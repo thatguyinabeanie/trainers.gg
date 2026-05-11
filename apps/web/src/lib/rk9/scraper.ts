@@ -148,6 +148,7 @@ export function parseRosterPage(html: string): RK9RosterEntry[] {
     if ($cells.length < 4) return;
 
     // Extract fields using column map
+    const playerIdMasked = getCellText($, $cells, columnMap.playerIdMasked);
     const firstName = getCellText($, $cells, columnMap.firstName);
     const lastName = getCellText($, $cells, columnMap.lastName);
     const country = getCellText($, $cells, columnMap.country);
@@ -177,6 +178,7 @@ export function parseRosterPage(html: string): RK9RosterEntry[] {
     if (!firstName || !lastName) return;
 
     entries.push({
+      playerIdMasked,
       firstName,
       lastName,
       country,
@@ -440,6 +442,129 @@ export function parseTournamentPage(
 }
 
 // ---------------------------------------------------------------------------
+// Archived events page parser (Wayback Machine snapshots)
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse a Wayback Machine archived /events/pokemon page to discover VG
+ * tournament IDs and metadata.
+ *
+ * This is more permissive than `parseEventsPage` because:
+ * - Table IDs changed over the years (2022: #dtOpenTournaments, later:
+ *   #dtUpcomingEvents/#dtPastEvents)
+ * - Wayback prefixes hrefs with /web/{timestamp}/... but the tournament ID
+ *   regex still works on the suffix
+ * - Some archived pages have slightly different column ordering
+ *
+ * Strategy: find ALL tables on the page, scan rows for VG tournament links,
+ * extract metadata from sibling cells. This makes it resilient to any era's
+ * table structure.
+ */
+export function parseArchivedEventsPage(html: string): RK9Event[] {
+  const $ = cheerio.load(html);
+  const events: RK9Event[] = [];
+  const seenIds = new Set<string>();
+
+  // Find all tables — don't rely on specific IDs
+  $("table").each((_tableIdx, table) => {
+    const $table = $(table);
+
+    $table.find("tbody tr").each((_i, row) => {
+      const $row = $(row);
+      const $cells = $row.find("td");
+      if ($cells.length < 3) return;
+
+      // Look for any link containing "/tournament/" with "VG" text or VG image
+      const $vgLinks = $row.find('a[href*="/tournament/"]').filter((_j, el) => {
+        const text = $(el).text().trim();
+        return (
+          text === "VG" ||
+          text === "VGC" ||
+          $(el).find('img[src*="pokemon-vg"]').length > 0 ||
+          $(el).find('img[src*="pokemon_vg"]').length > 0
+        );
+      });
+
+      if (!$vgLinks.length) return;
+
+      // Extract tournament ID from the first VG link
+      const href = $vgLinks.first().attr("href") ?? "";
+      // Handle Wayback prefix: /web/20220809/https://rk9.gg/tournament/ID
+      // or direct: /tournament/ID
+      const tournamentIdMatch = href.match(/\/tournament\/([^/?#]+)/);
+      if (!tournamentIdMatch?.[1]) return;
+      const eventId = tournamentIdMatch[1];
+
+      // Skip duplicates (same event can appear in multiple tables)
+      if (seenIds.has(eventId)) return;
+      seenIds.add(eventId);
+
+      // Extract metadata from cells.
+      // Typical column order: Date | Tier (image) | Event Name | Location | Links
+      // But some archives have fewer columns. We use heuristics.
+      const cellTexts = $cells.toArray().map((c) => $(c).text().trim());
+
+      // Find the event name: look for a cell with an <a> linking to /event/ or
+      // containing the most text (excluding the links column)
+      let name = "";
+      let dateRaw = "";
+      let locationRaw = "";
+
+      // Try standard layout: cell[0]=date, cell[2]=name, cell[3]=location
+      if ($cells.length >= 5) {
+        dateRaw = cellTexts[0] ?? "";
+        // Name: get from link text in cell[2], or fallback to cell text
+        const $nameCell = $cells.eq(2);
+        const $nameLink = $nameCell.find("a").first();
+        name = $nameLink.length ? $nameLink.text().trim() : $nameCell.text().trim();
+        locationRaw = cellTexts[3] ?? "";
+      } else if ($cells.length >= 3) {
+        // Smaller layout — best effort
+        dateRaw = cellTexts[0] ?? "";
+        name = cellTexts[1] ?? "";
+        locationRaw = cellTexts[2] ?? "";
+      }
+
+      // Derive tier from image in the row (check all img srcs)
+      let tier: RK9EventTier = "regional";
+      $row.find("img").each((_k, img) => {
+        const src = $(img).attr("src") ?? "";
+        if (src.includes("international")) tier = "international";
+        else if (src.includes("world")) tier = "worlds";
+        else if (src.includes("special")) tier = "special";
+      });
+      // Also derive from name as fallback
+      if (tier === "regional") {
+        tier = deriveTier(name);
+      }
+
+      // Parse location: "City, CC" pattern
+      const locationParts = locationRaw.split(",").map((s) => s.trim());
+      const locationCity = locationParts[0] ?? "";
+      const locationCountry = locationParts[1] ?? "";
+
+      // Parse date range
+      const normalizedDateRaw = dateRaw.replace(/[–—]/g, "-");
+      const { dateStart, dateEnd } = parseDateRange(normalizedDateRaw);
+
+      events.push({
+        eventId,
+        name: name || eventId,
+        dateRaw,
+        dateStart,
+        dateEnd,
+        locationCity,
+        locationCountry,
+        tier,
+        section: "past",
+      });
+    });
+  });
+
+  return events;
+}
+
+// ---------------------------------------------------------------------------
 // Helper functions
 // ---------------------------------------------------------------------------
 
@@ -539,6 +664,7 @@ function parseDivision(raw: string): RK9Division {
 
 /** Column index map for the roster table */
 interface ColumnMap {
+  playerIdMasked: number;
   firstName: number;
   lastName: number;
   country: number;
@@ -551,6 +677,7 @@ interface ColumnMap {
 /** Build a column index map from table headers */
 function buildColumnMap($: $API, $table: $Selection): ColumnMap {
   const map: ColumnMap = {
+    playerIdMasked: -1,
     firstName: -1,
     lastName: -1,
     country: -1,
@@ -562,7 +689,8 @@ function buildColumnMap($: $API, $table: $Selection): ColumnMap {
 
   $table.find("thead th").each((i, th) => {
     const text = $(th).text().trim().toLowerCase();
-    if (text.includes("first name")) map.firstName = i;
+    if (text.includes("player id")) map.playerIdMasked = i;
+    else if (text.includes("first name")) map.firstName = i;
     else if (text.includes("last name")) map.lastName = i;
     else if (text === "country") map.country = i;
     else if (text === "division") map.division = i;
@@ -574,6 +702,7 @@ function buildColumnMap($: $API, $table: $Selection): ColumnMap {
   // Fallback: if headers didn't match, use known positional layout
   // Standard layout: PlayerID(0), FirstName(1), LastName(2), Country(3),
   //                  Division(4), TrainerName(5), TeamList(6), Standing(7)
+  if (map.playerIdMasked === -1) map.playerIdMasked = 0;
   if (map.firstName === -1) map.firstName = 1;
   if (map.lastName === -1) map.lastName = 2;
   if (map.country === -1) map.country = 3;

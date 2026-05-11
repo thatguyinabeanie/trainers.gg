@@ -43,6 +43,8 @@ export type RK9Division = "masters" | "senior" | "junior";
 
 /** A single player entry from the roster page */
 export interface RK9RosterEntry {
+  /** Masked Play! Pokemon player ID (e.g., '4....3') — first+last digit only */
+  playerIdMasked: string;
   /** Player's first name */
   firstName: string;
   /** Player's last name (may be abbreviated for minors, e.g., 'W.') */

@@ -30,7 +30,6 @@ import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   discoverRk9Events,
-  addRk9EventById,
   scrapeRk9Roster,
   scrapeRk9TeamsBatch,
 } from "@/actions/rk9";
@@ -68,9 +67,6 @@ export function RK9Import() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discoverMessage, setDiscoverMessage] = useState<string | null>(null);
-  const [addByIdValue, setAddByIdValue] = useState("");
-  const [isAddingById, setIsAddingById] = useState(false);
-  const [addByIdMessage, setAddByIdMessage] = useState<string | null>(null);
   const [activeJobs, setActiveJobs] = useState<
     Map<string, { type: string; scraped?: number; total?: number }>
   >(new Map());
@@ -119,34 +115,17 @@ export function RK9Import() {
       const result = await discoverRk9Events();
       if (result.success) {
         const count = result.events?.length ?? 0;
-        setDiscoverMessage(`Discovered ${count} events from RK9`);
+        const live = result.sources?.live ?? 0;
+        const archive = result.sources?.archive ?? 0;
+        setDiscoverMessage(
+          `Discovered ${count} events (${live} live, ${archive} from archive)`
+        );
         setRefreshKey((k) => k + 1);
       } else {
         setDiscoverMessage(`Error: ${result.error}`);
       }
     } finally {
       setIsDiscovering(false);
-    }
-  }
-
-  async function handleAddById() {
-    const trimmed = addByIdValue.trim();
-    if (!trimmed) return;
-
-    setIsAddingById(true);
-    setAddByIdMessage(null);
-    try {
-      const result = await addRk9EventById(trimmed);
-      if (result.success) {
-        const name = result.event?.name ?? trimmed;
-        setAddByIdMessage(`Added: ${name}`);
-        setAddByIdValue("");
-        setRefreshKey((k) => k + 1);
-      } else {
-        setAddByIdMessage(`Error: ${result.error}`);
-      }
-    } finally {
-      setIsAddingById(false);
     }
   }
 
@@ -311,6 +290,56 @@ export function RK9Import() {
               )}
             >
               {addByIdMessage}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Discover from Wayback Machine (disaster recovery) */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <History className="text-muted-foreground h-4 w-4" />
+            <p className="text-sm font-medium">Discover from Wayback Machine</p>
+          </div>
+          <p className="text-muted-foreground mb-3 text-xs">
+            Fetch archived RK9 event listings from the Internet Archive. Re-runnable for disaster recovery — discovers all VG tournaments from each season.
+          </p>
+          <div className="flex items-center gap-2">
+            <select
+              value={archiveSeason}
+              onChange={(e) => setArchiveSeason(e.target.value)}
+              className="border-input bg-background text-foreground rounded-md border px-3 py-2 text-sm"
+            >
+              <option value="all">All seasons</option>
+              <option value="2022">2022 (Apr 2022 – Aug 2022)</option>
+              <option value="2023">2023 (Sep 2022 – Aug 2023)</option>
+              <option value="2024">2024 (Sep 2023 – Aug 2024)</option>
+              <option value="2025">2025 (Sep 2024 – present)</option>
+            </select>
+            <Button
+              onClick={handleDiscoverFromArchive}
+              disabled={isDiscoveringArchive}
+              variant="outline"
+            >
+              {isDiscoveringArchive ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <History className="mr-2 h-4 w-4" />
+              )}
+              Discover from Archive
+            </Button>
+          </div>
+          {archiveMessage && (
+            <p
+              className={cn(
+                "mt-2 text-xs",
+                archiveMessage.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-muted-foreground"
+              )}
+            >
+              {archiveMessage}
             </p>
           )}
         </CardContent>

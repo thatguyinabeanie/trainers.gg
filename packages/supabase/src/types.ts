@@ -4173,25 +4173,31 @@ export type Database = {
         Row: {
           country: string | null
           created_at: string
+          division: Database["rk9"]["Enums"]["division"]
           first_name: string
           id: number
           last_name: string
+          player_id_masked: string
           trainer_name: string | null
         }
         Insert: {
           country?: string | null
           created_at?: string
+          division?: Database["rk9"]["Enums"]["division"]
           first_name: string
           id?: never
           last_name: string
+          player_id_masked?: string
           trainer_name?: string | null
         }
         Update: {
           country?: string | null
           created_at?: string
+          division?: Database["rk9"]["Enums"]["division"]
           first_name?: string
           id?: never
           last_name?: string
+          player_id_masked?: string
           trainer_name?: string | null
         }
         Relationships: []

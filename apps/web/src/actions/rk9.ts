@@ -6,9 +6,9 @@ import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import {
   parseEventsPage,
+  parseArchivedEventsPage,
   parseRosterPage,
   parseTeamListPage,
-  parseTournamentPage,
 } from "@/lib/rk9/scraper";
 import { syncEvents, importEvent, seedSpeciesMap } from "@/lib/rk9/import";
 import type { RK9Event } from "@/lib/rk9/types";
@@ -18,6 +18,8 @@ import type { RK9Event } from "@/lib/rk9/types";
 // ---------------------------------------------------------------------------
 
 const RK9_BASE_URL = "https://rk9.gg";
+const WAYBACK_BASE_URL = "https://web.archive.org";
+const WAYBACK_CDX_URL = "https://web.archive.org/cdx/search/cdx";
 const FETCH_TIMEOUT_MS = 30_000;
 const DELAY_TEAM_MS = 1500;
 const DELAY_ROSTER_MS = 1000;
@@ -63,6 +65,53 @@ async function fetchRk9Html(path: string): Promise<string> {
   }
 }
 
+/**
+ * Fetch an archived page from the Wayback Machine.
+ *
+ * Uses the `id_` flag in the URL to get raw content without the Wayback
+ * toolbar wrapper, which would interfere with HTML parsing.
+ *
+ * @param timestamp - Wayback snapshot timestamp (e.g., "20220809")
+ * @param path - Original path on rk9.gg (e.g., "/events/pokemon")
+ */
+async function fetchWaybackHtml(
+  timestamp: string,
+  path: string
+): Promise<string> {
+  // Validate timestamp is numeric
+  if (!/^\d{8,14}$/.test(timestamp)) {
+    throw new Error(`Invalid Wayback timestamp: ${timestamp}`);
+  }
+  // Validate path starts with /
+  if (!path.startsWith("/")) {
+    throw new Error(`Path must start with /: ${path}`);
+  }
+
+  const url = `${WAYBACK_BASE_URL}/web/${timestamp}id_/https://rk9.gg${path}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "trainers.gg-rk9-scraper/1.0 (archival data recovery)",
+        Accept: "text/html",
+      },
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Wayback HTTP ${response.status}: ${response.statusText} (timestamp=${timestamp})`
+      );
+    }
+
+    return await response.text();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 /** RK9 event IDs are alphanumeric with hyphens */
 function assertValidEventId(eventId: string): void {
   if (!/^[\w-]+$/.test(eventId)) {
@@ -70,16 +119,95 @@ function assertValidEventId(eventId: string): void {
   }
 }
 
+/**
+ * Query the Wayback CDX API to discover all available snapshots of
+ * rk9.gg/events/pokemon. Returns timestamps (14-digit strings) for
+ * successful (HTTP 200) captures.
+ */
+async function fetchWaybackSnapshots(): Promise<string[]> {
+  const params = new URLSearchParams({
+    url: "rk9.gg/events/pokemon",
+    output: "json",
+    fl: "timestamp,statuscode",
+  });
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${WAYBACK_CDX_URL}?${params}`, {
+      headers: {
+        "User-Agent": "trainers.gg-rk9-scraper/1.0 (archival data recovery)",
+      },
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`CDX API HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const rows = (await response.json()) as string[][];
+    // First row is headers ["timestamp", "statuscode"], rest are data
+    return rows
+      .slice(1)
+      .filter(([, status]) => status === "200")
+      .map(([ts]) => ts!);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Pick one representative snapshot per competitive season from a list of
+ * timestamps. Maximizes coverage by selecting the latest snapshot in each
+ * season window (Sep–Aug).
+ *
+ * A competitive season runs Sep of year N to Aug of year N+1.
+ * We label it by the ending year (e.g., "2023" = Sep 2022 – Aug 2023).
+ */
+function pickSnapshotsPerSeason(timestamps: string[]): string[] {
+  // Group by season
+  const bySeason = new Map<string, string[]>();
+
+  for (const ts of timestamps) {
+    const year = parseInt(ts.slice(0, 4), 10);
+    const month = parseInt(ts.slice(4, 6), 10);
+    // Season label: if month >= 9, it's the NEXT year's season
+    const season = month >= 9 ? String(year + 1) : String(year);
+    const existing = bySeason.get(season) ?? [];
+    existing.push(ts);
+    bySeason.set(season, existing);
+  }
+
+  // Pick the latest timestamp from each season (most complete data)
+  const picks: string[] = [];
+  for (const [, seasonTimestamps] of bySeason) {
+    seasonTimestamps.sort();
+    picks.push(seasonTimestamps[seasonTimestamps.length - 1]!);
+  }
+
+  return picks.sort();
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ---------------------------------------------------------------------------
-// Action: Discover events from rk9.gg/events/pokemon
+// Action: Discover events from live RK9 + Wayback Machine archive
 // ---------------------------------------------------------------------------
 
+/**
+ * Discover all VG tournament events by fetching from two sources:
+ * 1. Live rk9.gg/events/pokemon (current season)
+ * 2. Wayback Machine archived snapshots (all historical seasons via CDX API)
+ *
+ * Fully re-runnable for disaster recovery — no hardcoded IDs or timestamps.
+ * The CDX API dynamically discovers available archive snapshots, then we pick
+ * one per season for maximum coverage with minimal requests.
+ */
 export async function discoverRk9Events(): Promise<
-  ActionResult & { events?: RK9Event[] }
+  ActionResult & { events?: RK9Event[]; sources?: { live: number; archive: number } }
 > {
   try {
     const userId = await getUserId();
@@ -88,14 +216,74 @@ export async function discoverRk9Events(): Promise<
     const isAdmin = await isSiteAdmin();
     if (!isAdmin) return { success: false, error: "Requires site admin" };
 
-    const html = await fetchRk9Html("/events/pokemon");
-    const events = parseEventsPage(html);
+    const allEvents: RK9Event[] = [];
+    let liveCount = 0;
+    let archiveCount = 0;
 
-    // Sync to database
+    // Source 1: Live RK9 events page (current season)
+    try {
+      const html = await fetchRk9Html("/events/pokemon");
+      const liveEvents = parseEventsPage(html);
+      allEvents.push(...liveEvents);
+      liveCount = liveEvents.length;
+    } catch (e) {
+      // Live fetch failing shouldn't block archive recovery
+      console.warn("[discoverRk9Events] Live RK9 fetch failed:", getErrorMessage(e));
+    }
+
+    // Source 2: Wayback Machine (all historical seasons)
+    try {
+      const snapshots = await fetchWaybackSnapshots();
+      const picks = pickSnapshotsPerSeason(snapshots);
+
+      for (const timestamp of picks) {
+        try {
+          const html = await fetchWaybackHtml(timestamp, "/events/pokemon");
+          const archivedEvents = parseArchivedEventsPage(html);
+          allEvents.push(...archivedEvents);
+          archiveCount += archivedEvents.length;
+        } catch (e) {
+          // Individual snapshot failure shouldn't abort the whole process
+          console.warn(
+            `[discoverRk9Events] Wayback snapshot ${timestamp} failed:`,
+            getErrorMessage(e)
+          );
+        }
+      }
+    } catch (e) {
+      // CDX API failure shouldn't block if live succeeded
+      console.warn("[discoverRk9Events] Wayback CDX query failed:", getErrorMessage(e));
+    }
+
+    if (allEvents.length === 0) {
+      return {
+        success: false,
+        error: "No events discovered from either live RK9 or Wayback archive",
+      };
+    }
+
+    // Deduplicate by eventId (later entries win — live data takes priority
+    // over archive since allEvents has live first, then archive appended)
+    // Actually reverse: archive is appended after live, so live should win.
+    // Use a Map that preserves first-seen (live data).
+    const deduped = new Map<string, RK9Event>();
+    for (const event of allEvents) {
+      if (!deduped.has(event.eventId)) {
+        deduped.set(event.eventId, event);
+      }
+    }
+    const uniqueEvents = Array.from(deduped.values());
+
+    // Upsert to database
     const supabase = createServiceRoleClient();
-    await syncEvents(supabase, events);
+    await syncEvents(supabase, uniqueEvents);
 
-    return { success: true, data: undefined, events };
+    return {
+      success: true,
+      data: undefined,
+      events: uniqueEvents,
+      sources: { live: liveCount, archive: archiveCount },
+    };
   } catch (e) {
     return {
       success: false,
@@ -355,54 +543,6 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
     return {
       success: false,
       error: getErrorMessage(e, "Failed to scrape teams"),
-    };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Action: Add a single event by tournament ID (for events not in /events/pokemon)
-// ---------------------------------------------------------------------------
-
-/**
- * Fetch a tournament detail page by ID and upsert it into the rk9.events table.
- *
- * This handles older events that no longer appear on /events/pokemon but whose
- * detail pages still exist at /tournament/{id}.
- */
-export async function addRk9EventById(
-  eventId: string
-): Promise<ActionResult & { event?: RK9Event }> {
-  try {
-    const trimmed = eventId.trim();
-    if (!trimmed) return { success: false, error: "Event ID is required" };
-    assertValidEventId(trimmed);
-
-    const userId = await getUserId();
-    if (!userId) return { success: false, error: "Not authenticated" };
-
-    const isAdmin = await isSiteAdmin();
-    if (!isAdmin) return { success: false, error: "Requires site admin" };
-
-    // Fetch the tournament detail page
-    const html = await fetchRk9Html(`/tournament/${trimmed}`);
-    const event = parseTournamentPage(html, trimmed);
-
-    if (!event) {
-      return {
-        success: false,
-        error: "Could not parse tournament page — check the ID is valid",
-      };
-    }
-
-    // Upsert into DB
-    const supabase = createServiceRoleClient();
-    await syncEvents(supabase, [event]);
-
-    return { success: true, data: undefined, event };
-  } catch (e) {
-    return {
-      success: false,
-      error: getErrorMessage(e, "Failed to add event"),
     };
   }
 }

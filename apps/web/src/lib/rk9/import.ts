@@ -6,7 +6,7 @@
  *
  * Import flow:
  *   1. Upsert event metadata (from events.json)
- *   2. Upsert players from roster (dedup by first_name + last_name + country)
+ *   2. Upsert players from roster (dedup by player_id_masked + first_name + last_name + country + division)
  *   3. Create standings (linking players to events with placement)
  *   4. Insert team_pokemon (species, ability, item, tera, moves)
  *
@@ -224,35 +224,45 @@ export async function importEvent(
     // Skip entries without names
     if (!entry.firstName || !entry.lastName) continue;
 
-    // Upsert player — dedup by (first_name, last_name, country)
+    // Upsert player — dedup by (player_id_masked, first_name, last_name, country, division)
     const playerId = await resolvePlayer(
       supabase,
       playerIdCache,
+      entry.playerIdMasked,
       entry.firstName,
       entry.lastName,
       entry.country,
+      entry.division,
       entry.trainerName
     );
     result.playersUpserted++;
 
-    // Insert standing
+    // Insert standing — use upsert to handle duplicate name collisions
+    // (two players with same first_name + last_name + country = same player_id,
+    // which can violate the standings unique constraint on event_id + player_id + division)
     const { data: standingRow, error: sErr } = await supabase
       .schema("rk9")
       .from("standings")
-      .insert({
-        event_id: eventId,
-        player_id: playerId,
-        division: entry.division,
-        placement: entry.placement,
-        roster_entry_id: entry.rosterEntryId,
-      })
+      .upsert(
+        {
+          event_id: eventId,
+          player_id: playerId,
+          division: entry.division,
+          placement: entry.placement,
+          roster_entry_id: entry.rosterEntryId,
+        },
+        { onConflict: "event_id,player_id,division" }
+      )
       .select("id")
       .single();
 
-    if (sErr)
-      throw new Error(
-        `Standing for ${entry.firstName} ${entry.lastName}: ${sErr.message}`
+    if (sErr) {
+      // Skip this entry gracefully — log but don't abort the entire import
+      console.warn(
+        `[rk9-import] Skipping standing for ${entry.firstName} ${entry.lastName}: ${sErr.message}`
       );
+      continue;
+    }
     result.standingsInserted++;
 
     // Insert team_pokemon if we have a team for this player
@@ -314,17 +324,20 @@ export async function importEvent(
 /**
  * Upsert a player and return the database ID.
  * Uses a local cache to avoid redundant DB round-trips.
+ * Dedup key: (player_id_masked, first_name, last_name, country, division)
  */
 async function resolvePlayer(
   supabase: SupabaseClient,
   cache: Map<string, number>,
+  playerIdMasked: string,
   firstName: string,
   lastName: string,
   country: string,
+  division: string,
   trainerName: string
 ): Promise<number> {
-  // Cache key is the dedup key
-  const cacheKey = `${firstName}|${lastName}|${country}`;
+  // Cache key mirrors the unique constraint
+  const cacheKey = `${playerIdMasked}|${firstName}|${lastName}|${country}|${division}`;
   const cached = cache.get(cacheKey);
   if (cached !== undefined) return cached;
 
@@ -333,12 +346,14 @@ async function resolvePlayer(
     .from("players")
     .upsert(
       {
+        player_id_masked: playerIdMasked || "",
         first_name: firstName,
         last_name: lastName,
         country: country || null,
+        division: division || "masters",
         trainer_name: trainerName || null,
       },
-      { onConflict: "first_name,last_name,country" }
+      { onConflict: "player_id_masked,first_name,last_name,country,division" }
     )
     .select("id")
     .single();
