@@ -328,6 +328,21 @@ async function handleProcessQueue(
     try {
       const data = await fetchTournamentData(tournamentId, apiKey);
       const result: ImportResult = await importTournament(supabase, data, formatId);
+
+      // Mark as completed
+      const { error: completeErr } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_status: "completed",
+          data_imported_at: new Date().toISOString(),
+        })
+        .eq("tournament_id", tournamentId);
+
+      if (completeErr) {
+        console.error(`[limitless-import:queue] Failed to mark ${tournamentId} complete:`, completeErr.message);
+      }
+
       results.push({ processed: true, tournamentId, result });
       totalProcessed++;
       console.log(

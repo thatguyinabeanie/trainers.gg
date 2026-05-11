@@ -36,7 +36,7 @@ ENV_FILE="$ROOT_DIR/.env.local"
 # Source cron-specific vars from .env.local (if present)
 if [ -f "$ENV_FILE" ]; then
   for var in CRON_SYNC_INTERVAL CRON_IMPORT_INTERVAL CRON_IMPORT_BATCH CRON_BASE_URL; do
-    val=$(grep "^${var}=" "$ENV_FILE" | cut -d'=' -f2-)
+    val=$(grep "^${var}=" "$ENV_FILE" | cut -d'=' -f2- || true)
     if [ -n "$val" ]; then
       export "$var=$val"
     fi
@@ -56,7 +56,7 @@ CRON_SECRET=""
 
 while [ $attempts -lt $max_attempts ]; do
   if [ -f "$ENV_FILE" ]; then
-    CRON_SECRET=$(grep "^CRON_SECRET=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
+    CRON_SECRET=$(grep "^CRON_SECRET=" "$ENV_FILE" | cut -d'=' -f2- || true)
   fi
   if [ -n "$CRON_SECRET" ]; then
     break
