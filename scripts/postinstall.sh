@@ -148,7 +148,7 @@ SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET=
 # Cron Jobs (Vercel cron auth for local dev)
 # =============================================================================
 # Auto-generated on first setup. Used by /api/cron/* routes.
-CRON_SECRET=$(openssl rand -hex 32)
+CRON_SECRET=$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | xxd -p 2>/dev/null || echo "local-dev-cron-secret-replace-me")
 
 EOF
 

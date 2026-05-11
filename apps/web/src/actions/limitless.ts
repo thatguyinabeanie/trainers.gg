@@ -3,6 +3,8 @@
 import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
+import { isSiteAdmin } from "@/lib/sudo/server";
+import { syncTournamentList } from "@/lib/limitless";
 
 /**
  * Queue a single tournament for import.
@@ -13,6 +15,9 @@ export async function queueTournamentForImport(
   try {
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
 
     const supabase = createServiceRoleClient();
 
@@ -44,6 +49,9 @@ export async function batchQueueTournaments(
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
 
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
     if (tournamentIds.length === 0) {
       return { success: true, data: { queued: 0 } };
     }
@@ -74,5 +82,33 @@ export async function batchQueueTournaments(
       success: false,
       error: getErrorMessage(e, "Failed to batch queue"),
     };
+  }
+}
+
+/**
+ * Trigger a manual sync of the Limitless tournament list.
+ * Admin-only — same logic as the cron route.
+ */
+export async function triggerLimitlessSync(): Promise<
+  ActionResult<{ synced: number }>
+> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const apiKey = process.env.LIMITLESS_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: "LIMITLESS_API_KEY not configured" };
+    }
+
+    const supabase = createServiceRoleClient();
+    const result = await syncTournamentList(supabase, apiKey);
+
+    return { success: true, data: { synced: result.synced } };
+  } catch (e) {
+    return { success: false, error: getErrorMessage(e, "Sync failed") };
   }
 }

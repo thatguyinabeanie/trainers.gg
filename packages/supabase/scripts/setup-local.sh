@@ -288,7 +288,7 @@ create_env_file() {
 
     # Auto-generate CRON_SECRET if not already set
     if [ -z "$EXISTING_CRON_SECRET" ]; then
-      EXISTING_CRON_SECRET=$(openssl rand -hex 32)
+      EXISTING_CRON_SECRET=$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | xxd -p 2>/dev/null || echo "local-dev-cron-secret-replace-me")
     fi
 
     cat > "$ENV_FILE" << EOF

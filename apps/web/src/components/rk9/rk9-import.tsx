@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock,
   Download,
+  ExternalLink,
   Globe,
   Loader2,
   RefreshCw,
@@ -292,17 +293,19 @@ interface JobState {
   total?: number;
 }
 
+interface EventTableRowProps {
+  event: RK9EventRow;
+  activeJob: JobState | null;
+  onScrapeRoster: () => void;
+  onScrapeTeams: () => void;
+}
+
 function EventTableRow({
   event,
   activeJob,
   onScrapeRoster,
   onScrapeTeams,
-}: {
-  event: RK9EventRow;
-  activeJob: JobState | null;
-  onScrapeRoster: () => void;
-  onScrapeTeams: () => void;
-}) {
+}: EventTableRowProps) {
   const isBusy = activeJob !== null;
 
   return (
@@ -310,10 +313,25 @@ function EventTableRow({
       {/* Event name + location */}
       <TableCell>
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium">{event.name}</span>
+          <a
+            href={`https://rk9.gg/tournament/${event.event_id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium hover:underline"
+          >
+            {event.name}
+          </a>
           <Badge variant="secondary" className="text-xs capitalize">
             {event.tier}
           </Badge>
+          <a
+            href={`https://rk9.gg/tournament/${event.event_id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         </div>
         {event.location_city && (
           <p className="text-muted-foreground text-xs">
@@ -391,13 +409,15 @@ function EventTableRow({
 // Status Badge
 // ---------------------------------------------------------------------------
 
+interface EventStatusBadgeProps {
+  status: string;
+  activeJob: JobState | null;
+}
+
 function EventStatusBadge({
   status,
   activeJob,
-}: {
-  status: string;
-  activeJob: JobState | null;
-}) {
+}: EventStatusBadgeProps) {
   if (activeJob) {
     if (activeJob.type === "teams" && activeJob.total && activeJob.total > 0) {
       const pct = Math.round(

@@ -221,10 +221,8 @@ export function parseTeamListPage(html: string): RK9Pokemon[] {
   // Target only the English language section
   const $english = $("#lang-EN");
   if (!$english.length) {
-    // Fallback: try the first .translation block
-    const $firstLang = $(".translation").first();
-    if (!$firstLang.length) return pokemon;
-    return parsePokemonBlocks($, $firstLang);
+    // No English section — return empty rather than risking non-English data
+    return pokemon;
   }
 
   return parsePokemonBlocks($, $english);
@@ -427,6 +425,11 @@ function parseDivision(raw: string): RK9Division {
   const lower = raw.toLowerCase().trim();
   if (lower.includes("senior")) return "senior";
   if (lower.includes("junior")) return "junior";
+  if (lower.includes("master")) return "masters";
+  // Unknown division text — log warning and default to masters
+  if (lower.length > 0) {
+    console.warn(`[rk9-scraper] Unknown division "${raw}", defaulting to masters`);
+  }
   return "masters";
 }
 

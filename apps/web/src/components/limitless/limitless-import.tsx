@@ -41,6 +41,7 @@ import { LIMITLESS_TO_FORMAT } from "@/lib/limitless";
 import {
   queueTournamentForImport,
   batchQueueTournaments,
+  triggerLimitlessSync,
 } from "@/actions/limitless";
 
 // ---------------------------------------------------------------------------
@@ -161,14 +162,15 @@ export function LimitlessImport() {
   }
 
   // -------------------------------------------------------------------------
-  // Manual sync (calls edge function)
+  // Manual sync (calls same logic as cron via Server Action)
   // -------------------------------------------------------------------------
 
   async function handleSync() {
     setSyncing(true);
     setSyncError(null);
     try {
-      await callEdgeFunction({ action: "sync" });
+      const result = await triggerLimitlessSync();
+      if (!result.success) throw new Error(result.error);
       refetchStats();
       setRefreshKey((k) => k + 1);
     } catch (err) {
@@ -206,7 +208,8 @@ export function LimitlessImport() {
   async function queueAll() {
     if (!tournaments || tournaments.length === 0) return;
 
-    const toQueue = tournaments
+    // Use filtered list so "Queue All" respects current search
+    const toQueue = filteredTournaments
       .filter((t) => !t.import_status || t.import_status === "failed")
       .slice(0, queueBatchSize);
     if (toQueue.length === 0) return;
@@ -563,6 +566,7 @@ export function LimitlessImport() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-muted-foreground hover:text-foreground"
+                            aria-label={`View ${t.name} on Limitless`}
                             onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -594,6 +598,7 @@ export function LimitlessImport() {
                             size="sm"
                             onClick={() => queueOne(t.tournament_id)}
                             disabled={isQueuing || batchQueuing}
+                            aria-label={`Queue ${t.name} for import`}
                           >
                             {isQueuing ? (
                               <Loader2 className="h-4 w-4 animate-spin" />

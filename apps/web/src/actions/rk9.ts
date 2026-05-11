@@ -3,6 +3,7 @@
 import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
+import { isSiteAdmin } from "@/lib/sudo/server";
 import {
   parseEventsPage,
   parseRosterPage,
@@ -83,6 +84,9 @@ export async function discoverRk9Events(): Promise<
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
 
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
     const html = await fetchRk9Html("/events/pokemon");
     const events = parseEventsPage(html);
 
@@ -110,6 +114,9 @@ export async function scrapeRk9Roster(
     assertValidEventId(eventId);
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
 
     const supabase = createServiceRoleClient();
 
@@ -176,6 +183,9 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
     assertValidEventId(eventId);
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
 
     const supabase = createServiceRoleClient();
 

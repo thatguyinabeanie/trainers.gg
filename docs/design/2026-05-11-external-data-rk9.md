@@ -183,7 +183,7 @@ All VGC tournament IDs from `/events/pokemon`:
 - Schema: **`rk9`** — isolated from `limitless` and `showdown`
 - Format IDs: **Showdown strings** (`gen9championsvgc2026regma`) — same canonical format as other schemas
 - Tournament IDs: RK9's native alphanumeric IDs (text PK)
-- Player IDs: RK9's internal player identifier from the roster URL (text)
+- Player IDs: Generated UUIDs — players are deduplicated by `(first_name, last_name, country)`. The `roster_entry_id` from the RK9 URL is stored on standings for linking back to team list pages.
 - **Division is a first-class concept** — stored on standings, not players (a player could theoretically age up between events)
 - No FK to `public` or other schemas (future account linking will bridge these)
 - `moves text[]` for move storage (same as `limitless`)
@@ -685,11 +685,11 @@ Per season (~20 official events):
 
 2. **Division handling** — Store all divisions or only Masters? Seniors and Juniors are smaller (~50-100 players) but still valuable for complete data. Recommendation: store all, filter at query time.
 
-4. **Format detection** — How to determine the format for an event? RK9 doesn't label events with format IDs. Options: (a) manual mapping per event, (b) infer from date (before May 2026 = SVI, after = Champions M-A), (c) derive from team sheets (presence of Mega stones → Champions M-A).
+3. **Format detection** — How to determine the format for an event? RK9 doesn't label events with format IDs. Options: (a) manual mapping per event, (b) infer from date (before May 2026 = SVI, after = Champions M-A), (c) derive from team sheets (presence of Mega stones → Champions M-A).
 
-5. **Team list availability** — Not all events have public team lists. Some events only publish top cut teams. The `has_team_lists` boolean on events tracks this, but standings without teams are still valuable for placement data.
+4. **Team list availability** — Not all events have public team lists. Some events only publish top cut teams. The `has_team_lists` boolean on events tracks this, but standings without teams are still valuable for placement data.
 
-6. **Partnership vs. scraping** — Long-term, a data sharing agreement with RK9 Labs would be more reliable and ethical than scraping. Worth exploring once we have a working pipeline that demonstrates value.
+5. **Partnership vs. scraping** — Long-term, a data sharing agreement with RK9 Labs would be more reliable and ethical than scraping. Worth exploring once we have a working pipeline that demonstrates value.
 
 ---
 

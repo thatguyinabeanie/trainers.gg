@@ -396,7 +396,7 @@ export async function processImportQueue(
     }
 
     results.push({ processed: false, recovered: true });
-    return { results, totalProcessed: 0, totalErrors: 0 };
+    // Continue to process queue — don't short-circuit after recovery
   }
 
   // 2. Process up to batchSize tournaments
@@ -427,7 +427,7 @@ async function processOne(
   const { data: queued, error: qErr } = await supabase
     .schema("limitless")
     .from("tournaments")
-    .select("tournament_id, format_id")
+    .select("tournament_id, format_id, import_attempts")
     .eq("import_status", "queued")
     .order("import_requested_at", { ascending: true })
     .limit(1)
@@ -437,6 +437,7 @@ async function processOne(
   if (!queued) return { processed: false };
 
   const { tournament_id: tournamentId, format_id: formatId } = queued;
+  const currentAttempts = queued.import_attempts ?? 0;
 
   // Claim the tournament (set importing) — verify exactly 1 row updated
   const { data: claimed, error: claimErr } = await supabase
@@ -464,17 +465,8 @@ async function processOne(
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
 
-    // Mark as failed
-    const attempts =
-      ((
-        await supabase
-          .schema("limitless")
-          .from("tournaments")
-          .select("import_attempts")
-          .eq("tournament_id", tournamentId)
-          .single()
-      ).data?.import_attempts ?? 0) + 1;
-
+    // Increment attempt counter atomically (use value fetched at claim time)
+    const attempts = currentAttempts + 1;
     const newStatus = attempts >= MAX_ATTEMPTS ? "failed" : "queued";
 
     await supabase
