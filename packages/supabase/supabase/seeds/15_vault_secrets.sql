@@ -24,6 +24,11 @@ BEGIN
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'service_role_key') THEN
+    -- This is the published supabase-demo service role JWT used by ALL local
+    -- Supabase projects. It is NOT a real secret — the value is hardcoded in
+    -- the supabase-demo image and documented at supabase.com/docs.
+    -- In production, the real service_role_key must be set via the Supabase
+    -- dashboard (Project Settings → Vault) and must never be committed.
     PERFORM vault.create_secret(
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
       'service_role_key',
