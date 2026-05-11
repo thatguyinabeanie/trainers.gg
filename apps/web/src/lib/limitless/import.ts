@@ -129,63 +129,67 @@ export async function importTournament(
   if (clearErr)
     throw new Error(`Clear tournament data failed: ${clearErr.message}`);
 
-  // 2. Upsert organizer (if present) and get organizer_id
-  let organizerId: number | null = null;
-  if (details.organizer?.id) {
-    const { data: orgData, error: orgErr } = await supabase
+  // 2. Insert phases, upsert organizer, and upsert tournament metadata in parallel
+  const [orgResult, tResult, pResult] = await Promise.all([
+    // Upsert organizer (if present) and get organizer_id
+    (async (): Promise<number | null> => {
+      if (!details.organizer?.id) return null;
+      const { data: orgData, error: orgErr } = await supabase
+        .schema("limitless")
+        .from("organizers")
+        .upsert(
+          {
+            limitless_id: details.organizer.id,
+            name: details.organizer.name,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "limitless_id" }
+        )
+        .select("id")
+        .single();
+      if (orgErr) throw new Error(`Organizer upsert failed: ${orgErr.message}`);
+      return orgData.id;
+    })(),
+
+    // Upsert tournament metadata (WITHOUT data_imported_at — set after all children succeed)
+    supabase
       .schema("limitless")
-      .from("organizers")
+      .from("tournaments")
       .upsert(
         {
-          limitless_id: details.organizer.id,
-          name: details.organizer.name,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "limitless_id" }
-      )
-      .select("id")
-      .single();
-    if (orgErr) throw new Error(`Organizer upsert failed: ${orgErr.message}`);
-    organizerId = orgData.id;
-  }
-
-  // 3. Upsert tournament metadata (WITHOUT data_imported_at — set after all children succeed)
-  const { error: tErr } = await supabase
-    .schema("limitless")
-    .from("tournaments")
-    .upsert(
-      {
-        tournament_id: tournamentId,
-        name: details.name,
-        format_id: formatId,
-        date: details.date.split("T")[0],
-        player_count: details.players ?? 0,
-        platform: details.platform ?? null,
-        is_online: details.isOnline ?? true,
-        decklists: details.decklists ?? false,
-        organizer_name: details.organizer?.name ?? null,
-        organizer_id: organizerId,
-      },
-      { onConflict: "tournament_id" }
-    );
-  if (tErr) throw new Error(`Tournament upsert failed: ${tErr.message}`);
-
-  // 3. Insert phases
-  if (details.phases && details.phases.length > 0) {
-    const { error: pErr } = await supabase
-      .schema("limitless")
-      .from("phases")
-      .insert(
-        details.phases.map((p) => ({
           tournament_id: tournamentId,
-          phase_number: p.phase,
-          type: p.type,
-          rounds: p.rounds,
-          mode: p.mode,
-        }))
-      );
-    if (pErr) throw new Error(`Phases insert failed: ${pErr.message}`);
-  }
+          name: details.name,
+          format_id: formatId,
+          date: details.date.split("T")[0],
+          player_count: details.players ?? 0,
+          platform: details.platform ?? null,
+          is_online: details.isOnline ?? true,
+          decklists: details.decklists ?? false,
+          organizer_name: details.organizer?.name ?? null,
+        },
+        { onConflict: "tournament_id" }
+      ),
+
+    // Insert phases (independent of players/standings)
+    details.phases && details.phases.length > 0
+      ? supabase
+          .schema("limitless")
+          .from("phases")
+          .insert(
+            details.phases.map((p) => ({
+              tournament_id: tournamentId,
+              phase_number: p.phase,
+              type: p.type,
+              rounds: p.rounds,
+              mode: p.mode,
+            }))
+          )
+      : Promise.resolve({ error: null }),
+  ]);
+
+  const organizerId = orgResult;
+  if (tResult.error) throw new Error(`Tournament upsert failed: ${tResult.message}`);
+  if (pResult?.error) throw new Error(`Phases insert failed: ${pResult.error.message}`);
 
   // 4. Batch upsert all players (collect from standings + pairings)
   const playerIdCache = new Map<string, number>();
@@ -223,9 +227,9 @@ export async function importTournament(
     }
   }
 
-  // Batch upsert players in chunks of 200
+  // Batch upsert players in chunks of 1000
   const playerRows = Array.from(playerMap.values());
-  for (let i = 0; i < playerRows.length; i += 200) {
+  for (let i = 0; i < playerRows.length; i += 1000) {
     const batch = playerRows.slice(i, i + 200);
     const { data: upserted, error: pErr } = await supabase
       .schema("limitless")
@@ -240,13 +244,13 @@ export async function importTournament(
     }
   }
 
-  // 5. Batch insert standings in chunks of 200, then team_pokemon
+  // 5. Batch insert standings in chunks of 1000, then team_pokemon
   let totalPokemon = 0;
 
   // Insert standings in batches and collect IDs for team_pokemon
   const standingIds: Array<{ id: number; index: number }> = [];
 
-  for (let i = 0; i < standings.length; i += 200) {
+  for (let i = 0; i < standings.length; i += 1000) {
     const batch = standings.slice(i, i + 200);
     const rows = batch.map((standing) => ({
       tournament_id: tournamentId,
@@ -323,8 +327,8 @@ export async function importTournament(
     const phaseNumbers = new Set(details.phases?.map((p) => p.phase) ?? []);
     const validPairings = pairings.filter((p) => phaseNumbers.has(p.phase));
 
-    // Batch insert (200 at a time)
-    for (let i = 0; i < validPairings.length; i += 200) {
+    // Batch insert (1000 at a time)
+    for (let i = 0; i < validPairings.length; i += 1000) {
       const batch = validPairings.slice(i, i + 200);
       const rows = batch.map((p) => ({
         tournament_id: tournamentId,

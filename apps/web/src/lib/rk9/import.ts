@@ -217,82 +217,167 @@ export async function importEvent(
   // 2. Load species_map for normalization overrides
   const speciesMap = speciesMapOverrides ?? (await loadSpeciesMap(supabase));
 
-  // 3. Upsert players and create standings + team_pokemon
+  // 3. Batch upsert all players first
   const playerIdCache = new Map<string, number>();
+  const uniquePlayers = new Map<string, {
+    playerIdMasked: string;
+    firstName: string;
+    lastName: string;
+    country: string | null;
+    trainerName: string | null;
+  }>();
 
   for (const entry of roster) {
-    // Skip entries without names
     if (!entry.firstName || !entry.lastName) continue;
+    const key = `${entry.playerIdMasked ?? ""}|${entry.firstName}|${entry.lastName}|${entry.country ?? ""}`;
+    if (!uniquePlayers.has(key)) {
+      uniquePlayers.set(key, {
+        playerIdMasked: entry.playerIdMasked ?? "",
+        firstName: entry.firstName,
+        lastName: entry.lastName,
+        country: entry.country ?? null,
+        trainerName: entry.trainerName ?? null,
+      });
+    }
+  }
 
-    // Upsert player — dedup by (player_id_masked, first_name, last_name, country)
-    const playerId = await resolvePlayer(
-      supabase,
-      playerIdCache,
-      entry.playerIdMasked,
-      entry.firstName,
-      entry.lastName,
-      entry.country,
-      entry.trainerName
-    );
-    result.playersUpserted++;
+  // Batch upsert players (500 at a time) and build cache
+  const playerRows = Array.from(uniquePlayers.values());
+  for (let i = 0; i < playerRows.length; i += 500) {
+    const batch = playerRows.slice(i, i + 500);
+    const { data: upserted, error: pErr } = await supabase
+      .schema("rk9")
+      .from("players")
+      .upsert(
+        batch.map((p) => ({
+          player_id_masked: p.playerIdMasked,
+          first_name: p.firstName,
+          last_name: p.lastName,
+          country: p.country,
+          trainer_name: p.trainerName,
+        })),
+        { onConflict: "player_id_masked,first_name,last_name,country" }
+      )
+      .select("id, player_id_masked, first_name, last_name, country");
 
-    // Insert standing — use upsert to handle duplicate name collisions
-    // (two players with same first_name + last_name + country = same player_id,
-    // which can violate the standings unique constraint on event_id + player_id + division)
-    const { data: standingRow, error: sErr } = await supabase
+    if (pErr) throw new Error(`Player batch upsert: ${pErr.message}`);
+
+    for (const row of upserted ?? []) {
+      const key = `${row.player_id_masked ?? ""}|${row.first_name}|${row.last_name}|${row.country ?? ""}`;
+      playerIdCache.set(key, row.id);
+    }
+  }
+
+  result.playersUpserted = playerIdCache.size;
+
+  // 4. Batch upsert standings, then batch insert team_pokemon
+  const standingBatch: Array<{
+    event_id: string;
+    player_id: number;
+    division: string;
+    placement: number | null;
+    roster_entry_id: string | null;
+    index: number;
+  }> = [];
+
+  for (const [idx, entry] of roster.entries()) {
+    if (!entry.firstName || !entry.lastName) continue;
+    const key = `${entry.playerIdMasked ?? ""}|${entry.firstName}|${entry.lastName}|${entry.country ?? ""}`;
+    const playerId = playerIdCache.get(key);
+    if (!playerId) {
+      console.warn(`[rk9-import] No player ID for ${entry.firstName} ${entry.lastName}`);
+      continue;
+    }
+    standingBatch.push({
+      event_id: eventId,
+      player_id: playerId,
+      division: entry.division,
+      placement: entry.placement,
+      roster_entry_id: entry.rosterEntryId ?? null,
+      index: idx,
+    });
+  }
+
+  // Upsert standings in batches (500 at a time) with SELECT to get IDs
+  const standingIdByIndex = new Map<number, number>();
+  for (let i = 0; i < standingBatch.length; i += 500) {
+    const batch = standingBatch.slice(i, i + 500);
+    const { data: inserted, error: sErr } = await supabase
       .schema("rk9")
       .from("standings")
       .upsert(
-        {
-          event_id: eventId,
-          player_id: playerId,
-          division: entry.division,
-          placement: entry.placement,
-          roster_entry_id: entry.rosterEntryId,
-        },
+        batch.map((s) => ({
+          event_id: s.event_id,
+          player_id: s.player_id,
+          division: s.division,
+          placement: s.placement,
+          roster_entry_id: s.roster_entry_id,
+        })),
         { onConflict: "event_id,player_id,division" }
       )
-      .select("id")
-      .single();
+      .select("id");
 
-    if (sErr) {
-      // Skip this entry gracefully — log but don't abort the entire import
-      console.warn(
-        `[rk9-import] Skipping standing for ${entry.firstName} ${entry.lastName}: ${sErr.message}`
-      );
-      continue;
-    }
-    result.standingsInserted++;
+    if (sErr) throw new Error(`Standings batch upsert: ${sErr.message}`);
 
-    // Insert team_pokemon if we have a team for this player
-    if (entry.rosterEntryId && teams[entry.rosterEntryId]) {
-      const pokemon = teams[entry.rosterEntryId]!;
-      if (pokemon.length > 0) {
-        const pokemonRows = pokemon.map((mon, i) => ({
-          standing_id: standingRow.id,
-          position: i + 1,
-          species: resolveSpeciesSlug(mon.speciesRaw, speciesMap),
-          species_raw: mon.speciesRaw,
-          ability: mon.ability || null,
-          held_item: mon.heldItem || null,
-          tera_type: mon.teraType || null,
-          moves: mon.moves.length > 0 ? mon.moves : null,
-        }));
-
-        const { error: pkErr } = await supabase
-          .schema("rk9")
-          .from("team_pokemon")
-          .insert(pokemonRows);
-
-        if (pkErr)
-          throw new Error(
-            `Team pokemon for ${entry.firstName} ${entry.lastName}: ${pkErr.message}`
-          );
-        result.pokemonInserted += pokemonRows.length;
-        result.teamsInserted++;
+    for (let j = 0; j < (inserted ?? []).length; j++) {
+      const standingId = inserted![j]?.id;
+      if (standingId) {
+        standingIdByIndex.set(batch[j].index, standingId);
       }
     }
   }
+
+  result.standingsInserted = standingIdByIndex.size;
+
+  // 5. Batch insert team_pokemon
+  const allPokemonRows: Array<{
+    standing_id: number;
+    position: number;
+    species: string;
+    species_raw: string;
+    ability: string | null;
+    held_item: string | null;
+    tera_type: string | null;
+    moves: string[] | null;
+  }> = [];
+
+  for (const [idx, entry] of roster.entries()) {
+    if (!entry.firstName || !entry.lastName) continue;
+    const standingId = standingIdByIndex.get(idx);
+    if (!standingId) continue;
+
+    if (entry.rosterEntryId && teams[entry.rosterEntryId]) {
+      const pokemon = teams[entry.rosterEntryId]!;
+      if (pokemon.length > 0) {
+        for (let pos = 0; pos < pokemon.length; pos++) {
+          const mon = pokemon[pos];
+          allPokemonRows.push({
+            standing_id: standingId,
+            position: pos + 1,
+            species: resolveSpeciesSlug(mon.speciesRaw, speciesMap),
+            species_raw: mon.speciesRaw,
+            ability: mon.ability || null,
+            held_item: mon.heldItem || null,
+            tera_type: mon.teraType || null,
+            moves: mon.moves.length > 0 ? mon.moves : null,
+          });
+        }
+      }
+    }
+  }
+
+  for (let i = 0; i < allPokemonRows.length; i += 500) {
+    const batch = allPokemonRows.slice(i, i + 500);
+    const { error: pkErr } = await supabase
+      .schema("rk9")
+      .from("team_pokemon")
+      .insert(batch);
+
+    if (pkErr) throw new Error(`Team pokemon batch: ${pkErr.message}`);
+  }
+
+  result.pokemonInserted = allPokemonRows.length;
+  result.teamsInserted = standingIdByIndex.size;
 
   // 4. Update event metadata
   // Status depends on what was actually imported:
@@ -319,53 +404,6 @@ export async function importEvent(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Upsert a player and return the database ID.
- * Uses a local cache to avoid redundant DB round-trips.
- * Dedup key: (player_id_masked, first_name, last_name, country)
- *
- * Division is NOT part of the player identity — players age up across
- * seasons (Junior → Senior → Masters). Division lives on standings.
- */
-async function resolvePlayer(
-  supabase: SupabaseClient,
-  cache: Map<string, number>,
-  playerIdMasked: string,
-  firstName: string,
-  lastName: string,
-  country: string,
-  trainerName: string
-): Promise<number> {
-  // Cache key mirrors the unique constraint
-  const cacheKey = `${playerIdMasked}|${firstName}|${lastName}|${country}`;
-  const cached = cache.get(cacheKey);
-  if (cached !== undefined) return cached;
-
-  const { data: row, error } = await supabase
-    .schema("rk9")
-    .from("players")
-    .upsert(
-      {
-        player_id_masked: playerIdMasked || "",
-        first_name: firstName,
-        last_name: lastName,
-        country: country || null,
-        trainer_name: trainerName || null,
-      },
-      { onConflict: "player_id_masked,first_name,last_name,country" }
-    )
-    .select("id")
-    .single();
-
-  if (error)
-    throw new Error(
-      `Player upsert "${firstName} ${lastName}": ${error.message}`
-    );
-
-  cache.set(cacheKey, row.id);
-  return row.id;
-}
 
 /**
  * Resolve a species display name to a normalized slug.

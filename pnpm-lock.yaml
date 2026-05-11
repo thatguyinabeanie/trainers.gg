@@ -730,12 +730,6 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
-  infra/cron:
-    devDependencies:
-      '@trainers/supabase':
-        specifier: workspace:*
-        version: link:../../packages/supabase
-
   infra/ngrok: {}
 
   infra/pds: {}

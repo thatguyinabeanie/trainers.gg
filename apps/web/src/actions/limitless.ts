@@ -63,7 +63,7 @@ export async function batchQueueTournaments(
     }
 
     const supabase = createServiceRoleClient();
-    const CHUNK_SIZE = 100;
+    const CHUNK_SIZE = 1000;
     let totalQueued = 0;
 
     for (let i = 0; i < tournamentIds.length; i += CHUNK_SIZE) {
