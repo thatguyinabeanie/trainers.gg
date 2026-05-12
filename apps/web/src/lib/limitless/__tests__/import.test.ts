@@ -267,4 +267,220 @@ describe("processImportQueue", () => {
       })
     );
   });
+
+  it("skips tournaments with unknown format", async () => {
+    const supabase = { schema: jest.fn() };
+
+    // Stale check → empty
+    const staleChain = createChain();
+    staleChain.limit.mockResolvedValue({ data: [], error: null });
+
+    // Queue pick → found one with unknown format
+    const pickChain = createChain();
+    pickChain.maybeSingle.mockResolvedValue({
+      data: { tournament_id: "t-unknown", format_id: "UNKNOWN_CODE", import_attempts: 0 },
+      error: null,
+    });
+
+    // Default chain for other workers
+    const emptyChain = createChain();
+    emptyChain.maybeSingle.mockResolvedValue({ data: null, error: null });
+
+    supabase.schema
+      .mockReturnValueOnce(staleChain)
+      .mockReturnValueOnce(pickChain)
+      .mockReturnValue(emptyChain);
+
+    const result = await processImportQueue(supabase as unknown as MockSupabase, "key", 1);
+
+    expect(result.totalProcessed).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// syncTournamentList tests
+// ---------------------------------------------------------------------------
+
+import { syncTournamentList, importTournament } from "../import";
+
+describe("syncTournamentList", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("syncs tournaments from the API into the DB", async () => {
+    const { fetchTournamentList: mockList } = jest.requireMock("../api");
+    mockList.mockResolvedValue([
+      { id: "t1", name: "Cup 1", format: "SVG", date: "2024-06-01T00:00:00Z", players: 100 },
+      { id: "t2", name: "Cup 2", format: "SVI", date: "2025-01-15T00:00:00Z", players: 50 },
+    ]);
+
+    const chain = createChain();
+    chain.upsert = jest.fn().mockResolvedValue({ error: null });
+    const fromMock = jest.fn().mockReturnValue({ upsert: chain.upsert });
+    const schemaMock = jest.fn().mockReturnValue({ from: fromMock });
+    const supabase = { schema: schemaMock } as unknown as MockSupabase;
+
+    const result = await syncTournamentList(supabase, "key");
+
+    expect(result.synced).toBe(2);
+    expect(result.skipped).toBe(0);
+    expect(result.mapped).toBe(0);
+    expect(result.unmapped).toBe(2);
+    expect(chain.upsert).toHaveBeenCalled();
+    const upsertArg = chain.upsert.mock.calls[0][0];
+    expect(upsertArg).toHaveLength(2);
+    expect(upsertArg[0].tournament_id).toBe("t1");
+    expect(upsertArg[1].tournament_id).toBe("t2");
+  });
+
+  it("skips tournaments with empty format codes", async () => {
+    const { fetchTournamentList: mockList } = jest.requireMock("../api");
+    mockList.mockResolvedValue([
+      { id: "t1", name: "No Format", format: "", date: "2024-01-01T00:00:00Z", players: 10 },
+    ]);
+
+    const chain = createChain();
+    chain.upsert = jest.fn().mockResolvedValue({ error: null });
+    const fromMock = jest.fn().mockReturnValue({ upsert: chain.upsert });
+    const schemaMock = jest.fn().mockReturnValue({ from: fromMock });
+    const supabase = { schema: schemaMock } as unknown as MockSupabase;
+
+    const result = await syncTournamentList(supabase, "key");
+
+    expect(result.synced).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(chain.upsert).not.toHaveBeenCalled();
+  });
+
+  it("deduplicates tournaments by id", async () => {
+    const { fetchTournamentList: mockList } = jest.requireMock("../api");
+    mockList.mockResolvedValue([
+      { id: "t1", name: "Duplicate", format: "VGC 2024", date: "2024-06-01T00:00:00Z", players: 50 },
+      { id: "t1", name: "Duplicate", format: "VGC 2024", date: "2024-06-01T00:00:00Z", players: 50 },
+    ]);
+
+    const chain = createChain();
+    chain.upsert = jest.fn().mockResolvedValue({ error: null });
+    const fromMock = jest.fn().mockReturnValue({ upsert: chain.upsert });
+    const schemaMock = jest.fn().mockReturnValue({ from: fromMock });
+    const supabase = { schema: schemaMock } as unknown as MockSupabase;
+
+    const result = await syncTournamentList(supabase, "key");
+
+    expect(result.synced).toBe(1);
+    expect(chain.upsert.mock.calls[0][0]).toHaveLength(1);
+  });
+
+  it("reports unmapped formats", async () => {
+    const { fetchTournamentList: mockList } = jest.requireMock("../api");
+    mockList.mockResolvedValue([
+      { id: "t1", name: "Unknown Format", format: "CUSTOM", date: "2024-06-01T00:00:00Z", players: 10 },
+    ]);
+
+    const chain = createChain();
+    chain.upsert = jest.fn().mockResolvedValue({ error: null });
+    const fromMock = jest.fn().mockReturnValue({ upsert: chain.upsert });
+    const schemaMock = jest.fn().mockReturnValue({ from: fromMock });
+    const supabase = { schema: schemaMock } as unknown as MockSupabase;
+
+    const result = await syncTournamentList(supabase, "key");
+
+    expect(result.synced).toBe(1);
+    expect(result.unmapped).toBe(1);
+  });
+});
+
+describe("importTournament", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("imports full tournament data with standings and pairings", async () => {
+    const data = {
+      details: {
+        id: "t1",
+        name: "Test Cup",
+        date: "2024-06-01T00:00:00Z",
+        players: 8,
+        phases: [{ phase: 1, type: "swiss", rounds: 5, mode: "single" }],
+        organizer: { id: "org1", name: "Test Org" },
+        platform: "limitless",
+        isOnline: true,
+        decklists: false,
+      },
+      standings: [
+        { player: "player1", name: "Player One", country: "US", placing: 1, record: { wins: 5, losses: 0, ties: 0 }, drop: null, decklist: [{ id: "pikachu", ability: null, item: null, tera: null, attacks: [] }] },
+        { player: "player2", name: "Player Two", country: "CA", placing: 2, record: { wins: 4, losses: 1, ties: 0 }, drop: null, decklist: [] },
+      ],
+      pairings: [
+        { phase: 1, round: 1, table: 1, match: "1", player1: "player1", player2: "player2", winner: "player1" },
+      ],
+    };
+
+    const chain = createChain();
+    chain.rpc = jest.fn().mockResolvedValue({ error: null });
+    chain.single.mockResolvedValue({ data: { id: 1 }, error: null });
+    chain.maybeSingle.mockResolvedValue({ data: { id: 1 }, error: null });
+    chain.limit.mockResolvedValue({ data: [], error: null });
+    chain.select.mockReturnValue({
+      single: chain.single,
+      maybeSingle: chain.maybeSingle,
+    });
+
+    const fromMock = jest.fn().mockReturnValue(chain);
+    const schemaMock = jest.fn().mockReturnValue({
+      from: fromMock,
+      rpc: chain.rpc,
+    });
+    const supabase = { schema: schemaMock } as unknown as MockSupabase;
+
+    const result = await importTournament(supabase, data, "VGC 2024");
+
+    expect(result.tournamentId).toBe("t1");
+    expect(result.standings).toBe(2);
+    expect(schemaMock).toHaveBeenCalledWith("limitless");
+    expect(chain.rpc).toHaveBeenCalledWith("atomic_clear_tournament", { p_tournament_id: "t1" });
+  });
+
+  it("imports tournament without phases or pairings", async () => {
+    const data = {
+      details: {
+        id: "t2",
+        name: "Minimal Cup",
+        date: "2024-06-01T00:00:00Z",
+        players: 4,
+        phases: [],
+        organizer: null,
+        platform: null,
+        isOnline: true,
+        decklists: false,
+      },
+      standings: [
+        { player: "p1", name: "P1", country: "US", placing: 1, record: { wins: 3, losses: 0, ties: 0 }, drop: null, decklist: [] },
+      ],
+      pairings: [],
+    };
+
+    const chain = createChain();
+    chain.rpc = jest.fn().mockResolvedValue({ error: null });
+    chain.maybeSingle.mockResolvedValue({ data: { id: 1 }, error: null });
+    chain.select.mockReturnValue({
+      single: chain.single,
+      maybeSingle: chain.maybeSingle,
+    });
+    chain.limit.mockResolvedValue({ data: [], error: null });
+
+    const fromMock = jest.fn().mockReturnValue(chain);
+    const schemaMock = jest.fn().mockReturnValue({
+      from: fromMock,
+      rpc: chain.rpc,
+    });
+    const supabase = { schema: schemaMock } as unknown as MockSupabase;
+
+    const result = await importTournament(supabase, data, "VGC 2024");
+
+    expect(result.tournamentId).toBe("t2");
+    expect(result.standings).toBe(1);
+  });
 });
