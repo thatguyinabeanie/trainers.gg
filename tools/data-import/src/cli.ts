@@ -17,6 +17,7 @@ import {
   DATA_DIR,
   type EventMeta,
 } from "./rk9/scrape.js";
+import { DEFAULT_TEAM_CONCURRENCY } from "./rk9/http.js";
 import {
   syncEvents,
   importRoster,
@@ -109,7 +110,7 @@ rk9
 rk9
   .command("scrape <eventId>")
   .description("Scrape roster + teams + matches for one event")
-  .option("-c, --concurrency <n>", "Team scrape concurrency", "3")
+  .option("-c, --concurrency <n>", "Team scrape concurrency", String(DEFAULT_TEAM_CONCURRENCY))
   .action(async (eventId: string, opts: { concurrency: string }) => {
     try {
       // Read dateStart from events.json if available — needed for format detection
@@ -124,7 +125,7 @@ rk9
       console.log(`\nScraping ${eventId}...`);
       const { roster } = await scrapeRoster(eventId, dateStart);
       await scrapeTeams(eventId, roster, parseInt(opts.concurrency, 10));
-      await scrapeMatches(eventId, roster.length);
+      await scrapeMatches(eventId);
       console.log(`\nDone scraping ${eventId}`);
     } catch (err) {
       console.error(
@@ -227,17 +228,17 @@ rk9
       // Matches
       const matchesPath = join(DATA_DIR, "rk9", eventId, "matches.json");
       if (existsSync(matchesPath)) {
-        const pairingsByRound = await readMatches(eventId);
+        const divisionPairings = await readMatches(eventId);
         const { matches, rounds } = await importMatchResults(
           supabase,
           eventId,
-          pairingsByRound
+          divisionPairings
         );
         console.log(`  Matches: ${matches} across ${rounds} rounds`);
       }
 
       // Mark complete
-      await supabase
+      const { error: markError } = await supabase
         .schema("rk9")
         .from("events")
         .update({
@@ -249,6 +250,8 @@ rk9
           imported_at: new Date().toISOString(),
         })
         .eq("event_id", eventId);
+
+      if (markError) throw new Error(`Failed to mark event complete: ${markError.message}`);
 
       console.log(`\nImport complete for ${eventId}`);
     } catch (err) {
@@ -265,7 +268,7 @@ rk9
   .alias("backfill")
   .description("Full pipeline: discover → scrape all pending → import all")
   .option("-f, --force", "Run even if rk9_backend_auto_import is enabled")
-  .option("-c, --concurrency <n>", "Team scrape concurrency", "3")
+  .option("-c, --concurrency <n>", "Team scrape concurrency", String(DEFAULT_TEAM_CONCURRENCY))
   .action(async (opts: { force?: boolean; concurrency: string }) => {
     try {
       const supabase = createAdminClient();
@@ -309,7 +312,7 @@ rk9
           // Scrape
           const { roster } = await scrapeRoster(event.eventId, event.dateStart);
           await scrapeTeams(event.eventId, roster, concurrency);
-          await scrapeMatches(event.eventId, roster.length);
+          await scrapeMatches(event.eventId);
 
           // Import roster
           const { playersUpserted, standingsInserted } = await importRoster(
@@ -357,11 +360,11 @@ rk9
             "matches.json"
           );
           if (existsSync(matchesPath)) {
-            const pairingsByRound = await readMatches(event.eventId);
+            const divisionPairings = await readMatches(event.eventId);
             const { matches, rounds } = await importMatchResults(
               supabase,
               event.eventId,
-              pairingsByRound
+              divisionPairings
             );
             console.log(`  Matches: ${matches} across ${rounds} rounds`);
           }
@@ -373,7 +376,7 @@ rk9
             event.eventId,
             "teams.json"
           );
-          await supabase
+          const { error: markError } = await supabase
             .schema("rk9")
             .from("events")
             .update({
@@ -383,6 +386,10 @@ rk9
               imported_at: new Date().toISOString(),
             })
             .eq("event_id", event.eventId);
+
+          if (markError) {
+            throw new Error(`Failed to mark event complete: ${markError.message}`);
+          }
 
           console.log(`  Done`);
         } catch (err) {

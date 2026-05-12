@@ -5,7 +5,7 @@ import { fetchTournamentList, fetchTournamentData } from "./http.js";
 import type { LimitlessTournament, TournamentData } from "./types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-export const DATA_DIR = resolve(__dirname, "../../../data");
+export const DATA_DIR = resolve(__dirname, "../../data");
 
 async function ensureDir(p: string): Promise<void> {
   await mkdir(p, { recursive: true });
