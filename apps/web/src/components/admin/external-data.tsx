@@ -332,6 +332,10 @@ export function ExternalData() {
   const [limitlessCronInterval, setLimitlessCronInterval] = useState(300);
   const [limitlessCronIntervalLoading, setLimitlessCronIntervalLoading] = useState(true);
 
+  // Throttle for Limitless sync in auto-import loop
+  const lastLimitlessSyncRef = useRef(0);
+  const LIMITLESS_SYNC_THROTTLE_MS = 300_000; // 5 min
+
   const [limitlessBatchSize, setLimitlessBatchSize] = useState(20);
   const [limitlessBatchSizeLoading, setLimitlessBatchSizeLoading] = useState(true);
 
@@ -902,6 +906,14 @@ export function ExternalData() {
       autoImportRunning.current = true;
       try {
         const promises: Promise<void>[] = [];
+
+        // Sync Limitless if auto-import is enabled (throttled to avoid hammering API)
+        if (limitlessAutoImportRef.current && Date.now() - lastLimitlessSyncRef.current > LIMITLESS_SYNC_THROTTLE_MS) {
+          lastLimitlessSyncRef.current = Date.now();
+          promises.push(
+            triggerLimitlessSync().catch(() => {}) as Promise<void>
+          );
+        }
 
         // Process RK9: finish in-progress events before starting new ones.
         // SYNC: This priority order is mirrored in the rk9-worker edge function
