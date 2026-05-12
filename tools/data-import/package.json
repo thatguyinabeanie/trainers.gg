@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "tsx src/cli.ts",
     "rk9": "tsx src/cli.ts rk9",
     "limitless": "tsx src/cli.ts limitless"
   },
