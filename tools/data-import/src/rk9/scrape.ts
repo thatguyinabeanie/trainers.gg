@@ -154,8 +154,6 @@ export async function scrapeTeams(
       process.stdout.write(
         `\r  Teams: ${done}/${eligible.length} (${failed} failed)`
       );
-      // Small per-worker delay to avoid thundering-herd bursts against RK9
-      if (next < eligible.length) await sleep(150);
     }
   }
 
