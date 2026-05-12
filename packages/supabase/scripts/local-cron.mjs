@@ -20,9 +20,12 @@ async function invokeEdgeFunction(name, body) {
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    const action = data?.data?.action ?? data?.action ?? "unknown";
-    if (action !== "skipped" && action !== "idle") {
-      console.log(`[local-cron] ${name} → ${action}`, data?.data ?? "");
+    const result = data?.data ?? data;
+    const action = result?.action ?? "unknown";
+
+    // Only log when actual work was done (edge functions return skipped/idle for no-ops)
+    if (action !== "skipped" && action !== "idle" && action !== "unknown") {
+      console.log(`[local-cron] ${name} → ${action}`, result);
     }
   } catch (err) {
     // Edge functions might not be ready yet during startup — silent skip
