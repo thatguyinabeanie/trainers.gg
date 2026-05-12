@@ -1,16 +1,16 @@
-// Local dev cron — mimics pg_cron by polling edge functions at configured intervals.
-// Run alongside `pnpm dev:backend` so the edge functions are available.
+// Local dev cron — fast poller that fires every second. Edge functions handle their
+// own gating via site_config (auto-import flag + cron interval), so this script just
+// calls them and lets them decide whether to do work.
 //
-// Edge functions handle their own gating (auto-import flag + cron interval),
-// so this script just calls them periodically and lets them decide.
+// Run alongside `pnpm dev` (starts as a Turbo panel automatically).
 //
 // Usage:
-//   node packages/supabase/scripts/local-cron.mjs
-//   # or alongside dev:
-//   pnpm dev:backend & node packages/supabase/scripts/local-cron.mjs
+//   pnpm dev
+//   # or standalone:
+//   pnpm --filter @trainers/supabase cron
 
 const SUPABASE_URL = "http://127.0.0.1:54321";
-const POLL_INTERVAL_MS = 30_000; // Check every 30s
+const POLL_INTERVAL_MS = 1_000; // 1 second — fast polling, edge functions gate themselves
 
 async function invokeEdgeFunction(name, body) {
   try {
@@ -40,7 +40,7 @@ async function tick() {
   ]);
 }
 
-console.log("[local-cron] Starting — polling edge functions every 30s");
+console.log("[local-cron] Starting — polling edge functions every 1s");
 console.log(`[local-cron]   rk9-worker            → http://127.0.0.1:54321/functions/v1/rk9-worker`);
 console.log(`[local-cron]   limitless-import sync  → http://127.0.0.1:54321/functions/v1/limitless-import`);
 console.log(`[local-cron]   limitless-import queue → http://127.0.0.1:54321/functions/v1/limitless-import`);
