@@ -268,8 +268,9 @@ rk9
   .alias("backfill")
   .description("Full pipeline: discover → scrape all pending → import all")
   .option("-f, --force", "Run even if rk9_backend_auto_import is enabled")
-  .option("-c, --concurrency <n>", "Team scrape concurrency", String(DEFAULT_TEAM_CONCURRENCY))
-  .action(async (opts: { force?: boolean; concurrency: string }) => {
+  .option("-c, --concurrency <n>", "Team scrape concurrency per event", String(DEFAULT_TEAM_CONCURRENCY))
+  .option("-e, --event-concurrency <n>", "Number of events to process in parallel", "3")
+  .action(async (opts: { force?: boolean; concurrency: string; eventConcurrency: string }) => {
     try {
       const supabase = createAdminClient();
       await checkCronGuard(
@@ -308,102 +309,103 @@ rk9
       // Upsert all discovered events first
       await syncEvents(supabase, events);
 
-      const concurrency = parseInt(opts.concurrency, 10);
+      const teamConcurrency = parseInt(opts.concurrency, 10);
+      const eventConcurrency = parseInt(opts.eventConcurrency, 10);
 
-      for (const event of pending) {
-        console.log(`\n── ${event.name} (${event.eventId})`);
+      // Pool pattern: N event workers share a queue index.
+      // Each picks the next event, processes it fully, then picks the next.
+      let nextIdx = 0;
 
-        try {
-          // Scrape
-          const { roster } = await scrapeRoster(event.eventId, event.dateStart);
-          await scrapeTeams(event.eventId, roster, concurrency);
-          await scrapeMatches(event.eventId);
+      async function processEvent(): Promise<void> {
+        while (true) {
+          const i = nextIdx++;
+          if (i >= pending.length) break;
+          const event = pending[i]!;
+          const tag = `[${event.name}]`;
 
-          // Import roster
-          const { playersUpserted, standingsInserted } = await importRoster(
-            supabase,
-            event.eventId,
-            roster
-          );
-          console.log(
-            `  Players: ${playersUpserted}, Standings: ${standingsInserted}`
-          );
+          console.log(`\n── ${event.name} (${event.eventId})`);
 
-          // Import teams
-          const teamsPath = join(DATA_DIR, "rk9", event.eventId, "teams.json");
-          if (existsSync(teamsPath)) {
-            const teams = await readTeams(event.eventId);
-            const speciesMap = await loadSpeciesMap(supabase);
-            const pokemonCount = await importTeams(
+          try {
+            // Scrape
+            const { roster } = await scrapeRoster(event.eventId, event.dateStart);
+            await scrapeTeams(event.eventId, roster, teamConcurrency);
+            await scrapeMatches(event.eventId);
+
+            // Import roster
+            const { playersUpserted, standingsInserted } = await importRoster(
               supabase,
               event.eventId,
-              teams,
-              speciesMap
+              roster
             );
+            console.log(`${tag} Players: ${playersUpserted}, Standings: ${standingsInserted}`);
 
-            const newSpecies = new Map<string, string>();
-            for (const team of teams) {
-              for (const mon of team.pokemon) {
-                if (mon.speciesRaw && !speciesMap.has(mon.speciesRaw)) {
-                  newSpecies.set(
-                    mon.speciesRaw,
-                    normalizeSpeciesInline(mon.speciesRaw)
-                  );
+            // Import teams
+            const teamsPath = join(DATA_DIR, "rk9", event.eventId, "teams.json");
+            if (existsSync(teamsPath)) {
+              const teams = await readTeams(event.eventId);
+              const speciesMap = await loadSpeciesMap(supabase);
+              const pokemonCount = await importTeams(
+                supabase,
+                event.eventId,
+                teams,
+                speciesMap
+              );
+
+              const newSpecies = new Map<string, string>();
+              for (const team of teams) {
+                for (const mon of team.pokemon) {
+                  if (mon.speciesRaw && !speciesMap.has(mon.speciesRaw)) {
+                    newSpecies.set(
+                      mon.speciesRaw,
+                      normalizeSpeciesInline(mon.speciesRaw)
+                    );
+                  }
                 }
               }
+              if (newSpecies.size > 0) await seedSpeciesMap(supabase, newSpecies);
+
+              console.log(`${tag} Pokemon: ${pokemonCount}`);
             }
-            if (newSpecies.size > 0) await seedSpeciesMap(supabase, newSpecies);
 
-            console.log(`  Pokemon: ${pokemonCount}`);
+            // Import matches
+            const matchesPath = join(DATA_DIR, "rk9", event.eventId, "matches.json");
+            if (existsSync(matchesPath)) {
+              const divisionPairings = await readMatches(event.eventId);
+              const { matches, rounds } = await importMatchResults(
+                supabase,
+                event.eventId,
+                divisionPairings
+              );
+              console.log(`${tag} Matches: ${matches} across ${rounds} rounds`);
+            }
+
+            // Mark complete
+            const { error: markError } = await supabase
+              .schema("rk9")
+              .from("events")
+              .update({
+                import_status: "complete",
+                import_error: null,
+                has_team_lists: existsSync(join(DATA_DIR, "rk9", event.eventId, "teams.json")),
+                imported_at: new Date().toISOString(),
+              })
+              .eq("event_id", event.eventId);
+
+            if (markError) {
+              throw new Error(`Failed to mark event complete: ${markError.message}`);
+            }
+
+            console.log(`${tag} Done`);
+          } catch (err) {
+            console.error(`${tag} Failed: ${err instanceof Error ? err.message : err}`);
+            // Continue to next event — don't abort the whole backfill
           }
-
-          // Import matches
-          const matchesPath = join(
-            DATA_DIR,
-            "rk9",
-            event.eventId,
-            "matches.json"
-          );
-          if (existsSync(matchesPath)) {
-            const divisionPairings = await readMatches(event.eventId);
-            const { matches, rounds } = await importMatchResults(
-              supabase,
-              event.eventId,
-              divisionPairings
-            );
-            console.log(`  Matches: ${matches} across ${rounds} rounds`);
-          }
-
-          // Mark complete
-          const teamsPath2 = join(
-            DATA_DIR,
-            "rk9",
-            event.eventId,
-            "teams.json"
-          );
-          const { error: markError } = await supabase
-            .schema("rk9")
-            .from("events")
-            .update({
-              import_status: "complete",
-              import_error: null,
-              has_team_lists: existsSync(teamsPath2),
-              imported_at: new Date().toISOString(),
-            })
-            .eq("event_id", event.eventId);
-
-          if (markError) {
-            throw new Error(`Failed to mark event complete: ${markError.message}`);
-          }
-
-          console.log(`  Done`);
-        } catch (err) {
-          console.error(
-            `  Failed: ${err instanceof Error ? err.message : err}`
-          );
-          // Continue to next event — don't abort the whole backfill
         }
       }
+
+      await Promise.all(
+        Array.from({ length: Math.min(eventConcurrency, pending.length) }, processEvent)
+      );
 
       console.log("\nRK9 backfill complete");
     } catch (err) {
