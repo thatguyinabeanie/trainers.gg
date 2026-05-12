@@ -527,4 +527,63 @@ limitless
     }
   });
 
+// ===========================================================================
+// crons subcommand group — toggle pg_cron auto-import flags in site_config
+// ===========================================================================
+
+const CRON_KEYS = ["rk9_backend_auto_import", "limitless_backend_auto_import"] as const;
+
+const crons = program
+  .command("crons")
+  .description("Manage auto-import cron flags in site_config");
+
+crons
+  .command("status")
+  .description("Show current values of auto-import flags")
+  .action(async () => {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("site_config")
+      .select("key, value")
+      .in("key", [...CRON_KEYS]);
+    if (error) { console.error(error.message); process.exit(1); }
+    for (const key of CRON_KEYS) {
+      const row = data?.find((r) => r.key === key);
+      const val = row ? String(row.value) : "(not set)";
+      console.log(`  ${key}: ${val}`);
+    }
+  });
+
+crons
+  .command("disable")
+  .description("Set both auto-import flags to false (safe to run CLI)")
+  .action(async () => {
+    const supabase = createAdminClient();
+    for (const key of CRON_KEYS) {
+      const { error } = await supabase
+        .from("site_config")
+        .update({ value: false })
+        .eq("key", key);
+      if (error) { console.error(`Failed to update ${key}: ${error.message}`); process.exit(1); }
+      console.log(`  ${key} → false`);
+    }
+    console.log("\nCrons disabled. Run `crons enable` when the CLI import finishes.");
+  });
+
+crons
+  .command("enable")
+  .description("Re-enable both auto-import flags")
+  .action(async () => {
+    const supabase = createAdminClient();
+    for (const key of CRON_KEYS) {
+      const { error } = await supabase
+        .from("site_config")
+        .update({ value: true })
+        .eq("key", key);
+      if (error) { console.error(`Failed to update ${key}: ${error.message}`); process.exit(1); }
+      console.log(`  ${key} → true`);
+    }
+    console.log("\nCrons re-enabled.");
+  });
+
 program.parse(process.argv);
