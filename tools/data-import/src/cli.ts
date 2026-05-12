@@ -261,7 +261,8 @@ rk9
   });
 
 rk9
-  .command("backfill")
+  .command("do-all")
+  .alias("backfill")
   .description("Full pipeline: discover → scrape all pending → import all")
   .option("-f, --force", "Run even if rk9_backend_auto_import is enabled")
   .option("-c, --concurrency <n>", "Team scrape concurrency", "3")
@@ -462,7 +463,8 @@ limitless
   });
 
 limitless
-  .command("backfill")
+  .command("do-all")
+  .alias("backfill")
   .description("sync → scrape all → import all unimported")
   .option("-f, --force", "Run even if limitless_backend_auto_import is enabled")
   .action(async (opts: { force?: boolean }) => {
