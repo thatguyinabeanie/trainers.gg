@@ -66,6 +66,42 @@ async function getConfigNumber(
 }
 
 /**
+ * Check whether enough time has passed since the last cron run for this source.
+ * Updates last_run_at in site_config when the interval has elapsed.
+ */
+async function checkCronInterval(
+  supabase: ReturnType<typeof adminClient>,
+  intervalKey: string,
+  lastRunKey: string,
+  defaultIntervalSeconds: number,
+  sourceLabel: string
+): Promise<{ shouldSkip: boolean; reason?: string }> {
+  const intervalSeconds = await getConfigNumber(supabase, intervalKey, defaultIntervalSeconds);
+  const { data: lastRunRow } = await supabase
+    .from("site_config")
+    .select("value")
+    .eq("key", lastRunKey)
+    .maybeSingle();
+
+  if (lastRunRow && typeof lastRunRow.value === "string") {
+    const lastRun = new Date(lastRunRow.value).getTime();
+    const elapsed = Date.now() - lastRun;
+    if (elapsed < intervalSeconds * 1000) {
+      const remaining = Math.round(intervalSeconds - elapsed / 1000);
+      console.log(`[${sourceLabel}] Skipping — next run in ~${remaining}s (interval: ${intervalSeconds}s)`);
+      return { shouldSkip: true, reason: `interval not elapsed (${remaining}s remaining)` };
+    }
+  }
+
+  await supabase.from("site_config").upsert(
+    { key: lastRunKey, value: new Date().toISOString() },
+    { onConflict: "key" }
+  );
+
+  return { shouldSkip: false };
+}
+
+/**
  * Verify the caller is a site admin or using the service role key.
  */
 async function requireAdmin(
@@ -468,6 +504,10 @@ Deno.serve(async (req) => {
 
       case "process-queue": {
         const supabase = adminClient();
+        const intervalCheck = await checkCronInterval(supabase, "limitless_cron_interval_seconds", "limitless_last_run_at", 300, "limitless-import");
+        if (intervalCheck.shouldSkip) {
+          return json({ success: true, data: { action: "skipped", reason: intervalCheck.reason } }, 200, cors);
+        }
         const batchSize =
           (typeof body.batchSize === "number" && body.batchSize > 0)
             ? body.batchSize

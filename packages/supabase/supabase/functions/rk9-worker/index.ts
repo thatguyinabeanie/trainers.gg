@@ -165,7 +165,50 @@ type WorkResult =
       done: boolean;
       failed: number;
     }
-  | { action: "idle" };
+  | { action: "idle" }
+  | { action: "skipped"; reason: string };
+
+// ---------------------------------------------------------------------------
+// Cron interval helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Check whether enough time has passed since the last cron run.
+ * If the interval hasn't elapsed, returns a skipped WorkResult.
+ * If it has (or last_run is null), updates last_run_at and returns null.
+ */
+async function checkCronInterval(
+  supabase: SupabaseClient,
+  intervalKey: string,
+  lastRunKey: string,
+  defaultIntervalSeconds: number,
+  sourceLabel: string
+): Promise<WorkResult | null> {
+  const intervalSeconds = await getConfigNumber(supabase, intervalKey, defaultIntervalSeconds);
+  const { data: lastRunRow } = await supabase
+    .from("site_config")
+    .select("value")
+    .eq("key", lastRunKey)
+    .maybeSingle();
+
+  if (lastRunRow && typeof lastRunRow.value === "string") {
+    const lastRun = new Date(lastRunRow.value).getTime();
+    const elapsed = Date.now() - lastRun;
+    if (elapsed < intervalSeconds * 1000) {
+      const remaining = Math.round(intervalSeconds - elapsed / 1000);
+      console.log(`[${sourceLabel}] Skipping — next run in ~${remaining}s (interval: ${intervalSeconds}s)`);
+      return { action: "skipped", reason: `interval not elapsed (${remaining}s remaining)` };
+    }
+  }
+
+  // Update last_run_at
+  await supabase.from("site_config").upsert(
+    { key: lastRunKey, value: new Date().toISOString() },
+    { onConflict: "key" }
+  );
+
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // Scraper: Events page (/events/pokemon)
@@ -1020,6 +1063,12 @@ Deno.serve(async (req) => {
     const autoImportEnabled = configRow?.value === true || configRow?.value === "true";
     if (!autoImportEnabled) {
       return json({ success: true, data: { action: "skipped", reason: "auto_import_rk9_enabled is false" } }, 200, cors);
+    }
+
+    // Check cron interval (dynamic skip — user configures via admin UI)
+    const intervalResult = await checkCronInterval(supabase, "rk9_cron_interval_seconds", "rk9_last_run_at", 60, "rk9-worker");
+    if (intervalResult) {
+      return json({ success: true, data: intervalResult }, 200, cors);
     }
 
     // Try work in priority order:

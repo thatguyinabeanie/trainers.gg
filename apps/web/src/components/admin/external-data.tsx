@@ -326,6 +326,12 @@ export function ExternalData() {
   const [rk9TeamConcurrency, setRk9TeamConcurrency] = useState(3);
   const [rk9TeamConcurrencyLoading, setRk9TeamConcurrencyLoading] = useState(true);
 
+  const [rk9CronInterval, setRk9CronInterval] = useState(60);
+  const [rk9CronIntervalLoading, setRk9CronIntervalLoading] = useState(true);
+
+  const [limitlessCronInterval, setLimitlessCronInterval] = useState(300);
+  const [limitlessCronIntervalLoading, setLimitlessCronIntervalLoading] = useState(true);
+
   const [limitlessBatchSize, setLimitlessBatchSize] = useState(20);
   const [limitlessBatchSizeLoading, setLimitlessBatchSizeLoading] = useState(true);
 
@@ -383,6 +389,20 @@ export function ExternalData() {
       }
       setRk9TeamConcurrencyLoading(false);
     });
+
+    getSiteConfig<number>("rk9_cron_interval_seconds").then((result) => {
+      if (result.success && result.data !== null) {
+        setRk9CronInterval(result.data);
+      }
+      setRk9CronIntervalLoading(false);
+    });
+
+    getSiteConfig<number>("limitless_cron_interval_seconds").then((result) => {
+      if (result.success && result.data !== null) {
+        setLimitlessCronInterval(result.data);
+      }
+      setLimitlessCronIntervalLoading(false);
+    });
   }, []);
 
   async function handleToggleRk9AutoImport(checked: boolean) {
@@ -394,6 +414,10 @@ export function ExternalData() {
       setRk9AutoImport(previous);
       rk9AutoImportRef.current = previous;
     }
+    // Reset timer so auto-import runs immediately on re-enable
+    if (checked) {
+      await setSiteConfig("rk9_last_run_at", null);
+    }
   }
 
   async function handleToggleLimitlessAutoImport(checked: boolean) {
@@ -404,6 +428,10 @@ export function ExternalData() {
     if (!result.success) {
       setLimitlessAutoImport(previous);
       limitlessAutoImportRef.current = previous;
+    }
+    // Reset timer so auto-import runs immediately on re-enable
+    if (checked) {
+      await setSiteConfig("limitless_last_run_at", null);
     }
   }
 
@@ -419,6 +447,20 @@ export function ExternalData() {
     if (isNaN(num) || num < 1) return;
     setRk9TeamConcurrency(num);
     await setSiteConfig("rk9_team_concurrency", num);
+  }
+
+  async function handleRk9CronIntervalChange(value: string) {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 1) return;
+    setRk9CronInterval(num);
+    await setSiteConfig("rk9_cron_interval_seconds", num);
+  }
+
+  async function handleLimitlessCronIntervalChange(value: string) {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 1) return;
+    setLimitlessCronInterval(num);
+    await setSiteConfig("limitless_cron_interval_seconds", num);
   }
 
   async function handleLimitlessBatchSizeChange(value: string) {
@@ -1002,6 +1044,21 @@ export function ExternalData() {
                   <span className="text-muted-foreground text-xs">concurrent</span>
                 </div>
               )}
+              {rk9CronIntervalLoading ? (
+                <Skeleton className="h-6 w-20" />
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    className="h-6 w-14 px-1 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={rk9CronInterval}
+                    onChange={(e) => handleRk9CronIntervalChange(e.target.value)}
+                    min={10}
+                    step={10}
+                  />
+                  <span className="text-muted-foreground text-xs">every (s)</span>
+                </div>
+              )}
               <div className="bg-border h-5 w-px" />
               <div className="flex items-center gap-1.5">
                 <Globe className="text-muted-foreground h-4 w-4" />
@@ -1195,6 +1252,21 @@ export function ExternalData() {
                     min={1}
                   />
                   <span className="text-muted-foreground text-xs">tourneys/tick</span>
+                </div>
+              )}
+              {limitlessCronIntervalLoading ? (
+                <Skeleton className="h-6 w-20" />
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    className="h-6 w-14 px-1 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={limitlessCronInterval}
+                    onChange={(e) => handleLimitlessCronIntervalChange(e.target.value)}
+                    min={10}
+                    step={10}
+                  />
+                  <span className="text-muted-foreground text-xs">every (s)</span>
                 </div>
               )}
               <div className="bg-border h-5 w-px" />
