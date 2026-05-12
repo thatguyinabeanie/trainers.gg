@@ -627,65 +627,91 @@ async function importRoster(
   eventId: string,
   roster: RK9RosterEntry[]
 ): Promise<{ playersUpserted: number; standingsInserted: number }> {
-  let playersUpserted = 0;
-  let standingsInserted = 0;
-
   // Delete existing standings for idempotency (cascade deletes team_pokemon)
   await supabase.schema("rk9").from("standings").delete().eq("event_id", eventId);
 
-  const playerIdCache = new Map<string, number>();
+  // -----------------------------------------------------------------------
+  // Batch 1: Upsert all unique players in one go
+  // -----------------------------------------------------------------------
+
+  const seen = new Set<string>();
+  const uniquePlayerRows: Record<string, unknown>[] = [];
 
   for (const entry of roster) {
     if (!entry.firstName || !entry.lastName) continue;
 
-    // Upsert player
-    const cacheKey = `${entry.playerIdMasked}|${entry.firstName}|${entry.lastName}|${entry.country}`;
-    let playerId = playerIdCache.get(cacheKey);
+    const key = `${entry.playerIdMasked}|${entry.firstName}|${entry.lastName}|${entry.country}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
 
-    if (playerId === undefined) {
-      const { data: row, error } = await supabase
+    uniquePlayerRows.push({
+      player_id_masked: entry.playerIdMasked || "",
+      first_name: entry.firstName,
+      last_name: entry.lastName,
+      country: entry.country || null,
+      trainer_name: entry.trainerName || null,
+    });
+  }
+
+  const playerIdCache = new Map<string, number>();
+
+  if (uniquePlayerRows.length > 0) {
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < uniquePlayerRows.length; i += BATCH_SIZE) {
+      const batch = uniquePlayerRows.slice(i, i + BATCH_SIZE);
+      const { data: inserted, error } = await supabase
         .schema("rk9")
         .from("players")
-        .upsert(
-          {
-            player_id_masked: entry.playerIdMasked || "",
-            first_name: entry.firstName,
-            last_name: entry.lastName,
-            country: entry.country || null,
-            trainer_name: entry.trainerName || null,
-          },
-          { onConflict: "player_id_masked,first_name,last_name,country" }
-        )
-        .select("id")
-        .single();
+        .upsert(batch, { onConflict: "player_id_masked,first_name,last_name,country" })
+        .select("id, player_id_masked, first_name, last_name, country");
 
-      if (error) throw new Error(`Player upsert "${entry.firstName} ${entry.lastName}": ${error.message}`);
-      playerId = row.id;
-      playerIdCache.set(cacheKey, playerId);
+      if (error) throw new Error(`Player batch upsert: ${error.message}`);
+
+      for (const row of inserted ?? []) {
+        const key = `${row.player_id_masked}|${row.first_name}|${row.last_name}|${row.country}`;
+        playerIdCache.set(key, row.id);
+      }
     }
+  }
 
-    playersUpserted++;
+  // -----------------------------------------------------------------------
+  // Batch 2: Upsert all standings in one go
+  // -----------------------------------------------------------------------
 
-    // Insert standing
-    const { error: sErr } = await supabase
-      .schema("rk9")
-      .from("standings")
-      .upsert(
-        {
-          event_id: eventId,
-          player_id: playerId,
-          division: entry.division,
-          placement: entry.placement,
-          roster_entry_id: entry.rosterEntryId,
-        },
-        { onConflict: "event_id,player_id,division" }
-      );
+  const standingRows: Record<string, unknown>[] = [];
 
-    if (sErr) {
-      console.warn(`[rk9-worker] Skipping standing for ${entry.firstName} ${entry.lastName}: ${sErr.message}`);
-      continue;
+  for (const entry of roster) {
+    if (!entry.firstName || !entry.lastName) continue;
+
+    const key = `${entry.playerIdMasked}|${entry.firstName}|${entry.lastName}|${entry.country}`;
+    const playerId = playerIdCache.get(key);
+    if (!playerId) continue;
+
+    standingRows.push({
+      event_id: eventId,
+      player_id: playerId,
+      division: entry.division,
+      placement: entry.placement,
+      roster_entry_id: entry.rosterEntryId,
+    });
+  }
+
+  let standingsInserted = 0;
+  if (standingRows.length > 0) {
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < standingRows.length; i += BATCH_SIZE) {
+      const batch = standingRows.slice(i, i + BATCH_SIZE);
+      const { error } = await supabase
+        .schema("rk9")
+        .from("standings")
+        .upsert(batch, { onConflict: "event_id,player_id,division" });
+
+      if (error) {
+        console.warn(`[rk9-worker] Standing batch upsert error at ${i}: ${error.message}`);
+      } else {
+        standingsInserted += batch.length;
+      }
     }
-    standingsInserted++;
   }
 
   // Update event metadata
@@ -695,7 +721,7 @@ async function importRoster(
     .update({ player_count: roster.length })
     .eq("event_id", eventId);
 
-  return { playersUpserted, standingsInserted };
+  return { playersUpserted: uniquePlayerRows.length, standingsInserted };
 }
 
 async function seedSpeciesMap(

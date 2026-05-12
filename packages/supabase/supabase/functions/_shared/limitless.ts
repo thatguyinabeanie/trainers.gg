@@ -410,85 +410,134 @@ export async function importTournament(
     if (pErr) throw new Error(`Phases insert failed: ${pErr.message}`);
   }
 
-  // 4. Upsert players, create standings + team_pokemon
+  // 4. Upsert all unique players in one batch, then batch-insert standings + team_pokemon
   const playerIdCache = new Map<string, number>();
 
-  async function resolvePlayer(
-    username: string,
-    displayName?: string | null,
-    country?: string | null
-  ): Promise<number> {
-    const cached = playerIdCache.get(username);
-    if (cached !== undefined) return cached;
-
-    const { data: row, error } = await supabase
-      .schema("limitless")
-      .from("players")
-      .upsert(
-        {
-          username,
-          display_name: displayName ?? null,
-          country: country ?? null,
-        },
-        { onConflict: "username" }
-      )
-      .select("id")
-      .single();
-
-    if (error) throw new Error(`Player upsert "${username}": ${error.message}`);
-    playerIdCache.set(username, row.id);
-    return row.id;
-  }
-
-  let totalPokemon = 0;
+  // 4a. Collect and batch-upsert unique players
+  const uniquePlayers: { username: string; display_name: string | null; country: string | null }[] = [];
+  const seenPlayers = new Set<string>();
 
   for (const standing of standings) {
-    const playerId = await resolvePlayer(
-      standing.player,
-      standing.name,
-      standing.country
-    );
+    if (!seenPlayers.has(standing.player)) {
+      seenPlayers.add(standing.player);
+      uniquePlayers.push({
+        username: standing.player,
+        display_name: standing.name ?? null,
+        country: standing.country ?? null,
+      });
+    }
+  }
 
-    const { data: sRow, error: sErr } = await supabase
-      .schema("limitless")
-      .from("standings")
-      .insert({
-        tournament_id: tournamentId,
-        player_id: playerId,
-        placement: standing.placing ?? 0,
-        record_wins: standing.record?.wins ?? 0,
-        record_losses: standing.record?.losses ?? 0,
-        record_ties: standing.record?.ties ?? 0,
-        drop_round: standing.drop ?? null,
-      })
-      .select("id")
-      .single();
+  // Also collect players from pairings who might not be in standings
+  for (const p of pairings ?? []) {
+    if (p.player1 && !seenPlayers.has(p.player1)) {
+      seenPlayers.add(p.player1);
+      uniquePlayers.push({ username: p.player1, display_name: null, country: null });
+    }
+    if (p.player2 && !seenPlayers.has(p.player2)) {
+      seenPlayers.add(p.player2);
+      uniquePlayers.push({ username: p.player2, display_name: null, country: null });
+    }
+  }
 
-    if (sErr)
-      throw new Error(`Standing for "${standing.player}": ${sErr.message}`);
-
-    // Team pokemon
-    if (standing.decklist && standing.decklist.length > 0) {
-      const pokemonRows = standing.decklist.map((mon, i) => ({
-        standing_id: sRow.id,
-        position: i + 1,
-        species: mon.id,
-        ability: mon.ability ?? null,
-        held_item: mon.item ?? null,
-        tera_type: mon.tera ?? null,
-        moves: mon.attacks ?? [],
-      }));
-
-      const { error: pkErr } = await supabase
+  if (uniquePlayers.length > 0) {
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < uniquePlayers.length; i += BATCH_SIZE) {
+      const batch = uniquePlayers.slice(i, i + BATCH_SIZE);
+      const { data: inserted, error } = await supabase
         .schema("limitless")
-        .from("team_pokemon")
-        .insert(pokemonRows);
+        .from("players")
+        .upsert(batch, { onConflict: "username" })
+        .select("id, username");
 
-      if (pkErr)
-        throw new Error(
-          `Team pokemon for "${standing.player}": ${pkErr.message}`
-        );
-      totalPokemon += pokemonRows.length;
+      if (error) throw new Error(`Player batch upsert: ${error.message}`);
+      for (const row of inserted ?? []) {
+        playerIdCache.set(row.username, row.id);
+      }
+    }
+  }
+
+  // 4b. Build standing rows + team pokemon rows
+  const standingRows: Record<string, unknown>[] = [];
+  const pendingPokemonRows: { score: number; data: Record<string, unknown>[] }[] = [];
+
+  for (const standing of standings) {
+    const playerId = playerIdCache.get(standing.player);
+    if (!playerId) continue;
+
+    const standingIdx = standingRows.length;
+    standingRows.push({
+      tournament_id: tournamentId,
+      player_id: playerId,
+      placement: standing.placing ?? 0,
+      record_wins: standing.record?.wins ?? 0,
+      record_losses: standing.record?.losses ?? 0,
+      record_ties: standing.record?.ties ?? 0,
+      drop_round: standing.drop ?? null,
+    });
+
+    if (standing.decklist && standing.decklist.length > 0) {
+      pendingPokemonRows.push({
+        score: standingIdx,
+        data: standing.decklist.map((mon, i) => ({
+          position: i + 1,
+          species: mon.id,
+          ability: mon.ability ?? null,
+          held_item: mon.item ?? null,
+          tera_type: mon.tera ?? null,
+          moves: mon.attacks ?? [],
+        })),
+      });
+    }
+  }
+
+  // 4c. Batch-insert standings with select to get IDs
+  const standingIdByPlayerId = new Map<number, number>();
+  let totalPokemon = 0;
+
+  if (standingRows.length > 0) {
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < standingRows.length; i += BATCH_SIZE) {
+      const batch = standingRows.slice(i, i + BATCH_SIZE);
+      const { data: inserted, error } = await supabase
+        .schema("limitless")
+        .from("standings")
+        .insert(batch)
+        .select("id, player_id");
+
+      if (error) throw new Error(`Standing batch insert: ${error.message}`);
+      for (const row of inserted ?? []) {
+        standingIdByPlayerId.set(row.player_id, row.id);
+      }
+    }
+
+    // 4d. Bulk-insert team pokemon (matches standing IDs by player_id offset)
+    const allPokemonRows: Record<string, unknown>[] = [];
+    const teamStandingsInserted = [...standingIdByPlayerId.entries()];
+    for (const [playerId, standingId] of teamStandingsInserted) {
+      const matching = standingRows.findIndex(
+        (r) => r.player_id === playerId
+      );
+      if (matching === -1) continue;
+      const pending = pendingPokemonRows.find((p) => p.score === matching);
+      if (!pending) continue;
+
+      for (const row of pending.data) {
+        allPokemonRows.push({ standing_id: standingId, ...row });
+      }
+    }
+
+    if (allPokemonRows.length > 0) {
+      const BULK_CHUNK = 200;
+      for (let i = 0; i < allPokemonRows.length; i += BULK_CHUNK) {
+        const chunk = allPokemonRows.slice(i, i + BULK_CHUNK);
+        const { error } = await supabase
+          .schema("limitless")
+          .from("team_pokemon")
+          .insert(chunk);
+        if (error) throw new Error(`Team pokemon bulk insert: ${error.message}`);
+        totalPokemon += chunk.length;
+      }
     }
   }
 
