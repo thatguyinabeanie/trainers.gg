@@ -243,7 +243,7 @@ export async function importTournament(
     })(),
   ]);
 
-  const organizerId = orgResult;
+  const _organizerId = orgResult;
   if (tResult.error) throw new Error(`Tournament upsert failed: ${tResult.error.message}`);
   if (pResult?.error) throw new Error(`Phases insert failed: ${pResult.error.message}`);
 
@@ -252,7 +252,7 @@ export async function importTournament(
     // Batch insert standings and team_pokemon
     (async () => {
       const standingIds: Array<{ id: number; index: number }> = [];
-      let totalPokemon = 0;
+      let _totalPokemon = 0;
 
       // Insert standings in batches of 1000
       for (let i = 0; i < standings.length; i += 1000) {
