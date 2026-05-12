@@ -38,6 +38,8 @@ function createChain(terminal: Record<string, unknown> = {}): MockChain {
     "upsert",
     "delete",
     "eq",
+    "neq",
+    "not",
     "lt",
     "order",
     "limit",
