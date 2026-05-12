@@ -323,6 +323,9 @@ export function ExternalData() {
   const [rk9TeamsPerTick, setRk9TeamsPerTick] = useState(100);
   const [rk9TeamsPerTickLoading, setRk9TeamsPerTickLoading] = useState(true);
 
+  const [rk9TeamConcurrency, setRk9TeamConcurrency] = useState(3);
+  const [rk9TeamConcurrencyLoading, setRk9TeamConcurrencyLoading] = useState(true);
+
   const [limitlessBatchSize, setLimitlessBatchSize] = useState(20);
   const [limitlessBatchSizeLoading, setLimitlessBatchSizeLoading] = useState(true);
 
@@ -373,6 +376,13 @@ export function ExternalData() {
       }
       setLimitlessBatchSizeLoading(false);
     });
+
+    getSiteConfig<number>("rk9_team_concurrency").then((result) => {
+      if (result.success && result.data !== null) {
+        setRk9TeamConcurrency(result.data);
+      }
+      setRk9TeamConcurrencyLoading(false);
+    });
   }, []);
 
   async function handleToggleRk9AutoImport(checked: boolean) {
@@ -402,6 +412,13 @@ export function ExternalData() {
     if (isNaN(num) || num < 1) return;
     setRk9TeamsPerTick(num);
     await setSiteConfig("rk9_max_teams_per_tick", num);
+  }
+
+  async function handleRk9TeamConcurrencyChange(value: string) {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 1) return;
+    setRk9TeamConcurrency(num);
+    await setSiteConfig("rk9_team_concurrency", num);
   }
 
   async function handleLimitlessBatchSizeChange(value: string) {
@@ -968,6 +985,21 @@ export function ExternalData() {
                     min={1}
                   />
                   <span className="text-muted-foreground text-xs">teams/tick</span>
+                </div>
+              )}
+              {rk9TeamConcurrencyLoading ? (
+                <Skeleton className="h-6 w-24" />
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    className="h-6 w-11 px-1 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={rk9TeamConcurrency}
+                    onChange={(e) => handleRk9TeamConcurrencyChange(e.target.value)}
+                    min={1}
+                    max={10}
+                  />
+                  <span className="text-muted-foreground text-xs">concurrent</span>
                 </div>
               )}
               <div className="bg-border h-5 w-px" />

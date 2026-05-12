@@ -53,6 +53,7 @@ const FETCH_TIMEOUT_MS = 30_000;
 const DELAY_TEAM_MS = 1500;
 const DELAY_ROSTER_MS = 1000;
 const DEFAULT_MAX_TEAMS_PER_TICK = 100;
+const DEFAULT_TEAM_CONCURRENCY = 3;
 const DISCOVERY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // ---------------------------------------------------------------------------
@@ -796,7 +797,7 @@ async function tryImportRoster(supabase: SupabaseClient): Promise<WorkResult | n
 /**
  * Priority 3: Scrape one batch of teams (25) for the oldest eligible event.
  */
-async function tryImportTeamBatch(supabase: SupabaseClient, maxTeams: number = DEFAULT_MAX_TEAMS_PER_TICK): Promise<WorkResult | null> {
+async function tryImportTeamBatch(supabase: SupabaseClient, maxTeams: number = DEFAULT_MAX_TEAMS_PER_TICK, concurrency: number = DEFAULT_TEAM_CONCURRENCY): Promise<WorkResult | null> {
   const { data: event } = await supabase
     .schema("rk9")
     .from("events")
@@ -874,20 +875,19 @@ async function tryImportTeamBatch(supabase: SupabaseClient, maxTeams: number = D
     speciesMap.set(row.raw_name, row.species_slug);
   }
 
-  // Process up to maxTeams in one tick (still scraped one at a time with delays)
+  // Process up to maxTeams in concurrent batches
   const batch = remaining.slice(0, maxTeams);
   let batchScraped = 0;
   let batchFailed = 0;
   const newSpecies = new Map<string, string>();
 
-  console.log(`[rk9-worker] Scraping ${Math.min(maxTeams, remaining.length)} teams (${remaining.length} remaining total)`);
+  console.log(`[rk9-worker] Scraping up to ${batch.length} teams across ${concurrency} concurrent workers (${remaining.length} remaining total)`);
 
-  for (const standing of batch) {
+  async function scrapeOneTeam(standing: { id: number; roster_entry_id: string | null }): Promise<{ ok: boolean }> {
     const entryId = standing.roster_entry_id;
-    if (!entryId) continue;
+    if (!entryId) return { ok: false };
 
     try {
-      await sleep(DELAY_TEAM_MS);
       const html = await fetchRk9Html(`/teamlist/public/${event.event_id}/${entryId}`);
       const pokemon = parseTeamListPage(html);
 
@@ -916,11 +916,24 @@ async function tryImportTeamBatch(supabase: SupabaseClient, maxTeams: number = D
           .from("team_pokemon")
           .insert(pokemonRows);
 
-        if (!pkErr) batchScraped++;
-        else batchFailed++;
+        return { ok: !pkErr };
       }
+      return { ok: true };
     } catch {
-      batchFailed++;
+      return { ok: false };
+    }
+  }
+
+  // Process in parallel chunks with delay between chunks
+  for (let i = 0; i < batch.length; i += concurrency) {
+    const chunk = batch.slice(i, i + concurrency);
+    const results = await Promise.all(chunk.map(scrapeOneTeam));
+    for (const r of results) {
+      if (r.ok) batchScraped++;
+      else batchFailed++;
+    }
+    if (i + concurrency < batch.length) {
+      await sleep(DELAY_TEAM_MS);
     }
   }
 
@@ -1019,6 +1032,7 @@ Deno.serve(async (req) => {
 
     // Read runtime config from site_config
     const maxTeams = await getConfigNumber(supabase, "rk9_max_teams_per_tick", DEFAULT_MAX_TEAMS_PER_TICK);
+    const teamConcurrency = await getConfigNumber(supabase, "rk9_team_concurrency", DEFAULT_TEAM_CONCURRENCY);
 
     let result: WorkResult;
 
@@ -1026,7 +1040,7 @@ Deno.serve(async (req) => {
     if (discoverResult) {
       result = discoverResult;
     } else {
-      const teamsResult = await tryImportTeamBatch(supabase, maxTeams);
+      const teamsResult = await tryImportTeamBatch(supabase, maxTeams, teamConcurrency);
       if (teamsResult) {
         result = teamsResult;
       } else {
