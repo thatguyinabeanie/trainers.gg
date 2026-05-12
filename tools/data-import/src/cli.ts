@@ -522,6 +522,18 @@ limitless
   });
 
 limitless
+  .command("formats")
+  .description("List all known Limitless format codes and their Showdown IDs")
+  .action(() => {
+    console.log("\nLimitless format codes (use with --format):\n");
+    const maxLen = Math.max(...Object.keys(LIMITLESS_TO_FORMAT).map((k) => k.length));
+    for (const [code, showdownId] of Object.entries(LIMITLESS_TO_FORMAT)) {
+      console.log(`  ${code.padEnd(maxLen + 2)}→  ${showdownId}`);
+    }
+    console.log();
+  });
+
+limitless
   .command("scrape <id>")
   .description("Scrape one tournament → data/limitless/data/<id>.json")
   .action(async (id: string) => {
@@ -565,7 +577,11 @@ limitless
   .description("sync → scrape all → import all unimported")
   .option("-f, --force", "Run even if limitless_backend_auto_import is enabled")
   .option("-e, --event-concurrency <n>", "Number of tournaments to process in parallel", "3")
-  .action(async (opts: { force?: boolean; eventConcurrency: string }) => {
+  .option(
+    "--format <codes>",
+    "Only process these formats, comma-separated. Accepts Limitless codes (SVG,SVH) or Showdown IDs (gen9vgc2024regg). List known codes with: limitless formats"
+  )
+  .action(async (opts: { force?: boolean; eventConcurrency: string; format?: string }) => {
     try {
       const supabase = createAdminClient();
       await checkCronGuard(
@@ -575,6 +591,28 @@ limitless
       );
 
       const apiKey = getLimitlessApiKey();
+
+      // Parse --format into a set of Limitless codes (normalise Showdown IDs back)
+      let formatFilter: Set<string> | null = null;
+      if (opts.format) {
+        const showdownToCode = new Map(
+          Object.entries(LIMITLESS_TO_FORMAT).map(([k, v]) => [v, k])
+        );
+        formatFilter = new Set(
+          opts.format.split(",").map((f) => {
+            const trimmed = f.trim();
+            // Accept either the raw Limitless code (SVG) or its Showdown ID
+            return showdownToCode.get(trimmed) ?? trimmed;
+          })
+        );
+        const unknown = [...formatFilter].filter((c) => !(c in LIMITLESS_TO_FORMAT));
+        if (unknown.length > 0) {
+          console.error(
+            `Unknown format code(s): ${unknown.join(", ")}\nKnown codes: ${Object.keys(LIMITLESS_TO_FORMAT).join(", ")}`
+          );
+          process.exit(1);
+        }
+      }
 
       // Step 1: Sync tournament list
       console.log("\nSyncing tournament list...");
@@ -591,16 +629,20 @@ limitless
         (alreadyImported ?? []).map((r) => r.tournament_id)
       );
 
-      const toImport = tournaments.filter(
-        (t) =>
-          (opts.force || !imported.has(t.id)) &&
-          LIMITLESS_TO_FORMAT[t.format] !== undefined
-      );
+      const toImport = tournaments.filter((t) => {
+        if (LIMITLESS_TO_FORMAT[t.format] === undefined) return false;
+        if (!opts.force && imported.has(t.id)) return false;
+        if (formatFilter && !formatFilter.has(t.format)) return false;
+        return true;
+      });
 
+      const filterDesc = formatFilter
+        ? ` (format: ${[...formatFilter].join(",")})`
+        : "";
       console.log(
         opts.force
-          ? `\n${toImport.length} tournaments to process (--force: includes already imported)`
-          : `\n${toImport.length} tournaments to scrape+import (${imported.size} already done)`
+          ? `\n${toImport.length} tournaments to process${filterDesc} (--force: includes already imported)`
+          : `\n${toImport.length} tournaments to scrape+import${filterDesc} (${imported.size} already done)`
       );
 
       const eventConcurrency = parseInt(opts.eventConcurrency, 10);
