@@ -327,7 +327,7 @@ export async function importEvent(
     for (let j = 0; j < (inserted ?? []).length; j++) {
       const standingId = inserted![j]?.id;
       if (standingId) {
-        standingIdByIndex.set(batch[j].index, standingId);
+        standingIdByIndex.set(batch[j]!.index, standingId);
       }
     }
   }
