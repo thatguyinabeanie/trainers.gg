@@ -2,15 +2,10 @@
  * @jest-environment node
  */
 
-import { normalizeSpecies, collectUniqueSpecies, syncEvents } from "../import";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { RK9Pokemon } from "../types";
 
-type MockSupabase = {
-  schema: (name: string) => {
-    from: (table: string) => {
-      upsert: jest.Mock;
-    };
-  };
-};
+import { normalizeSpecies, collectUniqueSpecies, syncEvents } from "../import";
 
 describe("normalizeSpecies", () => {
   it("normalizes basic species names", () => {
@@ -51,7 +46,7 @@ describe("collectUniqueSpecies", () => {
       ],
     };
 
-    const result = collectUniqueSpecies(teams as any);
+    const result = collectUniqueSpecies(teams as unknown as Record<string, RK9Pokemon[]>);
 
     expect(result.size).toBe(2);
     expect(result.get("Pikachu")).toBe("pikachu");
@@ -63,13 +58,13 @@ describe("syncEvents", () => {
   it("upserts events", async () => {
     const upsert = jest.fn().mockResolvedValue({ error: null });
 
-    const supabase: MockSupabase = {
+    const supabase = {
       schema: () => ({
         from: () => ({ upsert }),
       }),
-    };
+    } as unknown as SupabaseClient;
 
-    const result = await syncEvents(supabase as any, [
+    const result = await syncEvents(supabase, [
       { eventId: "e1", name: "Event 1", tier: "Regional", dateStart: "2024-01-01", dateEnd: "2024-01-02", locationCity: null, locationCountry: null },
     ]);
 
