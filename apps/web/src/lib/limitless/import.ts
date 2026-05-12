@@ -509,12 +509,14 @@ async function processOne(
   supabase: SupabaseClient,
   apiKey?: string
 ): Promise<QueueProcessResult> {
-  // Pick the oldest queued tournament
+  // Pick the oldest queued tournament with a known format
   const { data: queued, error: qErr } = await supabase
     .schema("limitless")
     .from("tournaments")
     .select("tournament_id, format_id, import_attempts")
     .eq("import_status", "queued")
+    .not("format_id", "is", null)
+    .neq("format_id", "unknown")
     .order("import_requested_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -525,10 +527,16 @@ async function processOne(
   const { tournament_id: tournamentId, format_id: formatId } = queued;
   const currentAttempts = queued.import_attempts ?? 0;
 
-  // Skip tournaments with unknown format — the sync cron hasn't filled the row yet
-  if (!formatId || formatId === "unknown" || !ALL_VALID_FORMATS.has(formatId)) {
-    console.warn(`[limitless-import] Skipping ${tournamentId}: unknown format "${formatId}" — re-queuing`);
-    // Don't claim — leave it queued for the next sync to fill
+  // Belt-and-suspenders: if the format still isn't valid, park the row
+  // so it doesn't block the queue
+  if (!formatId || !ALL_VALID_FORMATS.has(formatId)) {
+    console.warn(`[limitless-import] Parking ${tournamentId}: unknown format "${formatId}"`);
+    await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .update({ import_status: "failed", import_error: `Unknown format: ${formatId}` })
+      .eq("tournament_id", tournamentId)
+      .eq("import_status", "queued");
     return { processed: false };
   }
 
