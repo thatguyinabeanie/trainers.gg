@@ -1290,9 +1290,9 @@ Deno.serve(async (req) => {
 
     // Try work in priority order:
     // 1. Discover events (if stale)
-    // 2. Finish in-progress events (teams) before starting new ones
-    // 3. Scrape match results for events with roster but no matches yet
-    // 4. Roster for pending events
+    // 2. Roster for pending events (get players into the system first)
+    // 3. Match results (once roster is done)
+    // 4. Team lists (lowest priority — most expensive)
     //
     // SYNC: This priority order is mirrored in the client-side auto-import loop
     // (apps/web/src/components/admin/external-data.tsx).
@@ -1308,17 +1308,17 @@ Deno.serve(async (req) => {
     if (discoverResult) {
       result = discoverResult;
     } else {
-      const teamsResult = await tryImportTeamBatch(supabase, maxTeams, teamConcurrency);
-      if (teamsResult) {
-        result = teamsResult;
+      const rosterResult = await tryImportRoster(supabase);
+      if (rosterResult) {
+        result = rosterResult;
       } else {
         const matchesResult = await tryImportMatchResults(supabase);
         if (matchesResult) {
           result = matchesResult;
         } else {
-          const rosterResult = await tryImportRoster(supabase);
-          if (rosterResult) {
-            result = rosterResult;
+          const teamsResult = await tryImportTeamBatch(supabase, maxTeams, teamConcurrency);
+          if (teamsResult) {
+            result = teamsResult;
           } else {
             result = { action: "idle" };
             console.log("[rk9-worker] Nothing to do — idle");

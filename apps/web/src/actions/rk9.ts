@@ -489,7 +489,16 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
     let batchScraped = 0;
     let batchFailed = 0;
     const newSpecies = new Map<string, string>();
-    const allTeamRows: any[] = [];
+    const allTeamRows: {
+      standing_id: number;
+      position: number;
+      species: string;
+      species_raw: string;
+      ability: string | null;
+      held_item: string | null;
+      tera_type: string | null;
+      moves: string[] | null;
+    }[] = [];
 
     for (const standing of batch) {
       const entryId = standing.roster_entry_id;
