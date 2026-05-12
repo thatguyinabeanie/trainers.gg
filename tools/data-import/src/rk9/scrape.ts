@@ -5,7 +5,6 @@ import {
   fetchRk9Html,
   sleep,
   DELAY_ROSTER_MS,
-  DELAY_TEAM_MS,
   DEFAULT_TEAM_CONCURRENCY,
 } from "./http.js";
 import {
@@ -23,7 +22,7 @@ import type {
 } from "./types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-export const DATA_DIR = resolve(__dirname, "../../../data");
+export const DATA_DIR = resolve(__dirname, "../../data");
 
 function eventDir(eventId: string): string {
   return join(DATA_DIR, "rk9", eventId);
@@ -126,42 +125,43 @@ export async function scrapeTeams(
 
   const eligible = roster.filter((r) => r.rosterEntryId !== null);
   const teams: Array<{ rosterEntryId: string; pokemon: RK9Pokemon[] }> = [];
+  let done = 0;
   let failed = 0;
 
-  async function scrapeOne(entry: RK9RosterEntry): Promise<{
-    ok: boolean;
-    data?: { rosterEntryId: string; pokemon: RK9Pokemon[] };
-  }> {
-    if (!entry.rosterEntryId) return { ok: false };
-    try {
-      const html = await fetchRk9Html(
-        `/teamlist/public/${eventId}/${entry.rosterEntryId}`
+  // Pool pattern: keep `concurrency` workers running at all times.
+  // Each worker pulls the next entry from a shared index — no idle gaps
+  // between requests unlike the old chunk-based approach.
+  let next = 0;
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const i = next++;
+      if (i >= eligible.length) break;
+      const entry = eligible[i]!;
+      if (entry.rosterEntryId) {
+        try {
+          const html = await fetchRk9Html(
+            `/teamlist/public/${eventId}/${entry.rosterEntryId}`
+          );
+          const pokemon = parseTeamListPage(html);
+          teams.push({ rosterEntryId: entry.rosterEntryId, pokemon });
+        } catch {
+          // Network errors on individual teams are non-fatal
+          failed++;
+        }
+      }
+      done++;
+      process.stdout.write(
+        `\r  Teams: ${done}/${eligible.length} (${failed} failed)`
       );
-      const pokemon = parseTeamListPage(html);
-      return { ok: true, data: { rosterEntryId: entry.rosterEntryId, pokemon } };
-    } catch {
-      return { ok: false };
+      // Small per-worker delay to avoid thundering-herd bursts against RK9
+      if (next < eligible.length) await sleep(150);
     }
   }
 
-  for (let i = 0; i < eligible.length; i += concurrency) {
-    const chunk = eligible.slice(i, i + concurrency);
-    const results = await Promise.all(chunk.map(scrapeOne));
-    for (const r of results) {
-      if (r.ok && r.data) {
-        teams.push(r.data);
-      } else {
-        failed++;
-      }
-    }
-    const progress = Math.min(i + concurrency, eligible.length);
-    process.stdout.write(
-      `\r  Teams: ${progress}/${eligible.length} scraped (${failed} failed)`
-    );
-    if (i + concurrency < eligible.length) {
-      await sleep(DELAY_TEAM_MS);
-    }
-  }
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, eligible.length) }, worker)
+  );
 
   process.stdout.write("\n");
 

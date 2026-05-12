@@ -1,8 +1,7 @@
 export const RK9_BASE_URL = "https://rk9.gg";
 export const FETCH_TIMEOUT_MS = 30_000;
-export const DELAY_TEAM_MS = 1500;
 export const DELAY_ROSTER_MS = 1000;
-export const DEFAULT_TEAM_CONCURRENCY = 3;
+export const DEFAULT_TEAM_CONCURRENCY = 10;
 
 export function buildRk9Url(path: string): string {
   if (!/^\/[\w\-/.]+$/.test(path)) {
