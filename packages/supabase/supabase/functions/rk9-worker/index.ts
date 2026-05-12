@@ -165,6 +165,7 @@ type WorkResult =
       done: boolean;
       failed: number;
     }
+  | { action: "matches"; eventId: string; eventName: string; matches: number; rounds: number }
   | { action: "idle" }
   | { action: "skipped"; reason: string };
 
@@ -1064,6 +1065,175 @@ async function tryImportTeamBatch(supabase: SupabaseClient, maxTeams: number = D
 }
 
 // ---------------------------------------------------------------------------
+// Match results import
+// ---------------------------------------------------------------------------
+
+interface PairingsEntry {
+  tableNumber: number | null;
+  player1: string;
+  player2: string | null;
+  winner: string | null;
+}
+
+function parsePairingsPage(html: string): PairingsEntry[] {
+  const $ = cheerio.load(html);
+  const entries: PairingsEntry[] = [];
+
+  const $table = $("table").first();
+  if (!$table.length) return entries;
+
+  $table.find("tbody tr").each((_i, row) => {
+    const $cells = $(row).find("td");
+    if ($cells.length < 3) return;
+
+    const tableNumber = parseInt($cells.eq(0).text().trim(), 10) || null;
+    const player1 = $cells.eq(1).text().trim();
+    const player2Raw = $cells.eq(2).text().trim();
+    const player2 = player2Raw && player2Raw.toUpperCase() !== "BYE" ? player2Raw : null;
+
+    let winner: string | null = null;
+    if ($cells.length >= 4) {
+      const w = $cells.eq(3).text().trim();
+      if (w && w !== "—" && w !== "-") winner = w;
+    }
+
+    if (player1) entries.push({ tableNumber, player1, player2, winner });
+  });
+
+  return entries;
+}
+
+/**
+ * Priority 3 (between teams and roster): scrape match results for events
+ * that have a roster but no match_results yet.
+ */
+async function tryImportMatchResults(supabase: SupabaseClient): Promise<WorkResult | null> {
+  const { data: event } = await supabase
+    .schema("rk9")
+    .from("events")
+    .select("event_id, name, player_count")
+    .in("import_status", ["roster", "teams", "complete"])
+    .order("date_start", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (!event) return null;
+
+  // Check if match_results already exist
+  const { count } = await supabase
+    .schema("rk9")
+    .from("match_results")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", event.event_id);
+
+  if (count && count > 0) return null;
+
+  console.log(`[rk9-worker] Importing match results for: ${event.name}`);
+
+  // Get players for this event
+  const { data: standingPlayers } = await supabase
+    .schema("rk9")
+    .from("standings")
+    .select("player_id, division")
+    .eq("event_id", event.event_id);
+
+  if (!standingPlayers || standingPlayers.length === 0) return null;
+
+  const playerIds = standingPlayers.map((s) => s.player_id);
+  const division = standingPlayers[0].division;
+
+  const { data: eventPlayers } = await supabase
+    .schema("rk9")
+    .from("players")
+    .select("id, first_name, last_name")
+    .in("id", playerIds);
+
+  if (!eventPlayers || eventPlayers.length === 0) return null;
+
+  // Build name → ID lookup (case-insensitive)
+  const nameToId = new Map<string, number>();
+  for (const p of eventPlayers) {
+    nameToId.set(`${p.first_name} ${p.last_name}`.toLowerCase().trim(), p.id);
+    // Also try last,first and just last name
+    nameToId.set(`${p.last_name}, ${p.first_name}`.toLowerCase().trim(), p.id);
+  }
+
+  // Estimate Swiss rounds from player count
+  const pc = event.player_count ?? 64;
+  const maxRounds = pc <= 8 ? 3 : pc <= 16 ? 4 : pc <= 32 ? 5 : pc <= 64 ? 6 : pc <= 128 ? 7 : 8;
+
+  // Create phase entry
+  await supabase
+    .schema("rk9")
+    .from("phases")
+    .upsert(
+      { event_id: event.event_id, division, phase_number: 1, type: "swiss", rounds: maxRounds },
+      { onConflict: "event_id,division,phase_number" }
+    );
+
+  let totalMatches = 0;
+  let roundsScraped = 0;
+
+  for (let round = 1; round <= maxRounds; round++) {
+    await sleep(DELAY_ROSTER_MS);
+    let html: string;
+    try {
+      html = await fetchRk9Html(`/pairings/${event.event_id}/${round}`);
+    } catch {
+      break; // No more rounds
+    }
+
+    const pairings = parsePairingsPage(html);
+    if (pairings.length === 0) break;
+
+    const matchRows: Record<string, unknown>[] = [];
+    for (const p of pairings) {
+      const player1Id = nameToId.get(p.player1.toLowerCase().trim());
+      if (!player1Id) continue;
+
+      const player2Id = p.player2 ? (nameToId.get(p.player2.toLowerCase().trim()) ?? null) : null;
+      const winnerId = p.winner ? (nameToId.get(p.winner.toLowerCase().trim()) ?? null) : null;
+
+      matchRows.push({
+        event_id: event.event_id,
+        division,
+        phase_number: 1,
+        round,
+        table_number: p.tableNumber,
+        player1_id: player1Id,
+        player2_id: player2Id,
+        winner_id: winnerId,
+      });
+    }
+
+    if (matchRows.length > 0) {
+      const { error } = await supabase
+        .schema("rk9")
+        .from("match_results")
+        .insert(matchRows);
+      if (error) {
+        console.warn(`[rk9-worker] Match results round ${round}: ${error.message}`);
+        continue;
+      }
+      totalMatches += matchRows.length;
+      roundsScraped++;
+    }
+  }
+
+  if (totalMatches === 0) return null;
+
+  console.log(`[rk9-worker] Matches imported: ${event.name} — ${totalMatches} matches across ${roundsScraped} rounds`);
+
+  return {
+    action: "matches",
+    eventId: event.event_id,
+    eventName: event.name,
+    matches: totalMatches,
+    rounds: roundsScraped,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Auth helper
 // ---------------------------------------------------------------------------
 
@@ -1120,7 +1290,9 @@ Deno.serve(async (req) => {
 
     // Try work in priority order:
     // 1. Discover events (if stale)
-    // 2. Finish in-progress events (teams) before starting new ones (roster)
+    // 2. Finish in-progress events (teams) before starting new ones
+    // 3. Scrape match results for events with roster but no matches yet
+    // 4. Roster for pending events
     //
     // SYNC: This priority order is mirrored in the client-side auto-import loop
     // (apps/web/src/components/admin/external-data.tsx).
@@ -1140,12 +1312,17 @@ Deno.serve(async (req) => {
       if (teamsResult) {
         result = teamsResult;
       } else {
-        const rosterResult = await tryImportRoster(supabase);
-        if (rosterResult) {
-          result = rosterResult;
+        const matchesResult = await tryImportMatchResults(supabase);
+        if (matchesResult) {
+          result = matchesResult;
         } else {
-          result = { action: "idle" };
-          console.log("[rk9-worker] Nothing to do — idle");
+          const rosterResult = await tryImportRoster(supabase);
+          if (rosterResult) {
+            result = rosterResult;
+          } else {
+            result = { action: "idle" };
+            console.log("[rk9-worker] Nothing to do — idle");
+          }
         }
       }
     }
