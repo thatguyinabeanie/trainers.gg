@@ -6,7 +6,7 @@ import React from "react";
 jest.mock("@trainers/pokemon", () => ({
   ALL_TYPES: ["Fire", "Water", "Grass"],
   isChampionsFormat: jest.fn(
-    (f: { id?: string } | undefined) => f?.id === "gen9championsvgc2026regma"
+    (f: { gameShort?: string } | undefined) => f?.gameShort === "Champions"
   ),
   getAllLegalAbilities: jest.fn(() => ["Drought", "Drizzle", "Intimidate"]),
   getAllLegalMoves: jest.fn(() => ["Tailwind", "Trick Room", "Follow Me"]),
@@ -16,7 +16,7 @@ jest.mock("@trainers/pokemon", () => ({
 import { SpeciesSidebar } from "../pickers/species-sidebar";
 import { DEFAULT_SPECIES_FILTERS } from "../pickers/species-filter-state";
 
-const championsFormat = { id: "gen9championsvgc2026regma" } as never;
+const championsFormat = { id: "gen9championsvgc2026regma", gameShort: "Champions" } as never;
 
 function renderSidebar(overrides = {}) {
   return render(
