@@ -382,7 +382,7 @@ export async function importEvent(
   }
 
   result.pokemonInserted = allPokemonRows.length;
-  result.teamsInserted = standingIdByIndex.size;
+  result.teamsInserted = new Set(allPokemonRows.map((r) => r.standing_id)).size;
 
   // 4. Update event metadata
   // Status depends on what was actually imported:

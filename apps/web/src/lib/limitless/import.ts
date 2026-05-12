@@ -244,7 +244,7 @@ export async function importTournament(
   ]);
 
   const organizerId = orgResult;
-  if (tResult.error) throw new Error(`Tournament upsert failed: ${tResult.message}`);
+  if (tResult.error) throw new Error(`Tournament upsert failed: ${tResult.error.message}`);
   if (pResult?.error) throw new Error(`Phases insert failed: ${pResult.error.message}`);
 
   // 4. Standings+team_pokemon and match_results run in parallel (both need player IDs)
@@ -441,45 +441,22 @@ export async function processImportQueue(
   if (staleErr) {
     console.error("[limitless-import] Stale import query failed:", staleErr.message);
   } else if (staleRows && staleRows.length > 0) {
-    // Batch stale recovery: separate failed vs requeue in two .in() calls
-    const failed: string[] = [];
-    const requeue: string[] = [];
-
-    for (const row of staleRows) {
-      const attempts = (row.import_attempts ?? 0) + 1;
-      if (attempts >= MAX_ATTEMPTS) {
-        failed.push(row.tournament_id);
-      } else {
-        requeue.push(row.tournament_id);
-      }
-    }
-
-    const ops: Promise<unknown>[] = [];
-    if (failed.length > 0) {
-      ops.push(
-        supabase
+    // Recover stale imports concurrently (at most 5 rows, each needs per-row attempt increment)
+    await Promise.all(
+      staleRows.map(async (row) => {
+        const attempts = (row.import_attempts ?? 0) + 1;
+        const newStatus = attempts >= MAX_ATTEMPTS ? "failed" : "queued";
+        await supabase
           .schema("limitless")
           .from("tournaments")
           .update({
-            import_status: "failed",
-            import_error: `Timed out after ${MAX_ATTEMPTS} attempts`,
+            import_status: newStatus,
+            import_error: newStatus === "failed" ? `Timed out after ${MAX_ATTEMPTS} attempts` : null,
+            import_attempts: attempts,
           })
-          .in("tournament_id", failed)
-      );
-    }
-    if (requeue.length > 0) {
-      ops.push(
-        supabase
-          .schema("limitless")
-          .from("tournaments")
-          .update({
-            import_status: "queued",
-            import_error: null,
-          })
-          .in("tournament_id", requeue)
-      );
-    }
-    await Promise.all(ops);
+          .eq("tournament_id", row.tournament_id);
+      })
+    );
 
     results.push({ processed: false, recovered: true });
     // Continue to process queue — don't short-circuit after recovery
@@ -494,7 +471,7 @@ export async function processImportQueue(
   const MAX_CONCURRENT = 3;
 
   const worker = async (): Promise<void> => {
-    while (queueDoor) {
+    while (queueDoor && totalProcessed < effectiveBatch) {
       const singleResult = await processOne(supabase, apiKey);
       results.push(singleResult);
       if (!singleResult.processed && !singleResult.skipped) {
