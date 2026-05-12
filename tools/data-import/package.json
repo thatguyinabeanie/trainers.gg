@@ -1,0 +1,21 @@
+{
+  "name": "@trainers/data-import",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "rk9": "tsx src/cli.ts rk9",
+    "limitless": "tsx src/cli.ts limitless"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "cheerio": "^1.0.0",
+    "commander": "^13.1.0",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}
