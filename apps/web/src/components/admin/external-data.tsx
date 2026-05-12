@@ -50,7 +50,6 @@ import {
 import {
   queueTournamentForImport,
   batchQueueTournaments,
-  triggerImportQueue,
   triggerLimitlessSync,
 } from "@/actions/limitless";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
@@ -310,17 +309,9 @@ export function ExternalData() {
   const [limFilters, setLimFilters] = useState<LimitlessFilterState>(INITIAL_LIMITLESS_FILTERS);
   const [limSort, setLimSort] = useState<SortState>({ column: "date", direction: "desc" });
 
-  // Auto-import state (frontend = client-side loop, backend = pg_cron)
-  const [rk9FrontendAutoImport, setRk9FrontendAutoImport] = useState(false);
-  const [rk9FrontendAutoImportLoading, setRk9FrontendAutoImportLoading] = useState(true);
-  const rk9FrontendAutoImportRef = useRef(false);
-
+  // Auto-import state (backend = pg_cron)
   const [rk9BackendAutoImport, setRk9BackendAutoImport] = useState(false);
   const [rk9BackendAutoImportLoading, setRk9BackendAutoImportLoading] = useState(true);
-
-  const [limitlessFrontendAutoImport, setLimitlessFrontendAutoImport] = useState(false);
-  const [limitlessFrontendAutoImportLoading, setLimitlessFrontendAutoImportLoading] = useState(true);
-  const limitlessFrontendAutoImportRef = useRef(false);
 
   const [limitlessBackendAutoImport, setLimitlessBackendAutoImport] = useState(false);
   const [limitlessBackendAutoImportLoading, setLimitlessBackendAutoImportLoading] = useState(true);
@@ -337,10 +328,6 @@ export function ExternalData() {
 
   const [limitlessCronInterval, setLimitlessCronInterval] = useState(300);
   const [limitlessCronIntervalLoading, setLimitlessCronIntervalLoading] = useState(true);
-
-  // Throttle for Limitless sync in auto-import loop
-  const lastLimitlessSyncRef = useRef(0);
-  const LIMITLESS_SYNC_THROTTLE_MS = 300_000; // 5 min
 
   const [limitlessBatchSize, setLimitlessBatchSize] = useState(20);
   const [limitlessBatchSizeLoading, setLimitlessBatchSizeLoading] = useState(true);
@@ -363,27 +350,11 @@ export function ExternalData() {
   // -------------------------------------------------------------------------
 
   useEffect(() => {
-    getSiteConfig<boolean>("rk9_frontend_auto_import").then((result) => {
-      if (result.success && result.data !== null) {
-        setRk9FrontendAutoImport(result.data);
-        rk9FrontendAutoImportRef.current = result.data;
-      }
-      setRk9FrontendAutoImportLoading(false);
-    });
-
     getSiteConfig<boolean>("rk9_backend_auto_import").then((result) => {
       if (result.success && result.data !== null) {
         setRk9BackendAutoImport(result.data);
       }
       setRk9BackendAutoImportLoading(false);
-    });
-
-    getSiteConfig<boolean>("limitless_frontend_auto_import").then((result) => {
-      if (result.success && result.data !== null) {
-        setLimitlessFrontendAutoImport(result.data);
-        limitlessFrontendAutoImportRef.current = result.data;
-      }
-      setLimitlessFrontendAutoImportLoading(false);
     });
 
     getSiteConfig<boolean>("limitless_backend_auto_import").then((result) => {
@@ -429,17 +400,6 @@ export function ExternalData() {
     });
   }, []);
 
-  async function handleToggleRk9Frontend(checked: boolean) {
-    const previous = rk9FrontendAutoImport;
-    setRk9FrontendAutoImport(checked);
-    rk9FrontendAutoImportRef.current = checked;
-    const result = await setSiteConfig("rk9_frontend_auto_import", checked);
-    if (!result.success) {
-      setRk9FrontendAutoImport(previous);
-      rk9FrontendAutoImportRef.current = previous;
-    }
-  }
-
   async function handleToggleRk9Backend(checked: boolean) {
     const previous = rk9BackendAutoImport;
     setRk9BackendAutoImport(checked);
@@ -450,17 +410,6 @@ export function ExternalData() {
     // Reset timer so backend fires immediately on re-enable
     if (checked) {
       await setSiteConfig("rk9_last_run_at", null);
-    }
-  }
-
-  async function handleToggleLimitlessFrontend(checked: boolean) {
-    const previous = limitlessFrontendAutoImport;
-    setLimitlessFrontendAutoImport(checked);
-    limitlessFrontendAutoImportRef.current = checked;
-    const result = await setSiteConfig("limitless_frontend_auto_import", checked);
-    if (!result.success) {
-      setLimitlessFrontendAutoImport(previous);
-      limitlessFrontendAutoImportRef.current = previous;
     }
   }
 
@@ -896,7 +845,6 @@ export function ExternalData() {
   // When enabled, process one pending item at a time from each source.
   // -------------------------------------------------------------------------
 
-  const autoImportRunning = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -905,106 +853,6 @@ export function ExternalData() {
     estimateSize: () => 56,
     overscan: 10,
   });
-
-  useEffect(() => {
-    if ((!rk9FrontendAutoImport && !limitlessFrontendAutoImport) || autoImportRunning.current) return;
-    if (rk9Loading || limitlessLoading) return;
-
-    // Find next RK9 item to process (only if RK9 auto-import is enabled)
-    const nextRk9Pending = rk9FrontendAutoImport
-      ? (rk9Events ?? []).find(
-          (e) =>
-            !isUpcoming(e.date_start) &&
-            (e.import_status === "pending" || e.import_status === "failed") &&
-            !activeJobs.has(e.event_id)
-        )
-      : undefined;
-
-    const nextRk9Roster = rk9FrontendAutoImport
-      ? (rk9Events ?? []).find(
-          (e) =>
-            !isUpcoming(e.date_start) &&
-            (e.import_status === "roster" ||
-              e.import_status === "teams" ||
-              (e.import_status === "complete" && !e.has_team_lists)) &&
-            !activeJobs.has(e.event_id)
-        )
-      : undefined;
-
-    // Find next Limitless item to queue (only if Limitless auto-import is enabled)
-    const nextLimitlessPending = limitlessFrontendAutoImport
-      ? (limitlessTournaments ?? []).find(
-          (t) =>
-            (!t.import_status || t.import_status === "failed") &&
-            !queuingIds.has(t.tournament_id)
-        )
-      : undefined;
-
-    async function processNext() {
-      autoImportRunning.current = true;
-      try {
-        const promises: Promise<void>[] = [];
-
-        // Sync Limitless if auto-import is enabled (throttled to avoid hammering API)
-        if (limitlessFrontendAutoImportRef.current && Date.now() - lastLimitlessSyncRef.current > LIMITLESS_SYNC_THROTTLE_MS) {
-          lastLimitlessSyncRef.current = Date.now();
-          promises.push(
-            triggerLimitlessSync().catch(() => {}) as Promise<void>
-          );
-        }
-
-        // Process RK9: finish in-progress events before starting new ones.
-        // SYNC: This priority order is mirrored in the rk9-worker edge function
-        // (packages/supabase/supabase/functions/rk9-worker/index.ts).
-        // Update both locations when changing the processing order.
-        if (nextRk9Roster && rk9FrontendAutoImportRef.current) {
-          promises.push(handleScrapeTeams(nextRk9Roster.event_id));
-        } else if (nextRk9Pending && rk9FrontendAutoImportRef.current) {
-          promises.push(handleScrapeRoster(nextRk9Pending.event_id));
-        }
-
-        // Process Limitless: queue pending tournaments in batches
-        if (nextLimitlessPending && limitlessFrontendAutoImportRef.current) {
-          const pending = (limitlessTournaments ?? []).filter(
-            (t) => !t.import_status || t.import_status === "failed"
-          );
-          if (pending.length > 0) {
-            const ids = pending.slice(0, 100).map((t) => t.tournament_id);
-            promises.push(
-              batchQueueTournaments(ids).then(() => {
-                setRefreshKey((k) => k + 1);
-              })
-            );
-          }
-        }
-
-        // Process Limitless import queue if there are queued items
-        if (
-          limitlessFrontendAutoImportRef.current &&
-          (limitlessQueuedCount > 0 || limitlessImportingCount > 0)
-        ) {
-          promises.push(
-            triggerImportQueue(5).catch(() => {}) as Promise<void>
-          );
-        }
-
-        await Promise.all(promises);
-      } finally {
-        autoImportRunning.current = false;
-      }
-    }
-
-    processNext();
-  }, [
-    rk9FrontendAutoImport,
-    limitlessFrontendAutoImport,
-    rk9Events,
-    limitlessTournaments,
-    rk9Loading,
-    limitlessLoading,
-    activeJobs,
-    queuingIds,
-  ]);
 
   // -------------------------------------------------------------------------
   // Render
@@ -1054,17 +902,6 @@ export function ExternalData() {
           {/* RK9 Stats + Actions */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-5">
-              <label className="flex items-center gap-2 text-sm font-medium">
-                {rk9FrontendAutoImportLoading ? (
-                  <Skeleton className="h-[18px] w-[32px] rounded-full" />
-                ) : (
-                  <Switch
-                    checked={rk9FrontendAutoImport}
-                    onCheckedChange={handleToggleRk9Frontend}
-                  />
-                )}
-                Frontend
-              </label>
               <label className="flex items-center gap-2 text-sm font-medium">
                 {rk9BackendAutoImportLoading ? (
                   <Skeleton className="h-[18px] w-[32px] rounded-full" />
@@ -1290,17 +1127,6 @@ export function ExternalData() {
           {/* Limitless Stats + Actions */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-5">
-              <label className="flex items-center gap-2 text-sm font-medium">
-                {limitlessFrontendAutoImportLoading ? (
-                  <Skeleton className="h-[18px] w-[32px] rounded-full" />
-                ) : (
-                  <Switch
-                    checked={limitlessFrontendAutoImport}
-                    onCheckedChange={handleToggleLimitlessFrontend}
-                  />
-                )}
-                Frontend
-              </label>
               <label className="flex items-center gap-2 text-sm font-medium">
                 {limitlessBackendAutoImportLoading ? (
                   <Skeleton className="h-[18px] w-[32px] rounded-full" />
