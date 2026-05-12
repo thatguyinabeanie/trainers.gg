@@ -66,42 +66,6 @@ async function getConfigNumber(
 }
 
 /**
- * Check whether enough time has passed since the last cron run for this source.
- * Updates last_run_at in site_config when the interval has elapsed.
- */
-async function checkCronInterval(
-  supabase: ReturnType<typeof adminClient>,
-  intervalKey: string,
-  lastRunKey: string,
-  defaultIntervalSeconds: number,
-  sourceLabel: string
-): Promise<{ shouldSkip: boolean; reason?: string }> {
-  const intervalSeconds = await getConfigNumber(supabase, intervalKey, defaultIntervalSeconds);
-  const { data: lastRunRow } = await supabase
-    .from("site_config")
-    .select("value")
-    .eq("key", lastRunKey)
-    .maybeSingle();
-
-  if (lastRunRow && typeof lastRunRow.value === "string") {
-    const lastRun = new Date(lastRunRow.value).getTime();
-    const elapsed = Date.now() - lastRun;
-    if (elapsed < intervalSeconds * 1000) {
-      const remaining = Math.round(intervalSeconds - elapsed / 1000);
-      console.log(`[${sourceLabel}] Skipping — next run in ~${remaining}s (interval: ${intervalSeconds}s)`);
-      return { shouldSkip: true, reason: `interval not elapsed (${remaining}s remaining)` };
-    }
-  }
-
-  await supabase.from("site_config").upsert(
-    { key: lastRunKey, value: new Date().toISOString() },
-    { onConflict: "key" }
-  );
-
-  return { shouldSkip: false };
-}
-
-/**
  * Verify the caller is a site admin or using the service role key.
  */
 async function requireAdmin(
@@ -209,9 +173,7 @@ async function handleSync(cors: Record<string, string>) {
 
   const result: SyncResult = await syncTournamentList(supabase, apiKey);
 
-  console.log(
-    `[limitless-import:sync] Synced ${result.synced} tournaments (${result.skipped} skipped, ${result.total} total from API)`
-  );
+  console.log(`[limitless-import] Sync: ${result.synced} synced, ${result.skipped} skipped (${result.total} total from API)`);
 
   return json({ success: true, data: result }, 200, cors);
 }
@@ -267,7 +229,7 @@ async function handleAutoImport(
   );
 
   console.log(
-    `[limitless-import:auto] Imported ${tournamentId}: ${result.name} (${result.players} players, ${result.standings} standings)`
+    `[limitless-import] Auto-imported ${tournamentId}: ${result.name} (${result.players} players, ${result.standings} standings)`
   );
 
   return json({ success: true, data: result }, 200, cors);
@@ -287,6 +249,8 @@ async function handleProcessQueue(
   const STALE_IMPORT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
   const MAX_ATTEMPTS = 3;
   const effectiveBatch = Math.max(1, Math.min(batchSize, 50));
+
+  console.log(`[limitless-import] Processing queue (batchSize=${effectiveBatch})`);
 
   interface QueueResult {
     processed: boolean;
@@ -309,7 +273,7 @@ async function handleProcessQueue(
     .limit(5);
 
   if (staleErr) {
-    console.error("[limitless-edge] Stale import query failed:", staleErr.message);
+    console.error("[limitless-import] Stale import query failed:", staleErr.message);
   } else if (staleRows && staleRows.length > 0) {
     for (const row of staleRows) {
       const attempts = (row.import_attempts ?? 0) + 1;
@@ -325,7 +289,7 @@ async function handleProcessQueue(
         .eq("tournament_id", row.tournament_id);
 
       if (updateErr) {
-        console.error("[limitless-edge] Stale recovery update failed:", updateErr.message);
+        console.error("[limitless-import] Stale recovery update failed:", updateErr.message);
       }
     }
     results.push({ processed: false, recovered: true });
@@ -406,14 +370,12 @@ async function handleProcessQueue(
         .eq("tournament_id", tournamentId);
 
       if (completeErr) {
-        console.error(`[limitless-import:queue] Failed to mark ${tournamentId} complete:`, completeErr.message);
+        console.error(`[limitless-import] Failed to mark ${tournamentId} complete:`, completeErr.message);
       }
 
       results.push({ processed: true, tournamentId, result });
       totalProcessed++;
-      console.log(
-        `[limitless-import:queue] Imported ${tournamentId}: ${result.name} (${result.players} players)`
-      );
+      console.log(`[limitless-import] Imported ${tournamentId}: ${result.name} (${result.players} players)`);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Unknown error";
       const attempts = currentAttempts + 1;
@@ -464,6 +426,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
+    console.log(`[limitless-import] Action: ${action}`);
+
     switch (action) {
       case "stats":
         return await handleStats(cors);
@@ -504,15 +468,14 @@ Deno.serve(async (req) => {
 
       case "process-queue": {
         const supabase = adminClient();
-        const intervalCheck = await checkCronInterval(supabase, "limitless_cron_interval_seconds", "limitless_last_run_at", 300, "limitless-import");
-        if (intervalCheck.shouldSkip) {
-          return json({ success: true, data: { action: "skipped", reason: intervalCheck.reason } }, 200, cors);
-        }
         const batchSize =
           (typeof body.batchSize === "number" && body.batchSize > 0)
             ? body.batchSize
             : await getConfigNumber(supabase, "limitless_batch_size", 20);
-        return await handleProcessQueue(batchSize, cors);
+        const start = Date.now();
+        const result = await handleProcessQueue(batchSize, cors);
+        console.log(`[limitless-import] process-queue done (${Date.now() - start}ms)`);
+        return result;
       }
 
       default:

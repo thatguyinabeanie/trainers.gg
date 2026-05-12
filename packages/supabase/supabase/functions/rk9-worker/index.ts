@@ -1240,6 +1240,8 @@ Deno.serve(async (req) => {
       return json({ success: true, data: { action: "skipped", reason: "rk9_backend_auto_import is false" } }, 200, cors);
     }
 
+    console.log("[rk9-worker] Tick started");
+
     // Try work in priority order:
     // 1. Discover events (when stale — always high priority, infrequent)
     // 2. Match results (finish partially-processed events)
@@ -1255,6 +1257,7 @@ Deno.serve(async (req) => {
     const teamConcurrency = await getConfigNumber(supabase, "rk9_team_concurrency", DEFAULT_TEAM_CONCURRENCY);
 
     let result: WorkResult;
+    const tickStart = Date.now();
 
     const discoverResult = await tryDiscoverEvents(supabase);
     if (discoverResult) {
@@ -1279,9 +1282,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    const elapsed = Date.now() - tickStart;
+    console.log(`[rk9-worker] ${result.action} (${elapsed}ms)`);
+    if (result.action !== "idle" && result.action !== "discover") {
+      console.log(`[rk9-worker] ${JSON.stringify(result)}`);
+    }
+
     return json({ success: true, data: result }, 200, cors);
   } catch (err) {
-    console.error("[rk9-worker]", err);
+    console.error("[rk9-worker] Tick failed:", err);
     return json(
       { success: false, error: err instanceof Error ? err.message : "Worker failed" },
       500,
