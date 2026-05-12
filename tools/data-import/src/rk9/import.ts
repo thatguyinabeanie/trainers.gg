@@ -3,7 +3,7 @@ import type {
   RK9Event,
   RK9RosterEntry,
   RK9Pokemon,
-  PairingsEntry,
+  DivisionRoundPairings,
 } from "./types.js";
 import { normalizeSpeciesInline } from "./normalize.js";
 
@@ -251,103 +251,109 @@ export async function importTeams(
 // =============================================================================
 
 /**
- * Import match results for one event from pre-scraped pairings data.
- * pairings: Map<round → PairingsEntry[]>
+ * Import match results for all divisions of one event.
+ * Handles Masters, Senior, and Junior independently — each gets its own
+ * phase entry and name→ID lookup scoped to that division's standings.
  */
 export async function importMatchResults(
   supabase: SupabaseClient,
   eventId: string,
-  pairingsByRound: Map<number, PairingsEntry[]>
+  divisionPairings: DivisionRoundPairings[]
 ): Promise<{ matches: number; rounds: number }> {
-  if (pairingsByRound.size === 0) return { matches: 0, rounds: 0 };
-
-  // Load players for name→id lookup
-  const { data: standingPlayers } = await supabase
-    .schema("rk9")
-    .from("standings")
-    .select("player_id, division")
-    .eq("event_id", eventId);
-
-  if (!standingPlayers || standingPlayers.length === 0) {
-    return { matches: 0, rounds: 0 };
-  }
-
-  const playerIds = standingPlayers.map((s) => s.player_id);
-  const division = standingPlayers[0]?.division ?? "masters";
-
-  const { data: eventPlayers } = await supabase
-    .schema("rk9")
-    .from("players")
-    .select("id, first_name, last_name")
-    .in("id", playerIds);
-
-  if (!eventPlayers) return { matches: 0, rounds: 0 };
-
-  const nameToId = new Map<string, number>();
-  for (const p of eventPlayers) {
-    nameToId.set(`${p.first_name} ${p.last_name}`.toLowerCase().trim(), p.id);
-    nameToId.set(
-      `${p.last_name}, ${p.first_name}`.toLowerCase().trim(),
-      p.id
-    );
-  }
-
-  const maxRounds = pairingsByRound.size;
-
-  // Upsert phase entry
-  await supabase
-    .schema("rk9")
-    .from("phases")
-    .upsert(
-      {
-        event_id: eventId,
-        division,
-        phase_number: 1,
-        type: "swiss",
-        rounds: maxRounds,
-      },
-      { onConflict: "event_id,division,phase_number" }
-    );
+  if (divisionPairings.length === 0) return { matches: 0, rounds: 0 };
 
   let totalMatches = 0;
-  let roundsImported = 0;
+  let totalRounds = 0;
 
-  for (const [round, pairings] of pairingsByRound) {
-    const matchRows: Record<string, unknown>[] = [];
-    for (const p of pairings) {
-      const player1Id = nameToId.get(p.player1.toLowerCase().trim());
-      if (!player1Id) continue;
-      const player2Id = p.player2
-        ? (nameToId.get(p.player2.toLowerCase().trim()) ?? null)
-        : null;
-      const winnerId = p.winner
-        ? (nameToId.get(p.winner.toLowerCase().trim()) ?? null)
-        : null;
-      matchRows.push({
-        event_id: eventId,
-        division,
-        phase_number: 1,
-        round,
-        table_number: p.tableNumber,
-        player1_id: player1Id,
-        player2_id: player2Id,
-        winner_id: winnerId,
-      });
+  for (const { division, rounds } of divisionPairings) {
+    if (rounds.size === 0) continue;
+
+    // Load players for this specific division
+    const { data: standingPlayers } = await supabase
+      .schema("rk9")
+      .from("standings")
+      .select("player_id")
+      .eq("event_id", eventId)
+      .eq("division", division);
+
+    if (!standingPlayers || standingPlayers.length === 0) continue;
+
+    const playerIds = standingPlayers.map((s) => s.player_id);
+    const { data: eventPlayers } = await supabase
+      .schema("rk9")
+      .from("players")
+      .select("id, first_name, last_name")
+      .in("id", playerIds);
+
+    if (!eventPlayers || eventPlayers.length === 0) continue;
+
+    const nameToId = new Map<string, number>();
+    for (const p of eventPlayers) {
+      nameToId.set(`${p.first_name} ${p.last_name}`.toLowerCase().trim(), p.id);
+      nameToId.set(
+        `${p.last_name}, ${p.first_name}`.toLowerCase().trim(),
+        p.id
+      );
     }
 
-    if (matchRows.length > 0) {
-      const { error } = await supabase
-        .schema("rk9")
-        .from("match_results")
-        .insert(matchRows);
-      if (error) {
-        console.warn(`[import] Match results round ${round}: ${error.message}`);
-        continue;
+    // Upsert phase entry for this division
+    await supabase
+      .schema("rk9")
+      .from("phases")
+      .upsert(
+        {
+          event_id: eventId,
+          division,
+          phase_number: 1,
+          type: "swiss",
+          rounds: rounds.size,
+        },
+        { onConflict: "event_id,division,phase_number" }
+      );
+
+    for (const [round, pairings] of rounds) {
+      const matchRows: Record<string, unknown>[] = [];
+
+      for (const p of pairings) {
+        const player1Id = nameToId.get(p.player1.toLowerCase().trim());
+        if (!player1Id) continue;
+
+        const player2Id = p.player2
+          ? (nameToId.get(p.player2.toLowerCase().trim()) ?? null)
+          : null;
+
+        let winnerId: number | null = null;
+        if (p.player1Won === true) winnerId = player1Id;
+        else if (p.player1Won === false) winnerId = player2Id;
+
+        matchRows.push({
+          event_id: eventId,
+          division,
+          phase_number: 1,
+          round,
+          table_number: p.tableNumber,
+          player1_id: player1Id,
+          player2_id: player2Id,
+          winner_id: winnerId,
+        });
       }
-      totalMatches += matchRows.length;
-      roundsImported++;
+
+      if (matchRows.length > 0) {
+        const { error } = await supabase
+          .schema("rk9")
+          .from("match_results")
+          .insert(matchRows);
+        if (error) {
+          console.warn(
+            `[import] Match results ${division} round ${round}: ${error.message}`
+          );
+          continue;
+        }
+        totalMatches += matchRows.length;
+        totalRounds++;
+      }
     }
   }
 
-  return { matches: totalMatches, rounds: roundsImported };
+  return { matches: totalMatches, rounds: totalRounds };
 }

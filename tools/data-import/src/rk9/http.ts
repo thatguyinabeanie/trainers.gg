@@ -7,7 +7,9 @@ const MAX_RETRIES = 4;
 const INITIAL_BACKOFF_MS = 1000;
 
 export function buildRk9Url(path: string): string {
-  if (!/^\/[\w\-/.]+$/.test(path)) {
+  // Validate only the path segment (before '?') — query string is fine
+  const [pathPart] = path.split("?");
+  if (!pathPart || !/^\/[\w\-/.]+$/.test(pathPart)) {
     throw new Error(`Invalid RK9 path: ${path}`);
   }
   const url = new URL(path, RK9_BASE_URL);

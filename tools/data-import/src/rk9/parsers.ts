@@ -312,33 +312,95 @@ export function deriveTier(name: string): RK9EventTier {
 }
 
 // =============================================================================
-// Pairings page parser (/pairings/{eventId}/{round})
+// Pairings: navigation page parser (/pairings/{eventId})
 // =============================================================================
 
-export function parsePairingsPage(html: string): PairingsEntry[] {
+export interface PairingsDivisionInfo {
+  podId: number;
+  division: RK9Division;
+  roundCount: number;
+}
+
+/**
+ * Parse the pairings navigation page to discover all divisions (pods) and
+ * how many rounds each has. Used to know which HTMX endpoints to fetch.
+ *
+ * The outer tab pills identify divisions: "Masters in Round 17" → pod=2.
+ * Pod ID is the digit(s) in the href fragment: href="#P2" → pod=2.
+ */
+export function parsePairingsNav(html: string): PairingsDivisionInfo[] {
+  const $ = cheerio.load(html);
+  const divisions: PairingsDivisionInfo[] = [];
+
+  $("ul.nav.nav-pills a[data-toggle='tab']").each((_i, el) => {
+    const text = $(el).text().trim();
+    const href = $(el).attr("href") ?? "";
+
+    // href="#P2" → podId=2
+    const podMatch = href.match(/^#P(\d+)$/);
+    if (!podMatch?.[1]) return;
+    const podId = parseInt(podMatch[1], 10);
+
+    // "Masters in Round 17" → roundCount=17
+    const roundMatch = text.match(/\bRound\s+(\d+)/i);
+    const roundCount = roundMatch ? parseInt(roundMatch[1]!, 10) : 0;
+    if (roundCount === 0) return;
+
+    // Determine division from label text
+    const lower = text.toLowerCase();
+    let division: RK9Division = "masters";
+    if (lower.includes("senior")) division = "senior";
+    else if (lower.includes("junior")) division = "junior";
+
+    divisions.push({ podId, division, roundCount });
+  });
+
+  return divisions;
+}
+
+// =============================================================================
+// Pairings: HTMX fragment parser (/pairings/{eventId}?pod=N&rnd=M)
+// =============================================================================
+
+function parsePlayerName(raw: string): string {
+  // "<span class='name'>FirstName<br> LastName [US]<br></span>"
+  // .text() produces "FirstName\n LastName [US]\n"
+  return raw
+    .replace(/\[.*?\]/g, "")  // strip [US] country code
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Parse one HTMX pairings fragment (the response from ?pod=N&rnd=M).
+ * Each match is a `div.row.match` containing player1/player2 divs.
+ * Winner is indicated by the `winner` CSS class on the player div.
+ */
+export function parsePairingsFragment(
+  html: string
+): PairingsEntry[] {
   const $ = cheerio.load(html);
   const entries: PairingsEntry[] = [];
 
-  const $table = $("table").first();
-  if (!$table.length) return entries;
+  $("div.row.match").each((_i, row) => {
+    const $p1 = $(row).find("div.player1");
+    const $p2 = $(row).find("div.player2");
 
-  $table.find("tbody tr").each((_i, row) => {
-    const $cells = $(row).find("td");
-    if ($cells.length < 3) return;
+    const p1NameRaw = $p1.find("span.name").text();
+    const p1Name = parsePlayerName(p1NameRaw);
+    if (!p1Name) return;
 
-    const tableNumber = parseInt($cells.eq(0).text().trim(), 10) || null;
-    const player1 = $cells.eq(1).text().trim();
-    const player2Raw = $cells.eq(2).text().trim();
-    const player2 =
-      player2Raw && player2Raw.toUpperCase() !== "BYE" ? player2Raw : null;
+    const p2NameRaw = $p2.find("span.name").text();
+    const p2Name = p2NameRaw ? parsePlayerName(p2NameRaw) : null;
 
-    let winner: string | null = null;
-    if ($cells.length >= 4) {
-      const w = $cells.eq(3).text().trim();
-      if (w && w !== "—" && w !== "-") winner = w;
-    }
+    const tableRaw = $(row).find("span.tablenumber").text().trim();
+    const tableNumber = tableRaw ? (parseInt(tableRaw, 10) || null) : null;
 
-    if (player1) entries.push({ tableNumber, player1, player2, winner });
+    let player1Won: boolean | null = null;
+    if ($p1.hasClass("winner")) player1Won = true;
+    else if ($p2.hasClass("winner")) player1Won = false;
+
+    entries.push({ tableNumber, player1: p1Name, player2: p2Name, player1Won });
   });
 
   return entries;

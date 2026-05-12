@@ -34,5 +34,11 @@ export interface PairingsEntry {
   tableNumber: number | null;
   player1: string;
   player2: string | null;
-  winner: string | null;
+  /** true = player1 won, false = player2 won, null = bye or result not yet posted */
+  player1Won: boolean | null;
+}
+
+export interface DivisionRoundPairings {
+  division: RK9Division;
+  rounds: Map<number, PairingsEntry[]>;
 }

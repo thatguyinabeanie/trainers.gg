@@ -11,7 +11,8 @@ import {
   parseEventsPage,
   parseRosterPage,
   parseTeamListPage,
-  parsePairingsPage,
+  parsePairingsNav,
+  parsePairingsFragment,
 } from "./parsers.js";
 import { detectEventFormat, formatDetectionNeedsHtml } from "./normalize.js";
 import type {
@@ -19,6 +20,7 @@ import type {
   RK9RosterEntry,
   RK9Pokemon,
   PairingsEntry,
+  DivisionRoundPairings,
 } from "./types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -180,65 +182,89 @@ export async function readTeams(
 // Matches: scrape pairings → data/rk9/<eventId>/matches.json
 // ---------------------------------------------------------------------------
 
+/**
+ * Scrape all pairings for every division and round.
+ *
+ * Fetches the nav page once to discover divisions (pods) and round counts,
+ * then fetches each /pairings/{eventId}?pod={N}&rnd={M} endpoint.
+ * All data lands in data/rk9/{eventId}/matches.json.
+ */
 export async function scrapeMatches(
-  eventId: string,
-  playerCount: number
-): Promise<Map<number, PairingsEntry[]>> {
+  eventId: string
+): Promise<DivisionRoundPairings[]> {
   const dir = eventDir(eventId);
   await ensureDir(dir);
 
-  const maxRounds =
-    playerCount <= 8
-      ? 3
-      : playerCount <= 16
-        ? 4
-        : playerCount <= 32
-          ? 5
-          : playerCount <= 64
-            ? 6
-            : playerCount <= 128
-              ? 7
-              : 8;
+  // Step 1: Discover divisions + round counts from the nav page
+  await sleep(DELAY_ROSTER_MS);
+  const navHtml = await fetchRk9Html(`/pairings/${eventId}`);
+  const divisionInfos = parsePairingsNav(navHtml);
 
-  const pairingsByRound = new Map<number, PairingsEntry[]>();
-
-  for (let round = 1; round <= maxRounds; round++) {
-    await sleep(DELAY_ROSTER_MS);
-    let html: string;
-    try {
-      html = await fetchRk9Html(`/pairings/${eventId}/${round}`);
-    } catch {
-      break; // No more rounds
-    }
-    const pairings = parsePairingsPage(html);
-    if (pairings.length === 0) break;
-    pairingsByRound.set(round, pairings);
-    console.log(`  Round ${round}: ${pairings.length} matches`);
+  if (divisionInfos.length === 0) {
+    console.log(`  Matches: no divisions found — skipping`);
+    await writeJson(join(dir, "matches.json"), []);
+    return [];
   }
 
-  // Serialize as array of { round, pairings } for JSON
-  const serialized = Array.from(pairingsByRound.entries()).map(
-    ([round, pairings]) => ({
+  const results: DivisionRoundPairings[] = [];
+
+  // Step 2: For each division, fetch each round
+  for (const divInfo of divisionInfos) {
+    const rounds = new Map<number, PairingsEntry[]>();
+
+    for (let round = 1; round <= divInfo.roundCount; round++) {
+      await sleep(DELAY_ROSTER_MS);
+      let html: string;
+      try {
+        html = await fetchRk9Html(
+          `/pairings/${eventId}?pod=${divInfo.podId}&rnd=${round}`
+        );
+      } catch {
+        break;
+      }
+      const pairings = parsePairingsFragment(html);
+      if (pairings.length === 0) break;
+      rounds.set(round, pairings);
+      process.stdout.write(
+        `\r  ${divInfo.division}: round ${round}/${divInfo.roundCount} (${pairings.length} matches)`
+      );
+    }
+
+    process.stdout.write("\n");
+    results.push({ division: divInfo.division, rounds });
+    console.log(
+      `  ${divInfo.division}: ${rounds.size} rounds scraped`
+    );
+  }
+
+  // Serialize: array of { division, rounds: [{ round, pairings }] }
+  const serialized = results.map((dr) => ({
+    division: dr.division,
+    rounds: Array.from(dr.rounds.entries()).map(([round, pairings]) => ({
       round,
       pairings,
-    })
-  );
+    })),
+  }));
   await writeJson(join(dir, "matches.json"), serialized);
-  console.log(
-    `  Matches: ${pairingsByRound.size} rounds → data/rk9/${eventId}/matches.json`
-  );
-  return pairingsByRound;
+  console.log(`  Matches saved → data/rk9/${eventId}/matches.json`);
+  return results;
 }
 
 export async function readMatches(
   eventId: string
-): Promise<Map<number, PairingsEntry[]>> {
-  const raw = await readJson<Array<{ round: number; pairings: PairingsEntry[] }>>(
-    join(eventDir(eventId), "matches.json")
-  );
-  const map = new Map<number, PairingsEntry[]>();
-  for (const entry of raw) {
-    map.set(entry.round, entry.pairings);
-  }
-  return map;
+): Promise<DivisionRoundPairings[]> {
+  const raw = await readJson<
+    Array<{
+      division: string;
+      rounds: Array<{ round: number; pairings: PairingsEntry[] }>;
+    }>
+  >(join(eventDir(eventId), "matches.json"));
+
+  return raw.map((entry) => {
+    const rounds = new Map<number, PairingsEntry[]>();
+    for (const r of entry.rounds) {
+      rounds.set(r.round, r.pairings);
+    }
+    return { division: entry.division as DivisionRoundPairings["division"], rounds };
+  });
 }
