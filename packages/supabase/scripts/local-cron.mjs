@@ -24,7 +24,6 @@ function getServiceRoleKey() {
   } catch {}
   throw new Error("Cannot determine local Supabase service role key. Is Supabase running?");
 }
-}
 
 const SERVICE_ROLE_KEY = getServiceRoleKey();
 
