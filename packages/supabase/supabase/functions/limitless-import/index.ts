@@ -51,6 +51,20 @@ function adminClient() {
   });
 }
 
+async function getConfigNumber(
+  supabase: ReturnType<typeof adminClient>,
+  key: string,
+  fallback: number
+): Promise<number> {
+  const { data } = await supabase
+    .from("site_config")
+    .select("value")
+    .eq("key", key)
+    .maybeSingle();
+  if (data && typeof data.value === "number") return data.value;
+  return fallback;
+}
+
 /**
  * Verify the caller is a site admin or using the service role key.
  */
@@ -453,7 +467,11 @@ Deno.serve(async (req) => {
       }
 
       case "process-queue": {
-        const batchSize = body.batchSize ?? 5;
+        const supabase = adminClient();
+        const batchSize =
+          (typeof body.batchSize === "number" && body.batchSize > 0)
+            ? body.batchSize
+            : await getConfigNumber(supabase, "limitless_batch_size", 20);
         return await handleProcessQueue(batchSize, cors);
       }
 

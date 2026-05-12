@@ -52,8 +52,26 @@ const RK9_BASE_URL = "https://rk9.gg";
 const FETCH_TIMEOUT_MS = 30_000;
 const DELAY_TEAM_MS = 1500;
 const DELAY_ROSTER_MS = 1000;
-const TEAMS_BATCH_SIZE = 25;
+const DEFAULT_MAX_TEAMS_PER_TICK = 100;
 const DISCOVERY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// ---------------------------------------------------------------------------
+// Config helpers
+// ---------------------------------------------------------------------------
+
+async function getConfigNumber(
+  supabase: SupabaseClient,
+  key: string,
+  fallback: number
+): Promise<number> {
+  const { data } = await supabase
+    .from("site_config")
+    .select("value")
+    .eq("key", key)
+    .maybeSingle();
+  if (data && typeof data.value === "number") return data.value;
+  return fallback;
+}
 
 // ---------------------------------------------------------------------------
 // HTTP helpers
@@ -778,7 +796,7 @@ async function tryImportRoster(supabase: SupabaseClient): Promise<WorkResult | n
 /**
  * Priority 3: Scrape one batch of teams (25) for the oldest eligible event.
  */
-async function tryImportTeamBatch(supabase: SupabaseClient): Promise<WorkResult | null> {
+async function tryImportTeamBatch(supabase: SupabaseClient, maxTeams: number = DEFAULT_MAX_TEAMS_PER_TICK): Promise<WorkResult | null> {
   const { data: event } = await supabase
     .schema("rk9")
     .from("events")
@@ -856,11 +874,13 @@ async function tryImportTeamBatch(supabase: SupabaseClient): Promise<WorkResult 
     speciesMap.set(row.raw_name, row.species_slug);
   }
 
-  // Process batch
-  const batch = remaining.slice(0, TEAMS_BATCH_SIZE);
+  // Process up to maxTeams in one tick (still scraped one at a time with delays)
+  const batch = remaining.slice(0, maxTeams);
   let batchScraped = 0;
   let batchFailed = 0;
   const newSpecies = new Map<string, string>();
+
+  console.log(`[rk9-worker] Scraping ${Math.min(maxTeams, remaining.length)} teams (${remaining.length} remaining total)`);
 
   for (const standing of batch) {
     const entryId = standing.roster_entry_id;
@@ -976,33 +996,43 @@ Deno.serve(async (req) => {
     const authErr = requireServiceRole(req, cors);
     if (authErr) return authErr;
 
-    // Check auto_import_enabled in site_config
+    // Check auto_import_rk9_enabled in site_config
     const supabase = adminClient();
     const { data: configRow } = await supabase
       .from("site_config")
       .select("value")
-      .eq("key", "auto_import_enabled")
+      .eq("key", "auto_import_rk9_enabled")
       .single();
 
     const autoImportEnabled = configRow?.value === true || configRow?.value === "true";
     if (!autoImportEnabled) {
-      return json({ success: true, data: { action: "skipped", reason: "auto_import_enabled is false" } }, 200, cors);
+      return json({ success: true, data: { action: "skipped", reason: "auto_import_rk9_enabled is false" } }, 200, cors);
     }
 
-    // Try work in priority order
+    // Try work in priority order:
+    // 1. Discover events (if stale)
+    // 2. Finish in-progress events (teams) before starting new ones (roster)
+    //
+    // SYNC: This priority order is mirrored in the client-side auto-import loop
+    // (apps/web/src/components/admin/external-data.tsx).
+    // Update both locations when changing the processing order.
+
+    // Read runtime config from site_config
+    const maxTeams = await getConfigNumber(supabase, "rk9_max_teams_per_tick", DEFAULT_MAX_TEAMS_PER_TICK);
+
     let result: WorkResult;
 
     const discoverResult = await tryDiscoverEvents(supabase);
     if (discoverResult) {
       result = discoverResult;
     } else {
-      const rosterResult = await tryImportRoster(supabase);
-      if (rosterResult) {
-        result = rosterResult;
+      const teamsResult = await tryImportTeamBatch(supabase, maxTeams);
+      if (teamsResult) {
+        result = teamsResult;
       } else {
-        const teamsResult = await tryImportTeamBatch(supabase);
-        if (teamsResult) {
-          result = teamsResult;
+        const rosterResult = await tryImportRoster(supabase);
+        if (rosterResult) {
+          result = rosterResult;
         } else {
           result = { action: "idle" };
           console.log("[rk9-worker] Nothing to do — idle");

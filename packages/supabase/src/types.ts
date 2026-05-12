@@ -3815,11 +3815,7 @@ export type Database = {
         Returns: boolean
       }
       invoke_edge_function: {
-        Args: {
-          body?: Json
-          check_auto_import?: boolean
-          function_name: string
-        }
+        Args: { body?: Json; config_key?: string; function_name: string }
         Returns: number
       }
       is_community_owner: {
