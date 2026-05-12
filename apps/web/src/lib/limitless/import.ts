@@ -18,8 +18,14 @@ import {
 } from "./api";
 
 // Union of Limitless format codes (keys) and Showdown format IDs (values)
-// that are valid for import. Tournaments with format_id outside this set
-// (e.g. webhook placeholder "unknown") will be skipped.
+// that are valid for import.
+//
+// syncTournamentList stores Showdown IDs (the VALUE side of LIMITLESS_TO_FORMAT,
+// e.g. "gen9vgc2025regi") in limitless.tournaments.format_id. Previous bug: we
+// checked KNOWN_FORMATS (which is Object.keys — Limitless codes like "SVI")
+// against the stored Showdown ID, which NEVER matched, so EVERY tournament was
+// silently skipped. This set accepts both representations so either format
+// source (Limitless code or Showdown ID) passes validation.
 const ALL_VALID_FORMATS = new Set([
   ...KNOWN_FORMATS,
   ...Object.values(LIMITLESS_TO_FORMAT),
@@ -69,6 +75,10 @@ export async function syncTournamentList(
       unmappedFormats[rawCode] = (unmappedFormats[rawCode] ?? 0) + 1;
     }
 
+    // format_id stores the Showdown ID (value) when mapped, raw Limitless code
+    // when unmapped. The queue picker in processOne checks against
+    // ALL_VALID_FORMATS which includes BOTH keys and values — see the
+    // definition above for why both are needed.
     rows.push({
       tournament_id: t.id,
       name: t.name,
@@ -527,8 +537,13 @@ async function processOne(
   const { tournament_id: tournamentId, format_id: formatId } = queued;
   const currentAttempts = queued.import_attempts ?? 0;
 
-  // Belt-and-suspenders: if the format still isn't valid, park the row
-  // so it doesn't block the queue
+  // Belt-and-suspenders: format validation at the SELECT level filters
+  // null/"unknown", and ALL_VALID_FORMATS catches any edge cases that slip
+  // through. If something does slip through, park the row as "failed" so it
+  // doesn't sit at the head of the queue blocking all other tournaments.
+  // ALL_VALID_FORMATS includes both Limitless codes (keys) and Showdown IDs
+  // (values) because syncTournamentList stores Showdown IDs — see the
+  // definition above for the full story.
   if (!formatId || !ALL_VALID_FORMATS.has(formatId)) {
     console.warn(`[limitless-import] Parking ${tournamentId}: unknown format "${formatId}"`);
     await supabase
