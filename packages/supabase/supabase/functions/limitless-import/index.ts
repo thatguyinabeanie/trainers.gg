@@ -23,6 +23,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   LIMITLESS_TO_FORMAT,
+  ALL_VALID_FORMATS,
   fetchTournamentData,
   syncTournamentList,
   importTournament,
@@ -305,7 +306,7 @@ async function handleProcessQueue(
     const currentAttempts = queued.import_attempts ?? 0;
 
     // Skip tournaments with unknown format — the sync cron hasn't filled the row yet
-    if (!formatId || formatId === "unknown" || !(formatId in LIMITLESS_TO_FORMAT)) {
+    if (!formatId || formatId === "unknown" || !ALL_VALID_FORMATS.has(formatId)) {
       console.warn(`[limitless-import] Skipping ${tournamentId}: unknown format "${formatId}"`);
       results.push({ processed: false });
       continue;

@@ -17,6 +17,14 @@ import {
   type ImportResult,
 } from "./api";
 
+// Union of Limitless format codes (keys) and Showdown format IDs (values)
+// that are valid for import. Tournaments with format_id outside this set
+// (e.g. webhook placeholder "unknown") will be skipped.
+const ALL_VALID_FORMATS = new Set([
+  ...KNOWN_FORMATS,
+  ...Object.values(LIMITLESS_TO_FORMAT),
+]);
+
 // ---------------------------------------------------------------------------
 // Sync: Stage 1 — upsert tournament metadata
 // ---------------------------------------------------------------------------
@@ -518,7 +526,7 @@ async function processOne(
   const currentAttempts = queued.import_attempts ?? 0;
 
   // Skip tournaments with unknown format — the sync cron hasn't filled the row yet
-  if (!formatId || formatId === "unknown" || !KNOWN_FORMATS.has(formatId)) {
+  if (!formatId || formatId === "unknown" || !ALL_VALID_FORMATS.has(formatId)) {
     console.warn(`[limitless-import] Skipping ${tournamentId}: unknown format "${formatId}" — re-queuing`);
     // Don't claim — leave it queued for the next sync to fill
     return { processed: false };

@@ -33,6 +33,14 @@ export const LIMITLESS_TO_FORMAT: Record<string, string> = {
 
 export const KNOWN_FORMATS = new Set(Object.keys(LIMITLESS_TO_FORMAT));
 
+// Union of Limitless codes (keys) and Showdown format IDs (values).
+// DB stores Showdown IDs (the value side), so checking keys alone would
+// silently skip every mapped tournament.
+export const ALL_VALID_FORMATS = new Set([
+  ...KNOWN_FORMATS,
+  ...Object.values(LIMITLESS_TO_FORMAT),
+]);
+
 // ---------------------------------------------------------------------------
 // Types — raw Limitless API shapes
 // ---------------------------------------------------------------------------
