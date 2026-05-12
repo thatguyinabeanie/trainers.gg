@@ -544,12 +544,6 @@ export async function importTournament(
   // 5. Insert match results
   let matchCount = 0;
   if (pairings && pairings.length > 0) {
-    // Resolve all player usernames from pairings
-    for (const p of pairings) {
-      if (p.player1) await resolvePlayer(p.player1);
-      if (p.player2) await resolvePlayer(p.player2);
-    }
-
     const phaseNumbers = new Set(details.phases?.map((p) => p.phase) ?? []);
     const validPairings = pairings.filter((p) => phaseNumbers.has(p.phase));
 
