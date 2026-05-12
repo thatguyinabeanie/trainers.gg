@@ -960,7 +960,7 @@ export function ExternalData() {
         if (nextRk9Pending && rk9FrontendAutoImportRef.current) {
           promises.push(handleScrapeRoster(nextRk9Pending.event_id));
         } else if (nextRk9Roster && rk9FrontendAutoImportRef.current) {
-          promises.push(handleScrapeRoster(nextRk9Pending.event_id));
+          promises.push(handleScrapeTeams(nextRk9Roster.event_id));
         }
 
         // Process Limitless: queue pending tournaments in batches
