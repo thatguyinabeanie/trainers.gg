@@ -282,7 +282,9 @@ rk9
       console.log("\nDiscovering events...");
       const events = await scrapeEvents();
 
-      // Step 2: Find pending events (ended, not complete in DB)
+      // Step 2: Find events to process
+      // Without --force: only events not yet complete
+      // With --force: all ended events, including already-complete ones
       const { data: completedRows } = await supabase
         .schema("rk9")
         .from("events")
@@ -291,13 +293,16 @@ rk9
       const completed = new Set((completedRows ?? []).map((r) => r.event_id));
 
       const pending = events.filter((e) => {
-        if (completed.has(e.eventId)) return false;
         const endDate = e.dateEnd ?? e.dateStart;
-        return endDate <= today;
+        if (endDate > today) return false;
+        if (opts.force) return true;
+        return !completed.has(e.eventId);
       });
 
       console.log(
-        `\n${pending.length} events pending (${completed.size} already complete)`
+        opts.force
+          ? `\n${pending.length} events to process (--force: includes ${completed.size} already complete)`
+          : `\n${pending.length} events pending (${completed.size} already complete)`
       );
 
       // Upsert all discovered events first
@@ -404,6 +409,89 @@ rk9
     } catch (err) {
       console.error(
         "backfill failed:",
+        err instanceof Error ? err.message : err
+      );
+      process.exit(1);
+    }
+  });
+
+rk9
+  .command("backfill-matches")
+  .description(
+    "Scrape + import matches for all complete events that have no match_results"
+  )
+  .option("-f, --force", "Run even if rk9_backend_auto_import is enabled")
+  .option("--event-id <id>", "Limit to a single event ID")
+  .action(async (opts: { force?: boolean; eventId?: string }) => {
+    try {
+      const supabase = createAdminClient();
+      await checkCronGuard(
+        supabase,
+        "rk9_backend_auto_import",
+        opts.force ?? false
+      );
+
+      // Find complete events (or the one specified)
+      let query = supabase
+        .schema("rk9")
+        .from("events")
+        .select("event_id, name, date_start")
+        .eq("import_status", "complete")
+        .order("date_start", { ascending: true });
+
+      if (opts.eventId) {
+        query = query.eq("event_id", opts.eventId) as typeof query;
+      }
+
+      const { data: events, error: eventsErr } = await query;
+      if (eventsErr) throw new Error(`Events query failed: ${eventsErr.message}`);
+      if (!events || events.length === 0) {
+        console.log("No complete events found.");
+        return;
+      }
+
+      // Find which events already have match_results
+      const { data: withMatches } = await supabase
+        .schema("rk9")
+        .from("match_results")
+        .select("event_id")
+        .in(
+          "event_id",
+          events.map((e) => e.event_id)
+        );
+
+      const hasMatches = new Set((withMatches ?? []).map((r) => r.event_id));
+      const toProcess = events.filter((e) => !hasMatches.has(e.event_id));
+
+      console.log(
+        `\n${toProcess.length} events missing matches (${hasMatches.size} already have data)`
+      );
+
+      for (const event of toProcess) {
+        console.log(`\n── ${event.name} (${event.event_id})`);
+        try {
+          const divisionPairings = await scrapeMatches(event.event_id);
+          if (divisionPairings.length === 0 || divisionPairings.every((d) => d.rounds.size === 0)) {
+            console.log("  No pairings found — skipping");
+            continue;
+          }
+          const { matches, rounds } = await importMatchResults(
+            supabase,
+            event.event_id,
+            divisionPairings
+          );
+          console.log(`  Imported: ${matches} matches across ${rounds} rounds`);
+        } catch (err) {
+          console.error(
+            `  Failed: ${err instanceof Error ? err.message : err}`
+          );
+        }
+      }
+
+      console.log("\nMatch backfill complete");
+    } catch (err) {
+      console.error(
+        "backfill-matches failed:",
         err instanceof Error ? err.message : err
       );
       process.exit(1);

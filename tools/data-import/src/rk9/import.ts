@@ -262,6 +262,10 @@ export async function importMatchResults(
 ): Promise<{ matches: number; rounds: number }> {
   if (divisionPairings.length === 0) return { matches: 0, rounds: 0 };
 
+  // Delete any existing match data so reruns (--force) don't hit duplicate keys
+  await supabase.schema("rk9").from("match_results").delete().eq("event_id", eventId);
+  await supabase.schema("rk9").from("phases").delete().eq("event_id", eventId);
+
   let totalMatches = 0;
   let totalRounds = 0;
 
