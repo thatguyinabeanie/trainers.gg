@@ -43,6 +43,21 @@ export const ALL_VALID_FORMATS = new Set([
 ]);
 
 // ---------------------------------------------------------------------------
+// Cooperative yielding helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Yield to the runtime to reset the CPU time counter.
+ * Supabase Edge Functions have a 2s CPU limit — without yielding,
+ * long-running sync/import operations get killed by the supervisor.
+ */
+export async function yieldCpu(): Promise<void> {
+  await new Promise((r) => setTimeout(r, 0));
+}
+
+export const YIELD_INTERVAL = 200; // Yield every N iterations
+
+// ---------------------------------------------------------------------------
 // Types — raw Limitless API shapes
 // ---------------------------------------------------------------------------
 
@@ -276,7 +291,8 @@ export async function syncTournamentList(
     imported_at: string;
   }> = [];
 
-  for (const t of allTournaments) {
+  for (const [idx, t] of allTournaments.entries()) {
+    if (idx > 0 && idx % YIELD_INTERVAL === 0) await yieldCpu();
     const rawCode = t.format ?? "";
 
     // Skip tournaments with no format at all (empty or null)
@@ -417,7 +433,8 @@ export async function importTournament(
   const uniquePlayers: { username: string; display_name: string | null; country: string | null }[] = [];
   const seenPlayers = new Set<string>();
 
-  for (const standing of standings) {
+  for (const [idx, standing] of standings.entries()) {
+    if (idx > 0 && idx % YIELD_INTERVAL === 0) await yieldCpu();
     if (!seenPlayers.has(standing.player)) {
       seenPlayers.add(standing.player);
       uniquePlayers.push({
@@ -461,7 +478,8 @@ export async function importTournament(
   const standingRows: Record<string, unknown>[] = [];
   const pendingPokemonRows: { score: number; data: Record<string, unknown>[] }[] = [];
 
-  for (const standing of standings) {
+  for (const [idx, standing] of standings.entries()) {
+    if (idx > 0 && idx % YIELD_INTERVAL === 0) await yieldCpu();
     const playerId = playerIdCache.get(standing.player);
     if (!playerId) continue;
 

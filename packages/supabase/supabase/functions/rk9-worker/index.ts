@@ -559,6 +559,10 @@ function deriveTier(name: string): RK9EventTier {
 // DB import helpers
 // ---------------------------------------------------------------------------
 
+async function yieldCpu(): Promise<void> {
+  await new Promise((r) => setTimeout(r, 0));
+}
+
 async function syncEvents(supabase: SupabaseClient, events: RK9Event[]): Promise<void> {
   const rows = events.map((e) => ({
     event_id: e.eventId,
@@ -596,7 +600,8 @@ async function importRoster(
   const seen = new Set<string>();
   const uniquePlayerRows: Record<string, unknown>[] = [];
 
-  for (const entry of roster) {
+  for (const [idx, entry] of roster.entries()) {
+    if (idx > 0 && idx % 100 === 0) await yieldCpu();
     if (!entry.firstName || !entry.lastName) continue;
 
     const key = `${entry.playerIdMasked}|${entry.firstName}|${entry.lastName}|${entry.country}`;
@@ -639,7 +644,8 @@ async function importRoster(
 
   const standingRows: Record<string, unknown>[] = [];
 
-  for (const entry of roster) {
+  for (const [idx, entry] of roster.entries()) {
+    if (idx > 0 && idx % 100 === 0) await yieldCpu();
     if (!entry.firstName || !entry.lastName) continue;
 
     const key = `${entry.playerIdMasked}|${entry.firstName}|${entry.lastName}|${entry.country}`;
