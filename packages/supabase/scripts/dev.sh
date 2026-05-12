@@ -79,6 +79,16 @@ KONG_CONTAINER=$(docker ps --filter "name=supabase_kong_${SUPABASE_PROJECT}" --f
 
 if [ -n "$KONG_CONTAINER" ]; then
   log_success "Supabase is running — tailing API gateway logs ($KONG_CONTAINER)"
+
+  # Start local cron emulator in background (mimics pg_cron for local dev)
+  CRON_SCRIPT="$SUPABASE_DIR/scripts/local-cron.mjs"
+  if [ -f "$CRON_SCRIPT" ]; then
+    node "$CRON_SCRIPT" &
+    CRON_PID=$!
+    trap "kill $CRON_PID 2>/dev/null; exit" SIGINT SIGTERM EXIT
+    log_success "Local cron emulator started (PID: $CRON_PID)"
+  fi
+
   echo ""
   exec docker logs -f --since 0s "$KONG_CONTAINER" 2>&1
 else
