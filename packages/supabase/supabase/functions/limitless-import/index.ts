@@ -23,6 +23,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   LIMITLESS_TO_FORMAT,
+  ALL_VALID_FORMATS,
   fetchTournamentData,
   syncTournamentList,
   importTournament,
@@ -222,6 +223,175 @@ async function handleAutoImport(
   return json({ success: true, data: result }, 200, cors);
 }
 
+/**
+ * Process the import queue: recover stale entries, then import queued tournaments.
+ * Replaces the Vercel cron job at /api/cron/limitless-import.
+ */
+async function handleProcessQueue(
+  batchSize: number,
+  cors: Record<string, string>
+): Promise<Response> {
+  const supabase = adminClient();
+  const apiKey = Deno.env.get("LIMITLESS_API_KEY");
+
+  const STALE_IMPORT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+  const MAX_ATTEMPTS = 3;
+  const effectiveBatch = Math.max(1, Math.min(batchSize, 50));
+
+  interface QueueResult {
+    processed: boolean;
+    recovered?: boolean;
+    tournamentId?: string;
+    result?: ImportResult;
+    error?: string;
+  }
+
+  const results: QueueResult[] = [];
+
+  // 1. Recover stale imports (stuck > 10 min)
+  const staleThreshold = new Date(Date.now() - STALE_IMPORT_TIMEOUT_MS).toISOString();
+  const { data: staleRows, error: staleErr } = await supabase
+    .schema("limitless")
+    .from("tournaments")
+    .select("tournament_id, import_attempts")
+    .eq("import_status", "importing")
+    .lt("import_started_at", staleThreshold)
+    .limit(5);
+
+  if (staleErr) {
+    console.error("[limitless-edge] Stale import query failed:", staleErr.message);
+  } else if (staleRows && staleRows.length > 0) {
+    for (const row of staleRows) {
+      const attempts = (row.import_attempts ?? 0) + 1;
+      const newStatus = attempts >= MAX_ATTEMPTS ? "failed" : "queued";
+      const { error: updateErr } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_status: newStatus,
+          import_error: newStatus === "failed" ? `Timed out after ${MAX_ATTEMPTS} attempts` : null,
+          import_attempts: attempts,
+        })
+        .eq("tournament_id", row.tournament_id);
+
+      if (updateErr) {
+        console.error("[limitless-edge] Stale recovery update failed:", updateErr.message);
+      }
+    }
+    results.push({ processed: false, recovered: true });
+  }
+
+  // 2. Process up to batchSize tournaments
+  let totalProcessed = 0;
+  let totalErrors = 0;
+
+  for (let i = 0; i < effectiveBatch; i++) {
+    // Pick oldest queued tournament with a known format
+    const { data: queued, error: qErr } = await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .select("tournament_id, format_id, import_attempts")
+      .eq("import_status", "queued")
+      .not("format_id", "is", null)
+      .neq("format_id", "unknown")
+      .order("import_requested_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (qErr) throw new Error(`Queue fetch failed: ${qErr.message}`);
+    if (!queued) {
+      results.push({ processed: false });
+      break;
+    }
+
+    const { tournament_id: tournamentId, format_id: formatId } = queued;
+    const currentAttempts = queued.import_attempts ?? 0;
+
+    // Belt-and-suspenders: if the format still isn't valid, park the row
+    if (!formatId || !ALL_VALID_FORMATS.has(formatId)) {
+      console.warn(`[limitless-import] Parking ${tournamentId}: unknown format "${formatId}"`);
+      await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({ import_status: "failed", import_error: `Unknown format: ${formatId}` })
+        .eq("tournament_id", tournamentId)
+        .eq("import_status", "queued");
+      results.push({ processed: false });
+      continue;
+    }
+
+    // Claim the tournament (optimistic lock)
+    const { data: claimed, error: claimErr } = await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .update({
+        import_status: "importing",
+        import_started_at: new Date().toISOString(),
+        import_error: null,
+      })
+      .eq("tournament_id", tournamentId)
+      .eq("import_status", "queued")
+      .select("tournament_id")
+      .maybeSingle();
+
+    if (claimErr) throw new Error(`Failed to claim tournament: ${claimErr.message}`);
+    if (!claimed) {
+      results.push({ processed: false });
+      continue; // Don't break — other tournaments may still be claimable
+    }
+
+    // Fetch and import
+    try {
+      const data = await fetchTournamentData(tournamentId, apiKey);
+      const result: ImportResult = await importTournament(supabase, data, formatId);
+
+      // Mark as completed
+      const { error: completeErr } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_status: "completed",
+          data_imported_at: new Date().toISOString(),
+        })
+        .eq("tournament_id", tournamentId);
+
+      if (completeErr) {
+        console.error(`[limitless-import:queue] Failed to mark ${tournamentId} complete:`, completeErr.message);
+      }
+
+      results.push({ processed: true, tournamentId, result });
+      totalProcessed++;
+      console.log(
+        `[limitless-import:queue] Imported ${tournamentId}: ${result.name} (${result.players} players)`
+      );
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      const attempts = currentAttempts + 1;
+      const newStatus = attempts >= MAX_ATTEMPTS ? "failed" : "queued";
+
+      await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_status: newStatus,
+          import_error: errorMsg,
+          import_attempts: attempts,
+        })
+        .eq("tournament_id", tournamentId);
+
+      results.push({ processed: true, tournamentId, error: errorMsg });
+      totalProcessed++;
+      totalErrors++;
+    }
+  }
+
+  return json(
+    { success: true, data: { batchSize: effectiveBatch, totalProcessed, totalErrors, results } },
+    200,
+    cors
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
@@ -282,11 +452,16 @@ Deno.serve(async (req) => {
         return await handleAutoImport(tournamentId, cors);
       }
 
+      case "process-queue": {
+        const batchSize = body.batchSize ?? 5;
+        return await handleProcessQueue(batchSize, cors);
+      }
+
       default:
         return json(
           {
             success: false,
-            error: `Unknown action: ${action}. Valid: stats, sync, import, auto-import`,
+            error: `Unknown action: ${action}. Valid: stats, sync, import, auto-import, process-queue`,
           },
           400,
           cors

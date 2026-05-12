@@ -31,7 +31,7 @@ function asSet(value: LegalityResult): ReadonlySet<string> {
 }
 
 describe("format-legality — Champions M-A", () => {
-  const CHAMPIONS = "championsvgc2026regma";
+  const CHAMPIONS = "gen9championsvgc2026regma";
 
   it("marks Incineroar as legal in Champions M-A", () => {
     expect(isLegalSpecies("Incineroar", CHAMPIONS)).toBe(true);
@@ -127,7 +127,7 @@ describe("format-legality — items", () => {
   });
 
   it("returns the Champions M-A static item set (30 hold + 59 Mega Stones + 28 Berries)", () => {
-    const items = asSet(getLegalItems("championsvgc2026regma"));
+    const items = asSet(getLegalItems("gen9championsvgc2026regma"));
     // Hold items
     expect(items.has("Choice Scarf")).toBe(true);
     expect(items.has("Focus Sash")).toBe(true);
@@ -175,7 +175,7 @@ describe("format-legality — moves", () => {
   });
 
   it("returns a learnset-filtered set for Champions species", () => {
-    const legal = asSet(getLegalMoves("Incineroar", "championsvgc2026regma"));
+    const legal = asSet(getLegalMoves("Incineroar", "gen9championsvgc2026regma"));
     expect(legal.has("Fake Out")).toBe(true);
     expect(legal.has("Hyperspace Hole")).toBe(false);
   });
@@ -203,7 +203,7 @@ describe("format-legality — tera types", () => {
   });
 
   it("returns empty set for Champions M-A (no Tera — only Megas)", () => {
-    const tera = asSet(getLegalTeraTypes("championsvgc2026regma"));
+    const tera = asSet(getLegalTeraTypes("gen9championsvgc2026regma"));
     expect(tera.size).toBe(0);
   });
 
@@ -218,11 +218,11 @@ describe("format-legality — tera types", () => {
   });
 
   it("isLegalTeraType returns true for empty string (no tera selected)", () => {
-    expect(isLegalTeraType("", "championsvgc2026regma")).toBe(true);
+    expect(isLegalTeraType("", "gen9championsvgc2026regma")).toBe(true);
   });
 
   it("isLegalTeraType returns false for a type in a no-Tera format", () => {
-    expect(isLegalTeraType("Fire", "championsvgc2026regma")).toBe(false);
+    expect(isLegalTeraType("Fire", "gen9championsvgc2026regma")).toBe(false);
   });
 });
 
@@ -256,7 +256,7 @@ describe("format-legality — abilities", () => {
 
   it("returns all species abilities for Champions (no ability banlist)", () => {
     const legal = asSet(
-      getLegalAbilities("Incineroar", "championsvgc2026regma")
+      getLegalAbilities("Incineroar", "gen9championsvgc2026regma")
     );
     expect(legal.has("Intimidate")).toBe(true);
     expect(legal.has("Blaze")).toBe(true);
@@ -277,14 +277,14 @@ describe("format-legality — abilities", () => {
       "%s with stored base ability %s is legal (tournament submission shape)",
       (megaSpecies, baseAbility) => {
         expect(
-          isLegalAbility(baseAbility, megaSpecies, "championsvgc2026regma")
+          isLegalAbility(baseAbility, megaSpecies, "gen9championsvgc2026regma")
         ).toBe(true);
       }
     );
 
     it("Charizard-Mega-Y rejects an ability not in Charizard's pool", () => {
       expect(
-        isLegalAbility("Intimidate", "Charizard-Mega-Y", "championsvgc2026regma")
+        isLegalAbility("Intimidate", "Charizard-Mega-Y", "gen9championsvgc2026regma")
       ).toBe(false);
     });
   });

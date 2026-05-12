@@ -628,3 +628,25 @@ export async function getAltByHandle(supabase: TypedClient, handle: string) {
   if (error || !alt) return null;
   return alt;
 }
+
+/**
+ * Get the main_alt_id for a user by their auth ID.
+ * Returns null if the user has no main alt set.
+ */
+export async function getUserMainAltId(
+  supabase: TypedClient,
+  userId: string
+): Promise<number | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("main_alt_id")
+    .eq("id", userId)
+    .single();
+
+  if (error) {
+    console.error("[getUserMainAltId] Failed to fetch main_alt_id:", error);
+    return null;
+  }
+
+  return data?.main_alt_id ?? null;
+}

@@ -2543,3 +2543,32 @@ export async function getTeamsForAlt(
     })
     .filter((team) => team.pokemonSpecies.length > 0);
 }
+
+/**
+ * Get community IDs that have at least one live (active) tournament.
+ * Useful for highlighting communities with ongoing activity.
+ */
+export async function getLiveTournamentCommunityIds(
+  supabase: TypedClient,
+  communityIds: number[]
+): Promise<Set<number>> {
+  if (communityIds.length === 0) return new Set();
+
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("community_id")
+    .in("community_id", communityIds)
+    .eq("status", "active");
+
+  if (error) {
+    console.error(
+      "[getLiveTournamentCommunityIds] Failed to fetch:",
+      error
+    );
+    return new Set();
+  }
+
+  return new Set(
+    (data ?? []).map((t) => t.community_id).filter(Boolean) as number[]
+  );
+}

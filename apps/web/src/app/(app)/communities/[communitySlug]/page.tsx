@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import {
   createStaticClient,
   createClientReadOnly,
+  getUserId,
 } from "@/lib/supabase/server";
 import { getCommunityBySlug, hasCommunityAccess } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
@@ -82,18 +83,6 @@ const getCachedOrganization = (slug: string) =>
     [`organization-detail-${slug}`],
     { tags: [CacheTags.community(slug), CacheTags.COMMUNITIES_LIST] }
   )();
-
-async function getCurrentUserId(): Promise<string | null> {
-  try {
-    const supabase = await createClientReadOnly();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.id ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // ============================================================================
 // Server Components
@@ -253,7 +242,7 @@ export default async function OrganizationPage({
 
   const [organization, currentUserId] = await Promise.all([
     getCachedOrganization(communitySlug),
-    getCurrentUserId(),
+    getUserId(),
   ]);
 
   if (!organization) {

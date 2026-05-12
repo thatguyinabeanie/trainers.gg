@@ -33,6 +33,15 @@ export const LIMITLESS_TO_FORMAT: Record<string, string> = {
 
 export const KNOWN_FORMATS = new Set(Object.keys(LIMITLESS_TO_FORMAT));
 
+// Union of Limitless codes (keys) and Showdown format IDs (values).
+// DB stores Showdown IDs (the value side), so checking keys alone would
+// silently skip every mapped tournament. See syncTournamentList in
+// apps/web/src/lib/limitless/import.ts where format_id is written.
+export const ALL_VALID_FORMATS = new Set([
+  ...KNOWN_FORMATS,
+  ...Object.values(LIMITLESS_TO_FORMAT),
+]);
+
 // ---------------------------------------------------------------------------
 // Types — raw Limitless API shapes
 // ---------------------------------------------------------------------------
@@ -290,7 +299,7 @@ export async function syncTournamentList(
       tournament_id: t.id,
       name: t.name,
       format_id: showdownId ?? rawCode,
-      date: t.date.split("T")[0],
+      date: t.date.slice(0, 10),
       player_count: t.players ?? 0,
       imported_at: new Date().toISOString(),
     });
@@ -373,7 +382,7 @@ export async function importTournament(
         tournament_id: tournamentId,
         name: details.name,
         format_id: formatId,
-        date: details.date.split("T")[0],
+        date: details.date.slice(0, 10),
         player_count: details.players ?? 0,
         platform: details.platform ?? null,
         is_online: details.isOnline ?? true,

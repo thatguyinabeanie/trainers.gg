@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   limitless: {
     Tables: {
       match_results: {
@@ -76,6 +101,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      organizers: {
+        Row: {
+          created_at: string
+          id: number
+          limitless_id: number
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          limitless_id: number
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          limitless_id?: number
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       phases: {
         Row: {
@@ -228,9 +280,17 @@ export type Database = {
           date: string
           decklists: boolean
           format_id: string
+          import_attempts: number | null
+          import_error: string | null
+          import_page: number | null
+          import_phase: string | null
+          import_requested_at: string | null
+          import_started_at: string | null
+          import_status: string | null
           imported_at: string
           is_online: boolean
           name: string
+          organizer_id: number | null
           organizer_name: string | null
           platform: string | null
           player_count: number
@@ -241,9 +301,17 @@ export type Database = {
           date: string
           decklists?: boolean
           format_id: string
+          import_attempts?: number | null
+          import_error?: string | null
+          import_page?: number | null
+          import_phase?: string | null
+          import_requested_at?: string | null
+          import_started_at?: string | null
+          import_status?: string | null
           imported_at?: string
           is_online?: boolean
           name: string
+          organizer_id?: number | null
           organizer_name?: string | null
           platform?: string | null
           player_count?: number
@@ -254,22 +322,49 @@ export type Database = {
           date?: string
           decklists?: boolean
           format_id?: string
+          import_attempts?: number | null
+          import_error?: string | null
+          import_page?: number | null
+          import_phase?: string | null
+          import_requested_at?: string | null
+          import_started_at?: string | null
+          import_status?: string | null
           imported_at?: string
           is_online?: boolean
           name?: string
+          organizer_id?: number | null
           organizer_name?: string | null
           platform?: string | null
           player_count?: number
           tournament_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tournaments_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "organizers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      atomic_clear_tournament: {
+        Args: { p_tournament_id: string }
+        Returns: undefined
+      }
+      tournament_stats: {
+        Args: never
+        Returns: {
+          format_id: string
+          imported: number
+          synced: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -2003,6 +2098,27 @@ export type Database = {
         }
         Relationships: []
       }
+      site_config: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           amount: number | null
@@ -3698,6 +3814,14 @@ export type Database = {
         Args: { org_id: number; permission_key: string }
         Returns: boolean
       }
+      invoke_edge_function: {
+        Args: {
+          body?: Json
+          check_auto_import?: boolean
+          function_name: string
+        }
+        Returns: number
+      }
       is_community_owner: {
         Args: { p_community_id: number; p_user_id: string }
         Returns: boolean
@@ -3921,6 +4045,322 @@ export type Database = {
       [_ in never]: never
     }
   }
+  rk9: {
+    Tables: {
+      events: {
+        Row: {
+          date_end: string | null
+          date_start: string
+          event_id: string
+          format_id: string | null
+          has_team_lists: boolean
+          import_error: string | null
+          import_status: Database["rk9"]["Enums"]["import_status"]
+          imported_at: string
+          location_city: string | null
+          location_country: string | null
+          name: string
+          player_count: number | null
+          tier: Database["rk9"]["Enums"]["event_tier"]
+        }
+        Insert: {
+          date_end?: string | null
+          date_start: string
+          event_id: string
+          format_id?: string | null
+          has_team_lists?: boolean
+          import_error?: string | null
+          import_status?: Database["rk9"]["Enums"]["import_status"]
+          imported_at?: string
+          location_city?: string | null
+          location_country?: string | null
+          name: string
+          player_count?: number | null
+          tier: Database["rk9"]["Enums"]["event_tier"]
+        }
+        Update: {
+          date_end?: string | null
+          date_start?: string
+          event_id?: string
+          format_id?: string | null
+          has_team_lists?: boolean
+          import_error?: string | null
+          import_status?: Database["rk9"]["Enums"]["import_status"]
+          imported_at?: string
+          location_city?: string | null
+          location_country?: string | null
+          name?: string
+          player_count?: number | null
+          tier?: Database["rk9"]["Enums"]["event_tier"]
+        }
+        Relationships: []
+      }
+      match_results: {
+        Row: {
+          division: Database["rk9"]["Enums"]["division"]
+          event_id: string
+          id: number
+          imported_at: string
+          match_label: string | null
+          phase_number: number
+          player1_id: number | null
+          player2_id: number | null
+          round: number
+          table_number: number | null
+          winner_id: number | null
+        }
+        Insert: {
+          division: Database["rk9"]["Enums"]["division"]
+          event_id: string
+          id?: never
+          imported_at?: string
+          match_label?: string | null
+          phase_number: number
+          player1_id?: number | null
+          player2_id?: number | null
+          round: number
+          table_number?: number | null
+          winner_id?: number | null
+        }
+        Update: {
+          division?: Database["rk9"]["Enums"]["division"]
+          event_id?: string
+          id?: never
+          imported_at?: string
+          match_label?: string | null
+          phase_number?: number
+          player1_id?: number | null
+          player2_id?: number | null
+          round?: number
+          table_number?: number | null
+          winner_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_match_phase"
+            columns: ["event_id", "division", "phase_number"]
+            isOneToOne: false
+            referencedRelation: "phases"
+            referencedColumns: ["event_id", "division", "phase_number"]
+          },
+          {
+            foreignKeyName: "match_results_player1_id_fkey"
+            columns: ["player1_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_results_player2_id_fkey"
+            columns: ["player2_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_results_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phases: {
+        Row: {
+          division: Database["rk9"]["Enums"]["division"]
+          event_id: string
+          phase_number: number
+          rounds: number | null
+          type: Database["rk9"]["Enums"]["phase_type"]
+        }
+        Insert: {
+          division: Database["rk9"]["Enums"]["division"]
+          event_id: string
+          phase_number: number
+          rounds?: number | null
+          type: Database["rk9"]["Enums"]["phase_type"]
+        }
+        Update: {
+          division?: Database["rk9"]["Enums"]["division"]
+          event_id?: string
+          phase_number?: number
+          rounds?: number | null
+          type?: Database["rk9"]["Enums"]["phase_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phases_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["event_id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          country: string | null
+          created_at: string
+          first_name: string
+          id: number
+          last_name: string
+          player_id_masked: string
+          trainer_name: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          first_name: string
+          id?: never
+          last_name: string
+          player_id_masked?: string
+          trainer_name?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          first_name?: string
+          id?: never
+          last_name?: string
+          player_id_masked?: string
+          trainer_name?: string | null
+        }
+        Relationships: []
+      }
+      species_map: {
+        Row: {
+          created_at: string
+          raw_name: string
+          species_slug: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          raw_name: string
+          species_slug: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          raw_name?: string
+          species_slug?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      standings: {
+        Row: {
+          division: Database["rk9"]["Enums"]["division"]
+          drop_round: number | null
+          event_id: string
+          id: number
+          placement: number | null
+          player_id: number
+          roster_entry_id: string | null
+        }
+        Insert: {
+          division: Database["rk9"]["Enums"]["division"]
+          drop_round?: number | null
+          event_id: string
+          id?: never
+          placement?: number | null
+          player_id: number
+          roster_entry_id?: string | null
+        }
+        Update: {
+          division?: Database["rk9"]["Enums"]["division"]
+          drop_round?: number | null
+          event_id?: string
+          id?: never
+          placement?: number | null
+          player_id?: number
+          roster_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "standings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "standings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_pokemon: {
+        Row: {
+          ability: string | null
+          held_item: string | null
+          id: number
+          moves: string[] | null
+          position: number
+          species: string
+          species_raw: string
+          standing_id: number
+          tera_type: string | null
+        }
+        Insert: {
+          ability?: string | null
+          held_item?: string | null
+          id?: never
+          moves?: string[] | null
+          position: number
+          species: string
+          species_raw: string
+          standing_id: number
+          tera_type?: string | null
+        }
+        Update: {
+          ability?: string | null
+          held_item?: string | null
+          id?: never
+          moves?: string[] | null
+          position?: number
+          species?: string
+          species_raw?: string
+          standing_id?: number
+          tera_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_pokemon_standing_id_fkey"
+            columns: ["standing_id"]
+            isOneToOne: false
+            referencedRelation: "standings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      division: "masters" | "senior" | "junior"
+      event_tier: "regional" | "international" | "special" | "worlds"
+      import_status:
+        | "pending"
+        | "roster"
+        | "teams"
+        | "pairings"
+        | "complete"
+        | "failed"
+      phase_type: "swiss" | "single_elimination"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
@@ -4041,6 +4481,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   limitless: {
     Enums: {},
   },
@@ -4187,6 +4630,21 @@ export const Constants = {
         "cancelled",
       ],
       user_tier: ["free", "player_pro", "coach_premium"],
+    },
+  },
+  rk9: {
+    Enums: {
+      division: ["masters", "senior", "junior"],
+      event_tier: ["regional", "international", "special", "worlds"],
+      import_status: [
+        "pending",
+        "roster",
+        "teams",
+        "pairings",
+        "complete",
+        "failed",
+      ],
+      phase_type: ["swiss", "single_elimination"],
     },
   },
 } as const

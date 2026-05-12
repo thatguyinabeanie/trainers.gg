@@ -55,7 +55,7 @@ describe("formatSupportsTera", () => {
   });
 
   it("returns false for Pokemon Champions (no Tera in Champions rules)", () => {
-    const championsFormat = getFormatById("championsvgc2026regma");
+    const championsFormat = getFormatById("gen9championsvgc2026regma");
     expect(formatSupportsTera(championsFormat)).toBe(false);
   });
 
@@ -78,7 +78,7 @@ describe("formatSupportsIvs", () => {
   });
 
   it("returns false for Pokemon Champions (SP system, no IVs)", () => {
-    const championsFormat = getFormatById("championsvgc2026regma");
+    const championsFormat = getFormatById("gen9championsvgc2026regma");
     expect(formatSupportsIvs(championsFormat)).toBe(false);
   });
 

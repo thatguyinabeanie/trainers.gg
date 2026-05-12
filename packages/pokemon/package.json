@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./regulation-calendar": "./src/regulation-calendar.ts",
     "./types": "./src/types.ts",
     "./sprites": "./src/sprites.ts"
   },

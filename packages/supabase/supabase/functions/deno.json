@@ -7,9 +7,11 @@
   "imports": {
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.49.4",
     "zod": "npm:zod@^3",
+    "cheerio": "npm:cheerio@^1.0.0",
     "obscenity": "npm:obscenity@^0.4.6",
     "@pkmn/sets": "npm:@pkmn/sets@^5.2.0",
     "@pkmn/sim": "npm:@pkmn/sim@^0.10.7",
+    "@trainers/pokemon/regulation-calendar": "./_shared/regulation-calendar.ts",
     "@trainers/validators": "../../../validators/src/index.ts",
     "@trainers/validators/common": "../../../validators/src/common.ts",
     "@trainers/validators/match": "../../../validators/src/match.ts",

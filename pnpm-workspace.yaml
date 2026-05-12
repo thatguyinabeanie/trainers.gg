@@ -71,7 +71,7 @@ catalogs:
   supabase:
     "@supabase/ssr": ^0.9.0
     "@supabase/supabase-js": ^2.105.1
-    supabase: ^2.98.1
+    supabase: ^2.98.2
 
   tamagui:
     "@tamagui/config": 2.0.0-rc.41
@@ -94,12 +94,17 @@ catalogs:
     ts-jest: ^29.4.9
     ts-node: ^10.9.2
 
-onlyBuiltDependencies:
-  - browser-tabs-lock
-  - bufferutil
-  - core-js
-  - esbuild
-  - msw
-  - sharp
-  - supabase
-  - utf-8-validate
+allowBuilds:
+  browser-tabs-lock: true
+  bufferutil: true
+  core-js: true
+  esbuild: true
+  msw: true
+  sharp: true
+  supabase: true
+  utf-8-validate: true
+  "@smogon/calc": true
+  '@nestjs/core': true
+  '@swc/core': true
+  cbor-extract: true
+  protobufjs: true
