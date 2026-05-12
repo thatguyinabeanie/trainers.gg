@@ -564,7 +564,8 @@ limitless
   .alias("backfill")
   .description("sync → scrape all → import all unimported")
   .option("-f, --force", "Run even if limitless_backend_auto_import is enabled")
-  .action(async (opts: { force?: boolean }) => {
+  .option("-e, --event-concurrency <n>", "Number of tournaments to process in parallel", "3")
+  .action(async (opts: { force?: boolean; eventConcurrency: string }) => {
     try {
       const supabase = createAdminClient();
       await checkCronGuard(
@@ -592,29 +593,46 @@ limitless
 
       const toImport = tournaments.filter(
         (t) =>
-          !imported.has(t.id) && LIMITLESS_TO_FORMAT[t.format] !== undefined
+          (opts.force || !imported.has(t.id)) &&
+          LIMITLESS_TO_FORMAT[t.format] !== undefined
       );
 
       console.log(
-        `\n${toImport.length} tournaments to scrape+import (${imported.size} already done)`
+        opts.force
+          ? `\n${toImport.length} tournaments to process (--force: includes already imported)`
+          : `\n${toImport.length} tournaments to scrape+import (${imported.size} already done)`
       );
 
-      for (const tournament of toImport) {
-        console.log(`\n── ${tournament.name} (${tournament.id})`);
-        try {
-          const data = await scrapeTournament(tournament.id, apiKey);
-          const rawFormat = data.details.format ?? tournament.format ?? "";
-          const result = await importTournament(supabase, data, rawFormat);
-          console.log(
-            `  ${result.players} players, ${result.standings} standings, ${result.pokemon} pokemon, ${result.matches} matches`
-          );
-        } catch (err) {
-          console.error(
-            `  Failed: ${err instanceof Error ? err.message : err}`
-          );
-          // Continue to next tournament — don't abort the whole backfill
+      const eventConcurrency = parseInt(opts.eventConcurrency, 10);
+      let nextIdx = 0;
+
+      async function processTournament(): Promise<void> {
+        while (true) {
+          const i = nextIdx++;
+          if (i >= toImport.length) break;
+          const tournament = toImport[i]!;
+          const tag = `[${tournament.name}]`;
+
+          console.log(`\n── ${tournament.name} (${tournament.id})`);
+          try {
+            const data = await scrapeTournament(tournament.id, apiKey);
+            const rawFormat = data.details.format ?? tournament.format ?? "";
+            const result = await importTournament(supabase, data, rawFormat);
+            console.log(
+              `${tag} ${result.players} players, ${result.standings} standings, ${result.pokemon} pokemon, ${result.matches} matches`
+            );
+          } catch (err) {
+            console.error(
+              `${tag} Failed: ${err instanceof Error ? err.message : err}`
+            );
+            // Continue to next tournament — don't abort the whole backfill
+          }
         }
       }
+
+      await Promise.all(
+        Array.from({ length: Math.min(eventConcurrency, toImport.length) }, processTournament)
+      );
 
       console.log("\nLimitless backfill complete");
     } catch (err) {
