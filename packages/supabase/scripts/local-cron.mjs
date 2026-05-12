@@ -9,17 +9,21 @@
 //   # or standalone:
 //   pnpm --filter @trainers/supabase cron
 
+import { execSync } from "child_process";
+
 const SUPABASE_URL = "http://127.0.0.1:54321";
 const POLL_INTERVAL_MS = 1_000; // 1 second — fast polling, edge functions gate themselves
 
-// Get the local service role key (required by edge functions for auth)
+// Get the local service role key from supabase status
 function getServiceRoleKey() {
-  // Check if the env var is set (from .env or shell)
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return process.env.SUPABASE_SERVICE_ROLE_KEY;
-  }
-  // Default local Supabase service role key (all local instances use this)
-  return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpF81rI";
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) return process.env.SUPABASE_SERVICE_ROLE_KEY;
+  try {
+    const out = execSync("pnpm --silent supabase status --output json 2>/dev/null", { encoding: "utf8" });
+    const match = out.match(/"SERVICE_ROLE_KEY"\s*:\s*"([^"]+)"/);
+    if (match) return match[1];
+  } catch {}
+  throw new Error("Cannot determine local Supabase service role key. Is Supabase running?");
+}
 }
 
 const SERVICE_ROLE_KEY = getServiceRoleKey();
