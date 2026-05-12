@@ -356,6 +356,7 @@ export async function importEvent(
       if (pokemon.length > 0) {
         for (let pos = 0; pos < pokemon.length; pos++) {
           const mon = pokemon[pos];
+          if (!mon) continue;
           allPokemonRows.push({
             standing_id: standingId,
             position: pos + 1,

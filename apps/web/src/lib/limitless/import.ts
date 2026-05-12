@@ -478,7 +478,7 @@ export async function processImportQueue(
         queueDoor = false; // Queue is empty — signal all workers to stop
         return;
       }
-      totalProcessed++;
+      if (singleResult.processed) totalProcessed++;
       if (singleResult.error) totalErrors++;
     }
   };

@@ -5,6 +5,7 @@
 // Mock the API module before importing the subject
 jest.mock("../api", () => ({
   LIMITLESS_TO_FORMAT: { "VGC 2024": "gen9vgc2024regg" },
+  KNOWN_FORMATS: new Set(["VGC 2024"]),
   fetchTournamentList: jest.fn(),
   fetchTournamentData: jest.fn(),
 }));
@@ -182,13 +183,19 @@ describe("processImportQueue", () => {
     const claimChain = createChain();
     claimChain.maybeSingle.mockResolvedValue({ data: null, error: null });
 
+    // Default chain for remaining worker calls (concurrent pool)
+    const emptyChain = createChain();
+    emptyChain.maybeSingle.mockResolvedValue({ data: null, error: null });
+
     supabase.schema
       .mockReturnValueOnce(staleChain)
       .mockReturnValueOnce(pickChain)
-      .mockReturnValueOnce(claimChain);
+      .mockReturnValueOnce(claimChain)
+      .mockReturnValue(emptyChain);
 
     const result = await processImportQueue(supabase as unknown as MockSupabase, "key", 1);
 
+    expect(result.results[0].recovered).toBeUndefined();
     expect(result.results[0].processed).toBe(false);
     expect(result.totalProcessed).toBe(0);
   });
