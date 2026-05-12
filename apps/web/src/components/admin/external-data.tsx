@@ -953,14 +953,14 @@ export function ExternalData() {
           );
         }
 
-        // Process RK9: roster first (gets players into the system), then teams.
+        // Process RK9: finish in-progress events before starting new ones.
         // SYNC: This priority order is mirrored in the rk9-worker edge function
         // (packages/supabase/supabase/functions/rk9-worker/index.ts).
         // Update both locations when changing the processing order.
-        if (nextRk9Pending && rk9FrontendAutoImportRef.current) {
-          promises.push(handleScrapeRoster(nextRk9Pending.event_id));
-        } else if (nextRk9Roster && rk9FrontendAutoImportRef.current) {
+        if (nextRk9Roster && rk9FrontendAutoImportRef.current) {
           promises.push(handleScrapeTeams(nextRk9Roster.event_id));
+        } else if (nextRk9Pending && rk9FrontendAutoImportRef.current) {
+          promises.push(handleScrapeRoster(nextRk9Pending.event_id));
         }
 
         // Process Limitless: queue pending tournaments in batches

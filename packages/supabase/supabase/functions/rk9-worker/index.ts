@@ -170,48 +170,6 @@ type WorkResult =
   | { action: "skipped"; reason: string };
 
 // ---------------------------------------------------------------------------
-// Cron interval helper
-// ---------------------------------------------------------------------------
-
-/**
- * Check whether enough time has passed since the last cron run.
- * If the interval hasn't elapsed, returns a skipped WorkResult.
- * If it has (or last_run is null), updates last_run_at and returns null.
- */
-async function checkCronInterval(
-  supabase: SupabaseClient,
-  intervalKey: string,
-  lastRunKey: string,
-  defaultIntervalSeconds: number,
-  sourceLabel: string
-): Promise<WorkResult | null> {
-  const intervalSeconds = await getConfigNumber(supabase, intervalKey, defaultIntervalSeconds);
-  const { data: lastRunRow } = await supabase
-    .from("site_config")
-    .select("value")
-    .eq("key", lastRunKey)
-    .maybeSingle();
-
-  if (lastRunRow && typeof lastRunRow.value === "string") {
-    const lastRun = new Date(lastRunRow.value).getTime();
-    const elapsed = Date.now() - lastRun;
-    if (elapsed < intervalSeconds * 1000) {
-      const remaining = Math.round(intervalSeconds - elapsed / 1000);
-      console.log(`[${sourceLabel}] Skipping — next run in ~${remaining}s (interval: ${intervalSeconds}s)`);
-      return { action: "skipped", reason: `interval not elapsed (${remaining}s remaining)` };
-    }
-  }
-
-  // Update last_run_at
-  await supabase.from("site_config").upsert(
-    { key: lastRunKey, value: new Date().toISOString() },
-    { onConflict: "key" }
-  );
-
-  return null;
-}
-
-// ---------------------------------------------------------------------------
 // Scraper: Events page (/events/pokemon)
 // ---------------------------------------------------------------------------
 
@@ -1282,17 +1240,11 @@ Deno.serve(async (req) => {
       return json({ success: true, data: { action: "skipped", reason: "rk9_backend_auto_import is false" } }, 200, cors);
     }
 
-    // Check cron interval (dynamic skip — user configures via admin UI)
-    const intervalResult = await checkCronInterval(supabase, "rk9_cron_interval_seconds", "rk9_last_run_at", 60, "rk9-worker");
-    if (intervalResult) {
-      return json({ success: true, data: intervalResult }, 200, cors);
-    }
-
     // Try work in priority order:
-    // 1. Discover events (if stale)
-    // 2. Roster for pending events (get players into the system first)
-    // 3. Match results (once roster is done)
-    // 4. Team lists (lowest priority — most expensive)
+    // 1. Discover events (when stale — always high priority, infrequent)
+    // 2. Match results (finish partially-processed events)
+    // 3. Team lists (finish partially-processed events)
+    // 4. Roster for new events
     //
     // SYNC: This priority order is mirrored in the client-side auto-import loop
     // (apps/web/src/components/admin/external-data.tsx).
@@ -1308,17 +1260,17 @@ Deno.serve(async (req) => {
     if (discoverResult) {
       result = discoverResult;
     } else {
-      const rosterResult = await tryImportRoster(supabase);
-      if (rosterResult) {
-        result = rosterResult;
+      const matchesResult = await tryImportMatchResults(supabase);
+      if (matchesResult) {
+        result = matchesResult;
       } else {
-        const matchesResult = await tryImportMatchResults(supabase);
-        if (matchesResult) {
-          result = matchesResult;
+        const teamsResult = await tryImportTeamBatch(supabase, maxTeams, teamConcurrency);
+        if (teamsResult) {
+          result = teamsResult;
         } else {
-          const teamsResult = await tryImportTeamBatch(supabase, maxTeams, teamConcurrency);
-          if (teamsResult) {
-            result = teamsResult;
+          const rosterResult = await tryImportRoster(supabase);
+          if (rosterResult) {
+            result = rosterResult;
           } else {
             result = { action: "idle" };
             console.log("[rk9-worker] Nothing to do — idle");
