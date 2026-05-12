@@ -923,10 +923,11 @@ async function tryImportTeamBatch(supabase: SupabaseClient, maxTeams: number = D
   let batchScraped = 0;
   let batchFailed = 0;
   const newSpecies = new Map<string, string>();
+  const allTeamRows: Record<string, unknown>[] = [];
 
   console.log(`[rk9-worker] Scraping up to ${batch.length} teams across ${concurrency} concurrent workers (${remaining.length} remaining total)`);
 
-  async function scrapeOneTeam(standing: { id: number; roster_entry_id: string | null }): Promise<{ ok: boolean }> {
+  async function scrapeOneTeam(standing: { id: number; roster_entry_id: string | null }): Promise<{ ok: boolean; rows?: Record<string, unknown>[] }> {
     const entryId = standing.roster_entry_id;
     if (!entryId) return { ok: false };
 
@@ -954,14 +955,9 @@ async function tryImportTeamBatch(supabase: SupabaseClient, maxTeams: number = D
           };
         });
 
-        const { error: pkErr } = await supabase
-          .schema("rk9")
-          .from("team_pokemon")
-          .insert(pokemonRows);
-
-        return { ok: !pkErr };
+        return { ok: true, rows: pokemonRows };
       }
-      return { ok: true };
+      return { ok: true, rows: [] };
     } catch {
       return { ok: false };
     }
@@ -972,11 +968,36 @@ async function tryImportTeamBatch(supabase: SupabaseClient, maxTeams: number = D
     const chunk = batch.slice(i, i + concurrency);
     const results = await Promise.all(chunk.map(scrapeOneTeam));
     for (const r of results) {
-      if (r.ok) batchScraped++;
-      else batchFailed++;
+      if (r.ok) {
+        batchScraped++;
+        if (r.rows && r.rows.length > 0) {
+          allTeamRows.push(...r.rows);
+        }
+      } else {
+        batchFailed++;
+      }
     }
     if (i + concurrency < batch.length) {
       await sleep(DELAY_TEAM_MS);
+    }
+  }
+
+  // Bulk-insert all collected team pokemon rows
+  if (allTeamRows.length > 0) {
+    const BULK_CHUNK_SIZE = 200;
+    for (let i = 0; i < allTeamRows.length; i += BULK_CHUNK_SIZE) {
+      const chunk = allTeamRows.slice(i, i + BULK_CHUNK_SIZE);
+      try {
+        const { error } = await supabase
+          .schema("rk9")
+          .from("team_pokemon")
+          .insert(chunk);
+        if (error) {
+          console.error(`[rk9-worker] Bulk insert chunk failed (${chunk.length} rows):`, error.message);
+        }
+      } catch (err) {
+        console.error(`[rk9-worker] Bulk insert chunk error (${chunk.length} rows):`, err);
+      }
     }
   }
 
