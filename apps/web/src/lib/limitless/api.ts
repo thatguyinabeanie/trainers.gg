@@ -234,7 +234,10 @@ export async function fetchTournamentList(
         limitlessFetch<LimitlessTournament[]>(
           `/tournaments?game=VGC&limit=500&page=${p}`,
           apiKey
-        ).catch(() => null)
+        ).catch((err) => {
+          console.warn(`[limitless] Page ${p} fetch failed:`, err instanceof Error ? err.message : err);
+          return null;
+        })
       )
     );
 

@@ -63,7 +63,7 @@ export async function batchQueueTournaments(
     }
 
     const supabase = createServiceRoleClient();
-    const CHUNK_SIZE = 1000;
+    const CHUNK_SIZE = 100; // PostgREST .in() filter is encoded in the URL — keep under 100
     let totalQueued = 0;
 
     for (let i = 0; i < tournamentIds.length; i += CHUNK_SIZE) {

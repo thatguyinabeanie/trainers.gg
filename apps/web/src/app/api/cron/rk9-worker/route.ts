@@ -271,14 +271,22 @@ async function tryImportTeamBatch(
     return { action: "teams", eventId: event.event_id, eventName: event.name, scraped: 0, total: 0, done: true, failed: 0 };
   }
 
-  // Find standings that don't have team_pokemon yet
-  const { data: withTeams } = await supabase
-    .schema("rk9")
-    .from("team_pokemon")
-    .select("standing_id")
-    .in("standing_id", allStandings.map((s) => s.id));
+  // Find standings that don't have team_pokemon yet (batch in chunks to avoid long URLs)
+  const standingsWithTeams = new Set<number>();
+  const standingIds = allStandings.map((s) => s.id);
+  for (let i = 0; i < standingIds.length; i += 100) {
+    const chunk = standingIds.slice(i, i + 100);
+    const { data: withTeams } = await supabase
+      .schema("rk9")
+      .from("team_pokemon")
+      .select("standing_id")
+      .in("standing_id", chunk);
 
-  const standingsWithTeams = new Set((withTeams ?? []).map((t) => t.standing_id));
+    for (const row of withTeams ?? []) {
+      standingsWithTeams.add(row.standing_id);
+    }
+  }
+
   const remaining = allStandings.filter((s) => !standingsWithTeams.has(s.id));
 
   const total = allStandings.length;
