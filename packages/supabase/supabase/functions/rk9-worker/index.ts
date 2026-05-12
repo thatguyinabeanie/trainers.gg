@@ -1269,17 +1269,17 @@ Deno.serve(async (req) => {
     const authErr = requireServiceRole(req, cors);
     if (authErr) return authErr;
 
-    // Check auto_import_rk9_enabled in site_config
+    // Check rk9_backend_auto_import in site_config
     const supabase = adminClient();
     const { data: configRow } = await supabase
       .from("site_config")
       .select("value")
-      .eq("key", "auto_import_rk9_enabled")
+      .eq("key", "rk9_backend_auto_import")
       .single();
 
     const autoImportEnabled = configRow?.value === true || configRow?.value === "true";
     if (!autoImportEnabled) {
-      return json({ success: true, data: { action: "skipped", reason: "auto_import_rk9_enabled is false" } }, 200, cors);
+      return json({ success: true, data: { action: "skipped", reason: "rk9_backend_auto_import is false" } }, 200, cors);
     }
 
     // Check cron interval (dynamic skip — user configures via admin UI)
