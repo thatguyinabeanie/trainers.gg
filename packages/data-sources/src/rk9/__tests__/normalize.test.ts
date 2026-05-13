@@ -36,6 +36,12 @@ describe("normalizeSpecies", () => {
     expect(normalizeSpecies("Ogerpon [Cornerstone Mask]")).toBe("ogerpon-cornerstone");
     expect(normalizeSpecies("Ogerpon [Teal Mask]")).toBe("ogerpon");
   });
+
+  it("handles pathological input without hanging", () => {
+    const longSpaces = "A" + " ".repeat(1000);
+    expect(normalizeSpecies(longSpaces)).toBe("a");
+    expect(normalizeSpecies(longSpaces + "[B]")).toBe("a-b");
+  });
 });
 
 describe("collectUniqueSpecies", () => {
