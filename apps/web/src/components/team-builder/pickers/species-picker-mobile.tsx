@@ -130,7 +130,7 @@ export function SpeciesPickerMobile({
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="flex max-h-[95vh] flex-col gap-0 overflow-hidden rounded-t-[20px] p-0"
+        className="flex max-h-[95dvh] flex-col gap-0 overflow-hidden rounded-t-[20px] p-0"
       >
         <SheetTitle className="sr-only">
           {view === "list" ? "Choose species" : "Filters"}

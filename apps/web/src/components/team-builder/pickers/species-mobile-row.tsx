@@ -36,6 +36,8 @@ export function SpeciesMobileRow({
     entry.hiddenAbility,
   ].filter((a): a is string => Boolean(a));
 
+  const sprite = getPokemonSprite(entry.species);
+
   return (
     <button
       type="button"
@@ -49,13 +51,13 @@ export function SpeciesMobileRow({
     >
       <span className="bg-primary/5 border-primary/30 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border">
         <Image
-          src={getPokemonSprite(entry.species).url}
+          src={sprite.url}
           alt=""
           width={40}
           height={40}
           className={cn(
             "size-9 object-contain",
-            getPokemonSprite(entry.species).pixelated && "[image-rendering:pixelated]"
+            sprite.pixelated && "[image-rendering:pixelated]"
           )}
         />
       </span>

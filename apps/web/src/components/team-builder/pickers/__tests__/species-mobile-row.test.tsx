@@ -24,7 +24,7 @@ jest.mock("next/image", () => ({
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({
-  getPokemonSprite: jest.fn().mockReturnValue("/sprite.png"),
+  getPokemonSprite: jest.fn().mockReturnValue({ url: "/sprite.png", pixelated: false }),
 }));
 
 import { SpeciesMobileRow } from "../species-mobile-row";
@@ -94,5 +94,31 @@ describe("SpeciesMobileRow", () => {
     render(<SpeciesMobileRow entry={entry} onPick={jest.fn()} />);
     expect(screen.getByText("Zero to Hero")).toBeInTheDocument();
     expect(screen.queryByText("Sand Force")).not.toBeInTheDocument();
+  });
+
+  it("applies bg-primary/5 class when isSelected is true", () => {
+    render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} isSelected />);
+    expect(
+      screen.getByRole("button", { name: /garchomp-mega/i })
+    ).toHaveClass("bg-primary/5");
+  });
+
+  it("does not apply bg-primary/5 when isSelected is false", () => {
+    render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} isSelected={false} />);
+    expect(
+      screen.getByRole("button", { name: /garchomp-mega/i })
+    ).not.toHaveClass("bg-primary/5");
+  });
+
+  it("renders hiddenAbility as a chip when populated", () => {
+    const entry = speciesSearchEntryFactory.build({
+      species: "Greninja",
+      abilitySlot1: "Torrent",
+      abilitySlot2: null,
+      hiddenAbility: "Protean",
+    });
+    render(<SpeciesMobileRow entry={entry} onPick={jest.fn()} />);
+    expect(screen.getByText("Torrent")).toBeInTheDocument();
+    expect(screen.getByText("Protean")).toBeInTheDocument();
   });
 });

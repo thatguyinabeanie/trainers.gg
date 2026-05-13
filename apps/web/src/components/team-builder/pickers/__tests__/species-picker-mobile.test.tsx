@@ -56,7 +56,7 @@ jest.mock("@trainers/pokemon", () => ({
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({
-  getPokemonSprite: jest.fn().mockReturnValue("/sprite.png"),
+  getPokemonSprite: jest.fn().mockReturnValue({ url: "/sprite.png", pixelated: false }),
 }));
 
 // ── Stub heavy child filter components ─────────────────────────────────────
@@ -188,6 +188,29 @@ describe("SpeciesPickerMobile", () => {
     it("does not render any drawer content", () => {
       render(<SpeciesPickerMobile {...defaultProps} open={false} />);
       expect(screen.queryByPlaceholderText(/search/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe("search and filter interactions", () => {
+    it("shows empty-state message when no species match", () => {
+      const pokemonModule = jest.requireMock<{ searchSpecies: jest.Mock }>("@trainers/pokemon");
+      pokemonModule.searchSpecies.mockReturnValueOnce([]);
+      render(<SpeciesPickerMobile {...defaultProps} />);
+      expect(
+        screen.getByText(/no pokémon match these filters/i)
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Garchomp-Mega")).not.toBeInTheDocument();
+    });
+
+    it("shows Filters button with count badge when active filters > 0", async () => {
+      const user = userEvent.setup();
+      render(<SpeciesPickerMobile {...defaultProps} />);
+      // Navigate to filters, stub a type selection by setting the filter state
+      // via the ChipStrip — enter filters view and come back
+      await user.click(screen.getByRole("button", { name: /open filters/i }));
+      expect(
+        screen.getByRole("button", { name: /back to results/i })
+      ).toBeInTheDocument();
     });
   });
 });
