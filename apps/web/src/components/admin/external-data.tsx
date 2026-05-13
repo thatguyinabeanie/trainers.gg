@@ -398,6 +398,7 @@ export function ExternalData() {
     const result = await setSiteConfig("rk9_backend_auto_import", checked);
     if (!result.success) {
       setRk9BackendAutoImport(previous);
+      return;
     }
     // Reset timer so backend fires immediately on re-enable
     if (checked) {
@@ -414,6 +415,7 @@ export function ExternalData() {
     );
     if (!result.success) {
       setLimitlessBackendAutoImport(previous);
+      return;
     }
     // Reset timer so backend fires immediately on re-enable
     if (checked) {
