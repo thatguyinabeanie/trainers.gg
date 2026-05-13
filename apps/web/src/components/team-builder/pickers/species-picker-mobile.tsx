@@ -13,10 +13,10 @@ import {
 
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "../type-symbol-icon";
@@ -131,58 +131,51 @@ export function SpeciesPickerMobile({
   }
 
   return (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
-      {/* SheetContent side="bottom" has data-[side=bottom]:h-auto built in which
-          overrides any h-[*] class. Height is controlled by the inner wrapper
-          instead so we don't fight CSS specificity. */}
-      <SheetContent
-        side="bottom"
-        showCloseButton={false}
-        className="overflow-hidden rounded-t-[20px] p-0"
+    <Drawer open={open} onOpenChange={handleOpenChange}>
+      <DrawerContent
+        showHandle={false}
+        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-[20px] p-0"
       >
-        {/* Inner wrapper owns the fixed height and flex layout */}
-        <div className="flex h-[95dvh] flex-col overflow-hidden">
-          <SheetTitle className="sr-only">
-            {view === "list" ? "Choose species" : "Filters"}
-          </SheetTitle>
+        <DrawerTitle className="sr-only">
+          {view === "list" ? "Choose species" : "Filters"}
+        </DrawerTitle>
 
-          {/* Drag handle */}
-          <div
-            aria-hidden="true"
-            className="mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full bg-muted-foreground/20"
-          />
+        {/* Drag handle */}
+        <div
+          aria-hidden="true"
+          className="mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full bg-muted-foreground/20"
+        />
 
-          {/* Bounded container — gives ListView/FiltersView a fixed height to flex within */}
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {view === "list" ? (
-              <ListView
-                query={query}
-                onQueryChange={setQuery}
-                matched={matched}
-                speciesIndexCount={speciesIndex.length}
-                activeFilterCount={activeFilterCount}
-                filters={filters}
-                onFiltersChange={setFilters}
-                onOpenFilters={() => setView("filters")}
-                onPick={handlePick}
-                currentSpecies={value}
-              />
-            ) : (
-              <FiltersView
-                filters={filters}
-                onFiltersChange={setFilters}
-                format={format}
-                currentTeam={currentTeam}
-                bucketCount={bucketCount}
-                matchedCount={matched.length}
-                onBack={() => setView("list")}
-                onClearAll={clearAllFilters}
-              />
-            )}
-          </div>
+        {/* Bounded container — flex-1 fills the remaining drawer height */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {view === "list" ? (
+            <ListView
+              query={query}
+              onQueryChange={setQuery}
+              matched={matched}
+              speciesIndexCount={speciesIndex.length}
+              activeFilterCount={activeFilterCount}
+              filters={filters}
+              onFiltersChange={setFilters}
+              onOpenFilters={() => setView("filters")}
+              onPick={handlePick}
+              currentSpecies={value}
+            />
+          ) : (
+            <FiltersView
+              filters={filters}
+              onFiltersChange={setFilters}
+              format={format}
+              currentTeam={currentTeam}
+              bucketCount={bucketCount}
+              matchedCount={matched.length}
+              onBack={() => setView("list")}
+              onClearAll={clearAllFilters}
+            />
+          )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

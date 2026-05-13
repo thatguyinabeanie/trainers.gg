@@ -59,6 +59,32 @@ jest.mock("@trainers/pokemon/sprites", () => ({
   getPokemonSprite: jest.fn().mockReturnValue({ url: "/sprite.png", pixelated: false }),
 }));
 
+// ── Vaul Drawer mock — JSDOM lacks setPointerCapture used by Vaul's gesture ──
+jest.mock("@/components/ui/drawer", () => ({
+  Drawer: ({
+    children,
+    open,
+  }: {
+    children: React.ReactNode;
+    open: boolean;
+    onOpenChange?: (open: boolean) => void;
+  }) => (open ? <>{children}</> : null),
+  DrawerContent: ({
+    children,
+  }: {
+    children: React.ReactNode;
+    showHandle?: boolean;
+    className?: string;
+  }) => <div>{children}</div>,
+  DrawerTitle: ({
+    children,
+    className,
+  }: {
+    children: React.ReactNode;
+    className?: string;
+  }) => <h2 className={className}>{children}</h2>,
+}));
+
 // ── Stub heavy child filter components ─────────────────────────────────────
 jest.mock("../species-sidebar", () => ({
   SpeciesSidebar: () => <div data-testid="species-sidebar" />,
