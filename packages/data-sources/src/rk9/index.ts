@@ -13,4 +13,10 @@ export type {
 export { normalizeSpecies } from "./normalize";
 
 export type { ImportEventResult, SyncEventsResult } from "./import";
-export { syncEvents, importEvent, seedSpeciesMap, collectUniqueSpecies } from "./import";
+export {
+  syncEvents,
+  importEvent,
+  loadSpeciesMap,
+  seedSpeciesMap,
+} from "./import";
+export { collectUniqueSpecies } from "./normalize";

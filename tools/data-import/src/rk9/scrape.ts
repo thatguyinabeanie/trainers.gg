@@ -19,9 +19,11 @@ import type {
   RK9Event,
   RK9RosterEntry,
   RK9Pokemon,
+} from "@trainers/data-sources";
+import type {
   PairingsEntry,
   DivisionRoundPairings,
-} from "./types.js";
+} from "./import.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const DATA_DIR = resolve(__dirname, "../../data");

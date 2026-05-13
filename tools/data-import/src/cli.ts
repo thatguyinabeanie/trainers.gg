@@ -18,14 +18,7 @@ import {
   type EventMeta,
 } from "./rk9/scrape.js";
 import { DEFAULT_TEAM_CONCURRENCY } from "./rk9/http.js";
-import {
-  syncEvents,
-  importRoster,
-  seedSpeciesMap,
-  importTeams,
-  importMatchResults,
-} from "./rk9/import.js";
-import { normalizeSpeciesInline } from "./rk9/normalize.js";
+import { importMatchResults } from "./rk9/import.js";
 import {
   syncTournaments,
   scrapeTournament,
@@ -33,9 +26,15 @@ import {
   readTournamentData,
 } from "./limitless/scrape.js";
 import {
+  syncEvents,
+  importEvent,
+  seedSpeciesMap,
+  loadSpeciesMap,
+  collectUniqueSpecies,
   LIMITLESS_TO_FORMAT,
   syncTournamentList,
   importTournament,
+  type RK9Pokemon,
 } from "@trainers/data-sources";
 import type { SupabaseClient } from "@supabase/supabase-js";
 // =============================================================================
@@ -60,18 +59,6 @@ async function checkCronGuard(
     );
     process.exit(1);
   }
-}
-
-async function loadSpeciesMap(
-  supabase: SupabaseClient
-): Promise<Map<string, string>> {
-  const { data } = await supabase
-    .schema("rk9")
-    .from("species_map")
-    .select("raw_name, species_slug");
-  const map = new Map<string, string>();
-  for (const row of data ?? []) map.set(row.raw_name, row.species_slug);
-  return map;
 }
 
 const today = new Date().toISOString().slice(0, 10);
@@ -173,41 +160,37 @@ rk9
 
           console.log(`\nImporting ${eventId}...`);
 
-          const { playersUpserted, standingsInserted } = await importRoster(
-            supabase,
-            eventId,
-            roster
-          );
-          console.log(
-            `  Players: ${playersUpserted}, Standings: ${standingsInserted}`
-          );
-
           const teamsPath = join(DATA_DIR, "rk9", eventId, "teams.json");
+          const teamsRecord: Record<string, RK9Pokemon[]> = {};
           if (existsSync(teamsPath)) {
             const teams = await readTeams(eventId);
-            const speciesMap = await loadSpeciesMap(supabase);
-            const pokemonCount = await importTeams(
-              supabase,
-              eventId,
-              teams,
-              speciesMap
-            );
-
-            const newSpecies = new Map<string, string>();
             for (const team of teams) {
-              for (const mon of team.pokemon) {
-                if (mon.speciesRaw && !speciesMap.has(mon.speciesRaw)) {
-                  newSpecies.set(
-                    mon.speciesRaw,
-                    normalizeSpeciesInline(mon.speciesRaw)
-                  );
-                }
-              }
+              teamsRecord[team.rosterEntryId] = team.pokemon;
             }
-            if (newSpecies.size > 0) await seedSpeciesMap(supabase, newSpecies);
-
-            console.log(`  Pokemon: ${pokemonCount}`);
           }
+
+          const speciesMap = await loadSpeciesMap(supabase);
+          const result = await importEvent(
+            supabase,
+            eventId,
+            roster,
+            teamsRecord,
+            speciesMap
+          );
+          console.log(
+            `  Players: ${result.playersUpserted}, Standings: ${result.standingsInserted}`
+          );
+          if (result.pokemonInserted > 0) {
+            console.log(`  Pokemon: ${result.pokemonInserted}`);
+          }
+
+          // Seed unmapped species
+          const allSpecies = collectUniqueSpecies(teamsRecord);
+          const newSpecies = new Map<string, string>();
+          for (const [raw, slug] of allSpecies) {
+            if (!speciesMap.has(raw)) newSpecies.set(raw, slug);
+          }
+          if (newSpecies.size > 0) await seedSpeciesMap(supabase, newSpecies);
 
           const matchesPath = join(DATA_DIR, "rk9", eventId, "matches.json");
           if (existsSync(matchesPath)) {
@@ -219,26 +202,6 @@ rk9
             );
             console.log(`  Matches: ${matches} across ${rounds} rounds`);
           }
-
-          const { error: markError } = await supabase
-            .schema("rk9")
-            .from("events")
-            .update({
-              import_status: "complete",
-              import_error: null,
-              has_team_lists: existsSync(
-                join(DATA_DIR, "rk9", eventId, "teams.json")
-              ),
-              imported_at: new Date().toISOString(),
-            })
-            .eq("event_id", eventId);
-
-          if (markError)
-            throw new Error(
-              `Failed to mark event complete: ${markError.message}`
-            );
-
-          console.log(`\nImport complete for ${eventId}`);
         }
       } catch (err) {
         console.error(
@@ -306,45 +269,38 @@ rk9
 
       console.log(`\nImporting ${eventId}...`);
 
-      // Roster
       const roster = await readRoster(eventId);
-      const { playersUpserted, standingsInserted } = await importRoster(
-        supabase,
-        eventId,
-        roster
-      );
-      console.log(
-        `  Players: ${playersUpserted}, Standings: ${standingsInserted}`
-      );
-
-      // Teams
       const teamsPath = join(DATA_DIR, "rk9", eventId, "teams.json");
+      const teamsRecord: Record<string, RK9Pokemon[]> = {};
       if (existsSync(teamsPath)) {
         const teams = await readTeams(eventId);
-        const speciesMap = await loadSpeciesMap(supabase);
-        const pokemonCount = await importTeams(
-          supabase,
-          eventId,
-          teams,
-          speciesMap
-        );
-
-        // Seed any new species encountered
-        const newSpecies = new Map<string, string>();
         for (const team of teams) {
-          for (const mon of team.pokemon) {
-            if (mon.speciesRaw && !speciesMap.has(mon.speciesRaw)) {
-              newSpecies.set(
-                mon.speciesRaw,
-                normalizeSpeciesInline(mon.speciesRaw)
-              );
-            }
-          }
+          teamsRecord[team.rosterEntryId] = team.pokemon;
         }
-        if (newSpecies.size > 0) await seedSpeciesMap(supabase, newSpecies);
-
-        console.log(`  Pokemon: ${pokemonCount}`);
       }
+
+      const speciesMap = await loadSpeciesMap(supabase);
+      const result = await importEvent(
+        supabase,
+        eventId,
+        roster,
+        teamsRecord,
+        speciesMap
+      );
+      console.log(
+        `  Players: ${result.playersUpserted}, Standings: ${result.standingsInserted}`
+      );
+      if (result.pokemonInserted > 0) {
+        console.log(`  Pokemon: ${result.pokemonInserted}`);
+      }
+
+      // Seed unmapped species
+      const allSpecies = collectUniqueSpecies(teamsRecord);
+      const newSpecies = new Map<string, string>();
+      for (const [raw, slug] of allSpecies) {
+        if (!speciesMap.has(raw)) newSpecies.set(raw, slug);
+      }
+      if (newSpecies.size > 0) await seedSpeciesMap(supabase, newSpecies);
 
       // Matches
       const matchesPath = join(DATA_DIR, "rk9", eventId, "matches.json");
@@ -357,25 +313,6 @@ rk9
         );
         console.log(`  Matches: ${matches} across ${rounds} rounds`);
       }
-
-      // Mark complete
-      const { error: markError } = await supabase
-        .schema("rk9")
-        .from("events")
-        .update({
-          import_status: "complete",
-          import_error: null,
-          has_team_lists: existsSync(
-            join(DATA_DIR, "rk9", eventId, "teams.json")
-          ),
-          imported_at: new Date().toISOString(),
-        })
-        .eq("event_id", eventId);
-
-      if (markError)
-        throw new Error(`Failed to mark event complete: ${markError.message}`);
-
-      console.log(`\nImport complete for ${eventId}`);
     } catch (err) {
       console.error(
         "import-event failed:",
@@ -469,49 +406,43 @@ rk9
               await scrapeTeams(event.eventId, roster, teamConcurrency);
               await scrapeMatches(event.eventId);
 
-              // Import roster
-              const { playersUpserted, standingsInserted } = await importRoster(
-                supabase,
-                event.eventId,
-                roster
-              );
-              console.log(
-                `${tag} Players: ${playersUpserted}, Standings: ${standingsInserted}`
-              );
-
-              // Import teams
               const teamsPath = join(
                 DATA_DIR,
                 "rk9",
                 event.eventId,
                 "teams.json"
               );
+              const teamsRecord: Record<string, RK9Pokemon[]> = {};
               if (existsSync(teamsPath)) {
                 const teams = await readTeams(event.eventId);
-                const speciesMap = await loadSpeciesMap(supabase);
-                const pokemonCount = await importTeams(
-                  supabase,
-                  event.eventId,
-                  teams,
-                  speciesMap
-                );
-
-                const newSpecies = new Map<string, string>();
                 for (const team of teams) {
-                  for (const mon of team.pokemon) {
-                    if (mon.speciesRaw && !speciesMap.has(mon.speciesRaw)) {
-                      newSpecies.set(
-                        mon.speciesRaw,
-                        normalizeSpeciesInline(mon.speciesRaw)
-                      );
-                    }
-                  }
+                  teamsRecord[team.rosterEntryId] = team.pokemon;
                 }
-                if (newSpecies.size > 0)
-                  await seedSpeciesMap(supabase, newSpecies);
-
-                console.log(`${tag} Pokemon: ${pokemonCount}`);
               }
+
+              const speciesMap = await loadSpeciesMap(supabase);
+              const result = await importEvent(
+                supabase,
+                event.eventId,
+                roster,
+                teamsRecord,
+                speciesMap
+              );
+              console.log(
+                `${tag} Players: ${result.playersUpserted}, Standings: ${result.standingsInserted}`
+              );
+              if (result.pokemonInserted > 0) {
+                console.log(`${tag} Pokemon: ${result.pokemonInserted}`);
+              }
+
+              // Seed unmapped species
+              const allSpecies = collectUniqueSpecies(teamsRecord);
+              const newSpecies = new Map<string, string>();
+              for (const [raw, slug] of allSpecies) {
+                if (!speciesMap.has(raw)) newSpecies.set(raw, slug);
+              }
+              if (newSpecies.size > 0)
+                await seedSpeciesMap(supabase, newSpecies);
 
               // Import matches
               const matchesPath = join(
@@ -529,26 +460,6 @@ rk9
                 );
                 console.log(
                   `${tag} Matches: ${matches} across ${rounds} rounds`
-                );
-              }
-
-              // Mark complete
-              const { error: markError } = await supabase
-                .schema("rk9")
-                .from("events")
-                .update({
-                  import_status: "complete",
-                  import_error: null,
-                  has_team_lists: existsSync(
-                    join(DATA_DIR, "rk9", event.eventId, "teams.json")
-                  ),
-                  imported_at: new Date().toISOString(),
-                })
-                .eq("event_id", event.eventId);
-
-              if (markError) {
-                throw new Error(
-                  `Failed to mark event complete: ${markError.message}`
                 );
               }
 
