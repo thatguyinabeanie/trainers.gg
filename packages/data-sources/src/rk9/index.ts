@@ -9,3 +9,5 @@ export type {
   EventsManifest,
   EventDownloadState,
 } from "./types";
+
+export { normalizeSpecies, collectUniqueSpecies } from "./normalize";
