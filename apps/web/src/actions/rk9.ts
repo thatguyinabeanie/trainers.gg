@@ -538,6 +538,9 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
           });
 
           allTeamRows.push(...pokemonRows);
+          batchScraped++;
+        } else {
+          batchScraped++;
         }
       } catch {
         batchFailed++;
@@ -556,8 +559,6 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
         if (error) {
           console.error(`Team pokemon bulk insert chunk failed: ${error.message}`);
           batchFailed++;
-        } else {
-          batchScraped++;
         }
       }
     }

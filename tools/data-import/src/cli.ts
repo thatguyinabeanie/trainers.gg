@@ -372,11 +372,12 @@ rk9
         // Step 2: Find events to process
         // Without --force: only events not yet complete
         // With --force: all ended events, including already-complete ones
-        const { data: completedRows } = await supabase
+        const { data: completedRows, error: completedErr } = await supabase
           .schema("rk9")
           .from("events")
           .select("event_id")
           .eq("import_status", "complete");
+        if (completedErr) throw new Error(`Failed to query completed events: ${completedErr.message}`);
         const completed = new Set((completedRows ?? []).map((r) => r.event_id));
 
         const pending = events.filter((e) => {
@@ -542,7 +543,7 @@ rk9
       }
 
       // Find which events already have match_results
-      const { data: withMatches } = await supabase
+      const { data: withMatches, error: withMatchesErr } = await supabase
         .schema("rk9")
         .from("match_results")
         .select("event_id")
@@ -550,6 +551,7 @@ rk9
           "event_id",
           events.map((e) => e.event_id)
         );
+      if (withMatchesErr) throw new Error(`Failed to query match results: ${withMatchesErr.message}`);
 
       const hasMatches = new Set((withMatches ?? []).map((r) => r.event_id));
       const toProcess = events.filter((e) => !hasMatches.has(e.event_id));
@@ -725,11 +727,12 @@ limitless
         const tournaments = await syncTournaments(apiKey);
 
         // Step 2: Find unimported tournaments with known format mappings
-        const { data: alreadyImported } = await supabase
+        const { data: alreadyImported, error: alreadyImportedErr } = await supabase
           .schema("limitless")
           .from("tournaments")
           .select("tournament_id")
           .not("data_imported_at", "is", null);
+        if (alreadyImportedErr) throw new Error(`Failed to query imported tournaments: ${alreadyImportedErr.message}`);
         const imported = new Set(
           (alreadyImported ?? []).map((r) => r.tournament_id)
         );

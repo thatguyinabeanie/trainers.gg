@@ -31,11 +31,13 @@ describe("normalizeSpecies", () => {
     expect(normalizeSpecies("Weezing [Galarian Form]")).toBe("weezing-galar");
   });
 
-  it("handles Ogerpon mask forms", () => {
-    expect(normalizeSpecies("Ogerpon [Wellspring Mask]")).toBe("ogerpon-wellspring");
-    expect(normalizeSpecies("Ogerpon [Cornerstone Mask]")).toBe("ogerpon-cornerstone");
-    expect(normalizeSpecies("Ogerpon [Teal Mask]")).toBe("ogerpon");
-    expect(normalizeSpecies("Basculegion [Female]")).toBe("basculegion-f");
+  it.each([
+    ["Ogerpon [Wellspring Mask]", "ogerpon-wellspring"],
+    ["Ogerpon [Cornerstone Mask]", "ogerpon-cornerstone"],
+    ["Ogerpon [Teal Mask]", "ogerpon"],
+    ["Basculegion [Female]", "basculegion-f"],
+  ])('normalizeSpecies("%s") → "%s"', (input, expected) => {
+    expect(normalizeSpecies(input)).toBe(expected);
   });
 
   it("handles pathological input without hanging", () => {

@@ -167,10 +167,6 @@ export async function scrapeTeams(
     }
   }
 
-  if (concurrency <= 0) {
-    throw new Error("concurrency must be a positive integer");
-  }
-
   await Promise.all(
     Array.from({ length: Math.min(concurrency, eligible.length) }, worker)
   );
@@ -232,7 +228,7 @@ export async function scrapeMatches(
           `/pairings/${eventId}?pod=${divInfo.podId}&rnd=${round}`
         );
       } catch {
-        break;
+        throw new Error(`Failed to fetch pairings for division ${divInfo.division}, round ${round}`);
       }
       const pairings = parsePairingsFragment(html);
       if (pairings.length === 0) break;

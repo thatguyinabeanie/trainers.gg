@@ -35,6 +35,10 @@ export async function importMatchResults(
   if (divisionPairings.length === 0) return { matches: 0, rounds: 0 };
 
   // Delete any existing match data so reruns (--force) don't hit duplicate keys
+  // Note: This delete + subsequent insert is not truly atomic. If the
+  // insert fails partway through, the old data will have been deleted
+  // but new data only partially written. A proper fix would use a DB
+  // transaction or an RPC call to wrap both operations atomically.
   const { error: del1Err } = await supabase.schema("rk9").from("match_results").delete().eq("event_id", eventId);
   if (del1Err) throw new Error(`Delete match_results: ${del1Err.message}`);
   const { error: del2Err } = await supabase.schema("rk9").from("phases").delete().eq("event_id", eventId);
@@ -105,16 +109,19 @@ export async function importMatchResults(
           continue;
         }
         const player1Id = player1Ids[0];
-        const player2Id = p.player2 ? (() => {
+
+        // Resolve player2 — if present but unresolvable, skip the entire row
+        let player2Id: number | null = null;
+        if (p.player2) {
           const p2Ids = nameToId.get(p.player2.toLowerCase().trim());
           if (!p2Ids || p2Ids.length !== 1) {
             if (p2Ids && p2Ids.length > 1) {
               console.warn(`[import] Ambiguous player name: ${p.player2}`);
             }
-            return null;
+            continue;
           }
-          return p2Ids[0];
-        })() : null;
+          player2Id = p2Ids[0];
+        }
 
         let winnerId: number | null = null;
         if (p.player1Won === true) winnerId = player1Id;

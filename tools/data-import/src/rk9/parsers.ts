@@ -16,12 +16,12 @@ export function parseEventsPage(html: string): RK9Event[] {
   const $ = cheerio.load(html);
   const events: RK9Event[] = [];
 
-  const tables: Array<{ selector: string }> = [
-    { selector: "#dtUpcomingEvents" },
-    { selector: "#dtPastEvents" },
+  const tables: Array<{ selector: string; section: "upcoming" | "past" }> = [
+    { selector: "#dtUpcomingEvents", section: "upcoming" },
+    { selector: "#dtPastEvents", section: "past" },
   ];
 
-  for (const { selector } of tables) {
+  for (const { selector, section } of tables) {
     const $table = $(selector);
     if (!$table.length) continue;
 
@@ -41,7 +41,7 @@ export function parseEventsPage(html: string): RK9Event[] {
       if (!$vgLink.length) return;
 
       const href = $vgLink.attr("href") ?? "";
-      const tournamentIdMatch = href.match(/\/tournament\/(.+)$/);
+      const tournamentIdMatch = href.match(/\/tournament\/([^\/?#]+)/);
       if (!tournamentIdMatch?.[1]) return;
       const eventId = tournamentIdMatch[1];
 
@@ -59,11 +59,13 @@ export function parseEventsPage(html: string): RK9Event[] {
       events.push({
         eventId,
         name,
+        dateRaw,
         dateStart,
         dateEnd,
         locationCity,
         locationCountry,
         tier,
+        section,
       });
     });
   }
