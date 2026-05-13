@@ -49,11 +49,14 @@ export function SpeciesMobileRow({
     >
       <span className="bg-primary/5 border-primary/30 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border">
         <Image
-          src={getPokemonSprite(entry.species)}
+          src={getPokemonSprite(entry.species).url}
           alt=""
           width={40}
           height={40}
-          className="size-9 object-contain"
+          className={cn(
+            "size-9 object-contain",
+            getPokemonSprite(entry.species).pixelated && "[image-rendering:pixelated]"
+          )}
         />
       </span>
 
