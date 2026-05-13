@@ -13,6 +13,9 @@
 ## Code Patterns
 
 - **Sidebar layouts** — Match shadcn dashboard-01 block patterns exactly for sidebar layouts.
+- **Bottom Sheet internal scroll** — `SheetContent side="bottom"` has `data-[side=bottom]:h-auto` built in, which overrides any explicit `h-[Xvh]` class. For a sticky header + scrollable body inside a bottom sheet: use `max-h-[Xvh] overflow-hidden flex flex-col` on SheetContent, and wrap the inner content in `<div className="flex min-h-0 flex-1 flex-col overflow-hidden">`. The inner scrollable div then uses `flex-1 min-h-0 overflow-y-auto`.
+- **Mobile-dedicated components** — When desktop and mobile layouts diverge significantly (e.g. wide table grid vs compact card list), create a separate `*-mobile.tsx` component rather than adding isMobile branches throughout the desktop component. Use `SpeciesPickerMobile` / `SpeciesPickerDialog` as the reference pattern.
+- **`getPokemonSprite()` returns `{ url, pixelated }`** — not a raw string. Use `src={getPokemonSprite(species).url}` and apply `[image-rendering:pixelated]` when `.pixelated` is true. Tests mock this away so the type error only surfaces at typecheck time.
 
 ## Architecture Guidelines
 

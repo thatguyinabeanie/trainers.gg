@@ -41,6 +41,7 @@ import {
 import { SpeciesSidebar } from "./species-sidebar";
 import { SpeciesSmartSearch } from "./species-smart-search";
 import { SpeciesExpandedPanel } from "./species-expanded-panel";
+import { STAT_HEADER_COLORS } from "./stat-header-colors";
 
 // =============================================================================
 // Constants
@@ -48,6 +49,7 @@ import { SpeciesExpandedPanel } from "./species-expanded-panel";
 
 /** Stat threshold for the "high stat" highlight (matches the spec's 110+). */
 const HIGH_STAT_THRESHOLD = 110;
+
 
 /**
  * Shared Tailwind grid template for each data row.
@@ -211,19 +213,6 @@ function SortHeaderButton({
   );
 }
 
-/** Header stat colors — picker uses short stat-key names (atk/def/spa/spd/spe) and adds bst. Hues mirror STAT_COLOR_CLASS in stat-types.ts. */
-const STAT_HEADER_COLORS: Record<
-  "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst",
-  string
-> = {
-  hp: "text-rose-500 dark:text-rose-400",
-  atk: "text-orange-500 dark:text-orange-400",
-  def: "text-amber-500 dark:text-amber-400",
-  spa: "text-sky-500 dark:text-sky-400",
-  spd: "text-emerald-500 dark:text-emerald-400",
-  spe: "text-fuchsia-500 dark:text-fuchsia-400",
-  bst: "text-foreground",
-};
 
 // =============================================================================
 // SpeciesRow — one rich row in the picker
