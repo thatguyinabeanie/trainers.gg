@@ -29,6 +29,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export const DATA_DIR = resolve(__dirname, "../../data");
 
 function eventDir(eventId: string): string {
+  if (!/^[A-Za-z0-9_-]+$/.test(eventId)) {
+    throw new Error(`Invalid eventId: ${eventId}`);
+  }
   return join(DATA_DIR, "rk9", eventId);
 }
 
@@ -124,6 +127,9 @@ export async function scrapeTeams(
   roster: RK9RosterEntry[],
   concurrency = DEFAULT_TEAM_CONCURRENCY
 ): Promise<ScrapeTeamsResult> {
+  if (concurrency <= 0) {
+    throw new Error("concurrency must be a positive integer");
+  }
   const dir = eventDir(eventId);
   await ensureDir(dir);
 
@@ -159,6 +165,10 @@ export async function scrapeTeams(
         `\r  Teams: ${done}/${eligible.length} (${failed} failed)`
       );
     }
+  }
+
+  if (concurrency <= 0) {
+    throw new Error("concurrency must be a positive integer");
   }
 
   await Promise.all(

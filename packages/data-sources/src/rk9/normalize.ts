@@ -34,7 +34,7 @@ export function normalizeSpecies(raw: string): string {
     const formLower = form.toLowerCase();
 
     // Skip "Incarnate Forme" / "Male" / standard forms (these are the default)
-    const skipForms = [
+    const skipForms = new Set([
       "incarnate forme",
       "male",
       "standard",
@@ -45,8 +45,8 @@ export function normalizeSpecies(raw: string): string {
       "50% forme",
       "land forme",
       "solo form",
-    ];
-    if (skipForms.some((s) => formLower.includes(s))) {
+    ]);
+    if (skipForms.has(formLower)) {
       return species;
     }
 

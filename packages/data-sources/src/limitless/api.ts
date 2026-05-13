@@ -144,13 +144,13 @@ export async function fetchTournamentList(
             `[limitless] Page ${p} fetch failed:`,
             err instanceof Error ? err.message : err
           );
-          return null;
+          throw err;
         })
       )
     );
 
     for (const batch of results) {
-      if (!batch || batch.length === 0) return all;
+      if (batch.length === 0) return all;
       all.push(...batch.filter((t) => t.game === "VGC"));
       if (batch.length < 500) return all;
     }

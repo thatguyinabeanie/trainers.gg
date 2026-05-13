@@ -41,16 +41,30 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // Helpers
 // =============================================================================
 
+function parsePositiveInt(value: string, label: string): number {
+  if (!/^\d+$/.test(value)) {
+    throw new Error(`${label} must be a positive integer`);
+  }
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`${label} must be a positive integer`);
+  }
+  return parsed;
+}
+
 async function checkCronGuard(
   supabase: SupabaseClient,
   key: string,
   force: boolean
 ): Promise<void> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("site_config")
     .select("value")
     .eq("key", key)
     .maybeSingle();
+  if (error) {
+    throw new Error(`Failed to read cron guard ${key}: ${error.message}`);
+  }
   const enabled = data?.value === true || data?.value === "true";
   if (enabled && !force) {
     console.error(
@@ -130,7 +144,7 @@ rk9
 
         console.log(`\nScraping ${eventId}...`);
         const { roster } = await scrapeRoster(eventId, dateStart);
-        await scrapeTeams(eventId, roster, parseInt(opts.concurrency, 10));
+        await scrapeTeams(eventId, roster, parsePositiveInt(opts.concurrency, "--concurrency"));
         await scrapeMatches(eventId);
         console.log(`\nDone scraping ${eventId}`);
 
@@ -381,8 +395,8 @@ rk9
         // Upsert all discovered events first
         await syncEvents(supabase, events);
 
-        const teamConcurrency = parseInt(opts.concurrency, 10);
-        const eventConcurrency = parseInt(opts.eventConcurrency, 10);
+        const teamConcurrency = parsePositiveInt(opts.concurrency, "--concurrency");
+        const eventConcurrency = parsePositiveInt(opts.eventConcurrency, "--event-concurrency");
 
         // Pool pattern: N event workers share a queue index.
         // Each picks the next event, processes it fully, then picks the next.
@@ -736,7 +750,7 @@ limitless
             : `\n${toImport.length} tournaments to scrape+import${filterDesc} (${imported.size} already done)`
         );
 
-        const eventConcurrency = parseInt(opts.eventConcurrency, 10);
+        const eventConcurrency = parsePositiveInt(opts.eventConcurrency, "--event-concurrency");
         let nextIdx = 0;
 
         async function processTournament(): Promise<void> {
@@ -819,15 +833,22 @@ crons
   .description("Set both auto-import flags to false (safe to run CLI)")
   .action(async () => {
     const supabase = createAdminClient();
+    const { error, count } = await supabase
+      .from("site_config")
+      .update({ value: false })
+      .in("key", [...CRON_KEYS])
+      .select("key", { count: "exact", head: true });
+    if (error) {
+      console.error(`Failed to disable crons: ${error.message}`);
+      process.exit(1);
+    }
+    if (count !== null && count < CRON_KEYS.length) {
+      console.error(
+        `Expected ${CRON_KEYS.length} rows but only ${count} were updated — some cron keys may be missing`
+      );
+      process.exit(1);
+    }
     for (const key of CRON_KEYS) {
-      const { error } = await supabase
-        .from("site_config")
-        .update({ value: false })
-        .eq("key", key);
-      if (error) {
-        console.error(`Failed to update ${key}: ${error.message}`);
-        process.exit(1);
-      }
       console.log(`  ${key} → false`);
     }
     console.log(
@@ -840,15 +861,22 @@ crons
   .description("Re-enable both auto-import flags")
   .action(async () => {
     const supabase = createAdminClient();
+    const { error, count } = await supabase
+      .from("site_config")
+      .update({ value: true })
+      .in("key", [...CRON_KEYS])
+      .select("key", { count: "exact", head: true });
+    if (error) {
+      console.error(`Failed to enable crons: ${error.message}`);
+      process.exit(1);
+    }
+    if (count !== null && count < CRON_KEYS.length) {
+      console.error(
+        `Expected ${CRON_KEYS.length} rows but only ${count} were updated — some cron keys may be missing`
+      );
+      process.exit(1);
+    }
     for (const key of CRON_KEYS) {
-      const { error } = await supabase
-        .from("site_config")
-        .update({ value: true })
-        .eq("key", key);
-      if (error) {
-        console.error(`Failed to update ${key}: ${error.message}`);
-        process.exit(1);
-      }
       console.log(`  ${key} → true`);
     }
     console.log("\nCrons re-enabled.");

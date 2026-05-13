@@ -3,10 +3,10 @@ import type {
   RK9Event,
   RK9RosterEntry,
   RK9Pokemon,
-  PairingsEntry,
   RK9EventTier,
   RK9Division,
-} from "./types.js";
+} from "@trainers/data-sources";
+import type { PairingsEntry } from "./import.js";
 
 // =============================================================================
 // Events page parser (/events/pokemon)

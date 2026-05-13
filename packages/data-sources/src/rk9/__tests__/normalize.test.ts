@@ -35,6 +35,7 @@ describe("normalizeSpecies", () => {
     expect(normalizeSpecies("Ogerpon [Wellspring Mask]")).toBe("ogerpon-wellspring");
     expect(normalizeSpecies("Ogerpon [Cornerstone Mask]")).toBe("ogerpon-cornerstone");
     expect(normalizeSpecies("Ogerpon [Teal Mask]")).toBe("ogerpon");
+    expect(normalizeSpecies("Basculegion [Female]")).toBe("basculegion-f");
   });
 
   it("handles pathological input without hanging", () => {

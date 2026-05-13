@@ -197,9 +197,8 @@ function normalizeLimitlessStatus(status: string | null): string {
     case "completed":
       return "complete";
     case "queued":
-      return "queued";
     case "importing":
-      return "importing";
+      return "in-progress";
     case "failed":
       return "failed";
     default:
@@ -425,36 +424,46 @@ export function ExternalData() {
   async function handleRk9TeamsPerTickChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
-    setRk9TeamsPerTick(num);
-    await setSiteConfig("rk9_max_teams_per_tick", num);
+    const result = await setSiteConfig("rk9_max_teams_per_tick", num);
+    if (result.success) {
+      setRk9TeamsPerTick(num);
+    }
   }
 
   async function handleRk9TeamConcurrencyChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
-    setRk9TeamConcurrency(num);
-    await setSiteConfig("rk9_team_concurrency", num);
+    const result = await setSiteConfig("rk9_team_concurrency", num);
+    if (result.success) {
+      setRk9TeamConcurrency(num);
+    }
   }
 
   async function handleRk9CronIntervalChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
-    setRk9CronInterval(num);
-    await setSiteConfig("rk9_cron_interval_seconds", num);
+    const result = await setSiteConfig("rk9_cron_interval_seconds", num);
+    if (result.success) {
+      setRk9CronInterval(num);
+    }
   }
 
   async function handleLimitlessCronIntervalChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
-    setLimitlessCronInterval(num);
-    await setSiteConfig("limitless_cron_interval_seconds", num);
+    const result = await setSiteConfig("limitless_cron_interval_seconds", num);
+    if (result.success) {
+      setLimitlessCronInterval(num);
+    }
   }
 
   async function handleLimitlessBatchSizeChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
-    setLimitlessBatchSize(num);
-    await setSiteConfig("limitless_batch_size", num);
+    const result = await setSiteConfig("limitless_batch_size", num);
+    if (result.success) {
+      setLimitlessBatchSize(num);
+    }
   }
 
   // -------------------------------------------------------------------------
