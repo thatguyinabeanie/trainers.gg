@@ -22,7 +22,7 @@ import type {
   RK9RosterEntry,
 } from "./types";
 
-import { normalizeSpecies, collectUniqueSpecies } from "./normalize";
+import { normalizeSpecies } from "./normalize";
 
 export { collectUniqueSpecies } from "./normalize";
 
