@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -29,17 +29,11 @@ import {
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { AbilityCell } from "./ability-cell";
 import { RolePresetsPanel } from "./role-presets-panel";
-import {
-  getRolesForMove,
-  getRolesForSpecies,
-  ROLE_PRESETS,
-  type RoleId,
-} from "./role-registry";
+import { getRolesForMove, getRolesForSpecies, type RoleId } from "./role-registry";
 import {
   DEFAULT_SPECIES_FILTERS,
   type SpeciesFilterState,
@@ -48,7 +42,6 @@ import { SpeciesSidebar } from "./species-sidebar";
 import { SpeciesSmartSearch } from "./species-smart-search";
 import { SpeciesExpandedPanel } from "./species-expanded-panel";
 import { STAT_HEADER_COLORS } from "./stat-header-colors";
-import { SpeciesFilterSheet } from "./species-filter-sheet";
 
 // =============================================================================
 // Constants
@@ -57,11 +50,6 @@ import { SpeciesFilterSheet } from "./species-filter-sheet";
 /** Stat threshold for the "high stat" highlight (matches the spec's 110+). */
 const HIGH_STAT_THRESHOLD = 110;
 
-// Map from RoleId → display label for mobile filter chips.
-// RoleIds are kebab-case ("trick-room") but labels are title-case ("Trick Room").
-const ROLE_LABEL_BY_ID = new Map(
-  ROLE_PRESETS.map((preset) => [preset.id, preset.label])
-);
 
 /**
  * Shared Tailwind grid template for each data row.
@@ -670,8 +658,6 @@ export function SpeciesPicker({
 
   // Sidebar collapsed state
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
-  const isMobile = useIsMobile();
 
   // Scroll container ref for the virtualizer
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -869,16 +855,6 @@ export function SpeciesPicker({
     return () => observer.disconnect();
   }, [showSmartSearch, query]);
 
-  // Close the desktop sidebar before first browser paint on mobile so users
-  // never see the 340px panel squash the Pokémon list. useLayoutEffect fires
-  // synchronously after DOM mutations but before paint. setState in useLayoutEffect
-  // is the approved pattern for pre-paint state correction (see react-patterns.md).
-  useLayoutEffect(() => {
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
-  }, []);
-
   const rowVirtualizer = useVirtualizer({
     count: matched.length,
     getScrollElement: () => scrollRef.current,
@@ -921,148 +897,36 @@ export function SpeciesPicker({
           data-testid="species-search"
           className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
         />
-        {/* Fixed-width slot reserves space for the filter badge/button so the
-            search input does not shrink when filters become active (no layout shift). */}
+        {/* Fixed-width slot reserves space for the filter badge so the search
+            input does not shrink when filters become active (no layout shift). */}
         <div className="flex w-[88px] shrink-0 items-center justify-end">
-          {isMobile ? (
+          {activeFilterCount > 0 && (
             <button
               type="button"
-              onClick={() => setFilterSheetOpen(true)}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
-                activeFilterCount > 0
-                  ? "bg-primary/5 border-primary/30 text-primary hover:bg-primary/10"
-                  : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-              aria-label={`Open filters${activeFilterCount > 0 ? `, ${activeFilterCount} active` : ""}`}
+              onClick={clearAllFilters}
+              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
+              aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
             >
-              <Filter className="size-3" />
-              {activeFilterCount > 0 ? (
-                <>
-                  Filters{" "}
-                  <span className="bg-primary text-primary-foreground rounded-sm px-1 text-[9px]">
-                    {activeFilterCount}
-                  </span>
-                </>
-              ) : (
-                "Filters"
-              )}
+              {activeFilterCount}{" "}
+              {activeFilterCount === 1 ? "filter" : "filters"}
+              <span aria-hidden="true" className="text-[10px] opacity-70">
+                ×
+              </span>
             </button>
-          ) : (
-            activeFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={clearAllFilters}
-                className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
-                aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
-              >
-                {activeFilterCount}{" "}
-                {activeFilterCount === 1 ? "filter" : "filters"}
-                <span aria-hidden="true" className="text-[10px] opacity-70">
-                  ×
-                </span>
-              </button>
-            )
           )}
         </div>
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-          {isMobile
-            ? `${matched.length}/${speciesIndex.length}`
-            : `${matched.length} of ${speciesIndex.length}`}
+          {matched.length} of {speciesIndex.length}
         </span>
       </div>
-
-      {/* Active filter chips — mobile only, hidden when 0 active filters */}
-      {isMobile && activeFilterCount > 0 && (
-        <div className="border-border flex gap-1.5 overflow-x-auto border-b px-3 py-1.5 [scrollbar-width:none]">
-          {filters.types.map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() =>
-                setFilters((prev) => ({
-                  ...prev,
-                  types: prev.types.filter((t) => t !== type),
-                }))
-              }
-              className="bg-primary/5 border-primary/30 text-primary flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
-            >
-              <TypeSymbolIcon type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]} className="size-3" />
-              {type}
-              <span aria-hidden="true" className="opacity-60">
-                ×
-              </span>
-            </button>
-          ))}
-          {filters.ability && (
-            <button
-              type="button"
-              onClick={() => setFilters((prev) => ({ ...prev, ability: null }))}
-              className="bg-primary/5 border-primary/30 text-primary flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
-            >
-              {filters.ability}
-              <span aria-hidden="true" className="opacity-60">
-                ×
-              </span>
-            </button>
-          )}
-          {filters.moves.map((move) => (
-            <button
-              key={move}
-              type="button"
-              onClick={() =>
-                setFilters((prev) => ({
-                  ...prev,
-                  moves: prev.moves.filter((m) => m !== move),
-                }))
-              }
-              className="bg-primary/5 border-primary/30 text-primary flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
-            >
-              {move}
-              <span aria-hidden="true" className="opacity-60">
-                ×
-              </span>
-            </button>
-          ))}
-          {filters.roles.map((roleId) => (
-            <button
-              key={roleId}
-              type="button"
-              onClick={() =>
-                setFilters((prev) => ({
-                  ...prev,
-                  roles: prev.roles.filter((r) => r !== roleId),
-                }))
-              }
-              className="bg-primary/5 border-primary/30 text-primary flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
-            >
-              {ROLE_LABEL_BY_ID.get(roleId) ?? roleId}
-              <span aria-hidden="true" className="opacity-60">
-                ×
-              </span>
-            </button>
-          ))}
-          {filters.megaOnly && (
-            <button
-              type="button"
-              onClick={() => setFilters((prev) => ({ ...prev, megaOnly: false }))}
-              className="bg-primary/5 border-primary/30 text-primary flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
-            >
-              Mega only
-              <span aria-hidden="true" className="opacity-60">
-                ×
-              </span>
-            </button>
-          )}
-        </div>
-      )}
 
       {/* -------------------------------------------------------------------- */}
       {/* 3-column body                                                          */}
       {/* -------------------------------------------------------------------- */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Left rail — desktop only. Mobile uses SpeciesFilterSheet instead. */}
-        {!isMobile && (
+        {/* Left rail — collapsible sidebar with smooth transition.
+            Expanded: full filter panel (sidebar + roles + clear).
+            Collapsed: thin icon strip with filter indicators. */}
         <div
           className={cn(
             "border-border flex flex-shrink-0 flex-col border-r transition-[width] duration-200 ease-in-out",
@@ -1125,7 +989,6 @@ export function SpeciesPicker({
             />
           )}
         </div>
-        )}
 
         {/* Right — table (always rendered, filtered by query). When the
             query is non-empty the SpeciesSmartSearch panel renders above
@@ -1289,21 +1152,6 @@ export function SpeciesPicker({
           </div>
         </div>
       </div>
-
-      {/* Mobile-only filter bottom sheet — full-viewport-width via SheetPortal */}
-      {isMobile && (
-        <SpeciesFilterSheet
-          open={filterSheetOpen}
-          onOpenChange={setFilterSheetOpen}
-          filters={filters}
-          onFiltersChange={setFilters}
-          format={format}
-          currentTeam={currentTeam ?? []}
-          bucketCount={bucketCount}
-          matchedCount={matched.length}
-          onClearAll={clearAllFilters}
-        />
-      )}
     </div>
   );
 }
