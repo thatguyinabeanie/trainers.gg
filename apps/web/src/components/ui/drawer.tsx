@@ -45,14 +45,17 @@ function DrawerOverlay({
   );
 }
 
+interface DrawerContentProps
+  extends React.ComponentProps<typeof DrawerPrimitive.Content> {
+  showHandle?: boolean;
+}
+
 function DrawerContent({
   className,
   children,
   showHandle = true,
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Content> & {
-  showHandle?: boolean;
-}) {
+}: DrawerContentProps) {
   return (
     <DrawerPortal data-slot="drawer-portal">
       <DrawerOverlay />

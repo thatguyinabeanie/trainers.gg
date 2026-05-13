@@ -134,7 +134,7 @@ export function SpeciesPickerMobile({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         showHandle={false}
-        className="h-[95dvh] overflow-hidden rounded-t-[20px] p-0"
+        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-[20px] p-0"
       >
         <DrawerTitle className="sr-only">
           {view === "list" ? "Choose species" : "Filters"}
