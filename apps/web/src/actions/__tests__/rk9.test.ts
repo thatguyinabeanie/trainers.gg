@@ -37,7 +37,8 @@ jest.mock("@/lib/rk9/scraper", () => ({
   formatDetectionNeedsHtml: jest.fn().mockReturnValue(true),
 }));
 
-jest.mock("@/lib/rk9/import", () => ({
+jest.mock("@/lib/rk9/index", () => ({
+  ...jest.requireActual("@/lib/rk9/index"),
   syncEvents: jest.fn(),
   importEvent: jest.fn(),
   seedSpeciesMap: jest.fn(),

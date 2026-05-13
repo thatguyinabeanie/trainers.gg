@@ -2,10 +2,8 @@
  * @jest-environment node
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RK9Pokemon } from "../types";
-
-import { normalizeSpecies, collectUniqueSpecies, syncEvents } from "../import";
+import { normalizeSpecies, collectUniqueSpecies } from "../normalize";
 
 describe("normalizeSpecies", () => {
   it("normalizes basic species names", () => {
@@ -32,46 +30,43 @@ describe("normalizeSpecies", () => {
     expect(normalizeSpecies("Ninetales [Alolan Form]")).toBe("ninetales-alola");
     expect(normalizeSpecies("Weezing [Galarian Form]")).toBe("weezing-galar");
   });
+
+  it.each([
+    ["Ogerpon [Wellspring Mask]", "ogerpon-wellspring"],
+    ["Ogerpon [Cornerstone Mask]", "ogerpon-cornerstone"],
+    ["Ogerpon [Teal Mask]", "ogerpon"],
+    ["Basculegion [Female]", "basculegion-f"],
+  ])('normalizeSpecies("%s") → "%s"', (input, expected) => {
+    expect(normalizeSpecies(input)).toBe(expected);
+  });
+
+  it("handles pathological input without hanging", () => {
+    const longSpaces = "A" + " ".repeat(1000);
+    expect(normalizeSpecies(longSpaces)).toBe("a");
+    expect(normalizeSpecies(longSpaces + "[B]")).toBe("a-b");
+  });
 });
 
 describe("collectUniqueSpecies", () => {
   it("collects unique species from teams", () => {
-    const teams = {
+    const teams: Record<string, RK9Pokemon[]> = {
       entry1: [
-        { speciesRaw: "Pikachu", ability: "Static", heldItem: null, teraType: null, moves: [] },
-        { speciesRaw: "Charizard", ability: "Blaze", heldItem: null, teraType: null, moves: [] },
+        { speciesRaw: "Pikachu", ability: "Static", heldItem: "", teraType: null, moves: [] },
+        { speciesRaw: "Charizard", ability: "Blaze", heldItem: "", teraType: null, moves: [] },
       ],
       entry2: [
-        { speciesRaw: "Pikachu", ability: "Lightning Rod", heldItem: null, teraType: null, moves: [] },
+        { speciesRaw: "Pikachu", ability: "Lightning Rod", heldItem: "", teraType: null, moves: [] },
       ],
     };
 
-    const result = collectUniqueSpecies(teams as unknown as Record<string, RK9Pokemon[]>);
+    const result = collectUniqueSpecies(teams);
 
     expect(result.size).toBe(2);
     expect(result.get("Pikachu")).toBe("pikachu");
     expect(result.get("Charizard")).toBe("charizard");
   });
-});
 
-describe("syncEvents", () => {
-  it("upserts events", async () => {
-    const upsert = jest.fn().mockResolvedValue({ error: null });
-
-    const supabase = {
-      schema: () => ({
-        from: () => ({ upsert }),
-      }),
-    } as unknown as SupabaseClient;
-
-    const result = await syncEvents(supabase, [
-      { eventId: "e1", name: "Event 1", tier: "Regional", dateStart: "2024-01-01", dateEnd: "2024-01-02", locationCity: null, locationCountry: null },
-    ]);
-
-    expect(result.synced).toBe(1);
-    expect(upsert).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ event_id: "e1" })]),
-      { onConflict: "event_id" },
-    );
+  it("returns empty map for empty input", () => {
+    expect(collectUniqueSpecies({})).toEqual(new Map());
   });
 });

@@ -12,8 +12,8 @@ import {
   detectEventFormat,
   formatDetectionNeedsHtml,
 } from "@/lib/rk9/scraper";
-import { syncEvents, importEvent, seedSpeciesMap } from "@/lib/rk9/import";
-import type { RK9Event } from "@/lib/rk9/types";
+import { syncEvents, importEvent, seedSpeciesMap } from "@/lib/rk9";
+import type { RK9Event } from "@/lib/rk9";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -488,7 +488,18 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
     const batch = remaining.slice(0, TEAMS_BATCH_SIZE);
     let batchScraped = 0;
     let batchFailed = 0;
+    let standingsWithDataCount = 0;
     const newSpecies = new Map<string, string>();
+    const allTeamRows: {
+      standing_id: number;
+      position: number;
+      species: string;
+      species_raw: string;
+      ability: string | null;
+      held_item: string | null;
+      tera_type: string | null;
+      moves: string[] | null;
+    }[] = [];
 
     for (const standing of batch) {
       const entryId = standing.roster_entry_id;
@@ -527,19 +538,33 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
             };
           });
 
-          const { error: pkErr } = await supabase
-            .schema("rk9")
-            .from("team_pokemon")
-            .insert(pokemonRows);
-
-          if (!pkErr) batchScraped++;
-          else batchFailed++;
-        } else {
-          batchScraped++;
+          allTeamRows.push(...pokemonRows);
         }
+        standingsWithDataCount++;
       } catch {
         batchFailed++;
       }
+    }
+
+    // Bulk-insert all collected team pokemon rows
+    let insertOk = true;
+    if (allTeamRows.length > 0) {
+      const BULK_CHUNK = 200;
+      for (let i = 0; i < allTeamRows.length; i += BULK_CHUNK) {
+        const chunk = allTeamRows.slice(i, i + BULK_CHUNK);
+        const { error } = await supabase
+          .schema("rk9")
+          .from("team_pokemon")
+          .insert(chunk);
+        if (error) {
+          console.error(`Team pokemon bulk insert chunk failed: ${error.message}`);
+          batchFailed++;
+          insertOk = false;
+        }
+      }
+    }
+    if (insertOk) {
+      batchScraped += standingsWithDataCount;
     }
 
     // Seed new species

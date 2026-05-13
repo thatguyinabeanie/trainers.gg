@@ -1,10 +1,23 @@
-/**
- * RK9 Module
- *
- * Scraper and import utilities for official Play! Pokemon tournament data
- * from RK9.gg (Regionals, Internationals, Specials, Worlds).
- */
+export type {
+  RK9EventTier,
+  RK9Division,
+  RK9Event,
+  RK9RosterEntry,
+  RK9Pokemon,
+  RK9TeamSheet,
+  DownloadStatus,
+  EventsManifest,
+  EventDownloadState,
+  ImportEventResult,
+  SyncEventsResult,
+} from "@trainers/data-sources";
 
-export * from "./types";
+export {
+  normalizeSpecies,
+  collectUniqueSpecies,
+  syncEvents,
+  importEvent,
+  seedSpeciesMap,
+} from "@trainers/data-sources";
+
 export * from "./scraper";
-export * from "./import";
