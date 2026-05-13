@@ -33,14 +33,14 @@ export async function importMatchResults(
 ): Promise<{ matches: number; rounds: number }> {
   if (divisionPairings.length === 0) return { matches: 0, rounds: 0 };
 
-  // Delete any existing match data so reruns (--force) don't hit duplicate keys
+  // Delete existing phase data so reruns (--force) don't hit duplicate keys
+  // match_results has ON DELETE CASCADE from phases, so deleting phases is sufficient
   // Note: This delete + subsequent insert is not truly atomic. If the
   // insert fails partway through, the old data will have been deleted
   // but new data only partially written. A proper fix would use a DB
   // transaction or an RPC call to wrap both operations atomically.
-  const { error: del1Err } = await supabase.schema("rk9").from("match_results").delete().eq("event_id", eventId);
-  if (del1Err) throw new Error(`Delete match_results: ${del1Err.message}`);
-  const { error: del2Err } = await supabase.schema("rk9").from("phases").delete().eq("event_id", eventId);
+  const { error: delErr } = await supabase.schema("rk9").from("phases").delete().eq("event_id", eventId);
+  if (delErr) throw new Error(`Delete phases: ${delErr.message}`);
   if (del2Err) throw new Error(`Delete phases: ${del2Err.message}`);
 
   let totalMatches = 0;

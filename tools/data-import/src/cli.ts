@@ -737,10 +737,9 @@ limitless
           }
         }
 
-        // Step 1: Sync tournament list
+        // Step 1: Sync tournament list (syncTournamentList already fetches from API)
         console.log("\nSyncing tournament list...");
-        await syncTournamentList(supabase, apiKey);
-        const tournaments = await syncTournaments(apiKey);
+        const { tournaments } = await syncTournamentList(supabase, apiKey);
 
         // Step 2: Find unimported tournaments with known format mappings
         const { data: alreadyImported, error: alreadyImportedErr } = await supabase

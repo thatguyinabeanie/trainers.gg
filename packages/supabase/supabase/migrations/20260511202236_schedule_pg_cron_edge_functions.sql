@@ -1,10 +1,8 @@
 -- =============================================================================
--- pg_cron schedules for edge function invocation
+-- pg_cron unschedules — removes previously scheduled edge function jobs
 --
--- Replaces Vercel cron jobs for:
---   - limitless-sync (every 5 min)
---   - limitless-import queue processor (every 15 min)
---   - rk9-worker (every 5 min)
+-- The cron-based import pipeline has been replaced by manual CLI tooling.
+-- This migration cleans up the old schedules.
 --
 -- Uses:
 --   - pg_cron for scheduling
