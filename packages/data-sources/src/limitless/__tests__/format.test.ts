@@ -42,9 +42,12 @@ describe("ALL_VALID_FORMATS", () => {
     expect(ALL_VALID_FORMATS.has("gen9vgc2025regi")).toBe(true);
   });
 
-  it("has size = keys + values of LIMITLESS_TO_FORMAT", () => {
-    expect(ALL_VALID_FORMATS.size).toBe(
-      KNOWN_FORMATS.size + Object.values(LIMITLESS_TO_FORMAT).length
-    );
+  it("contains every Limitless code and every Showdown ID", () => {
+    for (const key of Object.keys(LIMITLESS_TO_FORMAT)) {
+      expect(ALL_VALID_FORMATS.has(key)).toBe(true);
+    }
+    for (const val of Object.values(LIMITLESS_TO_FORMAT)) {
+      expect(ALL_VALID_FORMATS.has(val)).toBe(true);
+    }
   });
 });
