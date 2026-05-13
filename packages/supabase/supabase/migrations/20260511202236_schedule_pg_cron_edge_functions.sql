@@ -29,7 +29,7 @@ BEGIN
   CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
   GRANT USAGE ON SCHEMA cron TO postgres;
   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron TO postgres;
-EXCEPTION WHEN undefined_table THEN
+EXCEPTION WHEN OTHERS THEN
   RAISE NOTICE 'pg_cron not available (expected in local dev) — skipping cron setup';
 END $$;
 

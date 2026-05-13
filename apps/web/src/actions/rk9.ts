@@ -488,6 +488,7 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
     const batch = remaining.slice(0, TEAMS_BATCH_SIZE);
     let batchScraped = 0;
     let batchFailed = 0;
+    let standingsWithDataCount = 0;
     const newSpecies = new Map<string, string>();
     const allTeamRows: {
       standing_id: number;
@@ -538,16 +539,15 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
           });
 
           allTeamRows.push(...pokemonRows);
-          batchScraped++;
-        } else {
-          batchScraped++;
         }
+        standingsWithDataCount++;
       } catch {
         batchFailed++;
       }
     }
 
     // Bulk-insert all collected team pokemon rows
+    let insertOk = true;
     if (allTeamRows.length > 0) {
       const BULK_CHUNK = 200;
       for (let i = 0; i < allTeamRows.length; i += BULK_CHUNK) {
@@ -559,8 +559,12 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
         if (error) {
           console.error(`Team pokemon bulk insert chunk failed: ${error.message}`);
           batchFailed++;
+          insertOk = false;
         }
       }
+    }
+    if (insertOk) {
+      batchScraped += standingsWithDataCount;
     }
 
     // Seed new species
