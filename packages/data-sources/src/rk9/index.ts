@@ -10,4 +10,7 @@ export type {
   EventDownloadState,
 } from "./types";
 
-export { normalizeSpecies, collectUniqueSpecies } from "./normalize";
+export { normalizeSpecies } from "./normalize";
+
+export type { ImportEventResult, SyncEventsResult } from "./import";
+export { syncEvents, importEvent, seedSpeciesMap, collectUniqueSpecies } from "./import";
