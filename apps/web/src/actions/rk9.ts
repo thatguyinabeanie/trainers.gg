@@ -12,8 +12,8 @@ import {
   detectEventFormat,
   formatDetectionNeedsHtml,
 } from "@/lib/rk9/scraper";
-import { syncEvents, importEvent, seedSpeciesMap } from "@/lib/rk9/import";
-import type { RK9Event } from "@/lib/rk9/types";
+import { syncEvents, importEvent, seedSpeciesMap } from "@/lib/rk9";
+import type { RK9Event } from "@/lib/rk9";
 
 // ---------------------------------------------------------------------------
 // Constants

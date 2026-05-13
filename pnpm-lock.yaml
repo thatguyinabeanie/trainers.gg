@@ -512,6 +512,9 @@ importers:
       '@trainers/atproto':
         specifier: workspace:*
         version: link:../../packages/atproto
+      '@trainers/data-sources':
+        specifier: workspace:*
+        version: link:../../packages/data-sources
       '@trainers/pokemon':
         specifier: workspace:*
         version: link:../../packages/pokemon
@@ -804,12 +807,15 @@ importers:
       '@types/jest':
         specifier: catalog:testing
         version: 29.5.14
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.19.17
       eslint:
         specifier: 'catalog:'
         version: 9.39.4(jiti@2.6.1)
       jest:
         specifier: catalog:testing
-        version: 29.7.0(@types/node@25.6.2)(ts-node@10.9.2(@swc/core@1.15.3)(@types/node@25.6.2)(typescript@5.9.3))
+        version: 29.7.0(@types/node@22.19.17)(ts-node@10.9.2(@swc/core@1.15.3)(@types/node@22.19.17)(typescript@5.9.3))
       jest-junit:
         specifier: catalog:testing
         version: 16.0.0
@@ -818,10 +824,10 @@ importers:
         version: 3.8.3
       ts-jest:
         specifier: catalog:testing
-        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(jest-util@29.7.0)(jest@29.7.0(@types/node@25.6.2)(ts-node@10.9.2(@swc/core@1.15.3)(@types/node@25.6.2)(typescript@5.9.3)))(typescript@5.9.3)
+        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.0))(esbuild@0.27.7)(jest-util@29.7.0)(jest@29.7.0(@types/node@22.19.17)(ts-node@10.9.2(@swc/core@1.15.3)(@types/node@22.19.17)(typescript@5.9.3)))(typescript@5.9.3)
       ts-node:
         specifier: catalog:testing
-        version: 10.9.2(@swc/core@1.15.3)(@types/node@25.6.2)(typescript@5.9.3)
+        version: 10.9.2(@swc/core@1.15.3)(@types/node@22.19.17)(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -19732,7 +19738,7 @@ snapshots:
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
       '@types/jsdom': 20.0.1
-      '@types/node': 22.19.17
+      '@types/node': 25.6.2
       jest-mock: 29.7.0
       jest-util: 29.7.0
       jsdom: 20.0.3
