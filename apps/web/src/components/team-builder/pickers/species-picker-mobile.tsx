@@ -130,7 +130,7 @@ export function SpeciesPickerMobile({
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="flex h-[95vh] flex-col gap-0 rounded-t-[20px] p-0"
+        className="flex max-h-[95vh] flex-col gap-0 overflow-hidden rounded-t-[20px] p-0"
       >
         <SheetTitle className="sr-only">
           {view === "list" ? "Choose species" : "Filters"}
@@ -142,6 +142,8 @@ export function SpeciesPickerMobile({
           className="mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full bg-muted-foreground/20"
         />
 
+        {/* Bounded container — gives ListView/FiltersView a fixed height to flex within */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {view === "list" ? (
           <ListView
             query={query}
@@ -167,6 +169,7 @@ export function SpeciesPickerMobile({
             onClearAll={clearAllFilters}
           />
         )}
+        </div>
       </SheetContent>
     </Sheet>
   );
