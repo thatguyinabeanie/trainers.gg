@@ -49,7 +49,7 @@ export function parseEventsPage(html: string): RK9Event[] {
       const name = $cells.eq(2).find("a").first().text().trim();
       const locationRaw = $cells.eq(3).text().trim();
 
-      const locationParts = locationRaw.split(",").map((s) => s.trim());
+      const locationParts = locationRaw.split(",").slice(0, 2).map((s) => s.trim());
       const locationCity = locationParts[0] ?? "";
       const locationCountry = locationParts[1] ?? "";
 

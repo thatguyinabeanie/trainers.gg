@@ -337,7 +337,7 @@ export function ExternalData() {
   const [queuingIds, setQueuingIds] = useState<Set<string>>(new Set());
   const [batchQueuing, setBatchQueuing] = useState(false);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // -------------------------------------------------------------------------
   // Load auto-import settings from DB (per-source)
@@ -429,70 +429,80 @@ export function ExternalData() {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setRk9TeamsPerTick(num);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    const key = "rk9_max_teams_per_tick";
+    const existing = debounceRefs.current.get(key);
+    if (existing) clearTimeout(existing);
+    debounceRefs.current.set(key, setTimeout(async () => {
       const result = await setSiteConfig("rk9_max_teams_per_tick", num);
       if (!result.success) {
         const original = await getSiteConfig<number>("rk9_max_teams_per_tick");
         if (original.success && original.data !== null) setRk9TeamsPerTick(original.data);
       }
-    }, 500);
+    }, 500));
   }
 
   async function handleRk9TeamConcurrencyChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setRk9TeamConcurrency(num);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    const key = "rk9_team_concurrency";
+    const existing = debounceRefs.current.get(key);
+    if (existing) clearTimeout(existing);
+    debounceRefs.current.set(key, setTimeout(async () => {
       const result = await setSiteConfig("rk9_team_concurrency", num);
       if (!result.success) {
         const original = await getSiteConfig<number>("rk9_team_concurrency");
         if (original.success && original.data !== null) setRk9TeamConcurrency(original.data);
       }
-    }, 500);
+    }, 500));
   }
 
   async function handleRk9CronIntervalChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setRk9CronInterval(num);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    const key = "rk9_cron_interval_seconds";
+    const existing = debounceRefs.current.get(key);
+    if (existing) clearTimeout(existing);
+    debounceRefs.current.set(key, setTimeout(async () => {
       const result = await setSiteConfig("rk9_cron_interval_seconds", num);
       if (!result.success) {
         const original = await getSiteConfig<number>("rk9_cron_interval_seconds");
         if (original.success && original.data !== null) setRk9CronInterval(original.data);
       }
-    }, 500);
+    }, 500));
   }
 
   async function handleLimitlessCronIntervalChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setLimitlessCronInterval(num);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    const key = "limitless_cron_interval_seconds";
+    const existing = debounceRefs.current.get(key);
+    if (existing) clearTimeout(existing);
+    debounceRefs.current.set(key, setTimeout(async () => {
       const result = await setSiteConfig("limitless_cron_interval_seconds", num);
       if (!result.success) {
         const original = await getSiteConfig<number>("limitless_cron_interval_seconds");
         if (original.success && original.data !== null) setLimitlessCronInterval(original.data);
       }
-    }, 500);
+    }, 500));
   }
 
   async function handleLimitlessBatchSizeChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setLimitlessBatchSize(num);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    const key = "limitless_batch_size";
+    const existing = debounceRefs.current.get(key);
+    if (existing) clearTimeout(existing);
+    debounceRefs.current.set(key, setTimeout(async () => {
       const result = await setSiteConfig("limitless_batch_size", num);
       if (!result.success) {
         const original = await getSiteConfig<number>("limitless_batch_size");
         if (original.success && original.data !== null) setLimitlessBatchSize(original.data);
       }
-    }, 500);
+    }, 500));
   }
 
   // -------------------------------------------------------------------------

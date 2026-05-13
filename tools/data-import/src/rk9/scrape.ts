@@ -227,8 +227,10 @@ export async function scrapeMatches(
         html = await fetchRk9Html(
           `/pairings/${eventId}?pod=${divInfo.podId}&rnd=${round}`
         );
-      } catch {
-        throw new Error(`Failed to fetch pairings for division ${divInfo.division}, round ${round}`);
+      } catch (err) {
+        throw new Error(
+          `Failed to fetch round ${round}: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
       const pairings = parsePairingsFragment(html);
       if (pairings.length === 0) break;

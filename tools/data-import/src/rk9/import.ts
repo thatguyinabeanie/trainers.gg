@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { RK9Pokemon } from "@trainers/data-sources";
 
 // =============================================================================
 // CLI-specific types (match scraping/pairings)

@@ -71,45 +71,30 @@ END $$;
 
 DO $$
 BEGIN
-  -- Limitless sync: every 5 minutes
-  PERFORM cron.unschedule('limitless-sync');
-  PERFORM cron.schedule(
-    'limitless-sync',
-    '*/5 * * * *',
-    $cmd$SELECT net.http_post(
-      url:=(SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='project_url')||'/functions/v1/limitless-import',
-      headers:=jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||(SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='service_role_key')),
-      body:='{"action":"sync"}'::jsonb
-    );$cmd$
-  );
+  BEGIN
+    PERFORM cron.unschedule('limitless-sync');
+    RAISE NOTICE 'limitless-sync unscheduled (job removed)';
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'limitless-sync unschedule skipped: %', SQLERRM;
+  END;
 
-  -- Limitless import queue: every 5 minutes, process 20 tournaments per tick
-  PERFORM cron.unschedule('limitless-import-queue');
-  PERFORM cron.schedule(
-    'limitless-import-queue',
-    '*/5 * * * *',
-    $cmd$SELECT net.http_post(
-      url:=(SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='project_url')||'/functions/v1/limitless-import',
-      headers:=jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||(SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='service_role_key')),
-      body:='{"action":"process-queue","batchSize":20}'::jsonb
-    );$cmd$
-  );
+  BEGIN
+    PERFORM cron.unschedule('limitless-import-queue');
+    RAISE NOTICE 'limitless-import-queue unscheduled (job removed)';
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'limitless-import-queue unschedule skipped: %', SQLERRM;
+  END;
 
-  -- RK9 worker: every 1 minute, process up to 100 teams per tick
-  PERFORM cron.unschedule('rk9-worker');
-  PERFORM cron.schedule(
-    'rk9-worker',
-    '*/1 * * * *',
-    $cmd$SELECT net.http_post(
-      url:=(SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='project_url')||'/functions/v1/rk9-worker',
-      headers:=jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||(SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='service_role_key')),
-      body:='{"maxTeams":100}'::jsonb
-    );$cmd$
-  );
+  BEGIN
+    PERFORM cron.unschedule('rk9-worker');
+    RAISE NOTICE 'rk9-worker unscheduled (job removed)';
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'rk9-worker unschedule skipped: %', SQLERRM;
+  END;
 
-  RAISE NOTICE 'pg_cron jobs scheduled successfully';
+  RAISE NOTICE 'pg_cron job cleanup complete — limitless-import and rk9-worker edge functions have been removed';
 EXCEPTION WHEN undefined_table THEN
-  RAISE NOTICE 'pg_cron not available (expected in local dev) — cron jobs not scheduled';
+  RAISE NOTICE 'pg_cron not available (expected in local dev) — cron cleanup skipped';
 WHEN OTHERS THEN
   RAISE;
 END $$;

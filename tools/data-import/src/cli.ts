@@ -165,11 +165,12 @@ rk9
           }
 
           if (formatId) {
-            await supabase
+            const { error: fmtErr } = await supabase
               .schema("rk9")
               .from("events")
               .update({ format_id: formatId })
               .eq("event_id", eventId);
+            if (fmtErr) throw new Error(`Failed to update format_id: ${fmtErr.message}`);
           }
 
           console.log(`\nImporting ${eventId}...`);
@@ -274,11 +275,12 @@ rk9
 
       // Update format_id on the event row if we have it
       if (formatId) {
-        await supabase
+        const { error: fmtErr } = await supabase
           .schema("rk9")
           .from("events")
           .update({ format_id: formatId })
           .eq("event_id", eventId);
+        if (fmtErr) throw new Error(`Failed to update format_id: ${fmtErr.message}`);
       }
 
       console.log(`\nImporting ${eventId}...`);
@@ -476,6 +478,20 @@ rk9
                 console.log(
                   `${tag} Matches: ${matches} across ${rounds} rounds`
                 );
+              }
+
+              // Update format_id from meta.json if available
+              const metaPath = join(DATA_DIR, "rk9", event.eventId, "meta.json");
+              if (existsSync(metaPath)) {
+                const meta = await readJson<EventMeta>(metaPath);
+                if (meta.formatId) {
+                  const { error: fmtErr } = await supabase
+                    .schema("rk9")
+                    .from("events")
+                    .update({ format_id: meta.formatId })
+                    .eq("event_id", event.eventId);
+                  if (fmtErr) console.warn(`${tag} Failed to update format_id: ${fmtErr.message}`);
+                }
               }
 
               console.log(`${tag} Done`);
