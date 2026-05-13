@@ -48,8 +48,8 @@ else
 fi
 
 if ! $SUPABASE_CMD status >/dev/null 2>&1; then
-  log_error "Supabase is not running. Run dev:setup first."
-  exit 1
+  log_info "Supabase is not running — starting it now..."
+  "$SCRIPT_DIR/setup-local.sh"
 fi
 
 # =============================================================================

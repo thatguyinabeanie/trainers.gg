@@ -120,9 +120,12 @@ start_supabase() {
   if $SUPABASE_CMD start; then
     echo -e "${GREEN}Supabase started successfully${NC}"
   else
-    echo -e "${YELLOW}First start attempt failed, retrying...${NC}"
+    # First attempt failed — likely a stale DB backup missing recent schema migrations.
+    # Clear the backup so the next start rebuilds from scratch, then apply migrations.
+    echo -e "${YELLOW}First start attempt failed — clearing stale backup and retrying fresh...${NC}"
+    $SUPABASE_CMD stop --no-backup 2>/dev/null || true
     if $SUPABASE_CMD start; then
-      echo -e "${GREEN}Supabase started successfully${NC}"
+      echo -e "${GREEN}Supabase started successfully (fresh start)${NC}"
     else
       echo -e "${RED}Failed to start Supabase${NC}"
       exit 1
