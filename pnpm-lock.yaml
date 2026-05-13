@@ -1292,6 +1292,12 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.49.4
         version: 2.105.1
+      '@trainers/data-sources':
+        specifier: workspace:*
+        version: link:../../packages/data-sources
+      '@trainers/pokemon':
+        specifier: workspace:*
+        version: link:../../packages/pokemon
       cheerio:
         specifier: ^1.0.0
         version: 1.2.0

@@ -36,7 +36,7 @@ import {
   LIMITLESS_TO_FORMAT,
   syncTournamentList,
   importTournament,
-} from "./limitless/import.js";
+} from "@trainers/data-sources";
 import type { SupabaseClient } from "@supabase/supabase-js";
 // =============================================================================
 // Helpers

@@ -2,7 +2,7 @@ import * as cheerio from "cheerio";
 import {
   getSvFormatForDate,
   getChampionsFormatForDate,
-} from "../shared/format.js";
+} from "@trainers/pokemon";
 
 // =============================================================================
 // Species normalization

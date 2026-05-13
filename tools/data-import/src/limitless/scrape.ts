@@ -1,8 +1,11 @@
 import { mkdir, writeFile, readFile } from "fs/promises";
 import { fileURLToPath } from "url";
 import { dirname, resolve, join } from "path";
-import { fetchTournamentList, fetchTournamentData } from "./http.js";
-import type { LimitlessTournament, TournamentData } from "./types.js";
+import {
+  fetchTournamentList,
+  fetchTournamentData,
+} from "@trainers/data-sources";
+import type { LimitlessTournament, TournamentData } from "@trainers/data-sources";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const DATA_DIR = resolve(__dirname, "../../data");
