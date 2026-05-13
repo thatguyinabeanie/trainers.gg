@@ -5,7 +5,7 @@
  * Validates the shared secret, then queues the tournament for import
  * by setting import_status = 'queued' on the tournaments row.
  *
- * The /api/cron/limitless-import cron processes the queue every 15 minutes.
+ * Queued tournaments can be imported via the admin data dashboard.
  *
  * Webhook payload from Limitless:
  *   {
@@ -132,15 +132,18 @@ export async function POST(request: Request) {
       const { error } = await supabase
         .schema("limitless")
         .from("tournaments")
-        .upsert({
-          tournament_id: tournamentId,
-          name: tournamentId, // Placeholder — sync cron will fill real name
-          format_id: "unknown", // Placeholder — sync cron will fill real format
-          date: dateOnly,
-          player_count: 0,
-          import_requested_at: now,
-          import_status: "queued",
-        }, { onConflict: "tournament_id" });
+        .upsert(
+          {
+            tournament_id: tournamentId,
+            name: tournamentId, // Placeholder — sync cron will fill real name
+            format_id: "unknown", // Placeholder — sync cron will fill real format
+            date: dateOnly,
+            player_count: 0,
+            import_requested_at: now,
+            import_status: "queued",
+          },
+          { onConflict: "tournament_id" }
+        );
       if (error) queueErr = error;
     }
 

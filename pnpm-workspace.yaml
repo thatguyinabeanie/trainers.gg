@@ -3,6 +3,7 @@ packages:
   - packages/*
   - tooling/*
   - infra/*
+  - tools/*
 
 catalog:
   "@faker-js/faker": ^10.4.0

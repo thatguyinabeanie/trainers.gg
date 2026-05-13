@@ -23,7 +23,7 @@ import type {
   RK9EventTier,
   RK9Pokemon,
   RK9RosterEntry,
-} from "./types";
+} from "@trainers/data-sources";
 
 // Use AnyNode type from cheerio's internal type system
 type $API = cheerio.CheerioAPI;

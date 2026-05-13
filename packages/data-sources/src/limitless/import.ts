@@ -7,15 +7,9 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  LIMITLESS_TO_FORMAT,
-  KNOWN_FORMATS,
-  fetchTournamentList,
-  fetchTournamentData,
-  type TournamentData,
-  type SyncResult,
-  type ImportResult,
-} from "./api";
+import { fetchTournamentList, fetchTournamentData } from "./api";
+import { LIMITLESS_TO_FORMAT, KNOWN_FORMATS } from "./format";
+import type { TournamentData, SyncResult, ImportResult } from "./types";
 
 // Union of Limitless format codes (keys) and Showdown format IDs (values)
 // that are valid for import.

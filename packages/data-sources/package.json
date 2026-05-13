@@ -1,0 +1,35 @@
+{
+  "name": "@trainers/data-sources",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint . --max-warnings 0 --cache",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "catalog:supabase",
+    "@trainers/pokemon": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/jest": "catalog:testing",
+    "@types/node": "catalog:",
+    "@trainers/eslint-config": "workspace:*",
+    "@trainers/test-utils": "workspace:*",
+    "@trainers/prettier-config": "workspace:*",
+    "@trainers/typescript-config": "workspace:*",
+    "eslint": "catalog:",
+    "jest": "catalog:testing",
+    "jest-junit": "catalog:testing",
+    "prettier": "catalog:",
+    "ts-jest": "catalog:testing",
+    "ts-node": "catalog:testing",
+    "typescript": "catalog:"
+  },
+  "prettier": "@trainers/prettier-config"
+}
