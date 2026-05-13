@@ -116,9 +116,14 @@ export function SpeciesPickerMobile({
   }
   const bucketCount = (roleId: RoleId) => roleCounts.get(roleId) ?? 0;
 
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) setView("list");
+    onOpenChange(nextOpen);
+  }
+
   function handlePick(species: string) {
     onPick(species);
-    onOpenChange(false);
+    handleOpenChange(false);
   }
 
   function clearAllFilters() {
@@ -126,7 +131,7 @@ export function SpeciesPickerMobile({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       {/* SheetContent side="bottom" has data-[side=bottom]:h-auto built in which
           overrides any h-[*] class. Height is controlled by the inner wrapper
           instead so we don't fight CSS specificity. */}

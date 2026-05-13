@@ -202,15 +202,18 @@ describe("SpeciesPickerMobile", () => {
       expect(screen.queryByText("Garchomp-Mega")).not.toBeInTheDocument();
     });
 
-    it("shows Filters button with count badge when active filters > 0", async () => {
+    it("Filters button shows plain label when no filters are active", () => {
+      render(<SpeciesPickerMobile {...defaultProps} />);
+      // No active filters: aria-label is exactly "Open filters" with no count suffix
+      expect(screen.getByRole("button", { name: "Open filters" })).toBeInTheDocument();
+    });
+
+    it("Filters button opens the filters panel and shows Filters heading", async () => {
       const user = userEvent.setup();
       render(<SpeciesPickerMobile {...defaultProps} />);
-      // Navigate to filters, stub a type selection by setting the filter state
-      // via the ChipStrip — enter filters view and come back
       await user.click(screen.getByRole("button", { name: /open filters/i }));
-      expect(
-        screen.getByRole("button", { name: /back to results/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /^filters$/i })).toBeInTheDocument();
+      expect(screen.getByTestId("species-sidebar")).toBeInTheDocument();
     });
   });
 });
