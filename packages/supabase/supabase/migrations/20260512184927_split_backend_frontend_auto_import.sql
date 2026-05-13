@@ -23,31 +23,3 @@ BEGIN
   ON CONFLICT (key) DO NOTHING;
 END $$;
 
--- Update cron jobs to use backend-specific config keys
-DO $$
-BEGIN
-  PERFORM cron.unschedule('limitless-sync');
-  PERFORM cron.schedule(
-    'limitless-sync',
-    '*/5 * * * *',
-    $cmd$SELECT public.invoke_edge_function('limitless-import', '{"action":"sync"}'::jsonb, 'limitless_backend_auto_import')$cmd$
-  );
-
-  PERFORM cron.unschedule('limitless-import-queue');
-  PERFORM cron.schedule(
-    'limitless-import-queue',
-    '*/5 * * * *',
-    $cmd$SELECT public.invoke_edge_function('limitless-import', '{"action":"process-queue","batchSize":20}'::jsonb, 'limitless_backend_auto_import')$cmd$
-  );
-
-  PERFORM cron.unschedule('rk9-worker');
-  PERFORM cron.schedule(
-    'rk9-worker',
-    '*/1 * * * *',
-    $cmd$SELECT public.invoke_edge_function('rk9-worker', '{"maxTeams":100}'::jsonb, 'rk9_backend_auto_import')$cmd$
-  );
-
-  RAISE NOTICE 'cron jobs updated to use backend config keys';
-EXCEPTION WHEN OTHERS THEN
-  RAISE NOTICE 'pg_cron not available — cron keys not updated in this migration';
-END $$;

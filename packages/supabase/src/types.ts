@@ -3814,10 +3814,6 @@ export type Database = {
         Args: { org_id: number; permission_key: string }
         Returns: boolean
       }
-      invoke_edge_function: {
-        Args: { body?: Json; config_key?: string; function_name: string }
-        Returns: number
-      }
       is_community_owner: {
         Args: { p_community_id: number; p_user_id: string }
         Returns: boolean

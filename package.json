@@ -10,7 +10,7 @@
     "setup:pds": "./infra/pds/setup-local.sh",
     "postinstall": "./scripts/postinstall.sh",
     "// dev": "",
-    "dev": "rm -rf apps/web/.next/dev && turbo run dev functions:serve cron --filter=@trainers/web --filter=@trainers/supabase",
+    "dev": "rm -rf apps/web/.next/dev && turbo run dev functions:serve --filter=@trainers/web --filter=@trainers/supabase",
     "dev:all": "rm -rf apps/web/.next/dev && turbo run dev functions:serve",
     "dev:web": "rm -rf apps/web/.next/dev && turbo run dev functions:serve --filter=@trainers/web --filter=@trainers/supabase",
     "dev:mobile": "turbo run dev --filter=@trainers/mobile",

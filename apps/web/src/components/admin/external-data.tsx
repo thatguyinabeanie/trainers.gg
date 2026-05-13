@@ -30,17 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { supabase } from "@/lib/supabase/client";
 import { LIMITLESS_TO_FORMAT } from "@/lib/limitless";
 import {
   discoverRk9Events,
@@ -87,17 +81,6 @@ interface LimitlessTournamentRow {
   import_requested_at: string | null;
   import_error: string | null;
   import_attempts: number | null;
-}
-
-interface LimitlessStatsResponse {
-  totalSynced: number;
-  totalImported: number;
-  formats: {
-    limitlessCode: string;
-    formatId: string;
-    synced: number;
-    imported: number;
-  }[];
 }
 
 // Unified row that merges both sources
@@ -240,7 +223,12 @@ function SortableHeader({
 }) {
   const isActive = sort.column === column;
   return (
-    <div className={cn("flex h-10 items-center px-2 font-medium whitespace-nowrap", className)}>
+    <div
+      className={cn(
+        "flex h-10 items-center px-2 font-medium whitespace-nowrap",
+        className
+      )}
+    >
       <button
         className="hover:text-foreground inline-flex items-center gap-1"
         onClick={() => onSort(column)}
@@ -283,18 +271,6 @@ function compareValues(
   return direction === "desc" ? -result : result;
 }
 
-async function callLimitlessStats(): Promise<LimitlessStatsResponse> {
-  const { data, error } = await supabase.functions.invoke<{
-    success: boolean;
-    data: LimitlessStatsResponse;
-    error?: string;
-  }>("limitless-import", { body: { action: "stats" } });
-
-  if (error) throw error;
-  if (!data?.success) throw new Error(data?.error ?? "Unknown error");
-  return data.data;
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -304,33 +280,50 @@ export function ExternalData() {
   const [activeTab, setActiveTab] = useState<"rk9" | "limitless">("limitless");
 
   // Per-tab filter state
-  const [rk9Filters, setRk9Filters] = useState<RK9FilterState>(INITIAL_RK9_FILTERS);
-  const [rk9Sort, setRk9Sort] = useState<SortState>({ column: "date", direction: "desc" });
-  const [limFilters, setLimFilters] = useState<LimitlessFilterState>(INITIAL_LIMITLESS_FILTERS);
-  const [limSort, setLimSort] = useState<SortState>({ column: "date", direction: "desc" });
+  const [rk9Filters, setRk9Filters] =
+    useState<RK9FilterState>(INITIAL_RK9_FILTERS);
+  const [rk9Sort, setRk9Sort] = useState<SortState>({
+    column: "date",
+    direction: "desc",
+  });
+  const [limFilters, setLimFilters] = useState<LimitlessFilterState>(
+    INITIAL_LIMITLESS_FILTERS
+  );
+  const [limSort, setLimSort] = useState<SortState>({
+    column: "date",
+    direction: "desc",
+  });
 
   // Auto-import state (backend = pg_cron)
   const [rk9BackendAutoImport, setRk9BackendAutoImport] = useState(false);
-  const [rk9BackendAutoImportLoading, setRk9BackendAutoImportLoading] = useState(true);
+  const [rk9BackendAutoImportLoading, setRk9BackendAutoImportLoading] =
+    useState(true);
 
-  const [limitlessBackendAutoImport, setLimitlessBackendAutoImport] = useState(false);
-  const [limitlessBackendAutoImportLoading, setLimitlessBackendAutoImportLoading] = useState(true);
+  const [limitlessBackendAutoImport, setLimitlessBackendAutoImport] =
+    useState(false);
+  const [
+    limitlessBackendAutoImportLoading,
+    setLimitlessBackendAutoImportLoading,
+  ] = useState(true);
 
   // Throughput config
   const [rk9TeamsPerTick, setRk9TeamsPerTick] = useState(100);
   const [rk9TeamsPerTickLoading, setRk9TeamsPerTickLoading] = useState(true);
 
   const [rk9TeamConcurrency, setRk9TeamConcurrency] = useState(3);
-  const [rk9TeamConcurrencyLoading, setRk9TeamConcurrencyLoading] = useState(true);
+  const [rk9TeamConcurrencyLoading, setRk9TeamConcurrencyLoading] =
+    useState(true);
 
   const [rk9CronInterval, setRk9CronInterval] = useState(60);
   const [rk9CronIntervalLoading, setRk9CronIntervalLoading] = useState(true);
 
   const [limitlessCronInterval, setLimitlessCronInterval] = useState(300);
-  const [limitlessCronIntervalLoading, setLimitlessCronIntervalLoading] = useState(true);
+  const [limitlessCronIntervalLoading, setLimitlessCronIntervalLoading] =
+    useState(true);
 
   const [limitlessBatchSize, setLimitlessBatchSize] = useState(20);
-  const [limitlessBatchSizeLoading, setLimitlessBatchSizeLoading] = useState(true);
+  const [limitlessBatchSizeLoading, setLimitlessBatchSizeLoading] =
+    useState(true);
 
   // RK9 state
   const [isDiscovering, setIsDiscovering] = useState(false);
@@ -416,7 +409,10 @@ export function ExternalData() {
   async function handleToggleLimitlessBackend(checked: boolean) {
     const previous = limitlessBackendAutoImport;
     setLimitlessBackendAutoImport(checked);
-    const result = await setSiteConfig("limitless_backend_auto_import", checked);
+    const result = await setSiteConfig(
+      "limitless_backend_auto_import",
+      checked
+    );
     if (!result.success) {
       setLimitlessBackendAutoImport(previous);
     }
@@ -490,14 +486,6 @@ export function ExternalData() {
   // -------------------------------------------------------------------------
 
   const {
-    data: limitlessStats,
-    error: limitlessStatsError,
-    isLoading: limitlessStatsLoading,
-  } = useSupabaseQuery(async () => {
-    return callLimitlessStats();
-  }, [refreshKey]);
-
-  const {
     data: limitlessTournaments,
     error: limitlessError,
     isLoading: limitlessLoading,
@@ -519,14 +507,15 @@ export function ExternalData() {
 
   // Build format lookup
   const FORMAT_ID_TO_CODE: Record<string, string> = {};
-  if (limitlessStats) {
-    for (const f of limitlessStats.formats) {
-      FORMAT_ID_TO_CODE[f.formatId] = f.limitlessCode;
-    }
-  }
   for (const [code, fmtId] of Object.entries(LIMITLESS_TO_FORMAT)) {
     FORMAT_ID_TO_CODE[fmtId] = code;
   }
+
+  // Derived stats from already-fetched tournament list
+  const totalSynced = (limitlessTournaments ?? []).length;
+  const totalImported = (limitlessTournaments ?? []).filter(
+    (t) => t.data_imported_at !== null
+  ).length;
 
   // -------------------------------------------------------------------------
   // Auto-poll when there are active items
@@ -584,24 +573,40 @@ export function ExternalData() {
       if (f.country !== "all" && row.country !== f.country) return false;
       if (f.dateFrom && row.date < f.dateFrom) return false;
       if (f.dateTo && row.date > f.dateTo) return false;
-      if (f.minPlayers && row.playerCount !== null && row.playerCount < Number(f.minPlayers)) return false;
+      if (
+        f.minPlayers &&
+        row.playerCount !== null &&
+        row.playerCount < Number(f.minPlayers)
+      )
+        return false;
       if (f.hasData === "yes" && !row.hasData) return false;
       if (f.hasData === "no" && row.hasData) return false;
       if (f.search) {
         const q = f.search.toLowerCase();
-        if (!row.name.toLowerCase().includes(q) && !row.id.toLowerCase().includes(q) && !row.category.toLowerCase().includes(q)) return false;
+        if (
+          !row.name.toLowerCase().includes(q) &&
+          !row.id.toLowerCase().includes(q) &&
+          !row.category.toLowerCase().includes(q)
+        )
+          return false;
       }
       return true;
     })
     .sort((a, b) => {
       const { column, direction } = rk9Sort;
       switch (column) {
-        case "name": return compareValues(a.name, b.name, direction);
-        case "category": return compareValues(a.category, b.category, direction);
-        case "date": return compareValues(a.date, b.date, direction);
-        case "playerCount": return compareValues(a.playerCount, b.playerCount, direction);
-        case "status": return compareValues(a.status, b.status, direction);
-        default: return 0;
+        case "name":
+          return compareValues(a.name, b.name, direction);
+        case "category":
+          return compareValues(a.category, b.category, direction);
+        case "date":
+          return compareValues(a.date, b.date, direction);
+        case "playerCount":
+          return compareValues(a.playerCount, b.playerCount, direction);
+        case "status":
+          return compareValues(a.status, b.status, direction);
+        default:
+          return 0;
       }
     });
 
@@ -631,52 +636,75 @@ export function ExternalData() {
       if (f.platform !== "all" && row.platform !== f.platform) return false;
       if (f.dateFrom && row.date < f.dateFrom) return false;
       if (f.dateTo && row.date > f.dateTo) return false;
-      if (f.minPlayers && row.playerCount !== null && row.playerCount < Number(f.minPlayers)) return false;
+      if (
+        f.minPlayers &&
+        row.playerCount !== null &&
+        row.playerCount < Number(f.minPlayers)
+      )
+        return false;
       if (f.hasData === "yes" && !row.hasData) return false;
       if (f.hasData === "no" && row.hasData) return false;
       if (f.search) {
         const q = f.search.toLowerCase();
-        if (!row.name.toLowerCase().includes(q) && !row.id.toLowerCase().includes(q) && !row.category.toLowerCase().includes(q)) return false;
+        if (
+          !row.name.toLowerCase().includes(q) &&
+          !row.id.toLowerCase().includes(q) &&
+          !row.category.toLowerCase().includes(q)
+        )
+          return false;
       }
       return true;
     })
     .sort((a, b) => {
       const { column, direction } = limSort;
       switch (column) {
-        case "name": return compareValues(a.name, b.name, direction);
-        case "category": return compareValues(a.category, b.category, direction);
-        case "date": return compareValues(a.date, b.date, direction);
-        case "playerCount": return compareValues(a.playerCount, b.playerCount, direction);
-        case "status": return compareValues(a.status, b.status, direction);
+        case "name":
+          return compareValues(a.name, b.name, direction);
+        case "category":
+          return compareValues(a.category, b.category, direction);
+        case "date":
+          return compareValues(a.date, b.date, direction);
+        case "playerCount":
+          return compareValues(a.playerCount, b.playerCount, direction);
+        case "status":
+          return compareValues(a.status, b.status, direction);
         case "queueOrder": {
           const aTime = a.limitless?.import_requested_at ?? "";
           const bTime = b.limitless?.import_requested_at ?? "";
           return compareValues(aTime, bTime, direction);
         }
-        default: return 0;
+        default:
+          return 0;
       }
     });
 
   // Current tab's rows for the virtualizer
-  const currentRows = activeTab === "rk9" ? filteredRk9Rows : filteredLimitlessRows;
-  const totalRowCount = activeTab === "rk9" ? rk9Rows.length : limitlessRows.length;
+  const currentRows =
+    activeTab === "rk9" ? filteredRk9Rows : filteredLimitlessRows;
+  const totalRowCount =
+    activeTab === "rk9" ? rk9Rows.length : limitlessRows.length;
   const currentSort = activeTab === "rk9" ? rk9Sort : limSort;
-  const setCurrentSort = activeTab === "rk9"
-    ? (s: SortState) => setRk9Sort(s)
-    : (s: SortState) => setLimSort(s);
+  const setCurrentSort =
+    activeTab === "rk9"
+      ? (s: SortState) => setRk9Sort(s)
+      : (s: SortState) => setLimSort(s);
 
   // Derive unique filter options from data
   const rk9Tiers = [...new Set(rk9Rows.map((r) => r.category))].sort();
-  const rk9Countries = [...new Set(rk9Rows.map((r) => r.country).filter(Boolean) as string[])].sort();
-  const limitlessFormats = [...new Set(limitlessRows.map((r) => r.category))].sort();
+  const rk9Countries = [
+    ...new Set(rk9Rows.map((r) => r.country).filter(Boolean) as string[]),
+  ].sort();
+  const limitlessFormats = [
+    ...new Set(limitlessRows.map((r) => r.category)),
+  ].sort();
 
   // Active filter counts
-  const rk9ActiveFilterCount = (Object.keys(rk9Filters) as (keyof RK9FilterState)[]).filter(
-    (key) => rk9Filters[key] !== INITIAL_RK9_FILTERS[key]
-  ).length;
-  const limActiveFilterCount = (Object.keys(limFilters) as (keyof LimitlessFilterState)[]).filter(
-    (key) => limFilters[key] !== INITIAL_LIMITLESS_FILTERS[key]
-  ).length;
+  const rk9ActiveFilterCount = (
+    Object.keys(rk9Filters) as (keyof RK9FilterState)[]
+  ).filter((key) => rk9Filters[key] !== INITIAL_RK9_FILTERS[key]).length;
+  const limActiveFilterCount = (
+    Object.keys(limFilters) as (keyof LimitlessFilterState)[]
+  ).filter((key) => limFilters[key] !== INITIAL_LIMITLESS_FILTERS[key]).length;
 
   // -------------------------------------------------------------------------
   // Stats
@@ -697,13 +725,14 @@ export function ExternalData() {
 
   const rk9ActiveCount = activeJobs.size;
 
-  const nextQueuedItem = (limitlessTournaments ?? [])
-    .filter((t) => t.import_status === "queued" && t.import_requested_at)
-    .sort(
-      (a, b) =>
-        new Date(a.import_requested_at!).getTime() -
-        new Date(b.import_requested_at!).getTime()
-    )[0] ?? null;
+  const nextQueuedItem =
+    (limitlessTournaments ?? [])
+      .filter((t) => t.import_status === "queued" && t.import_requested_at)
+      .sort(
+        (a, b) =>
+          new Date(a.import_requested_at!).getTime() -
+          new Date(b.import_requested_at!).getTime()
+      )[0] ?? null;
 
   function formatRelativeTime(iso: string): string {
     const diff = Date.now() - new Date(iso).getTime();
@@ -872,7 +901,9 @@ export function ExternalData() {
           onClick={() => setRefreshKey((k) => k + 1)}
           disabled={isFetching}
         >
-          <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
+          <RefreshCw
+            className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")}
+          />
           Refresh
         </Button>
       </div>
@@ -885,15 +916,22 @@ export function ExternalData() {
       )}
 
       {/* Sub-tabs: RK9 / Limitless */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "rk9" | "limitless")}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "rk9" | "limitless")}
+      >
         <TabsList variant="line">
           <TabsTrigger value="rk9">
             RK9
-            <Badge variant="secondary" className="ml-1.5 text-xs">{rk9Rows.length}</Badge>
+            <Badge variant="secondary" className="ml-1.5 text-xs">
+              {rk9Rows.length}
+            </Badge>
           </TabsTrigger>
           <TabsTrigger value="limitless">
             Limitless
-            <Badge variant="secondary" className="ml-1.5 text-xs">{limitlessRows.length}</Badge>
+            <Badge variant="secondary" className="ml-1.5 text-xs">
+              {limitlessRows.length}
+            </Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -919,12 +957,16 @@ export function ExternalData() {
                 <div className="flex items-center gap-1">
                   <Input
                     type="number"
-                    className="h-6 w-14 px-1 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-6 w-14 [appearance:textfield] px-1 text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     value={rk9TeamsPerTick}
-                    onChange={(e) => handleRk9TeamsPerTickChange(e.target.value)}
+                    onChange={(e) =>
+                      handleRk9TeamsPerTickChange(e.target.value)
+                    }
                     min={1}
                   />
-                  <span className="text-muted-foreground text-xs">teams/tick</span>
+                  <span className="text-muted-foreground text-xs">
+                    teams/tick
+                  </span>
                 </div>
               )}
               {rk9TeamConcurrencyLoading ? (
@@ -933,13 +975,17 @@ export function ExternalData() {
                 <div className="flex items-center gap-1">
                   <Input
                     type="number"
-                    className="h-6 w-11 px-1 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-6 w-11 [appearance:textfield] px-1 text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     value={rk9TeamConcurrency}
-                    onChange={(e) => handleRk9TeamConcurrencyChange(e.target.value)}
+                    onChange={(e) =>
+                      handleRk9TeamConcurrencyChange(e.target.value)
+                    }
                     min={1}
                     max={10}
                   />
-                  <span className="text-muted-foreground text-xs">concurrent</span>
+                  <span className="text-muted-foreground text-xs">
+                    concurrent
+                  </span>
                 </div>
               )}
               {rk9CronIntervalLoading ? (
@@ -948,13 +994,17 @@ export function ExternalData() {
                 <div className="flex items-center gap-1">
                   <Input
                     type="number"
-                    className="h-6 w-14 px-1 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-6 w-14 [appearance:textfield] px-1 text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     value={rk9CronInterval}
-                    onChange={(e) => handleRk9CronIntervalChange(e.target.value)}
+                    onChange={(e) =>
+                      handleRk9CronIntervalChange(e.target.value)
+                    }
                     min={10}
                     step={10}
                   />
-                  <span className="text-muted-foreground text-xs">every (s)</span>
+                  <span className="text-muted-foreground text-xs">
+                    every (s)
+                  </span>
                 </div>
               )}
               <div className="bg-border h-5 w-px" />
@@ -991,7 +1041,12 @@ export function ExternalData() {
                   {discoverMessage}
                 </p>
               )}
-              <Button onClick={handleDiscover} disabled={isDiscovering} size="sm" variant="outline">
+              <Button
+                onClick={handleDiscover}
+                disabled={isDiscovering}
+                size="sm"
+                variant="outline"
+              >
                 {isDiscovering ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
@@ -1007,34 +1062,54 @@ export function ExternalData() {
             {/* Row 1: Search + primary filters */}
             <div className="flex flex-wrap items-end gap-2.5">
               <div className="min-w-44 flex-1 space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Search</label>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Search
+                </label>
                 <div className="relative">
                   <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
                   <Input
                     placeholder="Search by name or ID..."
                     value={rk9Filters.search}
-                    onChange={(e) => setRk9Filters((p) => ({ ...p, search: e.target.value }))}
+                    onChange={(e) =>
+                      setRk9Filters((p) => ({ ...p, search: e.target.value }))
+                    }
                     className="h-8 pl-8 text-sm"
                   />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Tier</label>
-                <Select value={rk9Filters.tier} onValueChange={(v) => v && setRk9Filters((p) => ({ ...p, tier: v }))}>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Tier
+                </label>
+                <Select
+                  value={rk9Filters.tier}
+                  onValueChange={(v) =>
+                    v && setRk9Filters((p) => ({ ...p, tier: v }))
+                  }
+                >
                   <SelectTrigger className="w-32" size="sm">
                     <SelectValue className="capitalize" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     {rk9Tiers.map((t) => (
-                      <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                      <SelectItem key={t} value={t} className="capitalize">
+                        {t}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Status</label>
-                <Select value={rk9Filters.status} onValueChange={(v) => v && setRk9Filters((p) => ({ ...p, status: v }))}>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Status
+                </label>
+                <Select
+                  value={rk9Filters.status}
+                  onValueChange={(v) =>
+                    v && setRk9Filters((p) => ({ ...p, status: v }))
+                  }
+                >
                   <SelectTrigger className="w-32" size="sm">
                     <SelectValue className="capitalize" />
                   </SelectTrigger>
@@ -1049,15 +1124,24 @@ export function ExternalData() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Country</label>
-                <Select value={rk9Filters.country} onValueChange={(v) => v && setRk9Filters((p) => ({ ...p, country: v }))}>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Country
+                </label>
+                <Select
+                  value={rk9Filters.country}
+                  onValueChange={(v) =>
+                    v && setRk9Filters((p) => ({ ...p, country: v }))
+                  }
+                >
                   <SelectTrigger className="w-32" size="sm">
                     <SelectValue className="capitalize" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     {rk9Countries.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1066,8 +1150,19 @@ export function ExternalData() {
             {/* Row 2: Secondary filters */}
             <div className="flex flex-wrap items-end gap-2.5">
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Team Lists</label>
-                <Select value={rk9Filters.hasData} onValueChange={(v) => v && setRk9Filters((p) => ({ ...p, hasData: v as HasDataFilter }))}>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Team Lists
+                </label>
+                <Select
+                  value={rk9Filters.hasData}
+                  onValueChange={(v) =>
+                    v &&
+                    setRk9Filters((p) => ({
+                      ...p,
+                      hasData: v as HasDataFilter,
+                    }))
+                  }
+                >
                   <SelectTrigger className="w-32" size="sm">
                     <SelectValue className="capitalize" />
                   </SelectTrigger>
@@ -1079,30 +1174,40 @@ export function ExternalData() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Date Range</label>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Date Range
+                </label>
                 <div className="flex items-center gap-1.5">
                   <Input
                     type="date"
                     value={rk9Filters.dateFrom}
-                    onChange={(e) => setRk9Filters((p) => ({ ...p, dateFrom: e.target.value }))}
+                    onChange={(e) =>
+                      setRk9Filters((p) => ({ ...p, dateFrom: e.target.value }))
+                    }
                     className="h-7 w-32 text-xs"
                   />
                   <span className="text-muted-foreground text-xs">to</span>
                   <Input
                     type="date"
                     value={rk9Filters.dateTo}
-                    onChange={(e) => setRk9Filters((p) => ({ ...p, dateTo: e.target.value }))}
+                    onChange={(e) =>
+                      setRk9Filters((p) => ({ ...p, dateTo: e.target.value }))
+                    }
                     className="h-7 w-32 text-xs"
                   />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Min Players</label>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Min Players
+                </label>
                 <Input
                   type="number"
                   placeholder="0"
                   value={rk9Filters.minPlayers}
-                  onChange={(e) => setRk9Filters((p) => ({ ...p, minPlayers: e.target.value }))}
+                  onChange={(e) =>
+                    setRk9Filters((p) => ({ ...p, minPlayers: e.target.value }))
+                  }
                   className="h-7 w-20 text-xs"
                   min={0}
                 />
@@ -1144,12 +1249,16 @@ export function ExternalData() {
                 <div className="flex items-center gap-1">
                   <Input
                     type="number"
-                    className="h-6 w-14 px-1 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-6 w-14 [appearance:textfield] px-1 text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     value={limitlessBatchSize}
-                    onChange={(e) => handleLimitlessBatchSizeChange(e.target.value)}
+                    onChange={(e) =>
+                      handleLimitlessBatchSizeChange(e.target.value)
+                    }
                     min={1}
                   />
-                  <span className="text-muted-foreground text-xs">tourneys/tick</span>
+                  <span className="text-muted-foreground text-xs">
+                    tourneys/tick
+                  </span>
                 </div>
               )}
               {limitlessCronIntervalLoading ? (
@@ -1158,32 +1267,42 @@ export function ExternalData() {
                 <div className="flex items-center gap-1">
                   <Input
                     type="number"
-                    className="h-6 w-14 px-1 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-6 w-14 [appearance:textfield] px-1 text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     value={limitlessCronInterval}
-                    onChange={(e) => handleLimitlessCronIntervalChange(e.target.value)}
+                    onChange={(e) =>
+                      handleLimitlessCronIntervalChange(e.target.value)
+                    }
                     min={10}
                     step={10}
                   />
-                  <span className="text-muted-foreground text-xs">every (s)</span>
+                  <span className="text-muted-foreground text-xs">
+                    every (s)
+                  </span>
                 </div>
               )}
               <div className="bg-border h-5 w-px" />
-              {limitlessStatsLoading && !limitlessStats ? (
+              {limitlessLoading && !limitlessTournaments ? (
                 <Skeleton className="h-5 w-32" />
-              ) : limitlessStats ? (
+              ) : (
                 <>
                   <div className="flex items-center gap-1.5">
                     <Globe className="text-muted-foreground h-4 w-4" />
-                    <span className="text-sm font-semibold">{limitlessStats.totalSynced}</span>
-                    <span className="text-muted-foreground text-xs">synced</span>
+                    <span className="text-sm font-semibold">{totalSynced}</span>
+                    <span className="text-muted-foreground text-xs">
+                      synced
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    <span className="text-sm font-semibold">{limitlessStats.totalImported}</span>
-                    <span className="text-muted-foreground text-xs">imported</span>
+                    <span className="text-sm font-semibold">
+                      {totalImported}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      imported
+                    </span>
                   </div>
                 </>
-              ) : null}
+              )}
               {limitlessQueuedCount > 0 && (
                 <Badge
                   variant="secondary"
@@ -1202,8 +1321,8 @@ export function ExternalData() {
                   {limitlessImportingCount} importing
                 </Badge>
               )}
-              {limitlessStatsError && (
-                <p className="text-xs text-red-500">{limitlessStatsError.message}</p>
+              {limitlessError && (
+                <p className="text-xs text-red-500">{limitlessError.message}</p>
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -1234,7 +1353,12 @@ export function ExternalData() {
                   Queue All ({limitlessPendingCount})
                 </Button>
               )}
-              <Button onClick={handleSync} disabled={syncing} size="sm" variant="outline">
+              <Button
+                onClick={handleSync}
+                disabled={syncing}
+                size="sm"
+                variant="outline"
+              >
                 {syncing ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
@@ -1262,7 +1386,8 @@ export function ExternalData() {
                     {nextQueuedItem.name}
                   </span>
                   <span className="text-xs">
-                    (queued {formatRelativeTime(nextQueuedItem.import_requested_at!)})
+                    (queued{" "}
+                    {formatRelativeTime(nextQueuedItem.import_requested_at!)})
                   </span>
                 </span>
               )}
@@ -1285,34 +1410,54 @@ export function ExternalData() {
             {/* Row 1: Search + primary filters */}
             <div className="flex flex-wrap items-end gap-2.5">
               <div className="min-w-44 flex-1 space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Search</label>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Search
+                </label>
                 <div className="relative">
                   <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
                   <Input
                     placeholder="Search by name or ID..."
                     value={limFilters.search}
-                    onChange={(e) => setLimFilters((p) => ({ ...p, search: e.target.value }))}
+                    onChange={(e) =>
+                      setLimFilters((p) => ({ ...p, search: e.target.value }))
+                    }
                     className="h-8 pl-8 text-sm"
                   />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Format</label>
-                <Select value={limFilters.format} onValueChange={(v) => v && setLimFilters((p) => ({ ...p, format: v }))}>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Format
+                </label>
+                <Select
+                  value={limFilters.format}
+                  onValueChange={(v) =>
+                    v && setLimFilters((p) => ({ ...p, format: v }))
+                  }
+                >
                   <SelectTrigger className="w-32" size="sm">
                     <SelectValue className="capitalize" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     {limitlessFormats.map((f) => (
-                      <SelectItem key={f} value={f}>{f}</SelectItem>
+                      <SelectItem key={f} value={f}>
+                        {f}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Status</label>
-                <Select value={limFilters.status} onValueChange={(v) => v && setLimFilters((p) => ({ ...p, status: v }))}>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Status
+                </label>
+                <Select
+                  value={limFilters.status}
+                  onValueChange={(v) =>
+                    v && setLimFilters((p) => ({ ...p, status: v }))
+                  }
+                >
                   <SelectTrigger className="w-32" size="sm">
                     <SelectValue className="capitalize" />
                   </SelectTrigger>
@@ -1327,8 +1472,19 @@ export function ExternalData() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Platform</label>
-                <Select value={limFilters.platform} onValueChange={(v) => v && setLimFilters((p) => ({ ...p, platform: v as PlatformFilter }))}>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Platform
+                </label>
+                <Select
+                  value={limFilters.platform}
+                  onValueChange={(v) =>
+                    v &&
+                    setLimFilters((p) => ({
+                      ...p,
+                      platform: v as PlatformFilter,
+                    }))
+                  }
+                >
                   <SelectTrigger className="w-32" size="sm">
                     <SelectValue className="capitalize" />
                   </SelectTrigger>
@@ -1343,8 +1499,19 @@ export function ExternalData() {
             {/* Row 2: Secondary filters */}
             <div className="flex flex-wrap items-end gap-2.5">
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Decklists</label>
-                <Select value={limFilters.hasData} onValueChange={(v) => v && setLimFilters((p) => ({ ...p, hasData: v as HasDataFilter }))}>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Decklists
+                </label>
+                <Select
+                  value={limFilters.hasData}
+                  onValueChange={(v) =>
+                    v &&
+                    setLimFilters((p) => ({
+                      ...p,
+                      hasData: v as HasDataFilter,
+                    }))
+                  }
+                >
                   <SelectTrigger className="w-32" size="sm">
                     <SelectValue className="capitalize" />
                   </SelectTrigger>
@@ -1356,30 +1523,40 @@ export function ExternalData() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Date Range</label>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Date Range
+                </label>
                 <div className="flex items-center gap-1.5">
                   <Input
                     type="date"
                     value={limFilters.dateFrom}
-                    onChange={(e) => setLimFilters((p) => ({ ...p, dateFrom: e.target.value }))}
+                    onChange={(e) =>
+                      setLimFilters((p) => ({ ...p, dateFrom: e.target.value }))
+                    }
                     className="h-7 w-32 text-xs"
                   />
                   <span className="text-muted-foreground text-xs">to</span>
                   <Input
                     type="date"
                     value={limFilters.dateTo}
-                    onChange={(e) => setLimFilters((p) => ({ ...p, dateTo: e.target.value }))}
+                    onChange={(e) =>
+                      setLimFilters((p) => ({ ...p, dateTo: e.target.value }))
+                    }
                     className="h-7 w-32 text-xs"
                   />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">Min Players</label>
+                <label className="text-muted-foreground block text-xs font-medium">
+                  Min Players
+                </label>
                 <Input
                   type="number"
                   placeholder="0"
                   value={limFilters.minPlayers}
-                  onChange={(e) => setLimFilters((p) => ({ ...p, minPlayers: e.target.value }))}
+                  onChange={(e) =>
+                    setLimFilters((p) => ({ ...p, minPlayers: e.target.value }))
+                  }
                   className="h-7 w-20 text-xs"
                   min={0}
                 />
@@ -1430,7 +1607,9 @@ export function ExternalData() {
               label="Event"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className={activeTab === "limitless" ? "col-span-3" : "col-span-4"}
+              className={
+                activeTab === "limitless" ? "col-span-3" : "col-span-4"
+              }
             />
             <SortableHeader
               column="category"
@@ -1475,8 +1654,18 @@ export function ExternalData() {
           </div>
 
           {/* Virtualized body */}
-          <div key={activeTab} ref={scrollRef} className="overflow-auto" style={{ maxHeight: "calc(100vh - 300px)" }}>
-            <div style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}>
+          <div
+            key={activeTab}
+            ref={scrollRef}
+            className="overflow-auto"
+            style={{ maxHeight: "calc(100vh - 300px)" }}
+          >
+            <div
+              style={{
+                height: rowVirtualizer.getTotalSize(),
+                position: "relative",
+              }}
+            >
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const row = currentRows[virtualRow.index];
                 if (!row) return null;
@@ -1488,15 +1677,33 @@ export function ExternalData() {
                 const subLinks =
                   row.source === "rk9" && !isUpcomingRow
                     ? [
-                        { label: "Roster", href: `https://rk9.gg/roster/${row.rk9!.event_id}` },
-                        { label: "Pairings", href: `https://rk9.gg/pairings/${row.rk9!.event_id}` },
-                        { label: "Standings", href: `https://rk9.gg/standings/${row.rk9!.event_id}` },
+                        {
+                          label: "Roster",
+                          href: `https://rk9.gg/roster/${row.rk9!.event_id}`,
+                        },
+                        {
+                          label: "Pairings",
+                          href: `https://rk9.gg/pairings/${row.rk9!.event_id}`,
+                        },
+                        {
+                          label: "Standings",
+                          href: `https://rk9.gg/standings/${row.rk9!.event_id}`,
+                        },
                       ]
                     : row.source === "limitless"
                       ? [
-                          { label: "Standings", href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/standings` },
-                          { label: "Pairings", href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/pairings` },
-                          { label: "Players", href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/players` },
+                          {
+                            label: "Standings",
+                            href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/standings`,
+                          },
+                          {
+                            label: "Pairings",
+                            href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/pairings`,
+                          },
+                          {
+                            label: "Players",
+                            href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/players`,
+                          },
                         ]
                       : [];
                 return (
@@ -1505,7 +1712,7 @@ export function ExternalData() {
                     ref={rowVirtualizer.measureElement}
                     data-index={virtualRow.index}
                     className={cn(
-                      "grid grid-cols-12 border-b transition-colors hover:bg-muted/50",
+                      "hover:bg-muted/50 grid grid-cols-12 border-b transition-colors",
                       isUpcomingRow && "opacity-60"
                     )}
                     style={{
@@ -1516,7 +1723,12 @@ export function ExternalData() {
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
                   >
-                    <div className={cn("min-w-0 p-2", activeTab === "limitless" ? "col-span-3" : "col-span-4")}>
+                    <div
+                      className={cn(
+                        "min-w-0 p-2",
+                        activeTab === "limitless" ? "col-span-3" : "col-span-4"
+                      )}
+                    >
                       <div className="flex items-center gap-1.5">
                         <a
                           href={externalUrl}
@@ -1538,7 +1750,9 @@ export function ExternalData() {
                       {row.rk9?.location_city && (
                         <p className="text-muted-foreground truncate text-xs">
                           {row.rk9.location_city}
-                          {row.rk9.location_country ? `, ${row.rk9.location_country}` : ""}
+                          {row.rk9.location_country
+                            ? `, ${row.rk9.location_country}`
+                            : ""}
                         </p>
                       )}
                       {subLinks.length > 0 && (
@@ -1557,11 +1771,16 @@ export function ExternalData() {
                         </div>
                       )}
                       {row.error && (
-                        <p className="mt-0.5 truncate text-xs text-red-500">{row.error}</p>
+                        <p className="mt-0.5 truncate text-xs text-red-500">
+                          {row.error}
+                        </p>
                       )}
                     </div>
                     <div className="col-span-2 flex items-center p-2">
-                      <Badge variant="secondary" className="truncate text-xs capitalize">
+                      <Badge
+                        variant="secondary"
+                        className="truncate text-xs capitalize"
+                      >
                         {row.category}
                       </Badge>
                     </div>
@@ -1576,16 +1795,23 @@ export function ExternalData() {
                     </div>
                     {activeTab === "limitless" && (
                       <div className="col-span-1 flex items-center p-2">
-                        {row.status === "queued" && row.limitless?.import_requested_at && (
-                          <span className="text-muted-foreground whitespace-nowrap text-xs">
-                            {formatRelativeTime(row.limitless.import_requested_at)}
-                          </span>
-                        )}
-                        {row.status === "importing" && row.limitless?.import_requested_at && (
-                          <span className="whitespace-nowrap text-xs text-blue-600 dark:text-blue-400">
-                            started {formatRelativeTime(row.limitless.import_requested_at)}
-                          </span>
-                        )}
+                        {row.status === "queued" &&
+                          row.limitless?.import_requested_at && (
+                            <span className="text-muted-foreground text-xs whitespace-nowrap">
+                              {formatRelativeTime(
+                                row.limitless.import_requested_at
+                              )}
+                            </span>
+                          )}
+                        {row.status === "importing" &&
+                          row.limitless?.import_requested_at && (
+                            <span className="text-xs whitespace-nowrap text-blue-600 dark:text-blue-400">
+                              started{" "}
+                              {formatRelativeTime(
+                                row.limitless.import_requested_at
+                              )}
+                            </span>
+                          )}
                       </div>
                     )}
                     <div className="col-span-1 flex items-center justify-end p-2">
@@ -1609,8 +1835,6 @@ export function ExternalData() {
     </div>
   );
 }
-
-
 
 // ---------------------------------------------------------------------------
 // Status Badge
