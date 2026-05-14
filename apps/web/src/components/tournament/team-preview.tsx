@@ -64,7 +64,7 @@ export function TeamPreview({
 
         return (
           <Card key={i} size="sm" className="bg-muted/50 h-full py-0">
-            <CardContent className="grid h-full grid-cols-[72px_1fr] gap-x-3 gap-y-1.5 py-2.5 sm:grid-cols-[72px_1fr_auto] sm:gap-y-3">
+            <CardContent className="grid h-full grid-cols-2 gap-x-2 gap-y-1.5 py-2 sm:grid-cols-[72px_1fr_auto] sm:gap-3">
               <div className="flex flex-col items-center gap-1">
                 <PokemonSprite
                   species={displaySpecies}
@@ -98,10 +98,12 @@ export function TeamPreview({
                   </Badge>
                 )}
               </div>
-              <div className="col-span-2 flex flex-col justify-center gap-1.5 text-xs sm:col-span-1">
-                {moves.map((move, mi) => (
-                  <MoveRow key={mi} move={move} />
-                ))}
+              <div className="col-span-2 flex flex-col gap-1.5 text-xs sm:col-span-1 sm:justify-center">
+                <div className="grid grid-cols-2 gap-1 sm:block sm:space-y-1.5">
+                  {moves.map((move, mi) => (
+                    <MoveRow key={mi} move={move} />
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
