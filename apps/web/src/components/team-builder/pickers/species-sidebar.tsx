@@ -193,7 +193,7 @@ export function SpeciesSidebar({
   // ---------------------------------------------------------------------------
 
   return (
-    <aside className="flex h-full flex-col divide-y divide-border/40">
+    <aside className="flex flex-col divide-y divide-border/40">
       {/* ------------------------------------------------------------------ */}
       {/* 1. Mega toggle (Champions only)                                     */}
       {/* ------------------------------------------------------------------ */}
