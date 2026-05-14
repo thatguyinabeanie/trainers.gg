@@ -87,13 +87,15 @@ export function SpeciesPickerMobile({
     ? fullIndex.filter((e) => isLegalSpecies(e.species, format.id))
     : fullIndex;
 
+  const resolvedFormatId = format?.id ?? DEFAULT_FORMAT_ID;
+
   const filtered = searchSpecies(speciesIndex, query, {
     types: filters.types,
     abilities: filters.abilities.length > 0 ? filters.abilities : undefined,
     moves: filters.moves,
     roles: filters.roles.length > 0 ? filters.roles : undefined,
     megaOnly: filters.megaOnly,
-    formatId: format?.id,
+    formatId: resolvedFormatId,
   });
   // Default sort: BST descending (same as desktop default).
   const matched: SpeciesSearchEntry[] = [...filtered].sort(
@@ -160,7 +162,7 @@ export function SpeciesPickerMobile({
               onOpenFilters={() => setView("filters")}
               onPick={handlePick}
               currentSpecies={value}
-              formatId={format?.id ?? DEFAULT_FORMAT_ID}
+              formatId={resolvedFormatId}
             />
           ) : (
             <FiltersView
