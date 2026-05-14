@@ -87,13 +87,15 @@ export function SpeciesPickerMobile({
     ? fullIndex.filter((e) => isLegalSpecies(e.species, format.id))
     : fullIndex;
 
+  const resolvedFormatId = format?.id ?? DEFAULT_FORMAT_ID;
+
   const filtered = searchSpecies(speciesIndex, query, {
     types: filters.types,
-    ability: filters.ability ?? undefined,
+    abilities: filters.abilities.length > 0 ? filters.abilities : undefined,
     moves: filters.moves,
     roles: filters.roles.length > 0 ? filters.roles : undefined,
     megaOnly: filters.megaOnly,
-    formatId: format?.id,
+    formatId: resolvedFormatId,
   });
   // Default sort: BST descending (same as desktop default).
   const matched: SpeciesSearchEntry[] = [...filtered].sort(
@@ -104,7 +106,7 @@ export function SpeciesPickerMobile({
     filters.types.length +
     filters.moves.length +
     filters.roles.length +
-    (filters.ability ? 1 : 0) +
+    filters.abilities.length +
     (filters.megaOnly ? 1 : 0);
 
   // Bucket counts for role-presets — number of matched species with each role.
@@ -160,6 +162,7 @@ export function SpeciesPickerMobile({
               onOpenFilters={() => setView("filters")}
               onPick={handlePick}
               currentSpecies={value}
+              formatId={resolvedFormatId}
             />
           ) : (
             <FiltersView
@@ -194,6 +197,7 @@ interface ListViewProps {
   onOpenFilters: () => void;
   onPick: (species: string) => void;
   currentSpecies: string | null;
+  formatId: string;
 }
 
 function ListView({
@@ -207,6 +211,7 @@ function ListView({
   onOpenFilters,
   onPick,
   currentSpecies,
+  formatId,
 }: ListViewProps) {
   return (
     <>
@@ -219,7 +224,7 @@ function ListView({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           aria-label="Search species"
-          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
+          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-[16px] leading-tight focus:outline-none sm:text-sm"
         />
         <button
           type="button"
@@ -258,6 +263,7 @@ function ListView({
             entry={entry}
             onPick={onPick}
             isSelected={entry.species === currentSpecies}
+            formatId={formatId}
           />
         ))}
         {matched.length === 0 && (
@@ -308,19 +314,25 @@ function ChipStrip({ filters, onFiltersChange }: ChipStripProps) {
           </span>
         </button>
       ))}
-      {filters.ability && (
+      {filters.abilities.map((ability) => (
         <button
+          key={ability}
           type="button"
-          aria-label={`Remove ${filters.ability} ability filter`}
-          onClick={() => onFiltersChange({ ...filters, ability: null })}
+          aria-label={`Remove ${ability} ability filter`}
+          onClick={() =>
+            onFiltersChange({
+              ...filters,
+              abilities: filters.abilities.filter((a) => a !== ability),
+            })
+          }
           className={chipClass}
         >
-          {filters.ability}
+          {ability}
           <span aria-hidden="true" className="opacity-60">
             ×
           </span>
         </button>
-      )}
+      ))}
       {filters.moves.map((move) => (
         <button
           key={move}
@@ -438,7 +450,7 @@ function FiltersView({
         />
       </div>
 
-      {/* Show N results footer */}
+      {/* Show N results footer — always visible, pinned above keyboard */}
       <div className="shrink-0 border-t border-border p-3">
         <Button className="w-full" onClick={onBack}>
           Show {matchedCount} results

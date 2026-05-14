@@ -505,9 +505,9 @@ function CollapsedSidebarStrip({
   const typeCount = filters.types.length;
   const moveCount = filters.moves.length;
   const roleCount = filters.roles.length;
-  const hasAbility = filters.ability !== null;
+  const abilityCount = filters.abilities.length;
   const totalActive =
-    typeCount + moveCount + roleCount + (hasAbility ? 1 : 0) + (filters.megaOnly ? 1 : 0);
+    typeCount + moveCount + roleCount + abilityCount + (filters.megaOnly ? 1 : 0);
 
   return (
     <div className="bg-muted/50 flex h-full flex-col items-center gap-1 py-2">
@@ -567,18 +567,18 @@ function CollapsedSidebarStrip({
       <button
         type="button"
         onClick={onExpand}
-        aria-label={hasAbility ? `Ability: ${filters.ability} — expand sidebar` : "Ability filter — expand sidebar"}
+        aria-label={abilityCount > 0 ? `${abilityCount} ability filter${abilityCount > 1 ? "s" : ""} — expand sidebar` : "Ability filter — expand sidebar"}
         className={cn(
           "relative rounded p-1.5 transition-colors",
-          hasAbility
+          abilityCount > 0
             ? "text-primary hover:bg-primary/10"
             : "text-muted-foreground hover:text-foreground hover:bg-accent"
         )}
       >
         <Zap className="size-4" />
-        {hasAbility && (
+        {abilityCount > 0 && (
           <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
-            1
+            {abilityCount}
           </span>
         )}
       </button>
@@ -691,7 +691,7 @@ export function SpeciesPicker({
   // Derived list — search + filter (legality already applied to index)
   const filtered = searchSpecies(speciesIndex, query, {
     types: filters.types,
-    ability: filters.ability ?? undefined,
+    abilities: filters.abilities.length > 0 ? filters.abilities : undefined,
     moves: filters.moves,
     roles: filters.roles.length > 0 ? filters.roles : undefined,
     megaOnly: filters.megaOnly,
@@ -731,8 +731,8 @@ export function SpeciesPicker({
       if (move && !prev.moves.includes(move)) {
         next = { ...next, moves: [...prev.moves, move] };
       }
-      if (ability) {
-        next = { ...next, ability };
+      if (ability && !prev.abilities.includes(ability)) {
+        next = { ...next, abilities: [...prev.abilities, ability] };
       }
       return next;
     });
@@ -747,7 +747,10 @@ export function SpeciesPicker({
   }
 
   function handleAbilityFilter(ability: string) {
-    setFilters((prev) => ({ ...prev, ability }));
+    setFilters((prev) => {
+      if (prev.abilities.includes(ability)) return prev;
+      return { ...prev, abilities: [...prev.abilities, ability] };
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -758,7 +761,7 @@ export function SpeciesPicker({
     filters.types.length +
     filters.moves.length +
     filters.roles.length +
-    (filters.ability ? 1 : 0) +
+    filters.abilities.length +
     (filters.megaOnly ? 1 : 0);
 
   // ---------------------------------------------------------------------------

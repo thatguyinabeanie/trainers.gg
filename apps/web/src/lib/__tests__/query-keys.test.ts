@@ -48,6 +48,7 @@ describe("queryKeys", () => {
       expect(queryKeys.tournament.userTeams(7)).toEqual([
         "user-teams-for-tournament",
         7,
+        null,
       ]);
     });
   });

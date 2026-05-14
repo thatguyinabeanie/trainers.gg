@@ -550,8 +550,8 @@ describe("searchSpecies — new filters", () => {
     index = buildSpeciesSearchIndex("gen9vgc2026regg");
   });
 
-  it("ability filter matches any slot", () => {
-    const results = searchSpecies(index, "", { ability: "Intimidate" });
+  it("abilities filter matches any slot (OR logic)", () => {
+    const results = searchSpecies(index, "", { abilities: ["Intimidate"] });
     expect(results.length).toBeGreaterThan(0);
     expect(
       results.every(
