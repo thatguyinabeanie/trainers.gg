@@ -427,8 +427,7 @@ function FiltersView({
         </button>
       </div>
 
-      {/* Filter content + footer in a single scrollable area so there's no
-          forced empty space when the filter sections are shorter than the drawer */}
+      {/* Filter content */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         <SpeciesSidebar
           filters={filters}
@@ -441,13 +440,13 @@ function FiltersView({
           onChange={(next) => onFiltersChange({ ...filters, roles: next })}
           bucketCount={bucketCount}
         />
+      </div>
 
-        {/* Show N results button — inside the scroll so it sits right below content */}
-        <div className="border-t border-border p-3">
-          <Button className="w-full" onClick={onBack}>
-            Show {matchedCount} results
-          </Button>
-        </div>
+      {/* Show N results footer — always visible, pinned above keyboard */}
+      <div className="shrink-0 border-t border-border p-3">
+        <Button className="w-full" onClick={onBack}>
+          Show {matchedCount} results
+        </Button>
       </div>
     </>
   );
