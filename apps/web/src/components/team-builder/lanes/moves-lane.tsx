@@ -246,7 +246,23 @@ function MoveTile({
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
-    setPanel("picker");
+    if (moveName && hasCalc) {
+      setPanel("detail");
+    } else {
+      setPanel("picker");
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (moveName && hasCalc) {
+        setPanel("detail");
+      } else {
+        setPanel("picker");
+      }
+    }
   }
 
   const detailOpen = panel === "detail";
@@ -262,7 +278,9 @@ function MoveTile({
       >
         <TableRow
           ref={rowRef}
+          tabIndex={0}
           onClick={handleClick}
+          onKeyDown={handleKeyDown}
           onContextMenu={handleContextMenu}
           className={cn(
             "cursor-pointer border-none transition-colors",
