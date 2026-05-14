@@ -989,6 +989,10 @@ export async function getUserTeamsAction(
         held_item?: string | null;
         ability?: string | null;
         tera_type?: string | null;
+        move1?: string | null;
+        move2?: string | null;
+        move3?: string | null;
+        move4?: string | null;
       }>;
     }>
   >

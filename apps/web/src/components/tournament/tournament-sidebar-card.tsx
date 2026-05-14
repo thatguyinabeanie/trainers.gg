@@ -908,7 +908,6 @@ export function TournamentSidebarCard({
                     move3: mon.move3 ?? undefined,
                     move4: mon.move4 ?? undefined,
                   }))}
-                  compact
                 />
               </div>
             )}
@@ -964,7 +963,7 @@ export function TournamentSidebarCard({
             </CollapsibleTrigger>
             {pokemonCount > 0 && (
               <CollapsibleContent>
-                <TeamPreview pokemon={submittedTeam.pokemon} compact />
+                <TeamPreview pokemon={submittedTeam.pokemon} />
               </CollapsibleContent>
             )}
           </Collapsible>
@@ -995,7 +994,7 @@ export function TournamentSidebarCard({
             </CollapsibleTrigger>
             {pokemonCount > 0 && (
               <CollapsibleContent className="space-y-3">
-                <TeamPreview pokemon={submittedTeam.pokemon} compact />
+                <TeamPreview pokemon={submittedTeam.pokemon} />
                 <Button
                   variant="ghost"
                   size="sm"

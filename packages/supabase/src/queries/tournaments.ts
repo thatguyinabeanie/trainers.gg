@@ -1071,7 +1071,7 @@ export async function getUserTeams(
       `id, name, format,
        team_pokemon(
          team_position,
-         pokemon:pokemon(species, nickname, held_item, ability, tera_type)
+          pokemon:pokemon(species, nickname, held_item, ability, tera_type, move1, move2, move3, move4)
        )`
     )
     .eq("created_by", targetAltId!);
