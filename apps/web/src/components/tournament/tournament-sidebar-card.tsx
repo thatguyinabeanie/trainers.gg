@@ -369,9 +369,9 @@ export function TournamentSidebarCard({
     (checkInStatus?.isCheckedIn ?? false);
 
   const { data: availableTeams = [] } = useQuery({
-    queryKey: queryKeys.tournament.userTeams(tournamentId),
+    queryKey: queryKeys.tournament.userTeams(tournamentId, gameFormat),
     queryFn: async () => {
-      const result = await getUserTeamsAction();
+      const result = await getUserTeamsAction(gameFormat);
       if (result.success) return result.data;
       return [];
     },
@@ -603,15 +603,16 @@ export function TournamentSidebarCard({
         toast.success("Team selected", {
           description: `${result.data.teamName}: ${speciesList}`,
         });
+        const selectedTeam = availableTeams.find(
+          (t) => t.id === numericId
+        );
         setSubmittedTeam({
           teamId: result.data.teamId,
           submittedAt: new Date().toISOString(),
           locked: false,
-          // We don't have full pokemon details from the list,
-          // so use a minimal placeholder — refetch will fill it in
-          pokemon: Array.from({ length: result.data.pokemonCount }, () => ({
-            species: "Loading...",
-          })),
+          pokemon:
+            selectedTeam?.pokemon ??
+            result.data.species.map((species) => ({ species })),
         });
         setTeamEditMode(false);
         refetchRegistration();
@@ -768,7 +769,7 @@ export function TournamentSidebarCard({
     const teamDropdown =
       availableTeams.length > 0 ? (
         <Select onValueChange={handleSelectTeam} disabled={isSelectingTeam}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue
               placeholder={isSelectingTeam ? "Selecting..." : "Select a team"}
             />

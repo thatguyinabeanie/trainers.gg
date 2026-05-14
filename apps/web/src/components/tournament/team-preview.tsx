@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PokemonSprite } from "./pokemon-sprite";
 import { cn } from "@/lib/utils";
 
 interface TeamPokemon {
@@ -37,32 +38,37 @@ export function TeamPreview({
           size={compact ? "sm" : "default"}
           className="bg-muted/50 py-0"
         >
-          <CardContent className={cn("py-3", compact && "py-2")}>
-            <div className="text-sm font-semibold">{mon.species}</div>
-            {mon.nickname && mon.nickname !== mon.species && (
-              <div className="text-muted-foreground text-xs italic">
-                &quot;{mon.nickname}&quot;
+          <CardContent className={cn("flex items-center gap-2 py-3", compact && "py-2")}>
+            <PokemonSprite species={mon.species} size={compact ? 36 : 48} className="shrink-0" />
+            <div className="min-w-0">
+              <div className={cn("truncate font-semibold", compact ? "text-sm" : "text-sm")}>
+                {mon.species}
               </div>
-            )}
-            {!compact && (
-              <div className="mt-1.5 space-y-1">
-                {mon.held_item && (
-                  <div className="text-muted-foreground text-xs">
-                    {mon.held_item}
-                  </div>
-                )}
-                {mon.ability && (
-                  <div className="text-muted-foreground text-xs">
-                    {mon.ability}
-                  </div>
-                )}
-                {mon.tera_type && (
-                  <Badge variant="outline" className="px-1.5 py-0 text-xs">
-                    Tera: {mon.tera_type}
-                  </Badge>
-                )}
-              </div>
-            )}
+              {mon.nickname && mon.nickname !== mon.species && (
+                <div className="text-muted-foreground truncate text-xs italic">
+                  &quot;{mon.nickname}&quot;
+                </div>
+              )}
+              {!compact && (
+                <div className="mt-1 space-y-0.5">
+                  {mon.held_item && (
+                    <div className="text-muted-foreground truncate text-xs">
+                      {mon.held_item}
+                    </div>
+                  )}
+                  {mon.ability && (
+                    <div className="text-muted-foreground truncate text-xs">
+                      {mon.ability}
+                    </div>
+                  )}
+                  {mon.tera_type && (
+                    <Badge variant="outline" className="px-1.5 py-0 text-xs">
+                      Tera: {mon.tera_type}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       ))}
