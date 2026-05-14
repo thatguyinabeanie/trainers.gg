@@ -1077,9 +1077,7 @@ export async function getUserTeams(
     .eq("created_by", targetAltId!);
 
   const { data: teams } = await (gameFormat
-    ? baseQuery.or(
-        `format.eq.${gameFormat.replace(/[^a-z0-9_-]/gi, "")},format.is.null`
-      )
+    ? baseQuery.or(`format.eq.${gameFormat},format.is.null`)
     : baseQuery);
 
   if (!teams?.length) return [];
