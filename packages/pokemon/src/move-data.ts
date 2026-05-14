@@ -17,10 +17,21 @@ const gen9Dex = Dex.forGen(9);
 export type MoveCategory = "Physical" | "Special" | "Status";
 
 /**
+ * Fallback types for moves that @pkmn/dex Gen 9 data marks as nonstandard
+ * (Past, Unobtainable) and the Generations wrapper filters out.
+ * Key: move name as stored in the DB/team sheet.
+ * Value: canonical type.
+ */
+const MOVE_TYPE_FALLBACKS: Record<string, string> = {
+  "Light of Ruin": "Fairy",
+};
+
+/**
  * Get the type of a move (e.g., "Fire", "Water").
  * Returns null if the move is not found.
  */
 export function getMoveType(moveName: string): string | null {
+  if (MOVE_TYPE_FALLBACKS[moveName]) return MOVE_TYPE_FALLBACKS[moveName];
   try {
     const move = gen9.moves.get(moveName);
     if (!move?.exists) return null;

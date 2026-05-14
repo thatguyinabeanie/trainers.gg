@@ -30,12 +30,8 @@ interface TeamPreviewProps {
   className?: string;
 }
 
-const MOVE_TYPE_OVERRIDES: Record<string, string> = {
-  "Light of Ruin": "Fairy",
-};
-
 function MoveRow({ move }: { move: string }) {
-  const moveType = MOVE_TYPE_OVERRIDES[move] ?? getMoveType(move);
+  const moveType = getMoveType(move);
 
   return (
     <span className="inline-flex items-center gap-1.5 truncate text-xs">
