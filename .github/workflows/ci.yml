@@ -44,7 +44,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v6
         with:
@@ -311,7 +311,7 @@ jobs:
           fetch-depth: 1
 
       - name: Download all coverage artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: coverage-*
           merge-multiple: true
