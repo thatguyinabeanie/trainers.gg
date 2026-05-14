@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import Image from "next/image";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 import {
   getLegalMoves,
@@ -72,9 +72,9 @@ export function SpeciesMobileRow({
           className="flex size-10 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
         >
           {isExpanded ? (
-            <ChevronUp className="size-4" />
-          ) : (
             <ChevronDown className="size-4" />
+          ) : (
+            <ChevronRight className="size-4" />
           )}
         </button>
 
@@ -130,7 +130,7 @@ export function SpeciesMobileRow({
             )}
 
             {/* Line 3 — single-line stats */}
-            <span className="flex flex-wrap items-baseline gap-1.5 text-[10px] tabular-nums">
+            <span className="flex items-baseline gap-1.5 text-[10px] tabular-nums">
               {STAT_DEFS.map(({ key, label, valueKey }) => (
                 <span key={key} className="inline-flex items-baseline gap-0.5">
                   <span className={cn("font-bold opacity-60", STAT_HEADER_COLORS[key])}>

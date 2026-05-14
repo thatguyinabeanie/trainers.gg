@@ -222,7 +222,7 @@ function ListView({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           aria-label="Search species"
-          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
+          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-[16px] leading-tight focus:outline-none sm:text-sm"
         />
         <button
           type="button"
