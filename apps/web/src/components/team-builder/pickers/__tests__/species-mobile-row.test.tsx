@@ -31,7 +31,7 @@ const mockGetLegalMoves = jest.fn();
 const mockGetMoveData = jest.fn();
 
 jest.mock("@trainers/pokemon", () => {
-  const actual = jest.requireActual<typeof import("@trainers/pokemon")>("@trainers/pokemon");
+  const actual = jest.requireActual("@trainers/pokemon");
   return {
     ...actual,
     getLegalMoves: (...args: Parameters<typeof actual.getLegalMoves>) =>
@@ -239,7 +239,7 @@ describe("SpeciesMobileRow", () => {
 
     it("shows fallback message when getLegalMoves returns unavailable", async () => {
       const user = userEvent.setup();
-      const { LEGALITY_UNAVAILABLE } = jest.requireActual<typeof import("@trainers/pokemon")>("@trainers/pokemon");
+      const { LEGALITY_UNAVAILABLE } = jest.requireActual("@trainers/pokemon");
       mockGetLegalMoves.mockReturnValue(LEGALITY_UNAVAILABLE);
       render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
