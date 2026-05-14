@@ -8,11 +8,7 @@ import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent } from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -218,6 +214,7 @@ function MoveTile({
   slotErrors,
 }: MoveTileProps) {
   const [panel, setPanel] = useState<TilePanel>(null);
+  const rowRef = useRef<HTMLTableRowElement>(null);
 
   const calc = useCalcStateContext();
   const moveIdx = SLOT_IDX[slotKey];
@@ -263,29 +260,25 @@ function MoveTile({
           if (!open && panel === "detail") setPanel(null);
         }}
       >
-        <PopoverTrigger
-          nativeButton={false}
-          render={
-            <TableRow
-              onClick={handleClick}
-              onContextMenu={handleContextMenu}
-              className={cn(
-                "cursor-pointer border-none transition-colors",
-                "[&_td]:border-y [&_td]:border-transparent [&_td]:transition-colors",
-                "[&_td:first-child]:rounded-l-md [&_td:first-child]:border-l",
-                "[&_td:last-child]:rounded-r-md [&_td:last-child]:border-r",
-                "hover:[&_td]:border-border hover:[&_td]:bg-muted",
-                koTier === "1" &&
-                  "[&_td]:border-[color-mix(in_oklch,var(--ko-red)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-red)_8%,transparent)]",
-                koTier === "2" &&
-                  "[&_td]:border-[color-mix(in_oklch,var(--ko-amber2-fg)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-amber2-fg)_8%,transparent)]",
-                koTier === "3" &&
-                  "[&_td]:border-[color-mix(in_oklch,var(--ko-yellow-fg)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-yellow-fg)_8%,transparent)]",
-                koTier === "4" && "[&_td]:border-border/50 [&_td]:bg-muted/30",
-                hasError && "ring-destructive/50 ring-1"
-              )}
-            />
-          }
+        <TableRow
+          ref={rowRef}
+          onClick={handleClick}
+          onContextMenu={handleContextMenu}
+          className={cn(
+            "cursor-pointer border-none transition-colors",
+            "[&_td]:border-y [&_td]:border-transparent [&_td]:transition-colors",
+            "[&_td:first-child]:rounded-l-md [&_td:first-child]:border-l",
+            "[&_td:last-child]:rounded-r-md [&_td:last-child]:border-r",
+            "hover:[&_td]:border-border hover:[&_td]:bg-muted",
+            koTier === "1" &&
+              "[&_td]:border-[color-mix(in_oklch,var(--ko-red)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-red)_8%,transparent)]",
+            koTier === "2" &&
+              "[&_td]:border-[color-mix(in_oklch,var(--ko-amber2-fg)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-amber2-fg)_8%,transparent)]",
+            koTier === "3" &&
+              "[&_td]:border-[color-mix(in_oklch,var(--ko-yellow-fg)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-yellow-fg)_8%,transparent)]",
+            koTier === "4" && "[&_td]:border-border/50 [&_td]:bg-muted/30",
+            hasError && "ring-destructive/50 ring-1"
+          )}
         >
           {/* Type icon */}
           <TableCell className="w-6 p-1 align-middle">
@@ -391,9 +384,9 @@ function MoveTile({
               ) : null}
             </TableCell>
           )}
-        </PopoverTrigger>
+        </TableRow>
 
-        <PopoverContent side="bottom" align="start" className="w-auto p-0">
+        <PopoverContent side="bottom" align="start" anchor={rowRef} className="w-auto p-0">
           {detailOpen && moveName && output ? (
             <CalcDetailCard
               attacker={attacker}
