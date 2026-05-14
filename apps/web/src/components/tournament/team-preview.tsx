@@ -63,47 +63,47 @@ export function TeamPreview({
         );
 
         return (
-          <Card key={i} size="sm" className="bg-muted/50 h-full py-0">
-            <CardContent className="grid h-full grid-cols-2 gap-x-2 gap-y-1.5 py-2 sm:grid-cols-[72px_1fr_auto] sm:gap-3">
-              <div className="flex flex-col items-center gap-1">
-                <PokemonSprite
-                  species={displaySpecies}
-                  size={72}
-                  className="shrink-0"
-                />
-                <span className="truncate text-center text-xs font-semibold leading-tight">
-                  {displaySpecies}
-                </span>
-              </div>
-              <div className="flex flex-col justify-center gap-1.5 text-xs">
-                <div className="flex gap-0.5">
-                  {types.map((t) => (
-                    <TypeSprite key={t} type={t} className="h-[14px] w-[22px]" />
-                  ))}
-                </div>
-                {mon.held_item && (
-                  <span className="text-muted-foreground inline-flex items-center gap-1 truncate">
-                    <ItemSprite item={mon.held_item} size={14} />
-                    <span className="truncate">{mon.held_item}</span>
+          <Card key={i} size="sm" className="bg-muted/50 py-0">
+            <CardContent className="flex flex-col gap-2 py-2">
+              <div className="flex items-center gap-3">
+                <div className="flex shrink-0 flex-col items-center gap-1">
+                  <PokemonSprite
+                    species={displaySpecies}
+                    size={64}
+                    className="shrink-0"
+                  />
+                  <span className="max-w-16 truncate text-center text-[11px] font-semibold leading-tight">
+                    {displaySpecies}
                   </span>
-                )}
-                {mon.ability && (
-                  <Badge
-                    variant="secondary"
-                    className="w-fit truncate px-1.5 py-0 text-[11px] font-normal"
-                  >
-                    {megaAbility
-                      ? `${mon.ability} → ${megaAbility}`
-                      : mon.ability}
-                  </Badge>
-                )}
-              </div>
-              <div className="col-span-2 flex flex-col gap-1.5 text-xs sm:col-span-1 sm:justify-center">
-                <div className="grid grid-cols-2 gap-1 sm:block sm:space-y-1.5">
-                  {moves.map((move, mi) => (
-                    <MoveRow key={mi} move={move} />
-                  ))}
                 </div>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex gap-0.5">
+                    {types.map((t) => (
+                      <TypeSprite key={t} type={t} className="h-3 w-[18px]" />
+                    ))}
+                  </div>
+                  {mon.held_item && (
+                    <div className="text-muted-foreground inline-flex items-center gap-1 truncate text-[11px]">
+                      <ItemSprite item={mon.held_item} size={12} />
+                      <span className="truncate">{mon.held_item}</span>
+                    </div>
+                  )}
+                  {mon.ability && (
+                    <Badge
+                      variant="secondary"
+                      className="truncate px-1 py-0 text-[10px] font-normal"
+                    >
+                      {megaAbility
+                        ? `${mon.ability} → ${megaAbility}`
+                        : mon.ability}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                {moves.map((move, mi) => (
+                  <MoveRow key={mi} move={move} />
+                ))}
               </div>
             </CardContent>
           </Card>
