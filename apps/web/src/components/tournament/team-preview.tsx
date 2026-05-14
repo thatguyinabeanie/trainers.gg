@@ -72,7 +72,7 @@ export function TeamPreview({
                   className="shrink-0"
                 />
                 <span className="truncate text-center text-xs font-semibold leading-tight">
-                  {mon.species}
+                  {displaySpecies}
                 </span>
               </div>
               <div className="flex flex-col justify-center gap-1.5 text-xs">
