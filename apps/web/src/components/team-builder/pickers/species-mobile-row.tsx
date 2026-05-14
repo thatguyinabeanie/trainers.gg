@@ -85,14 +85,14 @@ export function SpeciesMobileRow({
           aria-label={entry.species}
           className="flex min-w-0 flex-1 items-center gap-2.5 py-2 pr-3 text-left transition-colors active:bg-muted/50 hover:bg-muted/30"
         >
-          <span className="bg-primary/5 border-primary/30 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border">
+          <span className="bg-primary/5 border-primary/30 flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full border">
             <Image
               src={sprite.url}
               alt=""
-              width={40}
-              height={40}
+              width={56}
+              height={56}
               className={cn(
-                "size-9 object-contain",
+                "size-12 object-contain",
                 sprite.pixelated && "[image-rendering:pixelated]"
               )}
             />
