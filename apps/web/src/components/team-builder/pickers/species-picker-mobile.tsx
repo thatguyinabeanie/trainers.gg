@@ -160,6 +160,7 @@ export function SpeciesPickerMobile({
               onOpenFilters={() => setView("filters")}
               onPick={handlePick}
               currentSpecies={value}
+              formatId={format?.id ?? DEFAULT_FORMAT_ID}
             />
           ) : (
             <FiltersView
@@ -194,6 +195,7 @@ interface ListViewProps {
   onOpenFilters: () => void;
   onPick: (species: string) => void;
   currentSpecies: string | null;
+  formatId: string;
 }
 
 function ListView({
@@ -207,6 +209,7 @@ function ListView({
   onOpenFilters,
   onPick,
   currentSpecies,
+  formatId,
 }: ListViewProps) {
   return (
     <>
@@ -258,6 +261,7 @@ function ListView({
             entry={entry}
             onPick={onPick}
             isSelected={entry.species === currentSpecies}
+            formatId={formatId}
           />
         ))}
         {matched.length === 0 && (
