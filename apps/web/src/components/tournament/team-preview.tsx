@@ -63,8 +63,8 @@ export function TeamPreview({
         );
 
         return (
-          <Card key={i} size="sm" className="bg-muted/50 py-0">
-            <CardContent className="grid grid-cols-[auto_1fr_auto] gap-3 py-2.5">
+          <Card key={i} size="sm" className="bg-muted/50 h-full py-0">
+            <CardContent className="grid h-full grid-cols-[72px_1fr_8rem] gap-3 py-2.5">
               <div className="flex flex-col items-center gap-1">
                 <PokemonSprite
                   species={displaySpecies}
