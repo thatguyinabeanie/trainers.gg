@@ -120,6 +120,7 @@ export function SpeciesSidebar({
           .filter((a) =>
             a.toLowerCase().includes(abilityInput.trim().toLowerCase())
           )
+          .filter((a) => !filters.abilities.includes(a))
           .slice(0, SUGGESTION_LIMIT)
       : [];
 
@@ -179,8 +180,8 @@ export function SpeciesSidebar({
       // Only commit when there's an actual suggestion match — typing arbitrary
       // text shouldn't apply an ability filter that doesn't exist.
       const pick = abilitySuggestions[0];
-      if (pick) {
-        onFiltersChange({ ...filters, ability: pick });
+      if (pick && !filters.abilities.includes(pick)) {
+        onFiltersChange({ ...filters, abilities: [...filters.abilities, pick] });
         setAbilityInput("");
       }
     } else if (e.key === "Escape") {
@@ -298,66 +299,87 @@ export function SpeciesSidebar({
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 3. Ability combobox                                                 */}
+      {/* 3. Ability combobox (multi-select)                                  */}
       {/* ------------------------------------------------------------------ */}
       <div className={SECTION_PADDING}>
         <span className={SECTION_HEADER}>Ability</span>
-        {filters.ability ? (
-          <button
-            type="button"
-            onClick={() => onFiltersChange({ ...filters, ability: null })}
-            aria-label={`Clear ${filters.ability} filter`}
-            className="bg-primary/10 text-primary border-primary hover:bg-primary/15 inline-flex w-full items-center justify-between gap-2 rounded border px-2 py-1 text-[11px] font-medium transition-colors"
-          >
-            <span className="truncate">{filters.ability}</span>
-            <span aria-hidden="true" className="text-[10px] opacity-70">
-              ×
-            </span>
-          </button>
-        ) : (
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Type or click an ability..."
-              value={abilityInput}
-              onChange={(e) => setAbilityInput(e.target.value)}
-              onKeyDown={handleAbilityKeyDown}
-              onFocus={() => setAbilityFocused(true)}
-              onBlur={() => {
-                // Defer so a click on a suggestion can fire before the
-                // dropdown disappears.
-                clearTimeout(abilityBlurTimerRef.current);
-                abilityBlurTimerRef.current = setTimeout(
-                  () => setAbilityFocused(false),
-                  120
-                );
-              }}
-              className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-[11px] focus:ring-1 focus:outline-none"
-            />
-            {abilityFocused && abilitySuggestions.length > 0 && (
-              <ul
-                aria-label="Matching abilities"
-                className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
+
+        {/* Typeahead input + suggestion dropdown — always visible */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder={
+              filters.abilities.length > 0
+                ? "Add another ability..."
+                : "Type or click an ability..."
+            }
+            value={abilityInput}
+            onChange={(e) => setAbilityInput(e.target.value)}
+            onKeyDown={handleAbilityKeyDown}
+            onFocus={() => setAbilityFocused(true)}
+            onBlur={() => {
+              // Defer so a click on a suggestion can fire before the
+              // dropdown disappears.
+              clearTimeout(abilityBlurTimerRef.current);
+              abilityBlurTimerRef.current = setTimeout(
+                () => setAbilityFocused(false),
+                120
+              );
+            }}
+            className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-[11px] focus:ring-1 focus:outline-none"
+          />
+          {abilityFocused && abilitySuggestions.length > 0 && (
+            <ul
+              aria-label="Matching abilities"
+              className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
+            >
+              {abilitySuggestions.map((ability) => (
+                <li key={ability}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                    }}
+                    onClick={() => {
+                      if (!filters.abilities.includes(ability)) {
+                        onFiltersChange({
+                          ...filters,
+                          abilities: [...filters.abilities, ability],
+                        });
+                      }
+                      setAbilityInput("");
+                    }}
+                    className="hover:bg-accent w-full px-2 py-1 text-left text-[11px]"
+                  >
+                    {ability}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Selected abilities as chips */}
+        {filters.abilities.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {filters.abilities.map((ability) => (
+              <button
+                key={ability}
+                type="button"
+                onClick={() =>
+                  onFiltersChange({
+                    ...filters,
+                    abilities: filters.abilities.filter((a) => a !== ability),
+                  })
+                }
+                className="bg-primary/15 text-primary border-primary hover:bg-primary/25 flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors"
               >
-                {abilitySuggestions.map((ability) => (
-                  <li key={ability}>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                      }}
-                      onClick={() => {
-                        onFiltersChange({ ...filters, ability });
-                        setAbilityInput("");
-                      }}
-                      className="hover:bg-accent w-full px-2 py-1 text-left text-[11px]"
-                    >
-                      {ability}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+                {ability}
+                <span aria-hidden="true" className="ml-0.5 text-[9px]">
+                  ×
+                </span>
+              </button>
+            ))}
           </div>
         )}
       </div>

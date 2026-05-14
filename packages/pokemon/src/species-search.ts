@@ -439,8 +439,6 @@ export function searchSpecies(
      * computable (the function falls back to name/type/ability matching).
      */
     formatId?: string;
-    /** Filter: species must have this exact ability in any slot */
-    ability?: string | null;
     /** Filter: include only species that have at least one Mega form */
     megaOnly?: boolean;
     /** Filter: species must carry ALL of these role IDs (AND logic). */
@@ -505,16 +503,6 @@ export function searchSpecies(
         normalizedAbilities.includes(a.toLowerCase())
       );
       if (!hasMatchingAbility) return false;
-    }
-
-    // -- Ability filter (exact match against any ability slot) --
-    if (options?.ability) {
-      const target = options.ability.toLowerCase();
-      const match =
-        entry.abilitySlot1?.toLowerCase() === target ||
-        entry.abilitySlot2?.toLowerCase() === target ||
-        entry.hiddenAbility?.toLowerCase() === target;
-      if (!match) return false;
     }
 
     // -- megaOnly filter — show ONLY Mega-form species --

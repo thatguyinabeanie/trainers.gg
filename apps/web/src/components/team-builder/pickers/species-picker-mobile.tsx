@@ -89,7 +89,7 @@ export function SpeciesPickerMobile({
 
   const filtered = searchSpecies(speciesIndex, query, {
     types: filters.types,
-    ability: filters.ability ?? undefined,
+    abilities: filters.abilities.length > 0 ? filters.abilities : undefined,
     moves: filters.moves,
     roles: filters.roles.length > 0 ? filters.roles : undefined,
     megaOnly: filters.megaOnly,
@@ -104,7 +104,7 @@ export function SpeciesPickerMobile({
     filters.types.length +
     filters.moves.length +
     filters.roles.length +
-    (filters.ability ? 1 : 0) +
+    filters.abilities.length +
     (filters.megaOnly ? 1 : 0);
 
   // Bucket counts for role-presets — number of matched species with each role.
@@ -312,19 +312,25 @@ function ChipStrip({ filters, onFiltersChange }: ChipStripProps) {
           </span>
         </button>
       ))}
-      {filters.ability && (
+      {filters.abilities.map((ability) => (
         <button
+          key={ability}
           type="button"
-          aria-label={`Remove ${filters.ability} ability filter`}
-          onClick={() => onFiltersChange({ ...filters, ability: null })}
+          aria-label={`Remove ${ability} ability filter`}
+          onClick={() =>
+            onFiltersChange({
+              ...filters,
+              abilities: filters.abilities.filter((a) => a !== ability),
+            })
+          }
           className={chipClass}
         >
-          {filters.ability}
+          {ability}
           <span aria-hidden="true" className="opacity-60">
             ×
           </span>
         </button>
-      )}
+      ))}
       {filters.moves.map((move) => (
         <button
           key={move}
