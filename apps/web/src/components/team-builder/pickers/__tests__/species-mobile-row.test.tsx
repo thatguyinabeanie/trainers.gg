@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { speciesSearchEntryFactory } from "@trainers/test-utils/factories";
@@ -28,18 +28,38 @@ jest.mock("@trainers/pokemon/sprites", () => ({
 }));
 
 const mockGetLegalMoves = jest.fn();
+const mockGetMoveData = jest.fn();
+
 jest.mock("@trainers/pokemon", () => {
   const actual = jest.requireActual<typeof import("@trainers/pokemon")>("@trainers/pokemon");
   return {
     ...actual,
     getLegalMoves: (...args: Parameters<typeof actual.getLegalMoves>) =>
       mockGetLegalMoves(...args),
+    getMoveData: (name: string) => mockGetMoveData(name),
   };
 });
 
 import { SpeciesMobileRow } from "../species-mobile-row";
 
 const FORMAT_ID = "gen9vgc2025regg";
+
+const makeMoveData = (overrides: Partial<{
+  name: string;
+  type: string;
+  category: "Physical" | "Special" | "Status";
+  basePower: number;
+  accuracy: number | true;
+  shortDesc: string;
+}> = {}) => ({
+  name: "Dragon Claw",
+  type: "Dragon",
+  category: "Physical" as const,
+  basePower: 80,
+  accuracy: 100,
+  shortDesc: "No additional effect.",
+  ...overrides,
+});
 
 describe("SpeciesMobileRow", () => {
   const baseEntry = speciesSearchEntryFactory.build({
@@ -54,7 +74,8 @@ describe("SpeciesMobileRow", () => {
   });
 
   beforeEach(() => {
-    mockGetLegalMoves.mockReturnValue(new Set(["Dragon Claw", "Earthquake", "Fire Fang"]));
+    mockGetLegalMoves.mockReturnValue(new Set(["Dragon Claw"]));
+    mockGetMoveData.mockReturnValue(makeMoveData());
   });
 
   it("renders the species name", () => {
@@ -152,30 +173,68 @@ describe("SpeciesMobileRow", () => {
     it("toggles aria-expanded when the chevron is clicked", async () => {
       const user = userEvent.setup();
       render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
-      const chevron = screen.getByRole("button", { name: /expand moves/i });
-      await user.click(chevron);
+      await user.click(screen.getByRole("button", { name: /expand moves/i }));
       expect(screen.getByRole("button", { name: /collapse moves/i })).toHaveAttribute(
         "aria-expanded",
         "true"
       );
     });
 
-    it("renders move chips when expanded and moves are available", async () => {
+    it("renders move name, BP, and ACC when expanded", async () => {
       const user = userEvent.setup();
-      mockGetLegalMoves.mockReturnValue(new Set(["Dragon Claw", "Earthquake"]));
+      mockGetLegalMoves.mockReturnValue(new Set(["Earthquake"]));
+      mockGetMoveData.mockReturnValue(
+        makeMoveData({ name: "Earthquake", type: "Ground", basePower: 100, accuracy: 100 })
+      );
       render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
-      expect(screen.getByText("Dragon Claw")).toBeInTheDocument();
       expect(screen.getByText("Earthquake")).toBeInTheDocument();
+      expect(screen.getByText("100")).toBeInTheDocument();
+      expect(screen.getByText("100%")).toBeInTheDocument();
     });
 
-    it("renders moves sorted alphabetically", async () => {
+    it("renders the category icon for Physical moves", async () => {
       const user = userEvent.setup();
-      mockGetLegalMoves.mockReturnValue(new Set(["Surf", "Ice Beam", "Blizzard"]));
+      mockGetLegalMoves.mockReturnValue(new Set(["Dragon Claw"]));
+      mockGetMoveData.mockReturnValue(makeMoveData({ category: "Physical" }));
       render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
-      const chips = screen.getAllByText(/blizzard|ice beam|surf/i);
-      expect(chips.map((c) => c.textContent)).toEqual(["Blizzard", "Ice Beam", "Surf"]);
+      expect(screen.getByAltText("Physical")).toBeInTheDocument();
+    });
+
+    it("renders the move description when it has additional effect text", async () => {
+      const user = userEvent.setup();
+      mockGetLegalMoves.mockReturnValue(new Set(["Iron Head"]));
+      mockGetMoveData.mockReturnValue(
+        makeMoveData({ name: "Iron Head", shortDesc: "30% chance to flinch." })
+      );
+      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      await user.click(screen.getByRole("button", { name: /expand moves/i }));
+      expect(screen.getByText("30% chance to flinch.")).toBeInTheDocument();
+    });
+
+    it("renders sort buttons for Name, BP, and ACC", async () => {
+      const user = userEvent.setup();
+      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      await user.click(screen.getByRole("button", { name: /expand moves/i }));
+      expect(screen.getByRole("button", { name: /^name/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^bp/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^acc/i })).toBeInTheDocument();
+    });
+
+    it("sorts moves by BP descending by default (highest BP first)", async () => {
+      const user = userEvent.setup();
+      mockGetLegalMoves.mockReturnValue(new Set(["Tackle", "Earthquake"]));
+      mockGetMoveData.mockImplementation((name: string) =>
+        name === "Tackle"
+          ? makeMoveData({ name: "Tackle", basePower: 40 })
+          : makeMoveData({ name: "Earthquake", basePower: 100 })
+      );
+      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      await user.click(screen.getByRole("button", { name: /expand moves/i }));
+      const names = screen.getAllByText(/tackle|earthquake/i).map((el) => el.textContent);
+      expect(names[0]).toBe("Earthquake");
+      expect(names[1]).toBe("Tackle");
     });
 
     it("shows fallback message when getLegalMoves returns unavailable", async () => {
@@ -190,6 +249,7 @@ describe("SpeciesMobileRow", () => {
     it("collapses the moves panel when chevron is clicked again", async () => {
       const user = userEvent.setup();
       mockGetLegalMoves.mockReturnValue(new Set(["Dragon Claw"]));
+      mockGetMoveData.mockReturnValue(makeMoveData());
       render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
       expect(screen.getByText("Dragon Claw")).toBeInTheDocument();
@@ -199,10 +259,22 @@ describe("SpeciesMobileRow", () => {
 
     it("passes the correct formatId to getLegalMoves", async () => {
       const user = userEvent.setup();
-      mockGetLegalMoves.mockReturnValue(new Set(["Tackle"]));
       render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId="gen9ou" />);
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
       expect(mockGetLegalMoves).toHaveBeenCalledWith("Garchomp-Mega", "gen9ou");
+    });
+
+    it("shows — for BP when basePower is 0 (status moves)", async () => {
+      const user = userEvent.setup();
+      mockGetLegalMoves.mockReturnValue(new Set(["Swords Dance"]));
+      mockGetMoveData.mockReturnValue(
+        makeMoveData({ name: "Swords Dance", category: "Status", basePower: 0, accuracy: true })
+      );
+      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      await user.click(screen.getByRole("button", { name: /expand moves/i }));
+      // BP and ACC both show — for status moves
+      const dashes = within(screen.getByTestId("species-mobile-row")).getAllByText("—");
+      expect(dashes.length).toBeGreaterThanOrEqual(2);
     });
   });
 });

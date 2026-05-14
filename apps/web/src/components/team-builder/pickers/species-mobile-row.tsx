@@ -7,14 +7,22 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 import {
   getLegalMoves,
+  getMoveData,
   LEGALITY_UNAVAILABLE,
+  type MoveData,
   type SpeciesSearchEntry,
 } from "@trainers/pokemon";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
 
+import { CATEGORY_ICON_URLS } from "../move-category-ui";
 import { TypeSymbolIcon } from "../type-symbol-icon";
+import {
+  sortMoveData,
+  type MoveListSortCol,
+  type MoveListSortState,
+} from "./move-list-shared";
 import { STAT_HEADER_COLORS } from "./stat-header-colors";
 
 interface SpeciesMobileRowProps {
@@ -48,14 +56,6 @@ export function SpeciesMobileRow({
   ].filter((a): a is string => Boolean(a));
 
   const sprite = getPokemonSprite(entry.species);
-
-  const expandedMoves = isExpanded
-    ? (() => {
-        const result = getLegalMoves(entry.species, formatId);
-        if (!result || result === LEGALITY_UNAVAILABLE) return null;
-        return Array.from(result).sort();
-      })()
-    : undefined;
 
   return (
     <div
@@ -156,25 +156,157 @@ export function SpeciesMobileRow({
 
       {/* Expanded moves panel */}
       {isExpanded && (
-        <div className="border-t border-border/50 px-3 py-2">
-          {expandedMoves && expandedMoves.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {expandedMoves.map((move) => (
-                <span
-                  key={move}
-                  className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-                >
-                  {move}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <span className="text-[11px] text-muted-foreground">
-              Moves unavailable for this format.
+        <SpeciesMobileMovesPanel
+          species={entry.species}
+          formatId={formatId}
+        />
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// SpeciesMobileMovesPanel
+// =============================================================================
+
+interface SpeciesMobileMovesPanelProps {
+  species: string;
+  formatId: string;
+}
+
+function SpeciesMobileMovesPanel({ species, formatId }: SpeciesMobileMovesPanelProps) {
+  const [sort, setSort] = useState<MoveListSortState>({ col: "bp", dir: "desc" });
+
+  const legalMovesResult = getLegalMoves(species, formatId);
+
+  if (!legalMovesResult || legalMovesResult === LEGALITY_UNAVAILABLE) {
+    return (
+      <div className="border-t border-border/50 px-3 py-2">
+        <span className="text-[11px] text-muted-foreground">
+          Moves unavailable for this format.
+        </span>
+      </div>
+    );
+  }
+
+  const allMoves: MoveData[] = [];
+  for (const moveName of legalMovesResult) {
+    const data = getMoveData(moveName);
+    if (data) allMoves.push(data);
+  }
+
+  const sorted = sortMoveData(allMoves, sort);
+
+  function handleSort(col: MoveListSortCol) {
+    setSort((prev) =>
+      prev.col === col
+        ? { col, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { col, dir: col === "name" ? "asc" : "desc" }
+    );
+  }
+
+  const sortArrow = (col: MoveListSortCol) =>
+    sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "";
+
+  return (
+    <div className="border-t border-border/50">
+      {/* Sort controls */}
+      <div className="flex items-center gap-2 border-b border-border/40 px-3 py-1.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Sort:
+        </span>
+        {(["name", "bp", "acc"] as const).map((col) => (
+          <button
+            key={col}
+            type="button"
+            onClick={() => handleSort(col)}
+            className={cn(
+              "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+              sort.col === col
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {col === "bp" ? "BP" : col === "acc" ? "ACC" : "Name"}
+            {sortArrow(col)}
+          </button>
+        ))}
+        <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+          {sorted.length}
+        </span>
+      </div>
+
+      {/* Move rows */}
+      <div className="max-h-64 overflow-y-auto">
+        {sorted.map((move) => (
+          <MobileMoveRow key={move.name} move={move} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// MobileMoveRow
+// =============================================================================
+
+function MobileMoveRow({ move }: { move: MoveData }) {
+  const categoryUrl = CATEGORY_ICON_URLS[move.category];
+  const bp = move.basePower > 0 ? String(move.basePower) : "—";
+  const acc =
+    move.accuracy === true || !move.accuracy ? "—" : `${move.accuracy}%`;
+  const desc =
+    move.shortDesc !== "No additional effect." ? move.shortDesc : "";
+
+  return (
+    <div className="flex items-start gap-1.5 border-b border-border/30 px-3 py-1.5">
+      {/* Type icon */}
+      <div className="mt-0.5 shrink-0">
+        <TypeSymbolIcon
+          type={move.type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
+          size={20}
+        />
+      </div>
+
+      {/* Category icon */}
+      <div className="mt-1 shrink-0">
+        {categoryUrl ? (
+          <Image
+            src={categoryUrl}
+            alt={move.category}
+            width={32}
+            height={14}
+            unoptimized
+            className="h-[14px] w-auto [image-rendering:pixelated]"
+          />
+        ) : (
+          <span className="text-[10px] text-muted-foreground">—</span>
+        )}
+      </div>
+
+      {/* Name + stats + description */}
+      <div className="min-w-0 flex-1">
+        {/* Line 1: name + BP */}
+        <div className="flex items-baseline justify-between gap-1">
+          <span className="truncate text-xs font-medium text-foreground">
+            {move.name}
+          </span>
+          <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+            {bp}
+          </span>
+        </div>
+        {/* Line 2: ACC + description */}
+        <div className="flex items-baseline gap-1.5">
+          <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+            {acc}
+          </span>
+          {desc && (
+            <span className="min-w-0 truncate text-[10px] text-muted-foreground">
+              {desc}
             </span>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
