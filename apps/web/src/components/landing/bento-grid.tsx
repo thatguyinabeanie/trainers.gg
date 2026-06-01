@@ -256,7 +256,7 @@ function CommunityPreview() {
 
 function BuilderPreview() {
   const features = [
-    { title: "Damage calculator", sub: "KO odds for every matchup" },
+    { title: "Damage calculator", sub: "One foe vs your 6 — and your 6 vs it" },
     { title: "Dynamic speed tiers", sub: "Your team, ranked in the format" },
     { title: "Type coverage", sub: "Spot defensive holes fast" },
     {
