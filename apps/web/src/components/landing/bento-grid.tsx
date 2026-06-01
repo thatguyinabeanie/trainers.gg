@@ -254,6 +254,60 @@ function CommunityPreview() {
   );
 }
 
+function BuilderPreview() {
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      {/* Speed tiers */}
+      <div>
+        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
+          Speed tiers
+        </p>
+        <div className="space-y-0.5 font-mono text-[10px]">
+          <div className="text-muted-foreground flex justify-between">
+            <span>Flutter Mane</span>
+            <span>205</span>
+          </div>
+          <div className="bg-primary/10 text-primary flex justify-between rounded px-1 font-semibold">
+            <span>Raichu</span>
+            <span>192</span>
+          </div>
+          <div className="text-muted-foreground flex justify-between">
+            <span>Chi-Yu</span>
+            <span>152</span>
+          </div>
+        </div>
+      </div>
+      {/* Damage calc */}
+      <div>
+        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
+          Damage calc
+        </p>
+        <div className="font-mono text-[10px]">
+          <p className="text-foreground">Moonblast vs. Chi-Yu</p>
+          <p className="text-primary font-semibold">82.4 – 97.1% · likely OHKO</p>
+        </div>
+      </div>
+      {/* Coverage */}
+      <div>
+        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
+          Type coverage
+        </p>
+        <div className="flex flex-wrap gap-1 font-mono text-[9px]">
+          <span className="rounded bg-green-500/15 px-1 text-green-600 dark:text-green-400">
+            Fire ✓
+          </span>
+          <span className="rounded bg-green-500/15 px-1 text-green-600 dark:text-green-400">
+            Water ✓
+          </span>
+          <span className="rounded bg-amber-500/15 px-1 text-amber-600 dark:text-amber-400">
+            Steel !
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const underConstructionItems = [
   {
     emoji: "📊",
@@ -261,9 +315,9 @@ const underConstructionItems = [
     desc: "Track usage rates, win rates, and popular cores drawn from publicly played tournament teams. See what's working in the current meta before you build.",
   },
   {
-    emoji: "⚔️",
-    label: "Builder",
-    desc: "Build and share teams with current meta analytics at your fingertips. See usage rates, win rates, and popular cores from public tournament data as you build — plus coverage checks and spread insights.",
+    emoji: "🏆",
+    label: "Tournament Results",
+    desc: "Standings and team sheets from across the scene, imported from RK9 and Limitless — viewable natively on profiles and in analytics.",
   },
   {
     emoji: "📝",
@@ -348,7 +402,17 @@ export function BentoGrid() {
           preview={<CompetePreview />}
         />
 
-        {/* Row 3: Community (full width) */}
+        {/* Row 3: Builder (full width) */}
+        <BentoCard
+          step="03"
+          label="builder"
+          headline="Build with the calc and speed tiers built in."
+          description="Damage calc, dynamic speed tiers, and type coverage — all in one builder. Import from Showdown or Poképaste. No account needed to start."
+          preview={<BuilderPreview />}
+          className="md:col-span-2 lg:col-span-3"
+        />
+
+        {/* Row 4: Community (full width) */}
         <BentoCard
           step="08"
           label="community"
