@@ -12,7 +12,13 @@ type OrganizationRow = Database["public"]["Tables"]["communities"]["Row"];
 export type TournamentWithOrg = TournamentRow & {
   organization: Pick<OrganizationRow, "id" | "name" | "slug"> | null;
   registrationCount: number;
-  winner: { id: number; username: string } | null;
+  winner: {
+    id: number;
+    username: string;
+    isPublic?: boolean;
+    isMainAlt?: boolean;
+    parentUsername?: string;
+  } | null;
 };
 
 export type GroupedTournaments = {
@@ -77,7 +83,16 @@ export async function listTournamentsGrouped(
     .filter((t) => t.status === "completed")
     .map((t) => t.id);
 
-  const winnerMap: Record<string, { id: number; username: string }> = {};
+  const winnerMap: Record<
+    string,
+    {
+      id: number;
+      username: string;
+      isPublic: boolean;
+      isMainAlt: boolean;
+      parentUsername: string;
+    }
+  > = {};
 
   if (completedTournamentIds.length > 0) {
     const { data: standings, error: standingsError } = await supabase
@@ -85,7 +100,7 @@ export async function listTournamentsGrouped(
       .select(
         `
         tournament_id,
-        alt:alts(id, username)
+        alt:alts(id, username, is_public, user:users!profiles_user_id_fkey(username, main_alt_id))
       `
       )
       .in("tournament_id", completedTournamentIds)
@@ -97,10 +112,19 @@ export async function listTournamentsGrouped(
 
     for (const standing of standings ?? []) {
       if (standing.alt) {
-        winnerMap[String(standing.tournament_id)] = {
-          id: standing.alt.id,
-          username: standing.alt.username,
-        };
+        const user = Array.isArray(standing.alt.user)
+          ? standing.alt.user[0]
+          : standing.alt.user;
+        if (user) {
+          winnerMap[String(standing.tournament_id)] = {
+            id: standing.alt.id,
+            username: standing.alt.username,
+            isPublic: standing.alt.is_public,
+            // PostgREST may serialize bigints as strings — use loose equality
+            isMainAlt: Number(user.main_alt_id) === Number(standing.alt.id),
+            parentUsername: user.username ?? standing.alt.username,
+          };
+        }
       }
     }
   }
@@ -1012,10 +1036,15 @@ export async function getCheckInStats(
 }
 
 /**
- * Get user's teams for tournament registration
- * If no altId is provided, returns teams for the current authenticated user
+ * Get user's teams for tournament registration.
+ * If no altId is provided, returns teams for the current authenticated user.
+ * Optionally filters by game format so the dropdown only shows valid teams.
  */
-export async function getUserTeams(supabase: TypedClient, altId?: number) {
+export async function getUserTeams(
+  supabase: TypedClient,
+  altId?: number,
+  gameFormat?: string | null
+) {
   let targetAltId: number | undefined = altId;
 
   if (!targetAltId) {
@@ -1036,29 +1065,31 @@ export async function getUserTeams(supabase: TypedClient, altId?: number) {
     targetAltId = alt.id as number;
   }
 
-  const { data: teams } = await supabase
+  const baseQuery = supabase
     .from("teams")
-    .select("*")
+    .select(
+      `id, name, format,
+       team_pokemon(
+         team_position,
+          pokemon:pokemon(species, nickname, held_item, ability, tera_type, move1, move2, move3, move4)
+       )`
+    )
     .eq("created_by", targetAltId!);
+
+  const { data: teams } = await (gameFormat
+    ? baseQuery.or(`format.eq.${gameFormat},format.is.null`)
+    : baseQuery);
 
   if (!teams?.length) return [];
 
-  // Get pokemon count for each team
-  const teamsWithCounts = await Promise.all(
-    teams.map(async (team) => {
-      const { count } = await supabase
-        .from("team_pokemon")
-        .select("*", { count: "exact", head: true })
-        .eq("team_id", team.id);
-
-      return {
-        ...team,
-        pokemonCount: count ?? 0,
-      };
+  return teams
+    .map((team) => {
+      const pokemon = (team.team_pokemon ?? [])
+        .sort((a, b) => a.team_position - b.team_position)
+        .flatMap((tp) => (tp.pokemon ? [tp.pokemon] : []));
+      return { ...team, pokemonCount: pokemon.length, pokemon };
     })
-  );
-
-  return teamsWithCounts.filter((team) => team.pokemonCount > 0);
+    .filter((team) => team.pokemonCount > 0);
 }
 
 /**
@@ -2151,17 +2182,19 @@ export async function getPlayerTournamentHistory(
 ) {
   if (altIds.length === 0) return [];
 
-  // Get all registrations for the given alts with tournament and community info
-  const { data: registrations, error } = await supabase
-    .from("tournament_registrations")
+  // Query tournament_player_stats — only tournaments where the player actually played
+  const { data: stats, error } = await supabase
+    .from("tournament_player_stats")
     .select(
       `
       id,
       alt_id,
-      status,
-      registered_at,
-      team_id,
-      tournament:tournaments!tournament_registrations_tournament_id_fkey (
+      tournament_id,
+      match_wins,
+      match_losses,
+      final_ranking,
+      created_at,
+      tournament:tournaments!tournament_player_stats_tournament_id_fkey (
         id,
         name,
         slug,
@@ -2177,55 +2210,45 @@ export async function getPlayerTournamentHistory(
     `
     )
     .in("alt_id", altIds)
-    .order("registered_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
-  if (!registrations || registrations.length === 0) return [];
+  if (!stats || stats.length === 0) return [];
 
   // Filter to completed tournaments only
-  const completedRegistrations = registrations.filter(
-    (r) =>
-      r.tournament &&
-      typeof r.tournament === "object" &&
-      "status" in r.tournament &&
-      r.tournament.status === "completed"
+  const completedStats = stats.filter(
+    (s) =>
+      s.tournament &&
+      typeof s.tournament === "object" &&
+      "status" in s.tournament &&
+      s.tournament.status === "completed"
   );
 
-  if (completedRegistrations.length === 0) return [];
+  if (completedStats.length === 0) return [];
 
   // Get tournament IDs for completed tournaments
-  const completedTournamentIds = completedRegistrations
-    .map((r) =>
-      typeof r.tournament === "object" && r.tournament && "id" in r.tournament
-        ? (r.tournament.id as number)
+  const completedTournamentIds = completedStats
+    .map((s) =>
+      typeof s.tournament === "object" && s.tournament && "id" in s.tournament
+        ? (s.tournament.id as number)
         : 0
     )
     .filter((id) => id > 0);
 
-  // Get standings for completed tournaments
-  const standingsMap = new Map<
-    number,
-    { rank: number; wins: number; losses: number }
-  >();
+  // Fetch team_id from registrations for team pokemon display
+  const { data: registrations } = await supabase
+    .from("tournament_registrations")
+    .select("tournament_id, alt_id, team_id")
+    .in("alt_id", altIds)
+    .in("tournament_id", completedTournamentIds);
 
-  if (completedTournamentIds.length > 0) {
-    const { data: standings } = await supabase
-      .from("tournament_standings")
-      .select("tournament_id, alt_id, rank, game_wins, game_losses")
-      .in("tournament_id", completedTournamentIds)
-      .in("alt_id", altIds);
-
-    for (const standing of standings ?? []) {
-      standingsMap.set(Number(`${standing.tournament_id}_${standing.alt_id}`), {
-        rank: standing.rank ?? 0,
-        wins: standing.game_wins ?? 0,
-        losses: standing.game_losses ?? 0,
-      });
-    }
+  const regTeamMap = new Map<string, number | null>();
+  for (const r of registrations ?? []) {
+    regTeamMap.set(`${r.tournament_id}-${r.alt_id}`, r.team_id);
   }
 
   // Get team Pokemon for registrations that have teams
-  const registrationTeamIds = completedRegistrations
+  const registrationTeamIds = (registrations ?? [])
     .filter((r) => r.team_id)
     .map((r) => r.team_id as number);
 
@@ -2272,10 +2295,10 @@ export async function getPlayerTournamentHistory(
     }
   }
 
-  // Map registrations to history records
-  return completedRegistrations.map((r) => {
+  // Map stats to history records
+  return completedStats.map((s) => {
     const tournament =
-      r.tournament && typeof r.tournament === "object" ? r.tournament : null;
+      s.tournament && typeof s.tournament === "object" ? s.tournament : null;
     const community =
       tournament &&
       "organization" in tournament &&
@@ -2284,14 +2307,15 @@ export async function getPlayerTournamentHistory(
         ? tournament.organization
         : null;
 
-    const standing = standingsMap.get(Number(`${tournament?.id}_${r.alt_id}`));
-    const teamPokemon = r.team_id ? (teamPokemonMap.get(r.team_id) ?? []) : [];
-
     const tournamentId =
       tournament && "id" in tournament ? (tournament.id as number) : 0;
 
+    const teamId = regTeamMap.get(`${tournamentId}-${s.alt_id}`) ?? null;
+    const teamPokemon = teamId ? (teamPokemonMap.get(teamId) ?? []) : [];
+
     return {
-      id: r.id,
+      id: s.id,
+      altId: s.alt_id,
       tournamentId,
       tournamentName:
         tournament && "name" in tournament ? (tournament.name as string) : "",
@@ -2310,9 +2334,9 @@ export async function getPlayerTournamentHistory(
           ? (tournament.format as string | null)
           : null,
       playerCount: playerCountMap[String(tournamentId)] ?? null,
-      placement: standing?.rank ?? null,
-      wins: standing?.wins ?? 0,
-      losses: standing?.losses ?? 0,
+      placement: s.final_ranking ?? null,
+      wins: s.match_wins ?? 0,
+      losses: s.match_losses ?? 0,
       teamPokemon,
     };
   });
@@ -2525,4 +2549,33 @@ export async function getTeamsForAlt(
       };
     })
     .filter((team) => team.pokemonSpecies.length > 0);
+}
+
+/**
+ * Get community IDs that have at least one live (active) tournament.
+ * Useful for highlighting communities with ongoing activity.
+ */
+export async function getLiveTournamentCommunityIds(
+  supabase: TypedClient,
+  communityIds: number[]
+): Promise<Set<number>> {
+  if (communityIds.length === 0) return new Set();
+
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("community_id")
+    .in("community_id", communityIds)
+    .eq("status", "active");
+
+  if (error) {
+    console.error(
+      "[getLiveTournamentCommunityIds] Failed to fetch:",
+      error
+    );
+    return new Set();
+  }
+
+  return new Set(
+    (data ?? []).map((t) => t.community_id).filter(Boolean) as number[]
+  );
 }

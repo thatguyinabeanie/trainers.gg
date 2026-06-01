@@ -17,6 +17,7 @@ import { DateChip } from "@/app/(app)/tournaments/date-chip";
 import { getGameById, getFormatById } from "@/components/tournaments/shared";
 import { formatDisplayUsername } from "@trainers/utils";
 import type { TournamentWithOrg } from "@trainers/supabase";
+import { getWinnerHref } from "./tournament-list-utils";
 
 const TOURNAMENT_FORMAT_LABELS: Record<string, string> = {
   swiss_only: "Swiss",
@@ -447,12 +448,31 @@ export function CompletedTournaments({
                     )}
                     <TableCell>
                       {tournament.winner ? (
-                        <div className="text-primary flex items-center gap-1.5 font-medium">
-                          <Trophy className="h-3.5 w-3.5" />
-                          <span>
-                            {formatDisplayUsername(tournament.winner.username)}
-                          </span>
-                        </div>
+                        (() => {
+                          const href = getWinnerHref(tournament.winner);
+                          const content = (
+                            <>
+                              <Trophy className="h-3.5 w-3.5" />
+                              <span>
+                                {formatDisplayUsername(
+                                  tournament.winner.username
+                                )}
+                              </span>
+                            </>
+                          );
+                          return href ? (
+                            <Link
+                              href={href}
+                              className="text-primary hover:text-primary/80 flex items-center gap-1.5 font-medium transition-colors"
+                            >
+                              {content}
+                            </Link>
+                          ) : (
+                            <span className="text-primary flex items-center gap-1.5 font-medium">
+                              {content}
+                            </span>
+                          );
+                        })()
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}

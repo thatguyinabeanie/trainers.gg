@@ -123,7 +123,7 @@ const defaultProps = {
     { id: "gen9vgc2024regg", label: "Reg G", game: "Scarlet & Violet" },
     { id: "gen9vgc2024regh", label: "Reg H", game: "Scarlet & Violet" },
     {
-      id: "championsvgc2026regma",
+      id: "gen9championsvgc2026regma",
       label: "Reg M-A",
       game: "Pokemon Champions",
     },
@@ -209,7 +209,7 @@ describe("TeamsListClient", () => {
       buildTeam({
         id: 2,
         name: "Champions Team",
-        format: "championsvgc2026regma",
+        format: "gen9championsvgc2026regma",
       }),
     ];
 
@@ -301,7 +301,7 @@ describe("TeamsListClient", () => {
       buildTeam({
         id: 2,
         name: "Champions Team",
-        format: "championsvgc2026regma",
+        format: "gen9championsvgc2026regma",
       }),
     ];
 

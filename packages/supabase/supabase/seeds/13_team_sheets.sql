@@ -15,7 +15,7 @@ DECLARE
   tp record;
 BEGIN
   -- Always backfill game_format (idempotent — only updates NULLs)
-  UPDATE public.tournaments SET game_format = 'gen9vgc2026regi' WHERE game_format IS NULL;
+  UPDATE public.tournaments SET game_format = 'gen9championsvgc2026regma' WHERE game_format IS NULL;
 
   -- Skip snapshot creation if already seeded
   SELECT EXISTS(SELECT 1 FROM public.tournament_team_sheets LIMIT 1) INTO sheets_exist;
@@ -60,7 +60,7 @@ BEGIN
           move1, move2, move3, move4
         ) VALUES (
           t.id, reg.reg_id, reg.alt_id, reg.team_id,
-          COALESCE(t.game_format, 'gen9vgc2026regi'),
+          COALESCE(t.game_format, 'gen9championsvgc2026regma'),
           tp.team_position, tp.species, tp.ability, tp.held_item, tp.tera_type,
           tp.move1, tp.move2, tp.move3, tp.move4
         ) ON CONFLICT DO NOTHING;

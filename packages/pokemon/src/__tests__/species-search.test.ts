@@ -115,7 +115,7 @@ describe("buildSpeciesSearchIndex", () => {
 });
 
 describe("buildSpeciesSearchIndex — Champions Reg M-A", () => {
-  const CHAMPIONS = "championsvgc2026regma";
+  const CHAMPIONS = "gen9championsvgc2026regma";
 
   it("includes Aerodactyl (isNonstandard=Past but legal in Champions)", () => {
     const index = buildSpeciesSearchIndex(CHAMPIONS);
@@ -550,8 +550,8 @@ describe("searchSpecies — new filters", () => {
     index = buildSpeciesSearchIndex("gen9vgc2026regg");
   });
 
-  it("ability filter matches any slot", () => {
-    const results = searchSpecies(index, "", { ability: "Intimidate" });
+  it("abilities filter matches any slot (OR logic)", () => {
+    const results = searchSpecies(index, "", { abilities: ["Intimidate"] });
     expect(results.length).toBeGreaterThan(0);
     expect(
       results.every(
@@ -564,7 +564,7 @@ describe("searchSpecies — new filters", () => {
   });
 
   it("megaOnly returns only Mega-form species (e.g. Charizard-Mega-X, Venusaur-Mega)", () => {
-    const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
+    const championsIndex = buildSpeciesSearchIndex("gen9championsvgc2026regma");
     const results = searchSpecies(championsIndex, "", { megaOnly: true });
     // Every result should be a Mega form, not a base species
     expect(results.every((e) => e.species.includes("-Mega"))).toBe(true);
@@ -572,7 +572,7 @@ describe("searchSpecies — new filters", () => {
   });
 
   it("megaOnly excludes base species (Charizard appears only as Mega forms)", () => {
-    const championsIndex = buildSpeciesSearchIndex("championsvgc2026regma");
+    const championsIndex = buildSpeciesSearchIndex("gen9championsvgc2026regma");
     const results = searchSpecies(championsIndex, "", { megaOnly: true });
     const names = results.map((e) => e.species);
     // Base "Charizard" should NOT appear; the Mega forms should

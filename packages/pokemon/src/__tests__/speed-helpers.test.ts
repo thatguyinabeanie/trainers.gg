@@ -278,7 +278,7 @@ describe("groupBySpeed", () => {
 
 describe("getSpeedAffectingItems", () => {
   it("returns just choice-scarf for Champions Reg M-A", () => {
-    const format = getFormatById("championsvgc2026regma");
+    const format = getFormatById("gen9championsvgc2026regma");
     if (!format) throw new Error("format fixture missing");
     const items = getSpeedAffectingItems(format);
     expect(items.map((i) => i.id)).toEqual(["choice-scarf"]);

@@ -14,11 +14,11 @@ const VALID_ABILITIES: ReadonlySet<SpeedAbility> = new Set<SpeedAbility>([
   "quick-feet",
 ]);
 
-describe("getMetaSpeedTiers — championsvgc2026regma", () => {
+describe("getMetaSpeedTiers — gen9championsvgc2026regma", () => {
   let entries: MetaSpeedEntry[];
 
   beforeAll(() => {
-    entries = getMetaSpeedTiers("championsvgc2026regma");
+    entries = getMetaSpeedTiers("gen9championsvgc2026regma");
   });
 
   it("returns a curated list (target ~30, must be 20–40)", () => {

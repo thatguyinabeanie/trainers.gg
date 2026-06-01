@@ -306,7 +306,7 @@ describe("TopNavAuthSection", () => {
       const profileLink = await screen.findByRole("link", {
         name: /my profile/i,
       });
-      expect(profileLink).toHaveAttribute("href", "/u/ash_ketchum");
+      expect(profileLink).toHaveAttribute("href", "/@ash_ketchum");
     });
 
     it("does not show My Profile link when no username in metadata", async () => {

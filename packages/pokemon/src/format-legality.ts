@@ -1070,7 +1070,7 @@ function computeLegalAbilitiesForChampions(
 // =============================================================================
 
 /** Format ID for Champions VGC 2026 Regulation M-A. */
-const CHAMPIONS_MA_FORMAT_ID = "championsvgc2026regma";
+const CHAMPIONS_MA_FORMAT_ID = "gen9championsvgc2026regma";
 
 // =============================================================================
 // Tera Types

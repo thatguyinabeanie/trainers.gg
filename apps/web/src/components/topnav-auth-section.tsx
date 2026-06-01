@@ -175,7 +175,7 @@ export function TopNavAuthSection() {
           {user.user_metadata?.username && (
             <DropdownMenuItem>
               <Link
-                href={`/u/${user.user_metadata.username}`}
+                href={`/@${user.user_metadata.username}`}
                 className="flex items-center gap-1.5"
               >
                 <User className="mr-2 h-4 w-4" />

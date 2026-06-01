@@ -407,7 +407,7 @@ describe("submitNewTeam", () => {
 
     const result = await submitNewTeam({
       ...BASE_INPUT,
-      format: "championsvgc2026regma",
+      format: "gen9championsvgc2026regma",
       mode: "import",
       paste: "Flutter Mane\nKoraidon",
     });
@@ -433,7 +433,7 @@ describe("submitNewTeam", () => {
 
     const result = await submitNewTeam({
       ...BASE_INPUT,
-      format: "championsvgc2026regma",
+      format: "gen9championsvgc2026regma",
       mode: "import",
       paste: "Flutter Mane\nIncineroar",
     });
@@ -682,7 +682,7 @@ describe("submitNewTeam", () => {
 
     const result = await submitNewTeam({
       ...BASE_INPUT,
-      format: "championsvgc2026regma",
+      format: "gen9championsvgc2026regma",
       mode: "import",
       paste: "Pikachu",
     });
@@ -733,7 +733,7 @@ describe("submitNewTeam", () => {
 
     const result = await submitNewTeam({
       ...BASE_INPUT,
-      format: "championsvgc2026regma",
+      format: "gen9championsvgc2026regma",
       mode: "import",
       paste: "Pikachu",
     });

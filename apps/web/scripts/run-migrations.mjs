@@ -540,7 +540,8 @@ async function runMigrations() {
     // db push is safe here: all migrations are idempotent (IF NOT EXISTS /
     // DROP ... IF EXISTS guards), so replaying previously-applied migrations
     // on a preview branch database is a no-op with no side effects.
-    exec("npx supabase db push --linked", { env: cliEnv }); // noqa: exec-ok — cliEnv is fully controlled, no user input
+    // --include-all allows out-of-order migrations (e.g. from parallel branches)
+    exec("npx supabase db push --linked --include-all", { env: cliEnv }); // noqa: exec-ok — cliEnv is fully controlled, no user input
   } else if (env.type === "preview" && isProductionDb) {
     // SAFETY: Never push unmerged branch migrations to production.
     console.log(
@@ -554,7 +555,9 @@ async function runMigrations() {
     execWithRetry(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
 
     console.log("\n📤 Applying migrations...");
-    exec("npx supabase db push --linked", { env: cliEnv });
+    // --include-all allows out-of-order migrations that can occur when PRs
+    // merge in a different order than their migration timestamps.
+    exec("npx supabase db push --linked --include-all", { env: cliEnv });
   }
 
   // --- Edge Functions ---

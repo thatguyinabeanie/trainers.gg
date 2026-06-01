@@ -30,7 +30,7 @@ export const FORMAT_MAP = {
   "reg-i": "gen9vgc2025regi",
   // Champions Reg MA: no @pkmn/sim format ID yet (no Tera, Stat Points instead of EVs/IVs).
   // Champions legality is checked by `validateChampionsLegality()` instead.
-  championsvgc2026regma: null,
+  gen9championsvgc2026regma: null,
   "reg-h": "gen9vgc2024regh",
   "reg-g": "gen9vgc2024regg",
   "reg-f": "gen9vgc2024regf",
@@ -278,7 +278,7 @@ function validateChampionsStatPoints(
  * - Every Pokemon has at least one move
  * - Every Pokemon has an ability
  * - Pokemon nicknames do not contain profanity
- * - Champions format (championsvgc2026regma): Stat Point limits (max 32 per stat, 66 total)
+ * - Champions format (gen9championsvgc2026regma): Stat Point limits (max 32 per stat, 66 total)
  */
 export function validateTeamStructure(
   team: ParsedTeam,

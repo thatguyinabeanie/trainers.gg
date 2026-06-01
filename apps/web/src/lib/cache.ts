@@ -86,4 +86,10 @@ export const CacheTags = {
    * because the data changes in Discord, not trainers.gg.
    */
   discordGuild: (serverId: number) => `discord-guild:${serverId}`,
+
+  /** Tag for the limitless tournament list (admin data browser) */
+  LIMITLESS_TOURNAMENTS: "limitless-tournaments",
+
+  /** Tag for a specific limitless tournament detail page */
+  limitlessTournament: (id: string) => `limitless-tournament:${id}`,
 } as const;

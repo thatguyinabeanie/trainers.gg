@@ -323,7 +323,7 @@ const VGC_FORMAT: GameFormat = {
 
 // Reserved for upcoming Champions-format identity-lane tests.
 const _CHAMPIONS_FORMAT: GameFormat = {
-  id: "championsvgc2026regma",
+  id: "gen9championsvgc2026regma",
   game: "Pokemon Champions",
   gameShort: "Champions",
   generation: 9,

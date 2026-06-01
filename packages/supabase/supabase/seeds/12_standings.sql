@@ -583,7 +583,7 @@ BEGIN
       opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann'),
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann_vgc'),
       5,
       24,
       17,
@@ -1124,6 +1124,88 @@ BEGIN
   END IF;
 
   RAISE NOTICE 'Created 64 standings entries for 2 tournaments';
+END $$;
+
+-- =============================================================================
+-- Stellar Novas Monthly #12 standings (private alt winner for link testing)
+-- =============================================================================
+DO $$
+DECLARE
+  t_id bigint;
+BEGIN
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'stellar-novas-monthly-12';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ash_ketchum_draft'),
+      5, 21, 14, 6, 0.7, 0.7, 0.52, 0.49, 1
+    ), (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cynthia'),
+      5, 18, 13, 7, 0.6, 0.65, 0.51, 0.48, 2
+    ), (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brock'),
+      5, 15, 11, 9, 0.5, 0.55, 0.50, 0.47, 3
+    ), (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'karen'),
+      5, 12, 9, 11, 0.4, 0.45, 0.49, 0.46, 4
+    ) ON CONFLICT DO NOTHING;
+    RAISE NOTICE 'Created 4 standings for stellar-novas-monthly-12 (private alt winner)';
+  END IF;
+END $$;
+
+-- =============================================================================
+-- Player stats for tournament history (non-admin users)
+-- These drive the tournament history queries (not registrations)
+-- =============================================================================
+DO $$
+DECLARE
+  t1_id bigint;  -- vgc-league-week-01
+  t2_id bigint;  -- pallet-town-week-01
+  t7_id bigint;  -- stellar-novas-monthly-12
+BEGIN
+  SELECT t.id INTO t1_id FROM public.tournaments t WHERE t.slug = 'vgc-league-week-01';
+  SELECT t.id INTO t2_id FROM public.tournaments t WHERE t.slug = 'pallet-town-week-01';
+  SELECT t.id INTO t7_id FROM public.tournaments t WHERE t.slug = 'stellar-novas-monthly-12';
+
+  -- alyson_stiedemann_vgc: rank 1 in pallet-town-week-01 (public non-main alt winner)
+  IF t2_id IS NOT NULL THEN
+    INSERT INTO public.tournament_player_stats (tournament_id, alt_id, matches_played, match_wins, match_losses, game_wins, game_losses, final_ranking)
+    VALUES (
+      t2_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann_vgc'),
+      5, 5, 0, 17, 8, 1
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- oswaldo_kling: rank 1 in vgc-league-week-01 (main alt winner)
+  IF t1_id IS NOT NULL THEN
+    INSERT INTO public.tournament_player_stats (tournament_id, alt_id, matches_played, match_wins, match_losses, game_wins, game_losses, final_ranking)
+    VALUES (
+      t1_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'oswaldo_kling'),
+      5, 5, 0, 14, 3, 1
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- ash_ketchum_draft: rank 1 in stellar-novas-monthly-12 (private alt winner)
+  IF t7_id IS NOT NULL THEN
+    INSERT INTO public.tournament_player_stats (tournament_id, alt_id, matches_played, match_wins, match_losses, game_wins, game_losses, final_ranking)
+    VALUES (
+      t7_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ash_ketchum_draft'),
+      5, 5, 0, 14, 6, 1
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  RAISE NOTICE 'Created tournament_player_stats for winner alts';
 END $$;
 
 -- =============================================================================

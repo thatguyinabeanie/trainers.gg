@@ -48,8 +48,8 @@ describe("SidebarNewMembers", () => {
   it("links each member to their profile", () => {
     render(<SidebarNewMembers members={makeMembers(2)} />);
     const links = screen.getAllByRole("link");
-    expect(links[0]).toHaveAttribute("href", "/u/member0");
-    expect(links[1]).toHaveAttribute("href", "/u/member1");
+    expect(links[0]).toHaveAttribute("href", "/@member0");
+    expect(links[1]).toHaveAttribute("href", "/@member1");
   });
 
   it("shows join date via formatTimeAgo", () => {

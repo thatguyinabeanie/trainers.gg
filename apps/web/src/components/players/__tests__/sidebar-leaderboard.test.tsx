@@ -52,8 +52,8 @@ describe("SidebarLeaderboard", () => {
   it("links each entry to the player profile", () => {
     render(<SidebarLeaderboard entries={makeEntries(2)} />);
     const links = screen.getAllByRole("link");
-    expect(links[0]).toHaveAttribute("href", "/u/player0");
-    expect(links[1]).toHaveAttribute("href", "/u/player1");
+    expect(links[0]).toHaveAttribute("href", "/@player0");
+    expect(links[1]).toHaveAttribute("href", "/@player1");
   });
 
   it("shows rank numbers starting from 1", () => {

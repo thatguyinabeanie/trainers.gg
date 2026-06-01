@@ -117,7 +117,7 @@ export const VGC_FORMATS: GameFormat[] = [
   // `gameShort === "Champions"`, not the generation number.
   // Showdown format IDs TBD — using placeholder convention until confirmed.
   {
-    id: "championsvgc2026regma",
+    id: "gen9championsvgc2026regma",
     game: "Pokemon Champions",
     gameShort: "Champions",
     generation: 9,
@@ -645,11 +645,11 @@ export const ALL_FORMAT_IDS = VGC_FORMATS.map((f) => f.id);
  * Format IDs that exist in VGC_FORMATS but are NOT supported by @pkmn/sim.
  * Used to filter the VGC registry down to sim-compatible entries.
  *
- * - championsvgc2026regma: Champions' synthetic-mega + Stat Points ruleset
+ * - gen9championsvgc2026regma: Champions' synthetic-mega + Stat Points ruleset
  *   isn't expressible to @pkmn/sim (gen-9 base mechanics with curated bans).
  */
 export const SIM_UNSUPPORTED_FORMAT_IDS: ReadonlySet<string> = new Set([
-  "championsvgc2026regma",
+  "gen9championsvgc2026regma",
 ]);
 
 // =============================================================================
@@ -683,7 +683,7 @@ export function formatHasTera(format: GameFormat | undefined | null): boolean {
 /**
  * Returns true when the given Showdown format ID identifies a Pokemon
  * Champions format. Accepts only modern Showdown IDs (e.g.
- * `championsvgc2026regma`) — legacy `game_format` keys are no longer
+ * `gen9championsvgc2026regma`) — legacy `game_format` keys are no longer
  * supported. Callers that handle raw IDs from the DB must use the
  * Showdown convention.
  *

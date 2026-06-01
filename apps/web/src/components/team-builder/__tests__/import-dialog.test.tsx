@@ -1217,7 +1217,7 @@ describe("ImportDialog", () => {
           open={true}
           onOpenChange={jest.fn()}
           onImportComplete={jest.fn()}
-          formatId="championsvgc2026regma"
+          formatId="gen9championsvgc2026regma"
         />
       );
 
@@ -1571,7 +1571,7 @@ describe("ImportDialog", () => {
           open={true}
           onOpenChange={jest.fn()}
           onImportComplete={jest.fn()}
-          formatId="championsvgc2026regma"
+          formatId="gen9championsvgc2026regma"
         />
       );
 

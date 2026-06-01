@@ -15,6 +15,7 @@ export interface QueryResult<T> {
   data: T | undefined;
   error: Error | null;
   isLoading: boolean;
+  isFetching: boolean;
   refetch: () => Promise<void>;
 }
 
@@ -61,7 +62,9 @@ export function useSupabaseQuery<T>(
   const [data, setData] = useState<T | undefined>(undefined);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const mountedRef = useRef(true);
+  const isInitialLoad = useRef(true);
 
   // Store queryFn in a ref to avoid triggering re-executions
   const queryFnRef = useRef(queryFn);
@@ -71,7 +74,12 @@ export function useSupabaseQuery<T>(
   const depsKey = JSON.stringify(deps);
 
   const execute = async () => {
-    setIsLoading(true);
+    // Only show skeleton on initial load, not background refreshes
+    if (isInitialLoad.current) {
+      setIsLoading(true);
+    } else {
+      setIsFetching(true);
+    }
     setError(null);
 
     try {
@@ -82,11 +90,26 @@ export function useSupabaseQuery<T>(
       }
     } catch (err) {
       if (mountedRef.current) {
-        setError(err instanceof Error ? err : new Error(String(err)));
+        // PostgREST errors are plain objects with a `message` property,
+        // not Error instances — extract the message to avoid "[object Object]"
+        setError(
+          err instanceof Error
+            ? err
+            : new Error(
+                typeof err === "object" &&
+                  err !== null &&
+                  "message" in err &&
+                  typeof (err as { message: unknown }).message === "string"
+                  ? (err as { message: string }).message
+                  : String(err)
+              )
+        );
       }
     } finally {
       if (mountedRef.current) {
         setIsLoading(false);
+        setIsFetching(false);
+        isInitialLoad.current = false;
       }
     }
   };
@@ -104,6 +127,7 @@ export function useSupabaseQuery<T>(
     data,
     error,
     isLoading,
+    isFetching,
     refetch: execute,
   };
 }

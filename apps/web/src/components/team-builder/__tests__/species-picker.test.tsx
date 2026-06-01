@@ -90,7 +90,7 @@ jest.mock("../pickers/species-sidebar", () => ({
   }: {
     filters: {
       types: string[];
-      ability: string | null;
+      abilities: string[];
       moves: string[];
       roles: string[];
       megaOnly: boolean;
@@ -891,7 +891,7 @@ describe("SpeciesPicker", () => {
     expect(filters.moves).toEqual(["Tailwind"]);
   });
 
-  it("smart-filter with kind=ability sets filters.ability and clears query", async () => {
+  it("smart-filter with kind=ability adds ability to filters.abilities and clears query", async () => {
     const user = userEvent.setup();
     render(
       <SpeciesPicker
@@ -907,12 +907,12 @@ describe("SpeciesPicker", () => {
     await user.click(screen.getByTestId("smart-filter-ability"));
     // Query must be cleared
     expect(input).toHaveValue("");
-    // filters.ability should be set to "Drought"
+    // filters.abilities should contain "Drought"
     const sidebarEl = screen.getByTestId("species-sidebar");
     const filters = JSON.parse(
       (sidebarEl as HTMLElement).dataset.filters ?? "{}"
-    ) as { ability?: string | null };
-    expect(filters.ability).toBe("Drought");
+    ) as { abilities?: string[] };
+    expect(filters.abilities).toEqual(["Drought"]);
     // Filter count badge reflects 1 active filter
     expect(
       screen.getByRole("button", { name: /Clear 1 active filter/i })

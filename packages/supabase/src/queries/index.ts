@@ -23,6 +23,8 @@ export {
   getFollowingCount,
   getPlayerTournamentHistoryFull,
   getPlayerPublicTeams,
+  getAltByHandle,
+  getUserMainAltId,
 } from "./users";
 
 // Community queries (renamed from organization)
@@ -104,6 +106,7 @@ export {
   getPlayerLifetimeStats,
   getAltsBulkStats,
   getTeamsForAlt,
+  getLiveTournamentCommunityIds,
 } from "./tournaments";
 
 export type {
