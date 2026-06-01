@@ -255,55 +255,35 @@ function CommunityPreview() {
 }
 
 function BuilderPreview() {
+  const features = [
+    { title: "Damage calculator", sub: "KO odds for every matchup" },
+    { title: "Dynamic speed tiers", sub: "Your team, ranked in the format" },
+    { title: "Type coverage", sub: "Spot defensive holes fast" },
+    {
+      title: "Showdown & Poképaste import",
+      sub: "Paste a team, start instantly",
+    },
+    { title: "Legality validation", sub: "Format-legal before you submit" },
+    { title: "No account needed", sub: "Build first, save later" },
+  ] as const;
+
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-      {/* Speed tiers */}
-      <div>
-        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
-          Speed tiers
-        </p>
-        <div className="space-y-0.5 font-mono text-[10px]">
-          <div className="text-muted-foreground flex justify-between">
-            <span>Flutter Mane</span>
-            <span>205</span>
-          </div>
-          <div className="bg-primary/10 text-primary flex justify-between rounded px-1 font-semibold">
-            <span>Raichu</span>
-            <span>192</span>
-          </div>
-          <div className="text-muted-foreground flex justify-between">
-            <span>Chi-Yu</span>
-            <span>152</span>
+    <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-3">
+      {features.map(({ title, sub }) => (
+        <div key={title} className="flex items-start gap-1.5">
+          <span className="text-primary shrink-0 text-[11px] leading-tight font-bold">
+            ✓
+          </span>
+          <div className="min-w-0">
+            <p className="text-foreground text-[11px] leading-tight font-semibold">
+              {title}
+            </p>
+            <p className="text-muted-foreground text-[10px] leading-tight">
+              {sub}
+            </p>
           </div>
         </div>
-      </div>
-      {/* Damage calc */}
-      <div>
-        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
-          Damage calc
-        </p>
-        <div className="font-mono text-[10px]">
-          <p className="text-foreground">Moonblast vs. Chi-Yu</p>
-          <p className="text-primary font-semibold">82.4 – 97.1% · likely OHKO</p>
-        </div>
-      </div>
-      {/* Coverage */}
-      <div>
-        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
-          Type coverage
-        </p>
-        <div className="flex flex-wrap gap-1 font-mono text-[9px]">
-          <span className="rounded bg-green-500/15 px-1 text-green-600 dark:text-green-400">
-            Fire ✓
-          </span>
-          <span className="rounded bg-green-500/15 px-1 text-green-600 dark:text-green-400">
-            Water ✓
-          </span>
-          <span className="rounded bg-amber-500/15 px-1 text-amber-600 dark:text-amber-400">
-            Steel !
-          </span>
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
@@ -407,7 +387,7 @@ export function BentoGrid() {
           step="03"
           label="builder"
           headline="Build with the calc and speed tiers built in."
-          description="Damage calc, dynamic speed tiers, and type coverage — all in one builder. Import from Showdown or Poképaste. No account needed to start."
+          description="Everything you need to theorycraft a team and lock it in — all in one place."
           preview={<BuilderPreview />}
           className="md:col-span-2 lg:col-span-3"
         />
