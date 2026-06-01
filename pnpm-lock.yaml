@@ -492,8 +492,8 @@ importers:
         specifier: ^1.2.4
         version: 1.2.4(@types/react@19.2.14)(react@19.2.5)
       '@smogon/calc':
-        specifier: github:thatguyinabeanie/damage-calc#24f4bd7b47ad9536497a18f9783f76c74032e371&path:/calc
-        version: https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/24f4bd7b47ad9536497a18f9783f76c74032e371#path:/calc
+        specifier: github:thatguyinabeanie/damage-calc#0f105ee50dda7cbc513ae1321c280e63c3681a96&path:/calc
+        version: https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/0f105ee50dda7cbc513ae1321c280e63c3681a96#path:/calc
       '@supabase/ssr':
         specifier: catalog:supabase
         version: 0.9.0(@supabase/supabase-js@2.105.1)
@@ -3892,8 +3892,8 @@ packages:
     resolution: {integrity: sha512-O/IEdcCUKkubz60tFbGA7ceITTAJsty+lBjNoorP4Z6XRqaFb/OjQjZODophEcuq68nKm6/0r+6/lLQ+XVpk8g==}
     engines: {node: '>=18.0.0'}
 
-  '@smogon/calc@https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/24f4bd7b47ad9536497a18f9783f76c74032e371#path:/calc':
-    resolution: {gitHosted: true, integrity: sha512-jbm6uRrpZp+OSA1Q2Dz2+Py+zejrDVcef11FnHaCDJFJEXBcVEr4PcZYlX5h5uGc3XzB9eqUJkI43UypEnbjbw==, tarball: https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/24f4bd7b47ad9536497a18f9783f76c74032e371}
+  '@smogon/calc@https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/0f105ee50dda7cbc513ae1321c280e63c3681a96#path:/calc':
+    resolution: {gitHosted: true, integrity: sha512-dvDe+QfNdRghJWVQ0bf/hXN58FoKtIUAli6CuD9+dBH3PjBGYiXeiQdSWk6wO3VNUZ2ZSjfYZqOL4o0TOMmwwQ==, tarball: https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/0f105ee50dda7cbc513ae1321c280e63c3681a96}
     version: 0.11.0
 
   '@standard-schema/spec@1.0.0':
@@ -13909,7 +13909,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@smogon/calc@https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/24f4bd7b47ad9536497a18f9783f76c74032e371#path:/calc':
+  '@smogon/calc@https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/0f105ee50dda7cbc513ae1321c280e63c3681a96#path:/calc':
     dependencies:
       '@types/node': 18.19.130
 
