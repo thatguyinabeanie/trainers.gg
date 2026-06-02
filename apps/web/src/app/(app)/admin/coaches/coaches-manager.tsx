@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSupabaseQuery } from "@/lib/supabase";
 
-import { type AdminUserRow } from "@/app/(app)/admin/users/columns";
 import { grantCoachStatusAction, revokeCoachStatusAction } from "./actions";
 
 // ---------------------------------------------------------------------------
