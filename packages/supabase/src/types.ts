@@ -622,6 +622,47 @@ export type Database = {
           },
         ]
       }
+      coach_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          formats: string[]
+          headline: string | null
+          links: Json
+          service_types: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          formats?: string[]
+          headline?: string | null
+          links?: Json
+          service_types?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          formats?: string[]
+          headline?: string | null
+          links?: Json
+          service_types?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communities: {
         Row: {
           about: string | null
@@ -3586,6 +3627,7 @@ export type Database = {
           first_name: string | null
           id: string
           image: string | null
+          is_coach: boolean
           is_locked: boolean | null
           last_active_at: string | null
           last_name: string | null
@@ -3615,6 +3657,7 @@ export type Database = {
           first_name?: string | null
           id: string
           image?: string | null
+          is_coach?: boolean
           is_locked?: boolean | null
           last_active_at?: string | null
           last_name?: string | null
@@ -3644,6 +3687,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           image?: string | null
+          is_coach?: boolean
           is_locked?: boolean | null
           last_active_at?: string | null
           last_name?: string | null
@@ -3744,6 +3788,14 @@ export type Database = {
           started_at: string
           user_agent: string
           user_id: string
+        }[]
+      }
+      get_coach_badges: {
+        Args: { p_alt_ids: number[] }
+        Returns: {
+          alt_id: number
+          coach_handle: string
+          show_coach_badge: boolean
         }[]
       }
       get_community_id_from_group_role: {
@@ -3979,6 +4031,8 @@ export type Database = {
         | "admin.org_request_approved"
         | "admin.org_request_rejected"
         | "admin.org_request_cancelled"
+        | "admin.coach_granted"
+        | "admin.coach_revoked"
       billing_interval: "monthly" | "annual"
       community_request_status:
         | "pending"
@@ -4559,6 +4613,8 @@ export const Constants = {
         "admin.org_request_approved",
         "admin.org_request_rejected",
         "admin.org_request_cancelled",
+        "admin.coach_granted",
+        "admin.coach_revoked",
       ],
       billing_interval: ["monthly", "annual"],
       community_request_status: [

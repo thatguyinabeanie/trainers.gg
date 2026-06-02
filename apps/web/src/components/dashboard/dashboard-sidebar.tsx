@@ -165,6 +165,7 @@ export function DashboardSidebar({
             alts={alts}
             selectedAltUsername={selectedAltUsername}
             hasTeamBuilderAccess={hasTeamBuilderAccess}
+            isSiteAdmin={isSiteAdmin}
           />
         )}
       </SidebarContent>
@@ -603,6 +604,7 @@ interface PlayerNavProps {
   alts: AltInfo[];
   selectedAltUsername: string | null;
   hasTeamBuilderAccess?: boolean;
+  isSiteAdmin?: boolean;
 }
 
 function PlayerNav({
@@ -612,6 +614,7 @@ function PlayerNav({
   alts,
   selectedAltUsername,
   hasTeamBuilderAccess = false,
+  isSiteAdmin = false,
 }: PlayerNavProps) {
   // Resolve the current alt to build a context-aware Team Builder link.
   // When "All Alts" is selected (no cookie), go to the cross-alt teams page.
@@ -828,6 +831,37 @@ function PlayerNav({
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+
+      {/* Admin nav — visible to site admins only */}
+      {isSiteAdmin && (
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+          <SidebarGroupLabel>Admin</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link href="/admin/communities" />}
+                  isActive={pathname.startsWith("/admin/communities")}
+                  tooltip="Communities"
+                >
+                  <Globe className="size-4 shrink-0" />
+                  <span>Communities</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link href="/admin/coaches" />}
+                  isActive={pathname.startsWith("/admin/coaches")}
+                  tooltip="Coaches"
+                >
+                  <GraduationCap className="size-4 shrink-0" />
+                  <span>Coaches</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      )}
 
       {/* Secondary nav — pinned to bottom of SidebarContent */}
       <SidebarGroup

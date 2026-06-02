@@ -211,6 +211,7 @@ export type {
 export {
   listUsersAdmin,
   getUserAdminDetails,
+  getUsersByIds,
   suspendUser,
   unsuspendUser,
   startImpersonation,
@@ -237,6 +238,7 @@ export type { FeatureFlag, AccessCheckResult } from "./feature-flags";
 // Player directory queries
 export {
   searchPlayers,
+  attachCoachBadges,
   getLeaderboard,
   getRecentlyActivePlayers,
   getNewMembers,
@@ -285,6 +287,15 @@ export {
   type TeamWithPokemon,
   type CrossAltTeamListItem,
 } from "./teams";
+
+// Coach queries
+export {
+  getCoachBadges,
+  getCoachProfileByHandle,
+  listCoaches,
+} from "./coach";
+
+export type { CoachBadgeInfo, CoachProfile } from "./coach";
 
 // Discord bot queries
 export {

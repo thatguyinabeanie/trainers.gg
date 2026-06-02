@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createStaticClient } from "@/lib/supabase/server";
-import { searchPlayers } from "@trainers/supabase/queries";
+import { searchPlayers, attachCoachBadges } from "@trainers/supabase/queries";
 import { playerSearchParamsSchema } from "@trainers/validators";
 
 /**
@@ -46,7 +46,10 @@ export async function GET(request: Request) {
       { query: q, country, format, sort },
       page ?? 1
     );
-    return NextResponse.json(result);
+    // Attach coach badges so client-side search results show the badge too.
+    // Privacy-safe (booleans + public canonical handle only) and flag-gated.
+    const players = await attachCoachBadges(supabase, result.players);
+    return NextResponse.json({ ...result, players });
   } catch (error) {
     console.error("Failed to search players:", error);
     return NextResponse.json(

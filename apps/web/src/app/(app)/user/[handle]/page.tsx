@@ -11,6 +11,8 @@ import {
   getFollowerCount,
   getFollowingCount,
   getPublicDiscordHandle,
+  getCoachBadges,
+  type CoachBadgeInfo,
 } from "@trainers/supabase/queries";
 import { CacheTags } from "@/lib/cache";
 import { PageContainer } from "@/components/layout/page-container";
@@ -24,6 +26,7 @@ import {
   isTempUsername,
 } from "@trainers/utils";
 import { NewTrainerBadge } from "@/components/ui/new-trainer-badge";
+import { CoachBadge } from "@/components/ui/coach-badge";
 import { DiscordIcon } from "@/components/icons/discord-icon";
 import { PlayerProfileTabs } from "./player-profile-tabs";
 
@@ -209,11 +212,13 @@ function ProfileHeader({
   canEdit,
   followCounts,
   discordHandle,
+  coachBadge,
 }: {
   profile: PlayerProfile;
   canEdit: boolean;
   followCounts: { followers: number; following: number };
   discordHandle: string | null;
+  coachBadge: CoachBadgeInfo | null;
 }) {
   const mainAlt = profile.mainAlt;
   const countryCode = profile.country;
@@ -239,6 +244,9 @@ function ProfileHeader({
           <div className="flex items-center gap-3">
             <h1 className="text-4xl font-bold tracking-tight">{displayName}</h1>
             {isTemp && <NewTrainerBadge className="mt-1" />}
+            {coachBadge?.showCoachBadge && coachBadge.coachHandle && (
+              <CoachBadge handle={coachBadge.coachHandle} className="mt-1" />
+            )}
           </div>
 
           {/* Handle */}
@@ -372,11 +380,22 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
 
   const profile = profileResult;
 
-  // Fetch follow counts and Discord handle in parallel (both depend on profile)
-  const [followCounts, discordHandle] = await Promise.all([
+  // Fetch follow counts, Discord handle, and coach badge in parallel (all
+  // depend on profile). The coach-badge lookup is NOT cached with the profile:
+  // it is gated on the global coaching flag and per-user coach status, neither
+  // of which busts CacheTags.player(handle) — caching it would serve stale
+  // badges. The query is privacy-safe (booleans + public handle only).
+  const mainAltId = profile.mainAlt?.id ?? null;
+  const [followCounts, discordHandle, coachBadgeMap] = await Promise.all([
     getCachedFollowCounts(profile.userId, handle),
     getCachedDiscordHandle(profile.userId, handle),
+    mainAltId != null
+      ? getCoachBadges(createStaticClient(), [mainAltId])
+      : Promise.resolve(null),
   ]);
+
+  const coachBadge =
+    mainAltId != null ? (coachBadgeMap?.get(mainAltId) ?? null) : null;
 
   const canEdit = currentUserId != null && profile.userId === currentUserId;
 
@@ -395,6 +414,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
         canEdit={canEdit}
         followCounts={followCounts}
         discordHandle={discordHandle}
+        coachBadge={coachBadge}
       />
       <div className="mt-6">
         <PlayerProfileTabs

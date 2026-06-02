@@ -115,6 +115,13 @@ export {
   reorderTeamPokemon,
 } from "./teams";
 
+// Coach mutations
+export {
+  grantCoachStatus,
+  revokeCoachStatus,
+  updateCoachProfile,
+} from "./coach";
+
 // Discord bot mutations
 export {
   createDiscordServer,

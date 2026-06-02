@@ -32,6 +32,16 @@ export async function checkFeatureAccess(
 }
 
 /**
+ * Global-only coaching flag check for anonymous viewers (no per-user allowlist).
+ * Returns true only when the coaching flag is globally enabled.
+ */
+export async function isCoachingPublic(): Promise<boolean> {
+  const supabase = await createClient();
+  const flag = await getFeatureFlag(supabase, "coaching");
+  return flag?.enabled ?? false;
+}
+
+/**
  * Check if a community has access to a feature flag.
  *
  * Logic:
