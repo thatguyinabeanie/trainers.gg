@@ -111,9 +111,11 @@ export function FilterDialogShell({
                   <PanelLeftClose className="size-4" />
                 </button>
               </div>
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-                {rail}
-              </div>
+              {/* The shell does NOT impose scrolling — consumers own their
+                  rail's scroll regions. SpeciesPicker relies on two independent
+                  scroll panes (sidebar + role presets); forcing overflow here
+                  would nest scroll containers and cause double scrollbars. */}
+              <div className="flex min-h-0 flex-1 flex-col">{rail}</div>
               {railFooter && (
                 <div className="border-border shrink-0 border-t px-3 py-2">
                   {railFooter}

@@ -146,7 +146,10 @@ export function SpeedTiersDialog(props: SpeedTiersDialogProps) {
             </>
           }
           rail={
-            <div className="flex flex-col gap-3 px-3 py-3">
+            // Own the rail scroll here — the shell intentionally doesn't impose
+            // overflow (see FilterDialogShell). Field + modifiers scroll when
+            // the dialog is short.
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
               {fieldControls}
               {modifiers}
             </div>
