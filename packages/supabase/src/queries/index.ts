@@ -234,6 +234,7 @@ export type { FeatureFlag, AccessCheckResult } from "./feature-flags";
 // Player directory queries
 export {
   searchPlayers,
+  attachCoachBadges,
   getLeaderboard,
   getRecentlyActivePlayers,
   getNewMembers,
