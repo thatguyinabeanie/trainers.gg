@@ -2,7 +2,7 @@
 
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0)
 
-All-in-one integrated platform for Pokemon fans. Current focus: competitive battling (VGC, Showdown, Pokemon Champions). Integrated with the **AT Protocol (Bluesky)** for decentralized social features.
+All-in-one integrated platform for Pokemon fans. Current focus: competitive battling (VGC, Showdown, Pokemon Champions). Built on the **AT Protocol (Bluesky)** for decentralized identity (`@username.trainers.gg` handles).
 
 ## Tech Stack
 
@@ -12,7 +12,7 @@ All-in-one integrated platform for Pokemon fans. Current focus: competitive batt
 | **Mobile**           | Expo 55 (React Native 0.83)         |
 | **Database**         | Supabase (PostgreSQL + RLS)         |
 | **Auth**             | Supabase Auth + Bluesky PDS         |
-| **Social**           | AT Protocol (Bluesky)               |
+| **Identity**         | AT Protocol (Bluesky)               |
 | **PDS Hosting**      | Fly.io (`pds.trainers.gg`)          |
 | **Edge Functions**   | Supabase Edge Functions (Deno)      |
 | **Styling (Web)**    | Tailwind CSS 4                      |
@@ -105,7 +105,7 @@ After running `pnpm db:reset`, the following test users are available (password:
 
 ### Bluesky Integration
 
-Every user gets a Bluesky identity (`@username.trainers.gg`) with a DID stored in the users table. Posts are visible on bsky.app and other AT Protocol apps.
+Every user gets a Bluesky identity (`@username.trainers.gg`) with a DID stored in the users table. This provides decentralized identity infrastructure; user-facing social features (posting, feeds) are deprioritized for now.
 
 ## Deployment
 
