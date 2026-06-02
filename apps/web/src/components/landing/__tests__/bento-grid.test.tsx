@@ -65,14 +65,14 @@ describe("UnderConstruction", () => {
     ).toBeInTheDocument();
   });
 
-  it.each(["Meta Analytics", "Builder", "Articles", "Coaching"])(
+  it.each(["Meta Analytics", "Tournament Results", "Articles", "Coaching"])(
     'renders coming-soon feature "%s"',
     (feature) => {
       expect(screen.getByText(feature)).toBeInTheDocument();
     }
   );
 
-  it("mentions meta analytics in Builder description", () => {
-    expect(screen.getByText(/current meta analytics/i)).toBeInTheDocument();
+  it("mentions the current meta in the Meta Analytics description", () => {
+    expect(screen.getByText(/current meta/i)).toBeInTheDocument();
   });
 });
