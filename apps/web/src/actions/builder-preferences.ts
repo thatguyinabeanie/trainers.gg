@@ -39,7 +39,9 @@ export async function getBuilderPreferencesAction(): Promise<
 }
 
 /**
- * Update the current user's builder preferences. No-op error if not signed in.
+ * Update the current user's builder preferences.
+ * Returns an error result when not signed in (the client hook only calls this
+ * when authenticated; signed-out users persist via localStorage instead).
  */
 export async function updateBuilderPreferencesAction(
   preferences: BuilderPreferences

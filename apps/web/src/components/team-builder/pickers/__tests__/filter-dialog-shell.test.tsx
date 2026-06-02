@@ -122,17 +122,37 @@ describe("FilterDialogShell — search input", () => {
     expect(screen.getByTestId("my-search-input")).toBeInTheDocument();
   });
 
-  it("calls search.onChange with the typed value", async () => {
+  it("calls search.onChange with the accumulated typed value", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
-    renderShell({
-      search: { value: "", onChange, placeholder: "Search…" },
-    });
+
+    // Stateful wrapper so the controlled input accumulates like real usage —
+    // each keystroke fires onChange with the full e.target.value.
+    function Harness() {
+      const [value, setValue] = React.useState("");
+      return (
+        <FilterDialogShell
+          rail={<div>rail</div>}
+          search={{
+            value,
+            onChange: (next) => {
+              setValue(next);
+              onChange(next);
+            },
+            placeholder: "Search…",
+          }}
+        >
+          <div>body</div>
+        </FilterDialogShell>
+      );
+    }
+
+    render(<Harness />);
     const input = screen.getByRole("textbox");
     await user.type(input, "pik");
-    // onChange called once per character
+    // onChange fires once per keystroke, each time with the accumulated value.
     expect(onChange).toHaveBeenCalledTimes(3);
-    expect(onChange).toHaveBeenLastCalledWith("k");
+    expect(onChange).toHaveBeenLastCalledWith("pik");
   });
 
   it("uses ariaLabel when provided (beats placeholder)", () => {
