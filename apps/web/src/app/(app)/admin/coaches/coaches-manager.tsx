@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GraduationCap, Search, UserPlus, X } from "lucide-react";
@@ -81,6 +81,7 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
 
   // Ref-based debounce for the grant search input — avoids stale closure issues
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); }, []);
 
   function handleGrantSearchChange(value: string) {
     setGrantSearch(value);

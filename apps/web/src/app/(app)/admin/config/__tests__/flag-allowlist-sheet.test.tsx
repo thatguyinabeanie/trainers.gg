@@ -427,7 +427,7 @@ describe("FlagAllowlistSheet", () => {
       await user.click(screen.getByRole("button", { name: "Save" }));
 
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith("Failed to save allowlist");
+        expect(toast.error).toHaveBeenCalledWith("network error");
       });
     });
 

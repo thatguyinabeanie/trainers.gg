@@ -260,12 +260,8 @@ test.describe("Admin coaches page — admin user with sudo", () => {
     // --- Step 4: Visit the coach profile ---
     const profileResponse = await page.goto("/coaching/ash_ketchum");
 
-    // If the flag is off or profile creation failed, we get a 404 — skip.
-    const is404 = profileResponse?.status() === 404;
-    test.skip(
-      is404,
-      "Coach profile returned 404 — coaching flag may be off or grant did not complete"
-    );
+    // The grant must have succeeded and the coaching flag must be on (enabled by seed).
+    expect(profileResponse?.status()).not.toBe(404);
 
     // The coach profile page must render (display-name h1). This is the durable
     // assertion — if the grant completed and the flag is on, the page renders.
@@ -306,33 +302,21 @@ test.describe("Coach badge in player directory", () => {
   test("Coach badge link points to /coaching/[handle] when a coach is in the directory", async ({
     page,
   }) => {
-    // NOTE: This test requires at least one coach in the DB — either from the
-    // admin grant test above (if it ran and hook was present) or a future seed.
-    // After a pristine db:reset with no seeded coaches, the badge is absent
-    // and the test skips. To make this test always run: add a seeded coach
-    // to packages/supabase/supabase/seeds/03_users.sql.
-
+    // seed/14_coaching.sql marks cynthia as a coach — badge is always present after db:reset.
     await page.goto("/players");
 
     await expect(
       page.getByRole("heading", { name: /Players/i })
     ).toBeVisible({ timeout: 15000 });
 
-    // Wait for the player grid to hydrate — look for any player card link
+    // Wait for the player grid to hydrate
     await expect(
       page.getByRole("link", { name: /ash_ketchum|admin_trainer|cynthia/i }).first()
     ).toBeVisible({ timeout: 15000 });
 
-    // Look for any Coach badge link rendered in the player grid
+    // A Coach badge must be visible (cynthia is a seeded coach)
     const coachBadge = page.getByRole("link", { name: /^coach$/i }).first();
-    const badgeVisible = await coachBadge
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
-
-    test.skip(
-      !badgeVisible,
-      "No coaches exist in DB — grant coach status via /admin/coaches first"
-    );
+    await expect(coachBadge).toBeVisible({ timeout: 5000 });
 
     // Badge href must point to /coaching/[handle]
     const href = await coachBadge.getAttribute("href");
@@ -417,10 +401,10 @@ test.describe("Coaching privacy", () => {
     // Asserting that link does not exist on the page is sufficient.
     // (admin_trainer is not a seeded coach — no badge should appear.)
     await expect(
-      page.getByRole("link", { name: /^coach$/i }).filter({
-        has: page.locator(`[href="/coaching/admin_trainer"]`),
-      })
-    ).not.toBeVisible();
+      page.getByRole("link", { name: /^coach$/i }).and(
+        page.locator(`[href="/coaching/admin_trainer"]`)
+      )
+    ).toHaveCount(0);
   });
 
   test("/players page shows no coach badges when no coaches are in the DB", async ({
@@ -457,10 +441,10 @@ test.describe("Coaching privacy", () => {
     // We assert the specific non-coach handles have no badge links
     for (const nonCoachHandle of ["brock", "admin_trainer"]) {
       await expect(
-        page.getByRole("link", { name: /^coach$/i }).filter({
-          has: page.locator(`[href="/coaching/${nonCoachHandle}"]`),
-        })
-      ).not.toBeVisible();
+        page.getByRole("link", { name: /^coach$/i }).and(
+          page.locator(`[href="/coaching/${nonCoachHandle}"]`)
+        )
+      ).toHaveCount(0);
     }
   });
 });
