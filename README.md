@@ -54,11 +54,14 @@ tooling/               # Shared ESLint, Prettier, Tailwind, TypeScript, test-uti
 ### Setup
 
 ```bash
-git clone https://github.com/thatguyinabeanie/trainers.gg.git
+git clone --recurse-submodules https://github.com/thatguyinabeanie/trainers.gg.git
 cd trainers.gg
 mise install          # installs Node 22, pnpm, ngrok, lefthook, etc.
 pnpm dev              # starts everything (auto-configures local Supabase + ngrok tunnel)
 ```
+
+> If you already cloned without `--recurse-submodules`, run:
+> `git submodule update --init --recursive`
 
 `pnpm dev` handles local Supabase startup, env var configuration, and ngrok tunneling automatically. Set `SKIP_LOCAL_SUPABASE=1` to use remote Supabase instead.
 
