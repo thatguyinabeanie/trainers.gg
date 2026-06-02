@@ -211,6 +211,7 @@ export type {
 export {
   listUsersAdmin,
   getUserAdminDetails,
+  getUsersByIds,
   suspendUser,
   unsuspendUser,
   startImpersonation,

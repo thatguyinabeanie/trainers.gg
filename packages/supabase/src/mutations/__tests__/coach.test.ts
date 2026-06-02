@@ -162,11 +162,10 @@ describe("updateCoachProfile", () => {
   });
 
   it("updates coach_profiles with the provided input fields", async () => {
-    const profileUpdateEq = jest.fn().mockResolvedValue({ error: null });
+    const upsertMock = jest.fn().mockResolvedValue({ error: null });
 
     mockClient.from.mockImplementation((table: string) => {
-      if (table === "coach_profiles")
-        return { update: jest.fn().mockReturnValue({ eq: profileUpdateEq }) };
+      if (table === "coach_profiles") return { upsert: upsertMock };
       return {};
     });
 
@@ -178,16 +177,18 @@ describe("updateCoachProfile", () => {
       serviceTypes: ["live", "replay_review"],
     });
 
-    expect(profileUpdateEq).toHaveBeenCalledWith("user_id", "user-1");
+    expect(upsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: "user-1", headline: "VGC Champion" }),
+      { onConflict: "user_id" }
+    );
   });
 
   it("throws when the update fails", async () => {
     const dbError = new Error("update failed");
-    const profileUpdateEq = jest.fn().mockResolvedValue({ error: dbError });
+    const upsertMock = jest.fn().mockResolvedValue({ error: dbError });
 
     mockClient.from.mockImplementation((table: string) => {
-      if (table === "coach_profiles")
-        return { update: jest.fn().mockReturnValue({ eq: profileUpdateEq }) };
+      if (table === "coach_profiles") return { upsert: upsertMock };
       return {};
     });
 

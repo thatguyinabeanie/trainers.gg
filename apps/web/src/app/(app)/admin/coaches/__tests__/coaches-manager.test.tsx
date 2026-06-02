@@ -363,7 +363,8 @@ describe("CoachesManager", () => {
       );
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
-      await user.click(screen.getByRole("button", { name: /^revoke$/i }));
+      const dialog = screen.getByTestId("alert-dialog");
+      await user.click(within(dialog).getByRole("button", { name: /^revoke$/i }));
 
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith(
@@ -386,7 +387,7 @@ describe("CoachesManager", () => {
       render(<CoachesManager coaches={[buildCoach()]} />);
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
-      await user.click(screen.getByRole("button", { name: /^revoke$/i }));
+      await user.click(within(screen.getByTestId("alert-dialog")).getByRole("button", { name: /^revoke$/i }));
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Permission denied");
@@ -400,7 +401,7 @@ describe("CoachesManager", () => {
       render(<CoachesManager coaches={[buildCoach()]} />);
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
-      await user.click(screen.getByRole("button", { name: /^revoke$/i }));
+      await user.click(within(screen.getByTestId("alert-dialog")).getByRole("button", { name: /^revoke$/i }));
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith(
@@ -414,7 +415,7 @@ describe("CoachesManager", () => {
       render(<CoachesManager coaches={[buildCoach()]} />);
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
-      await user.click(screen.getByRole("button", { name: /^revoke$/i }));
+      await user.click(within(screen.getByTestId("alert-dialog")).getByRole("button", { name: /^revoke$/i }));
 
       await waitFor(() => {
         expect(mockRefresh).toHaveBeenCalled();

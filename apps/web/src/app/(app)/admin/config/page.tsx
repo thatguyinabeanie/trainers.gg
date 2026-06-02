@@ -42,16 +42,13 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { supabase } from "@/lib/supabase/client";
 import { getSiteAdmins, getSiteRoles } from "@trainers/supabase";
 import {
-  createFlagAction,
   updateFlagAction,
-  deleteFlagAction,
   createAnnouncementAction,
   updateAnnouncementAction,
   deleteAnnouncementAction,
 } from "./actions";
-import { FlagDialog } from "./flag-dialog";
+import { FlagAllowlistSheet } from "./flag-allowlist-sheet";
 import { AnnouncementDialog } from "./announcement-dialog";
-import type { Json } from "@trainers/supabase/types";
 import { type FeatureFlag } from "@trainers/supabase";
 
 // --- Types ---
@@ -299,10 +296,6 @@ export default function AdminConfigPage() {
   const [flagDialogOpen, setFlagDialogOpen] = useState(false);
   const [editingFlag, setEditingFlag] = useState<FeatureFlag | null>(null);
 
-  // Flag delete confirmation state
-  const [deletingFlag, setDeletingFlag] = useState<FeatureFlag | null>(null);
-  const [flagDeleteOpen, setFlagDeleteOpen] = useState(false);
-
   // --- Announcements State ---
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
@@ -397,58 +390,18 @@ export default function AdminConfigPage() {
     setActionLoading(null);
   };
 
-  const handleCreateFlag = async (data: {
-    key: string;
-    description?: string;
-    enabled?: boolean;
-    metadata?: Json;
-  }) => {
-    setError(null);
-    const result = await createFlagAction(data);
-    if (!result.success) {
-      setError(result.error ?? "Failed to create flag");
-      throw new Error(result.error);
-    }
-    await fetchFlags();
-    router.refresh();
-  };
-
-  const handleUpdateFlag = async (data: {
-    key: string;
-    description?: string;
-    enabled?: boolean;
-    metadata?: Json;
-  }) => {
+  const handleSaveAllowlist = async (allowedUserIds: string[]) => {
     if (!editingFlag) return;
     setError(null);
     const result = await updateFlagAction(editingFlag.id, {
-      description: data.description,
-      enabled: data.enabled,
-      metadata: data.metadata,
+      metadata: { allowed_users: allowedUserIds },
     });
     if (!result.success) {
-      setError(result.error ?? "Failed to update flag");
+      setError(result.error ?? "Failed to update allowlist");
       throw new Error(result.error);
     }
     await fetchFlags();
     router.refresh();
-  };
-
-  const handleDeleteFlag = async () => {
-    if (!deletingFlag) return;
-    setActionLoading(deletingFlag.id);
-    setError(null);
-
-    const result = await deleteFlagAction(deletingFlag.id);
-    if (!result.success) {
-      setError(result.error ?? "Failed to delete flag");
-    } else {
-      await fetchFlags();
-      router.refresh();
-    }
-    setActionLoading(null);
-    setFlagDeleteOpen(false);
-    setDeletingFlag(null);
   };
 
   // --- Announcement Handlers ---
@@ -558,16 +511,6 @@ export default function AdminConfigPage() {
               <RefreshCw className="mr-1.5 size-3.5" />
               Refresh
             </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                setEditingFlag(null);
-                setFlagDialogOpen(true);
-              }}
-            >
-              <Plus className="mr-1.5 size-3.5" />
-              Create Flag
-            </Button>
           </div>
         </div>
 
@@ -609,24 +552,13 @@ export default function AdminConfigPage() {
                       <Button
                         variant="ghost"
                         size="icon-xs"
-                        title="Edit flag"
+                        title="Edit allowlist"
                         onClick={() => {
                           setEditingFlag(flag);
                           setFlagDialogOpen(true);
                         }}
                       >
                         <Pencil className="size-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        title="Delete flag"
-                        onClick={() => {
-                          setDeletingFlag(flag);
-                          setFlagDeleteOpen(true);
-                        }}
-                      >
-                        <Trash2 className="size-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -770,33 +702,13 @@ export default function AdminConfigPage() {
       {/* ========== Site Roles Section ========== */}
       <SiteRolesSection />
 
-      {/* ========== Flag Dialog (Create/Edit) ========== */}
-      <FlagDialog
+      {/* ========== Flag Allowlist Sheet ========== */}
+      <FlagAllowlistSheet
         flag={editingFlag}
         open={flagDialogOpen}
         onOpenChange={setFlagDialogOpen}
-        onSubmit={editingFlag ? handleUpdateFlag : handleCreateFlag}
+        onSave={handleSaveAllowlist}
       />
-
-      {/* ========== Flag Delete Confirmation ========== */}
-      <AlertDialog open={flagDeleteOpen} onOpenChange={setFlagDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Feature Flag</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the flag{" "}
-              <span className="font-mono font-medium">{deletingFlag?.key}</span>
-              ? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleDeleteFlag}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* ========== Announcement Dialog (Create/Edit) ========== */}
       <AnnouncementDialog
