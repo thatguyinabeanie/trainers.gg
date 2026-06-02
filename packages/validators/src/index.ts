@@ -180,6 +180,14 @@ export {
   type NotificationPreferences,
 } from "./notification-preferences";
 
+// Coach validators
+export {
+  COACH_SERVICE_TYPES,
+  coachLinkSchema,
+  coachProfileSchema,
+  type CoachProfileInput,
+} from "./coach";
+
 // Team builder validators
 export {
   teamNameSchema,
