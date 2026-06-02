@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
   useId,
   useEffect,
   useOptimistic,
@@ -64,6 +66,10 @@ import {
 } from "./calc/calc-state-context";
 import { Dockbar } from "./dock/dockbar";
 import { getTeamFastestSpeed, SpeedTiersPanel } from "./dock/speed-tiers-panel";
+import {
+  type ToggleState,
+  useSpeedTiersToggle,
+} from "./dock/speed-tiers-state";
 import { HeatmapPanel } from "./dock/heatmap-panel";
 import { PokeRow } from "./poke-row";
 import { warmSpeciesIndex } from "./pickers/species-picker";
@@ -278,17 +284,23 @@ function DockbarConnected({
 interface SpeedTiersPanelConnectedProps {
   team: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
+  toggle: ToggleState;
+  setToggle: Dispatch<SetStateAction<ToggleState>>;
 }
 
 function SpeedTiersPanelConnected({
   team,
   format,
+  toggle,
+  setToggle,
 }: SpeedTiersPanelConnectedProps) {
   const calc = useCalcStateContext();
   return (
     <SpeedTiersPanel
       team={team}
       format={format}
+      toggle={toggle}
+      setToggle={setToggle}
       weather={calc.weather}
       setWeather={calc.setWeather}
     />
@@ -422,6 +434,13 @@ export function TeamWorkspaceV2({
 }: TeamWorkspaceV2Props) {
   const router = useRouter();
   const state = useBuilderState();
+
+  /**
+   * Shared speed-tiers toggle — lifted here so the side pane (and a future
+   * dialog presentation) operate on one instance and never reset on switch.
+   */
+  const { toggle: speedToggle, setToggle: setSpeedToggle } =
+    useSpeedTiersToggle();
 
   /** Controls the import sheet. */
   const [importOpen, setImportOpen] = useState(false);
@@ -799,6 +818,8 @@ export function TeamWorkspaceV2({
                           <SpeedTiersPanelConnected
                             team={optimisticTeamPokemon}
                             format={format}
+                            toggle={speedToggle}
+                            setToggle={setSpeedToggle}
                           />
                         </div>
                       </div>
@@ -1160,6 +1181,8 @@ export function TeamWorkspaceV2({
                     <SpeedTiersPanelConnected
                       team={optimisticTeamPokemon}
                       format={format}
+                      toggle={speedToggle}
+                      setToggle={setSpeedToggle}
                     />
                   </div>
                 )}
