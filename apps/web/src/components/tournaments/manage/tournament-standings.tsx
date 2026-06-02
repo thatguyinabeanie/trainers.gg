@@ -1,7 +1,7 @@
 "use client";
 
 import { useSupabaseQuery } from "@/lib/supabase";
-import { getTournamentPlayerStats } from "@trainers/supabase";
+import { getCoachBadges, getTournamentPlayerStats } from "@trainers/supabase";
 import {
   Card,
   CardContent,
@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { CoachBadge } from "@/components/ui/coach-badge";
 import {
   Table,
   TableBody,
@@ -38,6 +39,19 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
   const { data: playerStats, isLoading } = useSupabaseQuery(queryFn, [
     tournament.id,
   ]);
+
+  // Resolve coach-badge visibility for the players in the standings. This runs
+  // a second query keyed on the alt ids once stats have loaded. The query is
+  // privacy-safe (returns only booleans + public handles, gated on the global
+  // coaching flag) so it is safe to call from the client.
+  const altIds = (playerStats ?? [])
+    .map((player) => player.alt?.id)
+    .filter((id): id is number => id != null);
+
+  const { data: coachBadges } = useSupabaseQuery(
+    (supabase) => getCoachBadges(supabase, altIds),
+    [JSON.stringify(altIds)]
+  );
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -81,6 +95,7 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
   // Transform data for display
   const standings = (playerStats ?? []).map((player) => ({
     rank: player.current_standing ?? 999,
+    altId: player.alt?.id ?? null,
     player: {
       name: player.alt?.username ?? player.alt?.username ?? "Unknown",
       username: player.alt?.username ?? "unknown",
@@ -175,7 +190,25 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium">{player.player.name}</div>
+                    <div className="flex items-center font-medium">
+                      {player.player.name}
+                      {(() => {
+                        const badge =
+                          player.altId != null
+                            ? coachBadges?.get(player.altId)
+                            : undefined;
+                        return (
+                          badge?.showCoachBadge &&
+                          badge.coachHandle && (
+                            <CoachBadge
+                              handle={badge.coachHandle}
+                              iconOnly
+                              className="ml-1"
+                            />
+                          )
+                        );
+                      })()}
+                    </div>
                     <div className="text-muted-foreground text-sm">
                       @{player.player.username}
                     </div>
@@ -220,44 +253,63 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {standings.map((player) => (
-                <TableRow
-                  key={player.player.username}
-                  className={player.isDropped ? "opacity-50" : ""}
-                >
-                  <TableCell>
-                    {getRankBadge(player.rank, player.isDropped)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={player.player.avatar || undefined} />
-                        <AvatarFallback>
-                          {player.player.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{player.player.name}</div>
-                        <div className="text-muted-foreground text-sm">
-                          @{player.player.username}
+              {standings.map((player) => {
+                const badge =
+                  player.altId != null
+                    ? coachBadges?.get(player.altId)
+                    : undefined;
+                return (
+                  <TableRow
+                    key={player.player.username}
+                    className={player.isDropped ? "opacity-50" : ""}
+                  >
+                    <TableCell>
+                      {getRankBadge(player.rank, player.isDropped)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage
+                            src={player.player.avatar || undefined}
+                          />
+                          <AvatarFallback>
+                            {player.player.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center font-medium">
+                            {player.player.name}
+                            {badge?.showCoachBadge && badge.coachHandle && (
+                              <CoachBadge
+                                handle={badge.coachHandle}
+                                iconOnly
+                                className="ml-1"
+                              />
+                            )}
+                          </div>
+                          <div className="text-muted-foreground text-sm">
+                            @{player.player.username}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {player.record.wins}-{player.record.losses}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {player.matchPoints}
-                  </TableCell>
-                  <TableCell>{player.gameWinPercentage.toFixed(1)}%</TableCell>
-                  <TableCell>
-                    {player.opponentWinPercentage.toFixed(1)}%
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {player.record.wins}-{player.record.losses}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {player.matchPoints}
+                    </TableCell>
+                    <TableCell>
+                      {player.gameWinPercentage.toFixed(1)}%
+                    </TableCell>
+                    <TableCell>
+                      {player.opponentWinPercentage.toFixed(1)}%
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
