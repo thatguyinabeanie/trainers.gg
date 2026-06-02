@@ -523,7 +523,6 @@ export function TeamWorkspaceV2({
   // the panel is positioned before the browser paints.
   const appliedLoadPrefRef = useRef(false);
   useLayoutEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
     if (appliedLoadPrefRef.current || prefs.loading) return;
     appliedLoadPrefRef.current = true;
     if (
@@ -533,7 +532,6 @@ export function TeamWorkspaceV2({
     ) {
       state.setSpeedView("sidepane");
     }
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, [prefs.loading]);
 
   /** Controls the import sheet. */
