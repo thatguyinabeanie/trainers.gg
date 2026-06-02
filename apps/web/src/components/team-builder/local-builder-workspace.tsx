@@ -255,6 +255,7 @@ export function LocalBuilderWorkspace() {
         persistence={persistence}
         selectedAltId={selectedAltId}
         onAltSelect={setSelectedAltId}
+        isAuthenticated={isAuthenticated}
         renderHeader={(actions) => (
           <BuilderNav>
             <BuilderTopbar
