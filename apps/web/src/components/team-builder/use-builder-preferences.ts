@@ -55,7 +55,12 @@ export function useBuilderPreferences(
   const [preferences, setPreferencesState] = useState<BuilderPreferences>(
     DEFAULT_BUILDER_PREFERENCES
   );
-  const [loading, setLoading] = useState(isAuthenticated);
+  // Start true for everyone so consumers gating on `loading` (e.g. the
+  // builder's load-time auto-open) wait until BOTH the post-mount localStorage
+  // hydration and the account reconciliation have run. If this started false
+  // for signed-out users, a load-time check could fire against the default
+  // preferences before the localStorage value was applied.
+  const [loading, setLoading] = useState(true);
 
   // Hydrate from localStorage post-mount (avoid SSR hydration mismatch).
   // This synchronous setState-in-effect is the same blessed pattern as
