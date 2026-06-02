@@ -50,11 +50,17 @@ export async function getCoachProfileByHandle(
   let userId: string | null = null;
   let userName: string | null = null;
   let userImage: string | null = null;
-  const { data: byUser } = await supabase
+  const { data: byUser, error: byUserError } = await supabase
     .from("users")
     .select("id, is_coach, main_alt_id, name, image")
     .eq("username", handle)
     .maybeSingle();
+
+  if (byUserError) {
+    throw new Error(
+      `Failed to look up user by username "${handle}": ${byUserError.message}`
+    );
+  }
 
   let isCoach = byUser?.is_coach ?? false;
   let mainAltId = byUser?.main_alt_id ?? null;
@@ -63,7 +69,7 @@ export async function getCoachProfileByHandle(
   userImage = byUser?.image ?? null;
 
   if (!userId) {
-    const { data: alt } = await supabase
+    const { data: alt, error: altError } = await supabase
       .from("alts")
       .select(
         "user_id, is_public, user:users!profiles_user_id_fkey(id, is_coach, main_alt_id, name, image)"
@@ -71,6 +77,11 @@ export async function getCoachProfileByHandle(
       .eq("username", handle)
       .eq("is_public", true)
       .maybeSingle();
+    if (altError) {
+      throw new Error(
+        `Failed to look up alt by username "${handle}": ${altError.message}`
+      );
+    }
     if (alt?.user) {
       const user = Array.isArray(alt.user) ? alt.user[0] : alt.user;
       if (user) {
@@ -88,20 +99,31 @@ export async function getCoachProfileByHandle(
   let canonicalHandle = handle;
   let mainAltAvatarUrl: string | null = null;
   if (mainAltId) {
-    const { data: mainAlt } = await supabase
+    const { data: mainAlt, error: mainAltError } = await supabase
       .from("alts")
       .select("username, avatar_url")
       .eq("id", mainAltId)
       .maybeSingle();
+    if (mainAltError) {
+      throw new Error(
+        `Failed to look up main alt (id=${mainAltId}) for user "${handle}": ${mainAltError.message}`
+      );
+    }
     if (mainAlt?.username) canonicalHandle = mainAlt.username;
     mainAltAvatarUrl = mainAlt?.avatar_url ?? null;
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("coach_profiles")
     .select("headline, bio, formats, links, service_types")
     .eq("user_id", userId)
     .maybeSingle();
+
+  if (profileError) {
+    throw new Error(
+      `Failed to load coach profile for user "${userId}": ${profileError.message}`
+    );
+  }
 
   return {
     userId,
