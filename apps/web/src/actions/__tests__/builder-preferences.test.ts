@@ -27,7 +27,7 @@ jest.mock("botid/server", () => ({
 }));
 
 // Mock getErrorMessage
-jest.mock("@/lib/utils", () => ({
+jest.mock("@trainers/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
 }));
 
