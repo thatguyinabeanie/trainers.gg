@@ -57,6 +57,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import { BuilderSettingsDialog } from "./builder-settings-dialog";
 import { ImportDialog } from "./import-dialog";
 import { useTeamValidation, type ValidationError } from "./validation-hooks";
 import { EditableName } from "./builder-topbar";
@@ -151,6 +152,8 @@ export interface WorkspaceHeaderActions {
   onJumpToPokemon: (pokemonId: number) => void;
   /** Rename the team. */
   onNameChange: (name: string) => Promise<void>;
+  /** Open the builder settings dialog. */
+  onOpenSettings: () => void;
 }
 
 // =============================================================================
@@ -535,6 +538,7 @@ export function TeamWorkspaceV2({
 
   /** Controls the import sheet. */
   const [importOpen, setImportOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   /** Controls the mobile validate popover. */
   const [mobileValidateOpen, setMobileValidateOpen] = useState(false);
@@ -866,6 +870,7 @@ export function TeamWorkspaceV2({
               }
               persistence.onMutationSuccess();
             },
+            onOpenSettings: () => setSettingsOpen(true),
           })}
 
           <div
@@ -1334,6 +1339,14 @@ export function TeamWorkspaceV2({
           onOpenChange={setImportOpen}
           onImportComplete={() => persistence.onMutationSuccess()}
           formatId={format?.id}
+        />
+
+        {/* Builder settings dialog — opened by the topbar gear button */}
+        <BuilderSettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          preferences={prefs.preferences}
+          onChange={prefs.setPreferences}
         />
 
         {/* Speed-tiers dialog — shares the lifted toggle so pop-out / collapse
