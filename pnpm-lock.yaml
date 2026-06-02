@@ -3893,7 +3893,7 @@ packages:
     engines: {node: '>=18.0.0'}
 
   '@smogon/calc@https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/0f105ee50dda7cbc513ae1321c280e63c3681a96#path:/calc':
-    resolution: {gitHosted: true, path: /calc, tarball: https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/0f105ee50dda7cbc513ae1321c280e63c3681a96}
+    resolution: {gitHosted: true, integrity: sha512-dvDe+QfNdRghJWVQ0bf/hXN58FoKtIUAli6CuD9+dBH3PjBGYiXeiQdSWk6wO3VNUZ2ZSjfYZqOL4o0TOMmwwQ==, tarball: https://codeload.github.com/thatguyinabeanie/damage-calc/tar.gz/0f105ee50dda7cbc513ae1321c280e63c3681a96}
     version: 0.11.0
 
   '@standard-schema/spec@1.0.0':
