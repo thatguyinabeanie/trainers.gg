@@ -12,6 +12,8 @@ interface FilterDialogShellProps {
     onChange: (next: string) => void;
     onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
     placeholder?: string;
+    /** Accessible label; falls back to the placeholder, then "Search". */
+    ariaLabel?: string;
     "data-testid"?: string;
   };
   /** Optional center header slot (e.g. active-filter clear badge). */
@@ -74,7 +76,7 @@ export function FilterDialogShell({
               value={search.value}
               onChange={(e) => search.onChange(e.target.value)}
               onKeyDown={search.onKeyDown}
-              aria-label={search.placeholder ?? "Search"}
+              aria-label={search.ariaLabel ?? search.placeholder ?? "Search"}
               data-testid={search["data-testid"]}
               className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
             />

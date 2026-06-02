@@ -899,6 +899,7 @@ export function SpeciesPicker({
         onChange: setQuery,
         onKeyDown: handleSearchKeyDown,
         placeholder: "Search Pokémon, type, ability, or move…",
+        ariaLabel: "Search species",
         "data-testid": "species-search",
       }}
       headerCenter={
