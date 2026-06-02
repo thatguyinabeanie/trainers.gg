@@ -2,14 +2,16 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 
 import { DEFAULT_BUILDER_PREFERENCES } from "@trainers/validators";
 
-import { useBuilderPreferences } from "../use-builder-preferences";
-
+// Declare the action mock before importing the hook under test so the hook
+// never binds to the real module (mirrors notification-preferences.test.ts).
 const mockGet = jest.fn();
 const mockUpdate = jest.fn();
 jest.mock("@/actions/builder-preferences", () => ({
   getBuilderPreferencesAction: () => mockGet(),
   updateBuilderPreferencesAction: (p: unknown) => mockUpdate(p),
 }));
+
+import { useBuilderPreferences } from "../use-builder-preferences";
 
 const STORAGE_KEY = "trainersgg.builder.preferences.v1";
 

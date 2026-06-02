@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useState } from "react";
-import { PanelLeftClose, Search } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -120,8 +120,20 @@ export function FilterDialogShell({
                 </div>
               )}
             </>
+          ) : collapsedStrip ? (
+            collapsedStrip(() => setSidebarOpen(true))
           ) : (
-            collapsedStrip?.(() => setSidebarOpen(true))
+            // Default collapsed affordance — without this, a consumer that omits
+            // collapsedStrip (e.g. the speed-tiers dialog) would leave a blank
+            // strip with no way to reopen the rail.
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Expand filter sidebar"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent flex items-center justify-center py-2 transition-colors"
+            >
+              <PanelLeftOpen className="size-4" />
+            </button>
           )}
         </div>
 

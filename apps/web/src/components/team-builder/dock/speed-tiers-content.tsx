@@ -249,8 +249,13 @@ function teamMonToScored(
       nature: pokemon.nature,
       evSpeed: pokemon.ev_speed,
       ivSpeed: pokemon.iv_speed,
+      // Store the NORMALIZED id (e.g. "swift-swim"), not the display name —
+      // isSpeedAbilityActive() and the meta rows both key off normalized ids,
+      // so the display name would never match and the pill would stay dim.
       speedAbility:
-        pokemon.ability === speedAbilityName ? speedAbilityName : null,
+        pokemon.ability === speedAbilityName && speedAbilityName
+          ? (SPEED_ABILITY_LOOKUP[speedAbilityName] ?? null)
+          : null,
       heldItem: pokemon.held_item,
     },
   };
@@ -317,7 +322,8 @@ const STAT_CELL =
 function isSpeedAbilityActive(
   ability: string | null | undefined,
   weather: Weather,
-  unburden: boolean
+  unburden: boolean,
+  statused: boolean
 ): boolean {
   if (!ability) return false;
   switch (ability) {
@@ -334,7 +340,7 @@ function isSpeedAbilityActive(
     case "speed-boost":
       return true; // always active
     case "quick-feet":
-      return true; // active when statused (handled by modifier)
+      return statused; // only active when the mon has a status condition
     default:
       return false;
   }
@@ -715,11 +721,14 @@ export function SpeedTiersTable({
                   effectiveWeather,
                   scored.mon.isYours
                     ? toggle.yours.unburden
-                    : toggle.theirs.unburden
+                    : toggle.theirs.unburden,
+                  scored.mon.isYours
+                    ? toggle.yours.status === "paralyzed"
+                    : toggle.theirs.status === "paralyzed"
                 )}
                 showGroupSeparator={showSeparator}
-                groupValue={scored.mon.baseSpeed}
-                groupLabel="Base Speed"
+                groupValue={curr}
+                groupLabel={toggle.sortBy === "speed" ? "Speed" : "Base Speed"}
               />
             );
           })}
