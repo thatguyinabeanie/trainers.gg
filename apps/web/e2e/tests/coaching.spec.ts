@@ -465,12 +465,19 @@ test.describe("Coaching hub page", () => {
     await page.goto("/coaching");
 
     // When flag is on: CoachingHub renders with "Coaching" h1
-    // When flag is off: ComingSoon renders with a description
-    const hubHeading = page.getByRole("heading", { name: "Coaching", exact: true });
+    // When flag is off: ComingSoon renders with BOTH a "Coaching" h1 AND the
+    // description, so .or() matches two elements. .first() resolves the strict-
+    // mode violation to exactly one element regardless of which state renders.
+    const hubHeading = page.getByRole("heading", {
+      name: "Coaching",
+      exact: true,
+    });
     const comingSoonText = page.getByText(
       /Find and connect with coaches who know the meta/i
     );
 
-    await expect(hubHeading.or(comingSoonText)).toBeVisible({ timeout: 15000 });
+    await expect(hubHeading.or(comingSoonText).first()).toBeVisible({
+      timeout: 15000,
+    });
   });
 });
