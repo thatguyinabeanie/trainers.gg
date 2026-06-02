@@ -248,8 +248,8 @@ export function FlagAllowlistSheet({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="border-t px-6 py-4">
+        {/* Footer — pb-16 clears the fixed sudo-mode indicator at bottom-4 */}
+        <div className="border-t px-6 pt-4 pb-16">
           <div className="flex justify-end gap-2">
             <Button
               variant="outline"
