@@ -283,6 +283,15 @@ export {
   type CrossAltTeamListItem,
 } from "./teams";
 
+// Coach queries
+export {
+  getCoachBadges,
+  getCoachProfileByHandle,
+  listCoaches,
+} from "./coach";
+
+export type { CoachBadgeInfo, CoachProfile } from "./coach";
+
 // Discord bot queries
 export {
   getDiscordServerById,

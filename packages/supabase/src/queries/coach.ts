@@ -1,0 +1,117 @@
+import type { TypedClient } from "../client";
+
+export interface CoachBadgeInfo {
+  showCoachBadge: boolean;
+  coachHandle: string | null;
+}
+
+/**
+ * Resolve coach-badge visibility for a set of alt ids via the privacy-safe,
+ * flag-aware SQL function. Returns only booleans + public handles — never is_coach
+ * or user_id — so it is safe to call from client components.
+ */
+export async function getCoachBadges(
+  supabase: TypedClient,
+  altIds: number[]
+): Promise<Map<number, CoachBadgeInfo>> {
+  if (altIds.length === 0) return new Map();
+  const { data, error } = await supabase.rpc("get_coach_badges", {
+    p_alt_ids: altIds,
+  });
+  if (error) throw error;
+  return new Map(
+    (data ?? []).map((r) => [
+      r.alt_id,
+      { showCoachBadge: r.show_coach_badge, coachHandle: r.coach_handle },
+    ])
+  );
+}
+
+export interface CoachProfile {
+  userId: string;
+  handle: string;
+  headline: string | null;
+  bio: string | null;
+  formats: string[];
+  links: { label: string; url: string }[];
+  serviceTypes: string[];
+}
+
+/**
+ * Resolve a public handle (users.username or any public alt username) to its
+ * account, and return the coach profile — but only if the account is a coach.
+ */
+export async function getCoachProfileByHandle(
+  supabase: TypedClient,
+  handle: string
+): Promise<CoachProfile | null> {
+  let userId: string | null = null;
+  const { data: byUser } = await supabase
+    .from("users")
+    .select("id, is_coach, main_alt_id")
+    .eq("username", handle)
+    .maybeSingle();
+
+  let isCoach = byUser?.is_coach ?? false;
+  let mainAltId = byUser?.main_alt_id ?? null;
+  userId = byUser?.id ?? null;
+
+  if (!userId) {
+    const { data: alt } = await supabase
+      .from("alts")
+      .select(
+        "user_id, is_public, user:users!profiles_user_id_fkey(id, is_coach, main_alt_id)"
+      )
+      .eq("username", handle)
+      .eq("is_public", true)
+      .maybeSingle();
+    if (alt?.user) {
+      const user = Array.isArray(alt.user) ? alt.user[0] : alt.user;
+      if (user) {
+        userId = user.id;
+        isCoach = user.is_coach;
+        mainAltId = user.main_alt_id;
+      }
+    }
+  }
+
+  if (!userId || !isCoach) return null;
+
+  let canonicalHandle = handle;
+  if (mainAltId) {
+    const { data: mainAlt } = await supabase
+      .from("alts")
+      .select("username")
+      .eq("id", mainAltId)
+      .maybeSingle();
+    if (mainAlt?.username) canonicalHandle = mainAlt.username;
+  }
+
+  const { data: profile } = await supabase
+    .from("coach_profiles")
+    .select("headline, bio, formats, links, service_types")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return {
+    userId,
+    handle: canonicalHandle,
+    headline: profile?.headline ?? null,
+    bio: profile?.bio ?? null,
+    formats: profile?.formats ?? [],
+    links:
+      (profile?.links as { label: string; url: string }[] | null) ?? [],
+    serviceTypes: profile?.service_types ?? [],
+  };
+}
+
+/** Admin: list current coaches (accounts with is_coach = true). */
+export async function listCoaches(supabase: TypedClient) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, username, name, image, is_coach, main_alt_id")
+    .eq("is_coach", true)
+    .order("username", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
