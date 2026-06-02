@@ -109,8 +109,8 @@ export function FlagAllowlistSheet({
     try {
       await onSave(allowedIds);
       onOpenChange(false);
-    } catch {
-      toast.error("Failed to save allowlist");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save allowlist");
     } finally {
       setSaving(false);
     }
