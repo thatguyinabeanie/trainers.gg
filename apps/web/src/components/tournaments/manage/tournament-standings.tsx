@@ -97,7 +97,7 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
     rank: player.current_standing ?? 999,
     altId: player.alt?.id ?? null,
     player: {
-      name: player.alt?.username ?? player.alt?.username ?? "Unknown",
+      name: player.alt?.username ?? "Unknown",
       username: player.alt?.username ?? "unknown",
       avatar: player.alt?.avatar_url ?? null,
     },

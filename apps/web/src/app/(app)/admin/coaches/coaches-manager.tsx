@@ -29,6 +29,16 @@ import { useSupabaseQuery } from "@/lib/supabase";
 
 import { grantCoachStatusAction, revokeCoachStatusAction } from "./actions";
 
+function coachLabel(c: {
+  username: string | null;
+  name?: string | null;
+  id: string;
+}): string {
+  if (c.username) return `@${c.username}`;
+  if (c.name) return c.name;
+  return c.id;
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -115,7 +125,7 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
         revokeReason.trim() || undefined
       );
       if (result.success) {
-        toast.success(`Coach status revoked from @${revokeTarget.username}`);
+        toast.success(`Coach status revoked from ${coachLabel(revokeTarget)}`);
         setRevokeTarget(null);
         setRevokeReason("");
         router.refresh();
@@ -134,7 +144,7 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
     try {
       const result = await grantCoachStatusAction(grantTarget.id);
       if (result.success) {
-        toast.success(`Coach status granted to @${grantTarget.username}`);
+        toast.success(`Coach status granted to ${coachLabel(grantTarget)}`);
         setGrantSearch("");
         setDebouncedGrantSearch("");
         setGrantTarget(null);
@@ -347,7 +357,10 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
             <AlertDialogTitle>Revoke coach status?</AlertDialogTitle>
             <AlertDialogDescription>
               This will remove coach status from{" "}
-              <strong>@{revokeTarget?.username}</strong>. Their coach profile
+              <strong>
+                {revokeTarget ? coachLabel(revokeTarget) : "this coach"}
+              </strong>
+              . Their coach profile
               will be hidden but not deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>

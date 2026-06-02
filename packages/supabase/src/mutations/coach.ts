@@ -65,14 +65,17 @@ export async function updateCoachProfile(
 ) {
   const { error } = await supabase
     .from("coach_profiles")
-    .update({
-      headline: input.headline,
-      bio: input.bio,
-      formats: input.formats,
-      links: input.links as unknown as Json,
-      service_types: input.serviceTypes,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", userId);
+    .upsert(
+      {
+        user_id: userId,
+        headline: input.headline,
+        bio: input.bio,
+        formats: input.formats,
+        links: input.links as unknown as Json,
+        service_types: input.serviceTypes,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" }
+    );
   if (error) throw error;
 }

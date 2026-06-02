@@ -14,6 +14,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  live: "Live Session",
+  replay_review: "Replay Review",
+  team_review: "Team Review",
+  mentorship: "Mentorship",
+};
+
 interface Props {
   params: Promise<{ handle: string }>;
 }
@@ -127,7 +134,7 @@ export default async function CoachProfilePage({ params }: Props) {
             <div className="flex flex-wrap gap-2">
               {profile.serviceTypes.map((service) => (
                 <Badge key={service} variant="outline">
-                  {service}
+                  {SERVICE_TYPE_LABELS[service] ?? service}
                 </Badge>
               ))}
             </div>

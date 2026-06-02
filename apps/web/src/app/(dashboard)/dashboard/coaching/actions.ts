@@ -35,12 +35,18 @@ export async function updateCoachProfileAction(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated" };
 
-  const { data: me } = await supabase
+  const { data: me, error: meError } = await supabase
     .from("users")
     .select("is_coach, username")
     .eq("id", user.id)
     .maybeSingle();
 
+  if (meError) {
+    return {
+      success: false,
+      error: meError.message ?? "Failed to load user",
+    };
+  }
   if (!me?.is_coach) return { success: false, error: "Not a coach" };
 
   try {
