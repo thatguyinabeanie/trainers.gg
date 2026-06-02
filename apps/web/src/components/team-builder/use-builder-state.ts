@@ -179,7 +179,7 @@ export function useBuilderState(): BuilderState {
   // Initial null — nothing auto-opens; the workspace applies the saved
   // preference (default view + open-on-load) after mount.
   const [speedView, setSpeedView] = useState<SpeedView>(null);
-  const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>("calc");
+  const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>(null);
   const [bottomDrawer, setBottomDrawer] = useState<BottomDrawerKey>(null);
 
   // Close side panels on mobile before first paint so the editor is immediately
