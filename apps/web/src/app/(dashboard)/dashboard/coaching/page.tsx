@@ -42,6 +42,15 @@ export default async function CoachingDashboardPage() {
       .maybeSingle(),
   ]);
 
+  // Surface real DB/RLS failures (e.g. transient outage, RLS denial) so they
+  // show up in observability tooling rather than silently 404'ing.
+  if (userRow.error) {
+    throw userRow.error;
+  }
+  if (profileRow.error) {
+    throw profileRow.error;
+  }
+
   if (!userRow.data?.is_coach) {
     notFound();
   }

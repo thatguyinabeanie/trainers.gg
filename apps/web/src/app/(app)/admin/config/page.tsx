@@ -393,8 +393,13 @@ export default function AdminConfigPage() {
   const handleSaveAllowlist = async (allowedUserIds: string[]) => {
     if (!editingFlag) return;
     setError(null);
+    // Merge into existing metadata so other keys (e.g. discord_integration's
+    // `allowed_communities`) are preserved across saves. Without this merge,
+    // any unrelated metadata key on the flag would be wiped on allowlist save.
+    const existingMetadata =
+      (editingFlag.metadata as Record<string, unknown> | null) ?? {};
     const result = await updateFlagAction(editingFlag.id, {
-      metadata: { allowed_users: allowedUserIds },
+      metadata: { ...existingMetadata, allowed_users: allowedUserIds },
     });
     if (!result.success) {
       setError(result.error ?? "Failed to update allowlist");

@@ -14,7 +14,7 @@ import { TEST_USERS, loginViaUI } from "../fixtures/auth";
 //
 // Seed state (after pnpm db:reset):
 //   - coaching feature flag ENABLED (02b_feature_flags.sql)
-//   - NO users are seeded as coaches (03_users.sql has no is_coach = true)
+//   - 4 seeded coaches (14_coaching.sql): cynthia, karen, lance, red
 //   - Default storage state = player@trainers.local (ash_ketchum)
 //
 // CI hazards:

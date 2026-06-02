@@ -63,19 +63,21 @@ export async function updateCoachProfile(
   userId: string,
   input: CoachProfileInput
 ) {
-  const { error } = await supabase
-    .from("coach_profiles")
-    .upsert(
-      {
-        user_id: userId,
-        headline: input.headline,
-        bio: input.bio,
-        formats: input.formats,
-        links: input.links as unknown as Json,
-        service_types: input.serviceTypes,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" }
-    );
+    const { error } = await supabase
+      .from("coach_profiles")
+      .upsert(
+        {
+          user_id: userId,
+          headline: input.headline,
+          bio: input.bio,
+          formats: input.formats,
+          links: input.links as unknown as Json,
+          service_types: input.serviceTypes,
+          // updated_at is set by the `set_coach_profiles_updated_at` DB
+          // trigger — writing it from app time would race with that trigger
+          // and introduce clock-skew inconsistencies across app servers.
+        },
+        { onConflict: "user_id" }
+      );
   if (error) throw error;
 }

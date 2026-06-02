@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -63,6 +63,15 @@ export function FlagAllowlistSheet({
       setDebouncedSearch(value.trim());
     }, 300);
   }
+
+  // Clear the debounce timer on unmount so a late-firing callback can't call
+  // setDebouncedSearch on an unmounted component (which would log a warning
+  // and trigger a state-update-on-unmounted warning in React).
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   // Fetch current allowed users by their IDs
   const currentAllowedQuery = useSupabaseQuery(
