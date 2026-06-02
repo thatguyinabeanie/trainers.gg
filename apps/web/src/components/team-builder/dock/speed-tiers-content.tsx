@@ -1,6 +1,6 @@
 "use client";
 
-import { type Dispatch, type SetStateAction, useState } from "react";
+import { type Dispatch, type SetStateAction } from "react";
 import Image from "next/image";
 
 import {
@@ -98,9 +98,12 @@ const STAGE_MAX = 6;
 
 /**
  * Sentinel for the render-time state-reset pattern (see react-patterns.md).
- * Module-scoped so its identity is stable across renders.
+ * Module-scoped so its identity is stable across renders. Exported because the
+ * EV-clamp-on-format-change reset now lives in TeamWorkspaceV2 (which owns the
+ * speed toggle), not here — calling setToggle during this table's render would
+ * be a cross-component render-setState violation.
  */
-const UNINITIALIZED_FORMAT_ID = Symbol("uninitialized-format-id");
+export const UNINITIALIZED_FORMAT_ID = Symbol("uninitialized-format-id");
 
 const SPEED_ABILITY_LOOKUP: Partial<Record<string, SpeedAbility>> = {
   Chlorophyll: "chlorophyll",
@@ -579,33 +582,9 @@ export function SpeedTiersTable({
   effectiveWeather,
   nameFilter,
 }: TableProps) {
-  const [prevFormatId, setPrevFormatId] = useState<
-    string | undefined | typeof UNINITIALIZED_FORMAT_ID
-  >(UNINITIALIZED_FORMAT_ID);
-
-  // Format can change (user switches VGC → Champions). Different formats have
-  // different max EVs (VGC 252 vs Champions 32), so a stale 100-EV override
-  // would otherwise pass out-of-range to calculateChampionsStat. Clamp on
-  // change using the render-time sentinel pattern from react-patterns.md.
-  const currentFormatId = format.id;
-  if (currentFormatId !== prevFormatId) {
-    setPrevFormatId(currentFormatId);
-    const newMaxEv = isChampionsFormat(format) ? 32 : 252;
-    setToggle((prev) => {
-      const yoursEvs = prev.yours.evs;
-      const theirsEvs = prev.theirs.evs;
-      const clampedYours =
-        yoursEvs != null && yoursEvs > newMaxEv ? newMaxEv : yoursEvs;
-      const clampedTheirs =
-        theirsEvs != null && theirsEvs > newMaxEv ? newMaxEv : theirsEvs;
-      if (clampedYours === yoursEvs && clampedTheirs === theirsEvs) return prev;
-      return {
-        ...prev,
-        yours: { ...prev.yours, evs: clampedYours },
-        theirs: { ...prev.theirs, evs: clampedTheirs },
-      };
-    });
-  }
+  // Format-change EV clamping moved to TeamWorkspaceV2 (which owns the toggle).
+  // Calling setToggle during this table's render would be a cross-component
+  // render-setState violation — the setter belongs to the parent now.
 
   // Filter to non-null pokemon on the team.
   const pokemons = team
