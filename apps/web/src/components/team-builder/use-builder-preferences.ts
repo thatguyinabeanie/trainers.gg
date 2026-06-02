@@ -79,8 +79,7 @@ export function useBuilderPreferences(
     }
     let cancelled = false;
     // setState calls below run AFTER an await (not synchronously in the effect
-    // body), so set-state-in-effect does not fire. If lint flags them anyway,
-    // wrap the offending lines in the same eslint-disable comment pair.
+    // body), so set-state-in-effect does not fire.
     void (async () => {
       const result = await getBuilderPreferencesAction();
       if (cancelled) return;
