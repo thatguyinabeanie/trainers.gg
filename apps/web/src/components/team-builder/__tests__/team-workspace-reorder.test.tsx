@@ -62,6 +62,24 @@ jest.mock("../dock/speed-tiers-panel", () => ({
   getTeamFastestSpeed: () => 0,
 }));
 
+jest.mock("../dock/speed-tiers-dialog", () => ({
+  SpeedTiersDialog: () => null,
+}));
+
+jest.mock("../dock/speed-tiers-content", () => ({
+  UNINITIALIZED_FORMAT_ID: Symbol("uninitialized-format-id"),
+}));
+
+jest.mock("../use-builder-preferences", () => ({
+  useBuilderPreferences: () => ({
+    preferences: {
+      speedTiers: { defaultView: "dialog", openOnLoad: false },
+    },
+    setPreferences: jest.fn(),
+    loading: false,
+  }),
+}));
+
 jest.mock("../poke-row", () => ({
   PokeRow: ({
     idx,
@@ -116,8 +134,8 @@ jest.mock("../use-builder-state", () => ({
   useBuilderState: () => ({
     activeIdx: 0,
     setActiveIdx: jest.fn(),
-    sideDrawer: null,
-    setSideDrawer: jest.fn(),
+    speedView: null,
+    setSpeedView: jest.fn(),
     rightDrawer: null,
     setRightDrawer: jest.fn(),
     bottomDrawer: null,
@@ -302,6 +320,7 @@ describe("TeamWorkspaceV2 — slot rendering", () => {
         format={undefined}
         alts={MOCK_ALTS}
         persistence={MOCK_PERSISTENCE}
+        isAuthenticated={false}
         renderHeader={() => null}
       />
     );
@@ -318,6 +337,7 @@ describe("TeamWorkspaceV2 — slot rendering", () => {
         format={undefined}
         alts={MOCK_ALTS}
         persistence={MOCK_PERSISTENCE}
+        isAuthenticated={false}
         renderHeader={() => null}
       />
     );
@@ -342,6 +362,7 @@ describe("TeamWorkspaceV2 — buildSlots position mapping", () => {
         format={undefined}
         alts={MOCK_ALTS}
         persistence={MOCK_PERSISTENCE}
+        isAuthenticated={false}
         renderHeader={() => null}
       />
     );
@@ -369,6 +390,7 @@ describe("TeamWorkspaceV2 — reorder success path", () => {
         format={undefined}
         alts={MOCK_ALTS}
         persistence={MOCK_PERSISTENCE}
+        isAuthenticated={false}
         renderHeader={() => null}
       />
     );
@@ -387,6 +409,7 @@ describe("TeamWorkspaceV2 — empty team", () => {
         format={undefined}
         alts={MOCK_ALTS}
         persistence={MOCK_PERSISTENCE}
+        isAuthenticated={false}
         renderHeader={() => null}
       />
     );
@@ -407,6 +430,7 @@ describe("TeamWorkspaceV2 — no duplicate slot IDs", () => {
         format={undefined}
         alts={MOCK_ALTS}
         persistence={MOCK_PERSISTENCE}
+        isAuthenticated={false}
         renderHeader={() => null}
       />
     );
@@ -425,6 +449,7 @@ describe("TeamWorkspaceV2 — no duplicate slot IDs", () => {
         format={undefined}
         alts={MOCK_ALTS}
         persistence={MOCK_PERSISTENCE}
+        isAuthenticated={false}
         renderHeader={() => null}
       />
     );
@@ -444,6 +469,7 @@ describe("TeamWorkspaceV2 — no duplicate slot IDs", () => {
         format={undefined}
         alts={MOCK_ALTS}
         persistence={MOCK_PERSISTENCE}
+        isAuthenticated={false}
         renderHeader={() => null}
       />
     );

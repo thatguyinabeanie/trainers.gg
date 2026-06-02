@@ -8,6 +8,22 @@ import type * as TrainersPokemon from "@trainers/pokemon";
 import { type GameFormat, type MetaSpeedEntry } from "@trainers/pokemon";
 
 import { SpeedTiersPanel } from "../dock/speed-tiers-panel";
+import { useSpeedTiersToggle } from "../dock/speed-tiers-state";
+
+/**
+ * Stateful harness — SpeedTiersPanel is now a controlled component that
+ * requires `toggle`/`setToggle`. The harness supplies real state via the
+ * shared hook so interaction tests (toggling Trick Room, etc.) work.
+ */
+function SpeedTiersPanelHarness(
+  props: Omit<
+    React.ComponentProps<typeof SpeedTiersPanel>,
+    "toggle" | "setToggle"
+  >
+) {
+  const { toggle, setToggle } = useSpeedTiersToggle();
+  return <SpeedTiersPanel {...props} toggle={toggle} setToggle={setToggle} />;
+}
 
 // base-ui Switch uses PointerEvent which jsdom doesn't have
 if (typeof globalThis.PointerEvent === "undefined") {
@@ -115,7 +131,7 @@ function renderPanel(
   // applySpeedModifiers returns the entry's fastSpread unchanged
   (applySpeedModifiers as jest.Mock).mockImplementation((base: number) => base);
 
-  return render(<SpeedTiersPanel team={[]} format={format} />);
+  return render(<SpeedTiersPanelHarness team={[]} format={format} />);
 }
 
 // =============================================================================
@@ -124,7 +140,7 @@ function renderPanel(
 
 describe("SpeedTiersPanel — no format", () => {
   it("shows a prompt when no format is provided", () => {
-    render(<SpeedTiersPanel team={[]} format={undefined} />);
+    render(<SpeedTiersPanelHarness team={[]} format={undefined} />);
     expect(
       screen.getByText(/select a format to see speed tiers/i)
     ).toBeInTheDocument();
@@ -248,7 +264,7 @@ describe("SpeedTiersPanel — external weather prop", () => {
     );
 
     return render(
-      <SpeedTiersPanel
+      <SpeedTiersPanelHarness
         team={[]}
         format={TEST_FORMAT}
         weather={weather}

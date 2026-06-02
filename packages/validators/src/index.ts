@@ -206,3 +206,14 @@ export {
   teamUpdateDataSchema,
   type TeamUpdateData,
 } from "./team-builder";
+
+// Builder UI preference validators
+export {
+  panelViewSchema,
+  panelPreferenceSchema,
+  builderPreferencesSchema,
+  DEFAULT_BUILDER_PREFERENCES,
+  type PanelView,
+  type PanelPreference,
+  type BuilderPreferences,
+} from "./builder-preferences";

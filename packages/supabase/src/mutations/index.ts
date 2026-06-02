@@ -100,6 +100,9 @@ export {
 // Notification preference mutations
 export { upsertNotificationPreferences } from "./notification-preferences";
 
+// User preference mutations
+export { upsertUserPreferences } from "./user-preferences";
+
 // Team builder mutations
 export {
   createTeam,

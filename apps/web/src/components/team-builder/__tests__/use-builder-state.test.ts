@@ -38,15 +38,15 @@ describe("useBuilderState — ephemeral state defaults", () => {
     expect(result.current.activeIdx).toBe(0);
   });
 
-  it("starts with sideDrawer='speed' on desktop", () => {
+  it("starts with speedView=null (workspace applies the saved preference)", () => {
     const { result } = renderHook(() => useBuilderState());
-    expect(result.current.sideDrawer).toBe("speed");
+    expect(result.current.speedView).toBe(null);
   });
 
-  it("closes sideDrawer and rightDrawer by default on mobile", () => {
+  it("closes speedView and rightDrawer by default on mobile", () => {
     setViewportWidth(375);
     const { result } = renderHook(() => useBuilderState());
-    expect(result.current.sideDrawer).toBe(null);
+    expect(result.current.speedView).toBe(null);
     expect(result.current.rightDrawer).toBe(null);
   });
 
@@ -58,10 +58,10 @@ describe("useBuilderState — ephemeral state defaults", () => {
     expect(result.current.activeIdx).toBe(3);
   });
 
-  it("setSideDrawer(null) then setBottomDrawer('matchups') opens matchups", () => {
+  it("setSpeedView(null) then setBottomDrawer('matchups') opens matchups", () => {
     const { result } = renderHook(() => useBuilderState());
     act(() => {
-      result.current.setSideDrawer(null);
+      result.current.setSpeedView(null);
     });
     act(() => {
       result.current.setBottomDrawer("matchups");

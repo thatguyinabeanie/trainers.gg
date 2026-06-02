@@ -150,6 +150,9 @@ export {
 // Notification preference queries
 export { getNotificationPreferences } from "./notification-preferences";
 
+// User preference queries
+export { getUserPreferences } from "./user-preferences";
+
 // Audit log queries
 export {
   getTournamentAuditLog,
