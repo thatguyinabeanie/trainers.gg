@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // Mock next/navigation
@@ -115,6 +115,11 @@ jest.mock("@/components/ui/avatar", () => ({
 // Mock shadcn/ui separator
 jest.mock("@/components/ui/separator", () => ({
   Separator: () => <hr />,
+}));
+
+// Mock @trainers/supabase to prevent barrel load side effects
+jest.mock("@trainers/supabase", () => ({
+  listUsersAdmin: jest.fn(),
 }));
 
 // Mock useSupabaseQuery — returns { data, isLoading }
@@ -307,9 +312,10 @@ describe("CoachesManager", () => {
       );
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
-      // Click the Revoke confirm button inside the dialog
-      const confirmBtn = screen.getByRole("button", { name: /^revoke$/i });
-      await user.click(confirmBtn);
+      // Click the Revoke confirm button inside the dialog (scoped to avoid
+      // ambiguity with the row-level Revoke button which stays mounted)
+      const dialog = screen.getByTestId("alert-dialog");
+      await user.click(within(dialog).getByRole("button", { name: /^revoke$/i }));
 
       await waitFor(() => {
         expect(mockRevokeCoachStatusAction).toHaveBeenCalledWith(
@@ -337,7 +343,8 @@ describe("CoachesManager", () => {
         /explain why coach status is being revoked/i
       );
       await user.type(reasonTextarea, "Policy violation");
-      await user.click(screen.getByRole("button", { name: /^revoke$/i }));
+      const dialog2 = screen.getByTestId("alert-dialog");
+      await user.click(within(dialog2).getByRole("button", { name: /^revoke$/i }));
 
       await waitFor(() => {
         expect(mockRevokeCoachStatusAction).toHaveBeenCalledWith(
