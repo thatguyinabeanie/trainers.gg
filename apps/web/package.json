@@ -35,7 +35,7 @@
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
-    "@smogon/calc": "github:thatguyinabeanie/damage-calc#0f105ee50dda7cbc513ae1321c280e63c3681a96&path:/calc",
+    "@smogon/calc": "github:thatguyinabeanie/damage-calc#8abfddf78906a77edd171335fc04268e316851ec&path:/calc",
     "@supabase/ssr": "catalog:supabase",
     "@supabase/supabase-js": "catalog:supabase",
     "@tanstack/react-query": "catalog:tanstack",
