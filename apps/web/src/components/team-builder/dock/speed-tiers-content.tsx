@@ -282,8 +282,12 @@ function metaToScored(
         ? 0.9
         : 1.0;
 
-  // EVs: if custom set use that; otherwise 0 baseline
-  const evs = customEvs ?? 0;
+  // EVs: if custom set use that; otherwise default to the format max. This
+  // matches the modifiers UI, where a cleared input shows the maxEv placeholder
+  // and the +/- steppers anchor at maxEv — so a blank field computes the speed
+  // the UI implies rather than 0.
+  const maxEv = champions ? 32 : 252;
+  const evs = customEvs ?? maxEv;
 
   const rawSpeed = champions
     ? calculateChampionsStat(b, evs, natureMult)
