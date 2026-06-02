@@ -104,12 +104,6 @@ const TEST_FORMAT: GameFormat = {
   active: true,
 };
 
-const CHAMPIONS_FORMAT: GameFormat = {
-  ...TEST_FORMAT,
-  id: "gen9champions2025",
-  category: "Champions",
-};
-
 function renderDialog(
   overrides: Partial<React.ComponentProps<typeof SpeedTiersDialog>> = {}
 ) {
