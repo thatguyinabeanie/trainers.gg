@@ -3,7 +3,7 @@
   "private": true,
   "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
-  "packageManager": "pnpm@11.1.0",
+  "packageManager": "pnpm@11.5.1",
   "scripts": {
     "// setup": "",
     "setup": "pnpm --filter=@trainers/supabase run setup",
