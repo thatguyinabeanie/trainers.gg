@@ -41,16 +41,30 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // Helpers
 // =============================================================================
 
+function parsePositiveInt(value: string, label: string): number {
+  if (!/^\d+$/.test(value)) {
+    throw new Error(`${label} must be a positive integer`);
+  }
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`${label} must be a positive integer`);
+  }
+  return parsed;
+}
+
 async function checkCronGuard(
   supabase: SupabaseClient,
   key: string,
   force: boolean
 ): Promise<void> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("site_config")
     .select("value")
     .eq("key", key)
     .maybeSingle();
+  if (error) {
+    throw new Error(`Failed to read cron guard ${key}: ${error.message}`);
+  }
   const enabled = data?.value === true || data?.value === "true";
   if (enabled && !force) {
     console.error(
@@ -130,7 +144,7 @@ rk9
 
         console.log(`\nScraping ${eventId}...`);
         const { roster } = await scrapeRoster(eventId, dateStart);
-        await scrapeTeams(eventId, roster, parseInt(opts.concurrency, 10));
+        await scrapeTeams(eventId, roster, parsePositiveInt(opts.concurrency, "--concurrency"));
         await scrapeMatches(eventId);
         console.log(`\nDone scraping ${eventId}`);
 
@@ -151,11 +165,12 @@ rk9
           }
 
           if (formatId) {
-            await supabase
+            const { error: fmtErr } = await supabase
               .schema("rk9")
               .from("events")
               .update({ format_id: formatId })
               .eq("event_id", eventId);
+            if (fmtErr) throw new Error(`Failed to update format_id: ${fmtErr.message}`);
           }
 
           console.log(`\nImporting ${eventId}...`);
@@ -260,11 +275,12 @@ rk9
 
       // Update format_id on the event row if we have it
       if (formatId) {
-        await supabase
+        const { error: fmtErr } = await supabase
           .schema("rk9")
           .from("events")
           .update({ format_id: formatId })
           .eq("event_id", eventId);
+        if (fmtErr) throw new Error(`Failed to update format_id: ${fmtErr.message}`);
       }
 
       console.log(`\nImporting ${eventId}...`);
@@ -358,11 +374,12 @@ rk9
         // Step 2: Find events to process
         // Without --force: only events not yet complete
         // With --force: all ended events, including already-complete ones
-        const { data: completedRows } = await supabase
+        const { data: completedRows, error: completedErr } = await supabase
           .schema("rk9")
           .from("events")
           .select("event_id")
           .eq("import_status", "complete");
+        if (completedErr) throw new Error(`Failed to query completed events: ${completedErr.message}`);
         const completed = new Set((completedRows ?? []).map((r) => r.event_id));
 
         const pending = events.filter((e) => {
@@ -381,8 +398,8 @@ rk9
         // Upsert all discovered events first
         await syncEvents(supabase, events);
 
-        const teamConcurrency = parseInt(opts.concurrency, 10);
-        const eventConcurrency = parseInt(opts.eventConcurrency, 10);
+        const teamConcurrency = parsePositiveInt(opts.concurrency, "--concurrency");
+        const eventConcurrency = parsePositiveInt(opts.eventConcurrency, "--event-concurrency");
 
         // Pool pattern: N event workers share a queue index.
         // Each picks the next event, processes it fully, then picks the next.
@@ -463,6 +480,20 @@ rk9
                 );
               }
 
+              // Update format_id from meta.json if available
+              const metaPath = join(DATA_DIR, "rk9", event.eventId, "meta.json");
+              if (existsSync(metaPath)) {
+                const meta = await readJson<EventMeta>(metaPath);
+                if (meta.formatId) {
+                  const { error: fmtErr } = await supabase
+                    .schema("rk9")
+                    .from("events")
+                    .update({ format_id: meta.formatId })
+                    .eq("event_id", event.eventId);
+                  if (fmtErr) console.warn(`${tag} Failed to update format_id: ${fmtErr.message}`);
+                }
+              }
+
               console.log(`${tag} Done`);
             } catch (err) {
               console.error(
@@ -528,7 +559,7 @@ rk9
       }
 
       // Find which events already have match_results
-      const { data: withMatches } = await supabase
+      const { data: withMatches, error: withMatchesErr } = await supabase
         .schema("rk9")
         .from("match_results")
         .select("event_id")
@@ -536,6 +567,7 @@ rk9
           "event_id",
           events.map((e) => e.event_id)
         );
+      if (withMatchesErr) throw new Error(`Failed to query match results: ${withMatchesErr.message}`);
 
       const hasMatches = new Set((withMatches ?? []).map((r) => r.event_id));
       const toProcess = events.filter((e) => !hasMatches.has(e.event_id));
@@ -705,17 +737,17 @@ limitless
           }
         }
 
-        // Step 1: Sync tournament list
+        // Step 1: Sync tournament list (syncTournamentList already fetches from API)
         console.log("\nSyncing tournament list...");
-        await syncTournamentList(supabase, apiKey);
-        const tournaments = await syncTournaments(apiKey);
+        const { tournaments } = await syncTournamentList(supabase, apiKey);
 
         // Step 2: Find unimported tournaments with known format mappings
-        const { data: alreadyImported } = await supabase
+        const { data: alreadyImported, error: alreadyImportedErr } = await supabase
           .schema("limitless")
           .from("tournaments")
           .select("tournament_id")
           .not("data_imported_at", "is", null);
+        if (alreadyImportedErr) throw new Error(`Failed to query imported tournaments: ${alreadyImportedErr.message}`);
         const imported = new Set(
           (alreadyImported ?? []).map((r) => r.tournament_id)
         );
@@ -736,7 +768,7 @@ limitless
             : `\n${toImport.length} tournaments to scrape+import${filterDesc} (${imported.size} already done)`
         );
 
-        const eventConcurrency = parseInt(opts.eventConcurrency, 10);
+        const eventConcurrency = parsePositiveInt(opts.eventConcurrency, "--event-concurrency");
         let nextIdx = 0;
 
         async function processTournament(): Promise<void> {
@@ -819,15 +851,22 @@ crons
   .description("Set both auto-import flags to false (safe to run CLI)")
   .action(async () => {
     const supabase = createAdminClient();
+    const { error, count } = await supabase
+      .from("site_config")
+      .update({ value: false })
+      .in("key", [...CRON_KEYS])
+      .select("key", { count: "exact", head: true });
+    if (error) {
+      console.error(`Failed to disable crons: ${error.message}`);
+      process.exit(1);
+    }
+    if (count !== null && count < CRON_KEYS.length) {
+      console.error(
+        `Expected ${CRON_KEYS.length} rows but only ${count} were updated — some cron keys may be missing`
+      );
+      process.exit(1);
+    }
     for (const key of CRON_KEYS) {
-      const { error } = await supabase
-        .from("site_config")
-        .update({ value: false })
-        .eq("key", key);
-      if (error) {
-        console.error(`Failed to update ${key}: ${error.message}`);
-        process.exit(1);
-      }
       console.log(`  ${key} → false`);
     }
     console.log(
@@ -840,15 +879,22 @@ crons
   .description("Re-enable both auto-import flags")
   .action(async () => {
     const supabase = createAdminClient();
+    const { error, count } = await supabase
+      .from("site_config")
+      .update({ value: true })
+      .in("key", [...CRON_KEYS])
+      .select("key", { count: "exact", head: true });
+    if (error) {
+      console.error(`Failed to enable crons: ${error.message}`);
+      process.exit(1);
+    }
+    if (count !== null && count < CRON_KEYS.length) {
+      console.error(
+        `Expected ${CRON_KEYS.length} rows but only ${count} were updated — some cron keys may be missing`
+      );
+      process.exit(1);
+    }
     for (const key of CRON_KEYS) {
-      const { error } = await supabase
-        .from("site_config")
-        .update({ value: true })
-        .eq("key", key);
-      if (error) {
-        console.error(`Failed to update ${key}: ${error.message}`);
-        process.exit(1);
-      }
       console.log(`  ${key} → true`);
     }
     console.log("\nCrons re-enabled.");

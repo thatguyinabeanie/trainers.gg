@@ -21,5 +21,8 @@ BEGIN
     ('limitless_frontend_auto_import', to_jsonb(_lim_val)),
     ('limitless_backend_auto_import', to_jsonb(_lim_val))
   ON CONFLICT (key) DO NOTHING;
+
+  -- Remove the old per-source keys now that they've been copied
+  DELETE FROM public.site_config WHERE key IN ('auto_import_rk9_enabled', 'auto_import_limitless_enabled');
 END $$;
 

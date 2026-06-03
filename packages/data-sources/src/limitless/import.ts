@@ -9,7 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { fetchTournamentList, fetchTournamentData } from "./api";
 import { LIMITLESS_TO_FORMAT, KNOWN_FORMATS } from "./format";
-import type { TournamentData, SyncResult, ImportResult } from "./types";
+import type { TournamentData, SyncResult, ImportResult, LimitlessTournament } from "./types";
 
 // Union of Limitless format codes (keys) and Showdown format IDs (values)
 // that are valid for import.
@@ -41,7 +41,7 @@ const ALL_VALID_FORMATS = new Set([
 export async function syncTournamentList(
   supabase: SupabaseClient,
   apiKey?: string
-): Promise<SyncResult> {
+): Promise<SyncResult & { tournaments: LimitlessTournament[] }> {
   const allTournaments = await fetchTournamentList(apiKey);
 
   let synced = 0;
@@ -111,6 +111,7 @@ export async function syncTournamentList(
     mapped,
     unmapped,
     unmappedFormats,
+    tournaments: allTournaments,
   };
 }
 

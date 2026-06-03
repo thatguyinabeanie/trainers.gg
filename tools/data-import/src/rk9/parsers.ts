@@ -3,10 +3,10 @@ import type {
   RK9Event,
   RK9RosterEntry,
   RK9Pokemon,
-  PairingsEntry,
   RK9EventTier,
   RK9Division,
-} from "./types.js";
+} from "@trainers/data-sources";
+import type { PairingsEntry } from "./import.js";
 
 // =============================================================================
 // Events page parser (/events/pokemon)
@@ -16,12 +16,12 @@ export function parseEventsPage(html: string): RK9Event[] {
   const $ = cheerio.load(html);
   const events: RK9Event[] = [];
 
-  const tables: Array<{ selector: string }> = [
-    { selector: "#dtUpcomingEvents" },
-    { selector: "#dtPastEvents" },
+  const tables: Array<{ selector: string; section: "upcoming" | "past" }> = [
+    { selector: "#dtUpcomingEvents", section: "upcoming" },
+    { selector: "#dtPastEvents", section: "past" },
   ];
 
-  for (const { selector } of tables) {
+  for (const { selector, section } of tables) {
     const $table = $(selector);
     if (!$table.length) continue;
 
@@ -41,7 +41,7 @@ export function parseEventsPage(html: string): RK9Event[] {
       if (!$vgLink.length) return;
 
       const href = $vgLink.attr("href") ?? "";
-      const tournamentIdMatch = href.match(/\/tournament\/(.+)$/);
+      const tournamentIdMatch = href.match(/\/tournament\/([^\/?#]+)/);
       if (!tournamentIdMatch?.[1]) return;
       const eventId = tournamentIdMatch[1];
 
@@ -49,7 +49,7 @@ export function parseEventsPage(html: string): RK9Event[] {
       const name = $cells.eq(2).find("a").first().text().trim();
       const locationRaw = $cells.eq(3).text().trim();
 
-      const locationParts = locationRaw.split(",").map((s) => s.trim());
+      const locationParts = locationRaw.split(",").slice(0, 2).map((s) => s.trim());
       const locationCity = locationParts[0] ?? "";
       const locationCountry = locationParts[1] ?? "";
 
@@ -59,11 +59,13 @@ export function parseEventsPage(html: string): RK9Event[] {
       events.push({
         eventId,
         name,
+        dateRaw,
         dateStart,
         dateEnd,
         locationCity,
         locationCountry,
         tier,
+        section,
       });
     });
   }

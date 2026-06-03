@@ -254,6 +254,40 @@ function CommunityPreview() {
   );
 }
 
+function BuilderPreview() {
+  const features = [
+    { title: "Damage calculator", sub: "One foe vs your 6 — and your 6 vs it" },
+    { title: "Dynamic speed tiers", sub: "Your team, ranked in the format" },
+    { title: "Type coverage", sub: "Spot defensive holes fast" },
+    {
+      title: "Showdown & Poképaste import",
+      sub: "Paste a team, start instantly",
+    },
+    { title: "Legality validation", sub: "Format-legal before you submit" },
+    { title: "No account needed", sub: "Build first, save later" },
+  ] as const;
+
+  return (
+    <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-3">
+      {features.map(({ title, sub }) => (
+        <div key={title} className="flex items-start gap-1.5">
+          <span className="text-primary shrink-0 text-[11px] leading-tight font-bold">
+            ✓
+          </span>
+          <div className="min-w-0">
+            <p className="text-foreground text-[11px] leading-tight font-semibold">
+              {title}
+            </p>
+            <p className="text-muted-foreground text-[10px] leading-tight">
+              {sub}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const underConstructionItems = [
   {
     emoji: "📊",
@@ -261,9 +295,9 @@ const underConstructionItems = [
     desc: "Track usage rates, win rates, and popular cores drawn from publicly played tournament teams. See what's working in the current meta before you build.",
   },
   {
-    emoji: "⚔️",
-    label: "Builder",
-    desc: "Build and share teams with current meta analytics at your fingertips. See usage rates, win rates, and popular cores from public tournament data as you build — plus coverage checks and spread insights.",
+    emoji: "🏆",
+    label: "Tournament Results",
+    desc: "Standings and team sheets from across the scene, imported from RK9 and Limitless — viewable natively on profiles and in analytics.",
   },
   {
     emoji: "📝",
@@ -348,7 +382,17 @@ export function BentoGrid() {
           preview={<CompetePreview />}
         />
 
-        {/* Row 3: Community (full width) */}
+        {/* Row 3: Builder (full width) */}
+        <BentoCard
+          step="03"
+          label="builder"
+          headline="Build with the calc and speed tiers built in."
+          description="Everything you need to theorycraft a team and lock it in — all in one place."
+          preview={<BuilderPreview />}
+          className="md:col-span-2 lg:col-span-3"
+        />
+
+        {/* Row 4: Community (full width) */}
         <BentoCard
           step="08"
           label="community"

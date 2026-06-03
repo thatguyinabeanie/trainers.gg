@@ -92,4 +92,10 @@ export const CacheTags = {
 
   /** Tag for a specific limitless tournament detail page */
   limitlessTournament: (id: string) => `limitless-tournament:${id}`,
+
+  /** Tag for the admin coaches list */
+  COACHES_LIST: "coaches-list",
+
+  /** Tag for a specific coach profile page */
+  coachProfile: (handle: string) => `coach-profile:${handle}`,
 } as const;

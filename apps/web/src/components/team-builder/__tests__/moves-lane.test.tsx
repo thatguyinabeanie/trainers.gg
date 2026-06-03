@@ -387,11 +387,9 @@ function renderLane(
 // =============================================================================
 
 describe("MovesLane — basic render", () => {
-  it("renders 4 move tiles (popover triggers)", () => {
+  it("renders 4 move tiles (clickable rows)", () => {
     renderLane();
-    expect(
-      screen.getAllByTestId("popover-trigger").length
-    ).toBeGreaterThanOrEqual(4);
+    expect(screen.getAllByRole("row").length).toBeGreaterThanOrEqual(4);
   });
 
   it("renders set moves by name", () => {

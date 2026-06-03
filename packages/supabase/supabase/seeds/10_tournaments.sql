@@ -55,7 +55,7 @@ BEGIN
 Welcome to VGC League''s Week 1 Championship! This is our weekly Swiss + Top Cut tournament open to all skill levels.
 
 ### Rules
-- **Format:** VGC Regulation I on Pokemon Showdown
+- **Format:** Pokemon Champions Reg M-A on Pokemon Showdown
 - **Best of 3** for all matches
 - **Open Team Sheets** — opponents can see your team before the match
 - **50 minute rounds** with 5 minute check-in between rounds
@@ -83,7 +83,7 @@ Good luck, trainers!',
 Welcome to Pallet Town Trainers'' first weekly tournament! Whether you''re a seasoned veteran or just starting your competitive journey, you''re welcome here.
 
 ### Format & Rules
-- **VGC Regulation I** on Pokemon Showdown
+- **Pokemon Champions Reg M-A** on Pokemon Showdown
 - **Best of 3**, open team sheets
 - **50 minute rounds**
 - Be respectful to your opponents — we''re all here to learn and have fun!
@@ -112,7 +112,7 @@ Week 2 is here! This week features an expanded format with **6 Swiss rounds** an
 - **Late registration** is enabled through Round 3
 
 ### Rules
-- **Format:** VGC Regulation I on Pokemon Showdown
+- **Format:** Pokemon Champions Reg M-A on Pokemon Showdown
 - **Best of 3** for all matches
 - **Open Team Sheets**
 - **50 minute rounds** with 5 minute check-in
@@ -140,7 +140,7 @@ Back for another week of friendly competition! This week we''re trying out an ex
 
 ### Format
 - **6 Swiss Rounds** into **Top 8**
-- VGC Regulation I on Pokemon Showdown
+- Pokemon Champions Reg M-A on Pokemon Showdown
 - Best of 3, open team sheets, 50 minute rounds
 
 ### Late Registration
@@ -166,7 +166,7 @@ Can''t make it right at the start? No problem — **late registration is open th
 Registration is open and check-in starts 1 hour before the tournament!
 
 ### Rules
-- **Format:** VGC Regulation I on Pokemon Showdown
+- **Format:** Pokemon Champions Reg M-A on Pokemon Showdown
 - **6 Swiss Rounds** into **Top 8 Cut**
 - **Best of 3**, open team sheets
 - **50 minute rounds**
@@ -191,7 +191,7 @@ Registration is open and check-in starts 1 hour before the tournament!
 Another week, another chance to prove yourself! Check-in opens 1 hour before start.
 
 ### Quick Info
-- VGC Regulation I, Best of 3
+- Pokemon Champions Reg M-A, Best of 3
 - 5 Swiss Rounds into Top 4
 - Open team sheets, 50 min rounds
 
@@ -216,7 +216,7 @@ See you on the battlefield, trainers!',
 Our monthly flagship tournament! The Stellar Novas Monthly is our longest-running series — this is edition #12.
 
 ### Format
-- **VGC Regulation I** on Pokemon Showdown
+- **Pokemon Champions Reg M-A** on Pokemon Showdown
 - **5 Swiss Rounds** into **Top 4 Cut**
 - **Best of 3**, open team sheets
 - **50 minute rounds**
@@ -242,7 +242,7 @@ This tournament will be streamed on [Twitch](https://twitch.tv/stellarnovas) wit
 It''s that time again! Monthly #13 is coming up — register now to secure your spot.
 
 ### Format
-- **VGC Regulation I** on Pokemon Showdown
+- **Pokemon Champions Reg M-A** on Pokemon Showdown
 - **5 Swiss Rounds** into **Top 4 Cut**
 - **Best of 3**, open team sheets
 - **50 minute rounds**
@@ -272,7 +272,7 @@ Welcome to the first Hatterene Cup! This is a tournament by and for women and fe
 The Hatterene Cup is a welcoming, inclusive space for players who are often underrepresented in competitive Pokemon. All skill levels welcome — from first-timers to seasoned competitors.
 
 ### Format
-- **VGC Regulation I** on Pokemon Showdown
+- **Pokemon Champions Reg M-A** on Pokemon Showdown
 - **4 Swiss Rounds** into **Top 4 Cut**
 - **Best of 3**, open team sheets
 - **50 minute rounds**

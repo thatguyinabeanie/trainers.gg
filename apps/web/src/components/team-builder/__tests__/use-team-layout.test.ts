@@ -7,22 +7,18 @@ jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => mockUseIsMobile(),
 }));
 
-function setViewportWidth(width: number) {
-  Object.defineProperty(window, "innerWidth", {
-    configurable: true,
-    writable: true,
-    value: width,
-  });
-  // Trigger the resize listener that useSyncExternalStore subscribes to
-  window.dispatchEvent(new Event("resize"));
-}
+const mockReplace = jest.fn();
+let mockSearchParams = new URLSearchParams();
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: mockReplace }),
+  useSearchParams: () => mockSearchParams,
+}));
 
 beforeEach(() => {
   mockUseIsMobile.mockReturnValue(false);
+  mockReplace.mockClear();
+  mockSearchParams = new URLSearchParams();
   window.localStorage.clear();
-  // Default to a wide viewport so existing tests that don't care about
-  // auto-degrade keep their original behaviour.
-  setViewportWidth(2400);
 });
 
 describe("useTeamLayout", () => {
@@ -31,7 +27,6 @@ describe("useTeamLayout", () => {
     expect(result.current.mode).toBe("1x6");
     expect(result.current.persisted).toBe("1x6");
     expect(result.current.isMobileLocked).toBe(false);
-    expect(result.current.isAutoDegraded).toBe(false);
   });
 
   it("returns the persisted mode when set", () => {
@@ -101,38 +96,94 @@ describe("useTeamLayout", () => {
     });
   });
 
-  describe("auto-degrade", () => {
-    it.each([
-      // [persisted, viewport, expectedMode, expectedDegraded]
-      ["2x3-vertical", 1800, "1x6", true],
-      ["2x3-vertical", 1200, "1x6", true],
-      ["2x3-vertical", 2400, "2x3-vertical", false],
-      ["1x6", 800, "1x6", false],
-    ] as const)(
-      "persisted=%s at %dpx → mode=%s, degraded=%s",
-      (persisted, width, expectedMode, expectedDegraded) => {
-        window.localStorage.setItem("tg.team-layout", persisted);
-        setViewportWidth(width);
-        const { result } = renderHook(() => useTeamLayout());
-        expect(result.current.mode).toBe(expectedMode);
-        expect(result.current.isAutoDegraded).toBe(expectedDegraded);
-      }
-    );
-
-    it("preserves persisted value when auto-degraded", () => {
+  describe("URL param sync", () => {
+    it("?layout=compact yields 1x6 and mirrors to localStorage", () => {
+      mockSearchParams = new URLSearchParams("layout=compact");
+      // Pre-seed storage with a different value to verify URL wins + mirror.
       window.localStorage.setItem("tg.team-layout", "2x3-vertical");
-      setViewportWidth(1800);
       const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("1x6");
+      expect(result.current.persisted).toBe("1x6");
+      expect(window.localStorage.getItem("tg.team-layout")).toBe("1x6");
+    });
+
+    it("?layout=grid yields 2x3-vertical", () => {
+      mockSearchParams = new URLSearchParams("layout=grid");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("2x3-vertical");
+      expect(result.current.persisted).toBe("2x3-vertical");
+      expect(window.localStorage.getItem("tg.team-layout")).toBe(
+        "2x3-vertical"
+      );
+    });
+
+    it("ignores unrecognised URL values and falls back to localStorage", () => {
+      mockSearchParams = new URLSearchParams("layout=garbage");
+      window.localStorage.setItem("tg.team-layout", "2x3-vertical");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("2x3-vertical");
       expect(result.current.persisted).toBe("2x3-vertical");
     });
 
-    it("mobile override beats viewport-based degrade", () => {
-      window.localStorage.setItem("tg.team-layout", "2x3-vertical");
+    it("ignores unrecognised URL values and uses default when storage is empty", () => {
+      mockSearchParams = new URLSearchParams("layout=garbage");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("1x6");
+    });
+
+    it("URL takes precedence over localStorage when both are set", () => {
+      mockSearchParams = new URLSearchParams("layout=grid");
+      window.localStorage.setItem("tg.team-layout", "1x6");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("2x3-vertical");
+    });
+
+    it("setMode('2x3-vertical') calls router.replace with ?layout=grid", () => {
+      const { result } = renderHook(() => useTeamLayout());
+      act(() => result.current.setMode("2x3-vertical"));
+      expect(mockReplace).toHaveBeenCalledWith("?layout=grid", {
+        scroll: false,
+      });
+    });
+
+    it("setMode('1x6') calls router.replace with ?layout=compact", () => {
+      const { result } = renderHook(() => useTeamLayout());
+      act(() => result.current.setMode("1x6"));
+      expect(mockReplace).toHaveBeenCalledWith("?layout=compact", {
+        scroll: false,
+      });
+    });
+
+    it("setMode preserves other existing search params", () => {
+      mockSearchParams = new URLSearchParams("foo=bar&layout=compact");
+      const { result } = renderHook(() => useTeamLayout());
+      act(() => result.current.setMode("2x3-vertical"));
+      const lastCall = mockReplace.mock.calls.at(-1)?.[0] as string;
+      const params = new URLSearchParams(lastCall.replace(/^\?/, ""));
+      expect(params.get("foo")).toBe("bar");
+      expect(params.get("layout")).toBe("grid");
+    });
+  });
+
+  describe("mobile lock", () => {
+    it("forces 1x6 regardless of persisted value", () => {
       mockUseIsMobile.mockReturnValue(true);
-      setViewportWidth(2400);
+      window.localStorage.setItem("tg.team-layout", "2x3-vertical");
       const { result } = renderHook(() => useTeamLayout());
       expect(result.current.mode).toBe("1x6");
       expect(result.current.isMobileLocked).toBe(true);
+      expect(result.current.persisted).toBe("2x3-vertical");
+    });
+
+    it("forces 1x6 even when URL requests grid", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      mockSearchParams = new URLSearchParams("layout=grid");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("1x6");
+      expect(result.current.isMobileLocked).toBe(true);
+      // URL value still wins as the persisted preference for when the user
+      // returns to a non-mobile viewport.
+      expect(result.current.persisted).toBe("2x3-vertical");
     });
   });
 });

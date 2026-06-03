@@ -124,7 +124,7 @@ export function DefenderMonHeader({
   return (
     <div className="flex w-full flex-col border-b border-dashed border-border">
       {/* Sprite + Meta fields — centered together, fixed height to avoid layout shift */}
-      <div className="flex min-h-[160px] min-w-0 flex-row items-center justify-center gap-2 px-3 py-2">
+      <div className="flex min-h-40 min-w-0 flex-row items-center justify-center gap-2 px-3 py-2">
         {/* Sprite — left of form */}
         <div className="shrink-0">
           <Sprite
@@ -157,7 +157,7 @@ export function DefenderMonHeader({
               >
                 {defenderSpecies || "Choose…"}
               </span>
-              <span aria-hidden className="text-[10px] text-muted-foreground">
+              <span aria-hidden className="text-xs text-muted-foreground">
                 ▾
               </span>
             </button>
@@ -201,7 +201,7 @@ export function DefenderMonHeader({
               />
             </FormChip>
             {canMega && (
-              <span className="pl-[calc(60px+6px+4px)] font-mono text-[9px] text-muted-foreground/50">
+              <span className="pl-[calc(60px+6px+4px)] font-mono text-xs text-muted-foreground/50">
                 {defenderMegaActive ? defenderAbility : displayAbility}
               </span>
             )}
@@ -232,7 +232,7 @@ export function DefenderMonHeader({
           )}
 
           {!hasLegalAbility && (
-            <p className="px-1 font-mono text-[9px] text-muted-foreground/60">
+            <p className="px-1 font-mono text-xs text-muted-foreground/60">
               No abilities found for format
             </p>
           )}

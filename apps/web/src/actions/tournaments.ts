@@ -972,26 +972,41 @@ export async function getCurrentUserAltsAction(): Promise<
 }
 
 /**
- * Get current user's teams for registration selection
+ * Get current user's teams for registration selection.
+ * Pass gameFormat to filter teams matching the tournament's format.
  */
-export async function getUserTeamsAction(): Promise<
+export async function getUserTeamsAction(
+  gameFormat?: string | null
+): Promise<
   ActionResult<
     Array<{
       id: number;
       name: string | null;
       pokemonCount: number;
+      pokemon: Array<{
+        species: string;
+        nickname?: string | null;
+        held_item?: string | null;
+        ability?: string | null;
+        tera_type?: string | null;
+        move1?: string | null;
+        move2?: string | null;
+        move3?: string | null;
+        move4?: string | null;
+      }>;
     }>
   >
 > {
   try {
     const supabase = await createClient();
-    const teams = await getUserTeams(supabase);
+    const teams = await getUserTeams(supabase, undefined, gameFormat);
     return {
       success: true,
       data: teams.map((t) => ({
         id: t.id,
         name: t.name,
         pokemonCount: t.pokemonCount,
+        pokemon: t.pokemon,
       })),
     };
   } catch (error) {

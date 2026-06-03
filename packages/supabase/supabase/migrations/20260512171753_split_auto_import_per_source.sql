@@ -3,8 +3,7 @@
 --   auto_import_limitless_enabled  — controls Limitless sync + import queue
 --
 -- Migrates existing auto_import_enabled value to both new keys,
--- then removes the old key. Updates invoke_edge_function to accept
--- a config_key parameter instead of a boolean flag.
+-- then removes the old key.
 
 -- ---------------------------------------------------------------------------
 -- 1. Seed per-source keys, inheriting from old value if present

@@ -131,7 +131,7 @@ export function ItemPicker({
                         {itemName}
                       </span>
                       {isDuplicate && !isSelected && (
-                        <span className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-[9px] leading-none font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        <span className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-xs leading-none font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                           held
                         </span>
                       )}

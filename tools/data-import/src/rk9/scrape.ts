@@ -29,6 +29,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export const DATA_DIR = resolve(__dirname, "../../data");
 
 function eventDir(eventId: string): string {
+  if (!/^[A-Za-z0-9_-]+$/.test(eventId)) {
+    throw new Error(`Invalid eventId: ${eventId}`);
+  }
   return join(DATA_DIR, "rk9", eventId);
 }
 
@@ -124,6 +127,9 @@ export async function scrapeTeams(
   roster: RK9RosterEntry[],
   concurrency = DEFAULT_TEAM_CONCURRENCY
 ): Promise<ScrapeTeamsResult> {
+  if (concurrency <= 0) {
+    throw new Error("concurrency must be a positive integer");
+  }
   const dir = eventDir(eventId);
   await ensureDir(dir);
 
@@ -221,8 +227,10 @@ export async function scrapeMatches(
         html = await fetchRk9Html(
           `/pairings/${eventId}?pod=${divInfo.podId}&rnd=${round}`
         );
-      } catch {
-        break;
+      } catch (err) {
+        throw new Error(
+          `Failed to fetch round ${round}: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
       const pairings = parsePairingsFragment(html);
       if (pairings.length === 0) break;

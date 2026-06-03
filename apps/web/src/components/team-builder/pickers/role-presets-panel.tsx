@@ -63,7 +63,7 @@ export function RolePresetsPanel({
         className
       )}
     >
-      <span className="text-muted-foreground block px-3 pb-1.5 text-[9px] font-bold tracking-widest uppercase">
+      <span className="text-muted-foreground block px-3 pb-1.5 text-xs font-bold tracking-widest uppercase">
         Role
       </span>
 
@@ -74,7 +74,7 @@ export function RolePresetsPanel({
           const presets = ROLE_PRESETS.filter((r) => r.group === group);
           return (
             <div key={group} className="mb-1.5 break-inside-avoid">
-              <span className="text-muted-foreground/50 block px-2 pt-1 pb-0.5 text-[7.5px] font-bold tracking-widest uppercase">
+              <span className="text-muted-foreground/50 block px-2 pt-1 pb-0.5 text-xs font-bold tracking-widest uppercase">
                 {ROLE_GROUP_LABELS[group]}
               </span>
               {presets.map((preset) => {
@@ -86,7 +86,7 @@ export function RolePresetsPanel({
                     aria-pressed={isActive}
                     onClick={() => toggle(preset.id)}
                     className={cn(
-                      "flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[11px] transition-colors",
+                      "flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs transition-colors",
                       isActive
                         ? cn(
                             GROUP_COLORS[group].active,
@@ -99,7 +99,7 @@ export function RolePresetsPanel({
                     <span className="truncate">{preset.label}</span>
                     <span
                       className={cn(
-                        "ml-auto shrink-0 font-mono text-[8.5px] tabular-nums",
+                        "ml-auto shrink-0 font-mono text-xs tabular-nums",
                         isActive ? "" : "text-muted-foreground/60"
                       )}
                     >

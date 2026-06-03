@@ -14,10 +14,17 @@ import type { RK9Pokemon } from "./types";
  * verified overrides for cases where heuristics fail.
  */
 export function normalizeSpecies(raw: string): string {
-  // Extract form from brackets: "Species [Form]" → species = "Species", form = "Form"
-  const bracketMatch = raw.match(/^(.+?)\s*\[(.+?)\]$/);
-  let species = bracketMatch ? bracketMatch[1]!.trim() : raw.trim();
-  const form = bracketMatch ? bracketMatch[2]!.trim() : null;
+  const open = raw.indexOf('[');
+  const close = raw.lastIndexOf(']');
+  let species: string;
+  let form: string | null;
+  if (open !== -1 && close > open) {
+    species = raw.slice(0, open).trim();
+    form = raw.slice(open + 1, close).trim();
+  } else {
+    species = raw.trim();
+    form = null;
+  }
 
   // Remove all non-alphanumeric except hyphens, lowercase
   species = species.toLowerCase().replace(/[^a-z0-9-]/g, "");
@@ -27,7 +34,7 @@ export function normalizeSpecies(raw: string): string {
     const formLower = form.toLowerCase();
 
     // Skip "Incarnate Forme" / "Male" / standard forms (these are the default)
-    const skipForms = [
+    const skipForms = new Set([
       "incarnate forme",
       "male",
       "standard",
@@ -38,8 +45,8 @@ export function normalizeSpecies(raw: string): string {
       "50% forme",
       "land forme",
       "solo form",
-    ];
-    if (skipForms.some((s) => formLower.includes(s))) {
+    ]);
+    if (skipForms.has(formLower)) {
       return species;
     }
 
@@ -83,7 +90,7 @@ export function normalizeSpecies(raw: string): string {
 
     // Fallback: slugify the form and append
     const sluggedForm = formLower
-      .replace(/\s*(forme?|style|mask|form)\s*/gi, "")
+      .replace(/(forme?|style|mask|form)/gi, "")
       .replace(/[^a-z0-9]/g, "-")
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "");

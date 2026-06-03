@@ -126,7 +126,7 @@ function Stepper<T extends number>({ options, value, onChange }: StepperProps<T>
           type="button"
           onClick={() => onChange(o)}
           className={cn(
-            "border-r border-border px-1.5 py-px font-mono text-[10px] last:border-r-0 transition-colors",
+            "border-r border-border px-1.5 py-px font-mono text-xs last:border-r-0 transition-colors",
             value === o
               ? "bg-primary text-primary-foreground font-semibold"
               : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -156,7 +156,7 @@ function ToggleBtn({ active, onClick, children }: ToggleBtnProps) {
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "rounded-full border px-2 py-0.5 font-mono text-[10px] leading-tight transition-all",
+        "rounded-full border px-2 py-0.5 font-mono text-xs leading-tight transition-all",
         active
           ? "border-primary/50 bg-primary/10 text-primary font-semibold shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
           : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"
@@ -189,7 +189,7 @@ function SideSwitchRow({
       <div className="flex justify-end">
         <Switch size="sm" checked={yours} onCheckedChange={onToggleYours} aria-label={`${label} (ours)`} />
       </div>
-      <span className="text-center text-[11px]">{label}</span>
+      <span className="text-center text-xs">{label}</span>
       <div className="flex justify-start">
         <Switch size="sm" checked={theirs} onCheckedChange={onToggleTheirs} aria-label={`${label} (theirs)`} />
       </div>
@@ -201,7 +201,7 @@ function SideSectionLabel({ label }: { label: string }) {
   return (
     <div className="col-span-3 flex items-center gap-2 pt-1">
       <div className="flex-1 border-t border-dashed border-border/40" />
-      <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70">
+      <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground/70">
         {label}
       </span>
       <div className="flex-1 border-t border-dashed border-border/40" />
@@ -245,7 +245,7 @@ export function CalcFieldBlock({
     <div className="flex h-full flex-col gap-3 overflow-y-auto">
       {/* Header: eyebrow + Singles/Doubles toggle */}
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+        <span className="font-mono text-xs font-bold uppercase tracking-[0.12em] text-primary">
           Field
         </span>
         <div className="inline-flex overflow-hidden rounded-full border border-border">
@@ -253,7 +253,7 @@ export function CalcFieldBlock({
             type="button"
             onClick={() => setGameType("Singles")}
             className={cn(
-              "px-2.5 py-0.5 font-mono text-[10px] transition-colors",
+              "px-2.5 py-0.5 font-mono text-xs transition-colors",
               gameType === "Singles"
                 ? "bg-primary text-primary-foreground font-semibold"
                 : "bg-card text-muted-foreground hover:text-foreground"
@@ -265,7 +265,7 @@ export function CalcFieldBlock({
             type="button"
             onClick={() => setGameType("Doubles")}
             className={cn(
-              "px-2.5 py-0.5 font-mono text-[10px] border-l border-border transition-colors",
+              "px-2.5 py-0.5 font-mono text-xs border-l border-border transition-colors",
               gameType === "Doubles"
                 ? "bg-primary text-primary-foreground font-semibold"
                 : "bg-card text-muted-foreground hover:text-foreground"
@@ -278,13 +278,13 @@ export function CalcFieldBlock({
 
       {/* Conditions: weather, terrain, gravity, fairy aura */}
       <fieldset className="rounded-lg border border-border/60 px-3 py-2">
-        <legend className="px-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-primary">
+        <legend className="px-1 font-mono text-xs font-bold uppercase tracking-[0.12em] text-primary">
           Conditions
         </legend>
         <div className="flex flex-col gap-2">
           {/* Weather */}
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
+            <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground/70 shrink-0">
               Weather
             </span>
             <div className="flex flex-1 flex-wrap justify-end gap-1">
@@ -299,14 +299,14 @@ export function CalcFieldBlock({
               ))}
             </div>
             {weather === "" && inferredWeather && (
-              <span className="font-mono text-[8.5px] italic text-muted-foreground">
+              <span className="font-mono text-xs italic text-muted-foreground">
                 ↳ {attackerAbility ?? inferredWeather}
               </span>
             )}
           </div>
           {/* Terrain */}
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
+            <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground/70 shrink-0">
               Terrain
             </span>
             <div className="flex flex-1 flex-wrap justify-end gap-1">
@@ -321,14 +321,14 @@ export function CalcFieldBlock({
               ))}
             </div>
             {terrain === "" && inferredTerrain && (
-              <span className="font-mono text-[8.5px] italic text-muted-foreground">
+              <span className="font-mono text-xs italic text-muted-foreground">
                 ↳ {attackerAbility ?? inferredTerrain}
               </span>
             )}
           </div>
           {/* Other */}
           <div className="flex items-center gap-2 border-t border-dashed border-border/40 pt-1.5">
-            <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
+            <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground/70 shrink-0">
               Other
             </span>
             <div className="flex flex-1 flex-wrap justify-end gap-1">
@@ -346,16 +346,16 @@ export function CalcFieldBlock({
       {/* Doubles-specific row — only visible in Doubles mode */}
       {gameType === "Doubles" && (
         <div className="flex items-center gap-2 rounded-md bg-muted/50 px-2.5 py-1.5">
-          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+          <span className="font-mono text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
             Doubles
           </span>
-          <span className="font-mono text-[9px] text-muted-foreground">Foes</span>
+          <span className="font-mono text-xs text-muted-foreground">Foes</span>
           <Stepper<1 | 2>
             options={FOES_ALIVE_OPTIONS}
             value={foesAlive}
             onChange={setFoesAlive}
           />
-          <span className="font-mono text-[9px] text-muted-foreground">Ally</span>
+          <span className="font-mono text-xs text-muted-foreground">Ally</span>
           <ToggleBtn active={allyAlive} onClick={() => setAllyAlive(!allyAlive)}>
             {allyAlive ? "Alive" : "Fainted"}
           </ToggleBtn>
@@ -364,16 +364,16 @@ export function CalcFieldBlock({
 
       {/* Sides — mirrored Ours | Label | Theirs grid */}
       <fieldset className="rounded-lg border border-border/60 px-3 py-2">
-        <legend className="px-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-primary">
+        <legend className="px-1 font-mono text-xs font-bold uppercase tracking-[0.12em] text-primary">
           Sides
         </legend>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-1 gap-y-0.5">
           {/* Header */}
-          <span className="text-muted-foreground text-right text-[10px] font-semibold uppercase tracking-wider">
+          <span className="text-muted-foreground text-right text-xs font-semibold uppercase tracking-wider">
             Ours
           </span>
           <span />
-          <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
+          <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
             Theirs
           </span>
 
@@ -408,7 +408,7 @@ export function CalcFieldBlock({
               onChange={setFaintedYours}
             />
           </div>
-          <span className="text-center text-[11px]">Knocked Out</span>
+          <span className="text-center text-xs">Knocked Out</span>
           <div className="flex justify-start">
             <Stepper<(typeof FAINTED_OPTIONS)[number]>
               options={FAINTED_OPTIONS}
@@ -459,7 +459,7 @@ export function CalcFieldBlock({
               onChange={(v) => setAttackerSide({ spikes: v })}
             />
           </div>
-          <span className="text-center text-[11px]">Spikes</span>
+          <span className="text-center text-xs">Spikes</span>
           <div className="flex justify-start">
             <Stepper<0 | 1 | 2 | 3>
               options={[0, 1, 2, 3] as const}

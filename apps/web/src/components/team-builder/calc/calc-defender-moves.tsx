@@ -97,18 +97,18 @@ function DefenderMoveTile({
           )}
           <span
             className={cn(
-              "flex-1 text-[11.5px] font-medium",
+              "flex-1 text-xs font-medium",
               isEmpty && "text-muted-foreground/60 italic"
             )}
           >
             {moveName || "+ Add move"}
           </span>
           {basePower > 0 && (
-            <span className="text-muted-foreground font-mono text-[9px]">
+            <span className="text-muted-foreground font-mono text-xs">
               BP {basePower}
             </span>
           )}
-          <span className="text-muted-foreground text-[10px]" aria-hidden>
+          <span className="text-muted-foreground text-xs" aria-hidden>
             ▾
           </span>
         </div>

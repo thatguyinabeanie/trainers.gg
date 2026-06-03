@@ -34,6 +34,11 @@ if [ -n "$CI" ] || [ -n "$VERCEL" ] || [ -n "$NETLIFY" ] || [ -n "$GITHUB_ACTION
   exit 0
 fi
 
+if [ -n "$SKIP_LOCAL_SUPABASE" ]; then
+  log_info "SKIP_LOCAL_SUPABASE is set — skipping local Supabase log tailer"
+  exit 0
+fi
+
 # =============================================================================
 # Check Supabase is running
 # =============================================================================
@@ -48,8 +53,8 @@ else
 fi
 
 if ! $SUPABASE_CMD status >/dev/null 2>&1; then
-  log_error "Supabase is not running. Run dev:setup first."
-  exit 1
+  log_info "Supabase is not running — starting it now..."
+  "$SCRIPT_DIR/setup-local.sh"
 fi
 
 # =============================================================================

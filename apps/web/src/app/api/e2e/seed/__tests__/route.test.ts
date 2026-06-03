@@ -12,6 +12,18 @@ const mockCreateUser = jest.fn();
 const mockUpsert = jest.fn();
 const mockUpdate = jest.fn();
 const mockSelect = jest.fn();
+const mockAltUpdate = jest.fn();
+
+jest.mock("next/cache", () => ({ revalidateTag: jest.fn() }));
+
+jest.mock("@/lib/cache", () => ({
+  CacheTags: {
+    PLAYERS_DIRECTORY: "players-directory",
+    PLAYERS_LEADERBOARD: "players-leaderboard",
+    PLAYERS_RECENT: "players-recent",
+    PLAYERS_NEW: "players-new",
+  },
+}));
 
 jest.mock("@/lib/supabase/server", () => ({
   createServiceRoleClient: () => ({
@@ -43,6 +55,32 @@ jest.mock("@/lib/supabase/server", () => ({
             }),
           }),
           insert: jest.fn().mockResolvedValue({ error: null }),
+        };
+      }
+      // Coaching seed: feature_flags upsert, alts lookup, coach_profiles upsert
+      if (table === "feature_flags" || table === "coach_profiles") {
+        return { upsert: jest.fn().mockResolvedValue({ error: null }) };
+      }
+      if (table === "alts") {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest
+                .fn()
+                .mockResolvedValue({ data: { id: 1 }, error: null }),
+            }),
+          }),
+          update: mockAltUpdate.mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                select: jest.fn().mockReturnValue({
+                  maybeSingle: jest
+                    .fn()
+                    .mockResolvedValue({ data: { id: 1 }, error: null }),
+                }),
+              }),
+            }),
+          }),
         };
       }
       return {};
@@ -335,6 +373,17 @@ describe("POST /api/e2e/seed", () => {
       expect(body.success).toBe(true);
       expect(body.results).toHaveLength(4);
       expect(mockCreateUser).toHaveBeenCalledTimes(4);
+      // Each seeded user's primary alt must be made public (player directory visibility)
+      expect(mockAltUpdate).toHaveBeenCalledWith({ is_public: true });
+      // Player directory cache must be busted after seeding
+      // Use jest.requireMock to access the hoisted jest.fn() reference
+      const { revalidateTag } = jest.requireMock("next/cache") as {
+        revalidateTag: jest.Mock;
+      };
+      expect(revalidateTag).toHaveBeenCalledWith("players-directory", "max");
+      expect(revalidateTag).toHaveBeenCalledWith("players-leaderboard", "max");
+      expect(revalidateTag).toHaveBeenCalledWith("players-recent", "max");
+      expect(revalidateTag).toHaveBeenCalledWith("players-new", "max");
     });
 
     it("returns 500 when role upsert fails", async () => {

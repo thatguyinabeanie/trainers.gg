@@ -68,17 +68,17 @@ export function FormChip({
         render={
           <button
             type="button"
-            className={cn("grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 px-1 py-[3px] rounded cursor-pointer bg-transparent text-left w-full transition-colors hover:bg-muted", triggerClassName)}
+            className={cn("grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 px-1 py-1 rounded cursor-pointer bg-transparent text-left w-full transition-colors hover:bg-muted", triggerClassName)}
           />
         }
       >
-        <span className="text-[9px] font-bold tracking-[0.08em] uppercase text-muted-foreground font-mono whitespace-nowrap overflow-hidden text-ellipsis shrink-0">{label}</span>
+        <span className="text-xs font-bold tracking-[0.08em] uppercase text-muted-foreground font-mono whitespace-nowrap overflow-hidden text-ellipsis shrink-0">{label}</span>
         {trailing || leading ? (
           <span className="flex min-w-0 items-center gap-1 overflow-hidden">
             {leading}
             <span
               className={cn(
-                "text-[11.5px] text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0",
+                "text-xs text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0",
                 !value && "italic text-muted-foreground/50"
               )}
             >
@@ -89,7 +89,7 @@ export function FormChip({
         ) : (
           <span
             className={cn(
-              "text-[11.5px] text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0",
+              "text-xs text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0",
               !value && "italic text-muted-foreground/50"
             )}
           >

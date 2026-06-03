@@ -2,6 +2,7 @@
 
 import { type ReactNode, useRef, useState } from "react";
 import Link from "next/link";
+import { Settings } from "lucide-react";
 
 import { type TeamWithPokemon } from "@trainers/supabase";
 
@@ -60,6 +61,8 @@ interface TopbarProps {
   onValidate: () => void;
   onNameChange: (name: string) => Promise<void>;
   exportMenu?: ReactNode;
+  /** Opens the builder settings dialog (gear button). */
+  onOpenSettings?: () => void;
 }
 
 // =============================================================================
@@ -170,6 +173,7 @@ export function Topbar({
   onValidate,
   onNameChange,
   exportMenu,
+  onOpenSettings,
 }: TopbarProps) {
   const [validateOpen, setValidateOpen] = useState(false);
 
@@ -223,7 +227,9 @@ export function Topbar({
 
       {/* Right: Actions (flush with far right / notifications) */}
       <div className="ml-auto flex items-center gap-1">
-        <TeamLayoutToggle />
+        <span className="hidden md:inline-flex">
+          <TeamLayoutToggle />
+        </span>
         <Button
           variant="outline"
           size="sm"
@@ -272,6 +278,16 @@ export function Topbar({
             />
           </PopoverContent>
         </Popover>
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            aria-label="Builder settings"
+            className="border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex size-7 items-center justify-center rounded-md border shadow-xs transition-colors sm:size-8"
+          >
+            <Settings className="size-3.5" />
+          </button>
+        )}
         {isLocalMode ? null : <NotificationsPopover />}
       </div>
     </>

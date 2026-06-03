@@ -23,6 +23,13 @@ jest.mock("next/link", () => {
   return MockLink;
 });
 
+// MatchHeader fetches coach badges via useSupabaseQuery (which calls the
+// browser Supabase client). Stub the hook so the badge query is a no-op and
+// no real client is created — the badge simply doesn't render.
+jest.mock("@/lib/supabase", () => ({
+  useSupabaseQuery: jest.fn().mockReturnValue({ data: undefined }),
+}));
+
 const mockSubmitGameSelection = jest.fn();
 const mockJudgeOverrideGame = jest.fn();
 const mockJudgeResetGame = jest.fn();

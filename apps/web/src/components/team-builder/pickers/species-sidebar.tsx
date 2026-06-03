@@ -35,7 +35,7 @@ import { type SpeciesFilterState } from "./species-filter-state";
 // =============================================================================
 
 const SECTION_HEADER =
-  "text-muted-foreground mb-1.5 block text-[9px] font-bold tracking-widest uppercase";
+  "text-muted-foreground mb-1.5 block text-xs font-bold tracking-widest uppercase";
 
 const SECTION_PADDING = "px-3 py-2.5";
 
@@ -120,6 +120,7 @@ export function SpeciesSidebar({
           .filter((a) =>
             a.toLowerCase().includes(abilityInput.trim().toLowerCase())
           )
+          .filter((a) => !filters.abilities.includes(a))
           .slice(0, SUGGESTION_LIMIT)
       : [];
 
@@ -179,8 +180,8 @@ export function SpeciesSidebar({
       // Only commit when there's an actual suggestion match — typing arbitrary
       // text shouldn't apply an ability filter that doesn't exist.
       const pick = abilitySuggestions[0];
-      if (pick) {
-        onFiltersChange({ ...filters, ability: pick });
+      if (pick && !filters.abilities.includes(pick)) {
+        onFiltersChange({ ...filters, abilities: [...filters.abilities, pick] });
         setAbilityInput("");
       }
     } else if (e.key === "Escape") {
@@ -193,7 +194,7 @@ export function SpeciesSidebar({
   // ---------------------------------------------------------------------------
 
   return (
-    <aside className="flex h-full flex-col divide-y divide-border/40">
+    <aside className="flex flex-col divide-y divide-border/40">
       {/* ------------------------------------------------------------------ */}
       {/* 1. Mega toggle (Champions only)                                     */}
       {/* ------------------------------------------------------------------ */}
@@ -214,13 +215,13 @@ export function SpeciesSidebar({
           >
             {/* Gradient gem icon */}
             <span
-              className="flex size-4 items-center justify-center rounded-sm bg-gradient-to-br from-violet-500 to-pink-500 text-[8px] font-bold text-white"
+              className="flex size-4 items-center justify-center rounded-sm bg-gradient-to-br from-violet-500 to-pink-500 text-xs font-bold text-white"
               aria-hidden="true"
             >
               M
             </span>
 
-            <span className="text-[11px] font-medium">Mega only</span>
+            <span className="text-xs font-medium">Mega only</span>
 
             {/* Checkbox — filled violet when active */}
             <span
@@ -281,7 +282,7 @@ export function SpeciesSidebar({
                 {isNeeded && (
                   <span
                     aria-hidden="true"
-                    className="absolute -top-1 -right-1 z-10 text-[9px] leading-none text-amber-500 drop-shadow"
+                    className="absolute -top-1 -right-1 z-10 text-xs leading-none text-amber-500 drop-shadow"
                   >
                     ✦
                   </span>
@@ -298,66 +299,86 @@ export function SpeciesSidebar({
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 3. Ability combobox                                                 */}
+      {/* 3. Ability combobox (multi-select)                                  */}
       {/* ------------------------------------------------------------------ */}
       <div className={SECTION_PADDING}>
         <span className={SECTION_HEADER}>Ability</span>
-        {filters.ability ? (
-          <button
-            type="button"
-            onClick={() => onFiltersChange({ ...filters, ability: null })}
-            aria-label={`Clear ${filters.ability} filter`}
-            className="bg-primary/10 text-primary border-primary hover:bg-primary/15 inline-flex w-full items-center justify-between gap-2 rounded border px-2 py-1 text-[11px] font-medium transition-colors"
-          >
-            <span className="truncate">{filters.ability}</span>
-            <span aria-hidden="true" className="text-[10px] opacity-70">
-              ×
-            </span>
-          </button>
-        ) : (
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Type or click an ability..."
-              value={abilityInput}
-              onChange={(e) => setAbilityInput(e.target.value)}
-              onKeyDown={handleAbilityKeyDown}
-              onFocus={() => setAbilityFocused(true)}
-              onBlur={() => {
-                // Defer so a click on a suggestion can fire before the
-                // dropdown disappears.
-                clearTimeout(abilityBlurTimerRef.current);
-                abilityBlurTimerRef.current = setTimeout(
-                  () => setAbilityFocused(false),
-                  120
-                );
-              }}
-              className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-[11px] focus:ring-1 focus:outline-none"
-            />
-            {abilityFocused && abilitySuggestions.length > 0 && (
-              <ul
-                aria-label="Matching abilities"
-                className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
+        {/* Typeahead input + suggestion dropdown — always visible */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder={
+              filters.abilities.length > 0
+                ? "Add another ability..."
+                : "Type or click an ability..."
+            }
+            value={abilityInput}
+            onChange={(e) => setAbilityInput(e.target.value)}
+            onKeyDown={handleAbilityKeyDown}
+            onFocus={() => setAbilityFocused(true)}
+            onBlur={() => {
+              // Defer so a click on a suggestion can fire before the
+              // dropdown disappears.
+              clearTimeout(abilityBlurTimerRef.current);
+              abilityBlurTimerRef.current = setTimeout(
+                () => setAbilityFocused(false),
+                120
+              );
+            }}
+            className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-xs focus:ring-1 focus:outline-none"
+          />
+          {abilityFocused && abilitySuggestions.length > 0 && (
+            <ul
+              aria-label="Matching abilities"
+              className="border-border bg-popover absolute top-full right-0 left-0 z-30 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg"
+            >
+              {abilitySuggestions.map((ability) => (
+                <li key={ability}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                    }}
+                    onClick={() => {
+                      if (!filters.abilities.includes(ability)) {
+                        onFiltersChange({
+                          ...filters,
+                          abilities: [...filters.abilities, ability],
+                        });
+                      }
+                      setAbilityInput("");
+                    }}
+                    className="hover:bg-accent w-full px-2 py-1 text-left text-xs"
+                  >
+                    {ability}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Selected abilities as chips */}
+        {filters.abilities.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {filters.abilities.map((ability) => (
+              <button
+                key={ability}
+                type="button"
+                onClick={() =>
+                  onFiltersChange({
+                    ...filters,
+                    abilities: filters.abilities.filter((a) => a !== ability),
+                  })
+                }
+                className="bg-primary/15 text-primary border-primary hover:bg-primary/25 flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors"
               >
-                {abilitySuggestions.map((ability) => (
-                  <li key={ability}>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                      }}
-                      onClick={() => {
-                        onFiltersChange({ ...filters, ability });
-                        setAbilityInput("");
-                      }}
-                      className="hover:bg-accent w-full px-2 py-1 text-left text-[11px]"
-                    >
-                      {ability}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+                {ability}
+                <span aria-hidden="true" className="ml-0.5 text-xs">
+                  ×
+                </span>
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -386,7 +407,7 @@ export function SpeciesSidebar({
                 120
               );
             }}
-            className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-[11px] focus:ring-1 focus:outline-none"
+            className="border-border bg-background placeholder:text-muted-foreground/60 focus:border-primary focus:ring-primary w-full rounded border px-2 py-1.5 text-xs focus:ring-1 focus:outline-none"
           />
           {moveFocused && moveSuggestions.length > 0 && (
             <ul
@@ -402,7 +423,7 @@ export function SpeciesSidebar({
                       addMove(move);
                       setMoveInput("");
                     }}
-                    className="hover:bg-accent w-full px-2 py-1 text-left text-[11px]"
+                    className="hover:bg-accent w-full px-2 py-1 text-left text-xs"
                   >
                     {move}
                   </button>
@@ -420,10 +441,10 @@ export function SpeciesSidebar({
                 key={move}
                 type="button"
                 onClick={() => removeMove(move)}
-                className="bg-primary/15 text-primary border-primary hover:bg-primary/25 flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors"
+                className="bg-primary/15 text-primary border-primary hover:bg-primary/25 flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors"
               >
                 {move}
-                <span aria-hidden="true" className="ml-0.5 text-[9px]">
+                <span aria-hidden="true" className="ml-0.5 text-xs">
                   ×
                 </span>
               </button>

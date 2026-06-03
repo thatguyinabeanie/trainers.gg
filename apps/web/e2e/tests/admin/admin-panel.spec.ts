@@ -429,10 +429,12 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     // Site Roles section heading
     await expect(page.getByText(/Site Roles/i)).toBeVisible();
 
-    // Create buttons for flags and announcements
+    // Flag rows have per-row Edit allowlist buttons (no Create Flag button exists)
     await expect(
-      page.getByRole("button", { name: /Create Flag/i })
+      main.getByRole("button", { name: /Edit allowlist/i }).first()
     ).toBeVisible();
+
+    // Create button for announcements
     await expect(
       page.getByRole("button", { name: /Create Announcement/i })
     ).toBeVisible();

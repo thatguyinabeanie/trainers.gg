@@ -55,10 +55,10 @@ export function CalcAttackerBlock({
     <div className="flex h-full flex-col rounded-lg border bg-card p-3 shadow-sm">
       {/* col head */}
       <div className="mb-2.5 flex items-center justify-between border-b pb-2">
-        <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] text-primary">
+        <span className="font-mono text-xs font-semibold uppercase tracking-[0.1em] text-primary">
           Attacker
         </span>
-        <span className="font-mono text-[10px] text-muted-foreground">
+        <span className="font-mono text-xs text-muted-foreground">
           your team
         </span>
       </div>
@@ -82,17 +82,17 @@ export function CalcAttackerBlock({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <div className="text-[12.5px] font-bold">{attacker.species}</div>
+              <div className="text-sm font-bold">{attacker.species}</div>
             </div>
             <div className="mb-1 mt-0.5 flex gap-1">
               {attackerTypes.map((t) => (
                 <TypePill key={t} t={t} />
               ))}
             </div>
-            <div className="flex items-center gap-1.5 font-mono text-[10px] leading-relaxed text-muted-foreground">
+            <div className="flex items-center gap-1.5 font-mono text-xs leading-relaxed text-muted-foreground">
               <span>{attacker.nature ?? "—"} · Lv {attacker.level ?? 50}</span>
             </div>
-            <div className="flex items-center gap-1.5 font-mono text-[10px] leading-relaxed text-muted-foreground">
+            <div className="flex items-center gap-1.5 font-mono text-xs leading-relaxed text-muted-foreground">
               <span>@ {attacker.held_item ?? "—"}</span>
               {attackerIsMega && (
                 <MegaToggle
@@ -101,7 +101,7 @@ export function CalcAttackerBlock({
                 />
               )}
             </div>
-            <div className="font-mono text-[10px] leading-relaxed text-muted-foreground">
+            <div className="font-mono text-xs leading-relaxed text-muted-foreground">
               {attacker.ability ?? "—"}
             </div>
           </div>
@@ -113,7 +113,7 @@ export function CalcAttackerBlock({
       )}
 
       {/* inherits-from note */}
-      <div className="mt-2.5 rounded bg-muted/40 px-2 py-1.5 text-[10px] italic leading-snug text-muted-foreground">
+      <div className="mt-2.5 rounded bg-muted/40 px-2 py-1.5 text-xs italic leading-snug text-muted-foreground">
         ↳ Inherits spread &amp; moves from row{" "}
         {String(attackerIdx + 1).padStart(2, "0")}. Edit the row to change.
       </div>

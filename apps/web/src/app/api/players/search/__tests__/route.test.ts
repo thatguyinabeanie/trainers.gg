@@ -12,6 +12,9 @@ jest.mock("@/lib/supabase/server", () => ({
 const mockSearchPlayers = jest.fn();
 jest.mock("@trainers/supabase/queries", () => ({
   searchPlayers: (...args: unknown[]) => mockSearchPlayers(...args),
+  // The route enriches results with coach badges. Pass players through
+  // unchanged so existing assertions (player count, response shape) hold.
+  attachCoachBadges: (_supabase: unknown, players: unknown) => players,
 }));
 
 // ============================================================================

@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { getCoachBadges, type CoachBadgeInfo } from "@trainers/supabase";
+import { useSupabaseQuery } from "@/lib/supabase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { CoachBadge } from "@/components/ui/coach-badge";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge, type Status } from "@/components/ui/status-badge";
@@ -88,6 +91,7 @@ function PlayerCard({
   showIGN,
   align = "left",
   isMatchWinner = false,
+  coachBadge,
   className,
 }: {
   player: PlayerInfo | null;
@@ -95,6 +99,7 @@ function PlayerCard({
   showIGN: boolean;
   align?: "left" | "right";
   isMatchWinner?: boolean;
+  coachBadge?: CoachBadgeInfo;
   className?: string;
 }) {
   if (!player) return null;
@@ -154,6 +159,9 @@ function PlayerCard({
             >
               {displayName}
             </span>
+          )}
+          {coachBadge?.showCoachBadge && coachBadge.coachHandle && (
+            <CoachBadge handle={coachBadge.coachHandle} className="shrink-0" />
           )}
           {stats && (
             <Badge variant="secondary" className="shrink-0 text-[10px]">
@@ -1006,6 +1014,22 @@ export function MatchHeader({
   const winsNeeded = Math.ceil(bestOf / 2);
   const matchDecided = myWins >= winsNeeded || opponentWins >= winsNeeded;
 
+  // Resolve coach-badge visibility for the two players. The query is
+  // privacy-safe (returns only booleans + public handles, gated on the global
+  // coaching flag) so it is safe to call from this client component.
+  const playerAltIds = [opponent?.id, myPlayer?.id].filter(
+    (id): id is number => id != null
+  );
+  const { data: coachBadges } = useSupabaseQuery(
+    (supabase) => getCoachBadges(supabase, playerAltIds),
+    [JSON.stringify(playerAltIds)]
+  );
+
+  const opponentBadge =
+    opponent?.id != null ? coachBadges?.get(opponent.id) : undefined;
+  const myBadge =
+    myPlayer?.id != null ? coachBadges?.get(myPlayer.id) : undefined;
+
   return (
     <div className="space-y-2">
       <Card>
@@ -1059,6 +1083,7 @@ export function MatchHeader({
               showIGN={true}
               align="left"
               isMatchWinner={matchDecided && opponentWins > myWins}
+              coachBadge={opponentBadge}
               className="min-w-0 flex-1"
             />
 
@@ -1075,6 +1100,7 @@ export function MatchHeader({
               showIGN={false}
               align="right"
               isMatchWinner={matchDecided && myWins > opponentWins}
+              coachBadge={myBadge}
               className="min-w-0 flex-1"
             />
           </div>

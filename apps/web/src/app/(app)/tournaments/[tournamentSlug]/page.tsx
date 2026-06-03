@@ -556,6 +556,10 @@ export default async function TournamentPage({ params }: PageProps) {
                       held_item: p.held_item,
                       ability: p.ability ?? undefined,
                       tera_type: p.tera_type,
+                      move1: p.move1,
+                      move2: p.move2,
+                      move3: p.move3,
+                      move4: p.move4,
                     })),
                   }
                 : null

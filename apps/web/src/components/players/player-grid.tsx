@@ -64,6 +64,7 @@ export function PlayerGrid({
             country={player.country}
             tournamentCount={player.tournamentCount}
             winRate={player.winRate}
+            coachBadge={player.coachBadge}
           />
         ))}
       </div>

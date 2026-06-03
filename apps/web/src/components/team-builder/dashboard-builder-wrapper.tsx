@@ -102,6 +102,7 @@ export function DashboardBuilderWrapper({
         format={format}
         alts={alts}
         persistence={persistence}
+        isAuthenticated={true}
         renderHeader={(actions) => (
           <PageHeader hideNotifications>
             <Topbar

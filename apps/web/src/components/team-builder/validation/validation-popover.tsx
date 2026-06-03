@@ -82,7 +82,7 @@ export function ValidationPopover({ errors, onJumpToPokemon }: ValidationPopover
           )}
         </span>
         {errors.length > 0 && (
-          <p className="text-muted-foreground mt-0.5 text-[10px]">
+          <p className="text-muted-foreground mt-0.5 text-xs">
             Click a row to jump to that Pokémon.
           </p>
         )}

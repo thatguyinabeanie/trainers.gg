@@ -100,6 +100,9 @@ export {
 // Notification preference mutations
 export { upsertNotificationPreferences } from "./notification-preferences";
 
+// User preference mutations
+export { upsertUserPreferences } from "./user-preferences";
+
 // Team builder mutations
 export {
   createTeam,
@@ -111,6 +114,13 @@ export {
   removePokemonFromTeam,
   reorderTeamPokemon,
 } from "./teams";
+
+// Coach mutations
+export {
+  grantCoachStatus,
+  revokeCoachStatus,
+  updateCoachProfile,
+} from "./coach";
 
 // Discord bot mutations
 export {

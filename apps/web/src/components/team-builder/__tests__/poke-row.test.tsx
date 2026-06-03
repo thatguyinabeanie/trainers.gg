@@ -1,9 +1,16 @@
 "use client";
 
 /**
- * Tests for the PokeRow component.
- * Covers: empty slot render, filled+collapsed render, filled+expanded render,
- * slot rib number, onActivate, onRemove, error/warning dots.
+ * Tests for the PokeRow layout-router component.
+ *
+ * After the layout-router refactor, PokeRow is a thin dispatcher:
+ *   - empty slot → inline EmptyPokeRow (legacy ghost UI)
+ *   - filled + layoutMode "1x6"          → <CompactRow />
+ *   - filled + layoutMode "2x3-vertical" → <GridRow />
+ *
+ * These tests mock CompactRow + GridRow + useTeamLayoutMode so we can verify
+ * the routing decision and that props are forwarded with the expected
+ * adapted signatures (onUpdate(fields), onRemove()).
  */
 
 import { render, screen, within } from "@testing-library/react";
@@ -16,137 +23,134 @@ import { type Tables } from "@trainers/supabase";
 // Mocks
 // =============================================================================
 
-
-jest.mock("@trainers/pokemon", () => ({
-  getSpeciesTypes: jest.fn((species: string) => {
-    if (species === "Garchomp") return ["Dragon", "Ground"];
-    return ["Normal"];
-  }),
-  getTypeColor: jest.fn(() => "#A8A878"),
+// useTeamLayoutMode — toggle per-test via the mock fn below.
+const mockLayoutMode = jest.fn<"1x6" | "2x3-vertical", []>(() => "1x6");
+jest.mock("../use-team-layout", () => ({
+  useTeamLayoutMode: () => mockLayoutMode(),
 }));
 
-jest.mock("../sprite", () => ({
-  Sprite: ({ species }: { species: string }) => (
-    <img data-testid="sprite" alt={species} />
-  ),
+// Layout variant components — captured props per render so we can assert
+// forwarding behaviour without exercising their internal logic.
+const compactRowProps = jest.fn();
+const gridRowProps = jest.fn();
+
+jest.mock("../layouts/compact-row", () => ({
+  CompactRow: (props: Record<string, unknown>) => {
+    compactRowProps(props);
+    return (
+      <div data-testid="compact-row" data-idx={String(props.idx)}>
+        compact:{(props.pokemon as { species?: string } | null)?.species ?? ""}
+        <button
+          type="button"
+          data-testid="compact-row-remove"
+          onClick={() => (props.onRemove as () => void)()}
+        >
+          remove
+        </button>
+        <button
+          type="button"
+          data-testid="compact-row-update"
+          onClick={() =>
+            (props.onUpdate as (f: Record<string, unknown>) => void)({
+              nickname: "Chompy",
+            })
+          }
+        >
+          update
+        </button>
+      </div>
+    );
+  },
 }));
 
-jest.mock("../type-pill", () => ({
-  TypePill: ({ t }: { t: string }) => <span data-testid={`type-pill-${t}`} />,
+jest.mock("../layouts/grid-row", () => ({
+  GridRow: (props: Record<string, unknown>) => {
+    gridRowProps(props);
+    return (
+      <div data-testid="grid-row" data-idx={String(props.idx)}>
+        grid:{(props.pokemon as { species?: string } | null)?.species ?? ""}
+        <button
+          type="button"
+          data-testid="grid-row-remove"
+          onClick={() => (props.onRemove as () => void)()}
+        >
+          remove
+        </button>
+        <button
+          type="button"
+          data-testid="grid-row-update"
+          onClick={() =>
+            (props.onUpdate as (f: Record<string, unknown>) => void)({
+              nickname: "Chompy",
+            })
+          }
+        >
+          update
+        </button>
+      </div>
+    );
+  },
 }));
 
-jest.mock("../lanes/active-row", () => ({
-  ActiveRow: ({
-    idx,
-    pokemon,
-    onRemove,
-  }: {
-    idx: number;
-    pokemon: Tables<"pokemon">;
-    onRemove: () => void;
-  }) => (
-    <div data-testid="active-row" data-idx={idx}>
-      <span>{pokemon.species}</span>
-      <button type="button" onClick={onRemove} data-testid="active-row-remove">
-        Remove (active)
-      </button>
+// Lane component ghost mocks — used only by EmptyPokeRow.
+jest.mock("../layouts/compact-row-ghost", () => ({
+  CompactRowGhost: ({ idx }: { idx: number }) => (
+    <div data-testid="compact-row-ghost" data-idx={String(idx)}>
+      <span>{String(idx + 1).padStart(2, "0")}</span>
+      <span>+ Add Pokémon</span>
+      <span>HP</span>
+      <span>+ Add move</span>
+      <span>+ Add move</span>
+      <span>+ Add move</span>
+      <span>+ Add move</span>
     </div>
   ),
 }));
 
-// Lane component ghost mocks — return static content matching the real ghost output
-jest.mock("../lanes/identity", () => ({
-  IdentityLane: ({ pokemon }: { pokemon: null | { species?: string } }) => {
-    if (!pokemon) {
-      return (
-        <div data-testid="identity-lane-ghost">
-          <span>+ Add Pokémon</span>
-        </div>
-      );
-    }
-    return <div data-testid="identity-lane-real" />;
-  },
-}));
-
-jest.mock("../lanes/stats-lane", () => ({
-  StatsLane: ({ pokemon }: { pokemon: null | object }) => {
-    if (!pokemon) {
-      return (
-        <div data-testid="stats-lane-ghost">
-          <span>HP</span>
-        </div>
-      );
-    }
-    return <div data-testid="stats-lane-real" />;
-  },
-  // Keep the GHOST_STATS export in case any other import still references it
-  GHOST_STATS: [],
-}));
-
-jest.mock("../lanes/moves-lane", () => ({
-  MovesLane: ({ pokemon }: { pokemon: null | object }) => {
-    if (!pokemon) {
-      return (
-        <div data-testid="moves-lane-ghost">
-          <span>+ Add move</span>
-          <span>+ Add move</span>
-          <span>+ Add move</span>
-          <span>+ Add move</span>
-        </div>
-      );
-    }
-    return <div data-testid="moves-lane-real" />;
-  },
-}));
-
-jest.mock("../lanes/calc-column", () => ({
-  CalcColumn: ({ pokemon, isActive }: { pokemon: null | object; isActive: boolean }) => (
-    <div
-      data-testid="calc-column"
-      data-ghost={pokemon === null ? "true" : "false"}
-      data-is-active={isActive ? "true" : "false"}
-    >
-      CALC
+jest.mock("../layouts/grid-row-ghost", () => ({
+  GridRowGhost: ({ idx }: { idx: number }) => (
+    <div data-testid="grid-row-ghost" data-idx={String(idx)}>
+      <span>{String(idx + 1).padStart(2, "0")}</span>
+      <span>+ Add Pokémon</span>
     </div>
   ),
 }));
 
-const mockUseCalcStateContext = jest.fn(() => ({ calcEnabled: false }));
-jest.mock("../calc/calc-state-context", () => ({
-  useCalcStateContext: () => mockUseCalcStateContext(),
-  // Derives from the same mock so existing tests that toggle calcEnabled
-  // via mockUseCalcStateContext.mockReturnValue still drive both consumers.
-  useCalcEnabled: () => mockUseCalcStateContext().calcEnabled,
-}));
-
-jest.mock("../pickers/species-picker", () => ({
-  SpeciesPicker: ({
+jest.mock("../pickers/species-picker-dialog", () => ({
+  SpeciesPickerDialog: ({
+    open,
     onPick,
-    onClose,
+    onOpenChange,
   }: {
+    open: boolean;
     onPick: (s: string) => void;
-    onClose: () => void;
-  }) => (
-    <div data-testid="species-picker">
-      <button
-        type="button"
-        onClick={() => onPick("Togekiss")}
-        data-testid="pick-species-btn"
-      >
-        Pick Togekiss
-      </button>
-      <button type="button" onClick={onClose} data-testid="close-picker-btn">
-        Close
-      </button>
-    </div>
-  ),
+    onOpenChange: (o: boolean) => void;
+  }) =>
+    open ? (
+      <div data-testid="species-picker">
+        <button
+          type="button"
+          onClick={() => onPick("Togekiss")}
+          data-testid="pick-species-btn"
+        >
+          Pick Togekiss
+        </button>
+        <button
+          type="button"
+          onClick={() => onOpenChange(false)}
+          data-testid="close-picker-btn"
+        >
+          Close
+        </button>
+      </div>
+    ) : null,
 }));
 
 // dnd-kit sortable — return stable no-op values so the component renders
 jest.mock("@dnd-kit/sortable", () => ({
   useSortable: () => ({
-    attributes: {},
-    listeners: {},
+    attributes: { role: "button" },
+    listeners: { onPointerDown: jest.fn() },
     setNodeRef: jest.fn(),
     transform: null,
     transition: undefined,
@@ -163,7 +167,6 @@ jest.mock("@dnd-kit/utilities", () => ({
 // =============================================================================
 
 import { PokeRow } from "../poke-row";
-import { type ValidationError } from "../validation-hooks";
 
 // =============================================================================
 // Fixtures
@@ -206,31 +209,17 @@ function makePokemon(
   };
 }
 
-function makeError(): ValidationError {
-  return {
-    pokemonId: 10,
-    pokemonName: "Garchomp",
-    field: "ability",
-    message: "Must select an ability",
-    severity: "error",
-  };
-}
-
-function makeWarning(): ValidationError {
-  return {
-    pokemonId: 10,
-    pokemonName: "Garchomp",
-    field: "item",
-    message: "Duplicate item",
-    severity: "warning",
-  };
-}
-
 // =============================================================================
 // Tests — empty slot
 // =============================================================================
 
 describe("PokeRow — empty slot", () => {
+  beforeEach(() => {
+    mockLayoutMode.mockReturnValue("1x6");
+    compactRowProps.mockClear();
+    gridRowProps.mockClear();
+  });
+
   it("renders '+ Add Pokémon' when pokemon is null", () => {
     render(
       <PokeRow
@@ -238,8 +227,6 @@ describe("PokeRow — empty slot", () => {
         sortableId="__empty__0"
         pokemon={null}
         isActive={false}
-        density="comfy"
-        expandMode="active"
         onActivate={jest.fn()}
       />
     );
@@ -253,8 +240,6 @@ describe("PokeRow — empty slot", () => {
         sortableId="__empty__0"
         pokemon={null}
         isActive={false}
-        density="comfy"
-        expandMode="active"
         onActivate={jest.fn()}
       />
     );
@@ -268,8 +253,6 @@ describe("PokeRow — empty slot", () => {
         sortableId="__empty__5"
         pokemon={null}
         isActive={false}
-        density="comfy"
-        expandMode="active"
         onActivate={jest.fn()}
       />
     );
@@ -284,12 +267,9 @@ describe("PokeRow — empty slot", () => {
         sortableId="__empty__0"
         pokemon={null}
         isActive={false}
-        density="comfy"
-        expandMode="active"
         onActivate={jest.fn()}
       />
     );
-    // Click the trigger button
     const addBtn = screen.getByText(/\+ Add Pokémon/i).closest("button");
     await user.click(addBtn!);
     expect(screen.getByTestId("species-picker")).toBeInTheDocument();
@@ -304,8 +284,6 @@ describe("PokeRow — empty slot", () => {
         sortableId="__empty__2"
         pokemon={null}
         isActive={false}
-        density="comfy"
-        expandMode="active"
         onActivate={jest.fn()}
         onAdd={onAdd}
       />
@@ -323,18 +301,28 @@ describe("PokeRow — empty slot", () => {
         sortableId="__empty__0"
         pokemon={null}
         isActive={false}
-        density="comfy"
-        expandMode="active"
         onActivate={jest.fn()}
       />
     );
-    // Identity ghost: '+ Add Pokémon' text
-    expect(screen.getByTestId("identity-lane-ghost")).toBeInTheDocument();
-    // Stats ghost: 'HP' label
-    expect(screen.getByTestId("stats-lane-ghost")).toBeInTheDocument();
+    // Default layoutMode is "1x6" → CompactRowGhost is rendered.
+    expect(screen.getByTestId("compact-row-ghost")).toBeInTheDocument();
     expect(screen.getByText("HP")).toBeInTheDocument();
-    // Moves ghost: '+ Add move' appears 4 times
     expect(screen.getAllByText(/\+ Add move/i)).toHaveLength(4);
+  });
+
+  it("renders GridRowGhost when layoutMode is '2x3-vertical'", () => {
+    mockLayoutMode.mockReturnValue("2x3-vertical");
+    render(
+      <PokeRow
+        idx={0}
+        sortableId="__empty__0"
+        pokemon={null}
+        isActive={false}
+        onActivate={jest.fn()}
+      />
+    );
+    expect(screen.getByTestId("grid-row-ghost")).toBeInTheDocument();
+    expect(screen.queryByTestId("compact-row-ghost")).not.toBeInTheDocument();
   });
 
   it("outer button has w-full to fill its grid cell", () => {
@@ -344,8 +332,6 @@ describe("PokeRow — empty slot", () => {
         sortableId="__empty__0"
         pokemon={null}
         isActive={false}
-        density="comfy"
-        expandMode="active"
         onActivate={jest.fn()}
       />
     );
@@ -360,202 +346,197 @@ describe("PokeRow — empty slot", () => {
         sortableId="__empty__0"
         pokemon={null}
         isActive={false}
-        density="comfy"
-        expandMode="active"
         onActivate={jest.fn()}
       />
     );
     const button = screen.getByText(/\+ Add Pokémon/i).closest("button")!;
-    // within(button) scopes to inside the button element; queryAllByRole("button")
-    // should return nothing because there are no nested buttons in ghost mode.
     expect(within(button).queryAllByRole("button")).toHaveLength(0);
   });
 
-  describe("calc width parity", () => {
-    afterEach(() => {
-      mockUseCalcStateContext.mockReturnValue({ calcEnabled: false });
-    });
-
-    it("does not render the calc column when calc is disabled", () => {
-      mockUseCalcStateContext.mockReturnValue({ calcEnabled: false });
-      render(
-        <PokeRow
-          idx={0}
-          sortableId="__empty__0"
-          pokemon={null}
-          isActive={false}
-          density="comfy"
-          expandMode="active"
-          onActivate={jest.fn()}
-        />
-      );
-      expect(screen.queryByTestId("calc-column")).not.toBeInTheDocument();
-    });
-
-    it("does not render the calc column for empty slots regardless of calc state", () => {
-      mockUseCalcStateContext.mockReturnValue({ calcEnabled: true });
-      render(
-        <PokeRow
-          idx={0}
-          sortableId="__empty__0"
-          pokemon={null}
-          isActive={false}
-          density="comfy"
-          expandMode="active"
-          onActivate={jest.fn()}
-        />
-      );
-      expect(screen.queryByTestId("calc-column")).not.toBeInTheDocument();
-    });
+  it("does NOT render a CompactRow or GridRow for empty slots", () => {
+    render(
+      <PokeRow
+        idx={0}
+        sortableId="__empty__0"
+        pokemon={null}
+        isActive={false}
+        onActivate={jest.fn()}
+      />
+    );
+    expect(screen.queryByTestId("compact-row")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("grid-row")).not.toBeInTheDocument();
   });
 });
 
 // =============================================================================
-// Tests — collapsed row (filled, not active, expandMode=active)
+// Tests — filled slot, layout routing
 // =============================================================================
 
-describe("PokeRow — collapsed row", () => {
-  function renderCollapsed(slotErrors: ValidationError[] = []) {
-    const onActivate = jest.fn();
-    const onRemove = jest.fn();
+describe("PokeRow — filled slot routes by layoutMode", () => {
+  beforeEach(() => {
+    compactRowProps.mockClear();
+    gridRowProps.mockClear();
+  });
+
+  it("renders CompactRow when layoutMode is '1x6'", () => {
+    mockLayoutMode.mockReturnValue("1x6");
     render(
       <PokeRow
         idx={0}
         sortableId="10"
         pokemon={makePokemon()}
         isActive={false}
-        density="comfy"
-        expandMode="active"
-        onActivate={onActivate}
-        onRemove={onRemove}
-        slotErrors={slotErrors}
+        onActivate={jest.fn()}
+        teamPokemon={[]}
       />
     );
-    return { onActivate, onRemove };
-  }
-
-  it("renders the pokemon species name", () => {
-    renderCollapsed();
-    expect(screen.getByText("Garchomp")).toBeInTheDocument();
+    expect(screen.getByTestId("compact-row")).toBeInTheDocument();
+    expect(screen.queryByTestId("grid-row")).not.toBeInTheDocument();
   });
 
-  it("renders the sprite", () => {
-    renderCollapsed();
-    expect(screen.getByTestId("sprite")).toBeInTheDocument();
-  });
-
-  it("calls onActivate when the expand row button is clicked", async () => {
-    const user = userEvent.setup();
-    const { onActivate } = renderCollapsed();
-    // The expand button has aria-label "Expand slot 1: Garchomp"
-    await user.click(screen.getByRole("button", { name: /Expand slot 1/i }));
-    expect(onActivate).toHaveBeenCalledWith(0);
-  });
-
-  it("calls onRemove when the remove button is clicked", async () => {
-    const user = userEvent.setup();
-    const { onRemove } = renderCollapsed();
-    await user.click(
-      screen.getByRole("button", { name: /Remove Garchomp from slot 1/i })
-    );
-    expect(onRemove).toHaveBeenCalledWith(0);
-  });
-
-  it("renders error dot when slotErrors has an error", () => {
-    renderCollapsed([makeError()]);
-    expect(
-      screen.getByLabelText("Has validation errors")
-    ).toBeInTheDocument();
-  });
-
-  it("renders warning dot when slotErrors has only warnings", () => {
-    renderCollapsed([makeWarning()]);
-    expect(
-      screen.getByLabelText("Has validation warnings")
-    ).toBeInTheDocument();
-  });
-
-  it("renders no dot when slotErrors is empty", () => {
-    renderCollapsed([]);
-    expect(
-      screen.queryByLabelText("Has validation errors")
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByLabelText("Has validation warnings")
-    ).not.toBeInTheDocument();
-  });
-
-  it("renders nickname with species in parens when nickname is set", () => {
+  it("renders GridRow when layoutMode is '2x3-vertical'", () => {
+    mockLayoutMode.mockReturnValue("2x3-vertical");
     render(
       <PokeRow
         idx={0}
         sortableId="10"
-        pokemon={makePokemon({ nickname: "Chomp" })}
+        pokemon={makePokemon()}
         isActive={false}
-        density="comfy"
-        expandMode="active"
         onActivate={jest.fn()}
+        teamPokemon={[]}
       />
     );
-    expect(screen.getByText("Chomp")).toBeInTheDocument();
-    expect(screen.getByText("(Garchomp)")).toBeInTheDocument();
+    expect(screen.getByTestId("grid-row")).toBeInTheDocument();
+    expect(screen.queryByTestId("compact-row")).not.toBeInTheDocument();
   });
 });
 
 // =============================================================================
-// Tests — expanded (active or expandMode=all)
+// Tests — filled slot, prop forwarding
 // =============================================================================
 
-describe("PokeRow — expanded (active)", () => {
-  it("renders ActiveRow when isActive is true", () => {
+describe("PokeRow — filled slot forwards props to variant", () => {
+  beforeEach(() => {
+    mockLayoutMode.mockReturnValue("1x6");
+    compactRowProps.mockClear();
+    gridRowProps.mockClear();
+  });
+
+  it("forwards idx, pokemon, teamPokemon, format, fieldErrors", () => {
+    const teamPokemon = [{ position: 0, pokemon: makePokemon() }];
+    const errors = [
+      {
+        pokemonId: 10,
+        pokemonName: "Garchomp",
+        field: "ability",
+        message: "x",
+        severity: "error" as const,
+      },
+    ];
+    render(
+      <PokeRow
+        idx={3}
+        sortableId="10"
+        pokemon={makePokemon()}
+        isActive={true}
+        onActivate={jest.fn()}
+        teamPokemon={teamPokemon as never}
+        format={undefined}
+        slotErrors={errors}
+      />
+    );
+    expect(compactRowProps).toHaveBeenCalledTimes(1);
+    const props = compactRowProps.mock.calls[0]![0] as Record<string, unknown>;
+    expect(props.idx).toBe(3);
+    expect((props.pokemon as Tables<"pokemon">).species).toBe("Garchomp");
+    expect(props.teamPokemon).toBe(teamPokemon);
+    expect(props.fieldErrors).toBe(errors);
+  });
+
+  it("forwards an empty teamPokemon array when none is provided", () => {
     render(
       <PokeRow
         idx={0}
         sortableId="10"
         pokemon={makePokemon()}
-        isActive={true}
-        density="comfy"
-        expandMode="active"
+        isActive={false}
         onActivate={jest.fn()}
-        teamPokemon={[]}
       />
     );
-    expect(screen.getByTestId("active-row")).toBeInTheDocument();
+    const props = compactRowProps.mock.calls[0]![0] as Record<string, unknown>;
+    expect(Array.isArray(props.teamPokemon)).toBe(true);
+    expect((props.teamPokemon as unknown[]).length).toBe(0);
   });
 
-  it("renders ActiveRow when expandMode is 'all' regardless of isActive", () => {
+  it("forwards drag attributes/listeners and isDragging from useSortable", () => {
     render(
       <PokeRow
-        idx={1}
+        idx={0}
         sortableId="10"
         pokemon={makePokemon()}
         isActive={false}
-        density="comfy"
-        expandMode="all"
         onActivate={jest.fn()}
-        teamPokemon={[]}
       />
     );
-    expect(screen.getByTestId("active-row")).toBeInTheDocument();
+    const props = compactRowProps.mock.calls[0]![0] as Record<string, unknown>;
+    expect(props.dragAttributes).toBeDefined();
+    expect(props.dragListeners).toBeDefined();
+    expect(props.isDragging).toBe(false);
   });
 
-  it("calls onRemove when the ActiveRow remove button is clicked", async () => {
+  it("adapts onUpdate(fields) to onPokemonUpdate(pokemonId, fields)", async () => {
+    const user = userEvent.setup();
+    const onPokemonUpdate = jest.fn();
+    render(
+      <PokeRow
+        idx={0}
+        sortableId="10"
+        pokemon={makePokemon()}
+        isActive={false}
+        onActivate={jest.fn()}
+        onPokemonUpdate={onPokemonUpdate}
+      />
+    );
+    await user.click(screen.getByTestId("compact-row-update"));
+    expect(onPokemonUpdate).toHaveBeenCalledWith(10, { nickname: "Chompy" });
+  });
+
+  it("adapts onRemove() to onRemove(idx)", async () => {
     const user = userEvent.setup();
     const onRemove = jest.fn();
     render(
       <PokeRow
-        idx={0}
+        idx={4}
         sortableId="10"
         pokemon={makePokemon()}
-        isActive={true}
-        density="comfy"
-        expandMode="active"
+        isActive={false}
         onActivate={jest.fn()}
         onRemove={onRemove}
-        teamPokemon={[]}
       />
     );
-    await user.click(screen.getByTestId("active-row-remove"));
-    expect(onRemove).toHaveBeenCalledWith(0);
+    await user.click(screen.getByTestId("compact-row-remove"));
+    expect(onRemove).toHaveBeenCalledWith(4);
+  });
+
+  it("adapts the same handlers correctly when routed to GridRow", async () => {
+    mockLayoutMode.mockReturnValue("2x3-vertical");
+    const user = userEvent.setup();
+    const onPokemonUpdate = jest.fn();
+    const onRemove = jest.fn();
+    render(
+      <PokeRow
+        idx={2}
+        sortableId="10"
+        pokemon={makePokemon()}
+        isActive={false}
+        onActivate={jest.fn()}
+        onPokemonUpdate={onPokemonUpdate}
+        onRemove={onRemove}
+      />
+    );
+    await user.click(screen.getByTestId("grid-row-update"));
+    await user.click(screen.getByTestId("grid-row-remove"));
+    expect(onPokemonUpdate).toHaveBeenCalledWith(10, { nickname: "Chompy" });
+    expect(onRemove).toHaveBeenCalledWith(2);
   });
 });

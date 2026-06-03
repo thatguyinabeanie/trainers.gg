@@ -28,8 +28,8 @@ export const queryKeys = {
       tournamentId: number | undefined,
       userId: string | undefined
     ) => ["current-match-banner", tournamentId, userId] as const,
-    userTeams: (tournamentId: number | undefined) =>
-      ["user-teams-for-tournament", tournamentId] as const,
+    userTeams: (tournamentId: number | undefined, gameFormat?: string | null) =>
+      ["user-teams-for-tournament", tournamentId, gameFormat ?? null] as const,
   },
 
   match: {

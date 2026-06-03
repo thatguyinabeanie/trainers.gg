@@ -96,7 +96,7 @@ export function NumberPicker({
 
       {/* Hint */}
       {hint && (
-        <p className="text-muted-foreground px-3 pb-2 text-[10.5px]">{hint}</p>
+        <p className="text-muted-foreground px-3 pb-2 text-xs">{hint}</p>
       )}
 
       {/* Preset chips */}
@@ -107,7 +107,7 @@ export function NumberPicker({
               key={p}
               type="button"
               onClick={() => clampAndEmit(p)}
-              className="bg-muted hover:border-primary rounded border px-2 py-0.5 font-mono text-[10.5px] transition-colors"
+              className="bg-muted hover:border-primary rounded border px-2 py-0.5 font-mono text-xs transition-colors"
             >
               {p}
             </button>
