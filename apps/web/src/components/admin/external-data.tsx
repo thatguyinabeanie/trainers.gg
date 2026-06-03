@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
 import {
@@ -224,7 +225,12 @@ function compareValues(
 
 export function ExternalData() {
   const [refreshKey, setRefreshKey] = useState(0);
-  const [activeTab, setActiveTab] = useState<"rk9" | "limitless">("limitless");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"rk9" | "limitless">(
+    tabParam === "limitless" ? "limitless" : "rk9"
+  );
 
   // Expanded row state
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
@@ -992,7 +998,17 @@ export function ExternalData() {
       {/* Sub-tabs: RK9 / Limitless */}
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "rk9" | "limitless")}
+        onValueChange={(v) => {
+          const tab = v as "rk9" | "limitless";
+          setActiveTab(tab);
+          const params = new URLSearchParams(searchParams.toString());
+          if (tab === "rk9") {
+            params.delete("tab");
+          } else {
+            params.set("tab", tab);
+          }
+          router.replace(`?${params.toString()}`, { scroll: false });
+        }}
       >
         <TabsList variant="line">
           <TabsTrigger value="rk9">
