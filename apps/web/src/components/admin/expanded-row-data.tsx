@@ -198,8 +198,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                     {row.source === "rk9" ? (
                       <>
                         <th className="py-1 pr-3 text-left font-medium">Trainer</th>
-                        <th className="py-1 pr-3 text-left font-medium">First</th>
-                        <th className="py-1 pr-3 text-left font-medium">Last</th>
+                        <th className="py-1 pr-3 text-left font-medium">Name</th>
                         <th className="py-1 pr-3 text-left font-medium">Country</th>
                         <th className="py-1 pr-4 text-left font-medium">ID</th>
                       </>
@@ -256,10 +255,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                 </div>
                               </td>
                               <td className="py-1.5 pr-3 text-xs">
-                                {s.players?.first_name ?? "—"}
-                              </td>
-                              <td className="py-1.5 pr-3 text-xs">
-                                {s.players?.last_name ?? "—"}
+                                {[s.players?.first_name, s.players?.last_name].filter(Boolean).join(" ") || "—"}
                               </td>
                               <td className="py-1.5 pr-3 font-mono text-xs uppercase">
                                 {s.players?.country ?? "—"}
