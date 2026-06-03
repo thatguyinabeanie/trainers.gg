@@ -4287,7 +4287,6 @@ export type Database = {
           id: number
           last_name: string
           player_id_masked: string
-          trainer_name: string | null
         }
         Insert: {
           country?: string | null
@@ -4296,7 +4295,6 @@ export type Database = {
           id?: never
           last_name: string
           player_id_masked?: string
-          trainer_name?: string | null
         }
         Update: {
           country?: string | null
@@ -4305,7 +4303,6 @@ export type Database = {
           id?: never
           last_name?: string
           player_id_masked?: string
-          trainer_name?: string | null
         }
         Relationships: []
       }
