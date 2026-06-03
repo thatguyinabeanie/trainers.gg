@@ -902,6 +902,48 @@ export function ExternalData() {
   }
 
   // -------------------------------------------------------------------------
+  // Bulk actions
+  // -------------------------------------------------------------------------
+
+  async function handleBulkScrapeRosters() {
+    setBulkProcessing(true);
+    const events = rosterEligibleSelected;
+    for (let i = 0; i < events.length; i++) {
+      const row = events[i]!;
+      setBulkProgress({ total: events.length, done: i, current: row.name });
+      await handleScrapeRoster(row.rk9!.event_id);
+    }
+    setBulkProcessing(false);
+    setBulkProgress(null);
+    setSelectedIds(new Set());
+  }
+
+  async function handleBulkScrapeTeams() {
+    setBulkProcessing(true);
+    const events = teamsEligibleSelected;
+    for (let i = 0; i < events.length; i++) {
+      const row = events[i]!;
+      setBulkProgress({ total: events.length, done: i, current: row.name });
+      await handleScrapeTeams(row.rk9!.event_id);
+    }
+    setBulkProcessing(false);
+    setBulkProgress(null);
+    setSelectedIds(new Set());
+  }
+
+  async function handleBulkQueueSelected() {
+    setBulkProcessing(true);
+    const ids = limitlessQueueEligibleSelected.map(
+      (r) => r.limitless!.tournament_id
+    );
+    const result = await batchQueueTournaments(ids);
+    if (!result.success) toast.error("Failed to queue tournaments");
+    setSelectedIds(new Set());
+    setRefreshKey((k) => k + 1);
+    setBulkProcessing(false);
+  }
+
+  // -------------------------------------------------------------------------
   // Auto-import loop
   // When enabled, process one pending item at a time from each source.
   // -------------------------------------------------------------------------
@@ -1674,6 +1716,72 @@ export function ExternalData() {
         </TabsContent>
       </Tabs>
 
+      {/* Bulk action toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 p-2.5">
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear
+          </Button>
+          <div className="bg-border h-4 w-px" />
+          {activeTab === "rk9" && rosterEligibleSelected.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkProcessing}
+              onClick={handleBulkScrapeRosters}
+            >
+              {bulkProcessing && bulkProgress ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Scrape Rosters ({rosterEligibleSelected.length})
+            </Button>
+          )}
+          {activeTab === "rk9" && teamsEligibleSelected.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkProcessing}
+              onClick={handleBulkScrapeTeams}
+            >
+              {bulkProcessing && bulkProgress ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CloudDownload className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Scrape Teams ({teamsEligibleSelected.length})
+            </Button>
+          )}
+          {activeTab === "limitless" && limitlessQueueEligibleSelected.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkProcessing}
+              onClick={handleBulkQueueSelected}
+            >
+              {bulkProcessing ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Queue ({limitlessQueueEligibleSelected.length})
+            </Button>
+          )}
+          {bulkProcessing && bulkProgress && (
+            <span className="text-muted-foreground text-xs">
+              {bulkProgress.done}/{bulkProgress.total} — {bulkProgress.current}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Shared Table */}
       {isLoading && !rk9Events && !limitlessTournaments ? (
         <div className="space-y-3">
@@ -1699,13 +1807,37 @@ export function ExternalData() {
 
           {/* Fixed header row */}
           <div className="grid grid-cols-12 border-b">
+            <div className="col-span-1 flex h-10 items-center px-2">
+              <input
+                type="checkbox"
+                checked={
+                  currentRows.length > 0 &&
+                  selectedIds.size === currentRows.length
+                }
+                ref={(el) => {
+                  if (el)
+                    el.indeterminate =
+                      selectedIds.size > 0 &&
+                      selectedIds.size < currentRows.length;
+                }}
+                onChange={(e) => {
+                  setSelectedIds(
+                    e.target.checked
+                      ? new Set(currentRows.map((r) => r.id))
+                      : new Set()
+                  );
+                }}
+                className="h-4 w-4 cursor-pointer rounded border"
+                aria-label="Select all visible"
+              />
+            </div>
             <SortableHeader
               column="name"
               label="Event"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
               className={
-                activeTab === "limitless" ? "col-span-3" : "col-span-4"
+                activeTab === "limitless" ? "col-span-2" : "col-span-3"
               }
             />
             <SortableHeader
@@ -1829,12 +1961,29 @@ export function ExternalData() {
                         isUpcomingRow && "opacity-60"
                       )}
                     >
+                      <div className="col-span-1 flex items-center px-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(row.id)}
+                          onChange={(e) => {
+                            setSelectedIds((prev) => {
+                              const next = new Set(prev);
+                              e.target.checked
+                                ? next.add(row.id)
+                                : next.delete(row.id);
+                              return next;
+                            });
+                          }}
+                          className="h-4 w-4 cursor-pointer rounded border"
+                          aria-label={`Select ${row.name}`}
+                        />
+                      </div>
                       <div
                         className={cn(
                           "min-w-0 p-2",
                           activeTab === "limitless"
-                            ? "col-span-3"
-                            : "col-span-4"
+                            ? "col-span-2"
+                            : "col-span-3"
                         )}
                       >
                         <div className="flex items-center gap-1.5">
