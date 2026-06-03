@@ -395,7 +395,10 @@ export async function POST(request: NextRequest) {
 
   const { error: coachUserError } = await supabase
     .from("users")
-    .update({ is_coach: true, main_alt_id: cynthiaAlt?.id ?? null })
+    .update({
+      is_coach: true,
+      ...(cynthiaAlt ? { main_alt_id: cynthiaAlt.id } : {}),
+    })
     .eq("id", cynthiaUserId);
 
   if (coachUserError) {
