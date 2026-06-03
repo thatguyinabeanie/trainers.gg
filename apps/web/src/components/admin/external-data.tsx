@@ -59,6 +59,7 @@ import {
   type LimitlessTournamentRow,
   type UnifiedRow,
 } from "./external-data-shared";
+import { ExpandedRowData } from "./expanded-row-data";
 
 type PlatformFilter = "all" | "SWITCH" | "SIM";
 type HasDataFilter = "all" | "yes" | "no";
@@ -1930,12 +1931,7 @@ export function ExternalData() {
                         />
                       </div>
                     </div>
-                    {expandedRowId === row.id && (
-                      <div className="border-t bg-muted/20 p-4 text-sm text-muted-foreground">
-                        {/* placeholder — will be replaced with <ExpandedRowData> in Task D */}
-                        Expanded: {row.id}
-                      </div>
-                    )}
+                    {expandedRowId === row.id && <ExpandedRowData row={row} />}
                   </div>
                 );
               })}
