@@ -429,12 +429,15 @@ export async function scrapeRk9TeamsBatch(
     const supabase = createServiceRoleClient();
 
     // Get all standings with roster_entry_ids, including scrape timestamp
+    // Use a high limit to bypass PostgREST's default 1000-row cap —
+    // events like Indianapolis have 1092+ standings.
     const { data: allStandings, error: standingsErr } = await supabase
       .schema("rk9")
       .from("standings")
       .select("id, roster_entry_id, team_scrape_attempted_at")
       .eq("event_id", eventId)
-      .not("roster_entry_id", "is", null);
+      .not("roster_entry_id", "is", null)
+      .limit(10000);
 
     if (standingsErr) throw standingsErr;
     if (!allStandings || allStandings.length === 0) {
