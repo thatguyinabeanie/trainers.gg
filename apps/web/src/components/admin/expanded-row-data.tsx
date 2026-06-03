@@ -74,6 +74,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
     new Set()
   );
   const [divisionFilter, setDivisionFilter] = useState<DivisionFilter>("masters");
+  const [showTeamOnly, setShowTeamOnly] = useState(false);
 
   function togglePlacement(key: string) {
     setExpandedPlacements((prev) => {
@@ -144,6 +145,29 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
               {div.charAt(0).toUpperCase() + div.slice(1)}
             </button>
           ))}
+          <div className="bg-border h-3 w-px mx-1" />
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showTeamOnly}
+              onChange={(e) => setShowTeamOnly(e.target.checked)}
+              className="h-3 w-3 rounded border"
+            />
+            Teams only
+          </label>
+        </div>
+      )}
+      {row.source === "limitless" && (
+        <div className="mb-3 flex items-center gap-1">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showTeamOnly}
+              onChange={(e) => setShowTeamOnly(e.target.checked)}
+              className="h-3 w-3 rounded border"
+            />
+            Teams only
+          </label>
         </div>
       )}
       <div className="max-h-96 overflow-auto">
@@ -192,6 +216,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                   {row.source === "rk9"
                     ? (data as RK9StandingWithTeam[])
                         .filter((s) => s.division === divisionFilter)
+                        .filter((s) => !showTeamOnly || (s.team_pokemon ?? []).filter((p) => p.position > 0).length > 0)
                         .map((s, i) => {
                           const expansionKey = `${s.division}-${s.placement}`;
                           const isExpanded = expandedPlacements.has(expansionKey);
@@ -363,7 +388,9 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                           </Fragment>
                         );
                       })
-                    : (data as LimitlessStandingWithTeam[]).map((s, i) => {
+                    : (data as LimitlessStandingWithTeam[])
+                        .filter((s) => !showTeamOnly || (s.team_pokemon ?? []).filter((p) => p.position > 0).length > 0)
+                        .map((s, i) => {
                         const playerName = s.players?.display_name ?? "—";
                         const record =
                           s.record_wins != null

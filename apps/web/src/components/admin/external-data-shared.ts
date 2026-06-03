@@ -14,6 +14,7 @@ export interface RK9EventRow {
   has_team_lists: boolean;
   import_status: string;
   import_error: string | null;
+  teams_imported_count: number | null;
 }
 
 export interface LimitlessTournamentRow {

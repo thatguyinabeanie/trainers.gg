@@ -473,7 +473,7 @@ export function ExternalData() {
         .schema("rk9")
         .from("events")
         .select(
-          "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error"
+          "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count"
         )
         .order("date_start", { ascending: false });
       if (error) throw error;
@@ -2098,8 +2098,15 @@ export function ExternalData() {
                       <div className="flex items-center p-2 text-sm whitespace-nowrap">
                         {row.playerCount ?? "—"}
                       </div>
-                      <div className="flex items-center p-2">
+                      <div className="flex flex-col items-start gap-0.5 p-2">
                         <StatusBadge row={row} activeJobs={activeJobs} />
+                        {row.source === "rk9" &&
+                          row.rk9!.teams_imported_count != null &&
+                          row.rk9!.teams_imported_count > 0 && (
+                            <span className="text-muted-foreground text-xs">
+                              {row.rk9!.teams_imported_count}/{row.rk9!.player_count ?? "?"} teams
+                            </span>
+                          )}
                       </div>
                       {activeTab === "limitless" && (
                         <div className="flex items-center p-2">

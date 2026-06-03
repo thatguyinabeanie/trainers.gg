@@ -446,6 +446,7 @@ export async function scrapeRk9TeamsBatch(
           import_error: null,
           has_team_lists: false,
           imported_at: new Date().toISOString(),
+          teams_imported_count: 0,
         })
         .eq("event_id", eventId);
       return { success: true, data: undefined, done: true, scraped: 0, total: 0, failed: 0 };
@@ -486,6 +487,7 @@ export async function scrapeRk9TeamsBatch(
           import_error: null,
           has_team_lists: true,
           imported_at: new Date().toISOString(),
+          teams_imported_count: alreadyScraped,
         })
         .eq("event_id", eventId);
 
@@ -496,7 +498,7 @@ export async function scrapeRk9TeamsBatch(
     await supabase
       .schema("rk9")
       .from("events")
-      .update({ import_status: "teams", import_error: null })
+      .update({ import_status: "teams", import_error: null, teams_imported_count: alreadyScraped })
       .eq("event_id", eventId);
 
     // Load species map
@@ -653,8 +655,8 @@ export async function scrapeRk9TeamsBatch(
     const totalScraped = alreadyScraped + batchScraped;
     const done = totalScraped >= total;
 
-    // If this batch finished everything, mark complete
     if (done) {
+      // Batch finished everything — mark event complete
       await supabase
         .schema("rk9")
         .from("events")
@@ -663,7 +665,15 @@ export async function scrapeRk9TeamsBatch(
           import_error: null,
           has_team_lists: true,
           imported_at: new Date().toISOString(),
+          teams_imported_count: alreadyScraped + batchScraped,
         })
+        .eq("event_id", eventId);
+    } else {
+      // More batches remain — update the running count so UI reflects progress
+      await supabase
+        .schema("rk9")
+        .from("events")
+        .update({ teams_imported_count: alreadyScraped + batchScraped })
         .eq("event_id", eventId);
     }
 
