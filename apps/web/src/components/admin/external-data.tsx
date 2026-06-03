@@ -63,6 +63,7 @@ import {
   type UnifiedRow,
 } from "./external-data-shared";
 import { ExpandedRowData } from "./expanded-row-data";
+import { PlayerExpandedData } from "./player-expanded-data";
 
 type PlatformFilter = "all" | "SWITCH" | "SIM";
 type HasDataFilter = "all" | "yes" | "no";
@@ -977,12 +978,65 @@ export function ExternalData() {
   // When enabled, process one pending item at a time from each source.
   // -------------------------------------------------------------------------
 
+  // RK9 sub-view: events or players
+  const [rk9View, setRk9View] = useState<"events" | "players">("events");
+
+  // Player search
+  const [playerSearch, setPlayerSearch] = useState("");
+
+  // RK9 players query — always called (Rules of Hooks), but skips fetch when not on players view
+  const { data: rk9Players, isLoading: rk9PlayersLoading } = useSupabaseQuery(
+    /* istanbul ignore next */
+    async (sb) => {
+      if (rk9View !== "players") return [];
+      const { data, error } = await sb
+        .schema("rk9")
+        .from("players")
+        .select(
+          "id, first_name, last_name, country, trainer_name, standings(count)"
+        )
+        .order("last_name", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<{
+        id: number;
+        first_name: string;
+        last_name: string;
+        country: string;
+        trainer_name: string | null;
+        standings: [{ count: number }];
+      }>;
+    },
+    [refreshKey, rk9View === "players" ? "load" : "skip"]
+  );
+
+  // Client-side player filter
+  const filteredPlayers = (rk9Players ?? []).filter((p) => {
+    if (!playerSearch) return true;
+    const q = playerSearch.toLowerCase();
+    return (
+      p.trainer_name?.toLowerCase().includes(q) ||
+      p.first_name?.toLowerCase().includes(q) ||
+      p.last_name?.toLowerCase().includes(q)
+    );
+  });
+
+  // Expanded player row state
+  const [expandedPlayerId, setExpandedPlayerId] = useState<number | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
+  const playerScrollRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
     count: currentRows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 56,
+    overscan: 10,
+  });
+
+  const playerVirtualizer = useVirtualizer({
+    count: filteredPlayers.length,
+    getScrollElement: () => playerScrollRef.current,
+    estimateSize: () => 44,
     overscan: 10,
   });
 
@@ -1050,6 +1104,45 @@ export function ExternalData() {
 
         {/* ----- RK9 Tab ----- */}
         <TabsContent value="rk9" className="space-y-4 pt-2">
+          {/* RK9 sub-nav: Events | Players */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setRk9View("events")}
+              className={cn(
+                "rounded px-3 py-1 text-xs font-medium",
+                rk9View === "events"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Events
+            </button>
+            <button
+              onClick={() => setRk9View("players")}
+              className={cn(
+                "rounded px-3 py-1 text-xs font-medium",
+                rk9View === "players"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Players
+            </button>
+          </div>
+
+          {rk9View === "players" ? (
+            /* Players search — filter panel is hidden in players view */
+            <div className="relative">
+              <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
+              <Input
+                placeholder="Search by trainer or name..."
+                value={playerSearch}
+                onChange={(e) => setPlayerSearch(e.target.value)}
+                className="h-8 pl-8 text-sm"
+              />
+            </div>
+          ) : (
+            <>
           {/* RK9 Stats + Actions */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-5">
@@ -1373,6 +1466,8 @@ export function ExternalData() {
                 );
               })}
             </div>
+          )}
+            </>
           )}
         </TabsContent>
 
@@ -1821,6 +1916,143 @@ export function ExternalData() {
         </div>
       )}
 
+      {/* Players Table — only shown when RK9 tab + players view */}
+      {activeTab === "rk9" && rk9View === "players" && (
+        <div className="rounded-md border">
+          <div className="text-muted-foreground flex items-center gap-2 px-4 py-2 text-xs">
+            <ListFilter className="h-3.5 w-3.5" />
+            {rk9PlayersLoading
+              ? "Loading players…"
+              : `Showing ${filteredPlayers.length} players`}
+          </div>
+
+          {/* Players table header */}
+          <div
+            className="grid border-b"
+            style={{ gridTemplateColumns: "28px 160px 1fr 80px 80px" }}
+          >
+            <div className="h-10" />
+            <div className="flex h-10 items-center px-2 text-xs font-medium">
+              Trainer
+            </div>
+            <div className="flex h-10 items-center px-2 text-xs font-medium">
+              Name
+            </div>
+            <div className="flex h-10 items-center px-2 text-xs font-medium">
+              Country
+            </div>
+            <div className="flex h-10 items-center px-2 text-xs font-medium">
+              Events
+            </div>
+          </div>
+
+          {rk9PlayersLoading ? (
+            <div className="space-y-2 p-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-11 w-full" />
+              ))}
+            </div>
+          ) : filteredPlayers.length === 0 ? (
+            <div className="text-muted-foreground py-12 text-center text-sm">
+              {(rk9Players ?? []).length === 0
+                ? "No players found."
+                : "No players match your search."}
+            </div>
+          ) : (
+            /* Virtualized body */
+            <div
+              ref={playerScrollRef}
+              className="overflow-auto"
+              style={{ maxHeight: "calc(100vh - 300px)" }}
+            >
+              <div
+                style={{
+                  height: playerVirtualizer.getTotalSize(),
+                  position: "relative",
+                }}
+              >
+                {playerVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const p = filteredPlayers[virtualRow.index];
+                  if (!p) return null;
+                  const isPlayerExpanded = expandedPlayerId === p.id;
+                  const fullName =
+                    [p.first_name, p.last_name].filter(Boolean).join(" ") ||
+                    "—";
+                  const eventCount = p.standings[0]?.count ?? 0;
+                  return (
+                    <div
+                      key={p.id}
+                      ref={playerVirtualizer.measureElement}
+                      data-index={virtualRow.index}
+                      className="border-b"
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                    >
+                      <div
+                        className="grid hover:bg-muted/50 transition-colors"
+                        style={{
+                          gridTemplateColumns: "28px 160px 1fr 80px 80px",
+                        }}
+                      >
+                        {/* Chevron */}
+                        <div className="flex items-center justify-center py-2">
+                          <button
+                            className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted"
+                            onClick={() =>
+                              setExpandedPlayerId(
+                                isPlayerExpanded ? null : p.id
+                              )
+                            }
+                            aria-label={
+                              isPlayerExpanded ? "Collapse" : "Expand"
+                            }
+                          >
+                            {isPlayerExpanded ? (
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </div>
+                        {/* Trainer */}
+                        <div className="flex min-w-0 items-center p-2 text-xs">
+                          <span className="truncate">
+                            {p.trainer_name ?? "—"}
+                          </span>
+                        </div>
+                        {/* Name */}
+                        <div className="flex min-w-0 items-center p-2 text-xs">
+                          <span className="truncate">{fullName}</span>
+                        </div>
+                        {/* Country */}
+                        <div className="flex items-center p-2 font-mono text-xs uppercase">
+                          {p.country ?? "—"}
+                        </div>
+                        {/* Events */}
+                        <div className="flex items-center p-2 text-xs">
+                          {eventCount}
+                        </div>
+                      </div>
+                      {isPlayerExpanded && (
+                        <PlayerExpandedData playerId={p.id} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Shared Events Table — hidden when RK9 tab is in players view */}
+      {(activeTab !== "rk9" || rk9View === "events") && (
+        <>
       {/* Shared Table */}
       {isLoading && !rk9Events && !limitlessTournaments ? (
         <div className="space-y-3">
@@ -2162,6 +2394,8 @@ export function ExternalData() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
