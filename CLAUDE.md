@@ -170,7 +170,7 @@ Store all Playwright MCP screenshots in `.playwright-mcp/screenshots/`. This dir
 
 ### Gotchas
 
-- **Always use `pnpm supabase`** from repo root — never `cd packages/supabase && supabase`
+- **Always run `pnpm supabase` from `packages/supabase`** — never from the repo root. The Supabase CLI writes its linked-project cache to a `supabase/.temp/` subdirectory in the current working directory; running from root pollutes the repo root with an untracked `supabase/.temp/linked-project.json`. The package-level path is already gitignored at `packages/supabase/supabase/.temp/`.
 - `pnpm dev` always reconfigures `.env.local` for local Supabase — set `SKIP_LOCAL_SUPABASE=1` to use remote instead
 - All env vars live in root `.env.local`, symlinked into apps/packages via `postinstall.sh`
 - When adding build-time env vars, declare them in `turbo.json` under the task's `env` array (cache invalidation)
