@@ -64,14 +64,14 @@ interface ExpandedRowDataProps {
 // ---------------------------------------------------------------------------
 
 const DIVISIONS = ["masters", "seniors", "juniors"] as const;
-type DivisionFilter = "all" | (typeof DIVISIONS)[number];
+type DivisionFilter = (typeof DIVISIONS)[number];
 
 export function ExpandedRowData({ row }: ExpandedRowDataProps) {
   const [standingsLimit, setStandingsLimit] = useState(50);
   const [expandedPlacements, setExpandedPlacements] = useState<Set<string>>(
     new Set()
   );
-  const [divisionFilter, setDivisionFilter] = useState<DivisionFilter>("all");
+  const [divisionFilter, setDivisionFilter] = useState<DivisionFilter>("masters");
 
   function togglePlacement(key: string) {
     setExpandedPlacements((prev) => {
@@ -128,7 +128,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
     <div className="border-t bg-muted/20 p-4">
       {row.source === "rk9" && (
         <div className="mb-3 flex items-center gap-1">
-          {(["all", ...DIVISIONS] as const).map((div) => (
+          {DIVISIONS.map((div) => (
             <button
               key={div}
               onClick={() => handleDivisionFilter(div)}
@@ -139,7 +139,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {div === "all" ? "All" : div.charAt(0).toUpperCase() + div.slice(1)}
+              {div.charAt(0).toUpperCase() + div.slice(1)}
             </button>
           ))}
         </div>
@@ -181,65 +181,21 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                       <th className="py-1 pr-4 text-left font-medium">Player</th>
                     )}
                     <th className="py-1 pr-4 text-left font-medium">Team</th>
-                    {row.source === "rk9" ? (
-                      divisionFilter === "all" && (
-                        <th className="py-1 text-left font-medium">Division</th>
-                      )
-                    ) : (
+                    {row.source === "limitless" && (
                       <th className="py-1 text-left font-medium">Record</th>
                     )}
                   </tr>
                 </thead>
                 <tbody>
                   {row.source === "rk9"
-                    ? (() => {
-                        const DIVISION_ORDER = ["masters", "seniors", "juniors"];
-                        const filtered = (data as RK9StandingWithTeam[])
-                          .filter(
-                            (s) =>
-                              divisionFilter === "all" ||
-                              s.division === divisionFilter
-                          )
-                          .sort((a, b) => {
-                            if (divisionFilter !== "all") return 0;
-                            const ai = DIVISION_ORDER.indexOf(a.division ?? "");
-                            const bi = DIVISION_ORDER.indexOf(b.division ?? "");
-                            if (ai !== bi) return ai - bi;
-                            return a.placement - b.placement;
-                          });
-                        let lastDivision: string | null = null;
-                        return filtered.map((s, i) => {
-                          const fullName =
-                            [s.players?.first_name, s.players?.last_name]
-                              .filter(Boolean)
-                              .join(" ") || null;
-                          const playerName =
-                            s.players?.trainer_name ?? fullName ?? "—";
-                          const divisionLabel = s.division
-                            ? s.division.charAt(0).toUpperCase() +
-                              s.division.slice(1)
-                            : "—";
-                          const expansionKey = `${s.division ?? "unknown"}-${s.placement}`;
+                    ? (data as RK9StandingWithTeam[])
+                        .filter((s) => s.division === divisionFilter)
+                        .map((s, i) => {
+                          const expansionKey = `${s.division}-${s.placement}`;
                           const isExpanded = expandedPlacements.has(expansionKey);
                           const pokemon = s.team_pokemon ?? [];
-                          const showDivisionHeader =
-                            divisionFilter === "all" &&
-                            s.division !== lastDivision;
-                          if (showDivisionHeader) lastDivision = s.division ?? null;
-                          // chevron + # + trainer + first + last + country + id + team + (division when all)
-                          const colSpan = divisionFilter === "all" ? 9 : 8;
                           return (
                             <Fragment key={i}>
-                              {showDivisionHeader && (
-                                <tr>
-                                  <td
-                                    colSpan={colSpan}
-                                    className="bg-muted/40 px-2 py-1 text-xs font-semibold text-muted-foreground"
-                                  >
-                                    {divisionLabel}
-                                  </td>
-                                </tr>
-                              )}
                             <tr className="border-b last:border-0">
                               <td className="py-1.5">
                                 <button
@@ -301,13 +257,10 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                   </span>
                                 )}
                               </td>
-                              {divisionFilter === "all" && (
-                                <td className="py-1.5 text-xs">{divisionLabel}</td>
-                              )}
                             </tr>
                             {isExpanded && (
                               <tr>
-                                <td colSpan={colSpan} className="px-2 pb-3">
+                                <td colSpan={8} className="px-2 pb-3">
                                   {pokemon.length === 0 ? (
                                     <p className="text-muted-foreground pt-1 text-xs">
                                       No team data
@@ -388,8 +341,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                             )}
                           </Fragment>
                         );
-                      });
-                      })()
+                      })
                     : (data as LimitlessStandingWithTeam[]).map((s, i) => {
                         const playerName = s.players?.display_name ?? "—";
                         const record =
