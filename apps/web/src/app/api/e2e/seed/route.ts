@@ -355,6 +355,74 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Enable coaching feature flag (migration inserts it as disabled; the local
+  // db:reset seed that enables it does not run on preview branch DBs).
+  // ---------------------------------------------------------------------------
+  const { error: flagError } = await supabase
+    .from("feature_flags")
+    .update({ enabled: true })
+    .eq("key", "coaching");
+
+  if (flagError) {
+    hasErrors = true;
+    results.push({
+      email: "feature_flags",
+      status: "error",
+      error: `coaching flag update failed: ${flagError.message}`,
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Seed cynthia as a coach (mirrors packages/supabase/supabase/seeds/14_coaching.sql).
+  // The coaching E2E tests require at least one seeded coach in the player directory.
+  // ---------------------------------------------------------------------------
+  const cynthiaUserId = E2E_USERS[2]!.id;
+
+  const { data: cynthiaAlt } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("username", "cynthia")
+    .maybeSingle();
+
+  const { error: coachUserError } = await supabase
+    .from("users")
+    .update({ is_coach: true, main_alt_id: cynthiaAlt?.id ?? null })
+    .eq("id", cynthiaUserId);
+
+  if (coachUserError) {
+    hasErrors = true;
+    results.push({
+      email: "cynthia",
+      status: "error",
+      error: `coach user update failed: ${coachUserError.message}`,
+    });
+  }
+
+  const { error: coachProfileError } = await supabase
+    .from("coach_profiles")
+    .upsert(
+      {
+        user_id: cynthiaUserId,
+        headline:
+          "Sinnoh Champion & VGC Veteran — 10+ years of competitive experience",
+        bio: "Former Sinnoh Champion turned full-time VGC coach.",
+        formats: ["vgc2025regh", "vgc2025regi"],
+        links: [{ label: "YouTube", url: "https://youtube.com" }],
+        service_types: ["live", "replay_review", "team_review", "mentorship"],
+      },
+      { onConflict: "user_id" }
+    );
+
+  if (coachProfileError) {
+    hasErrors = true;
+    results.push({
+      email: "cynthia",
+      status: "error",
+      error: `coach_profiles upsert failed: ${coachProfileError.message}`,
+    });
+  }
+
   return NextResponse.json(
     { success: !hasErrors, results },
     { status: hasErrors ? 207 : 200 }
