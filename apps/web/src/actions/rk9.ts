@@ -234,27 +234,56 @@ export async function discoverRk9Events(): Promise<
     }
 
     // Source 2: Wayback Machine (all historical seasons)
+    // Always try historical snapshots — first attempt dynamic CDX discovery,
+    // then fall back to hardcoded known-good timestamps per season so that
+    // older events are found even when the Wayback CDX API is unavailable.
+    const FALLBACK_SNAPSHOTS: string[] = [
+      "20220801120000", // 2021-22 season
+      "20230801120000", // 2022-23 season
+      "20240801120000", // 2023-24 season
+      "20250601120000", // 2024-25 season
+    ];
+
+    let snapshotPicks: string[] = [];
     try {
       const snapshots = await fetchWaybackSnapshots();
-      const picks = pickSnapshotsPerSeason(snapshots);
+      snapshotPicks = pickSnapshotsPerSeason(snapshots);
+    } catch (e) {
+      console.warn("[discoverRk9Events] Wayback CDX query failed, using fallback timestamps:", getErrorMessage(e, "unknown"));
+      snapshotPicks = FALLBACK_SNAPSHOTS;
+    }
 
-      for (const timestamp of picks) {
-        try {
-          const html = await fetchWaybackHtml(timestamp, "/events/pokemon");
-          const archivedEvents = parseArchivedEventsPage(html);
-          allEvents.push(...archivedEvents);
-          archiveCount += archivedEvents.length;
-        } catch (e) {
-          // Individual snapshot failure shouldn't abort the whole process
-          console.warn(
-            `[discoverRk9Events] Wayback snapshot ${timestamp} failed:`,
-            getErrorMessage(e, "unknown")
-          );
+    // If CDX returned snapshots but missed some seasons, supplement with fallbacks
+    if (snapshotPicks.length > 0) {
+      const coveredSeasons = new Set(
+        snapshotPicks.map((ts) => {
+          const year = parseInt(ts.slice(0, 4), 10);
+          const month = parseInt(ts.slice(4, 6), 10);
+          return month >= 9 ? String(year + 1) : String(year);
+        })
+      );
+      for (const fallback of FALLBACK_SNAPSHOTS) {
+        const year = parseInt(fallback.slice(0, 4), 10);
+        const month = parseInt(fallback.slice(4, 6), 10);
+        const season = month >= 9 ? String(year + 1) : String(year);
+        if (!coveredSeasons.has(season)) {
+          snapshotPicks.push(fallback);
         }
       }
-    } catch (e) {
-      // CDX API failure shouldn't block if live succeeded
-      console.warn("[discoverRk9Events] Wayback CDX query failed:", getErrorMessage(e, "unknown"));
+    }
+
+    for (const timestamp of snapshotPicks) {
+      try {
+        const html = await fetchWaybackHtml(timestamp, "/events/pokemon");
+        const archivedEvents = parseArchivedEventsPage(html);
+        allEvents.push(...archivedEvents);
+        archiveCount += archivedEvents.length;
+      } catch (e) {
+        console.warn(
+          `[discoverRk9Events] Wayback snapshot ${timestamp} failed:`,
+          getErrorMessage(e, "unknown")
+        );
+      }
     }
 
     if (allEvents.length === 0) {
