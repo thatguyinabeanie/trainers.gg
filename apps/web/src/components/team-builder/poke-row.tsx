@@ -101,7 +101,7 @@ export function PokeRow({
       ref={setNodeRef}
       style={style}
       className="mx-auto w-full"
-      aria-selected={isActive}
+      data-selected={isActive}
       onClick={() => onActivate(idx)}
     >
       <Variant

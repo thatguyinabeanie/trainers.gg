@@ -164,6 +164,8 @@ In `apps/web/`, always use `cn()` from `@/lib/utils` for combining class names �
 
 This applies to pre-existing values too — remove `[Npx]` values encountered while working in a file.
 
+Rare justified exceptions are allowed — workspace-scale caps (`max-w-[1600px]`), 1–3px hairlines (`h-[1px]`, `gap-[3px]`), and API-bound pixel params (e.g. sprite size props). Leave an inline comment explaining why the Tailwind scale doesn't apply.
+
 ## Error Handling
 
 | Context                | Pattern                                                     |

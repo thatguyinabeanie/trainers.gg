@@ -196,12 +196,10 @@ test.describe("Admin coaches page — admin user with sudo", () => {
     // multiple elements and trigger a strict-mode violation.
     await searchInput.fill("brock");
 
-    // Wait for the result button or "No users found" — debounced 300ms
-    await expect(
-      main
-        .getByRole("button", { name: /@brock/i })
-        .or(main.getByText(/No users found/i))
-    ).toBeVisible({ timeout: 10000 });
+    // Wait for the seeded result — debounced 300ms
+    await expect(main.getByRole("button", { name: /@brock/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   // ─── Test 2: Admin grant → coach profile renders + badge visible ───────
@@ -267,14 +265,11 @@ test.describe("Admin coaches page — admin user with sudo", () => {
     // --- Step 4: Visit the coach profile ---
     const profileResponse = await page.goto("/coaching/ash_ketchum");
 
-    // 404 means the grant failed (JWT hook not active → withAdminAction rejected
-    // the request → ash was never made a coach). Skip the remaining assertions
-    // rather than failing — the hook-missing path is already covered by test.skip
-    // at the top of this describe block, but timing can occasionally slip through.
-    test.skip(
-      profileResponse?.status() === 404,
-      "Coach profile 404 — grant likely failed (JWT custom_access_token_hook not active)"
-    );
+    // The grant must have succeeded — a 404 here means withAdminAction rejected
+    // the request (JWT hook not active or grant failed). The outer test.skip at
+    // the top of this describe block already guards the hook-offline case, so a
+    // 404 here is a real failure.
+    expect(profileResponse?.status()).not.toBe(404);
 
     // The coach profile page must render (display-name h1). This is the durable
     // assertion — if the grant completed and the flag is on, the page renders.

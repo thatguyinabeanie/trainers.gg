@@ -182,7 +182,7 @@ function StatsGhost() {
 function MovesGhost() {
   return (
     <div className="flex min-w-0 flex-1 flex-col px-3 py-1">
-      <div className="flex border-spacing-y-[3px] flex-col gap-1">
+      <div className="flex flex-col gap-1">
         {/* Header row */}
         <div className="grid grid-cols-[24px_32px_1fr_44px_48px] items-center gap-1 pb-0.5">
           <span />
