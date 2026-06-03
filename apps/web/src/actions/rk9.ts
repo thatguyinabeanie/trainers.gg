@@ -595,8 +595,22 @@ export async function scrapeRk9TeamsBatch(
 
             return { rows, newSpeciesEntries, scraped: 1, failed: 0 };
           } catch {
+            // Fetch failed permanently — insert sentinel so this standing is
+            // excluded from future batches rather than retried forever.
             return {
-              rows: [] as typeof allTeamRows,
+              rows: [
+                {
+                  standing_id: standing.id,
+                  position: 0,
+                  species: "",
+                  species_raw: "",
+                  ability: null,
+                  held_item: null,
+                  tera_type: null,
+                  stat_alignment: null,
+                  moves: null,
+                },
+              ] as typeof allTeamRows,
               newSpeciesEntries: new Map<string, string>(),
               scraped: 0,
               failed: 1,

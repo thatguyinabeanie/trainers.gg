@@ -806,14 +806,25 @@ export function ExternalData() {
     );
     try {
       let done = false;
+      let lastScraped = -1;
+      let noProgressRounds = 0;
       while (!done) {
         const result = await scrapeRk9TeamsBatch(eventId, { force });
         if (!result.success) break;
         done = result.done ?? false;
+        const scraped = result.scraped ?? 0;
+        // Detect infinite loop: if scraped count hasn't changed after 3 batches, stop.
+        if (scraped === lastScraped) {
+          noProgressRounds++;
+          if (noProgressRounds >= 3) break;
+        } else {
+          noProgressRounds = 0;
+          lastScraped = scraped;
+        }
         setActiveJobs((prev) =>
           new Map(prev).set(eventId, {
             type: "teams",
-            scraped: result.scraped ?? 0,
+            scraped,
             total: result.total ?? 0,
           })
         );
