@@ -1,0 +1,3 @@
+[submodule "vendor/damage-calc"]
+	path = vendor/damage-calc
+	url = https://github.com/thatguyinabeanie/damage-calc.git

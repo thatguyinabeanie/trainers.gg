@@ -1,37 +1,30 @@
 import { render, screen } from "@testing-library/react";
-import CoachingPage from "../page";
+import { CoachingHub } from "../coaching-hub";
 
-describe("CoachingPage", () => {
-  it("renders the page title", () => {
-    render(<CoachingPage />);
+// The coaching page is an async Server Component that calls Supabase and
+// feature-flag helpers — it cannot be rendered synchronously in Jest.
+// Tests for the gate logic belong in check-flag.test.ts.
+// Here we test the CoachingHub component directly.
+
+describe("CoachingHub", () => {
+  it("renders the coaching heading", () => {
+    render(<CoachingHub />);
     expect(
       screen.getByRole("heading", { name: "Coaching" })
     ).toBeInTheDocument();
   });
 
-  it("displays under construction badge", () => {
-    render(<CoachingPage />);
-    expect(screen.getByText("Under Construction")).toBeInTheDocument();
-  });
-
-  it("displays feature description", () => {
-    render(<CoachingPage />);
+  it("displays the welcome description", () => {
+    render(<CoachingHub />);
     expect(
-      screen.getByText(/Find and connect with coaches who know the meta/i)
+      screen.getByText(/Find experienced coaches who know the meta/i)
     ).toBeInTheDocument();
   });
 
-  it("renders feature bullets", () => {
-    render(<CoachingPage />);
+  it("mentions personalized guidance", () => {
+    render(<CoachingHub />);
     expect(
-      screen.getByText("Coaches identified by badge in the player directory")
+      screen.getByText(/personalized guidance/i)
     ).toBeInTheDocument();
-  });
-
-  it("renders back to home link", () => {
-    render(<CoachingPage />);
-    const backLink = screen.getByRole("link", { name: /Back to Home/i });
-    expect(backLink).toBeInTheDocument();
-    expect(backLink).toHaveAttribute("href", "/");
   });
 });

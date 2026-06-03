@@ -101,7 +101,7 @@ infra/
 | Auth               | Supabase Auth                  | Email/password + OAuth (X, Discord, Twitch, Bluesky)            |
 | Database           | Supabase (PostgreSQL)          | Row Level Security with auth.uid()                              |
 | Edge Functions     | Supabase Edge Functions        | Deno runtime                                                    |
-| Social/Identity    | AT Protocol (Bluesky)          | Decentralized identity and federation                           |
+| Social/Identity    | AT Protocol (Bluesky)          | Decentralized identity (handles, PDS); social features deprioritized |
 | React Compiler     | React Compiler                 | Auto-memoization — do NOT manually use useMemo/useCallback/memo |
 | Validation         | Zod via `@trainers/validators` | Shared schemas for forms, Server Actions, edge functions        |
 | Client State (Web) | TanStack Query v5              | Cache, mutations, optimistic updates                            |

@@ -7,9 +7,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ChevronRight,
   Filter,
-  PanelLeftClose,
   PanelLeftOpen,
-  Search,
   Sparkles,
   Swords,
   Zap,
@@ -32,8 +30,13 @@ import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { AbilityCell } from "./ability-cell";
+import { FilterDialogShell } from "./filter-dialog-shell";
 import { RolePresetsPanel } from "./role-presets-panel";
-import { getRolesForMove, getRolesForSpecies, type RoleId } from "./role-registry";
+import {
+  getRolesForMove,
+  getRolesForSpecies,
+  type RoleId,
+} from "./role-registry";
 import {
   DEFAULT_SPECIES_FILTERS,
   type SpeciesFilterState,
@@ -49,7 +52,6 @@ import { STAT_HEADER_COLORS } from "./stat-header-colors";
 
 /** Stat threshold for the "high stat" highlight (matches the spec's 110+). */
 const HIGH_STAT_THRESHOLD = 110;
-
 
 /**
  * Shared Tailwind grid template for each data row.
@@ -213,7 +215,6 @@ function SortHeaderButton({
   );
 }
 
-
 // =============================================================================
 // SpeciesRow — one rich row in the picker
 // =============================================================================
@@ -291,7 +292,9 @@ function SpeciesRow({
         {/* Expand/collapse chevron */}
         <button
           type="button"
-          aria-label={isExpanded ? `Collapse ${entry.species}` : `Expand ${entry.species}`}
+          aria-label={
+            isExpanded ? `Collapse ${entry.species}` : `Expand ${entry.species}`
+          }
           aria-expanded={isExpanded}
           aria-controls={`panel-${entry.species}`}
           onClick={(e) => {
@@ -507,7 +510,11 @@ function CollapsedSidebarStrip({
   const roleCount = filters.roles.length;
   const abilityCount = filters.abilities.length;
   const totalActive =
-    typeCount + moveCount + roleCount + abilityCount + (filters.megaOnly ? 1 : 0);
+    typeCount +
+    moveCount +
+    roleCount +
+    abilityCount +
+    (filters.megaOnly ? 1 : 0);
 
   return (
     <div className="bg-muted/50 flex h-full flex-col items-center gap-1 py-2">
@@ -567,7 +574,11 @@ function CollapsedSidebarStrip({
       <button
         type="button"
         onClick={onExpand}
-        aria-label={abilityCount > 0 ? `${abilityCount} ability filter${abilityCount > 1 ? "s" : ""} — expand sidebar` : "Ability filter — expand sidebar"}
+        aria-label={
+          abilityCount > 0
+            ? `${abilityCount} ability filter${abilityCount > 1 ? "s" : ""} — expand sidebar`
+            : "Ability filter — expand sidebar"
+        }
         className={cn(
           "relative rounded p-1.5 transition-colors",
           abilityCount > 0
@@ -655,9 +666,6 @@ export function SpeciesPicker({
 
   // Track which species row is expanded (null = none expanded)
   const [expandedSpecies, setExpandedSpecies] = useState<string | null>(null);
-
-  // Sidebar collapsed state
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Scroll container ref for the virtualizer
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -881,27 +889,19 @@ export function SpeciesPicker({
   // ---------------------------------------------------------------------------
 
   return (
-    <div
-      className="bg-popover text-popover-foreground flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl"
+    <FilterDialogShell
       data-testid="species-picker"
-    >
-      {/* -------------------------------------------------------------------- */}
-      {/* Header — search input + count                                         */}
-      {/* -------------------------------------------------------------------- */}
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3">
-        <Search className="text-muted-foreground size-4 shrink-0" />
-        <input
-          type="text"
-          placeholder="Search Pokémon, type, ability, or move…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
-          aria-label="Search species"
-          data-testid="species-search"
-          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
-        />
-        {/* Fixed-width slot reserves space for the filter badge so the search
-            input does not shrink when filters become active (no layout shift). */}
+      search={{
+        value: query,
+        onChange: setQuery,
+        onKeyDown: handleSearchKeyDown,
+        placeholder: "Search Pokémon, type, ability, or move…",
+        ariaLabel: "Search species",
+        "data-testid": "species-search",
+      }}
+      headerCenter={
+        /* Fixed-width slot reserves space for the filter badge so the search
+            input does not shrink when filters become active (no layout shift). */
         <div className="flex w-22 shrink-0 items-center justify-end">
           {activeFilterCount > 0 && (
             <button
@@ -918,243 +918,210 @@ export function SpeciesPicker({
             </button>
           )}
         </div>
+      }
+      headerCount={
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
           {matched.length} of {speciesIndex.length}
         </span>
-      </div>
-
-      {/* -------------------------------------------------------------------- */}
-      {/* 3-column body                                                          */}
-      {/* -------------------------------------------------------------------- */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Left rail — collapsible sidebar with smooth transition.
-            Expanded: full filter panel (sidebar + roles + clear).
-            Collapsed: thin icon strip with filter indicators. */}
-        <div
-          className={cn(
-            "border-border flex flex-shrink-0 flex-col border-r transition-[width] duration-200 ease-in-out",
-            sidebarOpen ? "w-[340px]" : "w-12"
-          )}
-        >
-          {sidebarOpen ? (
-            <>
-              {/* Collapse toggle — top of expanded sidebar */}
-              <div className="border-border flex shrink-0 items-center justify-between border-b px-3 py-1.5">
-                <span className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
-                  Filters
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSidebarOpen(false)}
-                  aria-label="Collapse filter sidebar"
-                  className="text-muted-foreground hover:text-foreground -mr-1 rounded p-0.5 transition-colors"
-                >
-                  <PanelLeftClose className="size-4" />
-                </button>
-              </div>
-
-              <div className="min-h-0 overflow-y-auto">
-                <SpeciesSidebar
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  format={format}
-                  currentTeam={currentTeam}
-                />
-              </div>
-              <div className="bg-muted/20 border-border min-h-0 flex-1 overflow-y-auto border-t">
-                <RolePresetsPanel
-                  selected={filters.roles}
-                  onChange={(next) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      roles: next,
-                    }))
-                  }
-                  bucketCount={bucketCount}
-                />
-              </div>
-
-              {/* Clear all filters — pinned at bottom of left rail */}
-              <div className="border-border shrink-0 border-t px-3 py-2">
-                <button
-                  type="button"
-                  onClick={clearAllFilters}
-                  className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full rounded px-2 py-1.5 text-xs font-medium transition-colors"
-                >
-                  Clear all filters
-                </button>
-              </div>
-            </>
-          ) : (
-            <CollapsedSidebarStrip
+      }
+      rail={
+        <>
+          <div className="min-h-0 overflow-y-auto">
+            <SpeciesSidebar
               filters={filters}
-              onExpand={() => setSidebarOpen(true)}
+              onFiltersChange={setFilters}
+              format={format}
+              currentTeam={currentTeam}
             />
-          )}
-        </div>
-
-        {/* Right — table (always rendered, filtered by query). When the
-            query is non-empty the SpeciesSmartSearch panel renders above
-            the table to offer "promote query into structured filter"
-            shortcuts (Type / Moves / Abilities). Pokémon matches stay in
-            the table below as full rich rows — they are not duplicated
-            in the smart-search panel. */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <div
-            ref={scrollRef}
-            className="relative flex-1 overflow-x-hidden overflow-y-auto"
-            data-testid="species-rows"
-          >
-            {/* Smart-search banner scrolls UP with the content as you move
+          </div>
+          <div className="bg-muted/20 border-border min-h-0 flex-1 overflow-y-auto border-t">
+            <RolePresetsPanel
+              selected={filters.roles}
+              onChange={(next) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  roles: next,
+                }))
+              }
+              bucketCount={bucketCount}
+            />
+          </div>
+        </>
+      }
+      railFooter={
+        <button
+          type="button"
+          onClick={clearAllFilters}
+          className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full rounded px-2 py-1.5 text-xs font-medium transition-colors"
+        >
+          Clear all filters
+        </button>
+      }
+      collapsedStrip={(onExpand) => (
+        <CollapsedSidebarStrip filters={filters} onExpand={onExpand} />
+      )}
+    >
+      {/* Right — table (always rendered, filtered by query). When the
+          query is non-empty the SpeciesSmartSearch panel renders above
+          the table to offer "promote query into structured filter"
+          shortcuts (Type / Moves / Abilities). Pokémon matches stay in
+          the table below as full rich rows — they are not duplicated
+          in the smart-search panel. */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div
+          ref={scrollRef}
+          className="relative flex-1 overflow-x-hidden overflow-y-auto"
+          data-testid="species-rows"
+        >
+          {/* Smart-search banner scrolls UP with the content as you move
                 through results. The virtualizer's `scrollMargin` accounts
                 for the banner + sticky header height (measured via
                 virtualParentRef.offsetTop), so top species rows stay
                 mounted even when the banner is partly visible. */}
-            {showSmartSearch && (
+          {showSmartSearch && (
+            <div
+              className="border-border border-b"
+              data-testid="smart-search-container"
+            >
+              <SpeciesSmartSearch
+                query={query}
+                index={speciesIndex}
+                format={format}
+                onFilter={handleSmartFilter}
+              />
+            </div>
+          )}
+
+          <div>
+            {/* Sticky sortable header */}
+            <div
+              className={cn(
+                "bg-card sticky top-0 z-20 grid items-center gap-2 border-b px-4 py-2 text-xs font-semibold tracking-wider uppercase",
+                ROW_GRID
+              )}
+              role="row"
+            >
+              <span aria-hidden="true" />
+              <span aria-hidden="true" />
+              <SortHeaderButton
+                col="name"
+                label="Name"
+                align="left"
+                sort={sort}
+                onSort={handleSort}
+              />
+              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
+                Types
+              </span>
+              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
+                Abilities
+              </span>
+              <SortHeaderButton
+                col="hp"
+                label="HP"
+                align="center"
+                sort={sort}
+                onSort={handleSort}
+                colorClass={STAT_HEADER_COLORS.hp}
+              />
+              <SortHeaderButton
+                col="atk"
+                label="ATK"
+                align="center"
+                sort={sort}
+                onSort={handleSort}
+                colorClass={STAT_HEADER_COLORS.atk}
+              />
+              <SortHeaderButton
+                col="def"
+                label="DEF"
+                align="center"
+                sort={sort}
+                onSort={handleSort}
+                colorClass={STAT_HEADER_COLORS.def}
+              />
+              <SortHeaderButton
+                col="spa"
+                label="SPA"
+                align="center"
+                sort={sort}
+                onSort={handleSort}
+                colorClass={STAT_HEADER_COLORS.spa}
+              />
+              <SortHeaderButton
+                col="spd"
+                label="SPD"
+                align="center"
+                sort={sort}
+                onSort={handleSort}
+                colorClass={STAT_HEADER_COLORS.spd}
+              />
+              <SortHeaderButton
+                col="spe"
+                label="SPE"
+                align="center"
+                sort={sort}
+                onSort={handleSort}
+                colorClass={STAT_HEADER_COLORS.spe}
+              />
+              <SortHeaderButton
+                col="bst"
+                label="BST"
+                align="center"
+                sort={sort}
+                onSort={handleSort}
+              />
+              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
+                Moves
+              </span>
+            </div>
+
+            {matched.length === 0 ? (
+              <div className="text-muted-foreground py-12 text-center text-sm">
+                No Pokémon match your filters. Try broadening your search.
+              </div>
+            ) : (
               <div
-                className="border-border border-b"
-                data-testid="smart-search-container"
+                ref={virtualParentRef}
+                className="relative w-full"
+                style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                }}
               >
-                <SpeciesSmartSearch
-                  query={query}
-                  index={speciesIndex}
-                  format={format}
-                  onFilter={handleSmartFilter}
-                />
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const entry = matched[virtualRow.index];
+                  if (!entry) return null;
+                  return (
+                    <div
+                      key={virtualRow.key}
+                      ref={rowVirtualizer.measureElement}
+                      data-index={virtualRow.index}
+                      className="absolute right-0 left-0"
+                      style={{ top: virtualRow.start - scrollMargin }}
+                    >
+                      <SpeciesRow
+                        entry={entry}
+                        isCurrent={entry.species === value}
+                        isExpanded={entry.species === expandedSpecies}
+                        formatId={format?.id ?? DEFAULT_FORMAT_ID}
+                        filteredMoves={filters.moves}
+                        filteredRoles={filters.roles}
+                        onSelect={() => onPick(entry.species)}
+                        onToggleExpand={() =>
+                          setExpandedSpecies((prev) =>
+                            prev === entry.species ? null : entry.species
+                          )
+                        }
+                        onFilterAbility={handleAbilityFilter}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
-
-            <div>
-              {/* Sticky sortable header */}
-              <div
-                className={cn(
-                  "bg-card sticky top-0 z-20 grid items-center gap-2 border-b px-4 py-2 text-xs font-semibold tracking-wider uppercase",
-                  ROW_GRID
-                )}
-                role="row"
-              >
-                <span aria-hidden="true" />
-                <span aria-hidden="true" />
-                <SortHeaderButton
-                  col="name"
-                  label="Name"
-                  align="left"
-                  sort={sort}
-                  onSort={handleSort}
-                />
-                <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
-                  Types
-                </span>
-                <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
-                  Abilities
-                </span>
-                <SortHeaderButton
-                  col="hp"
-                  label="HP"
-                  align="center"
-                  sort={sort}
-                  onSort={handleSort}
-                  colorClass={STAT_HEADER_COLORS.hp}
-                />
-                <SortHeaderButton
-                  col="atk"
-                  label="ATK"
-                  align="center"
-                  sort={sort}
-                  onSort={handleSort}
-                  colorClass={STAT_HEADER_COLORS.atk}
-                />
-                <SortHeaderButton
-                  col="def"
-                  label="DEF"
-                  align="center"
-                  sort={sort}
-                  onSort={handleSort}
-                  colorClass={STAT_HEADER_COLORS.def}
-                />
-                <SortHeaderButton
-                  col="spa"
-                  label="SPA"
-                  align="center"
-                  sort={sort}
-                  onSort={handleSort}
-                  colorClass={STAT_HEADER_COLORS.spa}
-                />
-                <SortHeaderButton
-                  col="spd"
-                  label="SPD"
-                  align="center"
-                  sort={sort}
-                  onSort={handleSort}
-                  colorClass={STAT_HEADER_COLORS.spd}
-                />
-                <SortHeaderButton
-                  col="spe"
-                  label="SPE"
-                  align="center"
-                  sort={sort}
-                  onSort={handleSort}
-                  colorClass={STAT_HEADER_COLORS.spe}
-                />
-                <SortHeaderButton
-                  col="bst"
-                  label="BST"
-                  align="center"
-                  sort={sort}
-                  onSort={handleSort}
-                />
-                <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
-                  Moves
-                </span>
-              </div>
-
-              {matched.length === 0 ? (
-                <div className="text-muted-foreground py-12 text-center text-sm">
-                  No Pokémon match your filters. Try broadening your search.
-                </div>
-              ) : (
-                <div
-                  ref={virtualParentRef}
-                  className="relative w-full"
-                  style={{
-                    height: `${rowVirtualizer.getTotalSize()}px`,
-                  }}
-                >
-                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                    const entry = matched[virtualRow.index];
-                    if (!entry) return null;
-                    return (
-                      <div
-                        key={virtualRow.key}
-                        ref={rowVirtualizer.measureElement}
-                        data-index={virtualRow.index}
-                        className="absolute right-0 left-0"
-                        style={{ top: virtualRow.start - scrollMargin }}
-                      >
-                        <SpeciesRow
-                          entry={entry}
-                          isCurrent={entry.species === value}
-                          isExpanded={entry.species === expandedSpecies}
-                          formatId={format?.id ?? DEFAULT_FORMAT_ID}
-                          filteredMoves={filters.moves}
-                          filteredRoles={filters.roles}
-                          onSelect={() => onPick(entry.species)}
-                          onToggleExpand={() =>
-                            setExpandedSpecies((prev) =>
-                              prev === entry.species ? null : entry.species
-                            )
-                          }
-                          onFilterAbility={handleAbilityFilter}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
-    </div>
+    </FilterDialogShell>
   );
 }

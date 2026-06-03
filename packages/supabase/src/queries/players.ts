@@ -1,5 +1,6 @@
 import type { TypedClient } from "../client";
 import { escapeLike } from "@trainers/utils";
+import { getCoachBadges, type CoachBadgeInfo } from "./coach";
 
 // ============================================================================
 // Types
@@ -8,6 +9,13 @@ import { escapeLike } from "@trainers/utils";
 /** A player card entry for the directory grid */
 export type PlayerDirectoryEntry = {
   userId: string;
+  /**
+   * Primary (first) alt id for this user. Used to resolve coach-badge
+   * visibility via getCoachBadges — callers must run that lookup OUTSIDE any
+   * unstable_cache (it is gated on the global coaching flag and per-user coach
+   * status, neither of which busts the directory cache tag).
+   */
+  altId: number | null;
   username: string;
   avatarUrl: string | null;
   country: string | null;
@@ -15,6 +23,12 @@ export type PlayerDirectoryEntry = {
   winRate: number;
   totalWins: number;
   totalLosses: number;
+  /**
+   * Coach-badge visibility for this entry's primary alt. Populated by the
+   * caller after searchPlayers (never inside the cache). Privacy-safe: only
+   * a boolean + the public canonical handle, never is_coach or user_id.
+   */
+  coachBadge?: CoachBadgeInfo;
 };
 
 /** Paginated search result */
@@ -326,6 +340,7 @@ export async function searchPlayers(
 
     return {
       userId: user.id,
+      altId: alt?.altId ?? null,
       username: alt?.username ?? user.username ?? "Unknown",
       avatarUrl: alt?.avatarUrl ?? null,
       country: user.country,
@@ -510,5 +525,37 @@ export async function getNewMembers(
       avatarUrl: alt?.avatarUrl ?? null,
       joinedAt: user.created_at ?? new Date().toISOString(),
     };
+  });
+}
+
+/**
+ * Attach coach-badge visibility to a list of directory entries.
+ *
+ * MUST be called OUTSIDE any unstable_cache: getCoachBadges is gated on the
+ * global coaching flag and per-user coach status, neither of which busts the
+ * directory cache tag — caching the result would serve stale badges. The
+ * underlying SQL function is privacy-safe (returns only a boolean + the public
+ * canonical handle, never is_coach or user_id), so this is safe on any client.
+ *
+ * Returns a new array; entries with no primary alt id are passed through
+ * unchanged. Resolution is account-level: the badge handle is the coach's
+ * canonical (main-alt) username, and the badge only shows when that primary
+ * alt is public and the account is a coach.
+ */
+export async function attachCoachBadges(
+  supabase: TypedClient,
+  entries: PlayerDirectoryEntry[]
+): Promise<PlayerDirectoryEntry[]> {
+  const altIds = entries
+    .map((e) => e.altId)
+    .filter((id): id is number => id != null);
+
+  if (altIds.length === 0) return entries;
+
+  const badges = await getCoachBadges(supabase, altIds);
+
+  return entries.map((entry) => {
+    const badge = entry.altId != null ? badges.get(entry.altId) : undefined;
+    return badge ? { ...entry, coachBadge: badge } : entry;
   });
 }
