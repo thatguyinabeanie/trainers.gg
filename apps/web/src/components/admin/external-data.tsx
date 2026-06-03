@@ -8,6 +8,8 @@ import {
   ArrowUp,
   ArrowUpDown,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
   CloudDownload,
   Download,
@@ -52,62 +54,11 @@ import {
 } from "@/actions/limitless";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
 import { normalizeLimitlessStatus } from "./limitless-status";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface RK9EventRow {
-  event_id: string;
-  name: string;
-  tier: string;
-  format_id: string | null;
-  date_start: string;
-  date_end: string | null;
-  location_city: string | null;
-  location_country: string | null;
-  player_count: number | null;
-  has_team_lists: boolean;
-  import_status: string;
-  import_error: string | null;
-}
-
-interface LimitlessTournamentRow {
-  tournament_id: string;
-  name: string;
-  format_id: string;
-  date: string;
-  player_count: number;
-  platform: string | null;
-  is_online: boolean;
-  decklists: boolean;
-  data_imported_at: string | null;
-  import_status: string | null;
-  import_requested_at: string | null;
-  import_error: string | null;
-  import_attempts: number | null;
-}
-
-// Unified row that merges both sources
-interface UnifiedRow {
-  id: string;
-  source: "rk9" | "limitless";
-  name: string;
-  category: string; // tier for RK9, format code for Limitless
-  date: string;
-  playerCount: number | null;
-  status: string; // normalized status
-  statusDetail: string; // original status for display
-  error: string | null;
-  // Filterable extras
-  platform: string | null; // "SWITCH" | "SIM" (Limitless only)
-  isOnline: boolean | null; // Limitless only
-  hasData: boolean; // has_team_lists (RK9) or decklists (Limitless)
-  country: string | null; // RK9 location_country
-  // Source-specific extras
-  rk9?: RK9EventRow;
-  limitless?: LimitlessTournamentRow;
-}
+import type {
+  RK9EventRow,
+  LimitlessTournamentRow,
+  UnifiedRow,
+} from "./external-data-shared";
 
 type PlatformFilter = "all" | "SWITCH" | "SIM";
 type HasDataFilter = "all" | "yes" | "no";
@@ -148,6 +99,9 @@ interface LimitlessFilterState {
   minPlayers: string;
   hasData: HasDataFilter;
 }
+
+// Sentinel for render-time tab-change reset (avoids useEffect for derived state)
+const UNINITIALIZED = Symbol();
 
 const INITIAL_RK9_FILTERS: RK9FilterState = {
   search: "",
@@ -270,6 +224,18 @@ function compareValues(
 export function ExternalData() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<"rk9" | "limitless">("limitless");
+
+  // Expanded row state
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+
+  // Render-time tab-change reset — collapses any open row when switching tabs
+  const [prevTab, setPrevTab] = useState<typeof activeTab | symbol>(
+    UNINITIALIZED
+  );
+  if (activeTab !== prevTab) {
+    setPrevTab(activeTab);
+    setExpandedRowId(null);
+  }
 
   // Per-tab filter state
   const [rk9Filters, setRk9Filters] =
@@ -1811,15 +1777,18 @@ export function ExternalData() {
                           },
                         ]
                       : [];
+                const isExpandable =
+                  row.source === "rk9"
+                    ? ["roster", "teams", "complete"].includes(
+                        row.rk9!.import_status
+                      )
+                    : row.limitless!.data_imported_at !== null;
                 return (
                   <div
                     key={row.id}
                     ref={rowVirtualizer.measureElement}
                     data-index={virtualRow.index}
-                    className={cn(
-                      "hover:bg-muted/50 grid grid-cols-12 border-b transition-colors",
-                      isUpcomingRow && "opacity-60"
-                    )}
+                    className="border-b"
                     style={{
                       position: "absolute",
                       top: 0,
@@ -1830,106 +1799,143 @@ export function ExternalData() {
                   >
                     <div
                       className={cn(
-                        "min-w-0 p-2",
-                        activeTab === "limitless" ? "col-span-3" : "col-span-4"
+                        "grid grid-cols-12 hover:bg-muted/50 transition-colors",
+                        isUpcomingRow && "opacity-60"
                       )}
                     >
-                      <div className="flex items-center gap-1.5">
-                        <a
-                          href={externalUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="truncate text-sm font-medium hover:underline"
-                        >
-                          {row.name}
-                        </a>
-                        <a
-                          href={externalUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground shrink-0"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      </div>
-                      {row.rk9?.location_city && (
-                        <p className="text-muted-foreground truncate text-xs">
-                          {row.rk9.location_city}
-                          {row.rk9.location_country
-                            ? `, ${row.rk9.location_country}`
-                            : ""}
-                        </p>
-                      )}
-                      {subLinks.length > 0 && (
-                        <div className="mt-0.5 flex items-center gap-2 text-xs">
-                          {subLinks.map((link) => (
-                            <a
-                              key={link.label}
-                              href={link.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-muted-foreground hover:text-foreground hover:underline"
+                      <div
+                        className={cn(
+                          "min-w-0 p-2",
+                          activeTab === "limitless"
+                            ? "col-span-3"
+                            : "col-span-4"
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          {isExpandable && (
+                            <button
+                              className="flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-muted"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedRowId(
+                                  expandedRowId === row.id ? null : row.id
+                                );
+                              }}
+                              aria-label={
+                                expandedRowId === row.id
+                                  ? "Collapse"
+                                  : "Expand"
+                              }
                             >
-                              {link.label}
-                            </a>
-                          ))}
+                              {expandedRowId === row.id ? (
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              ) : (
+                                <ChevronRight className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          )}
+                          <a
+                            href={externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="truncate text-sm font-medium hover:underline"
+                          >
+                            {row.name}
+                          </a>
+                          <a
+                            href={externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground shrink-0"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </div>
+                        {row.rk9?.location_city && (
+                          <p className="text-muted-foreground truncate text-xs">
+                            {row.rk9.location_city}
+                            {row.rk9.location_country
+                              ? `, ${row.rk9.location_country}`
+                              : ""}
+                          </p>
+                        )}
+                        {subLinks.length > 0 && (
+                          <div className="mt-0.5 flex items-center gap-2 text-xs">
+                            {subLinks.map((link) => (
+                              <a
+                                key={link.label}
+                                href={link.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-foreground hover:underline"
+                              >
+                                {link.label}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        {row.error && (
+                          <p className="mt-0.5 truncate text-xs text-red-500">
+                            {row.error}
+                          </p>
+                        )}
+                      </div>
+                      <div className="col-span-2 flex items-center p-2">
+                        <Badge
+                          variant="secondary"
+                          className="truncate text-xs capitalize"
+                        >
+                          {row.category}
+                        </Badge>
+                      </div>
+                      <div className="col-span-2 flex items-center p-2 text-sm whitespace-nowrap">
+                        {row.date}
+                      </div>
+                      <div className="col-span-1 flex items-center p-2 text-sm whitespace-nowrap">
+                        {row.playerCount ?? "—"}
+                      </div>
+                      <div className="col-span-2 flex items-center p-2">
+                        <StatusBadge row={row} activeJobs={activeJobs} />
+                      </div>
+                      {activeTab === "limitless" && (
+                        <div className="col-span-1 flex items-center p-2">
+                          {row.status === "queued" &&
+                            row.limitless?.import_requested_at && (
+                              <span className="text-muted-foreground text-xs whitespace-nowrap">
+                                {formatRelativeTime(
+                                  row.limitless.import_requested_at
+                                )}
+                              </span>
+                            )}
+                          {row.status === "importing" &&
+                            row.limitless?.import_requested_at && (
+                              <span className="text-xs whitespace-nowrap text-blue-600 dark:text-blue-400">
+                                started{" "}
+                                {formatRelativeTime(
+                                  row.limitless.import_requested_at
+                                )}
+                              </span>
+                            )}
                         </div>
                       )}
-                      {row.error && (
-                        <p className="mt-0.5 truncate text-xs text-red-500">
-                          {row.error}
-                        </p>
-                      )}
+                      <div className="col-span-1 flex items-center justify-end p-2">
+                        <RowActions
+                          row={row}
+                          activeJobs={activeJobs}
+                          queuingIds={queuingIds}
+                          batchQueuing={batchQueuing}
+                          onScrapeRoster={handleScrapeRoster}
+                          onScrapeTeams={handleScrapeTeams}
+                          onQueueOne={handleQueueOne}
+                        />
+                      </div>
                     </div>
-                    <div className="col-span-2 flex items-center p-2">
-                      <Badge
-                        variant="secondary"
-                        className="truncate text-xs capitalize"
-                      >
-                        {row.category}
-                      </Badge>
-                    </div>
-                    <div className="col-span-2 flex items-center p-2 text-sm whitespace-nowrap">
-                      {row.date}
-                    </div>
-                    <div className="col-span-1 flex items-center p-2 text-sm whitespace-nowrap">
-                      {row.playerCount ?? "—"}
-                    </div>
-                    <div className="col-span-2 flex items-center p-2">
-                      <StatusBadge row={row} activeJobs={activeJobs} />
-                    </div>
-                    {activeTab === "limitless" && (
-                      <div className="col-span-1 flex items-center p-2">
-                        {row.status === "queued" &&
-                          row.limitless?.import_requested_at && (
-                            <span className="text-muted-foreground text-xs whitespace-nowrap">
-                              {formatRelativeTime(
-                                row.limitless.import_requested_at
-                              )}
-                            </span>
-                          )}
-                        {row.status === "importing" &&
-                          row.limitless?.import_requested_at && (
-                            <span className="text-xs whitespace-nowrap text-blue-600 dark:text-blue-400">
-                              started{" "}
-                              {formatRelativeTime(
-                                row.limitless.import_requested_at
-                              )}
-                            </span>
-                          )}
+                    {expandedRowId === row.id && (
+                      <div className="border-t bg-muted/20 p-4 text-sm text-muted-foreground">
+                        {/* placeholder — will be replaced with <ExpandedRowData> in Task D */}
+                        Expanded: {row.id}
                       </div>
                     )}
-                    <div className="col-span-1 flex items-center justify-end p-2">
-                      <RowActions
-                        row={row}
-                        activeJobs={activeJobs}
-                        queuingIds={queuingIds}
-                        batchQueuing={batchQueuing}
-                        onScrapeRoster={handleScrapeRoster}
-                        onScrapeTeams={handleScrapeTeams}
-                        onQueueOne={handleQueueOne}
-                      />
-                    </div>
                   </div>
                 );
               })}
