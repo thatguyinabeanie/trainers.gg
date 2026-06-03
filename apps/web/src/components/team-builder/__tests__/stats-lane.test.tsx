@@ -509,9 +509,9 @@ describe("StatsLane", () => {
 
     const calls = onUpdate.mock.calls.map((c) => c[0]);
     // Nature is some +Atk nature whose −stat is NOT specialAttack
-    const natureCall = calls.find(
-      (c) => typeof c.nature === "string"
-    ) as { nature?: string } | undefined;
+    const natureCall = calls.find((c) => typeof c.nature === "string") as
+      | { nature?: string }
+      | undefined;
     expect(natureCall?.nature).toBeDefined();
     expect(natureCall?.nature).not.toBe("Adamant"); // Adamant = +Atk / −SpA — would be a flip
   });
@@ -661,13 +661,10 @@ describe("ghost mode (pokemon: null)", () => {
   // ---------------------------------------------------------------------------
   // 2. Root container has correct style and className
   // ---------------------------------------------------------------------------
-  it("root container has the fluid + container-query width classes and expected className", () => {
+  it("root container has the expected layout classes", () => {
     const { container } = render(<StatsLane pokemon={null} />);
     const root = container.firstElementChild as HTMLElement;
     expect(root).toBeTruthy();
-    // Width is now driven by Tailwind: w-full at narrow widths,
-    // 2xl:w-[400px] at wide viewports.
-    expect(root.className).toContain("2xl:w-[400px]");
     expect(root.className).toContain("border-dashed");
     expect(root.className).toContain("flex-col");
   });

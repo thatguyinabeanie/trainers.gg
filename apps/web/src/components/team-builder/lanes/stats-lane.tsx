@@ -30,7 +30,10 @@ import {
   getStatBudget,
   type StatBudget,
 } from "../calc-stat-helpers";
-import { useCalcEnabled, useCalcStateContext } from "../calc/calc-state-context";
+import {
+  useCalcEnabled,
+  useCalcStateContext,
+} from "../calc/calc-state-context";
 import { formatSupportsIvs } from "../format-gating";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { Slider } from "@/components/ui/slider";
@@ -571,11 +574,11 @@ function StatRow({
       className={cn(
         showIv
           ? showBoostCol
-            ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-            : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+            ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
+            : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] items-center gap-1.5 rounded px-1 py-0.5"
           : showBoostCol
-            ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-            : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+            ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
+            : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] items-center gap-1.5 rounded px-1 py-0.5",
         statColorClass
       )}
     >
@@ -600,7 +603,11 @@ function StatRow({
         }}
         disabled={statKey === "hp"}
         aria-label={statKey !== "hp" ? `Cycle nature for ${label}` : undefined}
-        className={cn("text-xs font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px", labelTextClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
+        className={cn(
+          "flex items-center gap-px text-left font-mono text-xs font-semibold tracking-[0.06em] whitespace-nowrap uppercase",
+          labelTextClass,
+          statKey !== "hp" && "cursor-pointer hover:opacity-70"
+        )}
       >
         {label}
         <span className="inline-block w-3 text-xs leading-none">
@@ -610,7 +617,13 @@ function StatRow({
       </button>
 
       {/* Col 2: Base stat number, muted mono */}
-      <span className={"font-mono text-xs text-muted-foreground text-right tabular-nums"}>{base}</span>
+      <span
+        className={
+          "text-muted-foreground text-right font-mono text-xs tabular-nums"
+        }
+      >
+        {base}
+      </span>
 
       {/* Col 3: Read-only viz bar (solid base + striped invest).
        * `bg-current` so both layers inherit the stat-key color from the row. */}
@@ -647,7 +660,12 @@ function StatRow({
        * Stat-key color is on the row, so the thumb (background: currentColor)
        * and the bump rings (border: currentColor) inherit it from the row. */}
       <div className={"relative h-3.5"}>
-        <div className={"absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none"} aria-hidden />
+        <div
+          className={
+            "bg-muted-foreground/40 pointer-events-none absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full"
+          }
+          aria-hidden
+        />
         <Slider
           min={0}
           max={budget.perStat}
@@ -710,7 +728,9 @@ function StatRow({
       )}
 
       {/* Col 6/7: Final stat, mono bold */}
-      <span className={"font-mono text-xs font-bold text-right tabular-nums"}>{liveFinalStat}</span>
+      <span className={"text-right font-mono text-xs font-bold tabular-nums"}>
+        {liveFinalStat}
+      </span>
 
       {/* Boost stepper — only rendered when calc is active and stat is not HP */}
       {showBoostCol && boost !== undefined && onBoostChange && (
@@ -719,13 +739,13 @@ function StatRow({
             type="button"
             aria-label={`Decrease ${STAT_LABELS[statKey]} boost`}
             onClick={() => onBoostChange(Math.max(-6, boost - 1))}
-            className="size-4 rounded text-xs font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-4 items-center justify-center rounded text-xs font-bold"
           >
             −
           </button>
           <span
             className={cn(
-              "font-mono text-xs font-semibold tabular-nums w-5 text-center",
+              "w-5 text-center font-mono text-xs font-semibold tabular-nums",
               boost > 0 && "text-teal-600 dark:text-teal-400",
               boost < 0 && "text-rose-600 dark:text-rose-400",
               boost === 0 && "text-muted-foreground"
@@ -737,7 +757,7 @@ function StatRow({
             type="button"
             aria-label={`Increase ${STAT_LABELS[statKey]} boost`}
             onClick={() => onBoostChange(Math.min(6, boost + 1))}
-            className="size-4 rounded text-xs font-bold flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-4 items-center justify-center rounded text-xs font-bold"
           >
             +
           </button>
@@ -802,20 +822,25 @@ export function StatsLane({
 
   if (!pokemon) {
     return (
-      <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-3 2xl:w-[400px] transition-[padding,flex] duration-300 ease-in-out", borderRight && "border-r border-dashed", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
-
-
+      <div
+        className={cn(
+          "border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-6 transition-[padding,flex] duration-300 ease-in-out",
+          borderRight && "border-r border-dashed",
+          calcEnabled ? "w-full shrink-0" : "flex-1",
+          "py-1"
+        )}
+      >
         {/* Column headers — same structure as real but dimmed */}
         <div
           className={cn(
             "mb-0.5 py-0",
             showIv
               ? calcEnabled
-                ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-                : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
+                : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] items-center gap-1.5 rounded px-1 py-0.5"
               : calcEnabled
-                ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-                : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
+                : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] items-center gap-1.5 rounded px-1 py-0.5"
           )}
         >
           <span />
@@ -843,25 +868,55 @@ export function StatsLane({
             className={cn(
               showIv
                 ? calcEnabled
-                  ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-                  : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+                  ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
+                  : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] items-center gap-1.5 rounded px-1 py-0.5"
                 : calcEnabled
-                  ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-                  : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+                  ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
+                  : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] items-center gap-1.5 rounded px-1 py-0.5",
               colorClass
             )}
           >
-            <span className={cn("text-xs font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px", "opacity-30")}>{label}</span>
-            <span className={cn("font-mono text-xs text-muted-foreground text-right tabular-nums", "opacity-25")}>—</span>
-            <div className={"h-2 bg-muted rounded-full overflow-hidden relative min-w-0"} />
+            <span
+              className={cn(
+                "flex items-center gap-px text-left font-mono text-xs font-semibold tracking-[0.06em] whitespace-nowrap uppercase",
+                "opacity-30"
+              )}
+            >
+              {label}
+            </span>
+            <span
+              className={cn(
+                "text-muted-foreground text-right font-mono text-xs tabular-nums",
+                "opacity-25"
+              )}
+            >
+              —
+            </span>
+            <div
+              className={
+                "bg-muted relative h-2 min-w-0 overflow-hidden rounded-full"
+              }
+            />
             <div className="border-border/30 h-5 w-9 rounded border border-dashed" />
             <div className={"relative h-3.5"}>
-              <div className={cn("absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none", "opacity-25")} />
+              <div
+                className={cn(
+                  "bg-muted-foreground/40 pointer-events-none absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full",
+                  "opacity-25"
+                )}
+              />
             </div>
             {showIv && (
               <div className="border-border/30 h-5 w-10 rounded border border-dashed" />
             )}
-            <span className={cn("font-mono text-xs font-bold text-right tabular-nums", "opacity-25")}>—</span>
+            <span
+              className={cn(
+                "text-right font-mono text-xs font-bold tabular-nums",
+                "opacity-25"
+              )}
+            >
+              —
+            </span>
             {calcEnabled && <span />}
           </div>
         ))}
@@ -908,18 +963,25 @@ export function StatsLane({
   );
 
   return (
-    <div className={cn("border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-3 2xl:w-[400px] transition-[padding,flex] duration-300 ease-in-out", borderRight && "border-r border-dashed", calcEnabled ? "w-full shrink-0" : "flex-1", "py-1")}>
+    <div
+      className={cn(
+        "border-border/60 flex min-w-0 flex-col justify-center gap-0.5 px-6 transition-[padding,flex] duration-300 ease-in-out",
+        borderRight && "border-r border-dashed",
+        calcEnabled ? "w-full shrink-0" : "flex-1",
+        "py-1"
+      )}
+    >
       {/* Column headers */}
       <div
         className={cn(
           "mb-0.5",
           showIv
             ? calcEnabled
-              ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-              : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
+              ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
+              : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] items-center gap-1.5 rounded px-1 py-0.5"
             : calcEnabled
-              ? "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted"
-              : "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted",
+              ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
+              : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] items-center gap-1.5 rounded px-1 py-0.5",
           "py-0"
         )}
       >
@@ -1003,8 +1065,16 @@ export function StatsLane({
               showIv={showIv}
               onUpdate={handleUpdate}
               onLiveEv={handleLiveEv}
-              boost={calcEnabled && boostKey ? calcState.attackerBoosts[boostKey] : undefined}
-              onBoostChange={calcEnabled && boostKey ? (v) => calcState.setAttackerBoost(boostKey, v) : undefined}
+              boost={
+                calcEnabled && boostKey
+                  ? calcState.attackerBoosts[boostKey]
+                  : undefined
+              }
+              onBoostChange={
+                calcEnabled && boostKey
+                  ? (v) => calcState.setAttackerBoost(boostKey, v)
+                  : undefined
+              }
               showBoostCol={calcEnabled}
             />
           );
