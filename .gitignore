@@ -48,6 +48,11 @@ playwright-report/
 # Supabase local
 packages/supabase/supabase/.branches/
 packages/supabase/supabase/.temp/
+# Supabase CLI also writes its linked-project cache + branch state to a
+# sibling .temp/.branches when run from the repo root (see AGENTS.md gotcha:
+# "Always use pnpm supabase from repo root").
+supabase/.branches/
+supabase/.temp/
 
 # Expo
 *.jks
