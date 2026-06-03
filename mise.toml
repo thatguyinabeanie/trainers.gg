@@ -1,7 +1,7 @@
 [env]
 BUN_JSC_forceRAMSize=25769803776
 BUN_JSC_gcMaxHeapSize=17179869184
-UV_PYTHON = { value = "{{ tools.python.path }}", tools = true }
+UV_PYTHON = { value = "{{ tools.python.path | default(value='') }}", tools = true }
 
 [settings]
 experimental = true
@@ -9,7 +9,10 @@ python.uv_venv_auto = "create|source"
 
 [tools]
 node = "22"
-pnpm = "latest"
+# Use npm backend for pnpm because the aqua registry's asset names
+# (pnpm-macos-arm64) are outdated; current pnpm releases ship
+# pnpm-darwin-arm64.tar.gz. npm:pnpm pulls from the npm registry instead.
+"npm:pnpm" = "latest"
 opencode = "latest"
 java = "zulu-21"
 ruby = "3.3"
