@@ -219,55 +219,75 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                             {isExpanded && (
                               <tr>
                                 <td colSpan={5} className="px-2 pb-3">
-                                  <div className="flex flex-wrap gap-2 pt-1">
-                                    {pokemon.map(/* istanbul ignore next */ (p, j) => {
-                                      const sprite = getPokemonSprite(
-                                        p.species ?? ""
-                                      );
-                                      return (
-                                        <div
-                                          key={j}
-                                          className="flex items-start gap-1.5 rounded border bg-background px-2 py-1.5"
-                                        >
-                                          <Image
-                                            src={sprite.url}
-                                            alt={p.species ?? "Pokemon"}
-                                            width={36}
-                                            height={36}
-                                            unoptimized
-                                            style={
-                                              sprite.pixelated
-                                                ? {
-                                                    imageRendering: "pixelated",
-                                                  }
-                                                : undefined
-                                            }
-                                          />
-                                          <div className="text-xs">
-                                            <p className="font-medium">
-                                              {p.species ?? "Unknown"}
-                                            </p>
-                                            <p className="text-muted-foreground">
-                                              {p.ability ?? "—"}
-                                            </p>
-                                            <p className="text-muted-foreground">
-                                              {p.held_item ?? "—"}
-                                            </p>
-                                            {p.tera_type && (
-                                              <p className="text-muted-foreground">
-                                                Tera: {p.tera_type}
-                                              </p>
-                                            )}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                    {pokemon.length === 0 && (
-                                      <p className="text-muted-foreground text-xs">
-                                        No team data
-                                      </p>
-                                    )}
-                                  </div>
+                                  {pokemon.length === 0 ? (
+                                    <p className="text-muted-foreground pt-1 text-xs">
+                                      No team data
+                                    </p>
+                                  ) : (
+                                    <table className="mt-1 w-full text-xs">
+                                      <thead>
+                                        <tr className="border-b text-muted-foreground">
+                                          <th className="py-1 pr-3 text-left font-medium">
+                                            Pokémon
+                                          </th>
+                                          <th className="py-1 pr-3 text-left font-medium">
+                                            Ability
+                                          </th>
+                                          <th className="py-1 pr-3 text-left font-medium">
+                                            Item
+                                          </th>
+                                          <th className="py-1 text-left font-medium">
+                                            Tera
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {pokemon.map(/* istanbul ignore next */ (p, j) => {
+                                          const sprite = getPokemonSprite(
+                                            p.species ?? ""
+                                          );
+                                          return (
+                                            <tr
+                                              key={j}
+                                              className="border-b last:border-0"
+                                            >
+                                              <td className="py-1 pr-3">
+                                                <div className="flex items-center gap-1.5">
+                                                  <Image
+                                                    src={sprite.url}
+                                                    alt={p.species ?? "Pokemon"}
+                                                    width={28}
+                                                    height={28}
+                                                    unoptimized
+                                                    style={
+                                                      sprite.pixelated
+                                                        ? {
+                                                            imageRendering:
+                                                              "pixelated",
+                                                          }
+                                                        : undefined
+                                                    }
+                                                  />
+                                                  <span className="font-medium">
+                                                    {p.species ?? "Unknown"}
+                                                  </span>
+                                                </div>
+                                              </td>
+                                              <td className="py-1 pr-3 text-muted-foreground">
+                                                {p.ability ?? "—"}
+                                              </td>
+                                              <td className="py-1 pr-3 text-muted-foreground">
+                                                {p.held_item ?? "—"}
+                                              </td>
+                                              <td className="py-1 text-muted-foreground">
+                                                {p.tera_type ?? "—"}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  )}
                                 </td>
                               </tr>
                             )}
@@ -340,55 +360,75 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                             {isExpanded && (
                               <tr>
                                 <td colSpan={5} className="px-2 pb-3">
-                                  <div className="flex flex-wrap gap-2 pt-1">
-                                    {pokemon.map(/* istanbul ignore next */ (p, j) => {
-                                      const sprite = getPokemonSprite(
-                                        p.species ?? ""
-                                      );
-                                      return (
-                                        <div
-                                          key={j}
-                                          className="flex items-start gap-1.5 rounded border bg-background px-2 py-1.5"
-                                        >
-                                          <Image
-                                            src={sprite.url}
-                                            alt={p.species ?? "Pokemon"}
-                                            width={36}
-                                            height={36}
-                                            unoptimized
-                                            style={
-                                              sprite.pixelated
-                                                ? {
-                                                    imageRendering: "pixelated",
-                                                  }
-                                                : undefined
-                                            }
-                                          />
-                                          <div className="text-xs">
-                                            <p className="font-medium">
-                                              {p.species ?? "Unknown"}
-                                            </p>
-                                            <p className="text-muted-foreground">
-                                              {p.ability ?? "—"}
-                                            </p>
-                                            <p className="text-muted-foreground">
-                                              {p.held_item ?? "—"}
-                                            </p>
-                                            {p.tera_type && (
-                                              <p className="text-muted-foreground">
-                                                Tera: {p.tera_type}
-                                              </p>
-                                            )}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                    {pokemon.length === 0 && (
-                                      <p className="text-muted-foreground text-xs">
-                                        No team data
-                                      </p>
-                                    )}
-                                  </div>
+                                  {pokemon.length === 0 ? (
+                                    <p className="text-muted-foreground pt-1 text-xs">
+                                      No team data
+                                    </p>
+                                  ) : (
+                                    <table className="mt-1 w-full text-xs">
+                                      <thead>
+                                        <tr className="border-b text-muted-foreground">
+                                          <th className="py-1 pr-3 text-left font-medium">
+                                            Pokémon
+                                          </th>
+                                          <th className="py-1 pr-3 text-left font-medium">
+                                            Ability
+                                          </th>
+                                          <th className="py-1 pr-3 text-left font-medium">
+                                            Item
+                                          </th>
+                                          <th className="py-1 text-left font-medium">
+                                            Tera
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {pokemon.map(/* istanbul ignore next */ (p, j) => {
+                                          const sprite = getPokemonSprite(
+                                            p.species ?? ""
+                                          );
+                                          return (
+                                            <tr
+                                              key={j}
+                                              className="border-b last:border-0"
+                                            >
+                                              <td className="py-1 pr-3">
+                                                <div className="flex items-center gap-1.5">
+                                                  <Image
+                                                    src={sprite.url}
+                                                    alt={p.species ?? "Pokemon"}
+                                                    width={28}
+                                                    height={28}
+                                                    unoptimized
+                                                    style={
+                                                      sprite.pixelated
+                                                        ? {
+                                                            imageRendering:
+                                                              "pixelated",
+                                                          }
+                                                        : undefined
+                                                    }
+                                                  />
+                                                  <span className="font-medium">
+                                                    {p.species ?? "Unknown"}
+                                                  </span>
+                                                </div>
+                                              </td>
+                                              <td className="py-1 pr-3 text-muted-foreground">
+                                                {p.ability ?? "—"}
+                                              </td>
+                                              <td className="py-1 pr-3 text-muted-foreground">
+                                                {p.held_item ?? "—"}
+                                              </td>
+                                              <td className="py-1 text-muted-foreground">
+                                                {p.tera_type ?? "—"}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  )}
                                 </td>
                               </tr>
                             )}
