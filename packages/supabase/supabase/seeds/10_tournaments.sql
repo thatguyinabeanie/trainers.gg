@@ -55,7 +55,7 @@ BEGIN
 Welcome to VGC League''s Week 1 Championship! This is our weekly Swiss + Top Cut tournament open to all skill levels.
 
 ### Rules
-- **Format:** VGC Regulation I on Pokemon Showdown
+- **Format:** Pokemon Champions Reg M-A on Pokemon Showdown
 - **Best of 3** for all matches
 - **Open Team Sheets** — opponents can see your team before the match
 - **50 minute rounds** with 5 minute check-in between rounds
@@ -83,7 +83,7 @@ Good luck, trainers!',
 Welcome to Pallet Town Trainers'' first weekly tournament! Whether you''re a seasoned veteran or just starting your competitive journey, you''re welcome here.
 
 ### Format & Rules
-- **VGC Regulation I** on Pokemon Showdown
+- **Pokemon Champions Reg M-A** on Pokemon Showdown
 - **Best of 3**, open team sheets
 - **50 minute rounds**
 - Be respectful to your opponents — we''re all here to learn and have fun!
@@ -112,7 +112,7 @@ Week 2 is here! This week features an expanded format with **6 Swiss rounds** an
 - **Late registration** is enabled through Round 3
 
 ### Rules
-- **Format:** VGC Regulation I on Pokemon Showdown
+- **Format:** Pokemon Champions Reg M-A on Pokemon Showdown
 - **Best of 3** for all matches
 - **Open Team Sheets**
 - **50 minute rounds** with 5 minute check-in
@@ -140,7 +140,7 @@ Back for another week of friendly competition! This week we''re trying out an ex
 
 ### Format
 - **6 Swiss Rounds** into **Top 8**
-- VGC Regulation I on Pokemon Showdown
+- Pokemon Champions Reg M-A on Pokemon Showdown
 - Best of 3, open team sheets, 50 minute rounds
 
 ### Late Registration
@@ -166,7 +166,7 @@ Can''t make it right at the start? No problem — **late registration is open th
 Registration is open and check-in starts 1 hour before the tournament!
 
 ### Rules
-- **Format:** VGC Regulation I on Pokemon Showdown
+- **Format:** Pokemon Champions Reg M-A on Pokemon Showdown
 - **6 Swiss Rounds** into **Top 8 Cut**
 - **Best of 3**, open team sheets
 - **50 minute rounds**
@@ -191,7 +191,7 @@ Registration is open and check-in starts 1 hour before the tournament!
 Another week, another chance to prove yourself! Check-in opens 1 hour before start.
 
 ### Quick Info
-- VGC Regulation I, Best of 3
+- Pokemon Champions Reg M-A, Best of 3
 - 5 Swiss Rounds into Top 4
 - Open team sheets, 50 min rounds
 
@@ -216,7 +216,7 @@ See you on the battlefield, trainers!',
 Our monthly flagship tournament! The Stellar Novas Monthly is our longest-running series — this is edition #12.
 
 ### Format
-- **VGC Regulation I** on Pokemon Showdown
+- **Pokemon Champions Reg M-A** on Pokemon Showdown
 - **5 Swiss Rounds** into **Top 4 Cut**
 - **Best of 3**, open team sheets
 - **50 minute rounds**
@@ -242,7 +242,7 @@ This tournament will be streamed on [Twitch](https://twitch.tv/stellarnovas) wit
 It''s that time again! Monthly #13 is coming up — register now to secure your spot.
 
 ### Format
-- **VGC Regulation I** on Pokemon Showdown
+- **Pokemon Champions Reg M-A** on Pokemon Showdown
 - **5 Swiss Rounds** into **Top 4 Cut**
 - **Best of 3**, open team sheets
 - **50 minute rounds**
@@ -272,7 +272,7 @@ Welcome to the first Hatterene Cup! This is a tournament by and for women and fe
 The Hatterene Cup is a welcoming, inclusive space for players who are often underrepresented in competitive Pokemon. All skill levels welcome — from first-timers to seasoned competitors.
 
 ### Format
-- **VGC Regulation I** on Pokemon Showdown
+- **Pokemon Champions Reg M-A** on Pokemon Showdown
 - **4 Swiss Rounds** into **Top 4 Cut**
 - **Best of 3**, open team sheets
 - **50 minute rounds**
@@ -3995,4 +3995,81 @@ BEGIN
   -- (runs after 11_matches.sql creates rounds)
 
   RAISE NOTICE 'Admin tournament seed data created: main=%, vgc=%, draft=%', v_main_id, v_vgc_id, v_draft_id;
+END $$;
+
+-- =============================================================================
+-- Stellar Novas Monthly #12 registrations (for player count display)
+-- =============================================================================
+DO $$
+DECLARE
+  t_id bigint;
+BEGIN
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'stellar-novas-monthly-12';
+  IF t_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  -- Register the 4 finalists + 24 other players for a realistic field size
+  INSERT INTO public.tournament_registrations (tournament_id, alt_id, status, registered_at, show_country_flag)
+  SELECT t_id, a.id, 'confirmed', now() - interval '10 days', TRUE
+  FROM public.alts a
+  WHERE a.username IN (
+    -- Top 4 (have standings)
+    'ash_ketchum_draft', 'cynthia', 'brock', 'karen',
+    -- Rest of field
+    'oswaldo_kling', 'dim_trainer_491', 'shad_williamson9',
+    'westonwilderman14', 'alyson_stiedemann', 'annette_harber2',
+    'oleflatley25', 'titus_kohler60', 'dirty_trainer_951',
+    'ashamed_elite', 'aged_trainer_120', 'angelic_trainer_423',
+    'abelardo_konopelski', 'adela1', 'alda_rau2',
+    'aliviashields97', 'alvertalemke46', 'amber_reichel25',
+    'annette20', 'arnoldo81', 'artfritsch16',
+    'arturofahey55', 'ashton_kshlerin', 'ashtyn_vonrueden'
+  )
+  ON CONFLICT DO NOTHING;
+
+  RAISE NOTICE 'Created registrations for stellar-novas-monthly-12';
+END $$;
+
+-- =============================================================================
+-- Stellar Novas Monthly #13 + Hatterene Cup registrations (upcoming events)
+-- =============================================================================
+DO $$
+DECLARE
+  t_stellar_id bigint;
+  t_hatterene_id bigint;
+BEGIN
+  SELECT id INTO t_stellar_id FROM public.tournaments WHERE slug = 'stellar-novas-monthly-13';
+  SELECT id INTO t_hatterene_id FROM public.tournaments WHERE slug = 'hatterene-cup-01';
+
+  -- Stellar Novas Monthly #13: 16 early registrations
+  IF t_stellar_id IS NOT NULL THEN
+    INSERT INTO public.tournament_registrations (tournament_id, alt_id, status, registered_at, show_country_flag)
+    SELECT t_stellar_id, a.id, 'registered', now() - interval '2 days', TRUE
+    FROM public.alts a
+    WHERE a.username IN (
+      'cynthia', 'brock', 'karen', 'oswaldo_kling',
+      'dim_trainer_491', 'shad_williamson9', 'westonwilderman14',
+      'alyson_stiedemann', 'ashamed_elite', 'aged_trainer_120',
+      'angelic_trainer_423', 'abelardo_konopelski', 'adela1',
+      'alda_rau2', 'aliviashields97', 'alvertalemke46'
+    )
+    ON CONFLICT DO NOTHING;
+    RAISE NOTICE 'Created registrations for stellar-novas-monthly-13';
+  END IF;
+
+  -- Hatterene Cup #1: 12 early registrations
+  IF t_hatterene_id IS NOT NULL THEN
+    INSERT INTO public.tournament_registrations (tournament_id, alt_id, status, registered_at, show_country_flag)
+    SELECT t_hatterene_id, a.id, 'registered', now() - interval '1 day', TRUE
+    FROM public.alts a
+    WHERE a.username IN (
+      'ash_ketchum', 'cynthia', 'brock', 'karen',
+      'oswaldo_kling', 'alyson_stiedemann', 'annette_harber2',
+      'ashamed_elite', 'aged_trainer_120', 'angelic_trainer_423',
+      'amber_reichel25', 'arnoldo81'
+    )
+    ON CONFLICT DO NOTHING;
+    RAISE NOTICE 'Created registrations for hatterene-cup-01';
+  END IF;
 END $$;

@@ -580,7 +580,10 @@ Timid Nature
 
       it("should throw a user-safe error (not raw postgres message) when pokemon creation fails", async () => {
         const fromSpy = jest.spyOn(mockClient, "from");
-        const pgError = { message: 'new row violates row-level security policy for table "pokemon"' };
+        const pgError = {
+          message:
+            'new row violates row-level security policy for table "pokemon"',
+        };
 
         // Mock: Get registration
         fromSpy.mockReturnValueOnce({
@@ -1327,7 +1330,7 @@ Timid Nature
               id: 500,
               team_id: null,
               team_locked: false,
-              tournaments: { game_format: "championsvgc2026regma" },
+              tournaments: { game_format: "gen9championsvgc2026regma" },
             },
             error: null,
           }),
@@ -1372,7 +1375,9 @@ Timid Nature
         expect(result.success).toBe(false);
         if (!result.success) {
           expect(
-            result.errors.some((e) => e.includes("Mew") && e.includes("not legal"))
+            result.errors.some(
+              (e) => e.includes("Mew") && e.includes("not legal")
+            )
           ).toBe(true);
         }
       });

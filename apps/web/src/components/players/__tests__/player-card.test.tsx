@@ -115,4 +115,63 @@ describe("PlayerCard", () => {
       expect(screen.queryByText("New")).not.toBeInTheDocument();
     });
   });
+
+  describe("coach badge", () => {
+    it("does not render the coach badge when no coachBadge prop is passed", () => {
+      render(<PlayerCard {...defaultProps} />);
+      expect(
+        screen.queryByRole("link", { name: "Coach" })
+      ).not.toBeInTheDocument();
+      // Only the profile overlay link remains
+      expect(screen.getByRole("link")).toHaveAttribute("href", "/@ash_ketchum");
+    });
+
+    it("renders the coach badge when showCoachBadge is true and coachHandle is set", () => {
+      render(
+        <PlayerCard
+          {...defaultProps}
+          coachBadge={{ showCoachBadge: true, coachHandle: "prof_oak" }}
+        />
+      );
+      expect(screen.getByRole("link", { name: "Coach" })).toBeInTheDocument();
+    });
+
+    it("links the coach badge to the canonical coach handle, not the card's username", () => {
+      render(
+        <PlayerCard
+          {...defaultProps}
+          coachBadge={{ showCoachBadge: true, coachHandle: "prof_oak" }}
+        />
+      );
+      // Privacy-critical: the badge must link via coachHandle (the account's
+      // canonical handle), never the row's own username (ash_ketchum).
+      const coachLink = screen.getByRole("link", { name: "Coach" });
+      expect(coachLink).toHaveAttribute("href", "/coaching/prof_oak");
+      expect(coachLink).not.toHaveAttribute("href", "/coaching/ash_ketchum");
+    });
+
+    it("hides the coach badge when showCoachBadge is false", () => {
+      render(
+        <PlayerCard
+          {...defaultProps}
+          coachBadge={{ showCoachBadge: false, coachHandle: "prof_oak" }}
+        />
+      );
+      expect(
+        screen.queryByRole("link", { name: "Coach" })
+      ).not.toBeInTheDocument();
+    });
+
+    it("hides the coach badge when coachHandle is null even if showCoachBadge is true", () => {
+      render(
+        <PlayerCard
+          {...defaultProps}
+          coachBadge={{ showCoachBadge: true, coachHandle: null }}
+        />
+      );
+      expect(
+        screen.queryByRole("link", { name: "Coach" })
+      ).not.toBeInTheDocument();
+    });
+  });
 });

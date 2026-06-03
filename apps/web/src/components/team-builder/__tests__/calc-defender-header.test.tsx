@@ -49,7 +49,11 @@ jest.mock("@/components/ui/popover", () => ({
         </div>
       );
     }
-    return <div data-testid="popover-trigger" className={className}>{children}</div>;
+    return (
+      <div data-testid="popover-trigger" className={className}>
+        {children}
+      </div>
+    );
   },
   PopoverContent: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popover-content">{children}</div>
@@ -100,10 +104,7 @@ jest.mock("../pickers/species-picker", () => ({
     format?: GameFormat;
     onClose?: () => void;
   }) => (
-    <button
-      data-testid="species-picker"
-      onClick={() => onPick("Garchomp")}
-    >
+    <button data-testid="species-picker" onClick={() => onPick("Garchomp")}>
       pick species
     </button>
   ),
@@ -120,10 +121,7 @@ jest.mock("../pickers/item-picker", () => ({
     teamItems?: string[];
     onClose?: () => void;
   }) => (
-    <button
-      data-testid="item-picker"
-      onClick={() => onPick("Sitrus Berry")}
-    >
+    <button data-testid="item-picker" onClick={() => onPick("Sitrus Berry")}>
       pick item
     </button>
   ),
@@ -140,10 +138,7 @@ jest.mock("../pickers/ability-picker", () => ({
     format?: GameFormat;
     onClose?: () => void;
   }) => (
-    <button
-      data-testid="ability-picker"
-      onClick={() => onPick("Intimidate")}
-    >
+    <button data-testid="ability-picker" onClick={() => onPick("Intimidate")}>
       pick ability
     </button>
   ),
@@ -158,10 +153,7 @@ jest.mock("../pickers/nature-picker", () => ({
     value?: string;
     onClose?: () => void;
   }) => (
-    <button
-      data-testid="nature-picker"
-      onClick={() => onPick("Adamant")}
-    >
+    <button data-testid="nature-picker" onClick={() => onPick("Adamant")}>
       pick nature
     </button>
   ),
@@ -176,10 +168,7 @@ jest.mock("../pickers/type-picker", () => ({
     value?: string;
     onClose?: () => void;
   }) => (
-    <button
-      data-testid="type-picker"
-      onClick={() => onPick("Fire")}
-    >
+    <button data-testid="type-picker" onClick={() => onPick("Fire")}>
       pick type
     </button>
   ),
@@ -263,7 +252,7 @@ const VGC_FORMAT: GameFormat = {
 
 /** A format that does NOT support Tera (mocked via formatHasTera returning false). */
 const CHAMPIONS_FORMAT: GameFormat = {
-  id: "championsvgc2026regma",
+  id: "gen9championsvgc2026regma",
   game: "Pokemon Champions",
   gameShort: "CH",
   generation: 10,
@@ -276,7 +265,9 @@ const CHAMPIONS_FORMAT: GameFormat = {
   active: true,
 };
 
-function makeProps(overrides: Partial<DefenderMonHeaderProps> = {}): DefenderMonHeaderProps {
+function makeProps(
+  overrides: Partial<DefenderMonHeaderProps> = {}
+): DefenderMonHeaderProps {
   return {
     defenderSpecies: "",
     defenderAbility: "",
@@ -318,7 +309,9 @@ describe("DefenderMonHeader — species pill", () => {
 
   it("shows the species name when defenderSpecies is set", () => {
     mockGetSpeciesTypes.mockReturnValue(["Fire", "Ghost"]);
-    render(<DefenderMonHeader {...makeProps({ defenderSpecies: "Incineroar" })} />);
+    render(
+      <DefenderMonHeader {...makeProps({ defenderSpecies: "Incineroar" })} />
+    );
     expect(screen.getByText("Incineroar")).toBeInTheDocument();
   });
 
@@ -343,7 +336,9 @@ describe("DefenderMonHeader — sprite", () => {
 
   it("renders type pills when species has types", () => {
     mockGetSpeciesTypes.mockReturnValue(["Fire", "Ghost"]);
-    render(<DefenderMonHeader {...makeProps({ defenderSpecies: "Incineroar" })} />);
+    render(
+      <DefenderMonHeader {...makeProps({ defenderSpecies: "Incineroar" })} />
+    );
     const pills = screen.getAllByTestId("type-pill");
     expect(pills).toHaveLength(2);
     expect(pills[0]).toHaveTextContent("Fire");
@@ -375,7 +370,9 @@ describe("DefenderMonHeader — Item row", () => {
   });
 
   it("shows the item name when defenderItem is set", () => {
-    render(<DefenderMonHeader {...makeProps({ defenderItem: "Sitrus Berry" })} />);
+    render(
+      <DefenderMonHeader {...makeProps({ defenderItem: "Sitrus Berry" })} />
+    );
     expect(screen.getByText("Sitrus Berry")).toBeInTheDocument();
   });
 
@@ -405,7 +402,9 @@ describe("DefenderMonHeader — Ability row", () => {
   });
 
   it("shows the ability name when defenderAbility is set", () => {
-    render(<DefenderMonHeader {...makeProps({ defenderAbility: "Intimidate" })} />);
+    render(
+      <DefenderMonHeader {...makeProps({ defenderAbility: "Intimidate" })} />
+    );
     expect(screen.getByText("Intimidate")).toBeInTheDocument();
   });
 
@@ -419,38 +418,61 @@ describe("DefenderMonHeader — Ability row", () => {
 
   it("uses getLegalAbilities when format is set and returns abilities", () => {
     mockGetLegalAbilities.mockReturnValue(new Set(["Intimidate"]));
-    render(<DefenderMonHeader {...makeProps({
-      defenderSpecies: "Incineroar",
-      format: VGC_FORMAT,
-    })} />);
-    expect(mockGetLegalAbilities).toHaveBeenCalledWith("Incineroar", VGC_FORMAT.id);
+    render(
+      <DefenderMonHeader
+        {...makeProps({
+          defenderSpecies: "Incineroar",
+          format: VGC_FORMAT,
+        })}
+      />
+    );
+    expect(mockGetLegalAbilities).toHaveBeenCalledWith(
+      "Incineroar",
+      VGC_FORMAT.id
+    );
   });
 
   it("treats getLegalAbilities returning undefined as permissive (no warning)", () => {
     // When getLegalAbilities returns undefined (unknown format), we default
     // hasLegalAbility to true — no "No abilities found" warning should appear.
     mockGetLegalAbilities.mockReturnValue(undefined);
-    render(<DefenderMonHeader {...makeProps({
-      defenderSpecies: "Incineroar",
-      format: VGC_FORMAT,
-    })} />);
-    expect(screen.queryByText(/No abilities found for format/)).not.toBeInTheDocument();
+    render(
+      <DefenderMonHeader
+        {...makeProps({
+          defenderSpecies: "Incineroar",
+          format: VGC_FORMAT,
+        })}
+      />
+    );
+    expect(
+      screen.queryByText(/No abilities found for format/)
+    ).not.toBeInTheDocument();
   });
 
   it("does not call getLegalAbilities when format is undefined", () => {
-    render(<DefenderMonHeader {...makeProps({
-      defenderSpecies: "Incineroar",
-      format: undefined,
-    })} />);
+    render(
+      <DefenderMonHeader
+        {...makeProps({
+          defenderSpecies: "Incineroar",
+          format: undefined,
+        })}
+      />
+    );
     expect(mockGetLegalAbilities).not.toHaveBeenCalled();
   });
 
   it("does not show warning when format is undefined (no format restriction)", () => {
-    render(<DefenderMonHeader {...makeProps({
-      defenderSpecies: "Incineroar",
-      format: undefined,
-    })} />);
-    expect(screen.queryByText(/No abilities found for format/)).not.toBeInTheDocument();
+    render(
+      <DefenderMonHeader
+        {...makeProps({
+          defenderSpecies: "Incineroar",
+          format: undefined,
+        })}
+      />
+    );
+    expect(
+      screen.queryByText(/No abilities found for format/)
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -462,29 +484,47 @@ describe("DefenderMonHeader — no-abilities warning", () => {
   it("shows warning when species is set and legalAbilities is empty", () => {
     // getLegalAbilities returns empty Set → legalAbilities.length === 0
     mockGetLegalAbilities.mockReturnValue(new Set());
-    render(<DefenderMonHeader {...makeProps({
-      defenderSpecies: "Incineroar",
-      format: VGC_FORMAT,
-    })} />);
-    expect(screen.getByText(/No abilities found for format/)).toBeInTheDocument();
+    render(
+      <DefenderMonHeader
+        {...makeProps({
+          defenderSpecies: "Incineroar",
+          format: VGC_FORMAT,
+        })}
+      />
+    );
+    expect(
+      screen.getByText(/No abilities found for format/)
+    ).toBeInTheDocument();
   });
 
   it("does NOT show warning when legalAbilities is non-empty", () => {
     mockGetLegalAbilities.mockReturnValue(new Set(["Intimidate"]));
-    render(<DefenderMonHeader {...makeProps({
-      defenderSpecies: "Incineroar",
-      format: VGC_FORMAT,
-    })} />);
-    expect(screen.queryByText(/No abilities found for format/)).not.toBeInTheDocument();
+    render(
+      <DefenderMonHeader
+        {...makeProps({
+          defenderSpecies: "Incineroar",
+          format: VGC_FORMAT,
+        })}
+      />
+    );
+    expect(
+      screen.queryByText(/No abilities found for format/)
+    ).not.toBeInTheDocument();
   });
 
   it("does NOT show warning when defenderSpecies is empty even if abilities list is empty", () => {
     mockGetLegalAbilities.mockReturnValue(new Set());
-    render(<DefenderMonHeader {...makeProps({
-      defenderSpecies: "",
-      format: VGC_FORMAT,
-    })} />);
-    expect(screen.queryByText(/No abilities found for format/)).not.toBeInTheDocument();
+    render(
+      <DefenderMonHeader
+        {...makeProps({
+          defenderSpecies: "",
+          format: VGC_FORMAT,
+        })}
+      />
+    );
+    expect(
+      screen.queryByText(/No abilities found for format/)
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -568,7 +608,11 @@ describe("DefenderMonHeader — Tera row format gating", () => {
 
   it("shows the em-dash placeholder when defenderTera is empty and Tera row is shown", () => {
     mockFormatHasTera.mockReturnValue(true);
-    render(<DefenderMonHeader {...makeProps({ format: VGC_FORMAT, defenderTera: "" })} />);
+    render(
+      <DefenderMonHeader
+        {...makeProps({ format: VGC_FORMAT, defenderTera: "" })}
+      />
+    );
     const teraLabel = screen.getByText("Tera");
     const teraChip = teraLabel.closest("[data-testid='popover-trigger']");
     expect(teraChip?.textContent).toContain("—");
@@ -576,7 +620,11 @@ describe("DefenderMonHeader — Tera row format gating", () => {
 
   it("shows the tera type when defenderTera is set", () => {
     mockFormatHasTera.mockReturnValue(true);
-    render(<DefenderMonHeader {...makeProps({ format: VGC_FORMAT, defenderTera: "Fire" })} />);
+    render(
+      <DefenderMonHeader
+        {...makeProps({ format: VGC_FORMAT, defenderTera: "Fire" })}
+      />
+    );
     expect(screen.getByText("Fire")).toBeInTheDocument();
   });
 
@@ -584,7 +632,11 @@ describe("DefenderMonHeader — Tera row format gating", () => {
     const user = userEvent.setup();
     const setDefenderTera = jest.fn();
     mockFormatHasTera.mockReturnValue(true);
-    render(<DefenderMonHeader {...makeProps({ format: VGC_FORMAT, setDefenderTera })} />);
+    render(
+      <DefenderMonHeader
+        {...makeProps({ format: VGC_FORMAT, setDefenderTera })}
+      />
+    );
     await user.click(screen.getByTestId("type-picker"));
     expect(setDefenderTera).toHaveBeenCalledWith("Fire");
   });

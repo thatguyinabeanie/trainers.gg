@@ -13,7 +13,7 @@ import { type RoleId } from "./role-registry";
 
 export type SpeciesFilterState = {
   types: readonly string[];
-  ability: string | null;
+  abilities: readonly string[];
   moves: readonly string[];
   roles: readonly RoleId[];
   megaOnly: boolean;
@@ -21,7 +21,7 @@ export type SpeciesFilterState = {
 
 export const DEFAULT_SPECIES_FILTERS: SpeciesFilterState = {
   types: [],
-  ability: null,
+  abilities: [],
   moves: [],
   roles: [],
   megaOnly: false,

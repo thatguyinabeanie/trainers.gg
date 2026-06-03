@@ -169,6 +169,17 @@ export {
   isChampionsFormatId,
 } from "./formats";
 
+// Regulation calendar (date-range → format ID lookup)
+export {
+  type RegulationPeriod,
+  REGULATION_CALENDAR,
+  CHAMPIONS_CALENDAR,
+  getSvFormatForDate,
+  getChampionsFormatForDate,
+  getFormatForDate,
+  getRegulationPeriodForDate,
+} from "./regulation-calendar";
+
 // Featured Pokemon for avatar picker
 export { FEATURED_POKEMON } from "./featured-pokemon";
 

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://v2-9-9.turborepo.dev/schema.json",
+  "$schema": "https://v2-9-16.turborepo.dev/schema.json",
   "ui": "tui",
   "globalEnv": [
     "FORCE_REDIRECT_TO_HOME",
@@ -43,7 +43,8 @@
     "DISCORD_APPLICATION_ID",
     "DISCORD_PUBLIC_KEY",
     "DISCORD_BOT_TOKEN",
-    "CRON_SECRET"
+    "CRON_SECRET",
+    "LIMITLESS_API_KEY"
   ],
   "tasks": {
     "build": {

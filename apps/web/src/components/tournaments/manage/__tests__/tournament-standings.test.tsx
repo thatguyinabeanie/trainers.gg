@@ -18,8 +18,40 @@ let mockQueryReturn: {
   isLoading: false,
 };
 
+// Coach-badge lookup result, keyed by alt id. The component runs a second
+// useSupabaseQuery for getCoachBadges after stats load — we hand it this Map.
+let mockCoachBadges: Map<
+  number,
+  { showCoachBadge: boolean; coachHandle: string | null }
+> = new Map();
+
+// The component calls useSupabaseQuery twice: first for player stats, then for
+// coach badges. We discriminate by inspecting the deps array — the badge query
+// is keyed on a JSON-stringified alt-id array (starts with "[").
 jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(() => mockQueryReturn),
+  useSupabaseQuery: jest.fn((_queryFn: unknown, deps: unknown[] = []) => {
+    const firstDep = deps[0];
+    if (typeof firstDep === "string" && firstDep.startsWith("[")) {
+      return { data: mockCoachBadges, isLoading: false };
+    }
+    return mockQueryReturn;
+  }),
+}));
+
+// getCoachBadges is imported alongside getTournamentPlayerStats. The query fn
+// itself is never invoked here (useSupabaseQuery is mocked), but the import
+// must resolve, so stub it.
+jest.mock("@trainers/supabase", () => ({
+  getCoachBadges: jest.fn(),
+  getTournamentPlayerStats: jest.fn(),
+}));
+
+jest.mock("@/components/ui/coach-badge", () => ({
+  CoachBadge: ({ handle }: { handle: string }) => (
+    <span data-testid="coach-badge" data-handle={handle}>
+      Coach
+    </span>
+  ),
 }));
 
 jest.mock("@/components/ui/card", () => ({
@@ -117,6 +149,7 @@ function buildPlayerStat(overrides: Record<string, unknown> = {}) {
   return {
     current_standing: 1,
     alt: {
+      id: 100,
       username: "ash_ketchum",
       avatar_url: "https://example.com/ash.png",
     },
@@ -142,6 +175,7 @@ describe("TournamentStandings", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockQueryReturn = { data: null, isLoading: false };
+    mockCoachBadges = new Map();
   });
 
   it("shows loading spinner when data is loading", () => {

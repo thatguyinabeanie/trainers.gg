@@ -387,11 +387,9 @@ function renderLane(
 // =============================================================================
 
 describe("MovesLane — basic render", () => {
-  it("renders 4 move tiles (popover triggers)", () => {
+  it("renders 4 move tiles (clickable rows)", () => {
     renderLane();
-    expect(
-      screen.getAllByTestId("popover-trigger").length
-    ).toBeGreaterThanOrEqual(4);
+    expect(screen.getAllByRole("row").length).toBeGreaterThanOrEqual(4);
   });
 
   it("renders set moves by name", () => {
@@ -665,7 +663,9 @@ describe("MovesLane — table headers", () => {
 
 describe("MovesLane — inline calc display", () => {
   beforeEach(() => {
-    (useCalcStateContext as jest.Mock).mockImplementation(() => mockCalcContext);
+    (useCalcStateContext as jest.Mock).mockImplementation(
+      () => mockCalcContext
+    );
     mockCalcContext.calcEnabled = false;
     mockCalcContext.rowOutputs = [null, null, null, null];
   });

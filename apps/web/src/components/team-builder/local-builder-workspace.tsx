@@ -176,7 +176,7 @@ export function LocalBuilderWorkspace() {
       const result = await teamsApi.saveLocal({
         altId: targetAlt.id,
         name: team.name || "Untitled Team",
-        format: team.format || "championsvgc2026regma",
+        format: team.format || "gen9championsvgc2026regma",
         pokemon: pokemonPayloads as Record<string, unknown>[],
       });
 
@@ -255,6 +255,7 @@ export function LocalBuilderWorkspace() {
         persistence={persistence}
         selectedAltId={selectedAltId}
         onAltSelect={setSelectedAltId}
+        isAuthenticated={isAuthenticated}
         renderHeader={(actions) => (
           <BuilderNav>
             <BuilderTopbar

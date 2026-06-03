@@ -1036,10 +1036,15 @@ export async function getCheckInStats(
 }
 
 /**
- * Get user's teams for tournament registration
- * If no altId is provided, returns teams for the current authenticated user
+ * Get user's teams for tournament registration.
+ * If no altId is provided, returns teams for the current authenticated user.
+ * Optionally filters by game format so the dropdown only shows valid teams.
  */
-export async function getUserTeams(supabase: TypedClient, altId?: number) {
+export async function getUserTeams(
+  supabase: TypedClient,
+  altId?: number,
+  gameFormat?: string | null
+) {
   let targetAltId: number | undefined = altId;
 
   if (!targetAltId) {
@@ -1060,29 +1065,31 @@ export async function getUserTeams(supabase: TypedClient, altId?: number) {
     targetAltId = alt.id as number;
   }
 
-  const { data: teams } = await supabase
+  const baseQuery = supabase
     .from("teams")
-    .select("*")
+    .select(
+      `id, name, format,
+       team_pokemon(
+         team_position,
+          pokemon:pokemon(species, nickname, held_item, ability, tera_type, move1, move2, move3, move4)
+       )`
+    )
     .eq("created_by", targetAltId!);
+
+  const { data: teams } = await (gameFormat
+    ? baseQuery.or(`format.eq.${gameFormat},format.is.null`)
+    : baseQuery);
 
   if (!teams?.length) return [];
 
-  // Get pokemon count for each team
-  const teamsWithCounts = await Promise.all(
-    teams.map(async (team) => {
-      const { count } = await supabase
-        .from("team_pokemon")
-        .select("*", { count: "exact", head: true })
-        .eq("team_id", team.id);
-
-      return {
-        ...team,
-        pokemonCount: count ?? 0,
-      };
+  return teams
+    .map((team) => {
+      const pokemon = (team.team_pokemon ?? [])
+        .sort((a, b) => a.team_position - b.team_position)
+        .flatMap((tp) => (tp.pokemon ? [tp.pokemon] : []));
+      return { ...team, pokemonCount: pokemon.length, pokemon };
     })
-  );
-
-  return teamsWithCounts.filter((team) => team.pokemonCount > 0);
+    .filter((team) => team.pokemonCount > 0);
 }
 
 /**
@@ -2542,4 +2549,30 @@ export async function getTeamsForAlt(
       };
     })
     .filter((team) => team.pokemonSpecies.length > 0);
+}
+
+/**
+ * Get community IDs that have at least one live (active) tournament.
+ * Useful for highlighting communities with ongoing activity.
+ */
+export async function getLiveTournamentCommunityIds(
+  supabase: TypedClient,
+  communityIds: number[]
+): Promise<Set<number>> {
+  if (communityIds.length === 0) return new Set();
+
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("community_id")
+    .in("community_id", communityIds)
+    .eq("status", "active");
+
+  if (error) {
+    console.error("[getLiveTournamentCommunityIds] Failed to fetch:", error);
+    return new Set();
+  }
+
+  return new Set(
+    (data ?? []).map((t) => t.community_id).filter(Boolean) as number[]
+  );
 }

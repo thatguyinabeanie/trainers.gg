@@ -90,7 +90,7 @@ jest.mock("../pickers/species-sidebar", () => ({
   }: {
     filters: {
       types: string[];
-      ability: string | null;
+      abilities: string[];
       moves: string[];
       roles: string[];
       megaOnly: boolean;
@@ -254,7 +254,6 @@ jest.mock("@tanstack/react-virtual", () => ({
 // =============================================================================
 // Mock CSS module
 // =============================================================================
-
 
 import { SpeciesPicker } from "../pickers/species-picker";
 import { type GameFormat } from "@trainers/pokemon";
@@ -891,7 +890,7 @@ describe("SpeciesPicker", () => {
     expect(filters.moves).toEqual(["Tailwind"]);
   });
 
-  it("smart-filter with kind=ability sets filters.ability and clears query", async () => {
+  it("smart-filter with kind=ability adds ability to filters.abilities and clears query", async () => {
     const user = userEvent.setup();
     render(
       <SpeciesPicker
@@ -907,12 +906,12 @@ describe("SpeciesPicker", () => {
     await user.click(screen.getByTestId("smart-filter-ability"));
     // Query must be cleared
     expect(input).toHaveValue("");
-    // filters.ability should be set to "Drought"
+    // filters.abilities should contain "Drought"
     const sidebarEl = screen.getByTestId("species-sidebar");
     const filters = JSON.parse(
       (sidebarEl as HTMLElement).dataset.filters ?? "{}"
-    ) as { ability?: string | null };
-    expect(filters.ability).toBe("Drought");
+    ) as { abilities?: string[] };
+    expect(filters.abilities).toEqual(["Drought"]);
     // Filter count badge reflects 1 active filter
     expect(
       screen.getByRole("button", { name: /Clear 1 active filter/i })
@@ -968,7 +967,9 @@ describe("SpeciesPicker", () => {
       await user.click(btn);
 
       // Panel should now be visible
-      expect(screen.getByTestId("expanded-panel-Bulbasaur")).toBeInTheDocument();
+      expect(
+        screen.getByTestId("expanded-panel-Bulbasaur")
+      ).toBeInTheDocument();
       // aria-expanded should be true, label changes to "Collapse"
       expect(
         screen.getByRole("button", { name: /collapse bulbasaur/i })
@@ -989,7 +990,9 @@ describe("SpeciesPicker", () => {
       await user.click(
         screen.getByRole("button", { name: /expand bulbasaur/i })
       );
-      expect(screen.getByTestId("expanded-panel-Bulbasaur")).toBeInTheDocument();
+      expect(
+        screen.getByTestId("expanded-panel-Bulbasaur")
+      ).toBeInTheDocument();
 
       // Collapse
       await user.click(
@@ -1048,7 +1051,9 @@ describe("SpeciesPicker", () => {
       await user.click(
         screen.getByRole("button", { name: /expand bulbasaur/i })
       );
-      expect(screen.getByTestId("expanded-panel-Bulbasaur")).toBeInTheDocument();
+      expect(
+        screen.getByTestId("expanded-panel-Bulbasaur")
+      ).toBeInTheDocument();
 
       // Expand Garchomp — Bulbasaur should collapse
       await user.click(

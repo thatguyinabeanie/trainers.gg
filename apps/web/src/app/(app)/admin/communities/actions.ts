@@ -314,3 +314,69 @@ export async function toggleDiscordAction(
     return { success: true };
   }, "Failed to toggle Discord integration");
 }
+
+// --- Provision All Communities PDS ---
+
+export interface ProvisionResult {
+  communityId: number;
+  slug: string;
+  handle: string;
+  success: boolean;
+  did?: string;
+  error?: string;
+}
+
+export interface ProvisionAllResult {
+  success: boolean;
+  message: string;
+  results: ProvisionResult[];
+}
+
+export async function provisionAllCommunitiesAction(): Promise<
+  ActionResult & { data?: ProvisionAllResult }
+> {
+  return withAdminAction(async (supabase) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000); // 2 min for batch
+
+    try {
+      const { data, error } =
+        await supabase.functions.invoke<ProvisionAllResult>(
+          "provision-all-communities",
+          { signal: controller.signal }
+        );
+
+      if (error) {
+        if (controller.signal.aborted || error.name === "AbortError") {
+          return { success: false, error: "Request timed out" };
+        }
+
+        // FunctionsHttpError has a `context` property containing the Response.
+        // Try to extract the actual JSON error body from the edge function.
+        if (error.name === "FunctionsHttpError" && error.context) {
+          try {
+            const body = await error.context.json();
+            if (body?.error) {
+              return { success: false, error: body.error };
+            }
+          } catch {
+            // Response body already consumed or not JSON — fall through
+          }
+        }
+
+        return { success: false, error: error.message };
+      }
+
+      if (!data) {
+        return { success: false, error: "No response from edge function" };
+      }
+
+      updateTag(CacheTags.COMMUNITIES_LIST);
+      return { success: true, data };
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }, "Failed to provision communities") as Promise<
+    ActionResult & { data?: ProvisionAllResult }
+  >;
+}

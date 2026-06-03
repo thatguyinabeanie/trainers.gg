@@ -43,7 +43,7 @@ const VGC_FORMAT: GameFormat = {
 // Champions format: generation:10 so getGen() clamps it down to gen 9 mechanics.
 // gameShort:"Champions" so isChampionsFormat() returns true (EV cap clamp).
 const CHAMPIONS_FORMAT: GameFormat = {
-  id: "championsvgc2026regma",
+  id: "gen9championsvgc2026regma",
   game: "Pokemon Champions",
   gameShort: "Champions",
   generation: 10,
@@ -829,7 +829,10 @@ describe("mega toggle (real engine)", () => {
 
     const megaOffOutput = result.current.selectedMoveOutput;
     expect(megaOffOutput).not.toBeNull();
-    const megaOffMid = mid(megaOffOutput!.minPercent, megaOffOutput!.maxPercent);
+    const megaOffMid = mid(
+      megaOffOutput!.minPercent,
+      megaOffOutput!.maxPercent
+    );
 
     // Base Charizard has lower SpA AND no Drought (which would Sun-boost
     // Flamethrower) — combined effect is a noticeably smaller hit.

@@ -14,3 +14,12 @@ VALUES (
   '{"allowed_users": []}'::jsonb
 )
 ON CONFLICT (key) DO UPDATE SET enabled = true;
+
+INSERT INTO public.feature_flags (key, description, enabled, metadata)
+VALUES (
+  'coaching',
+  'Controls access to the coaching surface (profiles, directory, coach badge)',
+  true,
+  '{"allowed_users": []}'::jsonb
+)
+ON CONFLICT (key) DO UPDATE SET enabled = true;

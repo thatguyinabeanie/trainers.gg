@@ -86,9 +86,7 @@ function execWithRetry(command, options = {}, maxRetries = 3, delayMs = 10000) {
       return exec(command, options);
     } catch (error) {
       if (attempt < maxRetries) {
-        console.log(
-          `\n⚠️  Command failed (attempt ${attempt}/${maxRetries})`
-        );
+        console.log(`\n⚠️  Command failed (attempt ${attempt}/${maxRetries})`);
         console.log(`   Retrying in ${delayMs / 1000}s...\n`);
         execSync(`sleep ${Math.ceil(delayMs / 1000)}`);
       } else {
@@ -535,7 +533,9 @@ async function runMigrations() {
   // --- Migrations ---
   if (env.type === "preview" && !isProductionDb) {
     console.log("\n🔗 Linking to preview Supabase project...");
-    execWithRetry(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
+    execWithRetry(`npx supabase link --project-ref ${projectRef}`, {
+      env: cliEnv,
+    });
     console.log("\n📤 Applying migrations to preview database...");
     // db push is safe here: all migrations are idempotent (IF NOT EXISTS /
     // DROP ... IF EXISTS guards), so replaying previously-applied migrations
@@ -552,10 +552,14 @@ async function runMigrations() {
   } else {
     // Production deploy from main — push new migrations
     console.log("\n🔗 Linking to Supabase project...");
-    execWithRetry(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
+    execWithRetry(`npx supabase link --project-ref ${projectRef}`, {
+      env: cliEnv,
+    });
 
     console.log("\n📤 Applying migrations...");
-    exec("npx supabase db push --linked", { env: cliEnv });
+    // --include-all allows out-of-order migrations that can occur when PRs
+    // merge in a different order than their migration timestamps.
+    exec("npx supabase db push --linked --include-all", { env: cliEnv });
   }
 
   // --- Edge Functions ---

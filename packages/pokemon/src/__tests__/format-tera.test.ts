@@ -10,7 +10,7 @@ describe("formatHasTera", () => {
   // ---------------------------------------------------------------------------
 
   it("returns false for the Champions Reg M-A format (no Terastal)", () => {
-    const format = getFormatById("championsvgc2026regma");
+    const format = getFormatById("gen9championsvgc2026regma");
     expect(formatHasTera(format)).toBe(false);
   });
 

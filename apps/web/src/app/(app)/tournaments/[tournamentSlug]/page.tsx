@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import {
   createStaticClient,
   createClientReadOnly,
+  getUserId,
 } from "@/lib/supabase/server";
 import {
   getTournamentBySlug,
@@ -122,21 +123,6 @@ const getCachedTournamentTeams = (tournamentId: number, slug: string) =>
     }
   )();
 
-/**
- * Get current user ID (not cached - user-specific)
- */
-async function getCurrentUserId(): Promise<string | null> {
-  try {
-    const supabase = await createClientReadOnly();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.id ?? null;
-  } catch {
-    return null;
-  }
-}
-
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -243,9 +229,7 @@ function TournamentHeader({
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-bold sm:text-4xl">{tournament.name}</h1>
-          {tournament.status && (
-            <StatusBadge status={tournament.status} />
-          )}
+          {tournament.status && <StatusBadge status={tournament.status} />}
         </div>
 
         {canManage && organization && (
@@ -358,7 +342,7 @@ function ScheduleCard({
       <div className="space-y-5">
         {/* Start time */}
         <div>
-          <p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wider">
+          <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wider uppercase">
             Start
           </p>
           <p className="font-medium">
@@ -418,7 +402,7 @@ function FormatCard({
       </h3>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+          <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
             Game Format
           </p>
           <p className="font-medium">
@@ -428,7 +412,7 @@ function FormatCard({
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+          <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
             Tournament Format
           </p>
           <p className="font-medium">
@@ -440,7 +424,7 @@ function FormatCard({
         </div>
         {tournament.round_time_minutes && (
           <div>
-            <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+            <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
               Round Time
             </p>
             <p className="flex items-center gap-1 font-medium">
@@ -451,7 +435,7 @@ function FormatCard({
         )}
         {tournament.swiss_rounds && (
           <div>
-            <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+            <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
               Swiss Rounds
             </p>
             <p className="font-medium">{tournament.swiss_rounds} rounds</p>
@@ -495,7 +479,7 @@ export default async function TournamentPage({ params }: PageProps) {
   // Fetch tournament (cached) and current user ID (not cached) in parallel
   const [tournament, currentUserId] = await Promise.all([
     getCachedTournament(tournamentSlug),
-    getCurrentUserId(),
+    getUserId(),
   ]);
 
   if (!tournament) {
@@ -570,6 +554,10 @@ export default async function TournamentPage({ params }: PageProps) {
                       held_item: p.held_item,
                       ability: p.ability ?? undefined,
                       tera_type: p.tera_type,
+                      move1: p.move1,
+                      move2: p.move2,
+                      move3: p.move3,
+                      move4: p.move4,
                     })),
                   }
                 : null

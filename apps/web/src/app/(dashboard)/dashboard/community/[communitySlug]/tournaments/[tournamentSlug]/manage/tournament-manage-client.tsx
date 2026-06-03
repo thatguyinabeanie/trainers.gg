@@ -254,6 +254,7 @@ export function TournamentManageClient({
       : undefined,
     tournamentFormat: tournament.tournament_format ?? "swiss_with_cut",
     format: tournament.format ?? "VGC 2025",
+    gameFormat: tournament.game_format ?? null,
     currentRound: tournament.current_round ?? undefined,
     roundTimeMinutes: tournament.round_time_minutes ?? 50,
     swissRounds: tournament.swiss_rounds ?? undefined,

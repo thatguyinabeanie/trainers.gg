@@ -10,7 +10,7 @@ enabled = true
 port = 54321
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
 # endpoints. `public` and `graphql_public` schemas are included by default.
-schemas = ["public", "graphql_public"]
+schemas = ["public", "limitless", "rk9", "graphql_public"]
 # Extra schemas to add to the search_path of every request.
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
@@ -69,7 +69,8 @@ sql_paths = [
   "./seeds/10_tournaments.sql",
   "./seeds/11_matches.sql",
   "./seeds/12_standings.sql",
-  "./seeds/13_team_sheets.sql"
+  "./seeds/13_team_sheets.sql",
+  "./seeds/15_vault_secrets.sql"
 ]
 
 [db.network_restrictions]
@@ -394,6 +395,7 @@ PDS_ADMIN_PASSWORD = "env(PDS_ADMIN_PASSWORD)"
 PDS_HANDLE_DOMAIN = "env(PDS_HANDLE_DOMAIN)"
 RESEND_API_KEY = "env(RESEND_API_KEY)"
 SEND_EMAIL_HOOK_SECRET = "env(SEND_EMAIL_HOOK_SECRET)"
+LIMITLESS_API_KEY = "env(LIMITLESS_API_KEY)"
 
 # Edge Functions
 # Deployed via the Vercel build pipeline (run-migrations.mjs → vendor-packages.ts).

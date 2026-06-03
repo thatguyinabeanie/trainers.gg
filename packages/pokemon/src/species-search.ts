@@ -62,7 +62,10 @@ function getLowercaseLegalMoves(
   const legal = getLegalMoves(species, formatId);
   // Treat the LEGALITY_UNAVAILABLE sentinel like undefined here — read-path
   // search shouldn't break the autocomplete UI on a transient sim hiccup.
-  if (legal === LEGALITY_UNAVAILABLE && !warnedLegalMovesUnavailable.has(formatId)) {
+  if (
+    legal === LEGALITY_UNAVAILABLE &&
+    !warnedLegalMovesUnavailable.has(formatId)
+  ) {
     warnedLegalMovesUnavailable.add(formatId);
     // Two distinct fallbacks, both surfaced in the warning:
     //  - free-text move-name matching (line ~445) is *skipped* — typing a
@@ -439,8 +442,6 @@ export function searchSpecies(
      * computable (the function falls back to name/type/ability matching).
      */
     formatId?: string;
-    /** Filter: species must have this exact ability in any slot */
-    ability?: string | null;
     /** Filter: include only species that have at least one Mega form */
     megaOnly?: boolean;
     /** Filter: species must carry ALL of these role IDs (AND logic). */
@@ -505,16 +506,6 @@ export function searchSpecies(
         normalizedAbilities.includes(a.toLowerCase())
       );
       if (!hasMatchingAbility) return false;
-    }
-
-    // -- Ability filter (exact match against any ability slot) --
-    if (options?.ability) {
-      const target = options.ability.toLowerCase();
-      const match =
-        entry.abilitySlot1?.toLowerCase() === target ||
-        entry.abilitySlot2?.toLowerCase() === target ||
-        entry.hiddenAbility?.toLowerCase() === target;
-      if (!match) return false;
     }
 
     // -- megaOnly filter — show ONLY Mega-form species --

@@ -46,11 +46,22 @@ jest.mock("@smogon/calc", () => {
     Move: MockMove,
     Side: MockSide,
     Field: MockField,
-    Generations: { get: jest.fn(() => ({
-      species: { get: jest.fn(() => ({
-        baseStats: { hp: 78, atk: 84, def: 78, spa: 109, spd: 85, spe: 100 },
-      })) },
-    })) },
+    Generations: {
+      get: jest.fn(() => ({
+        species: {
+          get: jest.fn(() => ({
+            baseStats: {
+              hp: 78,
+              atk: 84,
+              def: 78,
+              spa: 109,
+              spd: 85,
+              spe: 100,
+            },
+          })),
+        },
+      })),
+    },
   };
 });
 
@@ -319,7 +330,7 @@ describe("format clamp — switching from VGC to Champions", () => {
 
   it("clamps EVs to Champions caps (32 per stat, 66 total) when format switches to Champions", () => {
     const vgcFormat = getFormatById("gen9vgc2026regi");
-    const championsFormat = getFormatById("championsvgc2026regma");
+    const championsFormat = getFormatById("gen9championsvgc2026regma");
 
     const { result, rerender } = renderHook(
       ({ format }: { format: typeof vgcFormat }) =>
@@ -356,7 +367,7 @@ describe("format clamp — switching from VGC to Champions", () => {
 
   it("switching back from Champions to VGC restores 252-per-stat cap (does not re-inflate EVs)", () => {
     const vgcFormat = getFormatById("gen9vgc2026regi");
-    const championsFormat = getFormatById("championsvgc2026regma");
+    const championsFormat = getFormatById("gen9championsvgc2026regma");
 
     const { result, rerender } = renderHook(
       ({ format }: { format: typeof vgcFormat }) =>
@@ -408,16 +419,13 @@ describe("setDefenderIv — clamping", () => {
     [32, 31],
     [50, 31],
     [15.7, 16],
-  ])(
-    "setDefenderIv('hp', %i) → stored value %s",
-    (input, expectedOrNaN) => {
-      const { result } = renderHook(() =>
-        useCalcState({ selectedPokemon: makePokemon() })
-      );
-      act(() => result.current.setDefenderIv("hp", input));
-      expect(result.current.defenderIvs.hp).toBe(expectedOrNaN);
-    }
-  );
+  ])("setDefenderIv('hp', %i) → stored value %s", (input, expectedOrNaN) => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    act(() => result.current.setDefenderIv("hp", input));
+    expect(result.current.defenderIvs.hp).toBe(expectedOrNaN);
+  });
 
   it("NaN input: state becomes NaN (Math.round(NaN) = NaN)", () => {
     const { result } = renderHook(() =>
@@ -438,7 +446,7 @@ describe("setDefenderEv — Champions caps enforced after format flip", () => {
   });
 
   it("clamps a single per-stat assignment to 32", () => {
-    const championsFormat = getFormatById("championsvgc2026regma");
+    const championsFormat = getFormatById("gen9championsvgc2026regma");
 
     const { result } = renderHook(() =>
       useCalcState({ selectedPokemon: makePokemon(), format: championsFormat })
@@ -451,7 +459,7 @@ describe("setDefenderEv — Champions caps enforced after format flip", () => {
   });
 
   it("clamps to remaining headroom under the 66 total cap", () => {
-    const championsFormat = getFormatById("championsvgc2026regma");
+    const championsFormat = getFormatById("gen9championsvgc2026regma");
 
     const { result } = renderHook(() =>
       useCalcState({ selectedPokemon: makePokemon(), format: championsFormat })

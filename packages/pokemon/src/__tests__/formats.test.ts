@@ -22,11 +22,11 @@ describe("getFormatById", () => {
     expect(format?.label).toBe("SV: Reg I");
   });
 
-  it("returns the correct format for championsvgc2026regma", () => {
-    const format = getFormatById("championsvgc2026regma");
+  it("returns the correct format for gen9championsvgc2026regma", () => {
+    const format = getFormatById("gen9championsvgc2026regma");
 
     expect(format).toBeDefined();
-    expect(format?.id).toBe("championsvgc2026regma");
+    expect(format?.id).toBe("gen9championsvgc2026regma");
     expect(format?.game).toBe("Pokemon Champions");
     // Champions runs on gen 9 mechanics (gen 10 is reserved for Winds &
     // Waves). Champions-specific behaviors discriminate on gameShort.
@@ -50,7 +50,9 @@ describe("getFormatLabel", () => {
   });
 
   it("returns the label for another known ID", () => {
-    expect(getFormatLabel("championsvgc2026regma")).toBe("Champions: Reg M-A");
+    expect(getFormatLabel("gen9championsvgc2026regma")).toBe(
+      "Champions: Reg M-A"
+    );
   });
 
   it("returns the raw ID string for an unknown ID", () => {
@@ -81,12 +83,12 @@ describe("getActiveFormats", () => {
     expect(activeIds.has("gen8vgc2022")).toBe(false);
   });
 
-  it("includes gen9vgc2026regi and championsvgc2026regma as active", () => {
+  it("includes gen9vgc2026regi and gen9championsvgc2026regma as active", () => {
     const activeFormats = getActiveFormats();
     const activeIds = activeFormats.map((f) => f.id);
 
     expect(activeIds).toContain("gen9vgc2026regi");
-    expect(activeIds).toContain("championsvgc2026regma");
+    expect(activeIds).toContain("gen9championsvgc2026regma");
   });
 
   it("active formats count matches the number of active=true entries in VGC_FORMATS", () => {
@@ -244,8 +246,8 @@ describe("VGC_FORMATS registry", () => {
     expect(entry?.category).toBe("VGC");
   });
 
-  it("contains championsvgc2026regma", () => {
-    const entry = VGC_FORMATS.find((f) => f.id === "championsvgc2026regma");
+  it("contains gen9championsvgc2026regma", () => {
+    const entry = VGC_FORMATS.find((f) => f.id === "gen9championsvgc2026regma");
 
     expect(entry).toBeDefined();
     expect(entry?.active).toBe(true);

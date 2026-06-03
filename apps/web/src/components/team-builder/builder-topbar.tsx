@@ -18,6 +18,7 @@ import {
   Copy,
   ExternalLink,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 
 import { exportTeamToShowdown, getFormatById } from "@trainers/pokemon";
@@ -89,6 +90,8 @@ interface BuilderTopbarProps {
   onJumpToPokemon: (pokemonId: number) => void;
   onValidate: () => void;
   onNameChange: (name: string) => Promise<void>;
+  /** Open the builder settings dialog. */
+  onOpenSettings: () => void;
 }
 
 // =============================================================================
@@ -101,7 +104,11 @@ interface EditableNameProps {
   className?: string;
 }
 
-export function EditableName({ defaultValue, onSave, className }: EditableNameProps) {
+export function EditableName({
+  defaultValue,
+  onSave,
+  className,
+}: EditableNameProps) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(defaultValue);
   const [saving, setSaving] = useState(false);
@@ -203,6 +210,7 @@ export function BuilderTopbar({
   onJumpToPokemon,
   onValidate,
   onNameChange,
+  onOpenSettings,
 }: BuilderTopbarProps) {
   const [validateOpen, setValidateOpen] = useState(false);
   const [loadOpen, setLoadOpen] = useState(false);
@@ -367,6 +375,16 @@ export function BuilderTopbar({
             />
           </PopoverContent>
         </Popover>
+
+        {/* Settings (gear) */}
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          aria-label="Builder settings"
+          className="border-input bg-background hover:bg-accent hover:text-accent-foreground hidden size-7 items-center justify-center rounded-md border shadow-xs transition-colors sm:inline-flex"
+        >
+          <Settings className="size-3.5" />
+        </button>
       </div>
 
       {/* Load team popover (opened from File menu) */}

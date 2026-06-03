@@ -56,6 +56,25 @@ jest.mock("../dock/speed-tiers-panel", () => ({
   getTeamFastestSpeed: () => 120,
 }));
 
+jest.mock("../dock/speed-tiers-dialog", () => ({
+  SpeedTiersDialog: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="speed-tiers-dialog" /> : null,
+}));
+
+jest.mock("../dock/speed-tiers-content", () => ({
+  UNINITIALIZED_FORMAT_ID: Symbol("uninitialized-format-id"),
+}));
+
+jest.mock("../use-builder-preferences", () => ({
+  useBuilderPreferences: () => ({
+    preferences: {
+      speedTiers: { defaultView: "dialog", openOnLoad: false },
+    },
+    setPreferences: jest.fn(),
+    loading: false,
+  }),
+}));
+
 jest.mock("../poke-row", () => ({
   PokeRow: ({
     idx,
@@ -150,14 +169,14 @@ jest.mock("../validation/validation-popover", () => ({
 
 // Controllable drawer state — default closed, tests can override
 const mockSetActiveIdx = jest.fn();
-const mockSetSideDrawer = jest.fn();
+const mockSetSpeedView = jest.fn();
 const mockSetRightDrawer = jest.fn();
 const mockSetBottomDrawer = jest.fn();
 const mockBuilderState = {
   activeIdx: 0,
   setActiveIdx: mockSetActiveIdx,
-  sideDrawer: null as "speed" | null,
-  setSideDrawer: mockSetSideDrawer,
+  speedView: null as "sidepane" | "dialog" | null,
+  setSpeedView: mockSetSpeedView,
   rightDrawer: null as "calc" | null,
   setRightDrawer: mockSetRightDrawer,
   bottomDrawer: null as "matchups" | null,
@@ -226,7 +245,10 @@ jest.mock("@/actions/teams", () => ({
 // Import AFTER mocks
 // =============================================================================
 
-import { TeamWorkspaceV2, type WorkspaceHeaderActions } from "../team-workspace";
+import {
+  TeamWorkspaceV2,
+  type WorkspaceHeaderActions,
+} from "../team-workspace";
 import { type BuilderPersistence } from "../persistence/types";
 
 // =============================================================================
@@ -346,6 +368,7 @@ function renderWorkspace(
       format={format}
       alts={alts}
       persistence={MOCK_PERSISTENCE}
+      isAuthenticated={false}
       renderHeader={(actions: WorkspaceHeaderActions) => (
         <div data-testid="topbar">
           <button onClick={actions.onOpenImport} data-testid="open-import">
@@ -383,7 +406,7 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 beforeEach(() => {
   jest.clearAllMocks();
   // Reset builder state to defaults
-  mockBuilderState.sideDrawer = null;
+  mockBuilderState.speedView = null;
   mockBuilderState.rightDrawer = null;
   mockBuilderState.bottomDrawer = null;
   mockBuilderState.activeIdx = 0;
@@ -900,8 +923,8 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
     expect(screen.queryByTestId("speed-tiers-panel")).not.toBeInTheDocument();
   });
 
-  it("renders the speed tiers panel when sideDrawer is 'speed'", () => {
-    mockBuilderState.sideDrawer = "speed";
+  it("renders the speed tiers panel when speedView is 'sidepane'", () => {
+    mockBuilderState.speedView = "sidepane";
 
     renderWorkspace();
 
@@ -928,7 +951,7 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
   });
 
   it("renders no panel when all drawers are null", () => {
-    mockBuilderState.sideDrawer = null;
+    mockBuilderState.speedView = null;
     mockBuilderState.rightDrawer = null;
     mockBuilderState.bottomDrawer = null;
 
@@ -939,16 +962,16 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
     expect(screen.queryByTestId("calc-bottom-panel")).not.toBeInTheDocument();
   });
 
-  it("shows 'Speed Tiers' header when speed drawer is open", () => {
-    mockBuilderState.sideDrawer = "speed";
+  it("shows 'Speed Tiers' header when the sidepane is open", () => {
+    mockBuilderState.speedView = "sidepane";
 
     renderWorkspace();
 
     expect(screen.getByText("Speed Tiers")).toBeInTheDocument();
   });
 
-  it("close button in side panel header calls setSideDrawer(null)", async () => {
-    mockBuilderState.sideDrawer = "speed";
+  it("close button in side panel header calls setSpeedView(null)", async () => {
+    mockBuilderState.speedView = "sidepane";
 
     const user = userEvent.setup();
     renderWorkspace();
@@ -957,7 +980,28 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
       screen.getByRole("button", { name: /close speed tiers/i })
     );
 
-    expect(mockSetSideDrawer).toHaveBeenCalledWith(null);
+    expect(mockSetSpeedView).toHaveBeenCalledWith(null);
+  });
+
+  it("pop-out button in side panel header calls setSpeedView('dialog')", async () => {
+    mockBuilderState.speedView = "sidepane";
+
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    await user.click(
+      screen.getByRole("button", { name: /open speed tiers in a dialog/i })
+    );
+
+    expect(mockSetSpeedView).toHaveBeenCalledWith("dialog");
+  });
+
+  it("renders the speed tiers dialog when speedView is 'dialog'", () => {
+    mockBuilderState.speedView = "dialog";
+
+    renderWorkspace();
+
+    expect(screen.getByTestId("speed-tiers-dialog")).toBeInTheDocument();
   });
 });
 
@@ -967,7 +1011,7 @@ describe("TeamWorkspaceV2 — drawer panel", () => {
 
 describe("TeamWorkspaceV2 — side panel resizer", () => {
   it("renders a resize handle when side drawer is open", () => {
-    mockBuilderState.sideDrawer = "speed";
+    mockBuilderState.speedView = "sidepane";
 
     renderWorkspace();
 
@@ -1025,6 +1069,7 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
         format={undefined}
         alts={MULTI_ALT_LIST}
         persistence={persistence}
+        isAuthenticated={false}
         renderHeader={(actions: WorkspaceHeaderActions) => (
           <div data-testid="topbar">
             <button onClick={actions.onOpenImport} data-testid="open-import">
@@ -1042,9 +1087,13 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
     const { mockTransferTeam } = renderWithTransfer();
 
     // Find the alt select dropdown (contains alt usernames, not formats)
-    const altSelect = screen.getAllByRole("combobox").find((el) =>
-      el.querySelector('option[value="1"]')?.textContent?.includes("ash_ketchum")
-    )!;
+    const altSelect = screen
+      .getAllByRole("combobox")
+      .find((el) =>
+        el
+          .querySelector('option[value="1"]')
+          ?.textContent?.includes("ash_ketchum")
+      )!;
     await user.selectOptions(altSelect, "2");
 
     expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);
@@ -1072,6 +1121,7 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
         format={undefined}
         alts={MULTI_ALT_LIST}
         persistence={persistence}
+        isAuthenticated={false}
         renderHeader={(actions: WorkspaceHeaderActions) => (
           <div data-testid="topbar">
             <button onClick={actions.onOpenImport} data-testid="open-import">
@@ -1082,9 +1132,13 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
       />
     );
 
-    const altSelect = screen.getAllByRole("combobox").find((el) =>
-      el.querySelector('option[value="1"]')?.textContent?.includes("ash_ketchum")
-    )!;
+    const altSelect = screen
+      .getAllByRole("combobox")
+      .find((el) =>
+        el
+          .querySelector('option[value="1"]')
+          ?.textContent?.includes("ash_ketchum")
+      )!;
     await user.selectOptions(altSelect, "2");
 
     expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);

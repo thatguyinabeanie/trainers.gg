@@ -17,6 +17,7 @@ import { DateChip } from "@/app/(app)/tournaments/date-chip";
 import { getGameById, getFormatById } from "@/components/tournaments/shared";
 import { formatDisplayUsername } from "@trainers/utils";
 import type { TournamentWithOrg } from "@trainers/supabase";
+import { getWinnerHref } from "./tournament-list-utils";
 
 const TOURNAMENT_FORMAT_LABELS: Record<string, string> = {
   swiss_only: "Swiss",
@@ -24,29 +25,6 @@ const TOURNAMENT_FORMAT_LABELS: Record<string, string> = {
   single_elimination: "Single Elim",
   double_elimination: "Double Elim",
 };
-
-/**
- * Determines the correct href for a tournament winner link:
- * - Main alt → /@username (user profile)
- * - Public non-main alt → /@parentUsername/alts/altUsername
- * - Private alt → /alts/altUsername (standalone, no parent reveal)
- * - Unknown (no link data) → null (render as plain text)
- */
-function getWinnerHref(
-  winner: NonNullable<TournamentWithOrg["winner"]>
-): string | null {
-  if (winner.isMainAlt) {
-    return `/@${winner.username}`;
-  }
-  if (winner.isPublic && winner.parentUsername) {
-    return `/@${winner.parentUsername}/alts/${winner.username}`;
-  }
-  if (winner.isPublic === false) {
-    return `/alts/${winner.username}`;
-  }
-  // No link data available (e.g. dashboard context)
-  return null;
-}
 
 // ============================================================================
 // Section Header

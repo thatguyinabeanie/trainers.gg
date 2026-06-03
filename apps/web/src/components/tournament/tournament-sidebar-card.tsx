@@ -84,8 +84,12 @@ interface TournamentSidebarCardProps {
       species: string;
       nickname?: string | null;
       held_item?: string | null;
-      ability?: string;
+      ability?: string | null;
       tera_type?: string | null;
+      move1?: string | null;
+      move2?: string | null;
+      move3?: string | null;
+      move4?: string | null;
     }>;
   } | null;
 }
@@ -369,9 +373,9 @@ export function TournamentSidebarCard({
     (checkInStatus?.isCheckedIn ?? false);
 
   const { data: availableTeams = [] } = useQuery({
-    queryKey: queryKeys.tournament.userTeams(tournamentId),
+    queryKey: queryKeys.tournament.userTeams(tournamentId, gameFormat),
     queryFn: async () => {
-      const result = await getUserTeamsAction();
+      const result = await getUserTeamsAction(gameFormat);
       if (result.success) return result.data;
       return [];
     },
@@ -603,15 +607,14 @@ export function TournamentSidebarCard({
         toast.success("Team selected", {
           description: `${result.data.teamName}: ${speciesList}`,
         });
+        const selectedTeam = availableTeams.find((t) => t.id === numericId);
         setSubmittedTeam({
           teamId: result.data.teamId,
           submittedAt: new Date().toISOString(),
           locked: false,
-          // We don't have full pokemon details from the list,
-          // so use a minimal placeholder — refetch will fill it in
-          pokemon: Array.from({ length: result.data.pokemonCount }, () => ({
-            species: "Loading...",
-          })),
+          pokemon:
+            selectedTeam?.pokemon ??
+            result.data.species.map((species) => ({ species })),
         });
         setTeamEditMode(false);
         refetchRegistration();
@@ -768,7 +771,7 @@ export function TournamentSidebarCard({
     const teamDropdown =
       availableTeams.length > 0 ? (
         <Select onValueChange={handleSelectTeam} disabled={isSelectingTeam}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue
               placeholder={isSelectingTeam ? "Selecting..." : "Select a team"}
             />
@@ -907,7 +910,6 @@ export function TournamentSidebarCard({
                     move3: mon.move3 ?? undefined,
                     move4: mon.move4 ?? undefined,
                   }))}
-                  compact
                 />
               </div>
             )}
@@ -963,7 +965,7 @@ export function TournamentSidebarCard({
             </CollapsibleTrigger>
             {pokemonCount > 0 && (
               <CollapsibleContent>
-                <TeamPreview pokemon={submittedTeam.pokemon} compact />
+                <TeamPreview pokemon={submittedTeam.pokemon} />
               </CollapsibleContent>
             )}
           </Collapsible>
@@ -994,7 +996,7 @@ export function TournamentSidebarCard({
             </CollapsibleTrigger>
             {pokemonCount > 0 && (
               <CollapsibleContent className="space-y-3">
-                <TeamPreview pokemon={submittedTeam.pokemon} compact />
+                <TeamPreview pokemon={submittedTeam.pokemon} />
                 <Button
                   variant="ghost"
                   size="sm"

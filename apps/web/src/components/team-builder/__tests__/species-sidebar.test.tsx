@@ -6,7 +6,7 @@ import React from "react";
 jest.mock("@trainers/pokemon", () => ({
   ALL_TYPES: ["Fire", "Water", "Grass"],
   isChampionsFormat: jest.fn(
-    (f: { id?: string } | undefined) => f?.id === "championsvgc2026regma"
+    (f: { gameShort?: string } | undefined) => f?.gameShort === "Champions"
   ),
   getAllLegalAbilities: jest.fn(() => ["Drought", "Drizzle", "Intimidate"]),
   getAllLegalMoves: jest.fn(() => ["Tailwind", "Trick Room", "Follow Me"]),
@@ -16,7 +16,10 @@ jest.mock("@trainers/pokemon", () => ({
 import { SpeciesSidebar } from "../pickers/species-sidebar";
 import { DEFAULT_SPECIES_FILTERS } from "../pickers/species-filter-state";
 
-const championsFormat = { id: "championsvgc2026regma" } as never;
+const championsFormat = {
+  id: "gen9championsvgc2026regma",
+  gameShort: "Champions",
+} as never;
 
 function renderSidebar(overrides = {}) {
   return render(
@@ -56,39 +59,45 @@ describe("SpeciesSidebar", () => {
     expect(screen.getByText("Mega only")).toBeInTheDocument();
   });
 
-  it("clearing ability chip resets the ability filter", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    renderSidebar({
-      filters: { ...DEFAULT_SPECIES_FILTERS, ability: "Drought" },
-      onFiltersChange: onChange,
-    });
-    await user.click(screen.getByRole("button", { name: /clear drought/i }));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ ability: null })
-    );
-  });
-
-  it("ability section renders a typeahead input when no ability is set", () => {
+  it("ability section always renders a typeahead input", () => {
     renderSidebar({ format: { id: "gen9vgc2026regg" } as never });
     expect(
       screen.getByPlaceholderText(/type or click an ability/i)
     ).toBeInTheDocument();
   });
 
-  it("ability section renders the active ability as a removable chip", async () => {
+  it("ability section renders selected abilities as removable chips", () => {
+    renderSidebar({
+      filters: {
+        ...DEFAULT_SPECIES_FILTERS,
+        abilities: ["Drought", "Drizzle"],
+      },
+    });
+    expect(screen.getByRole("button", { name: "Drought" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Drizzle" })).toBeInTheDocument();
+  });
+
+  it("clicking an ability chip removes it from the filter", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     renderSidebar({
-      filters: { ...DEFAULT_SPECIES_FILTERS, ability: "Drought" },
+      filters: { ...DEFAULT_SPECIES_FILTERS, abilities: ["Drought"] },
       onFiltersChange: onChange,
     });
-    const chip = screen.getByRole("button", { name: /clear drought/i });
-    expect(chip).toHaveTextContent("Drought");
-    await user.click(chip);
+    await user.click(screen.getByRole("button", { name: "Drought" }));
     expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ ability: null })
+      expect.objectContaining({ abilities: [] })
     );
+  });
+
+  it("placeholder changes to 'Add another ability' when abilities are already selected", () => {
+    renderSidebar({
+      format: { id: "gen9vgc2026regg" } as never,
+      filters: { ...DEFAULT_SPECIES_FILTERS, abilities: ["Drought"] },
+    });
+    expect(
+      screen.getByPlaceholderText(/add another ability/i)
+    ).toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------
@@ -159,7 +168,7 @@ describe("SpeciesSidebar", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("ability Enter with a matching suggestion commits the matched value", async () => {
+  it("ability Enter with a matching suggestion adds the matched value to abilities array", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     renderSidebar({
@@ -171,7 +180,7 @@ describe("SpeciesSidebar", () => {
     await user.type(input, "Dro");
     await user.keyboard("{Enter}");
     expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ ability: "Drought" })
+      expect.objectContaining({ abilities: ["Drought"] })
     );
   });
 });

@@ -132,6 +132,26 @@ export async function getUserAdminDetails(
   return data;
 }
 
+/**
+ * Fetch minimal user profiles by a list of UUIDs.
+ * Used to display the current allowed-users list on a feature flag.
+ *
+ * @param supabase - Typed Supabase client
+ * @param ids      - Array of user UUIDs to fetch
+ */
+export async function getUsersByIds(
+  supabase: TypedClient,
+  ids: string[]
+): Promise<{ id: string; username: string | null; image: string | null }[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, username, image")
+    .in("id", ids);
+  if (error) throw error;
+  return data ?? [];
+}
+
 // ------------------------------------------------------------------
 // Mutations
 // ------------------------------------------------------------------

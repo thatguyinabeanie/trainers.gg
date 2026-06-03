@@ -25,16 +25,22 @@ export interface FieldState {
   allyAlive: boolean;
 }
 
-export type SideDrawerKey = "speed" | null;
 export type RightDrawerKey = "calc" | null;
 export type BottomDrawerKey = "matchups" | null;
+
+/**
+ * Ephemeral session presentation for speed tiers. Distinct from the persisted
+ * builder preference (default view + open-on-load) — pop-out/collapse change
+ * only this session value, never the saved preference.
+ */
+export type SpeedView = "sidepane" | "dialog" | null;
 
 interface BuilderState {
   activeIdx: number;
   setActiveIdx: (idx: number) => void;
-  /** Left panel — speed tiers */
-  sideDrawer: SideDrawerKey;
-  setSideDrawer: (d: SideDrawerKey) => void;
+  /** Left panel — speed tiers session presentation */
+  speedView: SpeedView;
+  setSpeedView: (v: SpeedView) => void;
   /** Right panel — damage calc */
   rightDrawer: RightDrawerKey;
   setRightDrawer: (d: RightDrawerKey) => void;
@@ -170,8 +176,10 @@ const DEFAULT_FIELD: FieldState = {
  */
 export function useBuilderState(): BuilderState {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [sideDrawer, setSideDrawer] = useState<SideDrawerKey>("speed");
-  const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>("calc");
+  // Initial null — nothing auto-opens; the workspace applies the saved
+  // preference (default view + open-on-load) after mount.
+  const [speedView, setSpeedView] = useState<SpeedView>(null);
+  const [rightDrawer, setRightDrawer] = useState<RightDrawerKey>(null);
   const [bottomDrawer, setBottomDrawer] = useState<BottomDrawerKey>(null);
 
   // Close side panels on mobile before first paint so the editor is immediately
@@ -181,7 +189,7 @@ export function useBuilderState(): BuilderState {
   useLayoutEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
     if (window.innerWidth < 768) {
-      setSideDrawer(null);
+      setSpeedView(null);
       setRightDrawer(null);
     }
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -304,8 +312,8 @@ export function useBuilderState(): BuilderState {
   return {
     activeIdx,
     setActiveIdx,
-    sideDrawer,
-    setSideDrawer,
+    speedView,
+    setSpeedView,
     rightDrawer,
     setRightDrawer,
     bottomDrawer,

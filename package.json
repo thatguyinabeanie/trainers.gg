@@ -3,18 +3,19 @@
   "private": true,
   "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@11.5.1",
   "scripts": {
     "// setup": "",
     "setup": "pnpm --filter=@trainers/supabase run setup",
     "setup:pds": "./infra/pds/setup-local.sh",
+    "preinstall": "git submodule update --init --recursive",
     "postinstall": "./scripts/postinstall.sh",
     "// dev": "",
-    "dev": "rm -rf apps/web/.next/dev && turbo run dev",
-    "dev:web": "turbo run dev --filter=@trainers/web",
+    "dev": "rm -rf apps/web/.next/dev && turbo run dev functions:serve --filter=@trainers/web --filter=@trainers/supabase",
+    "dev:all": "rm -rf apps/web/.next/dev && turbo run dev functions:serve",
+    "dev:web": "rm -rf apps/web/.next/dev && turbo run dev functions:serve --filter=@trainers/web --filter=@trainers/supabase",
     "dev:mobile": "turbo run dev --filter=@trainers/mobile",
-    "dev:backend": "turbo run dev --filter=@trainers/supabase",
-    "dev:web+backend": "turbo run dev --filter=@trainers/web --filter=@trainers/supabase",
+    "dev:backend": "turbo run dev functions:serve --filter=@trainers/supabase",
     "dev:db-reset": "pnpm db:reset && pnpm dev",
     "// build": "",
     "build": "turbo run build",
@@ -67,51 +68,12 @@
     "turbo:update": "pnpm dlx @turbo/codemod@latest update ."
   },
   "devDependencies": {
+    "@supabase/supabase-js": "catalog:supabase",
     "@trainers/prettier-config": "workspace:*",
+    "dotenv": "^17.4.2",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "catalog:",
-    "turbo": "^2.9.9"
-  },
-  "pnpm": {
-    "overrides": {
-      "lodash@<4.17.21": ">=4.17.21",
-      "tar@<=7.5.3": ">=7.5.4",
-      "@types/react": "~19.2.0",
-      "zod-validation-error": "^4"
-    },
-    "ignoredBuiltDependencies": [
-      "@nestjs/core",
-      "@swc/core",
-      "cbor-extract",
-      "protobufjs"
-    ],
-    "packageExtensions": {
-      "react-native": {
-        "dependencies": {
-          "@babel/runtime": "*"
-        }
-      },
-      "react-native-worklets": {
-        "dependencies": {
-          "@babel/generator": "*",
-          "@babel/traverse": "*",
-          "@babel/types": "*"
-        }
-      }
-    },
-    "onlyBuiltDependencies": [
-      "@nestjs/core",
-      "@smogon/calc",
-      "@swc/core",
-      "browser-tabs-lock",
-      "bufferutil",
-      "cbor-extract",
-      "core-js",
-      "esbuild",
-      "msw",
-      "sharp",
-      "supabase",
-      "utf-8-validate"
-    ]
+    "tsx": "catalog:",
+    "turbo": "^2.9.16"
   }
 }

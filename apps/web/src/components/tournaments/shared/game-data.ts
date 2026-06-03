@@ -37,7 +37,7 @@ export const POKEMON_GAMES: GameOption[] = [
  * Formats available for each game (newest first)
  */
 export const GAME_FORMATS: Record<string, FormatOption[]> = {
-  champions: [{ id: "championsvgc2026regma", name: "Regulation M-A" }],
+  champions: [{ id: "gen9championsvgc2026regma", name: "Regulation M-A" }],
   sv: [
     { id: "reg-i", name: "Regulation I" },
     { id: "reg-h", name: "Regulation H" },

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Play, AlertCircle, Loader2, CheckCircle, X } from "lucide-react";
 import { toast } from "sonner";
+import { getFormatLabel } from "@trainers/pokemon";
 import {
   RealtimeStatusBadge,
   type RealtimeStatus,
@@ -37,6 +38,7 @@ interface TournamentOverviewProps {
     endDate?: number;
     tournamentFormat: string;
     format: string;
+    gameFormat?: string | null;
     currentRound?: number;
     roundTimeMinutes?: number;
     swissRounds?: number;
@@ -599,6 +601,11 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
               <Badge variant="secondary" className="text-sm">
                 {tournament.format || "Custom"}
               </Badge>
+              {tournament.gameFormat && (
+                <Badge variant="outline" className="ml-1.5 text-sm">
+                  {getFormatLabel(tournament.gameFormat)}
+                </Badge>
+              )}
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">

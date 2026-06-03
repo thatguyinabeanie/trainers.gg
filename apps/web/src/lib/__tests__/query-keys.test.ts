@@ -48,6 +48,7 @@ describe("queryKeys", () => {
       expect(queryKeys.tournament.userTeams(7)).toEqual([
         "user-teams-for-tournament",
         7,
+        null,
       ]);
     });
   });
@@ -67,12 +68,9 @@ describe("queryKeys", () => {
     });
 
     it("handles undefined/null parameters", () => {
-      expect(queryKeys.match.postMatchSummary(undefined, undefined, null)).toEqual([
-        "post-match-summary",
-        undefined,
-        undefined,
-        null,
-      ]);
+      expect(
+        queryKeys.match.postMatchSummary(undefined, undefined, null)
+      ).toEqual(["post-match-summary", undefined, undefined, null]);
     });
   });
 });
