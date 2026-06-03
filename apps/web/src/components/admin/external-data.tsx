@@ -14,6 +14,7 @@ import {
   Globe,
   ListFilter,
   Loader2,
+  Play,
   RefreshCw,
   Search,
   Users,
@@ -45,6 +46,7 @@ import {
   queueTournamentForImport,
   batchQueueTournaments,
   triggerLimitlessSync,
+  triggerImportQueue,
 } from "@/actions/limitless";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
 import { normalizeLimitlessStatus } from "./limitless-status";
@@ -325,6 +327,8 @@ export function ExternalData() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [queuingIds, setQueuingIds] = useState<Set<string>>(new Set());
   const [batchQueuing, setBatchQueuing] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Load auto-import settings from DB (per-source)
@@ -818,6 +822,28 @@ export function ExternalData() {
       );
     } finally {
       setSyncing(false);
+    }
+  }
+
+  async function handleRunImport() {
+    setImporting(true);
+    setImportMessage(null);
+    try {
+      const result = await triggerImportQueue(limitlessBatchSize);
+      if (!result.success) throw new Error(result.error);
+      const { processed, errors } = result.data;
+      setImportMessage(
+        errors > 0
+          ? `Imported ${processed} (${errors} failed)`
+          : `Imported ${processed}`
+      );
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setImportMessage(
+        `Error: ${err instanceof Error ? err.message : "Import failed"}`
+      );
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -1340,6 +1366,33 @@ export function ExternalData() {
                   )}
                   Queue All ({limitlessPendingCount})
                 </Button>
+              )}
+              {limitlessQueuedCount > 0 && (
+                <Button
+                  onClick={handleRunImport}
+                  disabled={importing}
+                  size="sm"
+                  variant="outline"
+                >
+                  {importing ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Play className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Run Import
+                </Button>
+              )}
+              {importMessage && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    importMessage.startsWith("Error")
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {importMessage}
+                </p>
               )}
               <Button
                 onClick={handleSync}
