@@ -702,6 +702,9 @@ export function ExternalData() {
   const teamsEligibleSelected = selectedRk9Rows.filter((r) =>
     ["roster", "teams", "complete"].includes(r.rk9!.import_status)
   );
+  const resetEligibleSelected = selectedRk9Rows.filter(
+    (r) => r.rk9!.import_status !== "pending"
+  );
   const limitlessQueueEligibleSelected = limitlessRows.filter(
     (r) =>
       selectedIds.has(r.id) &&
@@ -959,6 +962,25 @@ export function ExternalData() {
     setBulkProcessing(false);
     setBulkProgress(null);
     setSelectedIds(new Set());
+  }
+
+  async function handleBulkResetEvents() {
+    if (
+      !window.confirm(
+        `Delete roster and team data for ${resetEligibleSelected.length} event(s)? This cannot be undone.`
+      )
+    )
+      return;
+    setBulkProcessing(true);
+    const events = resetEligibleSelected;
+    for (let i = 0; i < events.length; i++) {
+      setBulkProgress({ total: events.length, done: i, current: events[i]!.name });
+      await resetRk9EventData(events[i]!.rk9!.event_id);
+    }
+    setBulkProcessing(false);
+    setBulkProgress(null);
+    setSelectedIds(new Set());
+    setRefreshKey((k) => k + 1);
   }
 
   async function handleBulkQueueSelected() {
@@ -1925,6 +1947,22 @@ export function ExternalData() {
                 <CloudDownload className="mr-1.5 h-3.5 w-3.5" />
               )}
               Scrape Teams ({teamsEligibleSelected.length})
+            </Button>
+          )}
+          {activeTab === "rk9" && resetEligibleSelected.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkProcessing}
+              onClick={handleBulkResetEvents}
+              className="text-destructive hover:text-destructive"
+            >
+              {bulkProcessing && bulkProgress ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Delete Data ({resetEligibleSelected.length})
             </Button>
           )}
           {activeTab === "limitless" && limitlessQueueEligibleSelected.length > 0 && (
