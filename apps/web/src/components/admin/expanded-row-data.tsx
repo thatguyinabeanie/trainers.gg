@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { type UnifiedRow, type ExpandedView } from "./external-data-shared";
@@ -291,21 +292,23 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
       {/* View toggle */}
       <div className="mb-3 flex items-center gap-1">
         <button
-          className={
+          className={cn(
+            "rounded px-3 py-1 text-xs font-medium",
             view === "standings"
-              ? "rounded px-3 py-1 text-xs font-medium bg-muted text-foreground"
-              : "rounded px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-          }
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
           onClick={() => setView("standings")}
         >
           Standings
         </button>
         <button
-          className={
+          className={cn(
+            "rounded px-3 py-1 text-xs font-medium",
             view === secondaryView
-              ? "rounded px-3 py-1 text-xs font-medium bg-muted text-foreground"
-              : "rounded px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-          }
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
           onClick={() => setView(secondaryView)}
         >
           {secondaryLabel}
