@@ -195,7 +195,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                         .map((s, i) => {
                           const expansionKey = `${s.division}-${s.placement}`;
                           const isExpanded = expandedPlacements.has(expansionKey);
-                          const pokemon = s.team_pokemon ?? [];
+                          const pokemon = (s.team_pokemon ?? []).filter((p) => p.position > 0);
                           return (
                             <Fragment key={i}>
                             <tr className="border-b last:border-0">

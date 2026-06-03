@@ -548,6 +548,24 @@ export async function scrapeRk9TeamsBatch(
             const rows: typeof allTeamRows = [];
             const newSpeciesEntries = new Map<string, string>();
 
+            if (pokemon.length === 0) {
+              // Player didn't submit a team list. Insert a position=0 sentinel
+              // so this standing is excluded from future scrape batches and
+              // the import doesn't loop indefinitely on empty pages.
+              rows.push({
+                standing_id: standing.id,
+                position: 0,
+                species: "",
+                species_raw: "",
+                ability: null,
+                held_item: null,
+                tera_type: null,
+                stat_alignment: null,
+                moves: null,
+              });
+              return { rows, newSpeciesEntries, scraped: 1, failed: 0 };
+            }
+
             for (const [idx, mon] of pokemon.entries()) {
               if (
                 !newSpecies.has(mon.speciesRaw) &&
