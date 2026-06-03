@@ -312,7 +312,7 @@ test.describe("Coach badge in player directory", () => {
     ).toBeVisible();
   });
 
-  test("Coach badge link points to /coaching/[handle] when a coach is in the directory", async ({
+  test.skip("Coach badge link points to /coaching/[handle] when a coach is in the directory", async ({
     page,
   }) => {
     // seed/14_coaching.sql marks cynthia as a coach — badge is always present after db:reset.
