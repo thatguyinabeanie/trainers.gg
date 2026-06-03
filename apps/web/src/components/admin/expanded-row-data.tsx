@@ -102,6 +102,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
             "placement, record_wins, record_losses, record_ties, players(username, display_name, country), team_pokemon(position, species, ability, held_item, tera_type, moves)"
           )
           .eq("tournament_id", row.limitless.tournament_id)
+          .gt("placement", 0)
           .order("placement", { ascending: true })
           .limit(standingsLimit);
         if (error) throw error;
