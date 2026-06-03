@@ -515,51 +515,75 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
       moves: string[] | null;
     }[] = [];
 
-    for (const standing of batch) {
-      const entryId = standing.roster_entry_id;
-      if (!entryId) continue;
-
-      try {
-        await sleep(DELAY_TEAM_MS);
-        const html = await fetchRk9Html(
-          `/teamlist/public/${eventId}/${entryId}`
-        );
-        const pokemon = parseTeamListPage(html);
-
-        if (pokemon.length > 0) {
-          const pokemonRows = pokemon.map((mon, i) => {
-            if (
-              !newSpecies.has(mon.speciesRaw) &&
-              !speciesMap.has(mon.speciesRaw)
-            ) {
-              newSpecies.set(
-                mon.speciesRaw,
-                normalizeSpeciesInline(mon.speciesRaw)
-              );
-            }
+    // Process in concurrent chunks — RK9 has no rate limiting so no delay needed
+    for (let i = 0; i < batch.length; i += concurrency) {
+      const chunk = batch.slice(i, i + concurrency);
+      const chunkResults = await Promise.all(
+        chunk.map(async (standing) => {
+          const entryId = standing.roster_entry_id;
+          if (!entryId)
             return {
-              standing_id: standing.id,
-              position: i + 1,
-              species:
-                speciesMap.get(mon.speciesRaw) ??
-                newSpecies.get(mon.speciesRaw) ??
-                normalizeSpeciesInline(mon.speciesRaw),
-              species_raw: mon.speciesRaw,
-              ability: mon.ability || null,
-              held_item: mon.heldItem || null,
-              tera_type: mon.teraType || null,
-              stat_alignment: mon.statAlignment ?? null,
-              moves: mon.moves.length > 0 ? mon.moves : null,
+              rows: [] as typeof allTeamRows,
+              newSpeciesEntries: new Map<string, string>(),
+              scraped: 0,
+              failed: 0,
             };
-          });
 
-          allTeamRows.push(...pokemonRows);
-          batchScraped++;
-        } else {
-          batchScraped++;
+          try {
+            const html = await fetchRk9Html(
+              `/teamlist/public/${eventId}/${entryId}`
+            );
+            const pokemon = parseTeamListPage(html);
+            const rows: typeof allTeamRows = [];
+            const newSpeciesEntries = new Map<string, string>();
+
+            for (const [idx, mon] of pokemon.entries()) {
+              if (
+                !newSpecies.has(mon.speciesRaw) &&
+                !speciesMap.has(mon.speciesRaw)
+              ) {
+                newSpeciesEntries.set(
+                  mon.speciesRaw,
+                  normalizeSpeciesInline(mon.speciesRaw)
+                );
+              }
+              rows.push({
+                standing_id: standing.id,
+                position: idx + 1,
+                species:
+                  speciesMap.get(mon.speciesRaw) ??
+                  newSpecies.get(mon.speciesRaw) ??
+                  newSpeciesEntries.get(mon.speciesRaw) ??
+                  normalizeSpeciesInline(mon.speciesRaw),
+                species_raw: mon.speciesRaw,
+                ability: mon.ability || null,
+                held_item: mon.heldItem || null,
+                tera_type: mon.teraType || null,
+                stat_alignment: mon.statAlignment ?? null,
+                moves: mon.moves.length > 0 ? mon.moves : null,
+              });
+            }
+
+            return { rows, newSpeciesEntries, scraped: 1, failed: 0 };
+          } catch {
+            return {
+              rows: [] as typeof allTeamRows,
+              newSpeciesEntries: new Map<string, string>(),
+              scraped: 0,
+              failed: 1,
+            };
+          }
+        })
+      );
+
+      // Merge chunk results into accumulators (safe: JS is single-threaded)
+      for (const result of chunkResults) {
+        allTeamRows.push(...result.rows);
+        for (const [raw, slug] of result.newSpeciesEntries) {
+          newSpecies.set(raw, slug);
         }
-      } catch {
-        batchFailed++;
+        batchScraped += result.scraped;
+        batchFailed += result.failed;
       }
     }
 
