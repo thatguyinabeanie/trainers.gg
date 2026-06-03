@@ -58,6 +58,11 @@ jest.mock("@/lib/supabase/server", () => ({
                 .mockResolvedValue({ data: { id: 1 }, error: null }),
             }),
           }),
+          update: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({ error: null }),
+            }),
+          }),
         };
       }
       return {};
