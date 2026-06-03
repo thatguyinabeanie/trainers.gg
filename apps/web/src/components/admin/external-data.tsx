@@ -1015,7 +1015,7 @@ export function ExternalData() {
         .schema("rk9")
         .from("players")
         .select(
-          "id, player_id_masked, first_name, last_name, country, trainer_name, standings(count)"
+          "id, player_id_masked, first_name, last_name, country, standings(count)"
         )
         .order("last_name", { ascending: true });
       if (error) throw error;
@@ -1025,7 +1025,6 @@ export function ExternalData() {
         first_name: string;
         last_name: string;
         country: string;
-        trainer_name: string | null;
         standings: [{ count: number }];
       }>;
     },
@@ -1037,9 +1036,9 @@ export function ExternalData() {
     if (!playerSearch) return true;
     const q = playerSearch.toLowerCase();
     return (
-      p.trainer_name?.toLowerCase().includes(q) ||
       p.first_name?.toLowerCase().includes(q) ||
-      p.last_name?.toLowerCase().includes(q)
+      p.last_name?.toLowerCase().includes(q) ||
+      p.player_id_masked?.toLowerCase().includes(q)
     );
   });
 
@@ -1049,7 +1048,7 @@ export function ExternalData() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const playerScrollRef = useRef<HTMLDivElement>(null);
 
-  type PlayerSortCol = "trainer" | "name" | "country" | "id" | "events";
+  type PlayerSortCol = "name" | "id" | "country" | "events";
   const [playerSort, setPlayerSort] = useState<{
     column: PlayerSortCol;
     direction: "asc" | "desc";
@@ -1066,15 +1065,13 @@ export function ExternalData() {
   const sortedPlayers = [...filteredPlayers].sort((a, b) => {
     const dir = playerSort.direction === "asc" ? 1 : -1;
     switch (playerSort.column) {
-      case "trainer":
-        return (a.trainer_name ?? "").localeCompare(b.trainer_name ?? "") * dir;
       case "name":
         return `${a.first_name} ${a.last_name}`
           .localeCompare(`${b.first_name} ${b.last_name}`) * dir;
-      case "country":
-        return (a.country ?? "").localeCompare(b.country ?? "") * dir;
       case "id":
         return (a.player_id_masked ?? "").localeCompare(b.player_id_masked ?? "") * dir;
+      case "country":
+        return (a.country ?? "").localeCompare(b.country ?? "") * dir;
       case "events":
         return ((a.standings[0]?.count ?? 0) - (b.standings[0]?.count ?? 0)) * dir;
       default:
@@ -1163,7 +1160,7 @@ export function ExternalData() {
           {/* RK9 sub-nav: Events | Players */}
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setRk9View("events")}
+              onClick={() => { setRk9View("events"); setSelectedIds(new Set()); }}
               className={cn(
                 "rounded px-3 py-1 text-xs font-medium",
                 rk9View === "events"
@@ -1174,7 +1171,7 @@ export function ExternalData() {
               Events
             </button>
             <button
-              onClick={() => setRk9View("players")}
+              onClick={() => { setRk9View("players"); setSelectedIds(new Set()); }}
               className={cn(
                 "rounded px-3 py-1 text-xs font-medium",
                 rk9View === "players"
@@ -1191,7 +1188,7 @@ export function ExternalData() {
             <div className="relative">
               <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
               <Input
-                placeholder="Search by trainer or name..."
+                placeholder="Search by name or player ID..."
                 value={playerSearch}
                 onChange={(e) => setPlayerSearch(e.target.value)}
                 className="h-8 pl-8 text-sm"
@@ -1919,7 +1916,7 @@ export function ExternalData() {
             Clear
           </Button>
           <div className="bg-border h-4 w-px" />
-          {activeTab === "rk9" && rosterEligibleSelected.length > 0 && (
+          {activeTab === "rk9" && rk9View === "events" && rosterEligibleSelected.length > 0 && (
             <Button
               size="sm"
               variant="outline"
@@ -1934,7 +1931,7 @@ export function ExternalData() {
               Scrape Rosters ({rosterEligibleSelected.length})
             </Button>
           )}
-          {activeTab === "rk9" && teamsEligibleSelected.length > 0 && (
+          {activeTab === "rk9" && rk9View === "events" && teamsEligibleSelected.length > 0 && (
             <Button
               size="sm"
               variant="outline"
@@ -1949,7 +1946,7 @@ export function ExternalData() {
               Scrape Teams ({teamsEligibleSelected.length})
             </Button>
           )}
-          {activeTab === "rk9" && resetEligibleSelected.length > 0 && (
+          {activeTab === "rk9" && rk9View === "events" && resetEligibleSelected.length > 0 && (
             <Button
               size="sm"
               variant="outline"
@@ -2001,16 +1998,16 @@ export function ExternalData() {
           {/* Players table header */}
           <div
             className="grid border-b"
-            style={{ gridTemplateColumns: "28px 130px 1fr 120px 80px 80px" }}
+            style={{ gridTemplateColumns: "28px 1fr 120px 60px 60px" }}
           >
             <div className="h-10" />
-            {(["trainer", "name", "country", "id", "events"] as const).map((col) => (
+            {(["name", "id", "country", "events"] as const).map((col) => (
               <div key={col} className="flex h-10 items-center px-2">
                 <button
                   className="hover:text-foreground inline-flex items-center gap-1 text-xs font-medium capitalize whitespace-nowrap"
                   onClick={() => togglePlayerSort(col)}
                 >
-                  {col}
+                  {col === "id" ? "RK9 ID" : col.charAt(0).toUpperCase() + col.slice(1)}
                   {playerSort.column === col ? (
                     playerSort.direction === "asc" ? (
                       <ArrowUp className="h-3 w-3" />
@@ -2075,7 +2072,7 @@ export function ExternalData() {
                       <div
                         className="grid hover:bg-muted/50 transition-colors"
                         style={{
-                          gridTemplateColumns: "28px 130px 1fr 120px 80px 80px",
+                          gridTemplateColumns: "28px 1fr 120px 60px 60px",
                         }}
                       >
                         {/* Chevron */}
@@ -2098,23 +2095,19 @@ export function ExternalData() {
                             )}
                           </button>
                         </div>
-                        {/* Trainer */}
-                        <div className="flex min-w-0 items-center p-2 text-xs">
-                          <span className="truncate">
-                            {p.trainer_name ?? "—"}
-                          </span>
-                        </div>
                         {/* Name */}
                         <div className="flex min-w-0 items-center p-2 text-xs">
-                          <span className="truncate">{fullName}</span>
-                        </div>
-                        {/* Country */}
-                        <div className="flex items-center p-2 font-mono text-xs uppercase">
-                          {p.country ?? "—"}
+                          <span className="truncate">
+                            {[p.first_name, p.last_name].filter(Boolean).join(" ") || "—"}
+                          </span>
                         </div>
                         {/* Player ID */}
                         <div className="flex items-center p-2 font-mono text-xs text-muted-foreground">
                           {p.player_id_masked ?? "—"}
+                        </div>
+                        {/* Country */}
+                        <div className="flex items-center p-2 font-mono text-xs uppercase">
+                          {p.country ?? "—"}
                         </div>
                         {/* Events */}
                         <div className="flex items-center p-2 text-xs">

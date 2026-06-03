@@ -133,7 +133,6 @@ export async function importEvent(
     firstName: string;
     lastName: string;
     country: string | null;
-    trainerName: string | null;
   }>();
 
   for (const entry of roster) {
@@ -145,7 +144,6 @@ export async function importEvent(
         firstName: entry.firstName,
         lastName: entry.lastName,
         country: entry.country ?? null,
-        trainerName: entry.trainerName ?? null,
       });
     }
   }
@@ -163,7 +161,6 @@ export async function importEvent(
           first_name: p.firstName,
           last_name: p.lastName,
           country: p.country,
-          trainer_name: p.trainerName,
         })),
         { onConflict: "player_id_masked,first_name,last_name,country" }
       )

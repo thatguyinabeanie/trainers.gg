@@ -36,7 +36,7 @@ interface RK9StandingWithTeam {
     first_name: string;
     last_name: string;
     country: string;
-    trainer_name: string | null;
+    player_id_masked: string | null;
   } | null;
   team_pokemon: PokemonSlot[] | null;
 }
@@ -117,7 +117,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
           .schema("rk9")
           .from("standings")
           .select(
-            "placement, division, drop_round, player_id, roster_entry_id, players(first_name, last_name, country, trainer_name), team_pokemon(position, species, ability, held_item, tera_type, stat_alignment, moves)"
+            "placement, division, drop_round, player_id, roster_entry_id, players(first_name, last_name, country, player_id_masked), team_pokemon(position, species, ability, held_item, tera_type, stat_alignment, moves)"
           )
           .eq("event_id", row.rk9.event_id)
           .order("placement", { ascending: true })
@@ -210,12 +210,11 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                 <thead>
                   <tr className="border-b text-xs text-muted-foreground">
                     <th className="w-6 py-1" />
-                    <th className="py-1 pr-3 text-left font-medium">Standing</th>
+                    <th className="py-1 pr-3 text-left font-medium">#</th>
                     {row.source === "rk9" ? (
                       <>
                         <th className="py-1 pr-3 text-left font-medium">Name</th>
-                        <th className="py-1 pr-3 text-left font-medium">Country</th>
-                        <th className="py-1 pr-4 text-left font-medium">Trainer</th>
+                        <th className="py-1 pr-4 text-left font-medium">Country</th>
                       </>
                     ) : (
                       <th className="py-1 pr-4 text-left font-medium">Player</th>
@@ -254,41 +253,43 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                 {s.placement}
                               </td>
                               <td className="py-1.5 pr-3 text-xs">
-                                {[s.players?.first_name, s.players?.last_name].filter(Boolean).join(" ") || "—"}
-                              </td>
-                              <td className="py-1.5 pr-3 font-mono text-xs uppercase">
-                                {s.players?.country ?? "—"}
-                              </td>
-                              <td className="py-1.5 pr-4 text-xs">
-                                <div className="flex items-center gap-1">
-                                  <span>{s.players?.trainer_name ?? "—"}</span>
-                                  {s.roster_entry_id && (
-                                    <a
-                                      href={`https://rk9.gg/teamlist/public/${row.rk9!.event_id}/${s.roster_entry_id}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-muted-foreground hover:text-foreground shrink-0"
-                                      aria-label="View team on RK9"
-                                    >
-                                      <ExternalLink className="h-3 w-3" />
-                                    </a>
-                                  )}
-                                  {s.roster_entry_id && pokemon.length === 0 && (
-                                    <button
-                                      className="shrink-0 text-muted-foreground hover:text-foreground"
-                                      onClick={/* istanbul ignore next */ () => handleScrapeStanding(s.player_id!, s.roster_entry_id!)}
-                                      disabled={scrapingIds.has(s.player_id!)}
-                                      title="Scrape team list"
-                                      aria-label="Scrape team"
-                                    >
-                                      {scrapingIds.has(s.player_id!) ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      ) : (
-                                        <Download className="h-3 w-3" />
-                                      )}
-                                    </button>
-                                  )}
+                                <div>
+                                  <div className="flex items-center gap-1">
+                                    <span>{[s.players?.first_name, s.players?.last_name].filter(Boolean).join(" ") || "—"}</span>
+                                    {s.players?.player_id_masked && (
+                                      <span className="text-muted-foreground ml-1 text-xs">({s.players.player_id_masked})</span>
+                                    )}
+                                    {s.roster_entry_id && (
+                                      <a
+                                        href={`https://rk9.gg/teamlist/public/${row.rk9!.event_id}/${s.roster_entry_id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-muted-foreground hover:text-foreground shrink-0"
+                                        aria-label="View team on RK9"
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    )}
+                                    {s.roster_entry_id && pokemon.length === 0 && (
+                                      <button
+                                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                                        onClick={/* istanbul ignore next */ () => handleScrapeStanding(s.player_id!, s.roster_entry_id!)}
+                                        disabled={scrapingIds.has(s.player_id!)}
+                                        title="Scrape team list"
+                                        aria-label="Scrape team"
+                                      >
+                                        {scrapingIds.has(s.player_id!) ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                          <Download className="h-3 w-3" />
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
+                              </td>
+                              <td className="py-1.5 pr-4 font-mono text-xs uppercase">
+                                {s.players?.country ?? "—"}
                               </td>
                               <td className="py-1.5 pr-4">
                                 {pokemon.length > 0 ? (
@@ -323,7 +324,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                             </tr>
                             {isExpanded && (
                               <tr>
-                                <td colSpan={8} className="px-2 pb-3">
+                                <td colSpan={5} className="px-2 pb-3">
                                   {pokemon.length === 0 ? (
                                     <p className="text-muted-foreground pt-1 text-xs">
                                       No team data
