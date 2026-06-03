@@ -993,12 +993,13 @@ export function ExternalData() {
         .schema("rk9")
         .from("players")
         .select(
-          "id, first_name, last_name, country, trainer_name, standings(count)"
+          "id, player_id_masked, first_name, last_name, country, trainer_name, standings(count)"
         )
         .order("last_name", { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as Array<{
         id: number;
+        player_id_masked: string | null;
         first_name: string;
         last_name: string;
         country: string;
@@ -1026,7 +1027,7 @@ export function ExternalData() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const playerScrollRef = useRef<HTMLDivElement>(null);
 
-  type PlayerSortCol = "trainer" | "name" | "country" | "events";
+  type PlayerSortCol = "trainer" | "name" | "country" | "id" | "events";
   const [playerSort, setPlayerSort] = useState<{
     column: PlayerSortCol;
     direction: "asc" | "desc";
@@ -1050,6 +1051,8 @@ export function ExternalData() {
           .localeCompare(`${b.first_name} ${b.last_name}`) * dir;
       case "country":
         return (a.country ?? "").localeCompare(b.country ?? "") * dir;
+      case "id":
+        return (a.player_id_masked ?? "").localeCompare(b.player_id_masked ?? "") * dir;
       case "events":
         return ((a.standings[0]?.count ?? 0) - (b.standings[0]?.count ?? 0)) * dir;
       default:
@@ -1960,10 +1963,10 @@ export function ExternalData() {
           {/* Players table header */}
           <div
             className="grid border-b"
-            style={{ gridTemplateColumns: "28px 160px 1fr 80px 80px" }}
+            style={{ gridTemplateColumns: "28px 130px 1fr 120px 80px 80px" }}
           >
             <div className="h-10" />
-            {(["trainer", "name", "country", "events"] as const).map((col) => (
+            {(["trainer", "name", "country", "id", "events"] as const).map((col) => (
               <div key={col} className="flex h-10 items-center px-2">
                 <button
                   className="hover:text-foreground inline-flex items-center gap-1 text-xs font-medium capitalize whitespace-nowrap"
@@ -2034,7 +2037,7 @@ export function ExternalData() {
                       <div
                         className="grid hover:bg-muted/50 transition-colors"
                         style={{
-                          gridTemplateColumns: "28px 160px 1fr 80px 80px",
+                          gridTemplateColumns: "28px 130px 1fr 120px 80px 80px",
                         }}
                       >
                         {/* Chevron */}
@@ -2070,6 +2073,10 @@ export function ExternalData() {
                         {/* Country */}
                         <div className="flex items-center p-2 font-mono text-xs uppercase">
                           {p.country ?? "—"}
+                        </div>
+                        {/* Player ID */}
+                        <div className="flex items-center p-2 font-mono text-xs text-muted-foreground">
+                          {p.player_id_masked ?? "—"}
                         </div>
                         {/* Events */}
                         <div className="flex items-center p-2 text-xs">
