@@ -224,6 +224,7 @@ function renderTopbar(props: RenderProps = {}) {
   const onJumpToPokemon = jest.fn();
   const onValidate = jest.fn();
   const onNameChange = jest.fn().mockResolvedValue(undefined);
+  const onOpenSettings = jest.fn();
 
   const utils = render(
     <BuilderTopbar
@@ -233,6 +234,7 @@ function renderTopbar(props: RenderProps = {}) {
       onJumpToPokemon={onJumpToPokemon}
       onValidate={onValidate}
       onNameChange={onNameChange}
+      onOpenSettings={onOpenSettings}
       onSaveToAccount={props.onSaveToAccount}
       isSaving={props.isSaving}
       userTeams={props.userTeams as never}

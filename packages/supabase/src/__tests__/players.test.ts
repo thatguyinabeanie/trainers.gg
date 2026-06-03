@@ -213,6 +213,77 @@ describe("searchPlayers", () => {
     expect(result.players).toEqual([]);
     expect(result.totalCount).toBe(0);
   });
+
+  it("chunks the alts/stats IN-queries and merges rows across chunks", async () => {
+    // 150 users with default sort "tournaments" → searchPlayers fetches ALL
+    // users (post-sort), so allUserIds has 150 ids → 2 alts chunks (size 100)
+    // and 2 stats chunks. Regression guard: a single oversized IN-list returned
+    // "URI too long", silently stripping every altId and all coach badges.
+    const users = Array.from({ length: 150 }, (_, i) => ({
+      id: `user-${i}`,
+      username: `player_${i}`,
+      country: null,
+      created_at: "2025-01-01T00:00:00Z",
+    }));
+    const toAlt = (u: { id: string; username: string }, id: number) => ({
+      id,
+      user_id: u.id,
+      username: u.username,
+      avatar_url: null,
+    });
+    const altsChunk1 = users.slice(0, 100).map((u, i) => toAlt(u, i + 1));
+    const altsChunk2 = users.slice(100).map((u, i) => toAlt(u, i + 101));
+
+    const supabase = mockSupabaseSequential([
+      { data: users, count: 150 }, // users query
+      { data: altsChunk1 }, // alts chunk 1 (user-0..99 -> alt 1..100)
+      { data: altsChunk2 }, // alts chunk 2 (user-100..149 -> alt 101..150)
+      { data: [] }, // stats chunk 1 (alt 1..100)
+      // stats chunk 2 (alt 101..150): give a chunk-2 user a tournament so it
+      // sorts to the top, proving BOTH the alts and stats chunk-2 merged.
+      {
+        data: [
+          { alt_id: 101, match_wins: 9, match_losses: 1, tournament_id: 1 },
+        ],
+      },
+    ]);
+
+    const result = await searchPlayers(supabase, { sort: "tournaments" }, 1);
+
+    // Top player is the chunk-2 user whose stats came from stats chunk 2.
+    expect(result.players[0]).toEqual(
+      expect.objectContaining({
+        userId: "user-100",
+        username: "player_100",
+        altId: 101,
+        tournamentCount: 1,
+      })
+    );
+    // Every player on the page resolved a non-null altId (no silent strip).
+    expect(result.players.every((p) => p.altId !== null)).toBe(true);
+  });
+
+  it("throws when a chunked alts query errors instead of silently returning empty", async () => {
+    const supabase = mockSupabaseSequential([
+      {
+        data: [
+          {
+            id: "u1",
+            username: "solo",
+            country: null,
+            created_at: "2025-01-01T00:00:00Z",
+          },
+        ],
+        count: 1,
+      },
+      // alts chunk errors — must propagate, not be swallowed
+      { data: null, error: { message: "URI too long" } },
+    ]);
+
+    await expect(searchPlayers(supabase, {}, 1)).rejects.toThrow(
+      "URI too long"
+    );
+  });
 });
 
 // ============================================================================

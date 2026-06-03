@@ -68,6 +68,22 @@ import {
   SpeedTiersPanel,
   getTeamFastestSpeed,
 } from "../dock/speed-tiers-panel";
+import { useSpeedTiersToggle } from "../dock/speed-tiers-state";
+
+/**
+ * Stateful harness — SpeedTiersPanel is now a controlled component that
+ * requires `toggle`/`setToggle`. The harness supplies real state via the
+ * shared hook so interaction tests (stage steppers, etc.) work.
+ */
+function SpeedTiersPanelHarness(
+  props: Omit<
+    React.ComponentProps<typeof SpeedTiersPanel>,
+    "toggle" | "setToggle"
+  >
+) {
+  const { toggle, setToggle } = useSpeedTiersToggle();
+  return <SpeedTiersPanel {...props} toggle={toggle} setToggle={setToggle} />;
+}
 
 // =============================================================================
 // Fixtures
@@ -162,7 +178,7 @@ beforeEach(() => {
 
 describe("SpeedTiersPanel — switch interactions", () => {
   function renderEmpty() {
-    return render(<SpeedTiersPanel team={[]} format={TEST_FORMAT} />);
+    return render(<SpeedTiersPanelHarness team={[]} format={TEST_FORMAT} />);
   }
 
   it("renders section labels and headers", () => {
@@ -305,7 +321,7 @@ describe("SpeedTiersPanel — tier table row rendering", () => {
       makeEntry("Rillaboom", 60),
     ]);
 
-    render(<SpeedTiersPanel team={[]} format={TEST_FORMAT} />);
+    render(<SpeedTiersPanelHarness team={[]} format={TEST_FORMAT} />);
 
     expect(screen.getByText("Amoonguss")).toBeInTheDocument();
     expect(screen.getByText("Rillaboom")).toBeInTheDocument();
@@ -320,7 +336,7 @@ describe("SpeedTiersPanel — tier table row rendering", () => {
     const rillaboom = makePokemon(10, "Rillaboom");
     const team = [makeTeamEntry(100, 10, 1, rillaboom)];
 
-    render(<SpeedTiersPanel team={team} format={TEST_FORMAT} />);
+    render(<SpeedTiersPanelHarness team={team} format={TEST_FORMAT} />);
 
     const instances = screen.getAllByText("Rillaboom");
     expect(instances).toHaveLength(2);

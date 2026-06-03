@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { createStaticClient } from "@/lib/supabase/server";
 import {
   searchPlayers,
+  attachCoachBadges,
   getLeaderboard,
   getRecentlyActivePlayers,
   getNewMembers,
@@ -88,13 +89,25 @@ const getCachedNewMembers = unstable_cache(
 
 export default async function PlayersPage() {
   // Fetch all data in parallel
-  const [initialPlayers, leaderboard, recentlyActive, newMembers] =
+  const [cachedPlayers, leaderboard, recentlyActive, newMembers] =
     await Promise.all([
       getCachedPlayers(),
       getCachedLeaderboard(),
       getCachedRecentlyActive(),
       getCachedNewMembers(),
     ]);
+
+  // Resolve coach badges OUTSIDE the cache: getCoachBadges is gated on the
+  // global coaching flag and per-user coach status, neither of which busts
+  // CacheTags.PLAYERS_DIRECTORY — caching it would serve stale badges. The
+  // lookup is privacy-safe (booleans + public canonical handle only).
+  const initialPlayers = {
+    ...cachedPlayers,
+    players: await attachCoachBadges(
+      createStaticClient(),
+      cachedPlayers.players
+    ),
+  };
 
   return (
     <PageContainer>

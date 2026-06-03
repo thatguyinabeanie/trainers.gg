@@ -8,7 +8,9 @@ import {
   formatDisplayUsername,
   isTempUsername,
 } from "@trainers/utils";
+import { type CoachBadgeInfo } from "@trainers/supabase/queries";
 import { NewTrainerBadge } from "@/components/ui/new-trainer-badge";
+import { CoachBadge } from "@/components/ui/coach-badge";
 
 interface PlayerCardProps {
   username: string;
@@ -16,6 +18,12 @@ interface PlayerCardProps {
   country: string | null;
   tournamentCount: number;
   winRate: number;
+  /**
+   * Coach-badge visibility for this player's primary alt. Renders the badge
+   * only when showCoachBadge is true AND coachHandle is non-null. The badge
+   * links via coachHandle (the account's canonical handle), never username.
+   */
+  coachBadge?: CoachBadgeInfo;
   className?: string;
 }
 
@@ -30,6 +38,7 @@ export function PlayerCard({
   country,
   tournamentCount,
   winRate,
+  coachBadge,
   className,
 }: PlayerCardProps) {
   // Get first two characters of display name for avatar fallback
@@ -39,54 +48,68 @@ export function PlayerCard({
   const countryName = country ? getCountryName(country) : null;
 
   return (
-    <Link href={`/@${username}`} className="block">
-      <Card
-        size="sm"
-        className={cn(
-          "hover:bg-muted/50 transition-colors duration-150",
-          className
-        )}
-      >
-        <CardContent className="flex items-center gap-3">
-          {/* Avatar */}
-          <Avatar size="lg">
-            {avatarUrl && <AvatarImage src={avatarUrl} alt={username} />}
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
+    <Card
+      size="sm"
+      className={cn(
+        "hover:bg-muted/50 relative transition-colors duration-150",
+        className
+      )}
+    >
+      <CardContent className="flex items-center gap-3">
+        {/* Primary navigation target — overlay link covering the whole card.
+            Kept as a sibling (not a wrapper) so the CoachBadge's own link is
+            not nested inside this anchor (nested <a> is invalid HTML). */}
+        <Link
+          href={`/@${username}`}
+          aria-label={displayUsername}
+          className="absolute inset-0"
+        />
 
-          {/* Info */}
-          <div className="min-w-0 flex-1">
-            {/* Username + country flag */}
-            <div className="flex items-center gap-1.5">
-              <span className="truncate text-sm font-medium">
-                {displayUsername}
-              </span>
-              {isTemp && <NewTrainerBadge />}
-              {country && (
-                <span
-                  className="shrink-0 text-sm"
-                  title={countryName ?? country}
-                  role="img"
-                  aria-label={countryName ?? country}
-                >
-                  {countryCodeToFlag(country)}
-                </span>
-              )}
-            </div>
+        {/* Avatar */}
+        <Avatar size="lg">
+          {avatarUrl && <AvatarImage src={avatarUrl} alt={username} />}
+          <AvatarFallback>{initials}</AvatarFallback>
+        </Avatar>
 
-            {/* Stats row */}
-            <div className="text-muted-foreground mt-0.5 flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1">
-                <Trophy className="h-3 w-3" />
-                {tournamentCount}{" "}
-                {tournamentCount === 1 ? "tournament" : "tournaments"}
+        {/* Info */}
+        <div className="min-w-0 flex-1">
+          {/* Username + country flag */}
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium">
+              {displayUsername}
+            </span>
+            {isTemp && <NewTrainerBadge />}
+            {coachBadge?.showCoachBadge && coachBadge.coachHandle && (
+              <CoachBadge
+                handle={coachBadge.coachHandle}
+                iconOnly
+                className="relative z-10 shrink-0"
+              />
+            )}
+            {country && (
+              <span
+                className="shrink-0 text-sm"
+                title={countryName ?? country}
+                role="img"
+                aria-label={countryName ?? country}
+              >
+                {countryCodeToFlag(country)}
               </span>
-              {tournamentCount > 0 && <span>{winRate.toFixed(1)}% WR</span>}
-            </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+
+          {/* Stats row */}
+          <div className="text-muted-foreground mt-0.5 flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1">
+              <Trophy className="h-3 w-3" />
+              {tournamentCount}{" "}
+              {tournamentCount === 1 ? "tournament" : "tournaments"}
+            </span>
+            {tournamentCount > 0 && <span>{winRate.toFixed(1)}% WR</span>}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -1,5 +1,6 @@
 import type { TypedClient } from "../client";
 import { escapeLike } from "@trainers/utils";
+import { getCoachBadges, type CoachBadgeInfo } from "./coach";
 
 // ============================================================================
 // Types
@@ -8,6 +9,13 @@ import { escapeLike } from "@trainers/utils";
 /** A player card entry for the directory grid */
 export type PlayerDirectoryEntry = {
   userId: string;
+  /**
+   * Primary (first) alt id for this user. Used to resolve coach-badge
+   * visibility via getCoachBadges — callers must run that lookup OUTSIDE any
+   * unstable_cache (it is gated on the global coaching flag and per-user coach
+   * status, neither of which busts the directory cache tag).
+   */
+  altId: number | null;
   username: string;
   avatarUrl: string | null;
   country: string | null;
@@ -15,6 +23,12 @@ export type PlayerDirectoryEntry = {
   winRate: number;
   totalWins: number;
   totalLosses: number;
+  /**
+   * Coach-badge visibility for this entry's primary alt. Populated by the
+   * caller after searchPlayers (never inside the cache). Privacy-safe: only
+   * a boolean + the public canonical handle, never is_coach or user_id.
+   */
+  coachBadge?: CoachBadgeInfo;
 };
 
 /** Paginated search result */
@@ -70,6 +84,49 @@ export type NewMemberEntry = {
 // ============================================================================
 
 const PAGE_SIZE = 24;
+
+/**
+ * Max ids per PostgREST `.in()` filter. A directory with hundreds of users
+ * builds an IN-list that overflows the server's URI length limit ("URI too
+ * long"), which previously came back as a silently-ignored error — stripping
+ * every alt/stat row. Splitting the list keeps each request's URI well under
+ * the limit.
+ */
+const IN_QUERY_CHUNK_SIZE = 100;
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/** Split an array into fixed-size chunks (the last chunk may be smaller). */
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+/**
+ * Run a PostgREST `.in()` query in URI-safe chunks and merge the rows. Throws
+ * on the first chunk error so failures are visible — never silently returns a
+ * partial/empty set (the bug this guards against stripped every altId and all
+ * coach badges from the directory).
+ */
+async function fetchInChunks<Id extends string | number, Row>(
+  ids: Id[],
+  fetcher: (
+    idChunk: Id[]
+  ) => PromiseLike<{ data: Row[] | null; error: { message: string } | null }>
+): Promise<Row[]> {
+  const rows: Row[] = [];
+  for (const idChunk of chunk(ids, IN_QUERY_CHUNK_SIZE)) {
+    const { data, error } = await fetcher(idChunk);
+    if (error) throw new Error(`Chunked IN-query failed: ${error.message}`);
+    if (data) rows.push(...data);
+  }
+  return rows;
+}
 
 // ============================================================================
 // Queries
@@ -238,12 +295,20 @@ export async function searchPlayers(
     return { players: [], totalCount: 0, page };
   }
 
-  // Step 4: Get primary alt (avatar) for each user
+  // Step 4: Get primary alt (avatar) for each user. Chunk the user_id IN-list
+  // (see fetchInChunks) and order by is_public DESC, id ASC so the primary alt
+  // picked per user is deterministic and prefers a PUBLIC alt — a private alt
+  // must never represent a user in the public directory, and coach-badge
+  // resolution only answers for public alts.
   const allUserIds = userList.map((u) => u.id);
-  const { data: alts } = await supabase
-    .from("alts")
-    .select("id, user_id, username, avatar_url")
-    .in("user_id", allUserIds);
+  const altRows = await fetchInChunks(allUserIds, (idChunk) =>
+    supabase
+      .from("alts")
+      .select("id, user_id, username, avatar_url")
+      .in("user_id", idChunk)
+      .order("is_public", { ascending: false })
+      .order("id", { ascending: true })
+  );
 
   // Map: userId -> first alt (primary)
   const altMap = new Map<
@@ -255,7 +320,7 @@ export async function searchPlayers(
   // Map: altId -> userId for reverse lookup
   const altToUser = new Map<number, string>();
 
-  for (const alt of alts ?? []) {
+  for (const alt of altRows) {
     if (!altMap.has(alt.user_id)) {
       altMap.set(alt.user_id, {
         altId: alt.id,
@@ -274,16 +339,20 @@ export async function searchPlayers(
   >();
 
   if (allAltIds.length > 0) {
-    const { data: stats } = await supabase
-      .from("tournament_player_stats")
-      .select("alt_id, match_wins, match_losses, tournament_id")
-      .in("alt_id", allAltIds);
+    // Same chunking rationale as the alts query above — allAltIds can hold
+    // hundreds/thousands of ids across the whole directory.
+    const stats = await fetchInChunks(allAltIds, (idChunk) =>
+      supabase
+        .from("tournament_player_stats")
+        .select("alt_id, match_wins, match_losses, tournament_id")
+        .in("alt_id", idChunk)
+    );
 
     // Group by user (a user may have multiple alts, each in multiple tournaments)
     // Count unique tournaments per user
     const userTournaments = new Map<string, Set<number>>();
 
-    for (const stat of stats ?? []) {
+    for (const stat of stats) {
       const userId = altToUser.get(stat.alt_id);
       if (!userId) continue;
 
@@ -326,6 +395,7 @@ export async function searchPlayers(
 
     return {
       userId: user.id,
+      altId: alt?.altId ?? null,
       username: alt?.username ?? user.username ?? "Unknown",
       avatarUrl: alt?.avatarUrl ?? null,
       country: user.country,
@@ -510,5 +580,37 @@ export async function getNewMembers(
       avatarUrl: alt?.avatarUrl ?? null,
       joinedAt: user.created_at ?? new Date().toISOString(),
     };
+  });
+}
+
+/**
+ * Attach coach-badge visibility to a list of directory entries.
+ *
+ * MUST be called OUTSIDE any unstable_cache: getCoachBadges is gated on the
+ * global coaching flag and per-user coach status, neither of which busts the
+ * directory cache tag — caching the result would serve stale badges. The
+ * underlying SQL function is privacy-safe (returns only a boolean + the public
+ * canonical handle, never is_coach or user_id), so this is safe on any client.
+ *
+ * Returns a new array; entries with no primary alt id are passed through
+ * unchanged. Resolution is account-level: the badge handle is the coach's
+ * canonical (main-alt) username, and the badge only shows when that primary
+ * alt is public and the account is a coach.
+ */
+export async function attachCoachBadges(
+  supabase: TypedClient,
+  entries: PlayerDirectoryEntry[]
+): Promise<PlayerDirectoryEntry[]> {
+  const altIds = entries
+    .map((e) => e.altId)
+    .filter((id): id is number => id != null);
+
+  if (altIds.length === 0) return entries;
+
+  const badges = await getCoachBadges(supabase, altIds);
+
+  return entries.map((entry) => {
+    const badge = entry.altId != null ? badges.get(entry.altId) : undefined;
+    return badge ? { ...entry, coachBadge: badge } : entry;
   });
 }

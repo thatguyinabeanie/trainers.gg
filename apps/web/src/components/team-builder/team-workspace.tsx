@@ -1,9 +1,12 @@
 "use client";
 
 import {
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
   useId,
   useEffect,
+  useLayoutEffect,
   useOptimistic,
   useRef,
   useState,
@@ -11,7 +14,12 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  PanelRightOpen,
+} from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -32,6 +40,7 @@ import {
   type GameFormat,
   getActiveFormats,
   getMegaStoneForSpecies,
+  isChampionsFormat,
 } from "@trainers/pokemon";
 import {
   type TeamWithPokemon,
@@ -48,6 +57,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import { BuilderSettingsDialog } from "./builder-settings-dialog";
 import { ImportDialog } from "./import-dialog";
 import { useTeamValidation, type ValidationError } from "./validation-hooks";
 import { EditableName } from "./builder-topbar";
@@ -63,10 +73,17 @@ import {
   useCalcStateContext,
 } from "./calc/calc-state-context";
 import { Dockbar } from "./dock/dockbar";
+import { SpeedTiersDialog } from "./dock/speed-tiers-dialog";
+import { UNINITIALIZED_FORMAT_ID } from "./dock/speed-tiers-content";
 import { getTeamFastestSpeed, SpeedTiersPanel } from "./dock/speed-tiers-panel";
+import {
+  type ToggleState,
+  useSpeedTiersToggle,
+} from "./dock/speed-tiers-state";
 import { HeatmapPanel } from "./dock/heatmap-panel";
 import { PokeRow } from "./poke-row";
 import { warmSpeciesIndex } from "./pickers/species-picker";
+import { useBuilderPreferences } from "./use-builder-preferences";
 import { useBuilderState } from "./use-builder-state";
 import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
 import { TeamLayoutToggle } from "./team-layout-toggle";
@@ -111,6 +128,8 @@ interface TeamWorkspaceV2Props {
   selectedAltId?: number | null;
   /** Called when user picks a different alt (local builder mode). */
   onAltSelect?: (altId: number) => void;
+  /** Whether the viewer is signed in — gates account-backed builder preferences. */
+  isAuthenticated: boolean;
   /**
    * Render prop for the page header/topbar. Receives workspace-internal actions
    * (import toggle, validation, jump-to-pokemon) so the parent can compose its
@@ -133,6 +152,8 @@ export interface WorkspaceHeaderActions {
   onJumpToPokemon: (pokemonId: number) => void;
   /** Rename the team. */
   onNameChange: (name: string) => Promise<void>;
+  /** Open the builder settings dialog. */
+  onOpenSettings: () => void;
 }
 
 // =============================================================================
@@ -278,17 +299,48 @@ function DockbarConnected({
 interface SpeedTiersPanelConnectedProps {
   team: TeamWithPokemon["team_pokemon"];
   format: GameFormat | undefined;
+  toggle: ToggleState;
+  setToggle: Dispatch<SetStateAction<ToggleState>>;
 }
 
 function SpeedTiersPanelConnected({
   team,
   format,
+  toggle,
+  setToggle,
 }: SpeedTiersPanelConnectedProps) {
   const calc = useCalcStateContext();
   return (
     <SpeedTiersPanel
       team={team}
       format={format}
+      toggle={toggle}
+      setToggle={setToggle}
+      weather={calc.weather}
+      setWeather={calc.setWeather}
+    />
+  );
+}
+
+// =============================================================================
+// SpeedTiersDialogConnected — reads calc weather for the dialog presentation
+// =============================================================================
+
+interface SpeedTiersDialogConnectedProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  team: TeamWithPokemon["team_pokemon"];
+  format: GameFormat | undefined;
+  toggle: ToggleState;
+  setToggle: Dispatch<SetStateAction<ToggleState>>;
+  onCollapseToSidepane: () => void;
+}
+
+function SpeedTiersDialogConnected(props: SpeedTiersDialogConnectedProps) {
+  const calc = useCalcStateContext();
+  return (
+    <SpeedTiersDialog
+      {...props}
       weather={calc.weather}
       setWeather={calc.setWeather}
     />
@@ -418,13 +470,73 @@ export function TeamWorkspaceV2({
   persistence,
   selectedAltId,
   onAltSelect,
+  isAuthenticated,
   renderHeader,
 }: TeamWorkspaceV2Props) {
   const router = useRouter();
   const state = useBuilderState();
+  const prefs = useBuilderPreferences(isAuthenticated);
+
+  /**
+   * Shared speed-tiers toggle — lifted here so the side pane and dialog
+   * presentations operate on one instance and never reset on switch.
+   */
+  const { toggle: speedToggle, setToggle: setSpeedToggle } =
+    useSpeedTiersToggle();
+
+  // Format-change EV clamp. Owned here because TeamWorkspaceV2 holds the speed
+  // toggle — running this reset inside SpeedTiersTable's render would update a
+  // component (the workspace) while rendering a different one. Different formats
+  // have different max EVs (VGC 252 vs Champions 32), so a stale override would
+  // otherwise pass out-of-range to calculateChampionsStat. Render-time sentinel
+  // pattern per react-patterns.md; sentinel fires on first render even with
+  // immediately-available data.
+  const [prevFormatId, setPrevFormatId] = useState<
+    string | undefined | typeof UNINITIALIZED_FORMAT_ID
+  >(UNINITIALIZED_FORMAT_ID);
+  const currentFormatId = format?.id;
+  if (currentFormatId !== prevFormatId) {
+    setPrevFormatId(currentFormatId);
+    if (format) {
+      const newMaxEv = isChampionsFormat(format) ? 32 : 252;
+      setSpeedToggle((prev) => {
+        const yoursEvs = prev.yours.evs;
+        const theirsEvs = prev.theirs.evs;
+        const clampedYours =
+          yoursEvs != null && yoursEvs > newMaxEv ? newMaxEv : yoursEvs;
+        const clampedTheirs =
+          theirsEvs != null && theirsEvs > newMaxEv ? newMaxEv : theirsEvs;
+        if (clampedYours === yoursEvs && clampedTheirs === theirsEvs)
+          return prev;
+        return {
+          ...prev,
+          yours: { ...prev.yours, evs: clampedYours },
+          theirs: { ...prev.theirs, evs: clampedTheirs },
+        };
+      });
+    }
+  }
+
+  // Apply the saved speed-tiers preference once after prefs resolve. Desktop
+  // only — the use-builder-state mobile useLayoutEffect keeps speedView null on
+  // phones. useLayoutEffect (not a render-time window read) so SSR is safe and
+  // the panel is positioned before the browser paints.
+  const appliedLoadPrefRef = useRef(false);
+  useLayoutEffect(() => {
+    if (appliedLoadPrefRef.current || prefs.loading) return;
+    appliedLoadPrefRef.current = true;
+    if (
+      window.innerWidth >= 768 &&
+      prefs.preferences.speedTiers.defaultView === "sidepane" &&
+      prefs.preferences.speedTiers.openOnLoad
+    ) {
+      state.setSpeedView("sidepane");
+    }
+  }, [prefs.loading]);
 
   /** Controls the import sheet. */
   const [importOpen, setImportOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   /** Controls the mobile validate popover. */
   const [mobileValidateOpen, setMobileValidateOpen] = useState(false);
@@ -756,6 +868,7 @@ export function TeamWorkspaceV2({
               }
               persistence.onMutationSuccess();
             },
+            onOpenSettings: () => setSettingsOpen(true),
           })}
 
           <div
@@ -769,7 +882,7 @@ export function TeamWorkspaceV2({
                 className="min-w-0 flex-1"
               >
                 {/* Left panel: Speed Tiers (conditional) */}
-                {state.sideDrawer === "speed" && (
+                {state.speedView === "sidepane" && (
                   <>
                     <ResizablePanel
                       id="speed-tiers"
@@ -783,12 +896,20 @@ export function TeamWorkspaceV2({
                     >
                       <div className="flex h-full flex-col overflow-hidden">
                         <header className="flex items-center gap-2 px-3 py-2">
-                          <span className="text-primary flex-1 text-center font-mono text-[10px] font-bold tracking-wider uppercase">
+                          <span className="text-primary flex-1 text-center font-mono text-xs font-bold tracking-wider uppercase">
                             Speed Tiers
                           </span>
                           <button
                             type="button"
-                            onClick={() => state.setSideDrawer(null)}
+                            onClick={() => state.setSpeedView("dialog")}
+                            aria-label="Open speed tiers in a dialog"
+                            className="text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
+                          >
+                            <PanelRightOpen className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => state.setSpeedView(null)}
                             aria-label="Close speed tiers"
                             className="text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded transition-colors"
                           >
@@ -799,6 +920,8 @@ export function TeamWorkspaceV2({
                           <SpeedTiersPanelConnected
                             team={optimisticTeamPokemon}
                             format={format}
+                            toggle={speedToggle}
+                            setToggle={setSpeedToggle}
                           />
                         </div>
                       </div>
@@ -863,21 +986,15 @@ export function TeamWorkspaceV2({
                           persistence.onMutationSuccess();
                         }}
                       />
-                      <div className="ml-auto">
+                      <div className="ml-auto hidden md:block">
                         <TeamLayoutToggle />
                       </div>
                     </div>
                     {/* Section wraps pokemon rows */}
-                    <section
-                      className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3 [[data-density=compact]_&]:p-2"
-                      data-calc-open={
-                        state.rightDrawer === "calc" ? "true" : "false"
-                      }
-                      data-layout={layoutMode}
-                    >
+                    <section className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3">
                       <div
                         className={cn(
-                          "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
+                          "grid grid-cols-[minmax(0,1fr)] gap-2",
                           layoutMode === "2x3-vertical" &&
                             "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
                         )}
@@ -906,8 +1023,6 @@ export function TeamWorkspaceV2({
                                   idx={i}
                                   pokemon={p}
                                   isActive={state.activeIdx === i}
-                                  density="comfy"
-                                  expandMode="all"
                                   onActivate={state.setActiveIdx}
                                   onAdd={handleAdd}
                                   onRemove={handleRemoveByIdx}
@@ -1099,14 +1214,10 @@ export function TeamWorkspaceV2({
                     </Popover>
                   </div>
 
-                  <section
-                    className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 px-3 pb-3 [[data-density=compact]_&]:px-2 [[data-density=compact]_&]:pb-2"
-                    data-calc-open="false"
-                    data-layout={layoutMode}
-                  >
+                  <section className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 px-3 pb-3">
                     <div
                       className={cn(
-                        "grid grid-cols-[minmax(0,1fr)] gap-2 [[data-density=compact]_&]:gap-1",
+                        "grid grid-cols-[minmax(0,1fr)] gap-2",
                         layoutMode === "2x3-vertical" &&
                           "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
                       )}
@@ -1125,8 +1236,6 @@ export function TeamWorkspaceV2({
                             idx={i}
                             pokemon={p}
                             isActive={state.activeIdx === i}
-                            density="comfy"
-                            expandMode="all"
                             onActivate={state.setActiveIdx}
                             onAdd={handleAdd}
                             onRemove={handleRemoveByIdx}
@@ -1155,11 +1264,13 @@ export function TeamWorkspaceV2({
                     />
                   </div>
                 )}
-                {state.sideDrawer === "speed" && (
+                {state.speedView === "sidepane" && (
                   <div className="w-full border-t p-3">
                     <SpeedTiersPanelConnected
                       team={optimisticTeamPokemon}
                       format={format}
+                      toggle={speedToggle}
+                      setToggle={setSpeedToggle}
                     />
                   </div>
                 )}
@@ -1192,10 +1303,13 @@ export function TeamWorkspaceV2({
                   state.rightDrawer === "calc" ? null : "calc"
                 );
               } else {
-                state.setSideDrawer(state.sideDrawer === key ? null : key);
+                // key === "speed" — open the user's default presentation, or
+                // close if speed tiers is already open in either presentation.
+                const def = prefs.preferences.speedTiers.defaultView;
+                state.setSpeedView(state.speedView ? null : def);
               }
             }}
-            sideDrawer={state.sideDrawer}
+            sideDrawer={state.speedView !== null ? "speed" : null}
             rightDrawer={state.rightDrawer}
             bottomDrawer={state.bottomDrawer}
             fastest={fastestSpeed}
@@ -1209,6 +1323,26 @@ export function TeamWorkspaceV2({
           onOpenChange={setImportOpen}
           onImportComplete={() => persistence.onMutationSuccess()}
           formatId={format?.id}
+        />
+
+        {/* Builder settings dialog — opened by the topbar gear button */}
+        <BuilderSettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          preferences={prefs.preferences}
+          onChange={prefs.setPreferences}
+        />
+
+        {/* Speed-tiers dialog — shares the lifted toggle so pop-out / collapse
+            preserve weather + modifiers + sort across presentations. */}
+        <SpeedTiersDialogConnected
+          open={state.speedView === "dialog"}
+          onOpenChange={(o) => state.setSpeedView(o ? "dialog" : null)}
+          team={optimisticTeamPokemon}
+          format={format}
+          toggle={speedToggle}
+          setToggle={setSpeedToggle}
+          onCollapseToSidepane={() => state.setSpeedView("sidepane")}
         />
 
       </CalcStateProvider>
