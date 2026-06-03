@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { toast } from "sonner";
 import {
   ArrowDown,
   ArrowUp,
@@ -286,34 +287,18 @@ export function ExternalData() {
 
   // Auto-import state (backend = pg_cron)
   const [rk9BackendAutoImport, setRk9BackendAutoImport] = useState(false);
-  const [rk9BackendAutoImportLoading, setRk9BackendAutoImportLoading] =
-    useState(true);
-
   const [limitlessBackendAutoImport, setLimitlessBackendAutoImport] =
     useState(false);
-  const [
-    limitlessBackendAutoImportLoading,
-    setLimitlessBackendAutoImportLoading,
-  ] = useState(true);
 
   // Throughput config
   const [rk9TeamsPerTick, setRk9TeamsPerTick] = useState(100);
-  const [rk9TeamsPerTickLoading, setRk9TeamsPerTickLoading] = useState(true);
-
   const [rk9TeamConcurrency, setRk9TeamConcurrency] = useState(3);
-  const [rk9TeamConcurrencyLoading, setRk9TeamConcurrencyLoading] =
-    useState(true);
-
   const [rk9CronInterval, setRk9CronInterval] = useState(60);
-  const [rk9CronIntervalLoading, setRk9CronIntervalLoading] = useState(true);
-
   const [limitlessCronInterval, setLimitlessCronInterval] = useState(300);
-  const [limitlessCronIntervalLoading, setLimitlessCronIntervalLoading] =
-    useState(true);
-
   const [limitlessBatchSize, setLimitlessBatchSize] = useState(20);
-  const [limitlessBatchSizeLoading, setLimitlessBatchSizeLoading] =
-    useState(true);
+
+  // Single loading flag for all site config fields — set false once all 7 resolve
+  const [configLoading, setConfigLoading] = useState(true);
 
   // RK9 state
   const [isDiscovering, setIsDiscovering] = useState(false);
@@ -335,54 +320,46 @@ export function ExternalData() {
   // -------------------------------------------------------------------------
 
   useEffect(() => {
-    getSiteConfig<boolean>("rk9_backend_auto_import").then((result) => {
-      if (result.success && result.data !== null) {
-        setRk9BackendAutoImport(result.data);
-      }
-      setRk9BackendAutoImportLoading(false);
-    });
-
-    getSiteConfig<boolean>("limitless_backend_auto_import").then((result) => {
-      if (result.success && result.data !== null) {
-        setLimitlessBackendAutoImport(result.data);
-      }
-      setLimitlessBackendAutoImportLoading(false);
-    });
-
-    getSiteConfig<number>("rk9_max_teams_per_tick").then((result) => {
-      if (result.success && result.data !== null) {
-        setRk9TeamsPerTick(result.data);
-      }
-      setRk9TeamsPerTickLoading(false);
-    });
-
-    getSiteConfig<number>("limitless_batch_size").then((result) => {
-      if (result.success && result.data !== null) {
-        setLimitlessBatchSize(result.data);
-      }
-      setLimitlessBatchSizeLoading(false);
-    });
-
-    getSiteConfig<number>("rk9_team_concurrency").then((result) => {
-      if (result.success && result.data !== null) {
-        setRk9TeamConcurrency(result.data);
-      }
-      setRk9TeamConcurrencyLoading(false);
-    });
-
-    getSiteConfig<number>("rk9_cron_interval_seconds").then((result) => {
-      if (result.success && result.data !== null) {
-        setRk9CronInterval(result.data);
-      }
-      setRk9CronIntervalLoading(false);
-    });
-
-    getSiteConfig<number>("limitless_cron_interval_seconds").then((result) => {
-      if (result.success && result.data !== null) {
-        setLimitlessCronInterval(result.data);
-      }
-      setLimitlessCronIntervalLoading(false);
-    });
+    let cancelled = false;
+    async function loadConfig() {
+      const [
+        rk9Auto,
+        limAuto,
+        teamsPerTick,
+        batchSize,
+        concurrency,
+        rk9Cron,
+        limCron,
+      ] = await Promise.all([
+        getSiteConfig<boolean>("rk9_backend_auto_import"),
+        getSiteConfig<boolean>("limitless_backend_auto_import"),
+        getSiteConfig<number>("rk9_max_teams_per_tick"),
+        getSiteConfig<number>("limitless_batch_size"),
+        getSiteConfig<number>("rk9_team_concurrency"),
+        getSiteConfig<number>("rk9_cron_interval_seconds"),
+        getSiteConfig<number>("limitless_cron_interval_seconds"),
+      ]);
+      if (cancelled) return;
+      if (rk9Auto.success && rk9Auto.data !== null)
+        setRk9BackendAutoImport(rk9Auto.data);
+      if (limAuto.success && limAuto.data !== null)
+        setLimitlessBackendAutoImport(limAuto.data);
+      if (teamsPerTick.success && teamsPerTick.data !== null)
+        setRk9TeamsPerTick(teamsPerTick.data);
+      if (batchSize.success && batchSize.data !== null)
+        setLimitlessBatchSize(batchSize.data);
+      if (concurrency.success && concurrency.data !== null)
+        setRk9TeamConcurrency(concurrency.data);
+      if (rk9Cron.success && rk9Cron.data !== null)
+        setRk9CronInterval(rk9Cron.data);
+      if (limCron.success && limCron.data !== null)
+        setLimitlessCronInterval(limCron.data);
+      setConfigLoading(false);
+    }
+    loadConfig();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleToggleRk9Backend(checked: boolean) {
@@ -391,6 +368,7 @@ export function ExternalData() {
     const result = await setSiteConfig("rk9_backend_auto_import", checked);
     if (!result.success) {
       setRk9BackendAutoImport(previous);
+      toast.error("Failed to update RK9 backend setting");
     }
     // Reset timer so backend fires immediately on re-enable
     if (checked) {
@@ -407,6 +385,7 @@ export function ExternalData() {
     );
     if (!result.success) {
       setLimitlessBackendAutoImport(previous);
+      toast.error("Failed to update Limitless backend setting");
     }
     // Reset timer so backend fires immediately on re-enable
     if (checked) {
@@ -414,39 +393,62 @@ export function ExternalData() {
     }
   }
 
-  async function handleRk9TeamsPerTickChange(value: string) {
+  function handleRk9TeamsPerTickChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setRk9TeamsPerTick(num);
-    await setSiteConfig("rk9_max_teams_per_tick", num);
   }
 
-  async function handleRk9TeamConcurrencyChange(value: string) {
+  async function saveRk9TeamsPerTick() {
+    const result = await setSiteConfig("rk9_max_teams_per_tick", rk9TeamsPerTick);
+    if (!result.success) toast.error("Failed to save setting");
+  }
+
+  function handleRk9TeamConcurrencyChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setRk9TeamConcurrency(num);
-    await setSiteConfig("rk9_team_concurrency", num);
   }
 
-  async function handleRk9CronIntervalChange(value: string) {
+  async function saveRk9TeamConcurrency() {
+    const result = await setSiteConfig("rk9_team_concurrency", rk9TeamConcurrency);
+    if (!result.success) toast.error("Failed to save setting");
+  }
+
+  function handleRk9CronIntervalChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setRk9CronInterval(num);
-    await setSiteConfig("rk9_cron_interval_seconds", num);
   }
 
-  async function handleLimitlessCronIntervalChange(value: string) {
+  async function saveRk9CronInterval() {
+    const result = await setSiteConfig("rk9_cron_interval_seconds", rk9CronInterval);
+    if (!result.success) toast.error("Failed to save setting");
+  }
+
+  function handleLimitlessCronIntervalChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setLimitlessCronInterval(num);
-    await setSiteConfig("limitless_cron_interval_seconds", num);
   }
 
-  async function handleLimitlessBatchSizeChange(value: string) {
+  async function saveLimitlessCronInterval() {
+    const result = await setSiteConfig(
+      "limitless_cron_interval_seconds",
+      limitlessCronInterval
+    );
+    if (!result.success) toast.error("Failed to save setting");
+  }
+
+  function handleLimitlessBatchSizeChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setLimitlessBatchSize(num);
-    await setSiteConfig("limitless_batch_size", num);
+  }
+
+  async function saveLimitlessBatchSize() {
+    const result = await setSiteConfig("limitless_batch_size", limitlessBatchSize);
+    if (!result.success) toast.error("Failed to save setting");
   }
 
   // -------------------------------------------------------------------------
@@ -853,8 +855,8 @@ export function ExternalData() {
       const result = await queueTournamentForImport(tournamentId);
       if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
-    } catch (err) {
-      console.error("Failed to queue tournament:", err);
+    } catch {
+      toast.error("Failed to queue tournament");
     } finally {
       setQueuingIds((prev) => {
         const next = new Set(prev);
@@ -876,8 +878,8 @@ export function ExternalData() {
       const result = await batchQueueTournaments(ids);
       if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
-    } catch (err) {
-      console.error("Failed to batch queue:", err);
+    } catch {
+      toast.error("Failed to queue tournaments");
     } finally {
       setBatchQueuing(false);
     }
@@ -955,8 +957,8 @@ export function ExternalData() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-5">
               <label className="flex items-center gap-2 text-sm font-medium">
-                {rk9BackendAutoImportLoading ? (
-                  <Skeleton className="h-[18px] w-[32px] rounded-full" />
+                {configLoading ? (
+                  <Skeleton className="h-4 w-8 rounded-full" />
                 ) : (
                   <Switch
                     checked={rk9BackendAutoImport}
@@ -965,7 +967,7 @@ export function ExternalData() {
                 )}
                 Backend
               </label>
-              {rk9TeamsPerTickLoading ? (
+              {configLoading ? (
                 <Skeleton className="h-6 w-24" />
               ) : (
                 <div className="flex items-center gap-1">
@@ -976,6 +978,7 @@ export function ExternalData() {
                     onChange={(e) =>
                       handleRk9TeamsPerTickChange(e.target.value)
                     }
+                    onBlur={saveRk9TeamsPerTick}
                     min={1}
                   />
                   <span className="text-muted-foreground text-xs">
@@ -983,7 +986,7 @@ export function ExternalData() {
                   </span>
                 </div>
               )}
-              {rk9TeamConcurrencyLoading ? (
+              {configLoading ? (
                 <Skeleton className="h-6 w-24" />
               ) : (
                 <div className="flex items-center gap-1">
@@ -994,6 +997,7 @@ export function ExternalData() {
                     onChange={(e) =>
                       handleRk9TeamConcurrencyChange(e.target.value)
                     }
+                    onBlur={saveRk9TeamConcurrency}
                     min={1}
                     max={10}
                   />
@@ -1002,7 +1006,7 @@ export function ExternalData() {
                   </span>
                 </div>
               )}
-              {rk9CronIntervalLoading ? (
+              {configLoading ? (
                 <Skeleton className="h-6 w-20" />
               ) : (
                 <div className="flex items-center gap-1">
@@ -1013,6 +1017,7 @@ export function ExternalData() {
                     onChange={(e) =>
                       handleRk9CronIntervalChange(e.target.value)
                     }
+                    onBlur={saveRk9CronInterval}
                     min={10}
                     step={10}
                   />
@@ -1247,8 +1252,8 @@ export function ExternalData() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-5">
               <label className="flex items-center gap-2 text-sm font-medium">
-                {limitlessBackendAutoImportLoading ? (
-                  <Skeleton className="h-[18px] w-[32px] rounded-full" />
+                {configLoading ? (
+                  <Skeleton className="h-4 w-8 rounded-full" />
                 ) : (
                   <Switch
                     checked={limitlessBackendAutoImport}
@@ -1257,7 +1262,7 @@ export function ExternalData() {
                 )}
                 Backend
               </label>
-              {limitlessBatchSizeLoading ? (
+              {configLoading ? (
                 <Skeleton className="h-6 w-24" />
               ) : (
                 <div className="flex items-center gap-1">
@@ -1268,6 +1273,7 @@ export function ExternalData() {
                     onChange={(e) =>
                       handleLimitlessBatchSizeChange(e.target.value)
                     }
+                    onBlur={saveLimitlessBatchSize}
                     min={1}
                   />
                   <span className="text-muted-foreground text-xs">
@@ -1275,7 +1281,7 @@ export function ExternalData() {
                   </span>
                 </div>
               )}
-              {limitlessCronIntervalLoading ? (
+              {configLoading ? (
                 <Skeleton className="h-6 w-20" />
               ) : (
                 <div className="flex items-center gap-1">
@@ -1286,6 +1292,7 @@ export function ExternalData() {
                     onChange={(e) =>
                       handleLimitlessCronIntervalChange(e.target.value)
                     }
+                    onBlur={saveLimitlessCronInterval}
                     min={10}
                     step={10}
                   />
