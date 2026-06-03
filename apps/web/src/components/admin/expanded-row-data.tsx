@@ -210,13 +210,12 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                 <thead>
                   <tr className="border-b text-xs text-muted-foreground">
                     <th className="w-6 py-1" />
-                    <th className="py-1 pr-3 text-left font-medium">#</th>
+                    <th className="py-1 pr-3 text-left font-medium">Standing</th>
                     {row.source === "rk9" ? (
                       <>
-                        <th className="py-1 pr-3 text-left font-medium">Trainer</th>
                         <th className="py-1 pr-3 text-left font-medium">Name</th>
                         <th className="py-1 pr-3 text-left font-medium">Country</th>
-                        <th className="py-1 pr-4 text-left font-medium">ID</th>
+                        <th className="py-1 pr-4 text-left font-medium">Trainer</th>
                       </>
                     ) : (
                       <th className="py-1 pr-4 text-left font-medium">Player</th>
@@ -255,6 +254,12 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                 {s.placement}
                               </td>
                               <td className="py-1.5 pr-3 text-xs">
+                                {[s.players?.first_name, s.players?.last_name].filter(Boolean).join(" ") || "—"}
+                              </td>
+                              <td className="py-1.5 pr-3 font-mono text-xs uppercase">
+                                {s.players?.country ?? "—"}
+                              </td>
+                              <td className="py-1.5 pr-4 text-xs">
                                 <div className="flex items-center gap-1">
                                   <span>{s.players?.trainer_name ?? "—"}</span>
                                   {s.roster_entry_id && (
@@ -284,15 +289,6 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                     </button>
                                   )}
                                 </div>
-                              </td>
-                              <td className="py-1.5 pr-3 text-xs">
-                                {[s.players?.first_name, s.players?.last_name].filter(Boolean).join(" ") || "—"}
-                              </td>
-                              <td className="py-1.5 pr-3 font-mono text-xs uppercase">
-                                {s.players?.country ?? "—"}
-                              </td>
-                              <td className="py-1.5 pr-4 font-mono text-xs text-muted-foreground">
-                                {s.player_id ?? "—"}
                               </td>
                               <td className="py-1.5 pr-4">
                                 {pokemon.length > 0 ? (
