@@ -391,7 +391,10 @@ const TEAMS_BATCH_SIZE = 25;
  * TEAMS_BATCH_SIZE teams, skipping standings that already have team_pokemon.
  * Returns progress so the client can show a progress bar.
  */
-export async function scrapeRk9TeamsBatch(eventId: string): Promise<
+export async function scrapeRk9TeamsBatch(
+  eventId: string,
+  options?: { force?: boolean }
+): Promise<
   ActionResult & {
     done?: boolean;
     scraped?: number;
@@ -399,6 +402,8 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
     failed?: number;
   }
 > {
+  const { force = false } = options ?? {};
+
   try {
     assertValidEventId(eventId);
     const userId = await getUserId();
@@ -461,11 +466,16 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
     );
     const remaining = allStandings.filter((s) => !standingsWithTeams.has(s.id));
 
+    // When force=true, process all standings (upsert handles idempotency).
+    // When force=false (default), skip standings that already have team data
+    // for resume behavior — re-running continues from where it left off.
+    const toProcess = force ? allStandings : remaining;
+
     const total = allStandings.length;
-    const alreadyScraped = total - remaining.length;
+    const alreadyScraped = total - toProcess.length;
 
     // If nothing remaining, we're done
-    if (remaining.length === 0) {
+    if (toProcess.length === 0) {
       // Mark event complete
       await supabase
         .schema("rk9")
@@ -499,7 +509,7 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
     }
 
     // Process this batch
-    const batch = remaining.slice(0, batchSize);
+    const batch = toProcess.slice(0, batchSize);
     let batchScraped = 0;
     let batchFailed = 0;
     const newSpecies = new Map<string, string>();
@@ -595,7 +605,7 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
         const { error } = await supabase
           .schema("rk9")
           .from("team_pokemon")
-          .insert(chunk);
+          .upsert(chunk, { onConflict: "standing_id,position" });
         if (error) {
           console.error(`Team pokemon bulk insert chunk failed: ${error.message}`);
         }
