@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { type UnifiedRow } from "./external-data-shared";
 
@@ -61,22 +62,31 @@ interface ExpandedRowDataProps {
 // ExpandedRowData — main exported component
 // ---------------------------------------------------------------------------
 
+const DIVISIONS = ["masters", "seniors", "juniors"] as const;
+type DivisionFilter = "all" | (typeof DIVISIONS)[number];
+
 export function ExpandedRowData({ row }: ExpandedRowDataProps) {
   const [standingsLimit, setStandingsLimit] = useState(50);
-  const [expandedPlacements, setExpandedPlacements] = useState<Set<number>>(
+  const [expandedPlacements, setExpandedPlacements] = useState<Set<string>>(
     new Set()
   );
+  const [divisionFilter, setDivisionFilter] = useState<DivisionFilter>("all");
 
-  function togglePlacement(placement: number) {
+  function togglePlacement(key: string) {
     setExpandedPlacements((prev) => {
       const next = new Set(prev);
-      if (next.has(placement)) {
-        next.delete(placement);
+      if (next.has(key)) {
+        next.delete(key);
       } else {
-        next.add(placement);
+        next.add(key);
       }
       return next;
     });
+  }
+
+  function handleDivisionFilter(div: DivisionFilter) {
+    setDivisionFilter(div);
+    setExpandedPlacements(new Set());
   }
 
   const { data, isLoading, error } = useSupabaseQuery(
@@ -115,6 +125,24 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
 
   return (
     <div className="border-t bg-muted/20 p-4">
+      {row.source === "rk9" && (
+        <div className="mb-3 flex items-center gap-1">
+          {(["all", ...DIVISIONS] as const).map((div) => (
+            <button
+              key={div}
+              onClick={() => handleDivisionFilter(div)}
+              className={cn(
+                "rounded px-3 py-1 text-xs font-medium",
+                divisionFilter === div
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {div === "all" ? "All" : div.charAt(0).toUpperCase() + div.slice(1)}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="max-h-96 overflow-auto">
         {isLoading && (
           <div className="space-y-2">
@@ -143,7 +171,9 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                     <th className="py-1 pr-4 text-left font-medium">Player</th>
                     <th className="py-1 pr-4 text-left font-medium">Team</th>
                     {row.source === "rk9" ? (
-                      <th className="py-1 text-left font-medium">Division</th>
+                      divisionFilter === "all" && (
+                        <th className="py-1 text-left font-medium">Division</th>
+                      )
                     ) : (
                       <th className="py-1 text-left font-medium">Record</th>
                     )}
@@ -151,26 +181,58 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                 </thead>
                 <tbody>
                   {row.source === "rk9"
-                    ? (data as RK9StandingWithTeam[]).map((s, i) => {
-                        const fullName =
-                          [s.players?.first_name, s.players?.last_name]
-                            .filter(Boolean)
-                            .join(" ") || null;
-                        const playerName =
-                          s.players?.trainer_name ?? fullName ?? "—";
-                        const division = s.division
-                          ? s.division.charAt(0).toUpperCase() +
-                            s.division.slice(1)
-                          : "—";
-                        const isExpanded = expandedPlacements.has(s.placement);
-                        const pokemon = s.team_pokemon ?? [];
-                        return (
-                          <Fragment key={i}>
+                    ? (() => {
+                        const DIVISION_ORDER = ["masters", "seniors", "juniors"];
+                        const filtered = (data as RK9StandingWithTeam[])
+                          .filter(
+                            (s) =>
+                              divisionFilter === "all" ||
+                              s.division === divisionFilter
+                          )
+                          .sort((a, b) => {
+                            if (divisionFilter !== "all") return 0;
+                            const ai = DIVISION_ORDER.indexOf(a.division ?? "");
+                            const bi = DIVISION_ORDER.indexOf(b.division ?? "");
+                            if (ai !== bi) return ai - bi;
+                            return a.placement - b.placement;
+                          });
+                        let lastDivision: string | null = null;
+                        return filtered.map((s, i) => {
+                          const fullName =
+                            [s.players?.first_name, s.players?.last_name]
+                              .filter(Boolean)
+                              .join(" ") || null;
+                          const playerName =
+                            s.players?.trainer_name ?? fullName ?? "—";
+                          const divisionLabel = s.division
+                            ? s.division.charAt(0).toUpperCase() +
+                              s.division.slice(1)
+                            : "—";
+                          const expansionKey = `${s.division}-${s.placement}`;
+                          const isExpanded = expandedPlacements.has(expansionKey);
+                          const pokemon = s.team_pokemon ?? [];
+                          const showDivisionHeader =
+                            divisionFilter === "all" &&
+                            s.division !== lastDivision;
+                          if (showDivisionHeader) lastDivision = s.division ?? null;
+                          const colSpan = divisionFilter === "all" ? 5 : 4;
+                          return (
+                            <Fragment key={i}>
+                              {showDivisionHeader && (
+                                <tr>
+                                  <td
+                                    colSpan={colSpan}
+                                    className="bg-muted/40 px-2 py-1 text-xs font-semibold text-muted-foreground"
+                                  >
+                                    {divisionLabel}
+                                  </td>
+                                </tr>
+                              )}
                             <tr className="border-b last:border-0">
                               <td className="py-1.5">
                                 <button
                                   aria-label="Toggle team details"
-                                  onClick={/* istanbul ignore next */ () => togglePlacement(s.placement)}
+                                  onClick={/* istanbul ignore next */ () => togglePlacement(expansionKey)}
                                 >
                                   {isExpanded ? (
                                     <ChevronDown className="size-3.5 text-muted-foreground" />
@@ -215,11 +277,13 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                   </span>
                                 )}
                               </td>
-                              <td className="py-1.5 text-xs">{division}</td>
+                              {divisionFilter === "all" && (
+                                <td className="py-1.5 text-xs">{divisionLabel}</td>
+                              )}
                             </tr>
                             {isExpanded && (
                               <tr>
-                                <td colSpan={5} className="px-2 pb-3">
+                                <td colSpan={colSpan} className="px-2 pb-3">
                                   {pokemon.length === 0 ? (
                                     <p className="text-muted-foreground pt-1 text-xs">
                                       No team data
@@ -237,8 +301,11 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                           <th className="py-1 pr-3 text-left font-medium">
                                             Item
                                           </th>
-                                          <th className="py-1 text-left font-medium">
+                                          <th className="py-1 pr-3 text-left font-medium">
                                             Tera
+                                          </th>
+                                          <th className="py-1 text-left font-medium">
+                                            Moves
                                           </th>
                                         </tr>
                                       </thead>
@@ -280,8 +347,11 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                               <td className="py-1 pr-3 text-muted-foreground">
                                                 {p.held_item ?? "—"}
                                               </td>
-                                              <td className="py-1 text-muted-foreground">
+                                              <td className="py-1 pr-3 text-muted-foreground">
                                                 {p.tera_type ?? "—"}
+                                              </td>
+                                              <td className="py-1 text-muted-foreground">
+                                                {p.moves?.filter(Boolean).join(", ") || "—"}
                                               </td>
                                             </tr>
                                           );
@@ -294,14 +364,16 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                             )}
                           </Fragment>
                         );
-                      })
+                      });
+                      })()
                     : (data as LimitlessStandingWithTeam[]).map((s, i) => {
                         const playerName = s.players?.display_name ?? "—";
                         const record =
                           s.record_wins != null
                             ? `${s.record_wins}-${s.record_losses ?? 0}-${s.record_ties ?? 0}`
                             : "—";
-                        const isExpanded = expandedPlacements.has(s.placement);
+                        const expansionKey = `limitless-${s.placement}`;
+                        const isExpanded = expandedPlacements.has(expansionKey);
                         const pokemon = s.team_pokemon ?? [];
                         return (
                           <Fragment key={i}>
@@ -309,7 +381,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                               <td className="py-1.5">
                                 <button
                                   aria-label="Toggle team details"
-                                  onClick={/* istanbul ignore next */ () => togglePlacement(s.placement)}
+                                  onClick={/* istanbul ignore next */ () => togglePlacement(expansionKey)}
                                 >
                                   {isExpanded ? (
                                     <ChevronDown className="size-3.5 text-muted-foreground" />
@@ -378,8 +450,11 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                           <th className="py-1 pr-3 text-left font-medium">
                                             Item
                                           </th>
-                                          <th className="py-1 text-left font-medium">
+                                          <th className="py-1 pr-3 text-left font-medium">
                                             Tera
+                                          </th>
+                                          <th className="py-1 text-left font-medium">
+                                            Moves
                                           </th>
                                         </tr>
                                       </thead>
@@ -421,8 +496,11 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                               <td className="py-1 pr-3 text-muted-foreground">
                                                 {p.held_item ?? "—"}
                                               </td>
-                                              <td className="py-1 text-muted-foreground">
+                                              <td className="py-1 pr-3 text-muted-foreground">
                                                 {p.tera_type ?? "—"}
+                                              </td>
+                                              <td className="py-1 text-muted-foreground">
+                                                {p.moves?.filter(Boolean).join(", ") || "—"}
                                               </td>
                                             </tr>
                                           );
