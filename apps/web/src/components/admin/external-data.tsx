@@ -1026,6 +1026,37 @@ export function ExternalData() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const playerScrollRef = useRef<HTMLDivElement>(null);
 
+  type PlayerSortCol = "trainer" | "name" | "country" | "events";
+  const [playerSort, setPlayerSort] = useState<{
+    column: PlayerSortCol;
+    direction: "asc" | "desc";
+  }>({ column: "name", direction: "asc" });
+
+  function togglePlayerSort(col: PlayerSortCol) {
+    setPlayerSort((prev) =>
+      prev.column === col
+        ? { column: col, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { column: col, direction: "asc" }
+    );
+  }
+
+  const sortedPlayers = [...filteredPlayers].sort((a, b) => {
+    const dir = playerSort.direction === "asc" ? 1 : -1;
+    switch (playerSort.column) {
+      case "trainer":
+        return (a.trainer_name ?? "").localeCompare(b.trainer_name ?? "") * dir;
+      case "name":
+        return `${a.first_name} ${a.last_name}`
+          .localeCompare(`${b.first_name} ${b.last_name}`) * dir;
+      case "country":
+        return (a.country ?? "").localeCompare(b.country ?? "") * dir;
+      case "events":
+        return ((a.standings[0]?.count ?? 0) - (b.standings[0]?.count ?? 0)) * dir;
+      default:
+        return 0;
+    }
+  });
+
   const rowVirtualizer = useVirtualizer({
     count: currentRows.length,
     getScrollElement: () => scrollRef.current,
@@ -1034,7 +1065,7 @@ export function ExternalData() {
   });
 
   const playerVirtualizer = useVirtualizer({
-    count: filteredPlayers.length,
+    count: sortedPlayers.length,
     getScrollElement: () => playerScrollRef.current,
     estimateSize: () => 44,
     overscan: 10,
@@ -1932,18 +1963,25 @@ export function ExternalData() {
             style={{ gridTemplateColumns: "28px 160px 1fr 80px 80px" }}
           >
             <div className="h-10" />
-            <div className="flex h-10 items-center px-2 text-xs font-medium">
-              Trainer
-            </div>
-            <div className="flex h-10 items-center px-2 text-xs font-medium">
-              Name
-            </div>
-            <div className="flex h-10 items-center px-2 text-xs font-medium">
-              Country
-            </div>
-            <div className="flex h-10 items-center px-2 text-xs font-medium">
-              Events
-            </div>
+            {(["trainer", "name", "country", "events"] as const).map((col) => (
+              <div key={col} className="flex h-10 items-center px-2">
+                <button
+                  className="hover:text-foreground inline-flex items-center gap-1 text-xs font-medium capitalize whitespace-nowrap"
+                  onClick={() => togglePlayerSort(col)}
+                >
+                  {col}
+                  {playerSort.column === col ? (
+                    playerSort.direction === "asc" ? (
+                      <ArrowUp className="h-3 w-3" />
+                    ) : (
+                      <ArrowDown className="h-3 w-3" />
+                    )
+                  ) : (
+                    <ArrowUpDown className="h-3 w-3 opacity-40" />
+                  )}
+                </button>
+              </div>
+            ))}
           </div>
 
           {rk9PlayersLoading ? (
@@ -1972,7 +2010,7 @@ export function ExternalData() {
                 }}
               >
                 {playerVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const p = filteredPlayers[virtualRow.index];
+                  const p = sortedPlayers[virtualRow.index];
                   if (!p) return null;
                   const isPlayerExpanded = expandedPlayerId === p.id;
                   const fullName =
