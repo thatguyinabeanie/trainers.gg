@@ -25,13 +25,17 @@ describe("TeamLayoutToggle", () => {
   });
 
   it.each([
-    ["1 × 6 — full row layout", "1x6"],
-    ["2 × 3 — stacked per cell", "2x3-vertical"],
-  ])("changes the persisted mode to %s on click", (ariaLabel, expectedValue) => {
-    render(<TeamLayoutToggle />);
-    fireEvent.click(screen.getByLabelText(ariaLabel));
-    expect(window.localStorage.getItem("tg.team-layout")).toBe(expectedValue);
-  });
+    ["1 × 6 — full row layout", "1x6", "2x3-vertical"],
+    ["2 × 3 — stacked per cell", "2x3-vertical", "1x6"],
+  ])(
+    "changes the persisted mode to %s on click",
+    (ariaLabel, expectedValue, startingMode) => {
+      window.localStorage.setItem("tg.team-layout", startingMode);
+      render(<TeamLayoutToggle />);
+      fireEvent.click(screen.getByLabelText(ariaLabel));
+      expect(window.localStorage.getItem("tg.team-layout")).toBe(expectedValue);
+    }
+  );
 
   // Phase 2c: mobile-lock is enforced structurally at the mount site via
   // Tailwind (`hidden md:inline-flex`). The component itself always renders

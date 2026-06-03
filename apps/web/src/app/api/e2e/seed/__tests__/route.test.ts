@@ -45,6 +45,21 @@ jest.mock("@/lib/supabase/server", () => ({
           insert: jest.fn().mockResolvedValue({ error: null }),
         };
       }
+      // Coaching seed: feature_flags upsert, alts lookup, coach_profiles upsert
+      if (table === "feature_flags" || table === "coach_profiles") {
+        return { upsert: jest.fn().mockResolvedValue({ error: null }) };
+      }
+      if (table === "alts") {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest
+                .fn()
+                .mockResolvedValue({ data: { id: 1 }, error: null }),
+            }),
+          }),
+        };
+      }
       return {};
     }),
     auth: {
