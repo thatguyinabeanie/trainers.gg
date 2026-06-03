@@ -400,8 +400,12 @@ export function ExternalData() {
   }
 
   async function saveRk9TeamsPerTick() {
+    const previous = rk9TeamsPerTick;
     const result = await setSiteConfig("rk9_max_teams_per_tick", rk9TeamsPerTick);
-    if (!result.success) toast.error("Failed to save setting");
+    if (!result.success) {
+      setRk9TeamsPerTick(previous);
+      toast.error("Failed to save setting");
+    }
   }
 
   function handleRk9TeamConcurrencyChange(value: string) {
@@ -411,8 +415,12 @@ export function ExternalData() {
   }
 
   async function saveRk9TeamConcurrency() {
+    const previous = rk9TeamConcurrency;
     const result = await setSiteConfig("rk9_team_concurrency", rk9TeamConcurrency);
-    if (!result.success) toast.error("Failed to save setting");
+    if (!result.success) {
+      setRk9TeamConcurrency(previous);
+      toast.error("Failed to save setting");
+    }
   }
 
   function handleRk9CronIntervalChange(value: string) {
@@ -422,8 +430,12 @@ export function ExternalData() {
   }
 
   async function saveRk9CronInterval() {
+    const previous = rk9CronInterval;
     const result = await setSiteConfig("rk9_cron_interval_seconds", rk9CronInterval);
-    if (!result.success) toast.error("Failed to save setting");
+    if (!result.success) {
+      setRk9CronInterval(previous);
+      toast.error("Failed to save setting");
+    }
   }
 
   function handleLimitlessCronIntervalChange(value: string) {
@@ -433,11 +445,15 @@ export function ExternalData() {
   }
 
   async function saveLimitlessCronInterval() {
+    const previous = limitlessCronInterval;
     const result = await setSiteConfig(
       "limitless_cron_interval_seconds",
       limitlessCronInterval
     );
-    if (!result.success) toast.error("Failed to save setting");
+    if (!result.success) {
+      setLimitlessCronInterval(previous);
+      toast.error("Failed to save setting");
+    }
   }
 
   function handleLimitlessBatchSizeChange(value: string) {
@@ -447,8 +463,12 @@ export function ExternalData() {
   }
 
   async function saveLimitlessBatchSize() {
+    const previous = limitlessBatchSize;
     const result = await setSiteConfig("limitless_batch_size", limitlessBatchSize);
-    if (!result.success) toast.error("Failed to save setting");
+    if (!result.success) {
+      setLimitlessBatchSize(previous);
+      toast.error("Failed to save setting");
+    }
   }
 
   // -------------------------------------------------------------------------

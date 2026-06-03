@@ -105,6 +105,7 @@ describe("ExternalData slider handlers", () => {
 
     await act(async () => {
       fireEvent.change(inputs[0], { target: { value: "42" } });
+      fireEvent.blur(inputs[0]);
     });
 
     await waitFor(() => {
@@ -129,6 +130,7 @@ describe("ExternalData slider handlers", () => {
 
     await act(async () => {
       fireEvent.change(inputs[1], { target: { value: "5" } });
+      fireEvent.blur(inputs[1]);
     });
 
     await waitFor(() => {
@@ -150,6 +152,7 @@ describe("ExternalData slider handlers", () => {
 
     await act(async () => {
       fireEvent.change(inputs[2], { target: { value: "120" } });
+      fireEvent.blur(inputs[2]);
     });
 
     await waitFor(() => {
@@ -167,6 +170,7 @@ describe("ExternalData slider handlers", () => {
     // Limitless tab renders 2 inputs: batch size, then cron interval
     await act(async () => {
       fireEvent.change(inputs[0], { target: { value: "25" } });
+      fireEvent.blur(inputs[0]);
     });
 
     await waitFor(() => {
@@ -183,6 +187,7 @@ describe("ExternalData slider handlers", () => {
 
     await act(async () => {
       fireEvent.change(inputs[1], { target: { value: "600" } });
+      fireEvent.blur(inputs[1]);
     });
 
     await waitFor(() => {
