@@ -1965,8 +1965,8 @@ export function ExternalData() {
                       style={{
                         gridTemplateColumns:
                           activeTab === "limitless"
-                            ? "32px 28px 1fr 100px 90px 70px 130px 90px 68px"
-                            : "32px 28px 1fr 100px 90px 70px 130px 68px",
+                            ? "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 80px 100px"
+                            : "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
                       }}
                     >
                       {/* Checkbox */}
