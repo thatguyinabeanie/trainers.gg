@@ -2,6 +2,14 @@
 
 import { cn } from "@/lib/utils";
 
+import {
+  FormRowsGhost,
+  GHOST_STAT_ROWS,
+  MetaBarGhost,
+  SpeciesPillGhost,
+  SpriteGhost,
+} from "./row-ghost-shared";
+
 // =============================================================================
 // GridRowGhost — static placeholder mirroring GridRow's vertical structure
 //
@@ -62,102 +70,10 @@ export function GridRowGhost({ idx }: GridRowGhostProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Shared ghost primitives
-// ---------------------------------------------------------------------------
-
-function SpriteGhost({ size = 144 }: { size?: number }) {
-  return (
-    <div
-      className="bg-muted/40 rounded-xl"
-      style={{ width: size, height: size }}
-    />
-  );
-}
-
-function SpeciesPillGhost() {
-  return (
-    <div className="border-border bg-background flex w-full items-center gap-1 rounded-md border border-dashed px-2 py-1.5 text-left text-xs">
-      <span className="text-muted-foreground/50 min-w-0 flex-1 truncate">
-        + Add Pokémon
-      </span>
-      <span aria-hidden className="text-muted-foreground/30 text-xs">
-        ▾
-      </span>
-    </div>
-  );
-}
-
-function MetaBarGhost() {
-  return (
-    <div className="border-border grid h-9 shrink-0 grid-cols-[1fr_auto] items-center gap-2.5 border-b border-dashed px-3 py-2">
-      <span className="text-muted-foreground/30 text-sm font-normal italic">
-        Nickname
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="border-border bg-background text-muted-foreground/40 inline-flex h-6 items-center justify-center rounded-[5px] border px-2 font-mono text-xs font-semibold">
-          —
-        </span>
-        <span className="border-border bg-background text-muted-foreground/40 inline-flex h-6 items-center justify-center rounded-[5px] border px-2 font-mono text-xs font-semibold">
-          ✦
-        </span>
-      </span>
-    </div>
-  );
-}
-
-function FormRowsGhost() {
-  return (
-    <>
-      {(["Item", "Abil", "Nat", "Type"] as const).map((label) => (
-        <div
-          key={label}
-          className="grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 rounded px-1 py-1"
-        >
-          <span className="text-muted-foreground/30 font-mono text-xs font-bold tracking-[0.08em] uppercase">
-            {label}
-          </span>
-          <span className="text-muted-foreground/25 truncate text-xs italic">
-            —
-          </span>
-        </div>
-      ))}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Stats / Moves ghosts — visual structure copied from lane null branches
-// without importing the lanes themselves.
+// without importing the lanes themselves. Differ from compact variants in
+// border direction (border-b here vs border-r in compact) and flex axes.
 // ---------------------------------------------------------------------------
-
-const GHOST_STAT_ROWS = [
-  { key: "hp", label: "HP", colorClass: "text-rose-500 dark:text-rose-400" },
-  {
-    key: "attack",
-    label: "ATK",
-    colorClass: "text-orange-500 dark:text-orange-400",
-  },
-  {
-    key: "defense",
-    label: "DEF",
-    colorClass: "text-amber-500 dark:text-amber-400",
-  },
-  {
-    key: "specialAttack",
-    label: "SPA",
-    colorClass: "text-sky-500 dark:text-sky-400",
-  },
-  {
-    key: "specialDefense",
-    label: "SPD",
-    colorClass: "text-emerald-500 dark:text-emerald-400",
-  },
-  {
-    key: "speed",
-    label: "SPE",
-    colorClass: "text-fuchsia-500 dark:text-fuchsia-400",
-  },
-] as const;
 
 function StatsGhost() {
   const rowGrid =
@@ -180,16 +96,16 @@ function StatsGhost() {
       </div>
       {GHOST_STAT_ROWS.map(({ key, label, colorClass }) => (
         <div key={key} className={cn(rowGrid, colorClass)}>
-          <span className="font-mono text-xs font-semibold uppercase tracking-[0.06em] opacity-30">
+          <span className="font-mono text-xs font-semibold tracking-[0.06em] uppercase opacity-30">
             {label}
           </span>
           <span className="text-muted-foreground/25 text-right font-mono text-xs tabular-nums">
             —
           </span>
-          <div className="bg-muted relative min-w-0 h-2 overflow-hidden rounded-full" />
+          <div className="bg-muted relative h-2 min-w-0 overflow-hidden rounded-full" />
           <div className="border-border/30 h-5 w-9 rounded border border-dashed" />
           <div className="relative h-3.5">
-            <div className="bg-muted-foreground/40 pointer-events-none absolute top-1/2 left-0 right-0 h-[3px] -translate-y-1/2 rounded-full opacity-25" />
+            <div className="bg-muted-foreground/40 pointer-events-none absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full opacity-25" />
           </div>
           <span className="text-muted-foreground/25 text-right font-mono text-xs font-bold tabular-nums">
             —

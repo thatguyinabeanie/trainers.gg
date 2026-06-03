@@ -33,8 +33,10 @@ interface PokeRowProps {
    *  or a stable placeholder like `"__empty__0"` for empty slots. */
   sortableId: string;
   pokemon: Tables<"pokemon"> | null;
-  /** Kept for workspace focus/scroll; layout selection no longer branches on it. */
+  /** Whether this slot is the currently active/selected row in the workspace. */
   isActive: boolean;
+  /** Called when the user clicks this row — updates the workspace's active slot
+   *  index which the calc panel uses as a fallback attacker. */
   onActivate: (idx: number) => void;
   /** Called with the slot index and the chosen species when a species is picked
    *  for an empty slot. */
@@ -54,6 +56,8 @@ export function PokeRow({
   idx,
   sortableId,
   pokemon,
+  isActive,
+  onActivate,
   onAdd,
   onRemove,
   teamPokemon,
@@ -93,7 +97,13 @@ export function PokeRow({
   const Variant = layoutMode === "2x3-vertical" ? GridRow : CompactRow;
 
   return (
-    <div ref={setNodeRef} style={style} className="mx-auto w-full">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="mx-auto w-full"
+      aria-selected={isActive}
+      onClick={() => onActivate(idx)}
+    >
       <Variant
         idx={idx}
         pokemon={pokemon}

@@ -82,7 +82,8 @@ export function TeamLayoutToggle() {
         // re-asserting the current mode, keeping the control idempotent
         // and matching the previous bespoke-button behavior.
         const [picked] = next;
-        setMode((picked as TeamLayoutMode | undefined) ?? persisted);
+        if (!picked || picked === persisted) return;
+        setMode(picked as TeamLayoutMode);
       }}
       size="sm"
     >

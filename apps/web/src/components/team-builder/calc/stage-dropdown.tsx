@@ -46,14 +46,20 @@ function formatStage(v: number): string {
  * Clicking opens a popover with all 13 stages (−6 to +6).
  * The current value is highlighted with a checkmark.
  */
-export function StageDropdown({ value, onChange, statKey }: StageDropdownProps) {
+export function StageDropdown({
+  value,
+  onChange,
+  statKey,
+}: StageDropdownProps) {
   return (
     <Popover>
       <PopoverTrigger
         className={cn(
-          "flex w-full items-center justify-center gap-0.5 rounded border px-1 py-0.5 font-mono text-xs font-semibold cursor-default",
-          value > 0 && "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400",
-          value < 0 && "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400",
+          "flex w-full cursor-pointer items-center justify-center gap-0.5 rounded border px-1 py-0.5 font-mono text-xs font-semibold",
+          value > 0 &&
+            "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400",
+          value < 0 &&
+            "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400",
           value === 0 && "bg-card border-border text-muted-foreground"
         )}
         aria-label={`${statKey.toUpperCase()} stat stage`}
@@ -71,7 +77,7 @@ export function StageDropdown({ value, onChange, statKey }: StageDropdownProps) 
                 type="button"
                 onClick={() => onChange(s)}
                 className={cn(
-                  "flex items-center justify-between rounded px-2 py-1 font-mono text-xs cursor-default",
+                  "flex cursor-pointer items-center justify-between rounded px-2 py-1 font-mono text-xs",
                   isCurrent
                     ? "bg-primary/10 text-primary font-semibold"
                     : "hover:bg-muted text-foreground"

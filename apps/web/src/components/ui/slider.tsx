@@ -42,9 +42,9 @@ function Slider({
   // Normalize to array — Base UI always expects number[] for value/defaultValue.
   // When value is a single number, wrap it; when absent, fall back to defaultValue
   // (also normalized). Avoids the previous bug where a non-array value caused
-  // _values to fall back to [min, max], rendering two thumbs at the extremes.
+  // normalizedValues to fall back to [min, max], rendering two thumbs at the extremes.
   // React Compiler handles memoization — no useMemo.
-  const _values = Array.isArray(value)
+  const normalizedValues = Array.isArray(value)
     ? value
     : value !== undefined
       ? [value]
@@ -63,9 +63,13 @@ function Slider({
       data-inherit-color={inheritColor || undefined}
       data-at-bump={atBump || undefined}
       defaultValue={
-        isControlled ? undefined : _values.length > 0 ? _values : undefined
+        isControlled
+          ? undefined
+          : normalizedValues.length > 0
+            ? normalizedValues
+            : undefined
       }
-      value={isControlled ? _values : undefined}
+      value={isControlled ? normalizedValues : undefined}
       min={min}
       max={max}
       // inheritColor consumers (team-builder rows) want the thumb center to
@@ -97,7 +101,7 @@ function Slider({
             )}
           />
         </SliderPrimitive.Track>
-        {Array.from({ length: _values.length }, (_, index) => (
+        {Array.from({ length: normalizedValues.length }, (_, index) => (
           <SliderPrimitive.Thumb
             data-slot="slider-thumb"
             data-at-bump={atBump || undefined}
@@ -111,12 +115,12 @@ function Slider({
               // `border-current` here.
               inheritColor &&
                 !atBump &&
-                "bg-current border-transparent ring-current/30",
+                "border-transparent bg-current ring-current/30",
               // hollow-ring "at breakpoint" state: card-background fill with
               // an inset ring of the row's color.
               inheritColor &&
                 atBump &&
-                "bg-card border-current border-2 ring-current/30"
+                "bg-card border-2 border-current ring-current/30"
             )}
           />
         ))}

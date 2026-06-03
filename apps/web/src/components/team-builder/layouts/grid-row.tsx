@@ -183,7 +183,7 @@ export function GridRow({
       <div
         className={cn(
           "flex w-full shrink-0 flex-row items-center justify-between px-2 py-1",
-          "border-b border-dashed border-border/60",
+          "border-border/60 border-b border-dashed",
           !topRibBg && "bg-muted/20"
         )}
         style={topRibBg ? { background: topRibBg } : undefined}
@@ -195,7 +195,9 @@ export function GridRow({
             "text-muted-foreground font-mono text-xs font-medium tracking-wide",
             dragListeners && "cursor-grab touch-none active:cursor-grabbing"
           )}
-          aria-label={`Drag to reorder slot ${idx + 1}`}
+          aria-label={
+            dragListeners ? `Drag to reorder slot ${idx + 1}` : undefined
+          }
         >
           {String(idx + 1).padStart(2, "0")}
         </span>
@@ -221,7 +223,7 @@ export function GridRow({
       </div>
 
       {/* IDENTITY (vertical) — sprite (left, basis-[140px]) | meta-bar + form-grid */}
-      <div className="flex w-full flex-col border-b border-dashed border-border">
+      <div className="border-border flex w-full flex-col border-b border-dashed">
         <div className="flex min-w-0 flex-auto flex-row items-center justify-center">
           <div className="flex shrink-0 grow-0 basis-36 flex-col items-center justify-center gap-1.5 px-1 py-2">
             <SpriteSection

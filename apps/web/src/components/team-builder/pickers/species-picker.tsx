@@ -204,10 +204,7 @@ function SortHeaderButton({
       {label}
       <span
         aria-hidden="true"
-        className={cn(
-          "text-xs leading-none",
-          !isActive && "invisible"
-        )}
+        className={cn("text-xs leading-none", !isActive && "invisible")}
       >
         {isActive && sort.dir === "asc" ? "↑" : "↓"}
       </span>
@@ -356,7 +353,9 @@ function SpeciesRow({
         {/* Abilities — all slots stacked: • regular, ★ hidden */}
         <div className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden">
           <div className="flex min-w-0 items-baseline gap-1">
-            <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-xs">●</span>
+            <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-xs">
+              ●
+            </span>
             <AbilityCell
               name={entry.abilitySlot1 ?? null}
               slot="slot1"
@@ -365,7 +364,9 @@ function SpeciesRow({
           </div>
           {entry.abilitySlot2 && (
             <div className="flex min-w-0 items-baseline gap-1">
-              <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-xs">●</span>
+              <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-xs">
+                ●
+              </span>
               <AbilityCell
                 name={entry.abilitySlot2}
                 slot="slot2"
@@ -375,7 +376,9 @@ function SpeciesRow({
           )}
           {entry.hiddenAbility && (
             <div className="flex min-w-0 items-baseline gap-1">
-              <span className="text-amber-400/70 inline-block w-2.5 shrink-0 text-center text-xs">★</span>
+              <span className="inline-block w-2.5 shrink-0 text-center text-xs text-amber-400/70">
+                ★
+              </span>
               <AbilityCell
                 name={entry.hiddenAbility}
                 slot="hidden"
@@ -450,7 +453,7 @@ function SpeciesRow({
           {matchingMoveNames.map((name) => (
             <span
               key={name}
-              className="bg-primary/8 text-primary border-primary/15 shrink-0 rounded-full border px-1.5 py-px text-xs font-medium leading-tight"
+              className="bg-primary/8 text-primary border-primary/15 shrink-0 rounded-full border px-1.5 py-px text-xs leading-tight font-medium"
             >
               {name}
             </span>
@@ -544,7 +547,7 @@ function CollapsedSidebarStrip({
       >
         <Filter className="size-4" />
         {totalActive > 0 && (
-          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-xs font-bold text-white">
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-bold text-white">
             {totalActive}
           </span>
         )}
@@ -564,7 +567,7 @@ function CollapsedSidebarStrip({
       >
         <Sparkles className="size-4" />
         {typeCount > 0 && (
-          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-xs font-bold text-white">
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-bold text-white">
             {typeCount}
           </span>
         )}
@@ -588,7 +591,7 @@ function CollapsedSidebarStrip({
       >
         <Zap className="size-4" />
         {abilityCount > 0 && (
-          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-xs font-bold text-white">
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-bold text-white">
             {abilityCount}
           </span>
         )}
@@ -608,7 +611,7 @@ function CollapsedSidebarStrip({
       >
         <Swords className="size-4" />
         {moveCount > 0 && (
-          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-xs font-bold text-white">
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-bold text-white">
             {moveCount}
           </span>
         )}
@@ -622,8 +625,8 @@ function CollapsedSidebarStrip({
           aria-label={`${roleCount} role filters — expand sidebar`}
           className="text-primary hover:bg-primary/10 relative rounded p-1.5 transition-colors"
         >
-          <span className="text-xs font-bold leading-none">R</span>
-          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-xs font-bold text-white">
+          <span className="text-xs leading-none font-bold">R</span>
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-bold text-white">
             {roleCount}
           </span>
         </button>
@@ -907,7 +910,7 @@ export function SpeciesPicker({
             <button
               type="button"
               onClick={clearAllFilters}
-              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-xs font-medium transition-colors"
+              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-colors"
               aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
             >
               {activeFilterCount}{" "}

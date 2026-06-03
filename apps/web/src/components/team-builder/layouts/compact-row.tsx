@@ -166,8 +166,8 @@ export function CompactRow({
 
   // <md: vertical (mirrors IdentityVertical body)
   const identityVertical = (
-    <div className="flex w-full flex-col border-b border-dashed border-border md:hidden">
-      <div className="flex flex-auto flex-row items-center justify-center min-w-0">
+    <div className="border-border flex w-full flex-col border-b border-dashed md:hidden">
+      <div className="flex min-w-0 flex-auto flex-row items-center justify-center">
         <div className="flex shrink-0 grow-0 basis-36 flex-col items-center justify-center gap-1.5 px-1 py-2">
           <SpriteSection
             pokemon={pokemon}
@@ -222,7 +222,7 @@ export function CompactRow({
 
   // md: mid-stack (mirrors IdentityMidStack)
   const identityMidStack = (
-    <div className="hidden md:flex lg:hidden shrink-0 grow-0 basis-96 min-w-0 flex-col border-r border-dashed border-border">
+    <div className="border-border hidden min-w-0 shrink-0 grow-0 basis-96 flex-col border-r border-dashed md:flex lg:hidden">
       <MetaBar
         nickDraft={id.nickDraft}
         setNickDraft={id.setNickDraft}
@@ -239,7 +239,7 @@ export function CompactRow({
         genderErrors={id.genderErrors}
         variant="row"
       />
-      <div className="flex flex-auto flex-col items-center justify-center gap-2 min-h-0 min-w-0 px-2 py-3">
+      <div className="flex min-h-0 min-w-0 flex-auto flex-col items-center justify-center gap-2 px-2 py-3">
         <div className="mx-auto flex w-full max-w-60 flex-col items-center gap-1.5">
           <SpriteSection
             pokemon={pokemon}
@@ -250,7 +250,7 @@ export function CompactRow({
             isShiny={id.isShiny}
           />
         </div>
-        <div className="mx-auto flex w-full min-w-0 max-w-60 flex-col gap-1">
+        <div className="mx-auto flex w-full max-w-60 min-w-0 flex-col gap-1">
           <FormCells
             pokemon={pokemon}
             format={format}
@@ -296,7 +296,7 @@ export function CompactRow({
           />
         </div>
         <div className="flex w-64 min-w-0 shrink-0 flex-col justify-center gap-0.5">
-          <div className="mb-1 flex flex-col gap-1 border-b border-border pb-1.5">
+          <div className="border-border mb-1 flex flex-col gap-1 border-b pb-1.5">
             <MetaBar
               nickDraft={id.nickDraft}
               setNickDraft={id.setNickDraft}
@@ -381,7 +381,7 @@ export function CompactRow({
       {/* RIB LEFT — slot number + drag handle (+ remove button at <lg) */}
       <div
         className={cn(
-          "flex flex-col items-center justify-between shrink-0 w-7 border-r transition-[padding] duration-300 ease-in-out",
+          "flex w-7 shrink-0 flex-col items-center justify-between border-r transition-[padding] duration-300 ease-in-out",
           "border-border/60 border-dashed",
           calcEnabled ? "py-2" : "py-1",
           !leftBg && "bg-muted/20"
@@ -395,7 +395,9 @@ export function CompactRow({
             "text-muted-foreground font-mono text-xs font-medium tracking-wide",
             dragListeners && "cursor-grab touch-none active:cursor-grabbing"
           )}
-          aria-label={`Drag to reorder slot ${idx + 1}`}
+          aria-label={
+            dragListeners ? `Drag to reorder slot ${idx + 1}` : undefined
+          }
         >
           {String(idx + 1).padStart(2, "0")}
         </span>
@@ -415,13 +417,13 @@ export function CompactRow({
       </div>
 
       {/* Center column — flex-col: main row content on top, calc strip below */}
-      <div className="flex flex-col min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 flex-col">
         {/*
           Main content. At <lg, identity sits on top and stats+moves stack
           vertically below it (flex-col). At lg+, identity (single-row) is
           the first flex child and stats+moves sit side-by-side beside it.
         */}
-        <div className="flex flex-col lg:flex-row lg:items-stretch lg:flex-nowrap min-w-0 overflow-visible">
+        <div className="flex min-w-0 flex-col overflow-visible lg:flex-row lg:flex-nowrap lg:items-stretch">
           {identityVertical}
           {identityMidStack}
           {identitySingleRow}
@@ -433,7 +435,7 @@ export function CompactRow({
             lg+  — direct horizontal sibling of single-row identity, with
                    stats and moves laid out side-by-side as direct children.
           */}
-          <div className="flex flex-col min-w-0 flex-1 lg:flex-row lg:items-stretch">
+          <div className="flex min-w-0 flex-1 flex-col lg:flex-row lg:items-stretch">
             {statsLane}
             {movesLane}
           </div>
@@ -453,7 +455,7 @@ export function CompactRow({
       {/* RIB RIGHT — visible at lg+ only (at <lg the remove lives in left rib) */}
       <div
         className={cn(
-          "hidden lg:flex flex-col items-center justify-start shrink-0 w-7 border-l transition-[padding] duration-300 ease-in-out",
+          "hidden w-7 shrink-0 flex-col items-center justify-start border-l transition-[padding] duration-300 ease-in-out lg:flex",
           "border-border/60 border-dashed",
           calcEnabled ? "py-2" : "py-1",
           !rightBg && "bg-muted/20"

@@ -2,6 +2,14 @@
 
 import { cn } from "@/lib/utils";
 
+import {
+  FormRowsGhost,
+  GHOST_STAT_ROWS,
+  MetaBarGhost,
+  SpeciesPillGhost,
+  SpriteGhost,
+} from "./row-ghost-shared";
+
 // =============================================================================
 // CompactRowGhost — static placeholder mirroring CompactRow's outer structure
 //
@@ -58,14 +66,14 @@ export function CompactRowGhost({ idx }: CompactRowGhostProps) {
           </div>
 
           {/* md: identity mid-stack (380px column, vertical inside) */}
-          <div className="border-border hidden shrink-0 grow-0 basis-96 min-w-0 flex-col border-r border-dashed md:flex lg:hidden">
+          <div className="border-border hidden min-w-0 shrink-0 grow-0 basis-96 flex-col border-r border-dashed md:flex lg:hidden">
             <MetaBarGhost />
-            <div className="flex flex-auto flex-col items-center justify-center gap-2 min-h-0 min-w-0 px-2 py-3">
+            <div className="flex min-h-0 min-w-0 flex-auto flex-col items-center justify-center gap-2 px-2 py-3">
               <div className="mx-auto flex w-full max-w-60 flex-col items-center gap-1.5">
                 <SpriteGhost size={144} />
                 <SpeciesPillGhost />
               </div>
-              <div className="mx-auto flex w-full min-w-0 max-w-60 flex-col gap-1">
+              <div className="mx-auto flex w-full max-w-60 min-w-0 flex-col gap-1">
                 <FormRowsGhost />
               </div>
             </div>
@@ -96,7 +104,7 @@ export function CompactRowGhost({ idx }: CompactRowGhostProps) {
       </div>
 
       {/* RIGHT RIB — visible only at lg+ to match CompactRow structure */}
-      <div className="border-border/60 bg-muted/20 hidden lg:flex w-7 shrink-0 flex-col items-center justify-start border-l border-dashed py-2">
+      <div className="border-border/60 bg-muted/20 hidden w-7 shrink-0 flex-col items-center justify-start border-l border-dashed py-2 lg:flex">
         <span className="text-muted-foreground/20 flex size-5 items-center justify-center rounded">
           ×
         </span>
@@ -106,48 +114,8 @@ export function CompactRowGhost({ idx }: CompactRowGhostProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Shared ghost primitives
+// Compact-only ghost primitives
 // ---------------------------------------------------------------------------
-
-function SpriteGhost({ size = 144 }: { size?: number }) {
-  return (
-    <div
-      className="bg-muted/40 rounded-xl"
-      style={{ width: size, height: size }}
-    />
-  );
-}
-
-function SpeciesPillGhost() {
-  return (
-    <div className="border-border bg-background flex w-full items-center gap-1 rounded-md border border-dashed px-2 py-1.5 text-left text-xs">
-      <span className="text-muted-foreground/50 min-w-0 flex-1 truncate">
-        + Add Pokémon
-      </span>
-      <span aria-hidden className="text-muted-foreground/30 text-xs">
-        ▾
-      </span>
-    </div>
-  );
-}
-
-function MetaBarGhost() {
-  return (
-    <div className="border-border grid h-9 shrink-0 grid-cols-[1fr_auto] items-center gap-2.5 border-b border-dashed px-3 py-2">
-      <span className="text-muted-foreground/30 text-sm font-normal italic">
-        Nickname
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="border-border bg-background text-muted-foreground/40 inline-flex h-6 items-center justify-center rounded-[5px] border px-2 font-mono text-xs font-semibold">
-          —
-        </span>
-        <span className="border-border bg-background text-muted-foreground/40 inline-flex h-6 items-center justify-center rounded-[5px] border px-2 font-mono text-xs font-semibold">
-          ✦
-        </span>
-      </span>
-    </div>
-  );
-}
 
 function BannerGhost() {
   return (
@@ -164,59 +132,10 @@ function BannerGhost() {
   );
 }
 
-function FormRowsGhost() {
-  return (
-    <>
-      {(["Item", "Abil", "Nat", "Type"] as const).map((label) => (
-        <div
-          key={label}
-          className="grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 rounded px-1 py-1"
-        >
-          <span className="text-muted-foreground/30 font-mono text-xs font-bold tracking-[0.08em] uppercase">
-            {label}
-          </span>
-          <span className="text-muted-foreground/25 truncate text-xs italic">
-            —
-          </span>
-        </div>
-      ))}
-    </>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Stats / Moves ghosts — copy the visual structure from the lane null branches
 // without importing the lanes themselves.
 // ---------------------------------------------------------------------------
-
-const GHOST_STAT_ROWS = [
-  { key: "hp", label: "HP", colorClass: "text-rose-500 dark:text-rose-400" },
-  {
-    key: "attack",
-    label: "ATK",
-    colorClass: "text-orange-500 dark:text-orange-400",
-  },
-  {
-    key: "defense",
-    label: "DEF",
-    colorClass: "text-amber-500 dark:text-amber-400",
-  },
-  {
-    key: "specialAttack",
-    label: "SPA",
-    colorClass: "text-sky-500 dark:text-sky-400",
-  },
-  {
-    key: "specialDefense",
-    label: "SPD",
-    colorClass: "text-emerald-500 dark:text-emerald-400",
-  },
-  {
-    key: "speed",
-    label: "SPE",
-    colorClass: "text-fuchsia-500 dark:text-fuchsia-400",
-  },
-] as const;
 
 function StatsGhost() {
   // Match the StatsLane null branch grid (without IV / without calc — sane default)
@@ -240,16 +159,16 @@ function StatsGhost() {
       </div>
       {GHOST_STAT_ROWS.map(({ key, label, colorClass }) => (
         <div key={key} className={cn(rowGrid, colorClass)}>
-          <span className="font-mono text-xs font-semibold uppercase tracking-[0.06em] opacity-30">
+          <span className="font-mono text-xs font-semibold tracking-[0.06em] uppercase opacity-30">
             {label}
           </span>
           <span className="text-muted-foreground/25 text-right font-mono text-xs tabular-nums">
             —
           </span>
-          <div className="bg-muted relative min-w-0 h-2 overflow-hidden rounded-full" />
+          <div className="bg-muted relative h-2 min-w-0 overflow-hidden rounded-full" />
           <div className="border-border/30 h-5 w-9 rounded border border-dashed" />
           <div className="relative h-3.5">
-            <div className="bg-muted-foreground/40 pointer-events-none absolute top-1/2 left-0 right-0 h-[3px] -translate-y-1/2 rounded-full opacity-25" />
+            <div className="bg-muted-foreground/40 pointer-events-none absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full opacity-25" />
           </div>
           <span className="text-muted-foreground/25 text-right font-mono text-xs font-bold tabular-nums">
             —
@@ -263,7 +182,7 @@ function StatsGhost() {
 function MovesGhost() {
   return (
     <div className="flex min-w-0 flex-1 flex-col px-3 py-1">
-      <div className="border-spacing-y-[3px] flex flex-col gap-1">
+      <div className="flex border-spacing-y-[3px] flex-col gap-1">
         {/* Header row */}
         <div className="grid grid-cols-[24px_32px_1fr_44px_48px] items-center gap-1 pb-0.5">
           <span />

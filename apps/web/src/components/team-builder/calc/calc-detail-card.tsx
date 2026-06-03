@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 
-import { getMoveData, getSpeciesTypes, type GameFormat } from "@trainers/pokemon";
+import {
+  getMoveData,
+  getSpeciesTypes,
+  type GameFormat,
+} from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import {
-  getVerdict,
-  type CalcOutput,
-} from "../use-calc-state";
+import { getVerdict, type CalcOutput } from "../use-calc-state";
 import { formatSupportsTera } from "../format-gating";
 import { TypeDot } from "../type-dot";
 import {
@@ -208,9 +209,7 @@ export function CalcDetailCard({
         <span className="mvdetail-arrow">→</span>
         <span className="mvdetail-mon">
           <TypeDot
-            t={
-              (getSpeciesTypes(defender.species)[0] ?? "Normal") as string
-            }
+            t={(getSpeciesTypes(defender.species)[0] ?? "Normal") as string}
             size={9}
           />
           <b>{defender.species}</b>
@@ -219,7 +218,12 @@ export function CalcDetailCard({
 
       {/* Result block */}
       <div className="mvdetail-result">
-        <div className={cn("mvdetail-bigpct", koClass !== "mvdetail-ko--4" && koClass)}>
+        <div
+          className={cn(
+            "mvdetail-bigpct",
+            koClass !== "mvdetail-ko--4" && koClass
+          )}
+        >
           {minPct.toFixed(1)}
           <span className="mvdetail-pct-sep">–</span>
           {maxPct.toFixed(1)}
@@ -263,20 +267,34 @@ export function CalcDetailCard({
 
       {/* Toggle row: Crit / Terastallized / Screen up */}
       <div className="mvdetail-toggles">
-        <label className="mvdetail-tog flex items-center gap-1.5">
+        <div className="mvdetail-tog flex items-center gap-1.5">
           <Checkbox
+            aria-label="Crit"
             checked={crit}
             onCheckedChange={(v) => setCrit(v === true)}
           />
-          Crit
-        </label>
-        <label className="mvdetail-tog flex items-center gap-1.5">
+          <button
+            type="button"
+            className="cursor-pointer text-xs"
+            onClick={() => setCrit(!crit)}
+          >
+            Crit
+          </button>
+        </div>
+        <div className="mvdetail-tog flex items-center gap-1.5">
           <Checkbox
+            aria-label="Screen up"
             checked={screen}
             onCheckedChange={(v) => setScreen(v === true)}
           />
-          Screen up
-        </label>
+          <button
+            type="button"
+            className="cursor-pointer text-xs"
+            onClick={() => setScreen(!screen)}
+          >
+            Screen up
+          </button>
+        </div>
       </div>
 
       {/* Field row — only for spread moves */}
@@ -291,7 +309,7 @@ export function CalcDetailCard({
               className={cn(
                 "mvdetail-tog-btn",
                 localFoesAlive === 1 &&
-                  "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
+                  "border-primary text-primary bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] font-semibold"
               )}
               onClick={() => setLocalFoesAlive(1)}
             >
@@ -302,7 +320,7 @@ export function CalcDetailCard({
               className={cn(
                 "mvdetail-tog-btn",
                 localFoesAlive === 2 &&
-                  "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
+                  "border-primary text-primary bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] font-semibold"
               )}
               onClick={() => setLocalFoesAlive(2)}
             >
@@ -318,7 +336,7 @@ export function CalcDetailCard({
                 className={cn(
                   "mvdetail-tog-btn",
                   localAllyAlive &&
-                    "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
+                    "border-primary text-primary bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] font-semibold"
                 )}
                 onClick={() => setLocalAllyAlive(true)}
               >
@@ -329,7 +347,7 @@ export function CalcDetailCard({
                 className={cn(
                   "mvdetail-tog-btn",
                   !localAllyAlive &&
-                    "bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] border-primary text-primary font-semibold"
+                    "border-primary text-primary bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] font-semibold"
                 )}
                 onClick={() => setLocalAllyAlive(false)}
               >
