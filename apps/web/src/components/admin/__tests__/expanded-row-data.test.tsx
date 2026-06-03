@@ -436,6 +436,107 @@ describe("ExpandedRowData", () => {
     });
   });
 
+  describe("TeamsPanel", () => {
+    it("shows 3 skeleton rows while teams load", async () => {
+      // First call (standings): returns empty data, loaded
+      // All subsequent calls (TeamsPanel): returns loading state
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({ data: [], error: null, isLoading: false, isFetching: false })
+        .mockReturnValue({ data: undefined, error: null, isLoading: true, isFetching: true });
+
+      const { container } = render(<ExpandedRowData row={rk9Row} />);
+
+      // Switch to Teams view to mount TeamsPanel
+      fireEvent.click(screen.getByText("Teams"));
+
+      // Should show 3 skeleton elements with h-20 for team loading
+      const skeletons = container.querySelectorAll(".h-20");
+      expect(skeletons.length).toBe(3);
+    });
+
+    it("renders team composition when teams data is available", async () => {
+      const teamsData = [
+        {
+          placement: 1,
+          division: "masters",
+          players: { trainer_name: "Ash" },
+          team_pokemon: [
+            { position: 1, species: "pikachu", ability: "Static", held_item: "Light Ball", tera_type: "Electric", moves: [] },
+            { position: 2, species: "charizard", ability: "Blaze", held_item: "Choice Scarf", tera_type: "Fire", moves: [] },
+          ],
+        },
+      ];
+
+      // First call (standings): returns empty data, loaded
+      // All subsequent calls (TeamsPanel): returns team data
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({ data: [], error: null, isLoading: false, isFetching: false })
+        .mockReturnValue({ data: teamsData, error: null, isLoading: false, isFetching: false });
+
+      render(<ExpandedRowData row={rk9Row} />);
+      fireEvent.click(screen.getByText("Teams"));
+
+      expect(screen.getByText("#1")).toBeInTheDocument();
+      expect(screen.getByText("Ash")).toBeInTheDocument();
+      expect(screen.getByText("pikachu")).toBeInTheDocument();
+      expect(screen.getByText("charizard")).toBeInTheDocument();
+    });
+  });
+
+  describe("DecklistsPanel", () => {
+    it("shows 3 skeleton rows while decklists load", async () => {
+      // First call (standings): returns empty data, loaded
+      // All subsequent calls (DecklistsPanel): returns loading state
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({ data: [], error: null, isLoading: false, isFetching: false })
+        .mockReturnValue({ data: undefined, error: null, isLoading: true, isFetching: true });
+
+      const { container } = render(<ExpandedRowData row={limitlessRow} />);
+      fireEvent.click(screen.getByText("Decklists"));
+
+      const skeletons = container.querySelectorAll(".h-20");
+      expect(skeletons.length).toBe(3);
+    });
+
+    it("shows error message when decklists query fails", async () => {
+      // First call (standings): returns empty data, loaded
+      // All subsequent calls (DecklistsPanel): returns error state
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({ data: [], error: null, isLoading: false, isFetching: false })
+        .mockReturnValue({ data: null, error: new Error("decklist query failed"), isLoading: false, isFetching: false });
+
+      render(<ExpandedRowData row={limitlessRow} />);
+      fireEvent.click(screen.getByText("Decklists"));
+
+      expect(screen.getByText("decklist query failed")).toBeInTheDocument();
+    });
+
+    it("renders decklist composition when data is available", async () => {
+      const decklistData = [
+        {
+          placement: 1,
+          players: { display_name: "MistyWaters" },
+          team_pokemon: [
+            { position: 1, species: "gardevoir", ability: "Trace", held_item: "Life Orb", tera_type: "Psychic", moves: [] },
+          ],
+        },
+      ];
+
+      // First call (standings): returns empty data, loaded
+      // All subsequent calls (DecklistsPanel): returns decklist data
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({ data: [], error: null, isLoading: false, isFetching: false })
+        .mockReturnValue({ data: decklistData, error: null, isLoading: false, isFetching: false });
+
+      render(<ExpandedRowData row={limitlessRow} />);
+      fireEvent.click(screen.getByText("Decklists"));
+
+      expect(screen.getByText("#1")).toBeInTheDocument();
+      expect(screen.getByText("MistyWaters")).toBeInTheDocument();
+      expect(screen.getByText("gardevoir")).toBeInTheDocument();
+    });
+  });
+
   describe("error state", () => {
     it("shows error message when standings query fails", () => {
       mockUseSupabaseQuery.mockReturnValue({
