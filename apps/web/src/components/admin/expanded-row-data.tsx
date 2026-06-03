@@ -2,13 +2,14 @@
 
 import { Fragment, useState } from "react";
 import Image from "next/image";
-import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, ExternalLink, Loader2 } from "lucide-react";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
+import { scrapeRk9TeamForStanding } from "@/actions/rk9";
 import { type UnifiedRow } from "./external-data-shared";
 
 // ---------------------------------------------------------------------------
@@ -75,6 +76,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
   );
   const [divisionFilter, setDivisionFilter] = useState<DivisionFilter>("masters");
   const [showTeamOnly, setShowTeamOnly] = useState(false);
+  const [scrapingIds, setScrapingIds] = useState<Set<number>>(new Set());
 
   function togglePlacement(key: string) {
     setExpandedPlacements((prev) => {
@@ -91,6 +93,20 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
   function handleDivisionFilter(div: DivisionFilter) {
     setDivisionFilter(div);
     setExpandedPlacements(new Set());
+  }
+
+  async function handleScrapeStanding(standingId: number, rosterEntryId: string) {
+    if (!rosterEntryId) return;
+    setScrapingIds((prev) => new Set(prev).add(standingId));
+    try {
+      await scrapeRk9TeamForStanding(row.rk9!.event_id, standingId, rosterEntryId);
+    } finally {
+      setScrapingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(standingId);
+        return next;
+      });
+    }
   }
 
   const { data, isLoading, error } = useSupabaseQuery(
@@ -215,11 +231,11 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                   {row.source === "rk9"
                     ? (data as RK9StandingWithTeam[])
                         .filter((s) => s.division === divisionFilter)
-                        .filter((s) => !showTeamOnly || (s.team_pokemon ?? []).filter((p) => p.position > 0).length > 0)
+                        .filter((s) => !showTeamOnly || (s.team_pokemon ?? []).length > 0)
                         .map((s, i) => {
                           const expansionKey = `${s.division}-${s.placement}`;
                           const isExpanded = expandedPlacements.has(expansionKey);
-                          const pokemon = (s.team_pokemon ?? []).filter((p) => p.position > 0);
+                          const pokemon = s.team_pokemon ?? [];
                           return (
                             <Fragment key={i}>
                             <tr className="border-b last:border-0">
@@ -251,6 +267,21 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                     >
                                       <ExternalLink className="h-3 w-3" />
                                     </a>
+                                  )}
+                                  {s.roster_entry_id && pokemon.length === 0 && (
+                                    <button
+                                      className="shrink-0 text-muted-foreground hover:text-foreground"
+                                      onClick={/* istanbul ignore next */ () => handleScrapeStanding(s.player_id!, s.roster_entry_id!)}
+                                      disabled={scrapingIds.has(s.player_id!)}
+                                      title="Scrape team list"
+                                      aria-label="Scrape team"
+                                    >
+                                      {scrapingIds.has(s.player_id!) ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <Download className="h-3 w-3" />
+                                      )}
+                                    </button>
                                   )}
                                 </div>
                               </td>
@@ -385,7 +416,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                         );
                       })
                     : (data as LimitlessStandingWithTeam[])
-                        .filter((s) => !showTeamOnly || (s.team_pokemon ?? []).filter((p) => p.position > 0).length > 0)
+                        .filter((s) => !showTeamOnly || (s.team_pokemon ?? []).length > 0)
                         .map((s, i) => {
                         const playerName = s.players?.display_name ?? "—";
                         const record =

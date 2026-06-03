@@ -21,6 +21,7 @@ import {
   Play,
   RefreshCw,
   Search,
+  Trash2,
   Users,
   X,
   XCircle,
@@ -46,6 +47,7 @@ import {
   discoverRk9Events,
   scrapeRk9Roster,
   scrapeRk9TeamsBatch,
+  resetRk9EventData,
 } from "@/actions/rk9";
 import {
   queueTournamentForImport,
@@ -835,6 +837,16 @@ export function ExternalData() {
         next.delete(eventId);
         return next;
       });
+      setRefreshKey((k) => k + 1);
+    }
+  }
+
+  async function handleResetEvent(eventId: string) {
+    if (!window.confirm("Delete all roster and team data for this event? Cannot be undone.")) return;
+    const result = await resetRk9EventData(eventId);
+    if (!result.success) toast.error(result.error);
+    else {
+      toast.success("Event reset");
       setRefreshKey((k) => k + 1);
     }
   }
@@ -2129,15 +2141,17 @@ export function ExternalData() {
                             )}
                         </div>
                       )}
-                      <div className="flex items-center justify-end p-2">
+                      <div className="flex items-center justify-end gap-1 p-2">
                         <RowActions
                           row={row}
                           activeJobs={activeJobs}
                           queuingIds={queuingIds}
                           batchQueuing={batchQueuing}
+                          isUpcomingRow={isUpcomingRow}
                           onScrapeRoster={handleScrapeRoster}
                           onScrapeTeams={handleScrapeTeams}
                           onQueueOne={handleQueueOne}
+                          onResetEvent={handleResetEvent}
                         />
                       </div>
                     </div>
@@ -2275,45 +2289,67 @@ function RowActions({
   activeJobs,
   queuingIds,
   batchQueuing,
+  isUpcomingRow,
   onScrapeRoster,
   onScrapeTeams,
   onQueueOne,
+  onResetEvent,
 }: {
   row: UnifiedRow;
   activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
   queuingIds: Set<string>;
   batchQueuing: boolean;
+  isUpcomingRow: boolean;
   onScrapeRoster: (eventId: string) => void;
   onScrapeTeams: (eventId: string, force?: boolean) => void;
   onQueueOne: (tournamentId: string) => void;
+  onResetEvent: (eventId: string) => void;
 }) {
   if (row.source === "rk9" && row.rk9) {
     const event = row.rk9;
-    const upcoming = isUpcoming(event.date_start);
-    if (upcoming) return null;
+    if (isUpcomingRow) return null;
 
     const activeJob = activeJobs.get(event.event_id);
     const isBusy = activeJob !== null && activeJob !== undefined;
 
+    const resetButton = event.import_status !== "pending" ? (
+      <button
+        className="text-muted-foreground hover:text-destructive"
+        onClick={() => onResetEvent(event.event_id)}
+        title="Reset roster and team data"
+        aria-label="Reset event"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    ) : null;
+
     if (event.import_status === "complete" && event.has_team_lists) {
-      return <CheckCircle2 className="ml-auto h-4 w-4 text-emerald-500" />;
+      return (
+        <div className="flex items-center gap-1.5">
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          {resetButton}
+        </div>
+      );
     }
 
     if (event.import_status === "pending" || event.import_status === "failed") {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onScrapeRoster(event.event_id)}
-          disabled={isBusy}
-        >
-          {activeJob?.type === "roster" ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Download className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          Roster
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onScrapeRoster(event.event_id)}
+            disabled={isBusy}
+          >
+            {activeJob?.type === "roster" ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            Roster
+          </Button>
+          {resetButton}
+        </div>
       );
     }
 
@@ -2323,19 +2359,22 @@ function RowActions({
       (event.import_status === "complete" && !event.has_team_lists)
     ) {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onScrapeTeams(event.event_id, event.import_status === "complete")}
-          disabled={isBusy}
-        >
-          {activeJob?.type === "teams" ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Download className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          Teams
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onScrapeTeams(event.event_id, event.import_status === "complete")}
+            disabled={isBusy}
+          >
+            {activeJob?.type === "teams" ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            Teams
+          </Button>
+          {resetButton}
+        </div>
       );
     }
 

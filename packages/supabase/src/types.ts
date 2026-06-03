@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   limitless: {
     Tables: {
       match_results: {
@@ -4314,6 +4339,7 @@ export type Database = {
           placement: number | null
           player_id: number
           roster_entry_id: string | null
+          team_scrape_attempted_at: string | null
         }
         Insert: {
           division: Database["rk9"]["Enums"]["division"]
@@ -4323,6 +4349,7 @@ export type Database = {
           placement?: number | null
           player_id: number
           roster_entry_id?: string | null
+          team_scrape_attempted_at?: string | null
         }
         Update: {
           division?: Database["rk9"]["Enums"]["division"]
@@ -4332,6 +4359,7 @@ export type Database = {
           placement?: number | null
           player_id?: number
           roster_entry_id?: string | null
+          team_scrape_attempted_at?: string | null
         }
         Relationships: [
           {
@@ -4540,6 +4568,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   limitless: {
     Enums: {},
   },
