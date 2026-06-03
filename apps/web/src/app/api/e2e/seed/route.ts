@@ -378,11 +378,20 @@ export async function POST(request: NextRequest) {
   // ---------------------------------------------------------------------------
   const cynthiaUserId = E2E_USERS[2]!.id;
 
-  const { data: cynthiaAlt } = await supabase
+  const { data: cynthiaAlt, error: cynthiaAltError } = await supabase
     .from("alts")
     .select("id")
     .eq("username", "cynthia")
     .maybeSingle();
+
+  if (cynthiaAltError) {
+    hasErrors = true;
+    results.push({
+      email: "cynthia",
+      status: "error",
+      error: `cynthia alt lookup failed: ${cynthiaAltError.message}`,
+    });
+  }
 
   const { error: coachUserError } = await supabase
     .from("users")
