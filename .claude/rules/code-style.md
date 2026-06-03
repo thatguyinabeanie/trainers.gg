@@ -151,6 +151,21 @@ In `apps/web/`, always use `cn()` from `@/lib/utils` for combining class names �
 <div className={`base-class ${isActive ? "active-class" : ""}`} />
 ```
 
+## Tailwind Sizing (Web Only)
+
+**Never add new arbitrary pixel values** — no `w-[Npx]`, `min-w-[Npx]`, `max-w-[Npx]`, `h-[Npx]`, `gap-[Npx]`, etc. Use Tailwind's built-in spacing/sizing scale:
+
+| Need   | Use instead of |
+| ------ | -------------- |
+| ~320px | `w-80`         |
+| ~384px | `w-96`         |
+| ~448px | `max-w-md`     |
+| ~512px | `max-w-lg`     |
+
+This applies to pre-existing values too — remove `[Npx]` values encountered while working in a file.
+
+Rare justified exceptions are allowed — workspace-scale caps (`max-w-[1600px]`), 1–3px hairlines (`h-[1px]`, `gap-[3px]`), and API-bound pixel params (e.g. sprite size props). Leave an inline comment explaining why the Tailwind scale doesn't apply.
+
 ## Error Handling
 
 | Context                | Pattern                                                     |

@@ -509,9 +509,9 @@ describe("StatsLane", () => {
 
     const calls = onUpdate.mock.calls.map((c) => c[0]);
     // Nature is some +Atk nature whose −stat is NOT specialAttack
-    const natureCall = calls.find(
-      (c) => typeof c.nature === "string"
-    ) as { nature?: string } | undefined;
+    const natureCall = calls.find((c) => typeof c.nature === "string") as
+      | { nature?: string }
+      | undefined;
     expect(natureCall?.nature).toBeDefined();
     expect(natureCall?.nature).not.toBe("Adamant"); // Adamant = +Atk / −SpA — would be a flip
   });
@@ -588,8 +588,12 @@ describe("StatsLane", () => {
     (mockFindStatBreakpoints as jest.Mock).mockReturnValue([4, 8, 12]);
     renderLane({ nature: "Adamant", ev_attack: 8 });
 
+    // Base UI Slider exposes role="slider" on the visually-hidden <input>
+    // inside the thumb div. data-at-bump lives on the thumb div (which drives
+    // the hollow-ring visual). Walk up to the thumb to assert.
     const slider = screen.getByLabelText("Atk slider");
-    expect(slider).toHaveAttribute("data-at-bump");
+    const thumb = slider.closest('[data-slot="slider-thumb"]');
+    expect(thumb).toHaveAttribute("data-at-bump");
   });
 
   it("slider does NOT have data-at-bump attribute when current EV is between breakpoints", () => {
@@ -597,7 +601,8 @@ describe("StatsLane", () => {
     renderLane({ nature: "Adamant", ev_attack: 6 });
 
     const slider = screen.getByLabelText("Atk slider");
-    expect(slider).not.toHaveAttribute("data-at-bump");
+    const thumb = slider.closest('[data-slot="slider-thumb"]');
+    expect(thumb).not.toHaveAttribute("data-at-bump");
   });
 
   // ---------------------------------------------------------------------------
@@ -656,13 +661,10 @@ describe("ghost mode (pokemon: null)", () => {
   // ---------------------------------------------------------------------------
   // 2. Root container has correct style and className
   // ---------------------------------------------------------------------------
-  it("root container has the fluid + container-query width classes and expected className", () => {
+  it("root container has the expected layout classes", () => {
     const { container } = render(<StatsLane pokemon={null} />);
     const root = container.firstElementChild as HTMLElement;
     expect(root).toBeTruthy();
-    // Width is now driven by Tailwind: w-full at narrow widths,
-    // @[1580px]:w-[400px] at compact widths via container queries.
-    expect(root.className).toContain("@[1580px]:w-[400px]");
     expect(root.className).toContain("border-dashed");
     expect(root.className).toContain("flex-col");
   });

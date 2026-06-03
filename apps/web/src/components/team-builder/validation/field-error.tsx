@@ -22,7 +22,7 @@ export function FieldError({ message, severity = "error", className }: FieldErro
   return (
     <span
       className={cn(
-        "mt-0.5 block truncate font-mono text-[9px] leading-none",
+        "mt-0.5 block truncate font-mono text-xs leading-none",
         severity === "error" ? "text-destructive" : "text-amber-600 dark:text-amber-400",
         className
       )}

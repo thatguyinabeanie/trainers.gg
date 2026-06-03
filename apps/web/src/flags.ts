@@ -36,3 +36,15 @@ export const dashboardStats = flag<boolean>({
   ],
   adapter: supabaseAdapter,
 });
+
+export const coaching = flag<boolean>({
+  key: "coaching",
+  defaultValue: false,
+  description:
+    "Coaching surface — profiles, directory, and the coach badge (per-user allowlist via metadata.allowed_users)",
+  options: [
+    { label: "Disabled", value: false },
+    { label: "Enabled", value: true },
+  ],
+  adapter: supabaseAdapter,
+});

@@ -75,7 +75,7 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
     <div className={cn("calc-col-row", koTier && `calc-col-row--ko${koTier}`)}>
       {hasCalc && koTier ? (
         <>
-          <span className="flex-shrink-0 font-mono text-[8.5px] font-black tracking-[0.07em] uppercase">
+          <span className="flex-shrink-0 font-mono text-xs font-black tracking-[0.07em] uppercase">
             {output?.koChance != null &&
             output.koChance > 0 &&
             output.koChance < 100
@@ -96,7 +96,7 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
               {eff !== null && eff !== 1 && (
                 <span
                   className={cn(
-                    "rounded px-1 py-px text-[8.5px] font-bold",
+                    "rounded px-1 py-px text-xs font-bold",
                     eff > 1
                       ? "bg-green-500/15 text-green-700 dark:text-green-400"
                       : eff === 0
@@ -110,7 +110,7 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
               )}
               {spreadApplied && (
                 <span
-                  className="text-muted-foreground text-[8.5px] font-bold"
+                  className="text-muted-foreground text-xs font-bold"
                   title="Spread −25%"
                 >
                   spr
@@ -124,11 +124,11 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
         !isStatus &&
         hasDefender &&
         output === null ? (
-        <span className="text-muted-foreground/70 text-[9.5px] font-normal italic">
+        <span className="text-muted-foreground/70 text-xs font-normal italic">
           — unavailable —
         </span>
       ) : canShowCalcState && moveName && !isStatus && !hasDefender ? (
-        <span className="text-muted-foreground/50 text-[9.5px] font-normal italic">
+        <span className="text-muted-foreground/50 text-xs font-normal italic">
           — pick target —
         </span>
       ) : (

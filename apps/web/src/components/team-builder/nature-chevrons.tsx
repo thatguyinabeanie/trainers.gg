@@ -16,7 +16,7 @@ export function NatureChevrons({ boost, reduce, className }: NatureChevronsProps
   if (!boost || !reduce) return null;
   return (
     <span
-      className={cn("font-mono text-[9px] whitespace-nowrap", className)}
+      className={cn("font-mono text-xs whitespace-nowrap", className)}
     >
       <span className="text-emerald-600 dark:text-emerald-400">
         +{STAT_LABELS[boost]}

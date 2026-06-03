@@ -1,5 +1,7 @@
+import { revalidateTag } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { CacheTags } from "@/lib/cache";
 
 // E2E test users matching apps/web/e2e/fixtures/auth.ts
 // The handle_new_user() trigger auto-creates public.users + public.alts
@@ -219,6 +221,34 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Make the primary alt public so it appears in the player directory.
+      // handle_new_user() creates the alt with is_public = false by default.
+      // Chain .select + .maybeSingle() so we can detect 0-row-matched updates —
+      // Supabase returns { error: null } even when no rows were affected.
+      const { data: publicAlt, error: altPublicError } = await supabase
+        .from("alts")
+        .update({ is_public: true })
+        .eq("user_id", user.id)
+        .eq("username", user.username)
+        .select("id")
+        .maybeSingle();
+
+      if (altPublicError) {
+        hasErrors = true;
+        results.push({
+          email: user.email,
+          status: "error",
+          error: `alts.is_public update failed: ${altPublicError.message}`,
+        });
+      } else if (!publicAlt) {
+        hasErrors = true;
+        results.push({
+          email: user.email,
+          status: "error",
+          error: `alts.is_public update matched no primary alt for ${user.username}`,
+        });
+      }
+
       // Assign site_admin role to admin user
       if (user.isAdmin) {
         const { data: roleData, error: roleFetchError } = await supabase
@@ -354,6 +384,93 @@ export async function POST(request: NextRequest) {
       });
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Enable coaching feature flag (migration inserts it as disabled; the local
+  // db:reset seed that enables it does not run on preview branch DBs).
+  // ---------------------------------------------------------------------------
+  const { error: flagError } = await supabase
+    .from("feature_flags")
+    .upsert({ key: "coaching", enabled: true }, { onConflict: "key" });
+
+  if (flagError) {
+    hasErrors = true;
+    results.push({
+      email: "feature_flags",
+      status: "error",
+      error: `coaching flag update failed: ${flagError.message}`,
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Seed cynthia as a coach (mirrors packages/supabase/supabase/seeds/14_coaching.sql).
+  // The coaching E2E tests require at least one seeded coach in the player directory.
+  // ---------------------------------------------------------------------------
+  const cynthiaUserId = E2E_USERS[2]!.id;
+
+  const { data: cynthiaAlt, error: cynthiaAltError } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("username", "cynthia")
+    .maybeSingle();
+
+  if (cynthiaAltError) {
+    hasErrors = true;
+    results.push({
+      email: "cynthia",
+      status: "error",
+      error: `cynthia alt lookup failed: ${cynthiaAltError.message}`,
+    });
+  }
+
+  const { error: coachUserError } = await supabase
+    .from("users")
+    .update({
+      is_coach: true,
+      ...(cynthiaAlt ? { main_alt_id: cynthiaAlt.id } : {}),
+    })
+    .eq("id", cynthiaUserId);
+
+  if (coachUserError) {
+    hasErrors = true;
+    results.push({
+      email: "cynthia",
+      status: "error",
+      error: `coach user update failed: ${coachUserError.message}`,
+    });
+  }
+
+  const { error: coachProfileError } = await supabase
+    .from("coach_profiles")
+    .upsert(
+      {
+        user_id: cynthiaUserId,
+        headline:
+          "Sinnoh Champion & VGC Veteran — 10+ years of competitive experience",
+        bio: "Former Sinnoh Champion turned full-time VGC coach.",
+        formats: ["vgc2025regh", "vgc2025regi"],
+        links: [{ label: "YouTube", url: "https://youtube.com" }],
+        service_types: ["live", "replay_review", "team_review", "mentorship"],
+      },
+      { onConflict: "user_id" }
+    );
+
+  if (coachProfileError) {
+    hasErrors = true;
+    results.push({
+      email: "cynthia",
+      status: "error",
+      error: `coach_profiles upsert failed: ${coachProfileError.message}`,
+    });
+  }
+
+  // Bust the player directory cache so public alts seeded above are visible
+  // immediately in E2E tests (the page uses unstable_cache with on-demand
+  // revalidation only — without this the stale cache would hide seeded players).
+  revalidateTag(CacheTags.PLAYERS_DIRECTORY, "max");
+  revalidateTag(CacheTags.PLAYERS_LEADERBOARD, "max");
+  revalidateTag(CacheTags.PLAYERS_RECENT, "max");
+  revalidateTag(CacheTags.PLAYERS_NEW, "max");
 
   return NextResponse.json(
     { success: !hasErrors, results },
