@@ -45,7 +45,7 @@ import { FieldErrors } from "../validation/field-error";
 //   ┌─ rib (top, horizontal bar) ─────────────────────────────┐  ← 1
 //   │ slot # · drag handle · (decorations) · remove button    │
 //   ├─ identity (vertical) ───────────────────────────────────┤  ← 2
-//   │ sprite (basis-[140px])  |  meta-bar + form-grid         │
+//   │ sprite (basis-36)        |  meta-bar + form-grid         │
 //   ├─ stats + moves (stacked) ───────────────────────────────┤  ← 3
 //   │ stats lane                                              │
 //   │ moves lane                                              │
@@ -222,7 +222,7 @@ export function GridRow({
         </button>
       </div>
 
-      {/* IDENTITY (vertical) — sprite (left, basis-[140px]) | meta-bar + form-grid */}
+      {/* IDENTITY (vertical) — sprite (left, basis-36) | meta-bar + form-grid */}
       <div className="border-border flex w-full flex-col border-b border-dashed">
         <div className="flex min-w-0 flex-auto flex-row items-center justify-center">
           <div className="flex shrink-0 grow-0 basis-36 flex-col items-center justify-center gap-1.5 px-1 py-2">

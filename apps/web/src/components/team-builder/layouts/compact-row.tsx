@@ -41,7 +41,7 @@ import { FieldErrors } from "../validation/field-error";
 //
 //   <md  (<768px)   — identity vertical (meta-bar above sprite+form-grid),
 //                     stats+moves stacked vertically below identity, full width
-//   md   (≥768)     — identity mid-stack (basis-[380px]), stats+moves stacked
+//   md   (≥768)     — identity mid-stack (basis-96 / 384px), stats+moves stacked
 //                     vertically in the right column
 //   lg+  (≥1024)    — identity single-row (sprite-col + form-col, variant="row"),
 //                     stats+moves side-by-side as direct flex children;

@@ -361,8 +361,7 @@ export async function POST(request: NextRequest) {
   // ---------------------------------------------------------------------------
   const { error: flagError } = await supabase
     .from("feature_flags")
-    .update({ enabled: true })
-    .eq("key", "coaching");
+    .upsert({ key: "coaching", enabled: true }, { onConflict: "key" });
 
   if (flagError) {
     hasErrors = true;

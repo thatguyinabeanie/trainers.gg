@@ -16,7 +16,7 @@ import {
 // Renders three sibling JSX trees gated by Tailwind viewport classes,
 // matching CompactRow:
 //   <md  : vertical card  (sprite + form vertical, stats+moves stacked below)
-//   md   : mid-stack card (380px identity column on left, stats+moves right)
+//   md   : mid-stack card (basis-96 / 384px identity column on left, stats+moves right)
 //   lg+  : single-row card (sprite-col + form-col + stats + moves + right rib)
 //
 // All interactive elements are replaced with static <div>/<span> placeholders.
@@ -65,7 +65,7 @@ export function CompactRowGhost({ idx }: CompactRowGhostProps) {
             </div>
           </div>
 
-          {/* md: identity mid-stack (380px column, vertical inside) */}
+          {/* md: identity mid-stack (basis-96 / 384px column, vertical inside) */}
           <div className="border-border hidden min-w-0 shrink-0 grow-0 basis-96 flex-col border-r border-dashed md:flex lg:hidden">
             <MetaBarGhost />
             <div className="flex min-h-0 min-w-0 flex-auto flex-col items-center justify-center gap-2 px-2 py-3">

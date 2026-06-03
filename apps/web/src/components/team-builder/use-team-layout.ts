@@ -1,7 +1,12 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { createContext, useContext, useEffect, useSyncExternalStore } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useSyncExternalStore,
+} from "react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -22,7 +27,7 @@ const MODE_TO_URL: Record<TeamLayoutMode, string> = {
   "1x6": "compact",
   "2x3-vertical": "grid",
 };
-const URL_TO_MODE: Record<string, TeamLayoutMode> = {
+const URL_TO_MODE: Partial<Record<string, TeamLayoutMode>> = {
   compact: "1x6",
   grid: "2x3-vertical",
 };
@@ -54,7 +59,12 @@ function getSnapshot(): TeamLayoutMode {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     // Migrate old mode names to surviving modes.
     // Old 3-column modes → "2x3-vertical" (our remaining multi-col mode)
-    if (raw === "3x2-stack" || raw === "3x2-mid" || raw === "3x2" || raw === "3x2-vertical") {
+    if (
+      raw === "3x2-stack" ||
+      raw === "3x2-mid" ||
+      raw === "3x2" ||
+      raw === "3x2-vertical"
+    ) {
       window.localStorage.setItem(STORAGE_KEY, "2x3-vertical");
       return "2x3-vertical";
     }
