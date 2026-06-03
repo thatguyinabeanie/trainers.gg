@@ -69,7 +69,7 @@ const DEF_STAT_LABELS: { key: keyof DefenderEvs; label: string }[] = [
 ];
 
 const selectClass = cn(
-  "border-border bg-background h-6 w-full rounded border px-1 text-[11px]",
+  "border-border bg-background h-6 w-full rounded border px-1 text-xs",
   "focus:ring-1 focus:ring-primary focus:outline-none"
 );
 
@@ -149,7 +149,7 @@ export function CalcDefenderBlock({
           aria-label="Defender target"
           className={cn(
             "border-border bg-background hover:border-primary focus-visible:border-primary",
-            "flex h-6 max-w-[160px] flex-1 items-center gap-1 rounded border px-2 text-left text-[11px]",
+            "flex h-6 max-w-40 flex-1 items-center gap-1 rounded border px-2 text-left text-xs",
             "outline-none transition-colors focus:ring-1 focus:ring-primary"
           )}
         >
@@ -162,7 +162,7 @@ export function CalcDefenderBlock({
           >
             {defenderSpecies || "Choose species…"}
           </span>
-          <span aria-hidden className="text-[9px] text-muted-foreground">
+          <span aria-hidden className="text-xs text-muted-foreground">
             ▾
           </span>
         </button>

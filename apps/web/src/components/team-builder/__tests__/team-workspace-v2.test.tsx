@@ -216,7 +216,8 @@ jest.mock("@/hooks/use-mobile", () => ({
 const mockRouterRefresh = jest.fn();
 const mockRouterPush = jest.fn();
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: mockRouterRefresh, push: mockRouterPush }),
+  useRouter: () => ({ refresh: mockRouterRefresh, push: mockRouterPush, replace: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // Toast — capture calls

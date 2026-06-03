@@ -204,7 +204,7 @@ function SortHeaderButton({
       {label}
       <span
         aria-hidden="true"
-        className={cn("text-[8px] leading-none", !isActive && "invisible")}
+        className={cn("text-xs leading-none", !isActive && "invisible")}
       >
         {isActive && sort.dir === "asc" ? "↑" : "↓"}
       </span>
@@ -353,7 +353,7 @@ function SpeciesRow({
         {/* Abilities — all slots stacked: • regular, ★ hidden */}
         <div className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden">
           <div className="flex min-w-0 items-baseline gap-1">
-            <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-[8px]">
+            <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-xs">
               ●
             </span>
             <AbilityCell
@@ -364,7 +364,7 @@ function SpeciesRow({
           </div>
           {entry.abilitySlot2 && (
             <div className="flex min-w-0 items-baseline gap-1">
-              <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-[8px]">
+              <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-xs">
                 ●
               </span>
               <AbilityCell
@@ -376,7 +376,7 @@ function SpeciesRow({
           )}
           {entry.hiddenAbility && (
             <div className="flex min-w-0 items-baseline gap-1">
-              <span className="inline-block w-2.5 shrink-0 text-center text-[8px] text-amber-400/70">
+              <span className="inline-block w-2.5 shrink-0 text-center text-xs text-amber-400/70">
                 ★
               </span>
               <AbilityCell
@@ -453,7 +453,7 @@ function SpeciesRow({
           {matchingMoveNames.map((name) => (
             <span
               key={name}
-              className="bg-primary/8 text-primary border-primary/15 shrink-0 rounded-full border px-1.5 py-px text-[10px] leading-tight font-medium"
+              className="bg-primary/8 text-primary border-primary/15 shrink-0 rounded-full border px-1.5 py-px text-xs leading-tight font-medium"
             >
               {name}
             </span>
@@ -547,7 +547,7 @@ function CollapsedSidebarStrip({
       >
         <Filter className="size-4" />
         {totalActive > 0 && (
-          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-bold text-white">
             {totalActive}
           </span>
         )}
@@ -567,7 +567,7 @@ function CollapsedSidebarStrip({
       >
         <Sparkles className="size-4" />
         {typeCount > 0 && (
-          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-bold text-white">
             {typeCount}
           </span>
         )}
@@ -591,7 +591,7 @@ function CollapsedSidebarStrip({
       >
         <Zap className="size-4" />
         {abilityCount > 0 && (
-          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-bold text-white">
             {abilityCount}
           </span>
         )}
@@ -611,7 +611,7 @@ function CollapsedSidebarStrip({
       >
         <Swords className="size-4" />
         {moveCount > 0 && (
-          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-bold text-white">
             {moveCount}
           </span>
         )}
@@ -625,8 +625,8 @@ function CollapsedSidebarStrip({
           aria-label={`${roleCount} role filters — expand sidebar`}
           className="text-primary hover:bg-primary/10 relative rounded p-1.5 transition-colors"
         >
-          <span className="text-[10px] leading-none font-bold">R</span>
-          <span className="bg-primary absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full text-[8px] font-bold text-white">
+          <span className="text-xs leading-none font-bold">R</span>
+          <span className="bg-primary absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs leading-none font-bold text-white">
             {roleCount}
           </span>
         </button>
@@ -905,17 +905,17 @@ export function SpeciesPicker({
       headerCenter={
         /* Fixed-width slot reserves space for the filter badge so the search
             input does not shrink when filters become active (no layout shift). */
-        <div className="flex w-[88px] shrink-0 items-center justify-end">
+        <div className="flex w-22 shrink-0 items-center justify-end">
           {activeFilterCount > 0 && (
             <button
               type="button"
               onClick={clearAllFilters}
-              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap transition-colors"
+              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-colors"
               aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
             >
               {activeFilterCount}{" "}
               {activeFilterCount === 1 ? "filter" : "filters"}
-              <span aria-hidden="true" className="text-[10px] opacity-70">
+              <span aria-hidden="true" className="text-xs opacity-70">
                 ×
               </span>
             </button>
@@ -955,7 +955,7 @@ export function SpeciesPicker({
         <button
           type="button"
           onClick={clearAllFilters}
-          className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full rounded px-2 py-1.5 text-[11px] font-medium transition-colors"
+          className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full rounded px-2 py-1.5 text-xs font-medium transition-colors"
         >
           Clear all filters
         </button>
@@ -999,7 +999,7 @@ export function SpeciesPicker({
             {/* Sticky sortable header */}
             <div
               className={cn(
-                "bg-card sticky top-0 z-20 grid items-center gap-2 border-b px-4 py-2 text-[10px] font-semibold tracking-wider uppercase",
+                "bg-card sticky top-0 z-20 grid items-center gap-2 border-b px-4 py-2 text-xs font-semibold tracking-wider uppercase",
                 ROW_GRID
               )}
               role="row"
@@ -1013,10 +1013,10 @@ export function SpeciesPicker({
                 sort={sort}
                 onSort={handleSort}
               />
-              <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
+              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
                 Types
               </span>
-              <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
+              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
                 Abilities
               </span>
               <SortHeaderButton
@@ -1074,7 +1074,7 @@ export function SpeciesPicker({
                 sort={sort}
                 onSort={handleSort}
               />
-              <span className="text-muted-foreground text-center text-[9px] whitespace-nowrap">
+              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
                 Moves
               </span>
             </div>

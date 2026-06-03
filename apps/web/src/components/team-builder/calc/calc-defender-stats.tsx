@@ -29,14 +29,14 @@ import {
 } from "../calc-stat-helpers";
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { StageDropdown } from "./stage-dropdown";
+import { Slider } from "@/components/ui/slider";
 const spreadRowClass = "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
 const spreadRowWithStageClass = "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_32px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
-const spreadLabelClass = "text-[9.5px] font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px";
-const spreadBaseClass = "font-mono text-[9.5px] text-muted-foreground text-right tabular-nums";
+const spreadLabelClass = "text-xs font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px";
+const spreadBaseClass = "font-mono text-xs text-muted-foreground text-right tabular-nums";
 const spreadSliderWrapClass = "relative h-3.5";
 const spreadSliderTrackClass = "absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none";
-const spreadSliderClass = "spread-slider";
-const spreadFinalClass = "font-mono text-[11.5px] font-bold text-right tabular-nums";
+const spreadFinalClass = "font-mono text-xs font-bold text-right tabular-nums";
 
 // =============================================================================
 // Types
@@ -282,14 +282,18 @@ function DefenderStatRow({
 
   const nextBpEv = breakpoints.find((bp) => bp > ev);
 
+  // True when the current EV lands exactly on a breakpoint — drives the
+  // hollow-ring thumb state on the slider primitive.
+  const isAtBump =
+    isNatureBoosted && breakpoints.includes(ev) && ev > 0;
+
   // --- Input buffer for text EV entry ---
   const [inputBuffer, setInputBuffer] = useState<string | null>(null);
 
   const inputDisplay = buildInputDisplay(ev, isNatureBoosted, isNatureReduced);
   const displayValue = inputBuffer ?? inputDisplay;
 
-  function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = Number(e.target.value);
+  function handleSliderChange(raw: number) {
     const clamped = Math.min(raw, investBudget);
     const snapped = Math.round(clamped / budget.step) * budget.step;
     setDefenderEv(evKey, snapped);
@@ -344,7 +348,7 @@ function DefenderStatRow({
         className={cn(spreadLabelClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
       >
         {label}
-        <span className="inline-block w-[9px] text-[7px] leading-none">
+        <span className="inline-block w-3 text-xs leading-none">
           {isNatureBoosted && "▴"}
           {isNatureReduced && "▾"}
         </span>
@@ -371,7 +375,7 @@ function DefenderStatRow({
         onKeyDown={handleInputKeyDown}
         aria-label={`${label} ${isChampions ? "Stat Points" : "EVs"}`}
         className={cn(
-          "focus:ring-primary h-[18px] w-full rounded border bg-transparent text-center font-mono text-[10.5px] outline-none focus:ring-1",
+          "focus:ring-primary h-5 w-full rounded border bg-transparent text-center font-mono text-xs outline-none focus:ring-1",
           isNatureBoosted && "border-red-400/70 text-red-600 dark:text-red-400",
           isNatureReduced &&
             "border-sky-400/70 text-sky-600 dark:text-sky-400",
@@ -384,15 +388,19 @@ function DefenderStatRow({
       {/* Col 5: EV slider with breakpoint ticks */}
       <div className={spreadSliderWrapClass}>
         <div className={spreadSliderTrackClass} aria-hidden />
-        <input
-          type="range"
+        <Slider
           min={0}
           max={budget.perStat}
           step={budget.step}
-          value={ev}
-          onChange={handleSliderChange}
+          value={[ev]}
+          onValueChange={(next) => {
+            const v = Array.isArray(next) ? next[0] : next;
+            if (typeof v === "number") handleSliderChange(v);
+          }}
           aria-label={`${label} ${isChampions ? "Stat Point slider" : "EV slider"}`}
-          className={spreadSliderClass}
+          inheritColor
+          atBump={isAtBump}
+          className="absolute inset-0"
         />
         {isNatureBoosted && breakpoints.length > 0 && (
           <StatBumpsOverlay
@@ -497,12 +505,12 @@ export function CalcDefenderStats({
     <div className="flex min-w-0 flex-col gap-2">
       {/* ── Stats lane header ─────────────────────────────────────── */}
       <div className="flex items-baseline justify-between">
-        <span className="font-mono text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <span className="font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {isChampions ? "Stat points" : "Spread"}
         </span>
         <span
           className={cn(
-            "font-mono text-[10px]",
+            "font-mono text-xs",
             totalEv > budget.total
               ? "text-destructive font-semibold"
               : "text-muted-foreground"
@@ -558,7 +566,7 @@ export function CalcDefenderStats({
 
       {/* ── HP% slider ────────────────────────────────────────────── */}
       <div className="mt-2 flex items-center gap-2 px-2 pb-1">
-        <span className="w-5 font-mono text-[9.5px] font-semibold text-rose-500 dark:text-rose-400">
+        <span className="w-5 font-mono text-xs font-semibold text-rose-500 dark:text-rose-400">
           HP
         </span>
         <input
@@ -572,10 +580,10 @@ export function CalcDefenderStats({
           className="flex-1 accent-rose-500"
           style={{ height: 6 }}
         />
-        <span className="w-[72px] text-right font-mono text-[10px] text-muted-foreground">
+        <span className="w-18 text-right font-mono text-xs text-muted-foreground">
           {currentHP}/{maxHP}
         </span>
-        <span className="w-8 text-right font-mono text-[10px] font-semibold text-muted-foreground">
+        <span className="w-8 text-right font-mono text-xs font-semibold text-muted-foreground">
           {defenderHpPercent}%
         </span>
       </div>

@@ -227,7 +227,9 @@ export function Topbar({
 
       {/* Right: Actions (flush with far right / notifications) */}
       <div className="ml-auto flex items-center gap-1">
-        <TeamLayoutToggle />
+        <span className="hidden md:inline-flex">
+          <TeamLayoutToggle />
+        </span>
         <Button
           variant="outline"
           size="sm"

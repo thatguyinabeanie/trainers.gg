@@ -180,14 +180,16 @@ Store all Playwright MCP screenshots in `.playwright-mcp/screenshots/`. This dir
 
 ### Push Policy
 
-**You may commit frequently, but you may NOT push until all checks pass locally.** Before every push, run and confirm all pass:
+**You do NOT need to run lint, typecheck, tests, or E2E locally before committing or pushing.** CI runs all of them — offload these checks to CI rather than blocking the commit/push on a local run. Running them locally is optional (fine for fast iteration on a focused change), never required.
+
+**After every push, check CI.** Once the push lands, monitor the CI run and enumerate each check by name with its status:
 
 1. `pnpm lint` — ESLint across all packages
 2. `pnpm typecheck` — TypeScript type checking
 3. `pnpm test` — Full unit test suite
 4. `pnpm test:e2e` — Playwright E2E tests
 
-If any check fails, fix the issue and re-run before pushing. Never push with known failures.
+Use `gh pr checks <branch>` (or the Actions UI). If any CI check fails, fix the issue and push again — don't leave a red CI unaddressed. See "Completion Claims" below for enumerating checks before declaring CI green.
 
 ### Parallel Work & Unexpected Changes
 

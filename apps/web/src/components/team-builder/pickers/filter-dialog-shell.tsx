@@ -99,7 +99,7 @@ export function FilterDialogShell({
           {sidebarOpen ? (
             <>
               <div className="border-border flex shrink-0 items-center justify-between border-b px-3 py-1.5">
-                <span className="text-muted-foreground text-[9px] font-bold tracking-widest uppercase">
+                <span className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
                   Filters
                 </span>
                 <button

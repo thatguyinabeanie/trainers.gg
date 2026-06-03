@@ -261,7 +261,7 @@ export function MovePicker({
         />
         {/* Fixed-width slot reserves space so the search input width is stable
             whether or not filters are active (no layout shift on toggle). */}
-        <div className="flex w-[88px] shrink-0 items-center justify-end">
+        <div className="flex w-22 shrink-0 items-center justify-end">
           {activeFilterCount > 0 && (
             <button
               type="button"
@@ -273,11 +273,11 @@ export function MovePicker({
                 setFilters((f) => ({ ...DEFAULT_MOVE_FILTERS, search: f.search }))
               }
               aria-label={`Clear ${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`}
-              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors"
+              className="text-primary hover:bg-primary/10 border-primary/30 bg-primary/5 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium transition-colors"
             >
               {activeFilterCount}{" "}
               {activeFilterCount === 1 ? "filter" : "filters"}
-              <span aria-hidden="true" className="text-[10px] opacity-70">
+              <span aria-hidden="true" className="text-xs opacity-70">
                 ×
               </span>
             </button>
@@ -300,7 +300,7 @@ export function MovePicker({
           (bottom); right column hosts the filter chips + virtualized table. */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left rail — sidebar on top, role presets below */}
-        <div className="border-border flex w-[380px] flex-shrink-0 flex-col border-r">
+        <div className="border-border flex w-96 flex-shrink-0 flex-col border-r">
           <div className="shrink-0">
             <MoveSidebar filters={filters} onFiltersChange={setFilters} />
           </div>
@@ -317,7 +317,7 @@ export function MovePicker({
             <button
               type="button"
               onClick={() => setFilters((f) => ({ ...DEFAULT_MOVE_FILTERS, search: f.search }))}
-              className="border-border bg-background text-muted-foreground hover:border-destructive/50 hover:text-destructive w-full rounded-md border py-1 text-[11px] transition-colors"
+              className="border-border bg-background text-muted-foreground hover:border-destructive/50 hover:text-destructive w-full rounded-md border py-1 text-xs transition-colors"
             >
               Clear all filters
             </button>

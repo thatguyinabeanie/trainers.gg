@@ -119,7 +119,7 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
       <div className="max-h-[520px] overflow-y-auto p-1">
         {groups.map((group) => (
           <div key={group.label} className="flex flex-col">
-            <div className="text-muted-foreground px-2 pt-1.5 pb-0.5 text-[9.5px] font-medium tracking-wider uppercase">
+            <div className="text-muted-foreground px-2 pt-1.5 pb-0.5 text-xs font-medium tracking-wider uppercase">
               {group.label}
             </div>
             {group.natures.map((nature) => {
@@ -141,7 +141,7 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
                   <span className={cn(isNeutral && "text-muted-foreground")}>
                     {nature}
                   </span>
-                  <span className="flex items-center gap-1 font-mono text-[9.5px]">
+                  <span className="flex items-center gap-1 font-mono text-xs">
                     {isNeutral ? (
                       <span className="text-muted-foreground">—</span>
                     ) : (

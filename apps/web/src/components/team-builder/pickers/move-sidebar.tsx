@@ -26,7 +26,7 @@ import {
 // =============================================================================
 
 const SECTION_HEADER =
-  "text-muted-foreground mb-1.5 block text-[9px] font-bold tracking-widest uppercase";
+  "text-muted-foreground mb-1.5 block text-xs font-bold tracking-widest uppercase";
 
 const SECTION_PADDING = "px-3 py-2.5";
 
@@ -94,7 +94,7 @@ export function MoveSidebar({ filters, onFiltersChange }: MoveSidebarProps) {
                 aria-pressed={isActive}
                 onClick={() => toggleCategory(cat)}
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-semibold transition-colors",
+                  "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold transition-colors",
                   isActive
                     ? "border-primary/35 bg-primary/10 text-primary"
                     : "border-border bg-background text-muted-foreground hover:text-foreground"

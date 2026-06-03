@@ -123,7 +123,7 @@ export function MoveListHeader({ sort, onSort, className }: MoveListHeaderProps)
   return (
     <div
       className={cn(
-        "grid items-center gap-2 border-b px-3 py-1.5 text-[10px] font-semibold tracking-wide uppercase",
+        "grid items-center gap-2 border-b px-3 py-1.5 text-xs font-semibold tracking-wide uppercase",
         MOVE_LIST_GRID,
         className
       )}
