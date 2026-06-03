@@ -1806,8 +1806,16 @@ export function ExternalData() {
           </div>
 
           {/* Fixed header row */}
-          <div className="grid grid-cols-12 border-b">
-            <div className="col-span-1 flex h-10 items-center px-2">
+          <div
+            className="grid border-b"
+            style={{
+              gridTemplateColumns:
+                activeTab === "limitless"
+                  ? "32px 28px 1fr 100px 90px 70px 130px 90px 68px"
+                  : "32px 28px 1fr 100px 90px 70px 130px 68px",
+            }}
+          >
+            <div className="flex h-10 items-center justify-center">
               <input
                 type="checkbox"
                 checked={
@@ -1831,42 +1839,37 @@ export function ExternalData() {
                 aria-label="Select all visible"
               />
             </div>
+            {/* Chevron column header — empty */}
+            <div className="h-10" />
             <SortableHeader
               column="name"
               label="Event"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className={
-                activeTab === "limitless" ? "col-span-2" : "col-span-3"
-              }
             />
             <SortableHeader
               column="category"
               label="Type"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className="col-span-2"
             />
             <SortableHeader
               column="date"
               label="Date"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className="col-span-2"
             />
             <SortableHeader
               column="playerCount"
               label="Players"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className="col-span-1"
             />
             <SortableHeader
               column="status"
               label="Status"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className="col-span-2"
             />
             {activeTab === "limitless" && (
               <SortableHeader
@@ -1874,10 +1877,9 @@ export function ExternalData() {
                 label="Queue"
                 sort={currentSort}
                 onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-                className="col-span-1"
               />
             )}
-            <div className="col-span-1 flex h-10 items-center justify-end px-2 font-medium whitespace-nowrap">
+            <div className="flex h-10 items-center justify-end pr-2 text-xs font-medium whitespace-nowrap">
               Actions
             </div>
           </div>
@@ -1957,11 +1959,18 @@ export function ExternalData() {
                   >
                     <div
                       className={cn(
-                        "grid grid-cols-12 hover:bg-muted/50 transition-colors",
+                        "grid hover:bg-muted/50 transition-colors",
                         isUpcomingRow && "opacity-60"
                       )}
+                      style={{
+                        gridTemplateColumns:
+                          activeTab === "limitless"
+                            ? "32px 28px 1fr 100px 90px 70px 130px 90px 68px"
+                            : "32px 28px 1fr 100px 90px 70px 130px 68px",
+                      }}
                     >
-                      <div className="col-span-1 flex items-center px-2">
+                      {/* Checkbox */}
+                      <div className="flex items-center justify-center py-2">
                         <input
                           type="checkbox"
                           checked={selectedIds.has(row.id)}
@@ -1978,37 +1987,30 @@ export function ExternalData() {
                           aria-label={`Select ${row.name}`}
                         />
                       </div>
-                      <div
-                        className={cn(
-                          "min-w-0 p-2",
-                          activeTab === "limitless"
-                            ? "col-span-2"
-                            : "col-span-3"
+                      {/* Chevron */}
+                      <div className="flex items-center justify-center py-2">
+                        {isExpandable && (
+                          <button
+                            className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedRowId(
+                                expandedRowId === row.id ? null : row.id
+                              );
+                            }}
+                            aria-label={expandedRowId === row.id ? "Collapse" : "Expand"}
+                          >
+                            {expandedRowId === row.id ? (
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            )}
+                          </button>
                         )}
-                      >
+                      </div>
+                      {/* Event name */}
+                      <div className="min-w-0 p-2">
                         <div className="flex items-center gap-1.5">
-                          {isExpandable && (
-                            <button
-                              className="flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-muted"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedRowId(
-                                  expandedRowId === row.id ? null : row.id
-                                );
-                              }}
-                              aria-label={
-                                expandedRowId === row.id
-                                  ? "Collapse"
-                                  : "Expand"
-                              }
-                            >
-                              {expandedRowId === row.id ? (
-                                <ChevronDown className="h-3.5 w-3.5" />
-                              ) : (
-                                <ChevronRight className="h-3.5 w-3.5" />
-                              )}
-                            </button>
-                          )}
                           <a
                             href={externalUrl}
                             target="_blank"
@@ -2055,7 +2057,7 @@ export function ExternalData() {
                           </p>
                         )}
                       </div>
-                      <div className="col-span-2 flex items-center p-2">
+                      <div className="flex items-center p-2">
                         <Badge
                           variant="secondary"
                           className="truncate text-xs capitalize"
@@ -2063,17 +2065,17 @@ export function ExternalData() {
                           {row.category}
                         </Badge>
                       </div>
-                      <div className="col-span-2 flex items-center p-2 text-sm whitespace-nowrap">
+                      <div className="flex items-center p-2 text-sm whitespace-nowrap">
                         {row.date}
                       </div>
-                      <div className="col-span-1 flex items-center p-2 text-sm whitespace-nowrap">
+                      <div className="flex items-center p-2 text-sm whitespace-nowrap">
                         {row.playerCount ?? "—"}
                       </div>
-                      <div className="col-span-2 flex items-center p-2">
+                      <div className="flex items-center p-2">
                         <StatusBadge row={row} activeJobs={activeJobs} />
                       </div>
                       {activeTab === "limitless" && (
-                        <div className="col-span-1 flex items-center p-2">
+                        <div className="flex items-center p-2">
                           {row.status === "queued" &&
                             row.limitless?.import_requested_at && (
                               <span className="text-muted-foreground text-xs whitespace-nowrap">
@@ -2093,7 +2095,7 @@ export function ExternalData() {
                             )}
                         </div>
                       )}
-                      <div className="col-span-1 flex items-center justify-end p-2">
+                      <div className="flex items-center justify-end p-2">
                         <RowActions
                           row={row}
                           activeJobs={activeJobs}
