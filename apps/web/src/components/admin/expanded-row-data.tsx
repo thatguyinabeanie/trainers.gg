@@ -172,7 +172,8 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                     {row.source === "rk9" ? (
                       <>
                         <th className="py-1 pr-3 text-left font-medium">Trainer</th>
-                        <th className="py-1 pr-3 text-left font-medium">Name</th>
+                        <th className="py-1 pr-3 text-left font-medium">First</th>
+                        <th className="py-1 pr-3 text-left font-medium">Last</th>
                         <th className="py-1 pr-3 text-left font-medium">Country</th>
                         <th className="py-1 pr-4 text-left font-medium">ID</th>
                       </>
@@ -225,8 +226,8 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                             divisionFilter === "all" &&
                             s.division !== lastDivision;
                           if (showDivisionHeader) lastDivision = s.division ?? null;
-                          // chevron + # + trainer + name + country + id + team + (division when all)
-                          const colSpan = divisionFilter === "all" ? 8 : 7;
+                          // chevron + # + trainer + first + last + country + id + team + (division when all)
+                          const colSpan = divisionFilter === "all" ? 9 : 8;
                           return (
                             <Fragment key={i}>
                               {showDivisionHeader && (
@@ -259,7 +260,10 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                 {s.players?.trainer_name ?? "—"}
                               </td>
                               <td className="py-1.5 pr-3 text-xs">
-                                {fullName ?? "—"}
+                                {s.players?.first_name ?? "—"}
+                              </td>
+                              <td className="py-1.5 pr-3 text-xs">
+                                {s.players?.last_name ?? "—"}
                               </td>
                               <td className="py-1.5 pr-3 font-mono text-xs uppercase">
                                 {s.players?.country ?? "—"}
