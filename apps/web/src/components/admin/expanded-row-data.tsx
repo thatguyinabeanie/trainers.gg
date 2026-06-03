@@ -75,7 +75,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
     new Set()
   );
   const [divisionFilter, setDivisionFilter] = useState<DivisionFilter>("masters");
-  const [showTeamOnly, setShowTeamOnly] = useState(true);
+  const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [scrapingIds, setScrapingIds] = useState<Set<number>>(new Set());
 
   function togglePlacement(key: string) {
@@ -165,11 +165,11 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
             <input
               type="checkbox"
-              checked={showTeamOnly}
-              onChange={(e) => setShowTeamOnly(e.target.checked)}
+              checked={showMissingOnly}
+              onChange={(e) => setShowMissingOnly(e.target.checked)}
               className="h-3 w-3 rounded border"
             />
-            Teams only
+            No team
           </label>
         </div>
       )}
@@ -178,11 +178,11 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
             <input
               type="checkbox"
-              checked={showTeamOnly}
-              onChange={(e) => setShowTeamOnly(e.target.checked)}
+              checked={showMissingOnly}
+              onChange={(e) => setShowMissingOnly(e.target.checked)}
               className="h-3 w-3 rounded border"
             />
-            Teams only
+            No team
           </label>
         </div>
       )}
@@ -231,7 +231,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                   {row.source === "rk9"
                     ? (data as RK9StandingWithTeam[])
                         .filter((s) => s.division === divisionFilter)
-                        .filter((s) => !showTeamOnly || (s.team_pokemon ?? []).length > 0)
+                        .filter((s) => showMissingOnly ? (s.team_pokemon ?? []).length === 0 : (s.team_pokemon ?? []).length > 0)
                         .map((s, i) => {
                           const expansionKey = `${s.division}-${s.placement}`;
                           const isExpanded = expandedPlacements.has(expansionKey);
@@ -416,7 +416,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                         );
                       })
                     : (data as LimitlessStandingWithTeam[])
-                        .filter((s) => !showTeamOnly || (s.team_pokemon ?? []).length > 0)
+                        .filter((s) => showMissingOnly ? (s.team_pokemon ?? []).length === 0 : (s.team_pokemon ?? []).length > 0)
                         .map((s, i) => {
                         const playerName = s.players?.display_name ?? "—";
                         const record =
