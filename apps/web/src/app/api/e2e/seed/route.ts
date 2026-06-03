@@ -1,5 +1,7 @@
+import { revalidateTag } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { CacheTags } from "@/lib/cache";
 
 // E2E test users matching apps/web/e2e/fixtures/auth.ts
 // The handle_new_user() trigger auto-creates public.users + public.alts
@@ -450,6 +452,14 @@ export async function POST(request: NextRequest) {
       error: `coach_profiles upsert failed: ${coachProfileError.message}`,
     });
   }
+
+  // Bust the player directory cache so public alts seeded above are visible
+  // immediately in E2E tests (the page uses unstable_cache with on-demand
+  // revalidation only — without this the stale cache would hide seeded players).
+  revalidateTag(CacheTags.PLAYERS_DIRECTORY, "max");
+  revalidateTag(CacheTags.PLAYERS_LEADERBOARD, "max");
+  revalidateTag(CacheTags.PLAYERS_RECENT, "max");
+  revalidateTag(CacheTags.PLAYERS_NEW, "max");
 
   return NextResponse.json(
     { success: !hasErrors, results },

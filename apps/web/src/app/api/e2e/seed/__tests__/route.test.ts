@@ -13,6 +13,17 @@ const mockUpsert = jest.fn();
 const mockUpdate = jest.fn();
 const mockSelect = jest.fn();
 
+jest.mock("next/cache", () => ({ revalidateTag: jest.fn() }));
+
+jest.mock("@/lib/cache", () => ({
+  CacheTags: {
+    PLAYERS_DIRECTORY: "players-directory",
+    PLAYERS_LEADERBOARD: "players-leaderboard",
+    PLAYERS_RECENT: "players-recent",
+    PLAYERS_NEW: "players-new",
+  },
+}));
+
 jest.mock("@/lib/supabase/server", () => ({
   createServiceRoleClient: () => ({
     from: jest.fn((table: string) => {
