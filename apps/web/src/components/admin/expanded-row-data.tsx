@@ -21,6 +21,7 @@ interface PokemonSlot {
   ability: string | null;
   held_item: string | null;
   tera_type: string | null;
+  stat_alignment: string | null;
   moves: string[] | null;
 }
 
@@ -98,7 +99,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
           .schema("rk9")
           .from("standings")
           .select(
-            "placement, division, drop_round, player_id, players(first_name, last_name, country, trainer_name), team_pokemon(position, species, ability, held_item, tera_type, moves)"
+            "placement, division, drop_round, player_id, players(first_name, last_name, country, trainer_name), team_pokemon(position, species, ability, held_item, tera_type, stat_alignment, moves)"
           )
           .eq("event_id", row.rk9.event_id)
           .order("placement", { ascending: true })
@@ -110,7 +111,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
           .schema("limitless")
           .from("standings")
           .select(
-            "placement, record_wins, record_losses, record_ties, players(username, display_name, country), team_pokemon(position, species, ability, held_item, tera_type, moves)"
+            "placement, record_wins, record_losses, record_ties, players(username, display_name, country), team_pokemon(position, species, ability, held_item, tera_type, stat_alignment, moves)"
           )
           .eq("tournament_id", row.limitless.tournament_id)
           .gt("placement", 0)
@@ -281,6 +282,9 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                           <th className="py-1 pr-3 text-left font-medium">
                                             Tera
                                           </th>
+                                          <th className="py-1 pr-3 text-left font-medium">
+                                            Nature
+                                          </th>
                                           <th className="py-1 text-left font-medium">
                                             Moves
                                           </th>
@@ -326,6 +330,9 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                               </td>
                                               <td className="py-1 pr-3 text-muted-foreground">
                                                 {p.tera_type ?? "—"}
+                                              </td>
+                                              <td className="py-1 pr-3 text-muted-foreground">
+                                                {p.stat_alignment ?? "—"}
                                               </td>
                                               <td className="py-1 text-muted-foreground">
                                                 {p.moves?.filter(Boolean).join(", ") || "—"}
@@ -429,6 +436,9 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                           <th className="py-1 pr-3 text-left font-medium">
                                             Tera
                                           </th>
+                                          <th className="py-1 pr-3 text-left font-medium">
+                                            Nature
+                                          </th>
                                           <th className="py-1 text-left font-medium">
                                             Moves
                                           </th>
@@ -474,6 +484,9 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                               </td>
                                               <td className="py-1 pr-3 text-muted-foreground">
                                                 {p.tera_type ?? "—"}
+                                              </td>
+                                              <td className="py-1 pr-3 text-muted-foreground">
+                                                {p.stat_alignment ?? "—"}
                                               </td>
                                               <td className="py-1 text-muted-foreground">
                                                 {p.moves?.filter(Boolean).join(", ") || "—"}
