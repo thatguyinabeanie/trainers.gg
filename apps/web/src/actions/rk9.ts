@@ -466,10 +466,11 @@ export async function scrapeRk9TeamsBatch(
     );
     const remaining = allStandings.filter((s) => !standingsWithTeams.has(s.id));
 
-    // When force=true, process all standings (upsert handles idempotency).
-    // When force=false (default), skip standings that already have team data
-    // for resume behavior — re-running continues from where it left off.
-    const toProcess = force ? allStandings : remaining;
+    // Always skip standings that already have team data — avoids unnecessary
+    // HTTP requests for players whose teams are already uploaded.
+    // force=true only determines whether the UI shows the button for complete
+    // events; the per-player skip logic is preserved regardless.
+    const toProcess = remaining;
 
     const total = allStandings.length;
     const alreadyScraped = total - toProcess.length;
