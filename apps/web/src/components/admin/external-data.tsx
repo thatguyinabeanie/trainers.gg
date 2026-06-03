@@ -35,6 +35,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { LIMITLESS_TO_FORMAT } from "@/lib/limitless";
@@ -1267,6 +1268,39 @@ export function ExternalData() {
               )}
             </div>
           </div>
+
+          {/* RK9 active jobs progress strip */}
+          {activeJobs.size > 0 && (
+            <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+              {[...activeJobs.entries()].map(([eventId, job]) => {
+                const eventName =
+                  rk9Events?.find((e) => e.event_id === eventId)?.name ??
+                  eventId;
+                const pct =
+                  job.total && job.total > 0
+                    ? Math.round(((job.scraped ?? 0) / job.total) * 100)
+                    : 0;
+                return (
+                  <div key={eventId} className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                      <span className="font-medium">{eventName}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {job.type === "teams" && job.total && job.total > 0
+                          ? `Scraping teams: ${job.scraped ?? 0}/${job.total} (${pct}%)`
+                          : job.type === "teams"
+                            ? "Scraping teams…"
+                            : "Scraping roster…"}
+                      </span>
+                    </div>
+                    {job.type === "teams" && job.total && job.total > 0 && (
+                      <Progress value={pct} className="h-1.5" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
 
         {/* ----- Limitless Tab ----- */}
