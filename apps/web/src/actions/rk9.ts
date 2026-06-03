@@ -466,18 +466,27 @@ export async function scrapeRk9TeamsBatch(
     const total = allStandings.length;
     const alreadyScraped = total - toProcess.length;
 
-    // If nothing remaining, we're done
+    // If nothing remaining, all standings have been attempted
     if (toProcess.length === 0) {
-      // Mark event complete
+      const { data: standingIdsWithTeams } = await supabase
+        .schema("rk9")
+        .from("team_pokemon")
+        .select("standing_id")
+        .in("standing_id", allStandings.map((s) => s.id));
+      const importedCount = new Set(
+        standingIdsWithTeams?.map((t) => t.standing_id) ?? []
+      ).size;
+      const allImported = importedCount === total;
+
       await supabase
         .schema("rk9")
         .from("events")
         .update({
-          import_status: "complete",
+          import_status: allImported ? "complete" : "teams",
           import_error: null,
-          has_team_lists: true,
-          imported_at: new Date().toISOString(),
-          teams_imported_count: alreadyScraped,
+          has_team_lists: importedCount > 0,
+          ...(allImported ? { imported_at: new Date().toISOString() } : {}),
+          teams_imported_count: importedCount,
         })
         .eq("event_id", eventId);
 
@@ -629,29 +638,35 @@ export async function scrapeRk9TeamsBatch(
     }
 
     const totalScraped = alreadyScraped + batchScraped;
-    const done = totalScraped >= total;
+    const allAttempted = totalScraped + batchFailed >= total;
 
-    if (done) {
-      // Batch finished everything — mark event complete
-      await supabase
-        .schema("rk9")
-        .from("events")
-        .update({
-          import_status: "complete",
-          import_error: null,
-          has_team_lists: true,
-          imported_at: new Date().toISOString(),
-          teams_imported_count: alreadyScraped + batchScraped,
-        })
-        .eq("event_id", eventId);
-    } else {
-      // More batches remain — update the running count so UI reflects progress
-      await supabase
-        .schema("rk9")
-        .from("events")
-        .update({ teams_imported_count: alreadyScraped + batchScraped })
-        .eq("event_id", eventId);
-    }
+    // Count standings that actually have real team_pokemon rows (accurate import count).
+    // This is distinct from "attempted" — some attempts fail or produce no data.
+    const { data: standingIdsWithTeams } = await supabase
+      .schema("rk9")
+      .from("team_pokemon")
+      .select("standing_id")
+      .in("standing_id", allStandings.map((s) => s.id));
+    const importedCount = new Set(
+      standingIdsWithTeams?.map((t) => t.standing_id) ?? []
+    ).size;
+
+    // Only mark "complete" when every standing has real team data.
+    // If some players didn't submit or failed to scrape, stay at "teams".
+    const allImported = importedCount === total;
+    const done = allAttempted;
+
+    await supabase
+      .schema("rk9")
+      .from("events")
+      .update({
+        import_status: allImported ? "complete" : "teams",
+        import_error: null,
+        has_team_lists: importedCount > 0,
+        ...(allImported ? { imported_at: new Date().toISOString() } : {}),
+        teams_imported_count: importedCount,
+      })
+      .eq("event_id", eventId);
 
     return {
       success: true,
