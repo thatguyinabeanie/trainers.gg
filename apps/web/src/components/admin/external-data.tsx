@@ -54,10 +54,10 @@ import {
 } from "@/actions/limitless";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
 import { normalizeLimitlessStatus } from "./limitless-status";
-import type {
-  RK9EventRow,
-  LimitlessTournamentRow,
-  UnifiedRow,
+import {
+  type RK9EventRow,
+  type LimitlessTournamentRow,
+  type UnifiedRow,
 } from "./external-data-shared";
 
 type PlatformFilter = "all" | "SWITCH" | "SIM";
