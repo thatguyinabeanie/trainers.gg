@@ -245,7 +245,10 @@ jest.mock("@/actions/teams", () => ({
 // Import AFTER mocks
 // =============================================================================
 
-import { TeamWorkspaceV2, type WorkspaceHeaderActions } from "../team-workspace";
+import {
+  TeamWorkspaceV2,
+  type WorkspaceHeaderActions,
+} from "../team-workspace";
 import { type BuilderPersistence } from "../persistence/types";
 
 // =============================================================================
@@ -1084,9 +1087,13 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
     const { mockTransferTeam } = renderWithTransfer();
 
     // Find the alt select dropdown (contains alt usernames, not formats)
-    const altSelect = screen.getAllByRole("combobox").find((el) =>
-      el.querySelector('option[value="1"]')?.textContent?.includes("ash_ketchum")
-    )!;
+    const altSelect = screen
+      .getAllByRole("combobox")
+      .find((el) =>
+        el
+          .querySelector('option[value="1"]')
+          ?.textContent?.includes("ash_ketchum")
+      )!;
     await user.selectOptions(altSelect, "2");
 
     expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);
@@ -1125,9 +1132,13 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
       />
     );
 
-    const altSelect = screen.getAllByRole("combobox").find((el) =>
-      el.querySelector('option[value="1"]')?.textContent?.includes("ash_ketchum")
-    )!;
+    const altSelect = screen
+      .getAllByRole("combobox")
+      .find((el) =>
+        el
+          .querySelector('option[value="1"]')
+          ?.textContent?.includes("ash_ketchum")
+      )!;
     await user.selectOptions(altSelect, "2");
 
     expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);

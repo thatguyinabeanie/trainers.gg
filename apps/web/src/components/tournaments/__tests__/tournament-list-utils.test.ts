@@ -3,13 +3,15 @@ import { describe, it, expect } from "@jest/globals";
 import { getWinnerHref } from "../tournament-list-utils";
 
 // Minimal winner factory
-function makeWinner(overrides: Partial<{
-  id: number;
-  username: string;
-  isPublic: boolean;
-  isMainAlt: boolean;
-  parentUsername: string;
-}> = {}) {
+function makeWinner(
+  overrides: Partial<{
+    id: number;
+    username: string;
+    isPublic: boolean;
+    isMainAlt: boolean;
+    parentUsername: string;
+  }> = {}
+) {
   return {
     id: 1,
     username: "default_user",

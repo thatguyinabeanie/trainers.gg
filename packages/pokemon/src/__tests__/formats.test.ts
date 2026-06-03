@@ -50,7 +50,9 @@ describe("getFormatLabel", () => {
   });
 
   it("returns the label for another known ID", () => {
-    expect(getFormatLabel("gen9championsvgc2026regma")).toBe("Champions: Reg M-A");
+    expect(getFormatLabel("gen9championsvgc2026regma")).toBe(
+      "Champions: Reg M-A"
+    );
   });
 
   it("returns the raw ID string for an unknown ID", () => {

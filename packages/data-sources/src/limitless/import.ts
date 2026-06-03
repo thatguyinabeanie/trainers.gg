@@ -9,7 +9,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { fetchTournamentList, fetchTournamentData } from "./api";
 import { LIMITLESS_TO_FORMAT, KNOWN_FORMATS } from "./format";
-import type { TournamentData, SyncResult, ImportResult, LimitlessTournament } from "./types";
+import type {
+  TournamentData,
+  SyncResult,
+  ImportResult,
+  LimitlessTournament,
+} from "./types";
 
 // Union of Limitless format codes (keys) and Showdown format IDs (values)
 // that are valid for import.
@@ -247,7 +252,9 @@ export async function importTournament(
           .select("id, username");
 
         if (pErr)
-          throw new Error(`Player batch upsert at offset ${i}: ${pErr.message}`);
+          throw new Error(
+            `Player batch upsert at offset ${i}: ${pErr.message}`
+          );
         for (const row of upserted ?? []) {
           cache.set(row.username, row.id);
         }
@@ -257,8 +264,10 @@ export async function importTournament(
   ]);
 
   const _organizerId = orgResult;
-  if (tResult.error) throw new Error(`Tournament upsert failed: ${tResult.error.message}`);
-  if (pResult?.error) throw new Error(`Phases insert failed: ${pResult.error.message}`);
+  if (tResult.error)
+    throw new Error(`Tournament upsert failed: ${tResult.error.message}`);
+  if (pResult?.error)
+    throw new Error(`Phases insert failed: ${pResult.error.message}`);
 
   // 4. Standings+team_pokemon and match_results run in parallel (both need player IDs)
   const [standingIds, matchCount] = await Promise.all([
@@ -334,7 +343,9 @@ export async function importTournament(
           .insert(batch);
 
         if (pkErr)
-          throw new Error(`Team pokemon batch at offset ${i}: ${pkErr.message}`);
+          throw new Error(
+            `Team pokemon batch at offset ${i}: ${pkErr.message}`
+          );
       }
 
       return { standingIds, totalPokemon: allPokemonRows.length };
@@ -452,7 +463,10 @@ export async function processImportQueue(
     .limit(5);
 
   if (staleErr) {
-    console.error("[limitless-import] Stale import query failed:", staleErr.message);
+    console.error(
+      "[limitless-import] Stale import query failed:",
+      staleErr.message
+    );
   } else if (staleRows && staleRows.length > 0) {
     // Recover stale imports concurrently (at most 5 rows, each needs per-row attempt increment)
     await Promise.all(
@@ -464,7 +478,10 @@ export async function processImportQueue(
           .from("tournaments")
           .update({
             import_status: newStatus,
-            import_error: newStatus === "failed" ? `Timed out after ${MAX_ATTEMPTS} attempts` : null,
+            import_error:
+              newStatus === "failed"
+                ? `Timed out after ${MAX_ATTEMPTS} attempts`
+                : null,
             import_attempts: attempts,
           })
           .eq("tournament_id", row.tournament_id);
@@ -497,10 +514,17 @@ export async function processImportQueue(
   };
 
   // Start up to MAX_CONCURRENT workers
-  const workerCount = Math.min(MAX_CONCURRENT, effectiveBatch, Math.max(1, effectiveBatch));
+  const workerCount = Math.min(
+    MAX_CONCURRENT,
+    effectiveBatch,
+    Math.max(1, effectiveBatch)
+  );
   await Promise.all(Array.from({ length: workerCount }, () => worker()));
   // Trim excess results if we processed fewer than workerCount intended
-  while (results.length > effectiveBatch && !results[results.length - 1]?.processed) {
+  while (
+    results.length > effectiveBatch &&
+    !results[results.length - 1]?.processed
+  ) {
     results.pop();
   }
 
@@ -540,11 +564,16 @@ async function processOne(
   // (values) because syncTournamentList stores Showdown IDs — see the
   // definition above for the full story.
   if (!formatId || !ALL_VALID_FORMATS.has(formatId)) {
-    console.warn(`[limitless-import] Parking ${tournamentId}: unknown format "${formatId}"`);
+    console.warn(
+      `[limitless-import] Parking ${tournamentId}: unknown format "${formatId}"`
+    );
     await supabase
       .schema("limitless")
       .from("tournaments")
-      .update({ import_status: "failed", import_error: `Unknown format: ${formatId}` })
+      .update({
+        import_status: "failed",
+        import_error: `Unknown format: ${formatId}`,
+      })
       .eq("tournament_id", tournamentId)
       .eq("import_status", "queued");
     return { processed: false };

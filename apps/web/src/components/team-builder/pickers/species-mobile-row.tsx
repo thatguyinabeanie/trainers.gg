@@ -60,7 +60,7 @@ export function SpeciesMobileRow({
   return (
     <div
       data-testid="species-mobile-row"
-      className={cn("border-b border-border", isSelected && "bg-primary/5")}
+      className={cn("border-border border-b", isSelected && "bg-primary/5")}
     >
       <div className="flex items-center">
         {/* Expand/collapse moves — left of sprite */}
@@ -69,7 +69,7 @@ export function SpeciesMobileRow({
           onClick={() => setIsExpanded((prev) => !prev)}
           aria-label={isExpanded ? "Collapse moves" : "Expand moves"}
           aria-expanded={isExpanded}
-          className="flex size-10 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground flex size-10 shrink-0 items-center justify-center transition-colors"
         >
           {isExpanded ? (
             <ChevronDown className="size-4" />
@@ -83,7 +83,7 @@ export function SpeciesMobileRow({
           type="button"
           onClick={() => onPick(entry.species)}
           aria-label={entry.species}
-          className="flex min-w-0 flex-1 items-center gap-2.5 py-2 pr-3 text-left transition-colors active:bg-muted/50 hover:bg-muted/30"
+          className="active:bg-muted/50 hover:bg-muted/30 flex min-w-0 flex-1 items-center gap-2.5 py-2 pr-3 text-left transition-colors"
         >
           <span className="bg-primary/5 border-primary/30 flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full border">
             <Image
@@ -101,7 +101,7 @@ export function SpeciesMobileRow({
           <span className="flex min-w-0 flex-1 flex-col gap-1">
             {/* Line 1 — name + types */}
             <span className="flex items-center justify-between gap-2">
-              <span className="truncate text-sm font-semibold text-foreground">
+              <span className="text-foreground truncate text-sm font-semibold">
                 {entry.species}
               </span>
               <span className="flex shrink-0 items-center gap-1">
@@ -133,16 +133,25 @@ export function SpeciesMobileRow({
             <span className="flex items-baseline gap-1.5 text-[10px] tabular-nums">
               {STAT_DEFS.map(({ key, label, valueKey }) => (
                 <span key={key} className="inline-flex items-baseline gap-0.5">
-                  <span className={cn("font-bold opacity-60", STAT_HEADER_COLORS[key])}>
+                  <span
+                    className={cn(
+                      "font-bold opacity-60",
+                      STAT_HEADER_COLORS[key]
+                    )}
+                  >
                     {label}
                   </span>
-                  <span className={cn("font-semibold", STAT_HEADER_COLORS[key])}>
+                  <span
+                    className={cn("font-semibold", STAT_HEADER_COLORS[key])}
+                  >
                     {entry.baseStats[valueKey]}
                   </span>
                 </span>
               ))}
               <span className="inline-flex items-baseline gap-0.5">
-                <span className={cn("font-bold opacity-60", STAT_HEADER_COLORS.bst)}>
+                <span
+                  className={cn("font-bold opacity-60", STAT_HEADER_COLORS.bst)}
+                >
                   BST
                 </span>
                 <span className={cn("font-bold", STAT_HEADER_COLORS.bst)}>
@@ -156,10 +165,7 @@ export function SpeciesMobileRow({
 
       {/* Expanded moves panel */}
       {isExpanded && (
-        <SpeciesMobileMovesPanel
-          species={entry.species}
-          formatId={formatId}
-        />
+        <SpeciesMobileMovesPanel species={entry.species} formatId={formatId} />
       )}
     </div>
   );
@@ -174,15 +180,21 @@ interface SpeciesMobileMovesPanelProps {
   formatId: string;
 }
 
-function SpeciesMobileMovesPanel({ species, formatId }: SpeciesMobileMovesPanelProps) {
-  const [sort, setSort] = useState<MoveListSortState>({ col: "bp", dir: "desc" });
+function SpeciesMobileMovesPanel({
+  species,
+  formatId,
+}: SpeciesMobileMovesPanelProps) {
+  const [sort, setSort] = useState<MoveListSortState>({
+    col: "bp",
+    dir: "desc",
+  });
 
   const legalMovesResult = getLegalMoves(species, formatId);
 
   if (!legalMovesResult || legalMovesResult === LEGALITY_UNAVAILABLE) {
     return (
-      <div className="border-t border-border/50 px-3 py-2">
-        <span className="text-[11px] text-muted-foreground">
+      <div className="border-border/50 border-t px-3 py-2">
+        <span className="text-muted-foreground text-[11px]">
           Moves unavailable for this format.
         </span>
       </div>
@@ -209,10 +221,10 @@ function SpeciesMobileMovesPanel({ species, formatId }: SpeciesMobileMovesPanelP
     sort.col === col ? (sort.dir === "asc" ? " ↑" : " ↓") : "";
 
   return (
-    <div className="border-t border-border/50">
+    <div className="border-border/50 border-t">
       {/* Sort controls */}
-      <div className="flex items-center gap-2 border-b border-border/40 px-3 py-1.5">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="border-border/40 flex items-center gap-2 border-b px-3 py-1.5">
+        <span className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
           Sort:
         </span>
         {(["name", "bp", "acc"] as const).map((col) => (
@@ -221,7 +233,7 @@ function SpeciesMobileMovesPanel({ species, formatId }: SpeciesMobileMovesPanelP
             type="button"
             onClick={() => handleSort(col)}
             className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+              "rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase transition-colors",
               sort.col === col
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -231,7 +243,7 @@ function SpeciesMobileMovesPanel({ species, formatId }: SpeciesMobileMovesPanelP
             {sortArrow(col)}
           </button>
         ))}
-        <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+        <span className="text-muted-foreground ml-auto text-[10px] tabular-nums">
           {sorted.length}
         </span>
       </div>
@@ -255,11 +267,10 @@ function MobileMoveRow({ move }: { move: MoveData }) {
   const bp = move.basePower > 0 ? String(move.basePower) : "—";
   const acc =
     move.accuracy === true || !move.accuracy ? "—" : `${move.accuracy}%`;
-  const desc =
-    move.shortDesc !== "No additional effect." ? move.shortDesc : "";
+  const desc = move.shortDesc !== "No additional effect." ? move.shortDesc : "";
 
   return (
-    <div className="flex items-start gap-1.5 border-b border-border/30 px-3 py-1.5">
+    <div className="border-border/30 flex items-start gap-1.5 border-b px-3 py-1.5">
       {/* Type icon */}
       <div className="mt-0.5 shrink-0">
         <TypeSymbolIcon
@@ -280,7 +291,7 @@ function MobileMoveRow({ move }: { move: MoveData }) {
             className="h-[14px] w-auto [image-rendering:pixelated]"
           />
         ) : (
-          <span className="text-[10px] text-muted-foreground">—</span>
+          <span className="text-muted-foreground text-[10px]">—</span>
         )}
       </div>
 
@@ -288,20 +299,20 @@ function MobileMoveRow({ move }: { move: MoveData }) {
       <div className="min-w-0 flex-1">
         {/* Line 1: name + BP */}
         <div className="flex items-baseline justify-between gap-1">
-          <span className="truncate text-xs font-medium text-foreground">
+          <span className="text-foreground truncate text-xs font-medium">
             {move.name}
           </span>
-          <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+          <span className="text-muted-foreground shrink-0 font-mono text-[10px] tabular-nums">
             {bp}
           </span>
         </div>
         {/* Line 2: ACC + description */}
         <div className="flex items-baseline gap-1.5">
-          <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+          <span className="text-muted-foreground shrink-0 font-mono text-[10px] tabular-nums">
             {acc}
           </span>
           {desc && (
-            <span className="min-w-0 truncate text-[10px] text-muted-foreground">
+            <span className="text-muted-foreground min-w-0 truncate text-[10px]">
               {desc}
             </span>
           )}

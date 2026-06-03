@@ -20,10 +20,7 @@ import type {
   RK9RosterEntry,
   RK9Pokemon,
 } from "@trainers/data-sources";
-import type {
-  PairingsEntry,
-  DivisionRoundPairings,
-} from "./import.js";
+import type { PairingsEntry, DivisionRoundPairings } from "./import.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const DATA_DIR = resolve(__dirname, "../../data");
@@ -92,10 +89,10 @@ export async function scrapeRoster(
     formatId = detectEventFormat("", dateStart);
   }
 
-  await writeJson(
-    join(dir, "meta.json"),
-    { eventId, formatId } satisfies EventMeta
-  );
+  await writeJson(join(dir, "meta.json"), {
+    eventId,
+    formatId,
+  } satisfies EventMeta);
 
   await sleep(DELAY_ROSTER_MS);
   const rosterHtml = await fetchRk9Html(`/roster/${eventId}`);
@@ -242,9 +239,7 @@ export async function scrapeMatches(
 
     process.stdout.write("\n");
     results.push({ division: divInfo.division, rounds });
-    console.log(
-      `  ${divInfo.division}: ${rounds.size} rounds scraped`
-    );
+    console.log(`  ${divInfo.division}: ${rounds.size} rounds scraped`);
   }
 
   // Serialize: array of { division, rounds: [{ round, pairings }] }
@@ -275,6 +270,9 @@ export async function readMatches(
     for (const r of entry.rounds) {
       rounds.set(r.round, r.pairings);
     }
-    return { division: entry.division as DivisionRoundPairings["division"], rounds };
+    return {
+      division: entry.division as DivisionRoundPairings["division"],
+      rounds,
+    };
   });
 }

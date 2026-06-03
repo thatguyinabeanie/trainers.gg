@@ -130,9 +130,7 @@ describe("TournamentsTab", () => {
     render(<TournamentsTab {...defaultProps} />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/no tournaments found/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/no tournaments found/i)).toBeInTheDocument();
     });
   });
 
@@ -191,7 +189,9 @@ describe("TournamentsTab", () => {
     });
 
     // Owner with multiple alts gets 3 select triggers (Year, Status, Alt)
-    const triggers = container.querySelectorAll("button[aria-haspopup='listbox']");
+    const triggers = container.querySelectorAll(
+      "button[aria-haspopup='listbox']"
+    );
     expect(triggers.length).toBe(3);
   });
 
@@ -216,7 +216,9 @@ describe("TournamentsTab", () => {
     });
 
     // Non-owner only gets 2 select triggers (Year, Status)
-    const triggers = container.querySelectorAll("button[aria-haspopup='listbox']");
+    const triggers = container.querySelectorAll(
+      "button[aria-haspopup='listbox']"
+    );
     expect(triggers.length).toBe(2);
   });
 

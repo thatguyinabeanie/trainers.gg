@@ -58,9 +58,12 @@ const trainersResolvePlugin: esbuild.Plugin = {
       return { path: resolve(validatorsSrc, `${subpath}.ts`) };
     });
 
-    build.onResolve({ filter: /^@trainers\/pokemon\/regulation-calendar/ }, () => ({
-      path: resolve(pokemonSrc, "regulation-calendar.ts"),
-    }));
+    build.onResolve(
+      { filter: /^@trainers\/pokemon\/regulation-calendar/ },
+      () => ({
+        path: resolve(pokemonSrc, "regulation-calendar.ts"),
+      })
+    );
   },
 };
 

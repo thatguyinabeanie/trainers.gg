@@ -83,7 +83,7 @@ export function DashboardBuilderWrapper({
             <button
               type="button"
               onClick={handleRestore}
-              className="text-amber-600 hover:text-amber-600/80 dark:text-amber-400 dark:hover:text-amber-400/80 text-xs font-medium underline underline-offset-2"
+              className="text-xs font-medium text-amber-600 underline underline-offset-2 hover:text-amber-600/80 dark:text-amber-400 dark:hover:text-amber-400/80"
             >
               Restore
             </button>

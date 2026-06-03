@@ -81,7 +81,12 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
 
   // Ref-based debounce for the grant search input — avoids stale closure issues
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); }, []);
+  useEffect(
+    () => () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    },
+    []
+  );
 
   function handleGrantSearchChange(value: string) {
     setGrantSearch(value);
@@ -176,11 +181,7 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
         ) : (
           <ul className="divide-y rounded-lg border">
             {coaches.map((coach) => {
-              const initials = (
-                coach.username ??
-                coach.name ??
-                "?"
-              )
+              const initials = (coach.username ?? coach.name ?? "?")
                 .charAt(0)
                 .toUpperCase();
 
@@ -216,7 +217,7 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="shrink-0 text-destructive hover:text-destructive"
+                    className="text-destructive hover:text-destructive shrink-0"
                     onClick={() => {
                       setRevokeTarget(coach);
                       setRevokeReason("");
@@ -265,9 +266,7 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
             ) : searchResults.length === 0 ? (
               <p className="text-muted-foreground p-3 text-sm">
                 No users found
-                {coaches.length > 0 &&
-                  " (already-coached users are excluded)"}
-                .
+                {coaches.length > 0 && " (already-coached users are excluded)"}.
               </p>
             ) : (
               <ul className="divide-y">
@@ -361,8 +360,7 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
               <strong>
                 {revokeTarget ? coachLabel(revokeTarget) : "this coach"}
               </strong>
-              . Their coach profile
-              will be hidden but not deleted.
+              . Their coach profile will be hidden but not deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
 

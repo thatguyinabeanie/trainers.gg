@@ -289,11 +289,7 @@ export {
 } from "./teams";
 
 // Coach queries
-export {
-  getCoachBadges,
-  getCoachProfileByHandle,
-  listCoaches,
-} from "./coach";
+export { getCoachBadges, getCoachProfileByHandle, listCoaches } from "./coach";
 
 export type { CoachBadgeInfo, CoachProfile } from "./coach";
 

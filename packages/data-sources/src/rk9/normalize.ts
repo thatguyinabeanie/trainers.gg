@@ -14,8 +14,8 @@ import type { RK9Pokemon } from "./types";
  * verified overrides for cases where heuristics fail.
  */
 export function normalizeSpecies(raw: string): string {
-  const open = raw.indexOf('[');
-  const close = raw.lastIndexOf(']');
+  const open = raw.indexOf("[");
+  const close = raw.lastIndexOf("]");
   let species: string;
   let form: string | null;
   if (open !== -1 && close > open) {

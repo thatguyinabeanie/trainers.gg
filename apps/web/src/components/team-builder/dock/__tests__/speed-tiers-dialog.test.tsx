@@ -229,9 +229,7 @@ describe("SpeedTiersDialog — desktop (Dialog)", () => {
   it("calls onOpenChange(false) when the close button (×) is clicked", async () => {
     const user = userEvent.setup();
     const { onOpenChange } = renderDialog();
-    await user.click(
-      screen.getByRole("button", { name: "Close speed tiers" })
-    );
+    await user.click(screen.getByRole("button", { name: "Close speed tiers" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 

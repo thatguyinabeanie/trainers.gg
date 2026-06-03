@@ -31,7 +31,10 @@ import { TEST_USERS, loginViaUI } from "../fixtures/auth";
  * Log in as admin and set the sudo_mode cookie to simulate an active sudo
  * session. The proxy checks this cookie before granting admin route access.
  */
-async function loginAsAdminWithSudo(page: Page, baseURL: string): Promise<void> {
+async function loginAsAdminWithSudo(
+  page: Page,
+  baseURL: string
+): Promise<void> {
   await loginViaUI(page, TEST_USERS.admin);
 
   const url = new URL(baseURL || "http://localhost:3000");
@@ -150,9 +153,7 @@ test.describe("Admin coaches page — admin user with sudo", () => {
     ).toBeVisible({ timeout: 10000 });
 
     // Explanatory text
-    await expect(
-      main.getByText(/Grant or revoke coach status/i)
-    ).toBeVisible();
+    await expect(main.getByText(/Grant or revoke coach status/i)).toBeVisible();
 
     // Grant section heading (scoped to heading role to avoid matching the button)
     await expect(
@@ -192,9 +193,9 @@ test.describe("Admin coaches page — admin user with sudo", () => {
     await searchInput.fill("cynthia");
 
     // Wait for either search results or "No users found" — debounced 300ms
-    await expect(
-      main.getByText(/cynthia|No users found/i)
-    ).toBeVisible({ timeout: 10000 });
+    await expect(main.getByText(/cynthia|No users found/i)).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   // ─── Test 2: Admin grant → coach profile renders + badge visible ───────
@@ -236,9 +237,9 @@ test.describe("Admin coaches page — admin user with sudo", () => {
       await ashResult.click();
 
       // The selected user panel appears
-      await expect(
-        main.getByText("@ash_ketchum")
-      ).toBeVisible({ timeout: 5000 });
+      await expect(main.getByText("@ash_ketchum")).toBeVisible({
+        timeout: 5000,
+      });
 
       // --- Step 3: Grant coach status ---
       const grantButton = main.getByRole("button", {
@@ -265,9 +266,9 @@ test.describe("Admin coaches page — admin user with sudo", () => {
 
     // The coach profile page must render (display-name h1). This is the durable
     // assertion — if the grant completed and the flag is on, the page renders.
-    await expect(
-      page.getByRole("heading", { level: 1 })
-    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
+      timeout: 15000,
+    });
 
     // Coach indicator + handle near the name. Markup details may vary, so these
     // are non-fatal — the h1 render above is the load-bearing check.
@@ -290,9 +291,9 @@ test.describe("Coach badge in player directory", () => {
   test("/players page renders player grid without errors", async ({ page }) => {
     await page.goto("/players");
 
-    await expect(
-      page.getByRole("heading", { name: /Players/i })
-    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: /Players/i })).toBeVisible({
+      timeout: 15000,
+    });
 
     await expect(
       page.getByText(/Discover players in the competitive Pokemon community/i)
@@ -305,13 +306,15 @@ test.describe("Coach badge in player directory", () => {
     // seed/14_coaching.sql marks cynthia as a coach — badge is always present after db:reset.
     await page.goto("/players");
 
-    await expect(
-      page.getByRole("heading", { name: /Players/i })
-    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: /Players/i })).toBeVisible({
+      timeout: 15000,
+    });
 
     // Wait for the player grid to hydrate
     await expect(
-      page.getByRole("link", { name: /ash_ketchum|admin_trainer|cynthia/i }).first()
+      page
+        .getByRole("link", { name: /ash_ketchum|admin_trainer|cynthia/i })
+        .first()
     ).toBeVisible({ timeout: 15000 });
 
     // A Coach badge must be visible (cynthia is a seeded coach)
@@ -365,9 +368,9 @@ test.describe("Coaching privacy", () => {
   }) => {
     await page.goto("/players");
 
-    await expect(
-      page.getByRole("heading", { name: /Players/i })
-    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: /Players/i })).toBeVisible({
+      timeout: 15000,
+    });
 
     // Wait for the grid to hydrate by waiting for any player card to appear
     const anyCard = page
@@ -401,9 +404,9 @@ test.describe("Coaching privacy", () => {
     // Asserting that link does not exist on the page is sufficient.
     // (admin_trainer is not a seeded coach — no badge should appear.)
     await expect(
-      page.getByRole("link", { name: /^coach$/i }).and(
-        page.locator(`[href="/coaching/admin_trainer"]`)
-      )
+      page
+        .getByRole("link", { name: /^coach$/i })
+        .and(page.locator(`[href="/coaching/admin_trainer"]`))
     ).toHaveCount(0);
   });
 
@@ -421,9 +424,9 @@ test.describe("Coaching privacy", () => {
 
     await page.goto("/players");
 
-    await expect(
-      page.getByRole("heading", { name: /Players/i })
-    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: /Players/i })).toBeVisible({
+      timeout: 15000,
+    });
 
     // Wait for grid to hydrate — look for any known player card
     const gridSettled = await page
@@ -441,9 +444,9 @@ test.describe("Coaching privacy", () => {
     // We assert the specific non-coach handles have no badge links
     for (const nonCoachHandle of ["brock", "admin_trainer"]) {
       await expect(
-        page.getByRole("link", { name: /^coach$/i }).and(
-          page.locator(`[href="/coaching/${nonCoachHandle}"]`)
-        )
+        page
+          .getByRole("link", { name: /^coach$/i })
+          .and(page.locator(`[href="/coaching/${nonCoachHandle}"]`))
       ).toHaveCount(0);
     }
   });

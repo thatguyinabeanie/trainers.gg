@@ -6,34 +6,34 @@ All-in-one integrated platform for Pokemon fans. Current focus: competitive batt
 
 Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill before working in an area.
 
-| Skill                      | When to Use                                                             |
-| -------------------------- | ----------------------------------------------------------------------- |
-| `building-web-app`         | Web routes, components, Server Actions, data fetching, proxy.ts         |
-| `building-mobile-app`      | Mobile screens, Tamagui UI, Expo Router, SecureStore                    |
-| `querying-supabase`        | DB queries/mutations, client selection, Edge Functions                  |
-| `validating-input`         | Zod schemas, Server Action return types, profanity filter               |
-| `creating-components`      | UI components, design tokens, design principles                         |
-| `checking-mobile-parity`   | After developing web features, check for mobile parity tickets          |
-| `implementing-tournaments` | Swiss pairings, standings, brackets, adapters                           |
-| `parsing-pokemon`          | Team parsing, legality validation, type effectiveness                   |
-| `using-utils`              | `getLabel()`, `getErrorMessage()`, permissions, formatting              |
-| `tracking-analytics`       | PostHog event constants, adding new events                              |
-| `integrating-bluesky`      | Bluesky/AT Protocol, DID resolution, public agent                       |
-| `writing-tests`            | Fishery factories, Supabase/AT Protocol mocks, Jest config              |
-| `managing-infrastructure`  | PDS on Fly.io, ngrok tunnel for local dev                               |
-| `creating-edge-functions`  | Creating/updating Supabase edge functions                               |
-| `managing-edge-imports`    | Deno import maps, `deno.json` management                                |
-| `auditing-code`            | Codebase audits for type safety, architecture, maintainability          |
+| Skill                            | When to Use                                                                  |
+| -------------------------------- | ---------------------------------------------------------------------------- |
+| `building-web-app`               | Web routes, components, Server Actions, data fetching, proxy.ts              |
+| `building-mobile-app`            | Mobile screens, Tamagui UI, Expo Router, SecureStore                         |
+| `querying-supabase`              | DB queries/mutations, client selection, Edge Functions                       |
+| `validating-input`               | Zod schemas, Server Action return types, profanity filter                    |
+| `creating-components`            | UI components, design tokens, design principles                              |
+| `checking-mobile-parity`         | After developing web features, check for mobile parity tickets               |
+| `implementing-tournaments`       | Swiss pairings, standings, brackets, adapters                                |
+| `parsing-pokemon`                | Team parsing, legality validation, type effectiveness                        |
+| `using-utils`                    | `getLabel()`, `getErrorMessage()`, permissions, formatting                   |
+| `tracking-analytics`             | PostHog event constants, adding new events                                   |
+| `integrating-bluesky`            | Bluesky/AT Protocol, DID resolution, public agent                            |
+| `writing-tests`                  | Fishery factories, Supabase/AT Protocol mocks, Jest config                   |
+| `managing-infrastructure`        | PDS on Fly.io, ngrok tunnel for local dev                                    |
+| `creating-edge-functions`        | Creating/updating Supabase edge functions                                    |
+| `managing-edge-imports`          | Deno import maps, `deno.json` management                                     |
+| `auditing-code`                  | Codebase audits for type safety, architecture, maintainability               |
 | `auditing-mobile-responsiveness` | Mobile-viewport audit — overflow probes, tap targets, table→cards punch list |
-| `writing-skills`           | Creating/editing skills, agents, maintaining the architecture           |
-| `using-mempalace`          | Storing/searching decisions, session diaries, knowledge graph           |
-| `design-system`            | Elevation, typography hierarchy, transitions, layout conventions        |
-| `product-vision`           | Product vision, feature roadmap, differentiators, user types            |
-| `competitive-landscape`    | Competitive landscape, positioning, alternatives by category            |
-| `reviewing-pr`             | PR review orchestrator: dispatches domain-specific checks               |
-| `reviewing-database`       | RLS, migrations, indexes, N+1, unbounded fetches, query perf            |
-| `reviewing-caching`        | Next.js unstable_cache, TanStack Query, cache invalidation              |
-| `reviewing-pr-feedback`    | Fetch/group/resolve PR comments with user, no deferrals, re-review loop |
+| `writing-skills`                 | Creating/editing skills, agents, maintaining the architecture                |
+| `using-mempalace`                | Storing/searching decisions, session diaries, knowledge graph                |
+| `design-system`                  | Elevation, typography hierarchy, transitions, layout conventions             |
+| `product-vision`                 | Product vision, feature roadmap, differentiators, user types                 |
+| `competitive-landscape`          | Competitive landscape, positioning, alternatives by category                 |
+| `reviewing-pr`                   | PR review orchestrator: dispatches domain-specific checks                    |
+| `reviewing-database`             | RLS, migrations, indexes, N+1, unbounded fetches, query perf                 |
+| `reviewing-caching`              | Next.js unstable_cache, TanStack Query, cache invalidation                   |
+| `reviewing-pr-feedback`          | Fetch/group/resolve PR comments with user, no deferrals, re-review loop      |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
 
@@ -96,20 +96,20 @@ infra/
 
 ## Tech Stack
 
-| Layer              | Technology                     | Notes                                                           |
-| ------------------ | ------------------------------ | --------------------------------------------------------------- |
-| Auth               | Supabase Auth                  | Email/password + OAuth (X, Discord, Twitch, Bluesky)            |
-| Database           | Supabase (PostgreSQL)          | Row Level Security with auth.uid()                              |
-| Edge Functions     | Supabase Edge Functions        | Deno runtime                                                    |
+| Layer              | Technology                     | Notes                                                                |
+| ------------------ | ------------------------------ | -------------------------------------------------------------------- |
+| Auth               | Supabase Auth                  | Email/password + OAuth (X, Discord, Twitch, Bluesky)                 |
+| Database           | Supabase (PostgreSQL)          | Row Level Security with auth.uid()                                   |
+| Edge Functions     | Supabase Edge Functions        | Deno runtime                                                         |
 | Social/Identity    | AT Protocol (Bluesky)          | Decentralized identity (handles, PDS); social features deprioritized |
-| React Compiler     | React Compiler                 | Auto-memoization — do NOT manually use useMemo/useCallback/memo |
-| Validation         | Zod via `@trainers/validators` | Shared schemas for forms, Server Actions, edge functions        |
-| Client State (Web) | TanStack Query v5              | Cache, mutations, optimistic updates                            |
-| Web                | Next.js 16                     | React 19.2, App Router, Server Components                       |
-| Mobile             | Expo 55                        | React Native 0.83 with Tamagui                                  |
-| UI (Web)           | shadcn/ui + Base UI            | Base UI primitives (NOT Radix), no `asChild`                    |
-| Styling (Web)      | Tailwind CSS 4                 | @tailwindcss/postcss                                            |
-| Styling (Mobile)   | Tamagui                        | Theme tokens from @trainers/theme                               |
+| React Compiler     | React Compiler                 | Auto-memoization — do NOT manually use useMemo/useCallback/memo      |
+| Validation         | Zod via `@trainers/validators` | Shared schemas for forms, Server Actions, edge functions             |
+| Client State (Web) | TanStack Query v5              | Cache, mutations, optimistic updates                                 |
+| Web                | Next.js 16                     | React 19.2, App Router, Server Components                            |
+| Mobile             | Expo 55                        | React Native 0.83 with Tamagui                                       |
+| UI (Web)           | shadcn/ui + Base UI            | Base UI primitives (NOT Radix), no `asChild`                         |
+| Styling (Web)      | Tailwind CSS 4                 | @tailwindcss/postcss                                                 |
+| Styling (Mobile)   | Tamagui                        | Theme tokens from @trainers/theme                                    |
 
 ## Commands
 

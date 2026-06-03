@@ -104,7 +104,11 @@ interface EditableNameProps {
   className?: string;
 }
 
-export function EditableName({ defaultValue, onSave, className }: EditableNameProps) {
+export function EditableName({
+  defaultValue,
+  onSave,
+  className,
+}: EditableNameProps) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(defaultValue);
   const [saving, setSaving] = useState(false);

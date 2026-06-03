@@ -121,9 +121,7 @@ export default async function DashboardHomePage() {
       await Promise.allSettled([
         getCachedBulkStats(altIds),
         getCachedBulkRatings(altIds),
-        mainAltId
-          ? getActiveMatch(supabase, mainAltId)
-          : Promise.resolve(null),
+        mainAltId ? getActiveMatch(supabase, mainAltId) : Promise.resolve(null),
         mainAltId
           ? getMyDashboardData(supabase, mainAltId)
           : Promise.resolve(null),
@@ -205,8 +203,10 @@ export default async function DashboardHomePage() {
 
   // Prepare community highlights data
   const communityIds = myCommunities.map((c) => c.id);
-  const liveTournamentCommunityIds =
-    await getLiveTournamentCommunityIds(supabase, communityIds);
+  const liveTournamentCommunityIds = await getLiveTournamentCommunityIds(
+    supabase,
+    communityIds
+  );
 
   const communityHighlights = myCommunities.map((c) => ({
     id: c.id,

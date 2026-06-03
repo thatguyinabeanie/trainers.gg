@@ -61,7 +61,10 @@ describe("getBuilderPreferencesAction", () => {
         speedTiers: { defaultView: "sidepane", openOnLoad: true },
       });
     }
-    expect(mockGetUserPreferences).toHaveBeenCalledWith(mockSupabase, mockUser.id);
+    expect(mockGetUserPreferences).toHaveBeenCalledWith(
+      mockSupabase,
+      mockUser.id
+    );
   });
 
   it("fills defaults for partial stored preferences", async () => {

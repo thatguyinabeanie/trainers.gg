@@ -32,7 +32,9 @@ describe("useBuilderPreferences", () => {
   it("hydrates from localStorage when signed out", async () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ speedTiers: { defaultView: "sidepane", openOnLoad: true } })
+      JSON.stringify({
+        speedTiers: { defaultView: "sidepane", openOnLoad: true },
+      })
     );
     const { result } = renderHook(() => useBuilderPreferences(false));
     await waitFor(() =>
@@ -43,12 +45,16 @@ describe("useBuilderPreferences", () => {
   it("account value wins over localStorage when signed in", async () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ speedTiers: { defaultView: "sidepane", openOnLoad: true } })
+      JSON.stringify({
+        speedTiers: { defaultView: "sidepane", openOnLoad: true },
+      })
     );
     mockGet.mockResolvedValue({
       success: true,
       data: {
-        preferences: { speedTiers: { defaultView: "dialog", openOnLoad: false } },
+        preferences: {
+          speedTiers: { defaultView: "dialog", openOnLoad: false },
+        },
       },
     });
     const { result } = renderHook(() => useBuilderPreferences(true));
@@ -60,7 +66,9 @@ describe("useBuilderPreferences", () => {
   it("adopts localStorage to the account when signed in with no account row", async () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ speedTiers: { defaultView: "sidepane", openOnLoad: true } })
+      JSON.stringify({
+        speedTiers: { defaultView: "sidepane", openOnLoad: true },
+      })
     );
     mockGet.mockResolvedValue({ success: true, data: { preferences: null } });
     const { result } = renderHook(() => useBuilderPreferences(true));
@@ -75,9 +83,9 @@ describe("useBuilderPreferences", () => {
         speedTiers: { defaultView: "sidepane", openOnLoad: false },
       });
     });
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).speedTiers.defaultView).toBe(
-      "sidepane"
-    );
+    expect(
+      JSON.parse(localStorage.getItem(STORAGE_KEY)!).speedTiers.defaultView
+    ).toBe("sidepane");
     await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
   });
 });

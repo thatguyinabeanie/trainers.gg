@@ -87,16 +87,25 @@ const mockAddPokemon = jest.fn(() =>
 const mockPersistence = {
   mode: "api" as const,
   addPokemon: (...args: unknown[]) => mockAddPokemon(...args),
-  updatePokemon: jest.fn(() => Promise.resolve({ success: true, data: undefined })),
-  removePokemon: jest.fn(() => Promise.resolve({ success: true, data: undefined })),
-  reorderPokemon: jest.fn(() => Promise.resolve({ success: true, data: undefined })),
-  updateTeam: jest.fn(() => Promise.resolve({ success: true, data: undefined })),
+  updatePokemon: jest.fn(() =>
+    Promise.resolve({ success: true, data: undefined })
+  ),
+  removePokemon: jest.fn(() =>
+    Promise.resolve({ success: true, data: undefined })
+  ),
+  reorderPokemon: jest.fn(() =>
+    Promise.resolve({ success: true, data: undefined })
+  ),
+  updateTeam: jest.fn(() =>
+    Promise.resolve({ success: true, data: undefined })
+  ),
   onMutationSuccess: jest.fn(),
 };
 
 jest.mock("@/components/team-builder/persistence/context", () => ({
   usePersistence: () => mockPersistence,
-  PersistenceProvider: ({ children }: { children: React.ReactNode }) => children,
+  PersistenceProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
 }));
 
 jest.mock("sonner", () => ({
@@ -252,7 +261,10 @@ describe("ImportDialog", () => {
     mockParseShowdownText.mockReturnValue([mockParsedPikachu]);
     mockParsePokepaseUrl.mockReturnValue(null);
     mockValidateTeamStructure.mockReturnValue([]);
-    mockAddPokemon.mockResolvedValue({ success: true, data: { pokemonId: 99 } });
+    mockAddPokemon.mockResolvedValue({
+      success: true,
+      data: { pokemonId: 99 },
+    });
     // Default: permissive — no registered legality lists
     mockGetLegalSpecies.mockReturnValue(undefined);
     mockGetLegalItems.mockReturnValue(undefined);

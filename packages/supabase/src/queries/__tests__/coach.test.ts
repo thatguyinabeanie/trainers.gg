@@ -311,7 +311,9 @@ describe("listCoaches", () => {
       },
     ];
 
-    const orderMock = jest.fn().mockResolvedValue({ data: mockCoaches, error: null });
+    const orderMock = jest
+      .fn()
+      .mockResolvedValue({ data: mockCoaches, error: null });
     const eqMock = jest.fn().mockReturnValue({ order: orderMock });
     const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
 
@@ -326,7 +328,9 @@ describe("listCoaches", () => {
   it("throws when the query returns an error", async () => {
     const dbError = new Error("query failed");
 
-    const orderMock = jest.fn().mockResolvedValue({ data: null, error: dbError });
+    const orderMock = jest
+      .fn()
+      .mockResolvedValue({ data: null, error: dbError });
     const eqMock = jest.fn().mockReturnValue({ order: orderMock });
     const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
 

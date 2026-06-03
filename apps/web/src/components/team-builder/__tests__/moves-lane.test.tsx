@@ -663,7 +663,9 @@ describe("MovesLane — table headers", () => {
 
 describe("MovesLane — inline calc display", () => {
   beforeEach(() => {
-    (useCalcStateContext as jest.Mock).mockImplementation(() => mockCalcContext);
+    (useCalcStateContext as jest.Mock).mockImplementation(
+      () => mockCalcContext
+    );
     mockCalcContext.calcEnabled = false;
     mockCalcContext.rowOutputs = [null, null, null, null];
   });

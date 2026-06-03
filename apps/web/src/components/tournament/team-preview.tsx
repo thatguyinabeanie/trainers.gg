@@ -41,14 +41,16 @@ function MoveRow({ move }: { move: string }) {
   );
 }
 
-export function TeamPreview({
-  pokemon,
-  className,
-}: TeamPreviewProps) {
+export function TeamPreview({ pokemon, className }: TeamPreviewProps) {
   if (pokemon.length === 0) return null;
 
   return (
-    <div className={cn("grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3", className)}>
+    <div
+      className={cn(
+        "grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3",
+        className
+      )}
+    >
       {pokemon.map((mon, i) => {
         const megaSpecies = mon.held_item
           ? getMegaSpeciesForBaseAndItem(mon.species, mon.held_item)
@@ -72,7 +74,7 @@ export function TeamPreview({
                     size={64}
                     className="shrink-0"
                   />
-                  <span className="max-w-16 truncate text-center text-[11px] font-semibold leading-tight">
+                  <span className="max-w-16 truncate text-center text-[11px] leading-tight font-semibold">
                     {displaySpecies}
                   </span>
                 </div>

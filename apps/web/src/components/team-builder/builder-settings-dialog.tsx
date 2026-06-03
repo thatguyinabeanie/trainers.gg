@@ -15,16 +15,9 @@
 
 import { Info } from "lucide-react";
 
-import {
-  type BuilderPreferences,
-  type PanelView,
-} from "@trainers/validators";
+import { type BuilderPreferences, type PanelView } from "@trainers/validators";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,

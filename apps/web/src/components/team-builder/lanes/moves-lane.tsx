@@ -17,7 +17,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { type ValidationError } from "../validation-hooks";
 import { CATEGORY_ICON_URLS_MONO } from "../move-category-ui";
@@ -101,7 +105,13 @@ const KO_COLORS: Record<string, string> = {
   "4": "text-muted-foreground",
 };
 
-function KoLabel({ tier, koChance }: { tier: string; koChance?: number | null }) {
+function KoLabel({
+  tier,
+  koChance,
+}: {
+  tier: string;
+  koChance?: number | null;
+}) {
   // Show "87.5% OHKO" when chance is between 0-100 exclusive
   const showChance = koChance != null && koChance > 0 && koChance < 100;
   return (
@@ -122,18 +132,25 @@ function KoLabel({ tier, koChance }: { tier: string; koChance?: number | null })
 // CalcDescTooltip — rich tooltip showing the full calc description
 // =============================================================================
 
-function CalcDescTooltip({ desc, children }: { desc: string; children: ReactNode }) {
+function CalcDescTooltip({
+  desc,
+  children,
+}: {
+  desc: string;
+  children: ReactNode;
+}) {
   return (
     <Tooltip>
       {children}
-      <TooltipContent side="bottom" className="max-w-[560px] overflow-hidden border border-border bg-popover text-popover-foreground p-0">
+      <TooltipContent
+        side="bottom"
+        className="border-border bg-popover text-popover-foreground max-w-[560px] overflow-hidden border p-0"
+      >
         <div className="flex flex-col gap-1.5 p-3">
-          <p className="text-[13px] leading-relaxed font-mono whitespace-normal">
+          <p className="font-mono text-[13px] leading-relaxed whitespace-normal">
             {desc}
           </p>
-          <span className="text-[10px] opacity-60">
-            Click to copy
-          </span>
+          <span className="text-[10px] opacity-60">Click to copy</span>
         </div>
       </TooltipContent>
     </Tooltip>
@@ -171,15 +188,27 @@ function CalcCopyButton({ desc }: { desc: string }) {
     <CalcDescTooltip desc={desc}>
       <TooltipTrigger
         render={<span />}
-        className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+        className="text-muted-foreground/60 hover:bg-muted hover:text-foreground flex h-5 w-5 cursor-pointer items-center justify-center rounded transition-colors"
         onClick={handleCopy}
       >
         {copied ? (
-          <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            className="h-3 w-3"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <polyline points="3 8 7 12 13 4" />
           </svg>
         ) : (
-          <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            className="h-3 w-3"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <rect x="5" y="5" width="9" height="9" rx="1.5" />
             <path d="M4 11H3.5A1.5 1.5 0 012 9.5V3.5A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V4" />
           </svg>
@@ -364,7 +393,8 @@ function MoveTile({
             <TableCell className="p-1 pl-2 whitespace-nowrap">
               {hasCalc && koTier && output?.rolls.length ? (
                 <span className="text-muted-foreground text-[11px] tabular-nums">
-                  {output.rolls[0] ?? 0}–{output.rolls[output.rolls.length - 1] ?? 0}
+                  {output.rolls[0] ?? 0}–
+                  {output.rolls[output.rolls.length - 1] ?? 0}
                 </span>
               ) : (
                 <span className="text-muted-foreground text-[13px]">—</span>
@@ -404,7 +434,12 @@ function MoveTile({
           )}
         </TableRow>
 
-        <PopoverContent side="bottom" align="start" anchor={rowRef} className="w-auto p-0">
+        <PopoverContent
+          side="bottom"
+          align="start"
+          anchor={rowRef}
+          className="w-auto p-0"
+        >
           {detailOpen && moveName && output ? (
             <CalcDetailCard
               attacker={attacker}
@@ -472,8 +507,12 @@ function MovesLaneTileGhost() {
   return (
     <TableHeader>
       <TableRow className="border-none">
-        <TableHead className="!h-auto w-6 border-none p-0 pb-0.5"><span className="sr-only">Type</span></TableHead>
-        <TableHead className="!h-auto w-8 border-none p-0 pb-0.5"><span className="sr-only">Category</span></TableHead>
+        <TableHead className="!h-auto w-6 border-none p-0 pb-0.5">
+          <span className="sr-only">Type</span>
+        </TableHead>
+        <TableHead className="!h-auto w-8 border-none p-0 pb-0.5">
+          <span className="sr-only">Category</span>
+        </TableHead>
         <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5 text-[9.5px] font-medium tracking-[0.04em] uppercase">
           NAME
         </TableHead>
@@ -513,7 +552,11 @@ function MovesLaneTileGhost() {
 function MovesLaneGhost() {
   const calcEnabled = useCalcEnabled();
   return (
-    <div className={cn("flex min-w-0 flex-1 flex-col px-3 py-1 transition-[padding,flex] duration-300 ease-in-out")}>
+    <div
+      className={cn(
+        "flex min-w-0 flex-1 flex-col px-3 py-1 transition-[padding,flex] duration-300 ease-in-out"
+      )}
+    >
       <Table className="w-full border-separate border-spacing-y-[3px]">
         <MovesLaneTileGhost />
         <TableBody>
@@ -526,8 +569,8 @@ function MovesLaneGhost() {
                   + Add move
                 </span>
               </TableCell>
-              <TableCell className="w-11 p-1  font-mono text-[11px] tabular-nums" />
-              <TableCell className="w-12 p-1  font-mono text-[11px] tabular-nums" />
+              <TableCell className="w-11 p-1 font-mono text-[11px] tabular-nums" />
+              <TableCell className="w-12 p-1 font-mono text-[11px] tabular-nums" />
               {calcEnabled && <TableCell className="p-1 pl-3" />}
               {calcEnabled && <TableCell className="p-1" />}
               {calcEnabled && <TableCell className="p-1" />}
@@ -563,7 +606,11 @@ function MovesLaneReal({
   }
 
   return (
-    <div className={cn("flex min-w-0 flex-1 flex-col px-3 py-1 transition-[padding,flex] duration-300 ease-in-out")}>
+    <div
+      className={cn(
+        "flex min-w-0 flex-1 flex-col px-3 py-1 transition-[padding,flex] duration-300 ease-in-out"
+      )}
+    >
       <Table className="w-full border-separate border-spacing-y-[3px]">
         <MovesLaneTileGhost />
         <TableBody>

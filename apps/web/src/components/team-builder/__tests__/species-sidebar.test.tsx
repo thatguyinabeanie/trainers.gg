@@ -16,7 +16,10 @@ jest.mock("@trainers/pokemon", () => ({
 import { SpeciesSidebar } from "../pickers/species-sidebar";
 import { DEFAULT_SPECIES_FILTERS } from "../pickers/species-filter-state";
 
-const championsFormat = { id: "gen9championsvgc2026regma", gameShort: "Champions" } as never;
+const championsFormat = {
+  id: "gen9championsvgc2026regma",
+  gameShort: "Champions",
+} as never;
 
 function renderSidebar(overrides = {}) {
   return render(
@@ -65,7 +68,10 @@ describe("SpeciesSidebar", () => {
 
   it("ability section renders selected abilities as removable chips", () => {
     renderSidebar({
-      filters: { ...DEFAULT_SPECIES_FILTERS, abilities: ["Drought", "Drizzle"] },
+      filters: {
+        ...DEFAULT_SPECIES_FILTERS,
+        abilities: ["Drought", "Drizzle"],
+      },
     });
     expect(screen.getByRole("button", { name: "Drought" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Drizzle" })).toBeInTheDocument();

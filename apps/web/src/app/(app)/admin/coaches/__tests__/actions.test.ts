@@ -28,10 +28,7 @@ jest.mock("@trainers/supabase", () => ({
 }));
 
 // Import after mocks are declared
-import {
-  grantCoachStatusAction,
-  revokeCoachStatusAction,
-} from "../actions";
+import { grantCoachStatusAction, revokeCoachStatusAction } from "../actions";
 import { requireAdminWithSudo } from "@/lib/auth/require-admin";
 import { grantCoachStatus, revokeCoachStatus } from "@trainers/supabase";
 

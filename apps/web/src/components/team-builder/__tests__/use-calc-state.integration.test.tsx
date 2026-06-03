@@ -829,7 +829,10 @@ describe("mega toggle (real engine)", () => {
 
     const megaOffOutput = result.current.selectedMoveOutput;
     expect(megaOffOutput).not.toBeNull();
-    const megaOffMid = mid(megaOffOutput!.minPercent, megaOffOutput!.maxPercent);
+    const megaOffMid = mid(
+      megaOffOutput!.minPercent,
+      megaOffOutput!.maxPercent
+    );
 
     // Base Charizard has lower SpA AND no Drought (which would Sun-boost
     // Flamethrower) — combined effect is a noticeably smaller hit.

@@ -90,9 +90,7 @@ describe("getPlayerTournamentHistory", () => {
       },
     ];
 
-    const mockRegistrations = [
-      { tournament_id: 100, alt_id: 1, team_id: 10 },
-    ];
+    const mockRegistrations = [{ tournament_id: 100, alt_id: 1, team_id: 10 }];
 
     const mockTeamPokemon = [
       {

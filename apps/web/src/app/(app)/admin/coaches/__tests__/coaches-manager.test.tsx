@@ -220,9 +220,7 @@ describe("CoachesManager", () => {
 
     it("renders each coach username as a link to their profile", () => {
       render(
-        <CoachesManager
-          coaches={[buildCoach({ username: "ash_ketchum" })]}
-        />
+        <CoachesManager coaches={[buildCoach({ username: "ash_ketchum" })]} />
       );
 
       const link = screen.getByRole("link", { name: /@ash_ketchum/i });
@@ -277,9 +275,7 @@ describe("CoachesManager", () => {
     it("clicking Revoke opens the confirm dialog", async () => {
       const user = userEvent.setup();
       render(
-        <CoachesManager
-          coaches={[buildCoach({ username: "ash_ketchum" })]}
-        />
+        <CoachesManager coaches={[buildCoach({ username: "ash_ketchum" })]} />
       );
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
@@ -290,9 +286,7 @@ describe("CoachesManager", () => {
     it("dialog shows the coach username in the description", async () => {
       const user = userEvent.setup();
       render(
-        <CoachesManager
-          coaches={[buildCoach({ username: "ash_ketchum" })]}
-        />
+        <CoachesManager coaches={[buildCoach({ username: "ash_ketchum" })]} />
       );
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
@@ -315,7 +309,9 @@ describe("CoachesManager", () => {
       // Click the Revoke confirm button inside the dialog (scoped to avoid
       // ambiguity with the row-level Revoke button which stays mounted)
       const dialog = screen.getByTestId("alert-dialog");
-      await user.click(within(dialog).getByRole("button", { name: /^revoke$/i }));
+      await user.click(
+        within(dialog).getByRole("button", { name: /^revoke$/i })
+      );
 
       await waitFor(() => {
         expect(mockRevokeCoachStatusAction).toHaveBeenCalledWith(
@@ -344,7 +340,9 @@ describe("CoachesManager", () => {
       );
       await user.type(reasonTextarea, "Policy violation");
       const dialog2 = screen.getByTestId("alert-dialog");
-      await user.click(within(dialog2).getByRole("button", { name: /^revoke$/i }));
+      await user.click(
+        within(dialog2).getByRole("button", { name: /^revoke$/i })
+      );
 
       await waitFor(() => {
         expect(mockRevokeCoachStatusAction).toHaveBeenCalledWith(
@@ -357,14 +355,14 @@ describe("CoachesManager", () => {
     it("shows success toast and closes dialog on successful revoke", async () => {
       const user = userEvent.setup();
       render(
-        <CoachesManager
-          coaches={[buildCoach({ username: "ash_ketchum" })]}
-        />
+        <CoachesManager coaches={[buildCoach({ username: "ash_ketchum" })]} />
       );
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
       const dialog = screen.getByTestId("alert-dialog");
-      await user.click(within(dialog).getByRole("button", { name: /^revoke$/i }));
+      await user.click(
+        within(dialog).getByRole("button", { name: /^revoke$/i })
+      );
 
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith(
@@ -387,7 +385,11 @@ describe("CoachesManager", () => {
       render(<CoachesManager coaches={[buildCoach()]} />);
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
-      await user.click(within(screen.getByTestId("alert-dialog")).getByRole("button", { name: /^revoke$/i }));
+      await user.click(
+        within(screen.getByTestId("alert-dialog")).getByRole("button", {
+          name: /^revoke$/i,
+        })
+      );
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Permission denied");
@@ -401,7 +403,11 @@ describe("CoachesManager", () => {
       render(<CoachesManager coaches={[buildCoach()]} />);
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
-      await user.click(within(screen.getByTestId("alert-dialog")).getByRole("button", { name: /^revoke$/i }));
+      await user.click(
+        within(screen.getByTestId("alert-dialog")).getByRole("button", {
+          name: /^revoke$/i,
+        })
+      );
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith(
@@ -415,7 +421,11 @@ describe("CoachesManager", () => {
       render(<CoachesManager coaches={[buildCoach()]} />);
 
       await user.click(screen.getByRole("button", { name: /revoke/i }));
-      await user.click(within(screen.getByTestId("alert-dialog")).getByRole("button", { name: /^revoke$/i }));
+      await user.click(
+        within(screen.getByTestId("alert-dialog")).getByRole("button", {
+          name: /^revoke$/i,
+        })
+      );
 
       await waitFor(() => {
         expect(mockRefresh).toHaveBeenCalled();
@@ -482,10 +492,7 @@ describe("CoachesManager", () => {
       render(<CoachesManager coaches={[]} />);
 
       // Type into the search input
-      await user.type(
-        screen.getByPlaceholderText(/type a username/i),
-        "gary"
-      );
+      await user.type(screen.getByPlaceholderText(/type a username/i), "gary");
       // Advance timers past the 300ms debounce
       jest.advanceTimersByTime(350);
 
@@ -524,10 +531,7 @@ describe("CoachesManager", () => {
 
       render(<CoachesManager coaches={[]} />);
 
-      await user.type(
-        screen.getByPlaceholderText(/type a username/i),
-        "gary"
-      );
+      await user.type(screen.getByPlaceholderText(/type a username/i), "gary");
       jest.advanceTimersByTime(350);
 
       await waitFor(() => {
@@ -566,10 +570,7 @@ describe("CoachesManager", () => {
 
       render(<CoachesManager coaches={[]} />);
 
-      await user.type(
-        screen.getByPlaceholderText(/type a username/i),
-        "gary"
-      );
+      await user.type(screen.getByPlaceholderText(/type a username/i), "gary");
       jest.advanceTimersByTime(350);
 
       await waitFor(() => {

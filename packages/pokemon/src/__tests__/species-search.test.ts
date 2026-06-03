@@ -588,11 +588,19 @@ describe("searchSpecies — new filters", () => {
     // Previously the cache was keyed only by formatId, so the second call
     // would silently return the first resolver's roles.
     const resolverA = (
-      _abil: { slot1: string | null; slot2: string | null; hidden: string | null },
+      _abil: {
+        slot1: string | null;
+        slot2: string | null;
+        hidden: string | null;
+      },
       species: string
     ): readonly string[] => (species === "Incineroar" ? ["fake-out"] : []);
     const resolverB = (
-      _abil: { slot1: string | null; slot2: string | null; hidden: string | null },
+      _abil: {
+        slot1: string | null;
+        slot2: string | null;
+        hidden: string | null;
+      },
       species: string
     ): readonly string[] => (species === "Incineroar" ? ["drop-atk"] : []);
 

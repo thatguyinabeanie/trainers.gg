@@ -39,7 +39,11 @@ export async function importMatchResults(
   // insert fails partway through, the old data will have been deleted
   // but new data only partially written. A proper fix would use a DB
   // transaction or an RPC call to wrap both operations atomically.
-  const { error: delErr } = await supabase.schema("rk9").from("phases").delete().eq("event_id", eventId);
+  const { error: delErr } = await supabase
+    .schema("rk9")
+    .from("phases")
+    .delete()
+    .eq("event_id", eventId);
   if (delErr) throw new Error(`Delete phases: ${delErr.message}`);
   if (del2Err) throw new Error(`Delete phases: ${del2Err.message}`);
 
@@ -81,19 +85,16 @@ export async function importMatchResults(
     }
 
     // Upsert phase entry for this division
-    const { error: upErr } = await supabase
-      .schema("rk9")
-      .from("phases")
-      .upsert(
-        {
-          event_id: eventId,
-          division,
-          phase_number: 1,
-          type: "swiss",
-          rounds: rounds.size,
-        },
-        { onConflict: "event_id,division,phase_number" }
-      );
+    const { error: upErr } = await supabase.schema("rk9").from("phases").upsert(
+      {
+        event_id: eventId,
+        division,
+        phase_number: 1,
+        type: "swiss",
+        rounds: rounds.size,
+      },
+      { onConflict: "event_id,division,phase_number" }
+    );
     if (upErr) throw new Error(`Phase upsert: ${upErr.message}`);
 
     for (const [round, pairings] of rounds) {

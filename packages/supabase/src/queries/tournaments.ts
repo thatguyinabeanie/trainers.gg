@@ -2568,10 +2568,7 @@ export async function getLiveTournamentCommunityIds(
     .eq("status", "active");
 
   if (error) {
-    console.error(
-      "[getLiveTournamentCommunityIds] Failed to fetch:",
-      error
-    );
+    console.error("[getLiveTournamentCommunityIds] Failed to fetch:", error);
     return new Set();
   }
 

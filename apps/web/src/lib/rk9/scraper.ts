@@ -83,8 +83,7 @@ export function parseEventsPage(html: string): RK9Event[] {
           const text = $(el).text().trim();
           // Match "VG" text (past events) or links containing VG/Champions image
           return (
-            text === "VG" ||
-            $(el).find('img[src*="pokemon-vg"]').length > 0
+            text === "VG" || $(el).find('img[src*="pokemon-vg"]').length > 0
           );
         });
 
@@ -417,9 +416,7 @@ export function parseTournamentPage(
 
         // Look for a line matching "City, ST ZIP" or "City, Country"
         for (const line of lines) {
-          const cityStateZip = line.match(
-            /^([^,]+),\s*([A-Z]{2})\s*\d{4,5}$/
-          );
+          const cityStateZip = line.match(/^([^,]+),\s*([A-Z]{2})\s*\d{4,5}$/);
           if (cityStateZip?.[1]) {
             locationCity = cityStateZip[1]!.trim();
             locationCountry = "US";
@@ -589,7 +586,9 @@ export function parseArchivedEventsPage(html: string): RK9Event[] {
         // Name: get from link text in cell[2], or fallback to cell text
         const $nameCell = $cells.eq(2);
         const $nameLink = $nameCell.find("a").first();
-        name = $nameLink.length ? $nameLink.text().trim() : $nameCell.text().trim();
+        name = $nameLink.length
+          ? $nameLink.text().trim()
+          : $nameCell.text().trim();
         locationRaw = cellTexts[3] ?? "";
       } else if ($cells.length >= 3) {
         // Smaller layout — best effort
@@ -730,7 +729,9 @@ function parseDivision(raw: string): RK9Division {
   if (lower.includes("master")) return "masters";
   // Unknown division text — log warning and default to masters
   if (lower.length > 0) {
-    console.warn(`[rk9-scraper] Unknown division "${raw}", defaulting to masters`);
+    console.warn(
+      `[rk9-scraper] Unknown division "${raw}", defaulting to masters`
+    );
   }
   return "masters";
 }

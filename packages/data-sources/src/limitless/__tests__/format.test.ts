@@ -2,7 +2,11 @@
  * @jest-environment node
  */
 
-import { LIMITLESS_TO_FORMAT, KNOWN_FORMATS, ALL_VALID_FORMATS } from "../format";
+import {
+  LIMITLESS_TO_FORMAT,
+  KNOWN_FORMATS,
+  ALL_VALID_FORMATS,
+} from "../format";
 
 describe("LIMITLESS_TO_FORMAT", () => {
   it("maps known Limitless codes to Showdown format IDs", () => {

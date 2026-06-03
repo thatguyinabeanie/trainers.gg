@@ -25,7 +25,10 @@ function makeClient() {
   for (const m of methods) chain[m] = jest.fn().mockReturnValue(chain);
   chain.maybeSingle.mockResolvedValue({ data: null, error: null });
   chain.single.mockResolvedValue({ data: null, error: null });
-  return { chain, supabase: { from: chain.from, schema: () => ({ from: () => chain }) } };
+  return {
+    chain,
+    supabase: { from: chain.from, schema: () => ({ from: () => chain }) },
+  };
 }
 
 beforeEach(() => {

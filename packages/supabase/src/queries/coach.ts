@@ -133,8 +133,7 @@ export async function getCoachProfileByHandle(
     headline: profile?.headline ?? null,
     bio: profile?.bio ?? null,
     formats: profile?.formats ?? [],
-    links:
-      (profile?.links as { label: string; url: string }[] | null) ?? [],
+    links: (profile?.links as { label: string; url: string }[] | null) ?? [],
     serviceTypes: profile?.service_types ?? [],
   };
 }

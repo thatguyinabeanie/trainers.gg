@@ -17,11 +17,29 @@ describe("collectUniqueSpecies", () => {
   it("collects unique species from teams", () => {
     const teams: Record<string, RK9Pokemon[]> = {
       entry1: [
-        { speciesRaw: "Pikachu", ability: "Static", heldItem: "", teraType: null, moves: [] },
-        { speciesRaw: "Charizard", ability: "Blaze", heldItem: "", teraType: null, moves: [] },
+        {
+          speciesRaw: "Pikachu",
+          ability: "Static",
+          heldItem: "",
+          teraType: null,
+          moves: [],
+        },
+        {
+          speciesRaw: "Charizard",
+          ability: "Blaze",
+          heldItem: "",
+          teraType: null,
+          moves: [],
+        },
       ],
       entry2: [
-        { speciesRaw: "Pikachu", ability: "Lightning Rod", heldItem: "", teraType: null, moves: [] },
+        {
+          speciesRaw: "Pikachu",
+          ability: "Lightning Rod",
+          heldItem: "",
+          teraType: null,
+          moves: [],
+        },
       ],
     };
 
@@ -43,14 +61,27 @@ describe("syncEvents", () => {
       }),
     };
 
-    const result = await syncEvents(supabase as unknown as Parameters<typeof syncEvents>[0], [
-      { eventId: "e1", name: "Event 1", tier: "regional", dateStart: "2024-01-01", dateEnd: "2024-01-02", locationCity: "City", locationCountry: "CO", dateRaw: "", section: "past" },
-    ]);
+    const result = await syncEvents(
+      supabase as unknown as Parameters<typeof syncEvents>[0],
+      [
+        {
+          eventId: "e1",
+          name: "Event 1",
+          tier: "regional",
+          dateStart: "2024-01-01",
+          dateEnd: "2024-01-02",
+          locationCity: "City",
+          locationCountry: "CO",
+          dateRaw: "",
+          section: "past",
+        },
+      ]
+    );
 
     expect(result.synced).toBe(1);
     expect(upsert).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ event_id: "e1" })]),
-      { onConflict: "event_id" },
+      { onConflict: "event_id" }
     );
   });
 });

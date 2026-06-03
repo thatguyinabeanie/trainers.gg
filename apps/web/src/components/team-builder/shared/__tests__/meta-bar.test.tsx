@@ -7,7 +7,9 @@ import React from "react";
 // =============================================================================
 
 jest.mock("@/components/ui/popover", () => ({
-  Popover: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Popover: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   PopoverTrigger: ({
     children,
     render: renderProp,
@@ -20,7 +22,9 @@ jest.mock("@/components/ui/popover", () => ({
       {children}
     </div>
   ),
-  PopoverContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PopoverContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 jest.mock("../../pickers/number-picker", () => ({
@@ -62,7 +66,9 @@ describe("MetaBar", () => {
   describe("variant=banner", () => {
     it("renders nickname input with value", () => {
       render(<MetaBar {...baseProps} variant="banner" />);
-      expect(screen.getByRole("textbox", { name: "Nickname" })).toHaveValue("Chomp");
+      expect(screen.getByRole("textbox", { name: "Nickname" })).toHaveValue(
+        "Chomp"
+      );
     });
 
     it("renders gender toggle button with male symbol", () => {
@@ -87,7 +93,9 @@ describe("MetaBar", () => {
   describe("variant=row", () => {
     it("renders nickname input", () => {
       render(<MetaBar {...baseProps} variant="row" />);
-      expect(screen.getByRole("textbox", { name: "Nickname" })).toHaveValue("Chomp");
+      expect(screen.getByRole("textbox", { name: "Nickname" })).toHaveValue(
+        "Chomp"
+      );
     });
 
     it("renders Lv pill when showLevel is true", () => {

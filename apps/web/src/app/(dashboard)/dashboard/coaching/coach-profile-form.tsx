@@ -4,7 +4,10 @@ import { useState, useTransition } from "react";
 import { Loader2, Save, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { COACH_SERVICE_TYPES, type CoachProfileInput } from "@trainers/validators";
+import {
+  COACH_SERVICE_TYPES,
+  type CoachProfileInput,
+} from "@trainers/validators";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,9 +74,7 @@ export function CoachProfileForm({ initial }: CoachProfileFormProps) {
   const [bio, setBio] = useState(initial.bio);
 
   // formats: stored as string[] in DB, edited as a comma-separated string
-  const [formatsInput, setFormatsInput] = useState(
-    initial.formats.join(", ")
-  );
+  const [formatsInput, setFormatsInput] = useState(initial.formats.join(", "));
 
   // links: repeatable rows with label + url
   const [links, setLinks] = useState<LinkRow[]>(
@@ -198,9 +199,7 @@ export function CoachProfileForm({ initial }: CoachProfileFormProps) {
               maxLength={2000}
               rows={6}
             />
-            <p className="text-muted-foreground text-xs">
-              {bio.length}/2000
-            </p>
+            <p className="text-muted-foreground text-xs">{bio.length}/2000</p>
           </div>
         </CardContent>
       </Card>

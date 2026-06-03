@@ -45,12 +45,15 @@ describe("isStaticFile", () => {
     expect(isStaticFile(path)).toBe(true);
   });
 
-  it.each(["/dashboard", "/sign-in", "/api/users", "/", "/.well-known/atproto-did"])(
-    "returns false for %s",
-    (path) => {
-      expect(isStaticFile(path)).toBe(false);
-    }
-  );
+  it.each([
+    "/dashboard",
+    "/sign-in",
+    "/api/users",
+    "/",
+    "/.well-known/atproto-did",
+  ])("returns false for %s", (path) => {
+    expect(isStaticFile(path)).toBe(false);
+  });
 
   it("returns false for extension-like substrings mid-path", () => {
     expect(isStaticFile("/files.png/download")).toBe(false);
@@ -176,29 +179,55 @@ describe("isOnboardingExempt", () => {
     expect(isOnboardingExempt("/")).toBe(true);
   });
 
-  it.each([
-    "/sign-in",
-    "/sign-up",
-    "/forgot-password",
-    "/reset-password",
-    "/auth/callback",
-    "/api/webhooks",
-    "/oauth/.well-known/jwks.json",
-    "/.well-known/atproto-did",
-    "/dashboard/onboarding",
-    "/dashboard/onboarding/step-2",
-    "/players",
-    "/players/rankings",
-    "/user/ash_ketchum",
-    "/@ash_ketchum",
-    "/alts/my-alt",
-    "/tournaments/worlds-2025",
-    "/communities/my-community",
-    "/organizations/legacy",
-    "/builder",
-    "/builder/team",
-  ])("returns true for %s", (path) => {
-    expect(isOnboardingExempt(path)).toBe(true);
+  describe("isOnboardingExempt", () => {
+    it("should exempt auth pages", () => {
+      expect(isOnboardingExempt("/sign-in")).toBe(true);
+      expect(isOnboardingExempt("/sign-up")).toBe(true);
+      expect(isOnboardingExempt("/forgot-password")).toBe(true);
+      expect(isOnboardingExempt("/reset-password")).toBe(true);
+    });
+
+    it("should exempt auth callbacks and API routes", () => {
+      expect(isOnboardingExempt("/auth/callback")).toBe(true);
+      expect(isOnboardingExempt("/api/health")).toBe(true);
+      expect(isOnboardingExempt("/api/oauth/callback")).toBe(true);
+    });
+
+    it("should exempt AT Protocol paths", () => {
+      expect(isOnboardingExempt("/oauth/jwks")).toBe(true);
+      expect(isOnboardingExempt("/.well-known/atproto-did")).toBe(true);
+    });
+
+    it("should exempt the onboarding page itself", () => {
+      expect(isOnboardingExempt("/dashboard/onboarding")).toBe(true);
+    });
+
+    it("should exempt the homepage", () => {
+      expect(isOnboardingExempt("/")).toBe(true);
+    });
+
+    it("should NOT exempt dashboard routes", () => {
+      expect(isOnboardingExempt("/dashboard")).toBe(false);
+      expect(isOnboardingExempt("/dashboard/overview")).toBe(false);
+      expect(isOnboardingExempt("/dashboard/settings")).toBe(false);
+    });
+
+    it("should exempt public content pages (modal handles them client-side)", () => {
+      expect(isOnboardingExempt("/players")).toBe(true);
+      expect(isOnboardingExempt("/tournaments")).toBe(true);
+      expect(isOnboardingExempt("/communities")).toBe(true);
+    });
+
+    it("should exempt public content sub-routes", () => {
+      expect(isOnboardingExempt("/players/ash_ketchum")).toBe(true);
+      expect(isOnboardingExempt("/tournaments/summer-2025")).toBe(true);
+      expect(isOnboardingExempt("/user/ash_ketchum")).toBe(true);
+      expect(isOnboardingExempt("/@ash_ketchum")).toBe(true);
+      expect(isOnboardingExempt("/organizations/smogon")).toBe(true);
+      expect(isOnboardingExempt("/alts/my-alt")).toBe(true);
+      expect(isOnboardingExempt("/builder")).toBe(true);
+      expect(isOnboardingExempt("/builder/team")).toBe(true);
+    });
   });
 
   it.each(["/dashboard", "/dashboard/settings"])(

@@ -31,7 +31,9 @@ import { logError } from "@trainers/utils";
  * recognise it and so it can never collide with a hypothetical legal-set
  * value of "legality-unavailable".
  */
-export const LEGALITY_UNAVAILABLE: unique symbol = Symbol("legality-unavailable");
+export const LEGALITY_UNAVAILABLE: unique symbol = Symbol(
+  "legality-unavailable"
+);
 
 /**
  * Return type for the family of `getLegal*` lookups. See the file header
@@ -438,9 +440,7 @@ function probeSet(species: Species): PokemonSet {
  * other nonstandard values ("Future", "LGPE", "Gigantamax", "Past",
  * "CAP", "Custom") are excluded.
  */
-function computeLegalSpeciesFromSim(
-  formatId: string
-): LegalityResult {
+function computeLegalSpeciesFromSim(formatId: string): LegalityResult {
   const cached = simSetCache.get(formatId);
   if (cached) return cached;
 
@@ -740,9 +740,7 @@ const simItemCache = new Map<string, ReadonlySet<string>>();
  * nonstandard values ("Future", "LGPE", "Past", "CAP", "Custom") are excluded
  * — same convention as the species path.
  */
-function computeLegalItemsFromSim(
-  formatId: string
-): LegalityResult {
+function computeLegalItemsFromSim(formatId: string): LegalityResult {
   const cached = simItemCache.get(formatId);
   if (cached) return cached;
 
@@ -902,16 +900,17 @@ const CHAMPIONS_MEGA_LEARNSET_BASE: Readonly<Record<string, string>> = {
  * level move bans leaking through. Champions-specific bans are applied
  * on top via `CHAMPIONS_MA_MOVE_BANLIST`.
  */
-function computeLegalMovesForChampions(
-  species: string
-): LegalityResult {
+function computeLegalMovesForChampions(species: string): LegalityResult {
   const cached = championsMoveCache.get(species);
   if (cached) return cached;
 
   // For mega species, look up learnset from the base form.
   // Special cases (e.g. Floette-Mega → Floette-Eternal) override the default.
-  const lookupSpecies = CHAMPIONS_MEGA_LEARNSET_BASE[species]
-    ?? (MEGA_SPECIES_TO_STONE.has(species) ? getCanonicalBaseSpecies(species) : species);
+  const lookupSpecies =
+    CHAMPIONS_MEGA_LEARNSET_BASE[species] ??
+    (MEGA_SPECIES_TO_STONE.has(species)
+      ? getCanonicalBaseSpecies(species)
+      : species);
 
   const gen = SimDex.forGen(9);
   const speciesObj = gen.species.get(lookupSpecies);
@@ -1047,9 +1046,7 @@ const championsAbilityCache = new Map<string, ReadonlySet<string>>();
  * Returns the species' own abilities filtered through the Champions ability
  * banlist (currently empty — all abilities legal).
  */
-function computeLegalAbilitiesForChampions(
-  species: string
-): LegalityResult {
+function computeLegalAbilitiesForChampions(species: string): LegalityResult {
   const cached = championsAbilityCache.get(species);
   if (cached) return cached;
 
@@ -1127,9 +1124,7 @@ function formatUsesTerastalClause(formatId: string): boolean {
  * Returns the set of species legal in the given format, or `undefined`
  * if legality cannot be determined (treat as permissive).
  */
-export function getLegalSpecies(
-  formatId: string
-): LegalityResult {
+export function getLegalSpecies(formatId: string): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return CHAMPIONS_MA_LEGAL_SPECIES;
   }
@@ -1155,9 +1150,7 @@ export function isLegalSpecies(species: string, formatId: string): boolean {
  * if legality cannot be determined (treat as permissive — caller allows
  * any item).
  */
-export function getLegalItems(
-  formatId: string
-): LegalityResult {
+export function getLegalItems(formatId: string): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) return CHAMPIONS_MA_LEGAL_ITEMS;
   return computeLegalItemsFromSim(formatId);
 }
@@ -1259,9 +1252,7 @@ export function isLegalAbility(
  * - Other registered sim formats → all 18 standard types.
  * - Unknown formats → `undefined` (permissive).
  */
-export function getLegalTeraTypes(
-  formatId: string
-): LegalityResult {
+export function getLegalTeraTypes(formatId: string): LegalityResult {
   // Champions M-A has no Tera — only Mega Evolutions.
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return EMPTY_TERA_SET;

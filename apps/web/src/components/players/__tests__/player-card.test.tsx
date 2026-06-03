@@ -123,10 +123,7 @@ describe("PlayerCard", () => {
         screen.queryByRole("link", { name: "Coach" })
       ).not.toBeInTheDocument();
       // Only the profile overlay link remains
-      expect(screen.getByRole("link")).toHaveAttribute(
-        "href",
-        "/@ash_ketchum"
-      );
+      expect(screen.getByRole("link")).toHaveAttribute("href", "/@ash_ketchum");
     });
 
     it("renders the coach badge when showCoachBadge is true and coachHandle is set", () => {
@@ -136,9 +133,7 @@ describe("PlayerCard", () => {
           coachBadge={{ showCoachBadge: true, coachHandle: "prof_oak" }}
         />
       );
-      expect(
-        screen.getByRole("link", { name: "Coach" })
-      ).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Coach" })).toBeInTheDocument();
     });
 
     it("links the coach badge to the canonical coach handle, not the card's username", () => {

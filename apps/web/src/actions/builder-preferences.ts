@@ -9,10 +9,7 @@ import {
   type ActionResult,
   type BuilderPreferences,
 } from "@trainers/validators";
-import {
-  getUserPreferences,
-  upsertUserPreferences,
-} from "@trainers/supabase";
+import { getUserPreferences, upsertUserPreferences } from "@trainers/supabase";
 
 import { createClient, getUser } from "@/lib/supabase/server";
 

@@ -35,7 +35,9 @@ export function parseEventsPage(html: string): RK9Event[] {
         .find('a[href*="/tournament/"]')
         .filter((_j, el) => {
           const text = $(el).text().trim();
-          return text === "VG" || $(el).find('img[src*="pokemon-vg"]').length > 0;
+          return (
+            text === "VG" || $(el).find('img[src*="pokemon-vg"]').length > 0
+          );
         });
 
       if (!$vgLink.length) return;
@@ -49,7 +51,10 @@ export function parseEventsPage(html: string): RK9Event[] {
       const name = $cells.eq(2).find("a").first().text().trim();
       const locationRaw = $cells.eq(3).text().trim();
 
-      const locationParts = locationRaw.split(",").slice(0, 2).map((s) => s.trim());
+      const locationParts = locationRaw
+        .split(",")
+        .slice(0, 2)
+        .map((s) => s.trim());
       const locationCity = locationParts[0] ?? "";
       const locationCountry = locationParts[1] ?? "";
 
@@ -247,7 +252,10 @@ export function extractLabeledValue(blockHtml: string, label: string): string {
   const regex = new RegExp(`<b>${escapedLabel}:?</b>\\s*([^<]+)`, "i");
   const match = blockHtml.match(regex);
   if (!match?.[1]) return "";
-  return match[1].replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+  return match[1]
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // =============================================================================
@@ -255,8 +263,18 @@ export function extractLabeledValue(blockHtml: string, label: string): string {
 // =============================================================================
 
 const MONTH_NAMES = [
-  "jan", "feb", "mar", "apr", "may", "jun",
-  "jul", "aug", "sep", "oct", "nov", "dec",
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "may",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "oct",
+  "nov",
+  "dec",
 ];
 
 export function parseDate(month: string, day: string, year: string): string {
@@ -368,7 +386,7 @@ function parsePlayerName(raw: string): string {
   // "<span class='name'>FirstName<br> LastName [US]<br></span>"
   // .text() produces "FirstName\n LastName [US]\n"
   return raw
-    .replace(/\[.*?\]/g, "")  // strip [US] country code
+    .replace(/\[.*?\]/g, "") // strip [US] country code
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -378,9 +396,7 @@ function parsePlayerName(raw: string): string {
  * Each match is a `div.row.match` containing player1/player2 divs.
  * Winner is indicated by the `winner` CSS class on the player div.
  */
-export function parsePairingsFragment(
-  html: string
-): PairingsEntry[] {
+export function parsePairingsFragment(html: string): PairingsEntry[] {
   const $ = cheerio.load(html);
   const entries: PairingsEntry[] = [];
 
@@ -396,7 +412,7 @@ export function parsePairingsFragment(
     const p2Name = p2NameRaw ? parsePlayerName(p2NameRaw) : null;
 
     const tableRaw = $(row).find("span.tablenumber").text().trim();
-    const tableNumber = tableRaw ? (parseInt(tableRaw, 10) || null) : null;
+    const tableNumber = tableRaw ? parseInt(tableRaw, 10) || null : null;
 
     let player1Won: boolean | null = null;
     if ($p1.hasClass("winner")) player1Won = true;

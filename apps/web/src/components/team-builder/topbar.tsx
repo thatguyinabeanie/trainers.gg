@@ -201,8 +201,8 @@ export function Topbar({
       <div className="pointer-events-none absolute inset-x-0 flex items-center justify-center">
         <div className="pointer-events-auto flex items-center gap-1.5">
           <EditableName defaultValue={team.name} onSave={onNameChange} />
-          {isLocalMode && (
-            onSaveToAccount ? (
+          {isLocalMode &&
+            (onSaveToAccount ? (
               <button
                 type="button"
                 onClick={onSaveToAccount}
@@ -220,8 +220,7 @@ export function Topbar({
               >
                 {SaveIcon}
               </Link>
-            )
-          )}
+            ))}
         </div>
       </div>
 

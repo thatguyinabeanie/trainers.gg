@@ -12,20 +12,12 @@ import {
 } from "@trainers/pokemon";
 
 import { Button } from "@/components/ui/button";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { RolePresetsPanel } from "./role-presets-panel";
-import {
-  getRolesForSpecies,
-  ROLE_PRESETS,
-  type RoleId,
-} from "./role-registry";
+import { getRolesForSpecies, ROLE_PRESETS, type RoleId } from "./role-registry";
 import {
   DEFAULT_SPECIES_FILTERS,
   type SpeciesFilterState,
@@ -136,7 +128,7 @@ export function SpeciesPickerMobile({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         showHandle={false}
-        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-[20px] p-0"
+        className="h-[95dvh] overflow-hidden rounded-t-[20px] p-0 data-[vaul-drawer-direction=bottom]:max-h-[95dvh]"
       >
         <DrawerTitle className="sr-only">
           {view === "list" ? "Choose species" : "Filters"}
@@ -145,7 +137,7 @@ export function SpeciesPickerMobile({
         {/* Drag handle */}
         <div
           aria-hidden="true"
-          className="mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full bg-muted-foreground/20"
+          className="bg-muted-foreground/20 mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full"
         />
 
         {/* Bounded container — flex-1 fills the remaining drawer height */}
@@ -216,7 +208,7 @@ function ListView({
   return (
     <>
       {/* Search header */}
-      <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3">
+      <div className="border-border flex h-11 shrink-0 items-center gap-2 border-b px-3">
         <Search className="text-muted-foreground size-4 shrink-0" />
         <input
           type="text"
@@ -290,7 +282,7 @@ function ChipStrip({ filters, onFiltersChange }: ChipStripProps) {
     "bg-primary/5 border-primary/30 text-primary flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium";
 
   return (
-    <div className="flex gap-1.5 overflow-x-auto border-b border-border px-3 py-1.5 [scrollbar-width:none]">
+    <div className="border-border flex gap-1.5 overflow-x-auto border-b px-3 py-1.5 [scrollbar-width:none]">
       {filters.types.map((type) => (
         <button
           key={type}
@@ -416,7 +408,7 @@ function FiltersView({
   return (
     <>
       {/* Header — back · title · clear all */}
-      <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3">
+      <div className="border-border flex h-11 shrink-0 items-center gap-2 border-b px-3">
         <button
           type="button"
           onClick={onBack}
@@ -425,7 +417,9 @@ function FiltersView({
         >
           <span aria-hidden="true">‹</span> Back
         </button>
-        <span className="flex-1 text-center text-sm font-semibold">Filters</span>
+        <span className="flex-1 text-center text-sm font-semibold">
+          Filters
+        </span>
         <button
           type="button"
           onClick={onClearAll}
@@ -451,7 +445,7 @@ function FiltersView({
       </div>
 
       {/* Show N results footer — always visible, pinned above keyboard */}
-      <div className="shrink-0 border-t border-border p-3">
+      <div className="border-border shrink-0 border-t p-3">
         <Button className="w-full" onClick={onBack}>
           Show {matchedCount} results
         </Button>

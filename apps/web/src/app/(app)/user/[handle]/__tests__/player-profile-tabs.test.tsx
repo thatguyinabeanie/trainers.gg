@@ -38,7 +38,7 @@ function renderComponent(props = defaultProps) {
   return render(
     <QueryClientProvider client={queryClient}>
       <PlayerProfileTabs {...props} />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -109,7 +109,7 @@ describe("PlayerProfileTabs", () => {
     expect(mockOverviewTab).toHaveBeenCalledWith(
       expect.objectContaining({
         tournamentAltIds: [1, 2, 3],
-      }),
+      })
     );
   });
 

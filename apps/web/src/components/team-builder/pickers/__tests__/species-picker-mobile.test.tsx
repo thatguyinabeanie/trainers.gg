@@ -56,7 +56,9 @@ jest.mock("@trainers/pokemon", () => ({
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({
-  getPokemonSprite: jest.fn().mockReturnValue({ url: "/sprite.png", pixelated: false }),
+  getPokemonSprite: jest
+    .fn()
+    .mockReturnValue({ url: "/sprite.png", pixelated: false }),
 }));
 
 // ── Vaul Drawer mock — JSDOM lacks setPointerCapture used by Vaul's gesture ──
@@ -157,7 +159,9 @@ describe("SpeciesPickerMobile", () => {
     it("does NOT render filters-view components in list view", () => {
       render(<SpeciesPickerMobile {...defaultProps} />);
       expect(screen.queryByTestId("species-sidebar")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("role-presets-panel")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("role-presets-panel")
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -195,7 +199,9 @@ describe("SpeciesPickerMobile", () => {
       const user = userEvent.setup();
       render(<SpeciesPickerMobile {...defaultProps} />);
       await user.click(screen.getByRole("button", { name: /open filters/i }));
-      await user.click(screen.getByRole("button", { name: /back to results/i }));
+      await user.click(
+        screen.getByRole("button", { name: /back to results/i })
+      );
       expect(screen.queryByTestId("species-sidebar")).not.toBeInTheDocument();
       expect(screen.getByText("Garchomp-Mega")).toBeInTheDocument();
     });
@@ -219,7 +225,9 @@ describe("SpeciesPickerMobile", () => {
 
   describe("search and filter interactions", () => {
     it("shows empty-state message when no species match", () => {
-      const pokemonModule = jest.requireMock<{ searchSpecies: jest.Mock }>("@trainers/pokemon");
+      const pokemonModule = jest.requireMock<{ searchSpecies: jest.Mock }>(
+        "@trainers/pokemon"
+      );
       pokemonModule.searchSpecies.mockReturnValueOnce([]);
       render(<SpeciesPickerMobile {...defaultProps} />);
       expect(
@@ -231,14 +239,18 @@ describe("SpeciesPickerMobile", () => {
     it("Filters button shows plain label when no filters are active", () => {
       render(<SpeciesPickerMobile {...defaultProps} />);
       // No active filters: aria-label is exactly "Open filters" with no count suffix
-      expect(screen.getByRole("button", { name: "Open filters" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Open filters" })
+      ).toBeInTheDocument();
     });
 
     it("Filters button opens the filters panel and shows Filters heading", async () => {
       const user = userEvent.setup();
       render(<SpeciesPickerMobile {...defaultProps} />);
       await user.click(screen.getByRole("button", { name: /open filters/i }));
-      expect(screen.getByRole("heading", { name: /^filters$/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: /^filters$/i })
+      ).toBeInTheDocument();
       expect(screen.getByTestId("species-sidebar")).toBeInTheDocument();
     });
   });

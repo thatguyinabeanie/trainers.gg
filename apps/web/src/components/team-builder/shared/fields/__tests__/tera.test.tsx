@@ -17,7 +17,8 @@ jest.mock("../../../pickers/type-picker", () => ({
   TypePicker: () => <div data-testid="type-picker" />,
 }));
 jest.mock("../../../format-gating", () => ({
-  formatSupportsTera: (format: string | undefined) => format?.includes("gen9") ?? false,
+  formatSupportsTera: (format: string | undefined) =>
+    format?.includes("gen9") ?? false,
 }));
 
 const basePokemon = {
@@ -44,12 +45,19 @@ describe("TeraCell", () => {
   });
 
   it("renders placeholder when tera_type is null", () => {
-    render(<TeraCell {...defaultProps} pokemon={{ ...basePokemon, tera_type: null }} />);
+    render(
+      <TeraCell
+        {...defaultProps}
+        pokemon={{ ...basePokemon, tera_type: null }}
+      />
+    );
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
   it("returns null when format does not support tera", () => {
-    const { container } = render(<TeraCell {...defaultProps} format={"gen7vgc2018" as any} />);
+    const { container } = render(
+      <TeraCell {...defaultProps} format={"gen7vgc2018" as any} />
+    );
     expect(container).toBeEmptyDOMElement();
   });
 

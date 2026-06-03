@@ -1,13 +1,19 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 
-import { type BuilderPreferences, DEFAULT_BUILDER_PREFERENCES } from "@trainers/validators";
+import {
+  type BuilderPreferences,
+  DEFAULT_BUILDER_PREFERENCES,
+} from "@trainers/validators";
 
 import { BuilderSettingsDialog } from "../builder-settings-dialog";
 
 // Sidepane-default preferences (Open on load controls are enabled in this state)
 const SIDEPANE_PREFERENCES: BuilderPreferences = {
   ...DEFAULT_BUILDER_PREFERENCES,
-  speedTiers: { ...DEFAULT_BUILDER_PREFERENCES.speedTiers, defaultView: "sidepane" },
+  speedTiers: {
+    ...DEFAULT_BUILDER_PREFERENCES.speedTiers,
+    defaultView: "sidepane",
+  },
 };
 
 describe("BuilderSettingsDialog", () => {

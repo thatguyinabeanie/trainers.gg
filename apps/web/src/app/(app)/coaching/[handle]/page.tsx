@@ -112,7 +112,7 @@ export default async function CoachProfilePage({ params }: Props) {
         {/* Formats chips */}
         {profile.formats.length > 0 && (
           <div className="mt-5">
-            <p className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wider">
+            <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
               Formats
             </p>
             <div className="flex flex-wrap gap-2">
@@ -128,7 +128,7 @@ export default async function CoachProfilePage({ params }: Props) {
         {/* Service types chips */}
         {profile.serviceTypes.length > 0 && (
           <div className="mt-4">
-            <p className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wider">
+            <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
               Services
             </p>
             <div className="flex flex-wrap gap-2">
@@ -144,7 +144,7 @@ export default async function CoachProfilePage({ params }: Props) {
         {/* Links */}
         {profile.links.length > 0 && (
           <div className="mt-4">
-            <p className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wider">
+            <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wider uppercase">
               Links
             </p>
             <ul className="flex flex-col gap-1">
@@ -154,7 +154,7 @@ export default async function CoachProfilePage({ params }: Props) {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline text-sm"
+                    className="text-primary text-sm hover:underline"
                   >
                     {link.label}
                   </a>

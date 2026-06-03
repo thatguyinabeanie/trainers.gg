@@ -175,7 +175,9 @@ describe("format-legality — moves", () => {
   });
 
   it("returns a learnset-filtered set for Champions species", () => {
-    const legal = asSet(getLegalMoves("Incineroar", "gen9championsvgc2026regma"));
+    const legal = asSet(
+      getLegalMoves("Incineroar", "gen9championsvgc2026regma")
+    );
     expect(legal.has("Fake Out")).toBe(true);
     expect(legal.has("Hyperspace Hole")).toBe(false);
   });
@@ -284,7 +286,11 @@ describe("format-legality — abilities", () => {
 
     it("Charizard-Mega-Y rejects an ability not in Charizard's pool", () => {
       expect(
-        isLegalAbility("Intimidate", "Charizard-Mega-Y", "gen9championsvgc2026regma")
+        isLegalAbility(
+          "Intimidate",
+          "Charizard-Mega-Y",
+          "gen9championsvgc2026regma"
+        )
       ).toBe(false);
     });
   });

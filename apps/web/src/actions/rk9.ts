@@ -145,7 +145,9 @@ async function fetchWaybackSnapshots(): Promise<string[]> {
     });
 
     if (!response.ok) {
-      throw new Error(`CDX API HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        `CDX API HTTP ${response.status}: ${response.statusText}`
+      );
     }
 
     const rows = (await response.json()) as string[][];
@@ -209,7 +211,10 @@ function sleep(ms: number): Promise<void> {
  * one per season for maximum coverage with minimal requests.
  */
 export async function discoverRk9Events(): Promise<
-  ActionResult & { events?: RK9Event[]; sources?: { live: number; archive: number } }
+  ActionResult & {
+    events?: RK9Event[];
+    sources?: { live: number; archive: number };
+  }
 > {
   try {
     const userId = await getUserId();
@@ -230,7 +235,10 @@ export async function discoverRk9Events(): Promise<
       liveCount = liveEvents.length;
     } catch (e) {
       // Live fetch failing shouldn't block archive recovery
-      console.warn("[discoverRk9Events] Live RK9 fetch failed:", getErrorMessage(e, "unknown"));
+      console.warn(
+        "[discoverRk9Events] Live RK9 fetch failed:",
+        getErrorMessage(e, "unknown")
+      );
     }
 
     // Source 2: Wayback Machine (all historical seasons)
@@ -254,7 +262,10 @@ export async function discoverRk9Events(): Promise<
       }
     } catch (e) {
       // CDX API failure shouldn't block if live succeeded
-      console.warn("[discoverRk9Events] Wayback CDX query failed:", getErrorMessage(e, "unknown"));
+      console.warn(
+        "[discoverRk9Events] Wayback CDX query failed:",
+        getErrorMessage(e, "unknown")
+      );
     }
 
     if (allEvents.length === 0) {
@@ -429,7 +440,14 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
           imported_at: new Date().toISOString(),
         })
         .eq("event_id", eventId);
-      return { success: true, data: undefined, done: true, scraped: 0, total: 0, failed: 0 };
+      return {
+        success: true,
+        data: undefined,
+        done: true,
+        scraped: 0,
+        total: 0,
+        failed: 0,
+      };
     }
 
     // Find standings that DON'T have team_pokemon yet
@@ -464,7 +482,14 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
         })
         .eq("event_id", eventId);
 
-      return { success: true, data: undefined, done: true, scraped: total, total, failed: 0 };
+      return {
+        success: true,
+        data: undefined,
+        done: true,
+        scraped: total,
+        total,
+        failed: 0,
+      };
     }
 
     // Update status to "teams" if not already
@@ -557,7 +582,9 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
           .from("team_pokemon")
           .insert(chunk);
         if (error) {
-          console.error(`Team pokemon bulk insert chunk failed: ${error.message}`);
+          console.error(
+            `Team pokemon bulk insert chunk failed: ${error.message}`
+          );
           batchFailed++;
           insertOk = false;
         }

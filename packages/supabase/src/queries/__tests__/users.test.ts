@@ -265,9 +265,7 @@ describe("getCurrentUser", () => {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              single: jest
-                .fn()
-                .mockResolvedValue({ data: user, error: null }),
+              single: jest.fn().mockResolvedValue({ data: user, error: null }),
             }),
           }),
         };

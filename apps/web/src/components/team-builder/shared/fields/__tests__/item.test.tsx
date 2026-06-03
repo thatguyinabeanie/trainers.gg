@@ -26,7 +26,9 @@ jest.mock("../../../pickers/item-picker", () => ({
 }));
 jest.mock("../../../validation/field-error", () => ({
   FieldErrors: ({ errors }: any) =>
-    errors.length > 0 ? <span data-testid="field-errors">{errors[0].message}</span> : null,
+    errors.length > 0 ? (
+      <span data-testid="field-errors">{errors[0].message}</span>
+    ) : null,
 }));
 jest.mock("../../../lanes/form-chip", () => ({
   FormChip: ({ label, value, children }: any) => (
@@ -64,7 +66,12 @@ describe("ItemCell", () => {
   });
 
   it("renders placeholder when held_item is null", () => {
-    render(<ItemCell {...defaultProps} pokemon={{ ...basePokemon, held_item: null }} />);
+    render(
+      <ItemCell
+        {...defaultProps}
+        pokemon={{ ...basePokemon, held_item: null }}
+      />
+    );
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 

@@ -5,10 +5,7 @@ import { Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { getUsersByIds, listUsersAdmin } from "@trainers/supabase";
-import {
-  type TypedSupabaseClient,
-  type FeatureFlag,
-} from "@trainers/supabase";
+import { type TypedSupabaseClient, type FeatureFlag } from "@trainers/supabase";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -119,7 +116,9 @@ export function FlagAllowlistSheet({
       await onSave(allowedIds);
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save allowlist");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save allowlist"
+      );
     } finally {
       setSaving(false);
     }

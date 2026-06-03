@@ -38,9 +38,11 @@ export async function fetchRk9Html(path: string): Promise<string> {
       if (response.status === 429 && attempt < MAX_RETRIES) {
         const retryAfter = response.headers.get("Retry-After");
         const delayMs = retryAfter
-          ? (Number(retryAfter) * 1000 || INITIAL_BACKOFF_MS * 2 ** attempt)
+          ? Number(retryAfter) * 1000 || INITIAL_BACKOFF_MS * 2 ** attempt
           : INITIAL_BACKOFF_MS * 2 ** attempt;
-        console.warn(`\n  429 on ${path} — backing off ${delayMs}ms (attempt ${attempt + 1})`);
+        console.warn(
+          `\n  429 on ${path} — backing off ${delayMs}ms (attempt ${attempt + 1})`
+        );
         await sleep(delayMs);
         continue;
       }

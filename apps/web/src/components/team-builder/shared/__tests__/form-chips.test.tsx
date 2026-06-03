@@ -11,8 +11,10 @@ const mockGetMegaStoneForSpecies = jest.fn();
 
 jest.mock("@trainers/pokemon", () => ({
   getFormsForSpecies: (...args: unknown[]) => mockGetFormsForSpecies(...args),
-  getCanonicalBaseSpecies: (...args: unknown[]) => mockGetCanonicalBaseSpecies(...args),
-  getMegaStoneForSpecies: (...args: unknown[]) => mockGetMegaStoneForSpecies(...args),
+  getCanonicalBaseSpecies: (...args: unknown[]) =>
+    mockGetCanonicalBaseSpecies(...args),
+  getMegaStoneForSpecies: (...args: unknown[]) =>
+    mockGetMegaStoneForSpecies(...args),
 }));
 
 import { FormChips } from "../form-chips";
@@ -29,13 +31,21 @@ describe("FormChips", () => {
   it("returns null when species has only one form", () => {
     mockGetFormsForSpecies.mockReturnValue(["Garchomp"]);
     const { container } = render(
-      <FormChips currentSpecies="Garchomp" currentItem={null} onPick={jest.fn()} />
+      <FormChips
+        currentSpecies="Garchomp"
+        currentItem={null}
+        onPick={jest.fn()}
+      />
     );
     expect(container.firstChild).toBeNull();
   });
 
   it("renders chips for alt forms", () => {
-    mockGetFormsForSpecies.mockReturnValue(["Charizard", "Charizard-Mega-X", "Charizard-Mega-Y"]);
+    mockGetFormsForSpecies.mockReturnValue([
+      "Charizard",
+      "Charizard-Mega-X",
+      "Charizard-Mega-Y",
+    ]);
     mockGetCanonicalBaseSpecies.mockReturnValue("Charizard");
     mockGetMegaStoneForSpecies.mockImplementation((form: string) => {
       if (form === "Charizard-Mega-X") return "Charizardite X";
@@ -44,7 +54,11 @@ describe("FormChips", () => {
     });
 
     render(
-      <FormChips currentSpecies="Charizard" currentItem={null} onPick={jest.fn()} />
+      <FormChips
+        currentSpecies="Charizard"
+        currentItem={null}
+        onPick={jest.fn()}
+      />
     );
     expect(screen.getByText("Mega X")).toBeInTheDocument();
     expect(screen.getByText("Mega Y")).toBeInTheDocument();
@@ -56,7 +70,11 @@ describe("FormChips", () => {
     mockGetMegaStoneForSpecies.mockReturnValue("Charizardite X");
 
     render(
-      <FormChips currentSpecies="Charizard" currentItem={null} onPick={jest.fn()} />
+      <FormChips
+        currentSpecies="Charizard"
+        currentItem={null}
+        onPick={jest.fn()}
+      />
     );
     const chip = screen.getByText("Mega X");
     expect(chip.closest("button")).toBeDisabled();
@@ -68,7 +86,11 @@ describe("FormChips", () => {
     mockGetMegaStoneForSpecies.mockReturnValue("Charizardite X");
 
     render(
-      <FormChips currentSpecies="Charizard" currentItem="Charizardite X" onPick={jest.fn()} />
+      <FormChips
+        currentSpecies="Charizard"
+        currentItem="Charizardite X"
+        onPick={jest.fn()}
+      />
     );
     const chip = screen.getByText("Mega X");
     expect(chip.closest("button")).not.toBeDisabled();
@@ -81,7 +103,11 @@ describe("FormChips", () => {
 
     const onPick = jest.fn();
     render(
-      <FormChips currentSpecies="Charizard-Mega-X" currentItem="Charizardite X" onPick={onPick} />
+      <FormChips
+        currentSpecies="Charizard-Mega-X"
+        currentItem="Charizardite X"
+        onPick={onPick}
+      />
     );
     fireEvent.click(screen.getByText("Mega X"));
     expect(onPick).toHaveBeenCalledWith("Charizard");
@@ -93,7 +119,11 @@ describe("FormChips", () => {
     mockGetMegaStoneForSpecies.mockReturnValue(null);
 
     render(
-      <FormChips currentSpecies="Aegislash" currentItem={null} onPick={jest.fn()} />
+      <FormChips
+        currentSpecies="Aegislash"
+        currentItem={null}
+        onPick={jest.fn()}
+      />
     );
     const chip = screen.getByText("Blade");
     expect(chip.closest("button")).not.toBeDisabled();

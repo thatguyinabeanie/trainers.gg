@@ -1,5 +1,9 @@
 /** @jest-environment node */
-import { grantCoachStatus, revokeCoachStatus, updateCoachProfile } from "../coach";
+import {
+  grantCoachStatus,
+  revokeCoachStatus,
+  updateCoachProfile,
+} from "../coach";
 import {
   createMockClient,
   type MockSupabaseClient,
@@ -54,7 +58,11 @@ describe("grantCoachStatus", () => {
     });
 
     await expect(
-      grantCoachStatus(mockClient as unknown as TypedClient, "user-1", "admin-9")
+      grantCoachStatus(
+        mockClient as unknown as TypedClient,
+        "user-1",
+        "admin-9"
+      )
     ).rejects.toThrow("db error");
   });
 
@@ -71,7 +79,11 @@ describe("grantCoachStatus", () => {
     });
 
     await expect(
-      grantCoachStatus(mockClient as unknown as TypedClient, "user-1", "admin-9")
+      grantCoachStatus(
+        mockClient as unknown as TypedClient,
+        "user-1",
+        "admin-9"
+      )
     ).rejects.toThrow("upsert error");
   });
 });

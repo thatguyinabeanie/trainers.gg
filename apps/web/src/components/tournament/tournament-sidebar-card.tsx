@@ -607,9 +607,7 @@ export function TournamentSidebarCard({
         toast.success("Team selected", {
           description: `${result.data.teamName}: ${speciesList}`,
         });
-        const selectedTeam = availableTeams.find(
-          (t) => t.id === numericId
-        );
+        const selectedTeam = availableTeams.find((t) => t.id === numericId);
         setSubmittedTeam({
           teamId: result.data.teamId,
           submittedAt: new Date().toISOString(),

@@ -13,7 +13,9 @@ jest.mock("@trainers/pokemon", () => ({
 
 jest.mock("@/components/ui/popover", () => ({
   Popover: ({ children }: any) => <div>{children}</div>,
-  PopoverContent: ({ children }: any) => <div data-testid="popover-content">{children}</div>,
+  PopoverContent: ({ children }: any) => (
+    <div data-testid="popover-content">{children}</div>
+  ),
   PopoverTrigger: ({ children }: any) => <button>{children}</button>,
 }));
 
@@ -27,7 +29,9 @@ jest.mock("../../../pickers/ability-picker", () => ({
 }));
 jest.mock("../../../validation/field-error", () => ({
   FieldErrors: ({ errors }: any) =>
-    errors.length > 0 ? <span data-testid="field-errors">{errors[0].message}</span> : null,
+    errors.length > 0 ? (
+      <span data-testid="field-errors">{errors[0].message}</span>
+    ) : null,
 }));
 jest.mock("../../../lanes/description-tooltip", () => ({
   DescriptionTooltip: ({ children }: any) => <div>{children}</div>,
@@ -58,7 +62,12 @@ describe("AbilityCell", () => {
   });
 
   it("renders placeholder when ability is null", () => {
-    render(<AbilityCell {...defaultProps} pokemon={{ ...basePokemon, ability: null }} />);
+    render(
+      <AbilityCell
+        {...defaultProps}
+        pokemon={{ ...basePokemon, ability: null }}
+      />
+    );
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
@@ -70,7 +79,10 @@ describe("AbilityCell", () => {
 
   it("shows field errors when present", () => {
     render(
-      <AbilityCell {...defaultProps} errors={[{ field: "ability", message: "Required" }]} />
+      <AbilityCell
+        {...defaultProps}
+        errors={[{ field: "ability", message: "Required" }]}
+      />
     );
     expect(screen.getByTestId("field-errors")).toBeInTheDocument();
   });

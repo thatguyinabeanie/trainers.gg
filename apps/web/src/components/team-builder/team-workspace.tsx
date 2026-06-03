@@ -1091,9 +1091,7 @@ export function TeamWorkspaceV2({
                           name,
                         });
                         if (!result.success) {
-                          toast.error(
-                            result.error ?? "Failed to rename team."
-                          );
+                          toast.error(result.error ?? "Failed to rename team.");
                           return;
                         }
                         persistence.onMutationSuccess();
@@ -1200,10 +1198,7 @@ export function TeamWorkspaceV2({
                             aria-hidden="true"
                           />
                         ) : (
-                          <CheckCircle2
-                            className="size-5"
-                            aria-hidden="true"
-                          />
+                          <CheckCircle2 className="size-5" aria-hidden="true" />
                         )}
                       </PopoverTrigger>
                       <PopoverContent
@@ -1358,7 +1353,6 @@ export function TeamWorkspaceV2({
           setToggle={setSpeedToggle}
           onCollapseToSidepane={() => state.setSpeedView("sidepane")}
         />
-
       </CalcStateProvider>
     </TeamLayoutContext.Provider>
   );

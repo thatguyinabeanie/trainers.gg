@@ -1,6 +1,9 @@
 import { renderHook, act } from "@testing-library/react";
 import type { TeamWithPokemon } from "@trainers/supabase";
-import { useLocalTeamStorage, clearLocalTeamStorage } from "../use-local-team-storage";
+import {
+  useLocalTeamStorage,
+  clearLocalTeamStorage,
+} from "../use-local-team-storage";
 
 const STORAGE_KEY = "trainersgg.builder.localTeam.v1";
 
@@ -68,7 +71,11 @@ describe("useLocalTeamStorage", () => {
 
     localStorageMock.setItem(
       STORAGE_KEY,
-      JSON.stringify({ team: storedTeam, updatedAt: "2024-01-01T00:00:00Z", version: 1 })
+      JSON.stringify({
+        team: storedTeam,
+        updatedAt: "2024-01-01T00:00:00Z",
+        version: 1,
+      })
     );
 
     const { result } = renderHook(() => useLocalTeamStorage());

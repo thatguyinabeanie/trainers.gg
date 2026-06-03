@@ -12,7 +12,9 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("@/actions/teams", () => ({
-  createTeamAction: jest.fn().mockResolvedValue({ success: true, data: { id: 999 } }),
+  createTeamAction: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: { id: 999 } }),
 }));
 
 jest.mock("@tanstack/react-query", () => ({
@@ -234,7 +236,10 @@ describe("TeamsListClient", () => {
 
   it("calls createTeamAction and navigates when New Team is clicked", async () => {
     const { createTeamAction } = jest.requireMock("@/actions/teams");
-    (createTeamAction as jest.Mock).mockResolvedValue({ success: true, data: { id: 999 } });
+    (createTeamAction as jest.Mock).mockResolvedValue({
+      success: true,
+      data: { id: 999 },
+    });
     mockPush.mockClear();
 
     render(<TeamsListClient {...defaultProps} initialTeams={[buildTeam()]} />);
@@ -244,8 +249,14 @@ describe("TeamsListClient", () => {
     // Wait for async action to resolve
     await screen.findByText("New Team");
 
-    expect(createTeamAction).toHaveBeenCalledWith(42, "Untitled Team", "gen9vgc2024regg");
-    expect(mockPush).toHaveBeenCalledWith("/dashboard/alts/ash_ketchum/teams/999");
+    expect(createTeamAction).toHaveBeenCalledWith(
+      42,
+      "Untitled Team",
+      "gen9vgc2024regg"
+    );
+    expect(mockPush).toHaveBeenCalledWith(
+      "/dashboard/alts/ash_ketchum/teams/999"
+    );
   });
 
   it("opens the dialog in import mode when Import Paste is clicked", () => {

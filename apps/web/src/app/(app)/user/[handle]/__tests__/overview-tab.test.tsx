@@ -144,7 +144,12 @@ describe("OverviewTab", () => {
             new QueryClient({ defaultOptions: { queries: { retry: false } } })
           }
         >
-          <OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />
+          <OverviewTab
+            statsAltIds={[1]}
+            tournamentAltIds={[1]}
+            altMap={{ 1: "ash" }}
+            handle="ash"
+          />
         </QueryClientProvider>
       );
       // In loading state, skeleton elements are rendered
@@ -187,47 +192,95 @@ describe("OverviewTab", () => {
     });
 
     it("renders tournament count stat", async () => {
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("10")).toBeInTheDocument();
       expect(screen.getByText("Tournaments")).toBeInTheDocument();
     });
 
     it("renders win rate stat", async () => {
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("72.5%")).toBeInTheDocument();
       expect(screen.getByText("Win Rate")).toBeInTheDocument();
     });
 
     it("renders rating stat", async () => {
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("1,500")).toBeInTheDocument();
     });
 
     it("renders global rank in rating card", async () => {
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("Rank #42")).toBeInTheDocument();
     });
 
     it("renders best placement stat", async () => {
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("1st")).toBeInTheDocument();
       expect(screen.getByText("Best Placement")).toBeInTheDocument();
     });
 
     it("renders main format stat", async () => {
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("VGC 2026")).toBeInTheDocument();
       expect(screen.getByText("Main Format")).toBeInTheDocument();
     });
@@ -251,9 +304,17 @@ describe("OverviewTab", () => {
           json: () => Promise.resolve([]),
         });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       // Wait for stats to load
       await screen.findByText("Tournaments");
       const dashes = screen.getAllByText("-");
@@ -279,9 +340,17 @@ describe("OverviewTab", () => {
           json: () => Promise.resolve([]),
         });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       await screen.findByText("Best Placement");
       const dashes = screen.getAllByText("-");
       expect(dashes.length).toBeGreaterThanOrEqual(1);
@@ -306,9 +375,17 @@ describe("OverviewTab", () => {
           json: () => Promise.resolve([]),
         });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       await screen.findByText("Main Format");
       const dashes = screen.getAllByText("-");
       expect(dashes.length).toBeGreaterThanOrEqual(1);
@@ -333,9 +410,17 @@ describe("OverviewTab", () => {
           json: () => Promise.resolve([]),
         });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("Rating")).toBeInTheDocument();
     });
   });
@@ -367,9 +452,17 @@ describe("OverviewTab", () => {
         }
         return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       const link = await screen.findByRole("link", { name: /kanto regional/i });
       expect(link).toHaveAttribute("href", "/tournaments/kanto-regional");
     });
@@ -396,9 +489,17 @@ describe("OverviewTab", () => {
         }
         return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       const link = await screen.findByRole("link", { name: /pallet town/i });
       expect(link).toHaveAttribute("href", "/communities/pallet-town");
     });
@@ -426,9 +527,17 @@ describe("OverviewTab", () => {
         }
         return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("5-1")).toBeInTheDocument();
     });
 
@@ -455,9 +564,17 @@ describe("OverviewTab", () => {
         }
         return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("2nd")).toBeInTheDocument();
     });
 
@@ -484,9 +601,17 @@ describe("OverviewTab", () => {
         }
         return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       await screen.findByText("Kanto Regional");
       // Placement is null — the entry renders but no ordinal placement badge
     });
@@ -513,9 +638,17 @@ describe("OverviewTab", () => {
         }
         return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(
         await screen.findByText("No completed tournaments yet.")
       ).toBeInTheDocument();
@@ -543,9 +676,17 @@ describe("OverviewTab", () => {
         }
         return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("Recent Tournaments")).toBeInTheDocument();
     });
 
@@ -574,9 +715,17 @@ describe("OverviewTab", () => {
         }
         return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(await screen.findByText("2026-01-15")).toBeInTheDocument();
     });
 
@@ -610,9 +759,17 @@ describe("OverviewTab", () => {
         }
         return Promise.resolve({ ok: true, json: () => Promise.resolve(null) });
       });
-      render(<OverviewTab statsAltIds={[1]} tournamentAltIds={[1]} altMap={{ 1: "ash" }} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[1]}
+          tournamentAltIds={[1]}
+          altMap={{ 1: "ash" }}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       // Only 5 should appear (Tournament 1–5)
       expect(await screen.findByText("Tournament 1")).toBeInTheDocument();
       expect(screen.getByText("Tournament 5")).toBeInTheDocument();
@@ -626,17 +783,33 @@ describe("OverviewTab", () => {
 
   describe("empty altIds", () => {
     it("does not fetch when altIds is empty", () => {
-      render(<OverviewTab statsAltIds={[]} tournamentAltIds={[]} altMap={{}} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[]}
+          tournamentAltIds={[]}
+          altMap={{}}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it("renders Recent Tournaments heading even with no altIds", () => {
       // With no altIds, queries are disabled, so we get loading-or-null state
-      render(<OverviewTab statsAltIds={[]} tournamentAltIds={[]} altMap={{}} handle="ash" />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <OverviewTab
+          statsAltIds={[]}
+          tournamentAltIds={[]}
+          altMap={{}}
+          handle="ash"
+        />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
       // The component renders the skeleton/null states — just check it doesn't crash
       expect(document.body).toBeInTheDocument();
     });

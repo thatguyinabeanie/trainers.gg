@@ -181,7 +181,10 @@ export function SpeciesSidebar({
       // text shouldn't apply an ability filter that doesn't exist.
       const pick = abilitySuggestions[0];
       if (pick && !filters.abilities.includes(pick)) {
-        onFiltersChange({ ...filters, abilities: [...filters.abilities, pick] });
+        onFiltersChange({
+          ...filters,
+          abilities: [...filters.abilities, pick],
+        });
         setAbilityInput("");
       }
     } else if (e.key === "Escape") {
@@ -194,7 +197,7 @@ export function SpeciesSidebar({
   // ---------------------------------------------------------------------------
 
   return (
-    <aside className="flex flex-col divide-y divide-border/40">
+    <aside className="divide-border/40 flex flex-col divide-y">
       {/* ------------------------------------------------------------------ */}
       {/* 1. Mega toggle (Champions only)                                     */}
       {/* ------------------------------------------------------------------ */}
@@ -275,8 +278,14 @@ export function SpeciesSidebar({
                   "relative flex items-center justify-center rounded border border-transparent px-1 py-1 transition-all",
                   typeStyle.bg,
                   isActive
-                    ? cn(typeStyle.border, "ring-primary ring-2 ring-offset-background ring-offset-1")
-                    : cn(typeStyle.borderHover, "before:absolute before:inset-0 before:rounded before:bg-background/50 before:transition-opacity before:pointer-events-none hover:before:opacity-0")
+                    ? cn(
+                        typeStyle.border,
+                        "ring-primary ring-offset-background ring-2 ring-offset-1"
+                      )
+                    : cn(
+                        typeStyle.borderHover,
+                        "before:bg-background/50 before:pointer-events-none before:absolute before:inset-0 before:rounded before:transition-opacity hover:before:opacity-0"
+                      )
                 )}
               >
                 {isNeeded && (

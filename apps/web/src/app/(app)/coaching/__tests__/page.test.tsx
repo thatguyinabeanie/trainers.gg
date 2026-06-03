@@ -23,8 +23,6 @@ describe("CoachingHub", () => {
 
   it("mentions personalized guidance", () => {
     render(<CoachingHub />);
-    expect(
-      screen.getByText(/personalized guidance/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/personalized guidance/i)).toBeInTheDocument();
   });
 });

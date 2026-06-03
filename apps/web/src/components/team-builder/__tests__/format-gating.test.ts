@@ -116,4 +116,3 @@ describe("formatSupportsDynamax", () => {
     expect(formatSupportsDynamax(makeFormat(gen))).toBe(false);
   });
 });
-

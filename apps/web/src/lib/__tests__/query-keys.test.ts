@@ -68,12 +68,9 @@ describe("queryKeys", () => {
     });
 
     it("handles undefined/null parameters", () => {
-      expect(queryKeys.match.postMatchSummary(undefined, undefined, null)).toEqual([
-        "post-match-summary",
-        undefined,
-        undefined,
-        null,
-      ]);
+      expect(
+        queryKeys.match.postMatchSummary(undefined, undefined, null)
+      ).toEqual(["post-match-summary", undefined, undefined, null]);
     });
   });
 });

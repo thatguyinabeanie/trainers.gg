@@ -14,14 +14,22 @@ describe("coachProfileSchema", () => {
 
   it("rejects an invalid service type", () => {
     const result = coachProfileSchema.safeParse({
-      headline: "x", bio: "", formats: [], links: [], serviceTypes: ["bogus"],
+      headline: "x",
+      bio: "",
+      formats: [],
+      links: [],
+      serviceTypes: ["bogus"],
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects a non-URL link", () => {
     const result = coachProfileSchema.safeParse({
-      headline: "x", bio: "", formats: [], links: [{ label: "bad", url: "not-a-url" }], serviceTypes: [],
+      headline: "x",
+      bio: "",
+      formats: [],
+      links: [{ label: "bad", url: "not-a-url" }],
+      serviceTypes: [],
     });
     expect(result.success).toBe(false);
   });

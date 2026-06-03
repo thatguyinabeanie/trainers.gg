@@ -509,9 +509,9 @@ describe("StatsLane", () => {
 
     const calls = onUpdate.mock.calls.map((c) => c[0]);
     // Nature is some +Atk nature whose −stat is NOT specialAttack
-    const natureCall = calls.find(
-      (c) => typeof c.nature === "string"
-    ) as { nature?: string } | undefined;
+    const natureCall = calls.find((c) => typeof c.nature === "string") as
+      | { nature?: string }
+      | undefined;
     expect(natureCall?.nature).toBeDefined();
     expect(natureCall?.nature).not.toBe("Adamant"); // Adamant = +Atk / −SpA — would be a flip
   });

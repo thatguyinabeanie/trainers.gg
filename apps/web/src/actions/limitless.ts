@@ -148,6 +148,9 @@ export async function triggerImportQueue(
       data: { processed: result.totalProcessed, errors: result.totalErrors },
     };
   } catch (e) {
-    return { success: false, error: getErrorMessage(e, "Queue processing failed") };
+    return {
+      success: false,
+      error: getErrorMessage(e, "Queue processing failed"),
+    };
   }
 }

@@ -24,7 +24,9 @@ jest.mock("next/image", () => ({
 }));
 
 jest.mock("@trainers/pokemon/sprites", () => ({
-  getPokemonSprite: jest.fn().mockReturnValue({ url: "/sprite.png", pixelated: false }),
+  getPokemonSprite: jest
+    .fn()
+    .mockReturnValue({ url: "/sprite.png", pixelated: false }),
 }));
 
 const mockGetLegalMoves = jest.fn();
@@ -44,14 +46,16 @@ import { SpeciesMobileRow } from "../species-mobile-row";
 
 const FORMAT_ID = "gen9vgc2025regg";
 
-const makeMoveData = (overrides: Partial<{
-  name: string;
-  type: string;
-  category: "Physical" | "Special" | "Status";
-  basePower: number;
-  accuracy: number | true;
-  shortDesc: string;
-}> = {}) => ({
+const makeMoveData = (
+  overrides: Partial<{
+    name: string;
+    type: string;
+    category: "Physical" | "Special" | "Status";
+    basePower: number;
+    accuracy: number | true;
+    shortDesc: string;
+  }> = {}
+) => ({
   name: "Dragon Claw",
   type: "Dragon",
   category: "Physical" as const,
@@ -79,18 +83,36 @@ describe("SpeciesMobileRow", () => {
   });
 
   it("renders the species name", () => {
-    render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+    render(
+      <SpeciesMobileRow
+        entry={baseEntry}
+        onPick={jest.fn()}
+        formatId={FORMAT_ID}
+      />
+    );
     expect(screen.getByText("Garchomp-Mega")).toBeInTheDocument();
   });
 
   it("renders every ability as a chip", () => {
-    render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+    render(
+      <SpeciesMobileRow
+        entry={baseEntry}
+        onPick={jest.fn()}
+        formatId={FORMAT_ID}
+      />
+    );
     expect(screen.getByText("Sand Force")).toBeInTheDocument();
     expect(screen.getByText("Rough Skin")).toBeInTheDocument();
   });
 
   it("renders all six base-stat labels with values", () => {
-    render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+    render(
+      <SpeciesMobileRow
+        entry={baseEntry}
+        onPick={jest.fn()}
+        formatId={FORMAT_ID}
+      />
+    );
     expect(screen.getByText("HP")).toBeInTheDocument();
     expect(screen.getByText("108")).toBeInTheDocument();
     expect(screen.getByText("Atk")).toBeInTheDocument();
@@ -106,7 +128,13 @@ describe("SpeciesMobileRow", () => {
   });
 
   it("renders BST", () => {
-    render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+    render(
+      <SpeciesMobileRow
+        entry={baseEntry}
+        onPick={jest.fn()}
+        formatId={FORMAT_ID}
+      />
+    );
     expect(screen.getByText("BST")).toBeInTheDocument();
     expect(screen.getByText("700")).toBeInTheDocument();
   });
@@ -114,7 +142,13 @@ describe("SpeciesMobileRow", () => {
   it("calls onPick with species name when the row is clicked", async () => {
     const user = userEvent.setup();
     const onPick = jest.fn();
-    render(<SpeciesMobileRow entry={baseEntry} onPick={onPick} formatId={FORMAT_ID} />);
+    render(
+      <SpeciesMobileRow
+        entry={baseEntry}
+        onPick={onPick}
+        formatId={FORMAT_ID}
+      />
+    );
     await user.click(screen.getByRole("button", { name: /garchomp-mega/i }));
     expect(onPick).toHaveBeenCalledWith("Garchomp-Mega");
     expect(onPick).toHaveBeenCalledTimes(1);
@@ -123,7 +157,13 @@ describe("SpeciesMobileRow", () => {
   it("does not call onPick when the expand chevron is clicked", async () => {
     const user = userEvent.setup();
     const onPick = jest.fn();
-    render(<SpeciesMobileRow entry={baseEntry} onPick={onPick} formatId={FORMAT_ID} />);
+    render(
+      <SpeciesMobileRow
+        entry={baseEntry}
+        onPick={onPick}
+        formatId={FORMAT_ID}
+      />
+    );
     await user.click(screen.getByRole("button", { name: /expand moves/i }));
     expect(onPick).not.toHaveBeenCalled();
   });
@@ -136,19 +176,39 @@ describe("SpeciesMobileRow", () => {
       abilitySlot2: null,
       hiddenAbility: null,
     });
-    render(<SpeciesMobileRow entry={entry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+    render(
+      <SpeciesMobileRow entry={entry} onPick={jest.fn()} formatId={FORMAT_ID} />
+    );
     expect(screen.getByText("Zero to Hero")).toBeInTheDocument();
     expect(screen.queryByText("Sand Force")).not.toBeInTheDocument();
   });
 
   it("applies bg-primary/5 class to the row container when isSelected is true", () => {
-    render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} isSelected />);
-    expect(screen.getByTestId("species-mobile-row")).toHaveClass("bg-primary/5");
+    render(
+      <SpeciesMobileRow
+        entry={baseEntry}
+        onPick={jest.fn()}
+        formatId={FORMAT_ID}
+        isSelected
+      />
+    );
+    expect(screen.getByTestId("species-mobile-row")).toHaveClass(
+      "bg-primary/5"
+    );
   });
 
   it("does not apply bg-primary/5 when isSelected is false", () => {
-    render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} isSelected={false} />);
-    expect(screen.getByTestId("species-mobile-row")).not.toHaveClass("bg-primary/5");
+    render(
+      <SpeciesMobileRow
+        entry={baseEntry}
+        onPick={jest.fn()}
+        formatId={FORMAT_ID}
+        isSelected={false}
+      />
+    );
+    expect(screen.getByTestId("species-mobile-row")).not.toHaveClass(
+      "bg-primary/5"
+    );
   });
 
   it("renders hiddenAbility as a chip when populated", () => {
@@ -158,35 +218,59 @@ describe("SpeciesMobileRow", () => {
       abilitySlot2: null,
       hiddenAbility: "Protean",
     });
-    render(<SpeciesMobileRow entry={entry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+    render(
+      <SpeciesMobileRow entry={entry} onPick={jest.fn()} formatId={FORMAT_ID} />
+    );
     expect(screen.getByText("Torrent")).toBeInTheDocument();
     expect(screen.getByText("Protean")).toBeInTheDocument();
   });
 
   describe("expand / collapse", () => {
     it("shows the expand button with aria-expanded=false initially", () => {
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId={FORMAT_ID}
+        />
+      );
       const chevron = screen.getByRole("button", { name: /expand moves/i });
       expect(chevron).toHaveAttribute("aria-expanded", "false");
     });
 
     it("toggles aria-expanded when the chevron is clicked", async () => {
       const user = userEvent.setup();
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
-      await user.click(screen.getByRole("button", { name: /expand moves/i }));
-      expect(screen.getByRole("button", { name: /collapse moves/i })).toHaveAttribute(
-        "aria-expanded",
-        "true"
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId={FORMAT_ID}
+        />
       );
+      await user.click(screen.getByRole("button", { name: /expand moves/i }));
+      expect(
+        screen.getByRole("button", { name: /collapse moves/i })
+      ).toHaveAttribute("aria-expanded", "true");
     });
 
     it("renders move name, BP, and ACC when expanded", async () => {
       const user = userEvent.setup();
       mockGetLegalMoves.mockReturnValue(new Set(["Earthquake"]));
       mockGetMoveData.mockReturnValue(
-        makeMoveData({ name: "Earthquake", type: "Ground", basePower: 100, accuracy: 100 })
+        makeMoveData({
+          name: "Earthquake",
+          type: "Ground",
+          basePower: 100,
+          accuracy: 100,
+        })
       );
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId={FORMAT_ID}
+        />
+      );
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
       expect(screen.getByText("Earthquake")).toBeInTheDocument();
       expect(screen.getByText("100")).toBeInTheDocument();
@@ -197,7 +281,13 @@ describe("SpeciesMobileRow", () => {
       const user = userEvent.setup();
       mockGetLegalMoves.mockReturnValue(new Set(["Dragon Claw"]));
       mockGetMoveData.mockReturnValue(makeMoveData({ category: "Physical" }));
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId={FORMAT_ID}
+        />
+      );
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
       expect(screen.getByAltText("Physical")).toBeInTheDocument();
     });
@@ -208,16 +298,30 @@ describe("SpeciesMobileRow", () => {
       mockGetMoveData.mockReturnValue(
         makeMoveData({ name: "Iron Head", shortDesc: "30% chance to flinch." })
       );
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId={FORMAT_ID}
+        />
+      );
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
       expect(screen.getByText("30% chance to flinch.")).toBeInTheDocument();
     });
 
     it("renders sort buttons for Name, BP, and ACC", async () => {
       const user = userEvent.setup();
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId={FORMAT_ID}
+        />
+      );
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
-      expect(screen.getByRole("button", { name: /^name/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /^name/i })
+      ).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /^bp/i })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /^acc/i })).toBeInTheDocument();
     });
@@ -230,9 +334,17 @@ describe("SpeciesMobileRow", () => {
           ? makeMoveData({ name: "Tackle", basePower: 40 })
           : makeMoveData({ name: "Earthquake", basePower: 100 })
       );
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId={FORMAT_ID}
+        />
+      );
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
-      const names = screen.getAllByText(/tackle|earthquake/i).map((el) => el.textContent);
+      const names = screen
+        .getAllByText(/tackle|earthquake/i)
+        .map((el) => el.textContent);
       expect(names[0]).toBe("Earthquake");
       expect(names[1]).toBe("Tackle");
     });
@@ -241,7 +353,13 @@ describe("SpeciesMobileRow", () => {
       const user = userEvent.setup();
       const { LEGALITY_UNAVAILABLE } = jest.requireActual("@trainers/pokemon");
       mockGetLegalMoves.mockReturnValue(LEGALITY_UNAVAILABLE);
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId={FORMAT_ID}
+        />
+      );
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
       expect(screen.getByText(/moves unavailable/i)).toBeInTheDocument();
     });
@@ -250,7 +368,13 @@ describe("SpeciesMobileRow", () => {
       const user = userEvent.setup();
       mockGetLegalMoves.mockReturnValue(new Set(["Dragon Claw"]));
       mockGetMoveData.mockReturnValue(makeMoveData());
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId={FORMAT_ID}
+        />
+      );
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
       expect(screen.getByText("Dragon Claw")).toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: /collapse moves/i }));
@@ -259,7 +383,13 @@ describe("SpeciesMobileRow", () => {
 
     it("passes the correct formatId to getLegalMoves", async () => {
       const user = userEvent.setup();
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId="gen9ou" />);
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId="gen9ou"
+        />
+      );
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
       expect(mockGetLegalMoves).toHaveBeenCalledWith("Garchomp-Mega", "gen9ou");
     });
@@ -268,12 +398,25 @@ describe("SpeciesMobileRow", () => {
       const user = userEvent.setup();
       mockGetLegalMoves.mockReturnValue(new Set(["Swords Dance"]));
       mockGetMoveData.mockReturnValue(
-        makeMoveData({ name: "Swords Dance", category: "Status", basePower: 0, accuracy: true })
+        makeMoveData({
+          name: "Swords Dance",
+          category: "Status",
+          basePower: 0,
+          accuracy: true,
+        })
       );
-      render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);
+      render(
+        <SpeciesMobileRow
+          entry={baseEntry}
+          onPick={jest.fn()}
+          formatId={FORMAT_ID}
+        />
+      );
       await user.click(screen.getByRole("button", { name: /expand moves/i }));
       // BP and ACC both show — for status moves
-      const dashes = within(screen.getByTestId("species-mobile-row")).getAllByText("—");
+      const dashes = within(
+        screen.getByTestId("species-mobile-row")
+      ).getAllByText("—");
       expect(dashes.length).toBeGreaterThanOrEqual(2);
     });
   });

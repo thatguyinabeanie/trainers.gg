@@ -46,11 +46,22 @@ jest.mock("@smogon/calc", () => {
     Move: MockMove,
     Side: MockSide,
     Field: MockField,
-    Generations: { get: jest.fn(() => ({
-      species: { get: jest.fn(() => ({
-        baseStats: { hp: 78, atk: 84, def: 78, spa: 109, spd: 85, spe: 100 },
-      })) },
-    })) },
+    Generations: {
+      get: jest.fn(() => ({
+        species: {
+          get: jest.fn(() => ({
+            baseStats: {
+              hp: 78,
+              atk: 84,
+              def: 78,
+              spa: 109,
+              spd: 85,
+              spe: 100,
+            },
+          })),
+        },
+      })),
+    },
   };
 });
 
@@ -408,16 +419,13 @@ describe("setDefenderIv — clamping", () => {
     [32, 31],
     [50, 31],
     [15.7, 16],
-  ])(
-    "setDefenderIv('hp', %i) → stored value %s",
-    (input, expectedOrNaN) => {
-      const { result } = renderHook(() =>
-        useCalcState({ selectedPokemon: makePokemon() })
-      );
-      act(() => result.current.setDefenderIv("hp", input));
-      expect(result.current.defenderIvs.hp).toBe(expectedOrNaN);
-    }
-  );
+  ])("setDefenderIv('hp', %i) → stored value %s", (input, expectedOrNaN) => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    act(() => result.current.setDefenderIv("hp", input));
+    expect(result.current.defenderIvs.hp).toBe(expectedOrNaN);
+  });
 
   it("NaN input: state becomes NaN (Math.round(NaN) = NaN)", () => {
     const { result } = renderHook(() =>

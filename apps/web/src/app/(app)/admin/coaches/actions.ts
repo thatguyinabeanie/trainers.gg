@@ -72,7 +72,12 @@ export async function revokeCoachStatusAction(
   }
 
   return withAdminAction(async (supabase, adminUserId) => {
-    await revokeCoachStatus(supabase, parsed.data, adminUserId, validatedReason);
+    await revokeCoachStatus(
+      supabase,
+      parsed.data,
+      adminUserId,
+      validatedReason
+    );
     updateTag(CacheTags.COACHES_LIST);
     return { success: true };
   }, "Failed to revoke coach status");

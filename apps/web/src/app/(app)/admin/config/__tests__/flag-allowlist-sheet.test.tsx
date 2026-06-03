@@ -212,7 +212,9 @@ describe("FlagAllowlistSheet", () => {
       renderSheet();
       // The "globally enabled" phrase appears in the description paragraph (strong tag)
       // as well as the empty-allowlist message — use getAllByText to confirm at least one
-      expect(screen.getAllByText(/globally enabled/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/globally enabled/i).length).toBeGreaterThan(
+        0
+      );
     });
 
     it("shows 'Allowed users (0)' when allowlist is empty", () => {
@@ -248,9 +250,7 @@ describe("FlagAllowlistSheet", () => {
       // allowedIds from flag.metadata. After the effect the count updates to 1.
       const user = buildUser({ id: "uuid-abc" });
       // Mock returns for the initial render (empty ids) and after init (seeded ids)
-      mockUseSupabaseQuery.mockReturnValue(
-        defaultQueryState([user])
-      );
+      mockUseSupabaseQuery.mockReturnValue(defaultQueryState([user]));
 
       renderSheet({ metadata: { allowed_users: ["uuid-abc"] } });
 

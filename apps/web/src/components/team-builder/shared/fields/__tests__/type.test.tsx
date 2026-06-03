@@ -18,7 +18,8 @@ jest.mock("@/components/team-builder/type-pill", () => ({
   TypePill: ({ t }: any) => <span data-testid="type-pill">{t}</span>,
 }));
 jest.mock("@/components/team-builder/format-gating", () => ({
-  formatSupportsTera: (format: string | undefined) => format?.includes("gen9") ?? false,
+  formatSupportsTera: (format: string | undefined) =>
+    format?.includes("gen9") ?? false,
 }));
 jest.mock("@/components/team-builder/pickers/type-picker", () => ({
   TypePicker: () => <div data-testid="type-picker" />,

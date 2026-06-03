@@ -13,7 +13,9 @@ jest.mock("@/components/ui/popover", () => ({
 jest.mock("../../../validation-hooks", () => ({}));
 jest.mock("../../../nature-chevrons", () => ({
   NatureChevrons: ({ boost, reduce }: any) => (
-    <span data-testid="nature-chevrons">{boost}/{reduce}</span>
+    <span data-testid="nature-chevrons">
+      {boost}/{reduce}
+    </span>
   ),
 }));
 jest.mock("../../../pickers/nature-picker", () => ({
@@ -21,7 +23,9 @@ jest.mock("../../../pickers/nature-picker", () => ({
 }));
 jest.mock("../../../validation/field-error", () => ({
   FieldErrors: ({ errors }: any) =>
-    errors.length > 0 ? <span data-testid="field-errors">{errors[0].message}</span> : null,
+    errors.length > 0 ? (
+      <span data-testid="field-errors">{errors[0].message}</span>
+    ) : null,
 }));
 jest.mock("../../../lanes/form-chip", () => ({
   FormChip: ({ label, value, trailing, children }: any) => (
@@ -59,7 +63,12 @@ describe("NatureCell", () => {
   });
 
   it("renders placeholder when nature is null", () => {
-    render(<NatureCell {...defaultProps} pokemon={{ ...basePokemon, nature: null }} />);
+    render(
+      <NatureCell
+        {...defaultProps}
+        pokemon={{ ...basePokemon, nature: null }}
+      />
+    );
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
@@ -72,7 +81,11 @@ describe("NatureCell", () => {
 
   it("does not render chevrons in grid when nature is null", () => {
     render(
-      <NatureCell {...defaultProps} variant="grid" pokemon={{ ...basePokemon, nature: null }} />
+      <NatureCell
+        {...defaultProps}
+        variant="grid"
+        pokemon={{ ...basePokemon, nature: null }}
+      />
     );
     expect(screen.queryByTestId("nature-chevrons")).not.toBeInTheDocument();
   });

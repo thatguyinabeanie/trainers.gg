@@ -30,11 +30,7 @@ export default async function CoachingDashboardPage() {
 
   // Fetch user's is_coach flag and their coach profile in parallel
   const [userRow, profileRow] = await Promise.all([
-    supabase
-      .from("users")
-      .select("is_coach")
-      .eq("id", user.id)
-      .maybeSingle(),
+    supabase.from("users").select("is_coach").eq("id", user.id).maybeSingle(),
     supabase
       .from("coach_profiles")
       .select("headline, bio, formats, links, service_types")
@@ -62,8 +58,7 @@ export default async function CoachingDashboardPage() {
     headline: profile?.headline ?? "",
     bio: profile?.bio ?? "",
     formats: profile?.formats ?? [],
-    links:
-      (profile?.links as { label: string; url: string }[] | null) ?? [],
+    links: (profile?.links as { label: string; url: string }[] | null) ?? [],
     serviceTypes:
       (profile?.service_types as
         | ("live" | "replay_review" | "team_review" | "mentorship")[]

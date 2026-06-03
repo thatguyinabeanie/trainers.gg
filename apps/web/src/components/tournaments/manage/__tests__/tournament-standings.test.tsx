@@ -29,15 +29,13 @@ let mockCoachBadges: Map<
 // coach badges. We discriminate by inspecting the deps array — the badge query
 // is keyed on a JSON-stringified alt-id array (starts with "[").
 jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(
-    (_queryFn: unknown, deps: unknown[] = []) => {
-      const firstDep = deps[0];
-      if (typeof firstDep === "string" && firstDep.startsWith("[")) {
-        return { data: mockCoachBadges, isLoading: false };
-      }
-      return mockQueryReturn;
+  useSupabaseQuery: jest.fn((_queryFn: unknown, deps: unknown[] = []) => {
+    const firstDep = deps[0];
+    if (typeof firstDep === "string" && firstDep.startsWith("[")) {
+      return { data: mockCoachBadges, isLoading: false };
     }
-  ),
+    return mockQueryReturn;
+  }),
 }));
 
 // getCoachBadges is imported alongside getTournamentPlayerStats. The query fn

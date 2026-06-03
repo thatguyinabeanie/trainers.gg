@@ -229,9 +229,7 @@ function TournamentHeader({
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-bold sm:text-4xl">{tournament.name}</h1>
-          {tournament.status && (
-            <StatusBadge status={tournament.status} />
-          )}
+          {tournament.status && <StatusBadge status={tournament.status} />}
         </div>
 
         {canManage && organization && (
@@ -344,7 +342,7 @@ function ScheduleCard({
       <div className="space-y-5">
         {/* Start time */}
         <div>
-          <p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wider">
+          <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wider uppercase">
             Start
           </p>
           <p className="font-medium">
@@ -404,7 +402,7 @@ function FormatCard({
       </h3>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+          <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
             Game Format
           </p>
           <p className="font-medium">
@@ -414,7 +412,7 @@ function FormatCard({
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+          <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
             Tournament Format
           </p>
           <p className="font-medium">
@@ -426,7 +424,7 @@ function FormatCard({
         </div>
         {tournament.round_time_minutes && (
           <div>
-            <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+            <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
               Round Time
             </p>
             <p className="flex items-center gap-1 font-medium">
@@ -437,7 +435,7 @@ function FormatCard({
         )}
         {tournament.swiss_rounds && (
           <div>
-            <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+            <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
               Swiss Rounds
             </p>
             <p className="font-medium">{tournament.swiss_rounds} rounds</p>

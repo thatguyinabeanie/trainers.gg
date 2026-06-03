@@ -520,9 +520,7 @@ const registerForTournamentInputSchema = z
     altId: z.number().int().positive().optional(),
     teamName: z.string().max(80).optional(),
     inGameName: z.string().min(1).max(24).optional(),
-    displayNameOption: z
-      .enum(["username", "in_game_name"])
-      .optional(),
+    displayNameOption: z.enum(["username", "in_game_name"]).optional(),
     showCountryFlag: z.boolean().optional(),
   })
   .strict();
@@ -545,7 +543,9 @@ export async function registerForTournament(
     if (!Number.isInteger(tournamentId) || tournamentId <= 0) {
       return { success: false, error: "Invalid tournament ID." };
     }
-    let validatedData: z.infer<typeof registerForTournamentInputSchema> | undefined;
+    let validatedData:
+      | z.infer<typeof registerForTournamentInputSchema>
+      | undefined;
     if (data !== undefined) {
       const parsed = registerForTournamentInputSchema.safeParse(data);
       if (!parsed.success) {
@@ -975,9 +975,7 @@ export async function getCurrentUserAltsAction(): Promise<
  * Get current user's teams for registration selection.
  * Pass gameFormat to filter teams matching the tournament's format.
  */
-export async function getUserTeamsAction(
-  gameFormat?: string | null
-): Promise<
+export async function getUserTeamsAction(gameFormat?: string | null): Promise<
   ActionResult<
     Array<{
       id: number;

@@ -83,7 +83,9 @@ const ENGINE_TO_PANEL_WEATHER: Record<string, Weather> = {
 };
 
 /** Safely convert an external engine weather string to a validated Weather value. */
-export function parseExternalWeather(engineWeather: string | undefined): Weather {
+export function parseExternalWeather(
+  engineWeather: string | undefined
+): Weather {
   if (!engineWeather) return "none";
   return ENGINE_TO_PANEL_WEATHER[engineWeather] ?? "none";
 }
@@ -401,7 +403,7 @@ function TierMonRow({
           mon.isSelected && "bg-primary/10",
           mon.isYours && !mon.isSelected && "bg-primary/5",
           mon.isYours &&
-            "[&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg [&>td]:border-y [&>td]:border-primary/25 [&>td:first-child]:border-l [&>td:last-child]:border-r",
+            "[&>td]:border-primary/25 [&>td]:border-y [&>td:first-child]:rounded-l-lg [&>td:first-child]:border-l [&>td:last-child]:rounded-r-lg [&>td:last-child]:border-r",
           isFaster && "opacity-40"
         )}
       >
@@ -672,7 +674,7 @@ export function SpeedTiersTable({
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <table className="w-full table-fixed border-separate border-spacing-0 caption-bottom text-sm">
+      <table className="w-full table-fixed caption-bottom border-separate border-spacing-0 text-sm">
         <colgroup>
           <col className="w-full" />
           <col className="w-14" />
@@ -697,9 +699,7 @@ export function SpeedTiersTable({
                 onClick={() => setSortBy("speed")}
                 className={cn(
                   "h-auto w-full px-3 py-1.5 text-right text-[10px] leading-tight font-semibold tracking-wide",
-                  toggle.sortBy === "speed"
-                    ? "text-primary"
-                    : "text-foreground"
+                  toggle.sortBy === "speed" ? "text-primary" : "text-foreground"
                 )}
               >
                 SPE{" "}
@@ -874,9 +874,7 @@ export function SpeedTiersModifiers({
                 yours: {
                   ...prev.yours,
                   status:
-                    prev.yours.status === "paralyzed"
-                      ? "healthy"
-                      : "paralyzed",
+                    prev.yours.status === "paralyzed" ? "healthy" : "paralyzed",
                 },
               }))
             }

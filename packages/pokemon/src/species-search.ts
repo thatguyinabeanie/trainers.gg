@@ -62,7 +62,10 @@ function getLowercaseLegalMoves(
   const legal = getLegalMoves(species, formatId);
   // Treat the LEGALITY_UNAVAILABLE sentinel like undefined here — read-path
   // search shouldn't break the autocomplete UI on a transient sim hiccup.
-  if (legal === LEGALITY_UNAVAILABLE && !warnedLegalMovesUnavailable.has(formatId)) {
+  if (
+    legal === LEGALITY_UNAVAILABLE &&
+    !warnedLegalMovesUnavailable.has(formatId)
+  ) {
     warnedLegalMovesUnavailable.add(formatId);
     // Two distinct fallbacks, both surfaced in the warning:
     //  - free-text move-name matching (line ~445) is *skipped* — typing a

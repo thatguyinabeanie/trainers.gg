@@ -89,7 +89,7 @@ export function SpeedTiersDialog(props: SpeedTiersDialogProps) {
       <Drawer open={props.open} onOpenChange={props.onOpenChange}>
         <DrawerContent
           showHandle={false}
-          className="data-[vaul-drawer-direction=bottom]:max-h-[95dvh] h-[95dvh] overflow-hidden rounded-t-[20px] p-0"
+          className="h-[95dvh] overflow-hidden rounded-t-[20px] p-0 data-[vaul-drawer-direction=bottom]:max-h-[95dvh]"
         >
           <DrawerTitle className="sr-only">Speed tiers</DrawerTitle>
 

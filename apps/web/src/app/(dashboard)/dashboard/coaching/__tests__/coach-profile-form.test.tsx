@@ -5,9 +5,7 @@ import userEvent from "@testing-library/user-event";
 
 // Mock shadcn/ui card components
 jest.mock("@/components/ui/card", () => ({
-  Card: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  Card: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   CardHeader: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -138,7 +136,9 @@ describe("CoachProfileForm", () => {
     it("renders the headline field pre-filled", () => {
       render(<CoachProfileForm initial={POPULATED_INITIAL} />);
 
-      expect(screen.getByDisplayValue("VGC 2025 Specialist")).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue("VGC 2025 Specialist")
+      ).toBeInTheDocument();
     });
 
     it("renders the bio field pre-filled", () => {
@@ -200,7 +200,10 @@ describe("CoachProfileForm", () => {
       const user = userEvent.setup();
       render(<CoachProfileForm initial={EMPTY_INITIAL} />);
 
-      await user.type(screen.getByPlaceholderText(/vgc 2025 regulation/i), "My headline");
+      await user.type(
+        screen.getByPlaceholderText(/vgc 2025 regulation/i),
+        "My headline"
+      );
       await user.click(screen.getByRole("button", { name: /save profile/i }));
 
       await waitFor(() => {
@@ -221,18 +224,15 @@ describe("CoachProfileForm", () => {
       await user.click(screen.getByRole("button", { name: /save profile/i }));
 
       await waitFor(() => {
-        const call = mockUpdateCoachProfileAction.mock.calls[0]?.[0] as CoachProfileInput;
+        const call = mockUpdateCoachProfileAction.mock
+          .calls[0]?.[0] as CoachProfileInput;
         expect(call.formats).toEqual(["VGC 2025", "Reg G"]);
       });
     });
 
     it("drops empty format entries after splitting", async () => {
       const user = userEvent.setup();
-      render(
-        <CoachProfileForm
-          initial={{ ...EMPTY_INITIAL, formats: [] }}
-        />
-      );
+      render(<CoachProfileForm initial={{ ...EMPTY_INITIAL, formats: [] }} />);
 
       // Clear the formats input and add trailing comma
       const formatsInput = screen.getByPlaceholderText(/vgc 2025, reg g/i);
@@ -240,7 +240,8 @@ describe("CoachProfileForm", () => {
       await user.click(screen.getByRole("button", { name: /save profile/i }));
 
       await waitFor(() => {
-        const call = mockUpdateCoachProfileAction.mock.calls[0]?.[0] as CoachProfileInput;
+        const call = mockUpdateCoachProfileAction.mock
+          .calls[0]?.[0] as CoachProfileInput;
         // Empties (from ",,,") should be filtered out
         expect(call.formats).not.toContain("");
         expect(call.formats).toContain("VGC 2025");
@@ -265,7 +266,8 @@ describe("CoachProfileForm", () => {
       await user.click(screen.getByRole("button", { name: /save profile/i }));
 
       await waitFor(() => {
-        const call = mockUpdateCoachProfileAction.mock.calls[0]?.[0] as CoachProfileInput;
+        const call = mockUpdateCoachProfileAction.mock
+          .calls[0]?.[0] as CoachProfileInput;
         // The link with blank label should be filtered out
         expect(call.links).toHaveLength(1);
         expect(call.links[0]).toEqual({
@@ -292,7 +294,8 @@ describe("CoachProfileForm", () => {
       await user.click(screen.getByRole("button", { name: /save profile/i }));
 
       await waitFor(() => {
-        const call = mockUpdateCoachProfileAction.mock.calls[0]?.[0] as CoachProfileInput;
+        const call = mockUpdateCoachProfileAction.mock
+          .calls[0]?.[0] as CoachProfileInput;
         expect(call.links).toHaveLength(1);
         expect(call.links[0]?.label).toBe("YouTube");
       });
@@ -309,7 +312,8 @@ describe("CoachProfileForm", () => {
       await user.click(screen.getByRole("button", { name: /save profile/i }));
 
       await waitFor(() => {
-        const call = mockUpdateCoachProfileAction.mock.calls[0]?.[0] as CoachProfileInput;
+        const call = mockUpdateCoachProfileAction.mock
+          .calls[0]?.[0] as CoachProfileInput;
         expect(call.serviceTypes).toEqual(
           expect.arrayContaining(["live", "mentorship"])
         );
@@ -336,7 +340,8 @@ describe("CoachProfileForm", () => {
       await user.click(screen.getByRole("button", { name: /save profile/i }));
 
       await waitFor(() => {
-        const call = mockUpdateCoachProfileAction.mock.calls[0]?.[0] as CoachProfileInput;
+        const call = mockUpdateCoachProfileAction.mock
+          .calls[0]?.[0] as CoachProfileInput;
         expect(call.serviceTypes).not.toContain("live");
       });
     });
@@ -349,7 +354,8 @@ describe("CoachProfileForm", () => {
       await user.click(screen.getByRole("button", { name: /save profile/i }));
 
       await waitFor(() => {
-        const call = mockUpdateCoachProfileAction.mock.calls[0]?.[0] as CoachProfileInput;
+        const call = mockUpdateCoachProfileAction.mock
+          .calls[0]?.[0] as CoachProfileInput;
         expect(call.serviceTypes).toContain("team_review");
       });
     });

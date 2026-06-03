@@ -17,7 +17,10 @@ export async function grantCoachStatus(
 
   const { error: profileError } = await supabase
     .from("coach_profiles")
-    .upsert({ user_id: userId }, { onConflict: "user_id", ignoreDuplicates: true });
+    .upsert(
+      { user_id: userId },
+      { onConflict: "user_id", ignoreDuplicates: true }
+    );
   if (profileError) throw profileError;
 
   const { error: auditError } = await supabase.from("audit_log").insert({
@@ -63,21 +66,19 @@ export async function updateCoachProfile(
   userId: string,
   input: CoachProfileInput
 ) {
-    const { error } = await supabase
-      .from("coach_profiles")
-      .upsert(
-        {
-          user_id: userId,
-          headline: input.headline,
-          bio: input.bio,
-          formats: input.formats,
-          links: input.links as unknown as Json,
-          service_types: input.serviceTypes,
-          // updated_at is set by the `set_coach_profiles_updated_at` DB
-          // trigger — writing it from app time would race with that trigger
-          // and introduce clock-skew inconsistencies across app servers.
-        },
-        { onConflict: "user_id" }
-      );
+  const { error } = await supabase.from("coach_profiles").upsert(
+    {
+      user_id: userId,
+      headline: input.headline,
+      bio: input.bio,
+      formats: input.formats,
+      links: input.links as unknown as Json,
+      service_types: input.serviceTypes,
+      // updated_at is set by the `set_coach_profiles_updated_at` DB
+      // trigger — writing it from app time would race with that trigger
+      // and introduce clock-skew inconsistencies across app servers.
+    },
+    { onConflict: "user_id" }
+  );
   if (error) throw error;
 }

@@ -242,27 +242,50 @@ describe("validateTeamStructure — Champions (gen9championsvgc2026regma)", () =
   });
 
   it("accepts a valid Champions team (66 total, ≤32 per stat)", () => {
-    const errors = validateTeamStructure([makeChampionsMon()], "gen9championsvgc2026regma");
+    const errors = validateTeamStructure(
+      [makeChampionsMon()],
+      "gen9championsvgc2026regma"
+    );
     expect(errors).toHaveLength(0);
   });
 
   it("rejects a Pokemon with more than 66 total Stat Points", () => {
     const mon = makeChampionsMon({ ev_hp: 32, ev_attack: 32, ev_defense: 10 });
     const errors = validateTeamStructure([mon], "gen9championsvgc2026regma");
-    expect(errors.some((e) => e.message.includes("total Stat Points"))).toBe(true);
+    expect(errors.some((e) => e.message.includes("total Stat Points"))).toBe(
+      true
+    );
   });
 
   it("rejects a Pokemon with more than 32 in a single stat", () => {
-    const mon = makeChampionsMon({ ev_hp: 33, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0, ev_speed: 0 });
+    const mon = makeChampionsMon({
+      ev_hp: 33,
+      ev_attack: 0,
+      ev_defense: 0,
+      ev_special_attack: 0,
+      ev_special_defense: 0,
+      ev_speed: 0,
+    });
     const errors = validateTeamStructure([mon], "gen9championsvgc2026regma");
-    expect(errors.some((e) => e.message.includes("Stat Points in HP"))).toBe(true);
+    expect(errors.some((e) => e.message.includes("Stat Points in HP"))).toBe(
+      true
+    );
   });
 
   it("does not apply Champions stat limits for other formats", () => {
     // 252 EVs is valid for reg-i
-    const mon = makeChampionsMon({ ev_hp: 252, ev_speed: 252, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0 });
+    const mon = makeChampionsMon({
+      ev_hp: 252,
+      ev_speed: 252,
+      ev_attack: 0,
+      ev_defense: 0,
+      ev_special_attack: 0,
+      ev_special_defense: 0,
+    });
     const errors = validateTeamStructure([mon], "reg-i");
-    expect(errors.filter((e) => e.message.includes("Stat Points"))).toHaveLength(0);
+    expect(
+      errors.filter((e) => e.message.includes("Stat Points"))
+    ).toHaveLength(0);
   });
 });
 
@@ -298,37 +321,43 @@ describe("validateTeamStructure — Champions Showdown ID", () => {
     ...overrides,
   });
 
-  it(
-    "applies Champions stat-point check for gen9championsvgc2026regma",
-    () => {
-      // Over-limit Stat Points — should produce errors from the SP validator
-      const mon = makeChampionsMon({
-        ev_hp: 33,
-        ev_attack: 0,
-        ev_defense: 0,
-        ev_special_attack: 0,
-        ev_special_defense: 0,
-        ev_speed: 0,
-      });
-      const errors = validateTeamStructure([mon], "gen9championsvgc2026regma");
-      expect(errors.some((e) => e.message.includes("Stat Points"))).toBe(true);
-    }
-  );
+  it("applies Champions stat-point check for gen9championsvgc2026regma", () => {
+    // Over-limit Stat Points — should produce errors from the SP validator
+    const mon = makeChampionsMon({
+      ev_hp: 33,
+      ev_attack: 0,
+      ev_defense: 0,
+      ev_special_attack: 0,
+      ev_special_defense: 0,
+      ev_speed: 0,
+    });
+    const errors = validateTeamStructure([mon], "gen9championsvgc2026regma");
+    expect(errors.some((e) => e.message.includes("Stat Points"))).toBe(true);
+  });
 
-  it(
-    "accepts a valid Champions team for gen9championsvgc2026regma",
-    () => {
-      const errors = validateTeamStructure([makeChampionsMon()], "gen9championsvgc2026regma");
-      expect(errors).toHaveLength(0);
-    }
-  );
+  it("accepts a valid Champions team for gen9championsvgc2026regma", () => {
+    const errors = validateTeamStructure(
+      [makeChampionsMon()],
+      "gen9championsvgc2026regma"
+    );
+    expect(errors).toHaveLength(0);
+  });
 
   it("does not apply Champions stat limits for the legacy reg-m-a key (no longer recognized)", () => {
     // reg-m-a is no longer in FORMAT_MAP and isChampionsFormatId("reg-m-a") is false —
     // so a team with over-limit Stat Points passes structure validation (no Champions check).
-    const mon = makeChampionsMon({ ev_hp: 252, ev_speed: 252, ev_attack: 0, ev_defense: 0, ev_special_attack: 0, ev_special_defense: 0 });
+    const mon = makeChampionsMon({
+      ev_hp: 252,
+      ev_speed: 252,
+      ev_attack: 0,
+      ev_defense: 0,
+      ev_special_attack: 0,
+      ev_special_defense: 0,
+    });
     const errors = validateTeamStructure([mon], "reg-m-a");
-    expect(errors.filter((e) => e.message.includes("Stat Points"))).toHaveLength(0);
+    expect(
+      errors.filter((e) => e.message.includes("Stat Points"))
+    ).toHaveLength(0);
   });
 });
 
@@ -371,9 +400,7 @@ describe("validateChampionsLegality", () => {
       "gen9championsvgc2026regma"
     );
     expect(
-      errors.some((e) =>
-        e.message.includes("does not allow Terastallization")
-      )
+      errors.some((e) => e.message.includes("does not allow Terastallization"))
     ).toBe(true);
     expect(errors[0]!.source).toBe("format");
   });
@@ -393,9 +420,9 @@ describe("validateChampionsLegality", () => {
     // Even against an unmapped format, Tera is always rejected
     const errors = validateChampionsLegality([mon], "unknown-format-xyz");
     expect(errors.some((e) => e.source === "format")).toBe(true);
-    expect(
-      errors.some((e) => e.message.includes("Terastallization"))
-    ).toBe(true);
+    expect(errors.some((e) => e.message.includes("Terastallization"))).toBe(
+      true
+    );
   });
 });
 

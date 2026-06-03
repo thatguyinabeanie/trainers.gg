@@ -16,11 +16,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type {
-  RK9Event,
-  RK9Pokemon,
-  RK9RosterEntry,
-} from "./types";
+import type { RK9Event, RK9Pokemon, RK9RosterEntry } from "./types";
 
 import { normalizeSpecies } from "./normalize";
 
@@ -128,13 +124,16 @@ export async function importEvent(
 
   // 3. Batch upsert all players first
   const playerIdCache = new Map<string, number>();
-  const uniquePlayers = new Map<string, {
-    playerIdMasked: string;
-    firstName: string;
-    lastName: string;
-    country: string | null;
-    trainerName: string | null;
-  }>();
+  const uniquePlayers = new Map<
+    string,
+    {
+      playerIdMasked: string;
+      firstName: string;
+      lastName: string;
+      country: string | null;
+      trainerName: string | null;
+    }
+  >();
 
   for (const entry of roster) {
     if (!entry.firstName || !entry.lastName) continue;
@@ -194,7 +193,9 @@ export async function importEvent(
     const key = `${entry.playerIdMasked ?? ""}|${entry.firstName}|${entry.lastName}|${entry.country ?? ""}`;
     const playerId = playerIdCache.get(key);
     if (!playerId) {
-      console.warn(`[rk9-import] No player ID for ${entry.firstName} ${entry.lastName}`);
+      console.warn(
+        `[rk9-import] No player ID for ${entry.firstName} ${entry.lastName}`
+      );
       continue;
     }
     standingBatch.push({

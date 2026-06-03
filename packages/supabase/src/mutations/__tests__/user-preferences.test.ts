@@ -7,7 +7,9 @@ import { upsertUserPreferences } from "../user-preferences";
 
 describe("upsertUserPreferences", () => {
   const userId = "user-abc-123";
-  const preferences = { speedTiers: { defaultView: "sidepane", openOnLoad: true } };
+  const preferences = {
+    speedTiers: { defaultView: "sidepane", openOnLoad: true },
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -55,10 +57,9 @@ describe("upsertUserPreferences", () => {
 
     await upsertUserPreferences(mockClient, userId, preferences);
 
-    expect(upsertMock).toHaveBeenCalledWith(
-      expect.anything(),
-      { onConflict: "user_id" }
-    );
+    expect(upsertMock).toHaveBeenCalledWith(expect.anything(), {
+      onConflict: "user_id",
+    });
   });
 
   it("resolves without error on success", async () => {

@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import {
-  createStaticClient,
-  getUserId,
-} from "@/lib/supabase/server";
+import { createStaticClient, getUserId } from "@/lib/supabase/server";
 import {
   getPlayerProfileByHandle,
   getFollowerCount,

@@ -255,7 +255,6 @@ jest.mock("@tanstack/react-virtual", () => ({
 // Mock CSS module
 // =============================================================================
 
-
 import { SpeciesPicker } from "../pickers/species-picker";
 import { type GameFormat } from "@trainers/pokemon";
 
@@ -968,7 +967,9 @@ describe("SpeciesPicker", () => {
       await user.click(btn);
 
       // Panel should now be visible
-      expect(screen.getByTestId("expanded-panel-Bulbasaur")).toBeInTheDocument();
+      expect(
+        screen.getByTestId("expanded-panel-Bulbasaur")
+      ).toBeInTheDocument();
       // aria-expanded should be true, label changes to "Collapse"
       expect(
         screen.getByRole("button", { name: /collapse bulbasaur/i })
@@ -989,7 +990,9 @@ describe("SpeciesPicker", () => {
       await user.click(
         screen.getByRole("button", { name: /expand bulbasaur/i })
       );
-      expect(screen.getByTestId("expanded-panel-Bulbasaur")).toBeInTheDocument();
+      expect(
+        screen.getByTestId("expanded-panel-Bulbasaur")
+      ).toBeInTheDocument();
 
       // Collapse
       await user.click(
@@ -1048,7 +1051,9 @@ describe("SpeciesPicker", () => {
       await user.click(
         screen.getByRole("button", { name: /expand bulbasaur/i })
       );
-      expect(screen.getByTestId("expanded-panel-Bulbasaur")).toBeInTheDocument();
+      expect(
+        screen.getByTestId("expanded-panel-Bulbasaur")
+      ).toBeInTheDocument();
 
       // Expand Garchomp — Bulbasaur should collapse
       await user.click(

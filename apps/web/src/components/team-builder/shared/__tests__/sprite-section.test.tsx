@@ -92,11 +92,16 @@ describe("SpriteSection", () => {
 
     it("renders sprite component", () => {
       render(<SpriteSection {...baseProps} variant="pill-top" />);
-      expect(screen.getByTestId("sprite")).toHaveAttribute("data-species", "Garchomp");
+      expect(screen.getByTestId("sprite")).toHaveAttribute(
+        "data-species",
+        "Garchomp"
+      );
     });
 
     it("applies error ring when speciesHasError", () => {
-      render(<SpriteSection {...baseProps} variant="pill-top" speciesHasError />);
+      render(
+        <SpriteSection {...baseProps} variant="pill-top" speciesHasError />
+      );
       const btn = screen.getByRole("button", { name: /Change species/ });
       expect(btn.className).toContain("ring-1");
     });
@@ -109,8 +114,12 @@ describe("SpriteSection", () => {
     });
 
     it("renders sprite before pill", () => {
-      const { container } = render(<SpriteSection {...baseProps} variant="pill-bottom" />);
-      const elements = container.querySelectorAll("[data-testid='sprite'], button");
+      const { container } = render(
+        <SpriteSection {...baseProps} variant="pill-bottom" />
+      );
+      const elements = container.querySelectorAll(
+        "[data-testid='sprite'], button"
+      );
       // Sprite button comes first in pill-bottom
       expect(elements.length).toBeGreaterThan(0);
     });

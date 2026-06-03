@@ -50,10 +50,7 @@ describe("FilterDialogShell — basic render", () => {
 
   it("applies data-testid to the root element", () => {
     const { container } = render(
-      <FilterDialogShell
-        rail={<div>rail</div>}
-        data-testid="my-shell"
-      >
+      <FilterDialogShell rail={<div>rail</div>} data-testid="my-shell">
         <div>body</div>
       </FilterDialogShell>
     );
@@ -105,7 +102,11 @@ describe("FilterDialogShell — search input", () => {
 
   it("applies placeholder from the search prop", () => {
     renderShell({
-      search: { value: "", onChange: jest.fn(), placeholder: "Filter by name…" },
+      search: {
+        value: "",
+        onChange: jest.fn(),
+        placeholder: "Filter by name…",
+      },
     });
     expect(screen.getByPlaceholderText("Filter by name…")).toBeInTheDocument();
   });
@@ -186,9 +187,7 @@ describe("FilterDialogShell — search input", () => {
     renderShell({
       search: { value: "", onChange: jest.fn() },
     });
-    expect(
-      screen.getByRole("textbox", { name: "Search" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Search" })).toBeInTheDocument();
   });
 });
 
@@ -216,9 +215,7 @@ describe("FilterDialogShell — collapse toggle", () => {
   it("clicking collapse renders the collapsedStrip", async () => {
     const user = userEvent.setup();
     renderShell({
-      collapsedStrip: (onExpand) => (
-        <button onClick={onExpand}>EXPAND</button>
-      ),
+      collapsedStrip: (onExpand) => <button onClick={onExpand}>EXPAND</button>,
     });
     await user.click(
       screen.getByRole("button", { name: "Collapse filter sidebar" })
@@ -229,9 +226,7 @@ describe("FilterDialogShell — collapse toggle", () => {
   it("clicking the strip's expand callback restores the rail", async () => {
     const user = userEvent.setup();
     renderShell({
-      collapsedStrip: (onExpand) => (
-        <button onClick={onExpand}>EXPAND</button>
-      ),
+      collapsedStrip: (onExpand) => <button onClick={onExpand}>EXPAND</button>,
     });
     // Collapse first
     await user.click(

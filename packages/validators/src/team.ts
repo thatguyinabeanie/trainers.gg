@@ -58,7 +58,9 @@ const KNOWN_GAME_FORMAT_SET: ReadonlySet<string> = new Set(
 );
 
 /** Runtime guard. Use at boundaries where a `string` may or may not be a recognised game format. */
-export function isKnownGameFormat(s: string | null | undefined): s is KnownGameFormat {
+export function isKnownGameFormat(
+  s: string | null | undefined
+): s is KnownGameFormat {
   return s != null && KNOWN_GAME_FORMAT_SET.has(s);
 }
 

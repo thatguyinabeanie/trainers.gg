@@ -44,7 +44,12 @@ beforeEach(() => {
           in: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
           select: jest.fn().mockReturnValue({
-            maybeSingle: jest.fn().mockResolvedValue({ data: [{ tournament_id: "t1" }], error: null }),
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({
+                data: [{ tournament_id: "t1" }],
+                error: null,
+              }),
           }),
           maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
         };
