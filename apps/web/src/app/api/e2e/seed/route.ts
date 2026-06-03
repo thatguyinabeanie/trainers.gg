@@ -219,6 +219,23 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Make the primary alt public so it appears in the player directory.
+      // handle_new_user() creates the alt with is_public = false by default.
+      const { error: altPublicError } = await supabase
+        .from("alts")
+        .update({ is_public: true })
+        .eq("user_id", user.id)
+        .eq("username", user.username);
+
+      if (altPublicError) {
+        hasErrors = true;
+        results.push({
+          email: user.email,
+          status: "error",
+          error: `alts.is_public update failed: ${altPublicError.message}`,
+        });
+      }
+
       // Assign site_admin role to admin user
       if (user.isAdmin) {
         const { data: roleData, error: roleFetchError } = await supabase
