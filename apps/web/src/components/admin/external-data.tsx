@@ -322,39 +322,42 @@ export function ExternalData() {
   useEffect(() => {
     let cancelled = false;
     async function loadConfig() {
-      const [
-        rk9Auto,
-        limAuto,
-        teamsPerTick,
-        batchSize,
-        concurrency,
-        rk9Cron,
-        limCron,
-      ] = await Promise.all([
-        getSiteConfig<boolean>("rk9_backend_auto_import"),
-        getSiteConfig<boolean>("limitless_backend_auto_import"),
-        getSiteConfig<number>("rk9_max_teams_per_tick"),
-        getSiteConfig<number>("limitless_batch_size"),
-        getSiteConfig<number>("rk9_team_concurrency"),
-        getSiteConfig<number>("rk9_cron_interval_seconds"),
-        getSiteConfig<number>("limitless_cron_interval_seconds"),
-      ]);
-      if (cancelled) return;
-      if (rk9Auto.success && rk9Auto.data !== null)
-        setRk9BackendAutoImport(rk9Auto.data);
-      if (limAuto.success && limAuto.data !== null)
-        setLimitlessBackendAutoImport(limAuto.data);
-      if (teamsPerTick.success && teamsPerTick.data !== null)
-        setRk9TeamsPerTick(teamsPerTick.data);
-      if (batchSize.success && batchSize.data !== null)
-        setLimitlessBatchSize(batchSize.data);
-      if (concurrency.success && concurrency.data !== null)
-        setRk9TeamConcurrency(concurrency.data);
-      if (rk9Cron.success && rk9Cron.data !== null)
-        setRk9CronInterval(rk9Cron.data);
-      if (limCron.success && limCron.data !== null)
-        setLimitlessCronInterval(limCron.data);
-      setConfigLoading(false);
+      try {
+        const [
+          rk9Auto,
+          limAuto,
+          teamsPerTick,
+          batchSize,
+          concurrency,
+          rk9Cron,
+          limCron,
+        ] = await Promise.all([
+          getSiteConfig<boolean>("rk9_backend_auto_import"),
+          getSiteConfig<boolean>("limitless_backend_auto_import"),
+          getSiteConfig<number>("rk9_max_teams_per_tick"),
+          getSiteConfig<number>("limitless_batch_size"),
+          getSiteConfig<number>("rk9_team_concurrency"),
+          getSiteConfig<number>("rk9_cron_interval_seconds"),
+          getSiteConfig<number>("limitless_cron_interval_seconds"),
+        ]);
+        if (cancelled) return;
+        if (rk9Auto.success && rk9Auto.data !== null)
+          setRk9BackendAutoImport(rk9Auto.data);
+        if (limAuto.success && limAuto.data !== null)
+          setLimitlessBackendAutoImport(limAuto.data);
+        if (teamsPerTick.success && teamsPerTick.data !== null)
+          setRk9TeamsPerTick(teamsPerTick.data);
+        if (batchSize.success && batchSize.data !== null)
+          setLimitlessBatchSize(batchSize.data);
+        if (concurrency.success && concurrency.data !== null)
+          setRk9TeamConcurrency(concurrency.data);
+        if (rk9Cron.success && rk9Cron.data !== null)
+          setRk9CronInterval(rk9Cron.data);
+        if (limCron.success && limCron.data !== null)
+          setLimitlessCronInterval(limCron.data);
+      } finally {
+        if (!cancelled) setConfigLoading(false);
+      }
     }
     loadConfig();
     return () => {
