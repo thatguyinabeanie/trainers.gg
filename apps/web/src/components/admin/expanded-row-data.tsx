@@ -75,7 +75,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
     new Set()
   );
   const [divisionFilter, setDivisionFilter] = useState<DivisionFilter>("masters");
-  const [showTeamOnly, setShowTeamOnly] = useState(false);
+  const [showTeamOnly, setShowTeamOnly] = useState(true);
   const [scrapingIds, setScrapingIds] = useState<Set<number>>(new Set());
 
   function togglePlacement(key: string) {
