@@ -10,7 +10,14 @@ describe("fetchTournamentList", () => {
       status: 200,
       ok: true,
       json: async () => [
-        { id: "t1", format: "SVG", name: "VGC Cup", date: "2024-01-01T00:00:00Z", players: 10, game: "VGC" },
+        {
+          id: "t1",
+          format: "SVG",
+          name: "VGC Cup",
+          date: "2024-01-01T00:00:00Z",
+          players: 10,
+          game: "VGC",
+        },
       ],
     });
     jest.spyOn(globalThis, "fetch").mockImplementation(mockFetch);
@@ -26,8 +33,22 @@ describe("fetchTournamentList", () => {
       status: 200,
       ok: true,
       json: async () => [
-        { id: "t1", format: "SVG", name: "VGC Cup", date: "2024-01-01T00:00:00Z", players: 10, game: "VGC" },
-        { id: "t2", format: "STD", name: "TCG Cup", date: "2024-01-01T00:00:00Z", players: 10, game: "TCG" },
+        {
+          id: "t1",
+          format: "SVG",
+          name: "VGC Cup",
+          date: "2024-01-01T00:00:00Z",
+          players: 10,
+          game: "VGC",
+        },
+        {
+          id: "t2",
+          format: "STD",
+          name: "TCG Cup",
+          date: "2024-01-01T00:00:00Z",
+          players: 10,
+          game: "TCG",
+        },
       ],
     });
     jest.spyOn(globalThis, "fetch").mockImplementation(mockFetch);
@@ -37,6 +58,30 @@ describe("fetchTournamentList", () => {
     expect(results.every((t) => t.game === "VGC")).toBe(true);
   });
 
+  it("returns accumulated results when a subsequent page fetch fails", async () => {
+    const firstPage = Array.from({ length: 500 }, (_, i) => ({
+      id: `t${i}`,
+      format: "SVG",
+      name: `VGC Cup ${i}`,
+      date: "2024-01-01T00:00:00Z",
+      players: 10,
+      game: "VGC",
+    }));
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        json: async () => firstPage,
+      })
+      .mockRejectedValueOnce(new Error("network down"));
+    jest.spyOn(globalThis, "fetch").mockImplementation(mockFetch);
+
+    const results = await fetchTournamentList();
+
+    expect(results.length).toBe(500);
+  });
+
   afterEach(() => {
     jest.restoreAllMocks();
   });
@@ -44,11 +89,19 @@ describe("fetchTournamentList", () => {
 
 describe("fetchTournamentData", () => {
   it("returns tournament data with details, standings, pairings", async () => {
-    const details = { id: "t1", format: "SVG", name: "Cup", date: "2024-01-01T00:00:00Z", players: 2, game: "VGC" };
+    const details = {
+      id: "t1",
+      format: "SVG",
+      name: "Cup",
+      date: "2024-01-01T00:00:00Z",
+      players: 2,
+      game: "VGC",
+    };
     const standings = [{ player: "p1", name: "Alice", placing: 1 }];
     const pairings = [{ round: 1, phase: 1, player1: "p1", player2: "p2" }];
 
-    const mockFetch = jest.fn()
+    const mockFetch = jest
+      .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => details })
       .mockResolvedValueOnce({ ok: true, json: async () => standings })
       .mockResolvedValueOnce({ ok: true, json: async () => pairings });

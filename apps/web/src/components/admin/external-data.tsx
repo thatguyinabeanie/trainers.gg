@@ -47,6 +47,7 @@ import {
   triggerLimitlessSync,
 } from "@/actions/limitless";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
+import { normalizeLimitlessStatus } from "./limitless-status";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -192,20 +193,7 @@ function normalizeRk9Status(status: string, upcoming: boolean): string {
 }
 
 // Normalize Limitless status
-function normalizeLimitlessStatus(status: string | null): string {
-  switch (status) {
-    case "completed":
-      return "complete";
-    case "queued":
-      return "queued";
-    case "importing":
-      return "importing";
-    case "failed":
-      return "failed";
-    default:
-      return "pending";
-  }
-}
+// (moved to ./limitless-status.ts so it can be unit tested in isolation)
 
 // Sortable header cell
 function SortableHeader({
