@@ -4,6 +4,7 @@ import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
+import { getSiteConfig } from "@/actions/site-config";
 import {
   parseEventsPage,
   parseArchivedEventsPage,
@@ -23,7 +24,6 @@ const RK9_BASE_URL = "https://rk9.gg";
 const WAYBACK_BASE_URL = "https://web.archive.org";
 const WAYBACK_CDX_URL = "https://web.archive.org/cdx/search/cdx";
 const FETCH_TIMEOUT_MS = 30_000;
-const DELAY_TEAM_MS = 1500;
 const DELAY_ROSTER_MS = 1000;
 
 // ---------------------------------------------------------------------------
@@ -407,6 +407,20 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
     const isAdmin = await isSiteAdmin();
     if (!isAdmin) return { success: false, error: "Requires site admin" };
 
+    // Read batch size and concurrency from site config, fall back to defaults
+    const [batchSizeResult, concurrencyResult] = await Promise.all([
+      getSiteConfig<number>("rk9_max_teams_per_tick"),
+      getSiteConfig<number>("rk9_team_concurrency"),
+    ]);
+    const batchSize =
+      batchSizeResult.success && batchSizeResult.data
+        ? batchSizeResult.data
+        : TEAMS_BATCH_SIZE;
+    const concurrency =
+      concurrencyResult.success && concurrencyResult.data
+        ? concurrencyResult.data
+        : 3;
+
     const supabase = createServiceRoleClient();
 
     // Get all standings with roster_entry_ids
@@ -485,7 +499,7 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
     }
 
     // Process this batch
-    const batch = remaining.slice(0, TEAMS_BATCH_SIZE);
+    const batch = remaining.slice(0, batchSize);
     let batchScraped = 0;
     let batchFailed = 0;
     const newSpecies = new Map<string, string>();
@@ -497,6 +511,7 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
       ability: string | null;
       held_item: string | null;
       tera_type: string | null;
+      stat_alignment: string | null;
       moves: string[] | null;
     }[] = [];
 
@@ -533,6 +548,7 @@ export async function scrapeRk9TeamsBatch(eventId: string): Promise<
               ability: mon.ability || null,
               held_item: mon.heldItem || null,
               tera_type: mon.teraType || null,
+              stat_alignment: mon.statAlignment ?? null,
               moves: mon.moves.length > 0 ? mon.moves : null,
             };
           });

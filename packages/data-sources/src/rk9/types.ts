@@ -75,6 +75,8 @@ export interface RK9Pokemon {
   ability: string;
   /** Held item name */
   heldItem: string;
+  /** Nature / stat alignment (null for older tournaments that did not publish natures) */
+  statAlignment: string | null;
   /** Array of up to 4 move names */
   moves: string[];
 }
