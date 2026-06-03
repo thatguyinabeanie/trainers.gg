@@ -53,4 +53,3 @@ export interface UnifiedRow {
   limitless?: LimitlessTournamentRow;
 }
 
-export type ExpandedView = "standings" | "teams" | "decklists";
