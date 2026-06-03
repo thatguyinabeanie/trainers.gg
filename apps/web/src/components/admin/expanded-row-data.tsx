@@ -28,6 +28,7 @@ interface RK9StandingWithTeam {
   placement: number;
   division: string;
   drop_round: number | null;
+  player_id: number | null;
   players: {
     first_name: string;
     last_name: string;
@@ -97,7 +98,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
           .schema("rk9")
           .from("standings")
           .select(
-            "placement, division, drop_round, players(first_name, last_name, country, trainer_name), team_pokemon(position, species, ability, held_item, tera_type, moves)"
+            "placement, division, drop_round, player_id, players(first_name, last_name, country, trainer_name), team_pokemon(position, species, ability, held_item, tera_type, moves)"
           )
           .eq("event_id", row.rk9.event_id)
           .order("placement", { ascending: true })
@@ -168,7 +169,16 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                   <tr className="border-b text-xs text-muted-foreground">
                     <th className="w-6 py-1" />
                     <th className="py-1 pr-3 text-left font-medium">#</th>
-                    <th className="py-1 pr-4 text-left font-medium">Player</th>
+                    {row.source === "rk9" ? (
+                      <>
+                        <th className="py-1 pr-3 text-left font-medium">Trainer</th>
+                        <th className="py-1 pr-3 text-left font-medium">Name</th>
+                        <th className="py-1 pr-3 text-left font-medium">Country</th>
+                        <th className="py-1 pr-4 text-left font-medium">ID</th>
+                      </>
+                    ) : (
+                      <th className="py-1 pr-4 text-left font-medium">Player</th>
+                    )}
                     <th className="py-1 pr-4 text-left font-medium">Team</th>
                     {row.source === "rk9" ? (
                       divisionFilter === "all" && (
@@ -208,14 +218,15 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                             ? s.division.charAt(0).toUpperCase() +
                               s.division.slice(1)
                             : "—";
-                          const expansionKey = `${s.division}-${s.placement}`;
+                          const expansionKey = `${s.division ?? "unknown"}-${s.placement}`;
                           const isExpanded = expandedPlacements.has(expansionKey);
                           const pokemon = s.team_pokemon ?? [];
                           const showDivisionHeader =
                             divisionFilter === "all" &&
                             s.division !== lastDivision;
                           if (showDivisionHeader) lastDivision = s.division ?? null;
-                          const colSpan = divisionFilter === "all" ? 5 : 4;
+                          // chevron + # + trainer + name + country + id + team + (division when all)
+                          const colSpan = divisionFilter === "all" ? 8 : 7;
                           return (
                             <Fragment key={i}>
                               {showDivisionHeader && (
@@ -244,8 +255,17 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                               <td className="py-1.5 pr-3 font-mono text-xs">
                                 {s.placement}
                               </td>
-                              <td className="py-1.5 pr-4 text-xs">
-                                {playerName}
+                              <td className="py-1.5 pr-3 text-xs">
+                                {s.players?.trainer_name ?? "—"}
+                              </td>
+                              <td className="py-1.5 pr-3 text-xs">
+                                {fullName ?? "—"}
+                              </td>
+                              <td className="py-1.5 pr-3 font-mono text-xs uppercase">
+                                {s.players?.country ?? "—"}
+                              </td>
+                              <td className="py-1.5 pr-4 font-mono text-xs text-muted-foreground">
+                                {s.player_id ?? "—"}
                               </td>
                               <td className="py-1.5 pr-4">
                                 {pokemon.length > 0 ? (

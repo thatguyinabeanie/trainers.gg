@@ -24,9 +24,24 @@ export interface SpriteData {
  */
 export type SpritePreference = "gen5" | "gen5ani" | "ani";
 
+// Some data sources (RK9, Limitless) store form names with descriptive suffixes
+// that @pkmn/img doesn't recognize. Map them to Showdown-compatible slugs.
+const SPECIES_SLUG_OVERRIDES: Record<string, string> = {
+  "calyrex-shadow-rider": "calyrex-shadow",
+  "calyrex-ice-rider": "calyrex-ice",
+  "urshifu-rapid-strike-style": "urshifu-rapid-strike",
+  "ogerpon-hearthflame-mask": "ogerpon-hearthflame",
+  "ogerpon-wellspring-mask": "ogerpon-wellspring",
+  "ogerpon-cornerstone-mask": "ogerpon-cornerstone",
+  "zacian-crowned-sword": "zacian-crowned",
+  "zamazenta-crowned-shield": "zamazenta-crowned",
+  "giratina-origin-forme": "giratina-origin",
+};
+
 /**
  * Get sprite data for a Pokemon species.
  * Handles all forms and variants (Ogerpon-Hearthflame, Urshifu-Rapid-Strike, etc.).
+ * Normalizes data-source slugs that differ from Showdown conventions.
  */
 export function getPokemonSprite(
   species: string,
@@ -36,7 +51,8 @@ export function getPokemonSprite(
     spriteStyle?: SpritePreference;
   }
 ): SpriteData {
-  const sprite = Sprites.getPokemon(species, {
+  const normalized = SPECIES_SLUG_OVERRIDES[species] ?? species;
+  const sprite = Sprites.getPokemon(normalized, {
     gen: options?.spriteStyle ?? "gen5",
     shiny: options?.shiny,
     gender: options?.gender,
