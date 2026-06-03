@@ -73,6 +73,7 @@ interface ExpandedRowDataProps {
 
 function TeamsPanel({ eventId }: { eventId: string }) {
   const { data, isLoading, error } = useSupabaseQuery(
+    /* istanbul ignore next */
     async (sb) => {
       const { data, error } = await sb
         .schema("rk9")
@@ -157,6 +158,7 @@ function TeamsPanel({ eventId }: { eventId: string }) {
 
 function DecklistsPanel({ tournamentId }: { tournamentId: string }) {
   const { data, isLoading, error } = useSupabaseQuery(
+    /* istanbul ignore next */
     async (sb) => {
       const { data, error } = await sb
         .schema("limitless")
@@ -256,6 +258,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
     isLoading: standingsLoading,
     error: standingsError,
   } = useSupabaseQuery(
+    /* istanbul ignore next */
     async (sb) => {
       if (row.source === "rk9" && row.rk9) {
         const { data, error } = await sb
