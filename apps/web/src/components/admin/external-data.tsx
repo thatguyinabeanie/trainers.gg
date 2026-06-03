@@ -1089,7 +1089,7 @@ export function ExternalData() {
   const playerVirtualizer = useVirtualizer({
     count: sortedPlayers.length,
     getScrollElement: () => playerScrollRef.current,
-    estimateSize: () => 44,
+    estimateSize: () => 52,
     overscan: 10,
   });
 
@@ -2076,7 +2076,7 @@ export function ExternalData() {
                         }}
                       >
                         {/* Chevron */}
-                        <div className="flex items-center justify-center py-2">
+                        <div className="flex items-center justify-center py-3">
                           <button
                             className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted"
                             onClick={() =>
@@ -2096,21 +2096,21 @@ export function ExternalData() {
                           </button>
                         </div>
                         {/* Name */}
-                        <div className="flex min-w-0 items-center p-2 text-xs">
+                        <div className="flex min-w-0 items-center px-3 py-3 text-xs">
                           <span className="truncate">
                             {[p.first_name, p.last_name].filter(Boolean).join(" ") || "—"}
                           </span>
                         </div>
                         {/* Player ID */}
-                        <div className="flex items-center p-2 font-mono text-xs text-muted-foreground">
+                        <div className="flex items-center px-3 py-3 font-mono text-xs text-muted-foreground">
                           {p.player_id_masked ?? "—"}
                         </div>
                         {/* Country */}
-                        <div className="flex items-center p-2 font-mono text-xs uppercase">
+                        <div className="flex items-center px-3 py-3 font-mono text-xs uppercase">
                           {p.country ?? "—"}
                         </div>
                         {/* Events */}
-                        <div className="flex items-center p-2 text-xs">
+                        <div className="flex items-center px-3 py-3 text-xs">
                           {eventCount}
                         </div>
                       </div>
