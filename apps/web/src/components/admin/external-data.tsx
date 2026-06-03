@@ -229,6 +229,15 @@ export function ExternalData() {
   // Expanded row state
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{
+    total: number;
+    done: number;
+    current: string;
+  } | null>(null);
+
   // Render-time tab-change reset — collapses any open row when switching tabs
   const [prevTab, setPrevTab] = useState<typeof activeTab | symbol>(
     UNINITIALIZED
@@ -236,6 +245,7 @@ export function ExternalData() {
   if (activeTab !== prevTab) {
     setPrevTab(activeTab);
     setExpandedRowId(null);
+    setSelectedIds(new Set());
   }
 
   // Per-tab filter state
@@ -674,6 +684,21 @@ export function ExternalData() {
       ? (s: SortState) => setRk9Sort(s)
       : (s: SortState) => setLimSort(s);
 
+  // Bulk action eligibility
+  const selectedRk9Rows = rk9Rows.filter((r) => selectedIds.has(r.id));
+  const rosterEligibleSelected = selectedRk9Rows.filter(
+    (r) =>
+      r.rk9!.import_status === "pending" || r.rk9!.import_status === "failed"
+  );
+  const teamsEligibleSelected = selectedRk9Rows.filter((r) =>
+    ["roster", "teams", "complete"].includes(r.rk9!.import_status)
+  );
+  const limitlessQueueEligibleSelected = limitlessRows.filter(
+    (r) =>
+      selectedIds.has(r.id) &&
+      (!r.limitless!.import_status || r.limitless!.import_status === "failed")
+  );
+
   // Derive unique filter options from data
   const rk9Tiers = [...new Set(rk9Rows.map((r) => r.category))].sort();
   const rk9Countries = [
@@ -769,14 +794,14 @@ export function ExternalData() {
     }
   }
 
-  async function handleScrapeTeams(eventId: string) {
+  async function handleScrapeTeams(eventId: string, force?: boolean) {
     setActiveJobs((prev) =>
       new Map(prev).set(eventId, { type: "teams", scraped: 0, total: 0 })
     );
     try {
       let done = false;
       while (!done) {
-        const result = await scrapeRk9TeamsBatch(eventId);
+        const result = await scrapeRk9TeamsBatch(eventId, { force });
         if (!result.success) break;
         done = result.done ?? false;
         setActiveJobs((prev) =>
@@ -2074,7 +2099,7 @@ function RowActions({
   queuingIds: Set<string>;
   batchQueuing: boolean;
   onScrapeRoster: (eventId: string) => void;
-  onScrapeTeams: (eventId: string) => void;
+  onScrapeTeams: (eventId: string, force?: boolean) => void;
   onQueueOne: (tournamentId: string) => void;
 }) {
   if (row.source === "rk9" && row.rk9) {
@@ -2116,7 +2141,7 @@ function RowActions({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onScrapeTeams(event.event_id)}
+          onClick={() => onScrapeTeams(event.event_id, event.import_status === "complete")}
           disabled={isBusy}
         >
           {activeJob?.type === "teams" ? (

@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from "react";
 import Image from "next/image";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
@@ -30,6 +30,7 @@ interface RK9StandingWithTeam {
   division: string;
   drop_round: number | null;
   player_id: number | null;
+  roster_entry_id: string | null;
   players: {
     first_name: string;
     last_name: string;
@@ -99,7 +100,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
           .schema("rk9")
           .from("standings")
           .select(
-            "placement, division, drop_round, player_id, players(first_name, last_name, country, trainer_name), team_pokemon(position, species, ability, held_item, tera_type, stat_alignment, moves)"
+            "placement, division, drop_round, player_id, roster_entry_id, players(first_name, last_name, country, trainer_name), team_pokemon(position, species, ability, held_item, tera_type, stat_alignment, moves)"
           )
           .eq("event_id", row.rk9.event_id)
           .order("placement", { ascending: true })
@@ -214,7 +215,20 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                 {s.placement}
                               </td>
                               <td className="py-1.5 pr-3 text-xs">
-                                {s.players?.trainer_name ?? "—"}
+                                <div className="flex items-center gap-1">
+                                  <span>{s.players?.trainer_name ?? "—"}</span>
+                                  {s.roster_entry_id && (
+                                    <a
+                                      href={`https://rk9.gg/teamlist/public/${row.rk9!.event_id}/${s.roster_entry_id}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-muted-foreground hover:text-foreground shrink-0"
+                                      aria-label="View team on RK9"
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  )}
+                                </div>
                               </td>
                               <td className="py-1.5 pr-3 text-xs">
                                 {s.players?.first_name ?? "—"}
