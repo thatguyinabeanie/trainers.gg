@@ -223,11 +223,15 @@ export async function POST(request: NextRequest) {
 
       // Make the primary alt public so it appears in the player directory.
       // handle_new_user() creates the alt with is_public = false by default.
-      const { error: altPublicError } = await supabase
+      // Chain .select + .maybeSingle() so we can detect 0-row-matched updates —
+      // Supabase returns { error: null } even when no rows were affected.
+      const { data: publicAlt, error: altPublicError } = await supabase
         .from("alts")
         .update({ is_public: true })
         .eq("user_id", user.id)
-        .eq("username", user.username);
+        .eq("username", user.username)
+        .select("id")
+        .maybeSingle();
 
       if (altPublicError) {
         hasErrors = true;
@@ -235,6 +239,13 @@ export async function POST(request: NextRequest) {
           email: user.email,
           status: "error",
           error: `alts.is_public update failed: ${altPublicError.message}`,
+        });
+      } else if (!publicAlt) {
+        hasErrors = true;
+        results.push({
+          email: user.email,
+          status: "error",
+          error: `alts.is_public update matched no primary alt for ${user.username}`,
         });
       }
 
