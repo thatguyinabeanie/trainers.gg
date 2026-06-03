@@ -1,6 +1,0 @@
-[project]
-name = "trainers-gg-tools"
-version = "0.0.1"
-description = "Python dev tools for trainers.gg"
-requires-python = ">=3.12"
-dependencies = ["mempalace", "codecov-cli"]
