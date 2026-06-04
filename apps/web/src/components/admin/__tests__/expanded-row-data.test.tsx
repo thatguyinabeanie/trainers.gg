@@ -278,7 +278,13 @@ describe("ExpandedRowData", () => {
 
       render(<ExpandedRowData row={rk9Row} />);
 
-      expect(screen.getByText("—")).toBeInTheDocument();
+      // Toggle showMissingOnly so rows without teams become visible
+      const checkbox = screen.getByRole("checkbox");
+      fireEvent.click(checkbox);
+
+      // The Team cell renders "—" when team_pokemon is empty
+      const dashes = screen.getAllByText("—");
+      expect(dashes.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -408,6 +414,10 @@ describe("ExpandedRowData", () => {
 
       render(<ExpandedRowData row={rk9Row} />);
 
+      // Toggle showMissingOnly so rows without teams become visible
+      const checkbox = screen.getByRole("checkbox");
+      fireEvent.click(checkbox);
+
       const toggleBtn = screen.getByRole("button", { name: /toggle team details/i });
       await act(async () => {
         fireEvent.click(toggleBtn);
@@ -433,8 +443,9 @@ describe("ExpandedRowData", () => {
         fireEvent.click(toggleBtn);
       });
 
+      // The Tera column renders the raw tera_type value (e.g. "Electric")
       await waitFor(() => {
-        expect(screen.getByText("Tera: Electric")).toBeInTheDocument();
+        expect(screen.getByText("Electric")).toBeInTheDocument();
       });
     });
   });
