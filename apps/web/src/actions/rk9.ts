@@ -497,14 +497,19 @@ export async function scrapeRk9TeamsBatch(
 
     // If nothing remaining, all standings have been attempted
     if (toProcess.length === 0) {
-      const { data: standingIdsWithTeams } = await supabase
-        .schema("rk9")
-        .from("team_pokemon")
-        .select("standing_id")
-        .in("standing_id", allStandings.map((s) => s.id));
-      const importedCount = new Set(
-        standingIdsWithTeams?.map((t) => t.standing_id) ?? []
-      ).size;
+      // Chunk the .in() to avoid URI too long for large events (>100 standings)
+      const importedSet = new Set<number>();
+      const allIds = allStandings.map((s) => s.id);
+      for (let i = 0; i < allIds.length; i += 100) {
+        const { data: chunk } = await supabase
+          .schema("rk9")
+          .from("team_pokemon")
+          .select("standing_id")
+          .in("standing_id", allIds.slice(i, i + 100))
+          .limit(700); // max 100 standings × 6 pokemon + buffer
+        for (const row of chunk ?? []) importedSet.add(row.standing_id);
+      }
+      const importedCount = importedSet.size;
       const allImported = importedCount === total;
 
       await supabase
@@ -670,15 +675,19 @@ export async function scrapeRk9TeamsBatch(
     const allAttempted = totalScraped + batchFailed >= total;
 
     // Count standings that actually have real team_pokemon rows (accurate import count).
-    // This is distinct from "attempted" — some attempts fail or produce no data.
-    const { data: standingIdsWithTeams } = await supabase
-      .schema("rk9")
-      .from("team_pokemon")
-      .select("standing_id")
-      .in("standing_id", allStandings.map((s) => s.id));
-    const importedCount = new Set(
-      standingIdsWithTeams?.map((t) => t.standing_id) ?? []
-    ).size;
+    // Chunk the .in() to avoid URI too long for large events (>100 standings)
+    const importedSet = new Set<number>();
+    const allIds = allStandings.map((s) => s.id);
+    for (let i = 0; i < allIds.length; i += 100) {
+      const { data: chunk } = await supabase
+        .schema("rk9")
+        .from("team_pokemon")
+        .select("standing_id")
+        .in("standing_id", allIds.slice(i, i + 100))
+        .limit(700);
+      for (const row of chunk ?? []) importedSet.add(row.standing_id);
+    }
+    const importedCount = importedSet.size;
 
     // Only mark "complete" when every standing has real team data.
     // If some players didn't submit or failed to scrape, stay at "teams".

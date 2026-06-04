@@ -2421,10 +2421,10 @@ export function ExternalData() {
                       <div className="flex flex-col items-start gap-0.5 p-2">
                         <StatusBadge row={row} activeJobs={activeJobs} />
                         {row.source === "rk9" &&
-                          row.rk9!.teams_imported_count != null &&
-                          row.rk9!.teams_imported_count > 0 && (
+                          (row.rk9!.import_status === "teams" || row.rk9!.import_status === "complete") &&
+                          row.rk9!.player_count != null && (
                             <span className="text-muted-foreground text-xs">
-                              {row.rk9!.teams_imported_count}/{row.rk9!.player_count ?? "?"} teams
+                              {row.rk9!.teams_imported_count ?? 0}/{row.rk9!.player_count} teams
                             </span>
                           )}
                       </div>
