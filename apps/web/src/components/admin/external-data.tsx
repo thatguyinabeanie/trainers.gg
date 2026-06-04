@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { toast } from "sonner";
 import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
   CloudDownload,
   Download,
@@ -14,8 +18,10 @@ import {
   Globe,
   ListFilter,
   Loader2,
+  Play,
   RefreshCw,
   Search,
+  Trash2,
   Users,
   X,
   XCircle,
@@ -33,6 +39,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { LIMITLESS_TO_FORMAT } from "@/lib/limitless";
@@ -40,69 +47,24 @@ import {
   discoverRk9Events,
   scrapeRk9Roster,
   scrapeRk9TeamsBatch,
+  resetRk9EventData,
 } from "@/actions/rk9";
 import {
   queueTournamentForImport,
   batchQueueTournaments,
   triggerLimitlessSync,
+  triggerImportQueue,
 } from "@/actions/limitless";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface RK9EventRow {
-  event_id: string;
-  name: string;
-  tier: string;
-  format_id: string | null;
-  date_start: string;
-  date_end: string | null;
-  location_city: string | null;
-  location_country: string | null;
-  player_count: number | null;
-  has_team_lists: boolean;
-  import_status: string;
-  import_error: string | null;
-}
-
-interface LimitlessTournamentRow {
-  tournament_id: string;
-  name: string;
-  format_id: string;
-  date: string;
-  player_count: number;
-  platform: string | null;
-  is_online: boolean;
-  decklists: boolean;
-  data_imported_at: string | null;
-  import_status: string | null;
-  import_requested_at: string | null;
-  import_error: string | null;
-  import_attempts: number | null;
-}
-
-// Unified row that merges both sources
-interface UnifiedRow {
-  id: string;
-  source: "rk9" | "limitless";
-  name: string;
-  category: string; // tier for RK9, format code for Limitless
-  date: string;
-  playerCount: number | null;
-  status: string; // normalized status
-  statusDetail: string; // original status for display
-  error: string | null;
-  // Filterable extras
-  platform: string | null; // "SWITCH" | "SIM" (Limitless only)
-  isOnline: boolean | null; // Limitless only
-  hasData: boolean; // has_team_lists (RK9) or decklists (Limitless)
-  country: string | null; // RK9 location_country
-  // Source-specific extras
-  rk9?: RK9EventRow;
-  limitless?: LimitlessTournamentRow;
-}
+import { formatTimeAgo } from "@trainers/utils";
+import { normalizeLimitlessStatus } from "./limitless-status";
+import {
+  type RK9EventRow,
+  type LimitlessTournamentRow,
+  type UnifiedRow,
+} from "./external-data-shared";
+import { ExpandedRowData } from "./expanded-row-data";
+import { PlayerExpandedData } from "./player-expanded-data";
 
 type PlatformFilter = "all" | "SWITCH" | "SIM";
 type HasDataFilter = "all" | "yes" | "no";
@@ -143,6 +105,9 @@ interface LimitlessFilterState {
   minPlayers: string;
   hasData: HasDataFilter;
 }
+
+// Sentinel for render-time tab-change reset (avoids useEffect for derived state)
+const UNINITIALIZED = Symbol();
 
 const INITIAL_RK9_FILTERS: RK9FilterState = {
   search: "",
@@ -192,19 +157,7 @@ function normalizeRk9Status(status: string, upcoming: boolean): string {
 }
 
 // Normalize Limitless status
-function normalizeLimitlessStatus(status: string | null): string {
-  switch (status) {
-    case "completed":
-      return "complete";
-    case "queued":
-    case "importing":
-      return "in-progress";
-    case "failed":
-      return "failed";
-    default:
-      return "pending";
-  }
-}
+// (moved to ./limitless-status.ts so it can be unit tested in isolation)
 
 // Sortable header cell
 function SortableHeader({
@@ -276,7 +229,34 @@ function compareValues(
 
 export function ExternalData() {
   const [refreshKey, setRefreshKey] = useState(0);
-  const [activeTab, setActiveTab] = useState<"rk9" | "limitless">("limitless");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"rk9" | "limitless">(
+    tabParam === "limitless" ? "limitless" : "rk9"
+  );
+
+  // Expanded row state
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{
+    total: number;
+    done: number;
+    current: string;
+  } | null>(null);
+
+  // Render-time tab-change reset — collapses any open row when switching tabs
+  const [prevTab, setPrevTab] = useState<typeof activeTab | symbol>(
+    UNINITIALIZED
+  );
+  if (activeTab !== prevTab) {
+    setPrevTab(activeTab);
+    setExpandedRowId(null);
+    setSelectedIds(new Set());
+  }
 
   // Per-tab filter state
   const [rk9Filters, setRk9Filters] =
@@ -295,34 +275,25 @@ export function ExternalData() {
 
   // Auto-import state (backend = pg_cron)
   const [rk9BackendAutoImport, setRk9BackendAutoImport] = useState(false);
-  const [rk9BackendAutoImportLoading, setRk9BackendAutoImportLoading] =
-    useState(true);
-
   const [limitlessBackendAutoImport, setLimitlessBackendAutoImport] =
     useState(false);
-  const [
-    limitlessBackendAutoImportLoading,
-    setLimitlessBackendAutoImportLoading,
-  ] = useState(true);
 
   // Throughput config
   const [rk9TeamsPerTick, setRk9TeamsPerTick] = useState(100);
-  const [rk9TeamsPerTickLoading, setRk9TeamsPerTickLoading] = useState(true);
-
   const [rk9TeamConcurrency, setRk9TeamConcurrency] = useState(3);
-  const [rk9TeamConcurrencyLoading, setRk9TeamConcurrencyLoading] =
-    useState(true);
-
   const [rk9CronInterval, setRk9CronInterval] = useState(60);
-  const [rk9CronIntervalLoading, setRk9CronIntervalLoading] = useState(true);
-
   const [limitlessCronInterval, setLimitlessCronInterval] = useState(300);
-  const [limitlessCronIntervalLoading, setLimitlessCronIntervalLoading] =
-    useState(true);
-
   const [limitlessBatchSize, setLimitlessBatchSize] = useState(20);
-  const [limitlessBatchSizeLoading, setLimitlessBatchSizeLoading] =
-    useState(true);
+
+  // Committed (last successfully saved) values for config inputs
+  const rk9TeamsPerTickCommitted = useRef(rk9TeamsPerTick);
+  const rk9TeamConcurrencyCommitted = useRef(rk9TeamConcurrency);
+  const rk9CronIntervalCommitted = useRef(rk9CronInterval);
+  const limitlessCronIntervalCommitted = useRef(limitlessCronInterval);
+  const limitlessBatchSizeCommitted = useRef(limitlessBatchSize);
+
+  // Single loading flag for all site config fields — set false once all 7 resolve
+  const [configLoading, setConfigLoading] = useState(true);
 
   // RK9 state
   const [isDiscovering, setIsDiscovering] = useState(false);
@@ -336,62 +307,57 @@ export function ExternalData() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [queuingIds, setQueuingIds] = useState<Set<string>>(new Set());
   const [batchQueuing, setBatchQueuing] = useState(false);
-
-  const debounceRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Load auto-import settings from DB (per-source)
   // -------------------------------------------------------------------------
 
   useEffect(() => {
-    getSiteConfig<boolean>("rk9_backend_auto_import").then((result) => {
-      if (result.success && result.data !== null) {
-        setRk9BackendAutoImport(result.data);
+    let cancelled = false;
+    async function loadConfig() {
+      try {
+        const [
+          rk9Auto,
+          limAuto,
+          teamsPerTick,
+          batchSize,
+          concurrency,
+          rk9Cron,
+          limCron,
+        ] = await Promise.all([
+          getSiteConfig<boolean>("rk9_backend_auto_import"),
+          getSiteConfig<boolean>("limitless_backend_auto_import"),
+          getSiteConfig<number>("rk9_max_teams_per_tick"),
+          getSiteConfig<number>("limitless_batch_size"),
+          getSiteConfig<number>("rk9_team_concurrency"),
+          getSiteConfig<number>("rk9_cron_interval_seconds"),
+          getSiteConfig<number>("limitless_cron_interval_seconds"),
+        ]);
+        if (cancelled) return;
+        if (rk9Auto.success && rk9Auto.data !== null)
+          setRk9BackendAutoImport(rk9Auto.data);
+        if (limAuto.success && limAuto.data !== null)
+          setLimitlessBackendAutoImport(limAuto.data);
+        if (teamsPerTick.success && teamsPerTick.data !== null)
+          setRk9TeamsPerTick(teamsPerTick.data);
+        if (batchSize.success && batchSize.data !== null)
+          setLimitlessBatchSize(batchSize.data);
+        if (concurrency.success && concurrency.data !== null)
+          setRk9TeamConcurrency(concurrency.data);
+        if (rk9Cron.success && rk9Cron.data !== null)
+          setRk9CronInterval(rk9Cron.data);
+        if (limCron.success && limCron.data !== null)
+          setLimitlessCronInterval(limCron.data);
+      } finally {
+        if (!cancelled) setConfigLoading(false);
       }
-      setRk9BackendAutoImportLoading(false);
-    });
-
-    getSiteConfig<boolean>("limitless_backend_auto_import").then((result) => {
-      if (result.success && result.data !== null) {
-        setLimitlessBackendAutoImport(result.data);
-      }
-      setLimitlessBackendAutoImportLoading(false);
-    });
-
-    getSiteConfig<number>("rk9_max_teams_per_tick").then((result) => {
-      if (result.success && result.data !== null) {
-        setRk9TeamsPerTick(result.data);
-      }
-      setRk9TeamsPerTickLoading(false);
-    });
-
-    getSiteConfig<number>("limitless_batch_size").then((result) => {
-      if (result.success && result.data !== null) {
-        setLimitlessBatchSize(result.data);
-      }
-      setLimitlessBatchSizeLoading(false);
-    });
-
-    getSiteConfig<number>("rk9_team_concurrency").then((result) => {
-      if (result.success && result.data !== null) {
-        setRk9TeamConcurrency(result.data);
-      }
-      setRk9TeamConcurrencyLoading(false);
-    });
-
-    getSiteConfig<number>("rk9_cron_interval_seconds").then((result) => {
-      if (result.success && result.data !== null) {
-        setRk9CronInterval(result.data);
-      }
-      setRk9CronIntervalLoading(false);
-    });
-
-    getSiteConfig<number>("limitless_cron_interval_seconds").then((result) => {
-      if (result.success && result.data !== null) {
-        setLimitlessCronInterval(result.data);
-      }
-      setLimitlessCronIntervalLoading(false);
-    });
+    }
+    loadConfig();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleToggleRk9Backend(checked: boolean) {
@@ -400,9 +366,10 @@ export function ExternalData() {
     const result = await setSiteConfig("rk9_backend_auto_import", checked);
     if (!result.success) {
       setRk9BackendAutoImport(previous);
+      toast.error("Failed to update RK9 backend setting");
       return;
     }
-    // Reset timer so backend fires immediately on re-enable
+    // Only reset timer when the save succeeded and we're enabling
     if (checked) {
       await setSiteConfig("rk9_last_run_at", null);
     }
@@ -417,92 +384,106 @@ export function ExternalData() {
     );
     if (!result.success) {
       setLimitlessBackendAutoImport(previous);
+      toast.error("Failed to update Limitless backend setting");
       return;
     }
-    // Reset timer so backend fires immediately on re-enable
+    // Only reset timer when the save succeeded and we're enabling
     if (checked) {
       await setSiteConfig("limitless_last_run_at", null);
     }
   }
 
-  async function handleRk9TeamsPerTickChange(value: string) {
+  function handleRk9TeamsPerTickChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setRk9TeamsPerTick(num);
-    const key = "rk9_max_teams_per_tick";
-    const existing = debounceRefs.current.get(key);
-    if (existing) clearTimeout(existing);
-    debounceRefs.current.set(key, setTimeout(async () => {
-      const result = await setSiteConfig("rk9_max_teams_per_tick", num);
-      if (!result.success) {
-        const original = await getSiteConfig<number>("rk9_max_teams_per_tick");
-        if (original.success && original.data !== null) setRk9TeamsPerTick(original.data);
-      }
-    }, 500));
   }
 
-  async function handleRk9TeamConcurrencyChange(value: string) {
+  async function saveRk9TeamsPerTick() {
+    const current = rk9TeamsPerTick;
+    const previous = rk9TeamsPerTickCommitted.current;
+    const result = await setSiteConfig("rk9_max_teams_per_tick", current);
+    if (!result.success) {
+      setRk9TeamsPerTick(previous);
+      toast.error("Failed to save setting");
+    } else {
+      rk9TeamsPerTickCommitted.current = current;
+    }
+  }
+
+  function handleRk9TeamConcurrencyChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setRk9TeamConcurrency(num);
-    const key = "rk9_team_concurrency";
-    const existing = debounceRefs.current.get(key);
-    if (existing) clearTimeout(existing);
-    debounceRefs.current.set(key, setTimeout(async () => {
-      const result = await setSiteConfig("rk9_team_concurrency", num);
-      if (!result.success) {
-        const original = await getSiteConfig<number>("rk9_team_concurrency");
-        if (original.success && original.data !== null) setRk9TeamConcurrency(original.data);
-      }
-    }, 500));
   }
 
-  async function handleRk9CronIntervalChange(value: string) {
+  async function saveRk9TeamConcurrency() {
+    const current = rk9TeamConcurrency;
+    const previous = rk9TeamConcurrencyCommitted.current;
+    const result = await setSiteConfig("rk9_team_concurrency", current);
+    if (!result.success) {
+      setRk9TeamConcurrency(previous);
+      toast.error("Failed to save setting");
+    } else {
+      rk9TeamConcurrencyCommitted.current = current;
+    }
+  }
+
+  function handleRk9CronIntervalChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setRk9CronInterval(num);
-    const key = "rk9_cron_interval_seconds";
-    const existing = debounceRefs.current.get(key);
-    if (existing) clearTimeout(existing);
-    debounceRefs.current.set(key, setTimeout(async () => {
-      const result = await setSiteConfig("rk9_cron_interval_seconds", num);
-      if (!result.success) {
-        const original = await getSiteConfig<number>("rk9_cron_interval_seconds");
-        if (original.success && original.data !== null) setRk9CronInterval(original.data);
-      }
-    }, 500));
   }
 
-  async function handleLimitlessCronIntervalChange(value: string) {
+  async function saveRk9CronInterval() {
+    const current = rk9CronInterval;
+    const previous = rk9CronIntervalCommitted.current;
+    const result = await setSiteConfig("rk9_cron_interval_seconds", current);
+    if (!result.success) {
+      setRk9CronInterval(previous);
+      toast.error("Failed to save setting");
+    } else {
+      rk9CronIntervalCommitted.current = current;
+    }
+  }
+
+  function handleLimitlessCronIntervalChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setLimitlessCronInterval(num);
-    const key = "limitless_cron_interval_seconds";
-    const existing = debounceRefs.current.get(key);
-    if (existing) clearTimeout(existing);
-    debounceRefs.current.set(key, setTimeout(async () => {
-      const result = await setSiteConfig("limitless_cron_interval_seconds", num);
-      if (!result.success) {
-        const original = await getSiteConfig<number>("limitless_cron_interval_seconds");
-        if (original.success && original.data !== null) setLimitlessCronInterval(original.data);
-      }
-    }, 500));
   }
 
-  async function handleLimitlessBatchSizeChange(value: string) {
+  async function saveLimitlessCronInterval() {
+    const current = limitlessCronInterval;
+    const previous = limitlessCronIntervalCommitted.current;
+    const result = await setSiteConfig(
+      "limitless_cron_interval_seconds",
+      current
+    );
+    if (!result.success) {
+      setLimitlessCronInterval(previous);
+      toast.error("Failed to save setting");
+    } else {
+      limitlessCronIntervalCommitted.current = current;
+    }
+  }
+
+  function handleLimitlessBatchSizeChange(value: string) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) return;
     setLimitlessBatchSize(num);
-    const key = "limitless_batch_size";
-    const existing = debounceRefs.current.get(key);
-    if (existing) clearTimeout(existing);
-    debounceRefs.current.set(key, setTimeout(async () => {
-      const result = await setSiteConfig("limitless_batch_size", num);
-      if (!result.success) {
-        const original = await getSiteConfig<number>("limitless_batch_size");
-        if (original.success && original.data !== null) setLimitlessBatchSize(original.data);
-      }
-    }, 500));
+  }
+
+  async function saveLimitlessBatchSize() {
+    const current = limitlessBatchSize;
+    const previous = limitlessBatchSizeCommitted.current;
+    const result = await setSiteConfig("limitless_batch_size", current);
+    if (!result.success) {
+      setLimitlessBatchSize(previous);
+      toast.error("Failed to save setting");
+    } else {
+      limitlessBatchSizeCommitted.current = current;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -520,7 +501,7 @@ export function ExternalData() {
         .schema("rk9")
         .from("events")
         .select(
-          "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error"
+          "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count"
         )
         .order("date_start", { ascending: false });
       if (error) throw error;
@@ -737,6 +718,24 @@ export function ExternalData() {
       ? (s: SortState) => setRk9Sort(s)
       : (s: SortState) => setLimSort(s);
 
+  // Bulk action eligibility
+  const selectedRk9Rows = rk9Rows.filter((r) => selectedIds.has(r.id));
+  const rosterEligibleSelected = selectedRk9Rows.filter(
+    (r) =>
+      r.rk9!.import_status === "pending" || r.rk9!.import_status === "failed"
+  );
+  const teamsEligibleSelected = selectedRk9Rows.filter((r) =>
+    ["roster", "teams", "complete"].includes(r.rk9!.import_status)
+  );
+  const resetEligibleSelected = selectedRk9Rows.filter(
+    (r) => r.rk9!.import_status !== "pending"
+  );
+  const limitlessQueueEligibleSelected = limitlessRows.filter(
+    (r) =>
+      selectedIds.has(r.id) &&
+      (!r.limitless!.import_status || r.limitless!.import_status === "failed")
+  );
+
   // Derive unique filter options from data
   const rk9Tiers = [...new Set(rk9Rows.map((r) => r.category))].sort();
   const rk9Countries = [
@@ -782,17 +781,6 @@ export function ExternalData() {
           new Date(b.import_requested_at!).getTime()
       )[0] ?? null;
 
-  function formatRelativeTime(iso: string): string {
-    const diff = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  }
-
   // -------------------------------------------------------------------------
   // RK9 actions
   // -------------------------------------------------------------------------
@@ -832,20 +820,31 @@ export function ExternalData() {
     }
   }
 
-  async function handleScrapeTeams(eventId: string) {
+  async function handleScrapeTeams(eventId: string, force?: boolean) {
     setActiveJobs((prev) =>
       new Map(prev).set(eventId, { type: "teams", scraped: 0, total: 0 })
     );
     try {
       let done = false;
+      let lastScraped = -1;
+      let noProgressRounds = 0;
       while (!done) {
-        const result = await scrapeRk9TeamsBatch(eventId);
+        const result = await scrapeRk9TeamsBatch(eventId, { force });
         if (!result.success) break;
         done = result.done ?? false;
+        const scraped = result.scraped ?? 0;
+        // Detect infinite loop: if scraped count hasn't changed after 3 batches, stop.
+        if (scraped === lastScraped) {
+          noProgressRounds++;
+          if (noProgressRounds >= 3) break;
+        } else {
+          noProgressRounds = 0;
+          lastScraped = scraped;
+        }
         setActiveJobs((prev) =>
           new Map(prev).set(eventId, {
             type: "teams",
-            scraped: result.scraped ?? 0,
+            scraped,
             total: result.total ?? 0,
           })
         );
@@ -856,6 +855,16 @@ export function ExternalData() {
         next.delete(eventId);
         return next;
       });
+      setRefreshKey((k) => k + 1);
+    }
+  }
+
+  async function handleResetEvent(eventId: string) {
+    if (!window.confirm("Delete all roster and team data for this event? Cannot be undone.")) return;
+    const result = await resetRk9EventData(eventId);
+    if (!result.success) toast.error(result.error);
+    else {
+      toast.success("Event reset");
       setRefreshKey((k) => k + 1);
     }
   }
@@ -881,14 +890,36 @@ export function ExternalData() {
     }
   }
 
+  async function handleRunImport() {
+    setImporting(true);
+    setImportMessage(null);
+    try {
+      const result = await triggerImportQueue(limitlessBatchSize);
+      if (!result.success) throw new Error(result.error);
+      const { processed, errors } = result.data;
+      setImportMessage(
+        errors > 0
+          ? `Imported ${processed} (${errors} failed)`
+          : `Imported ${processed}`
+      );
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setImportMessage(
+        `Error: ${err instanceof Error ? err.message : "Import failed"}`
+      );
+    } finally {
+      setImporting(false);
+    }
+  }
+
   async function handleQueueOne(tournamentId: string) {
     setQueuingIds((prev) => new Set(prev).add(tournamentId));
     try {
       const result = await queueTournamentForImport(tournamentId);
       if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
-    } catch (err) {
-      console.error("Failed to queue tournament:", err);
+    } catch {
+      toast.error("Failed to queue tournament");
     } finally {
       setQueuingIds((prev) => {
         const next = new Set(prev);
@@ -910,11 +941,72 @@ export function ExternalData() {
       const result = await batchQueueTournaments(ids);
       if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
-    } catch (err) {
-      console.error("Failed to batch queue:", err);
+    } catch {
+      toast.error("Failed to queue tournaments");
     } finally {
       setBatchQueuing(false);
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Bulk actions
+  // -------------------------------------------------------------------------
+
+  async function handleBulkScrapeRosters() {
+    setBulkProcessing(true);
+    const events = rosterEligibleSelected;
+    for (let i = 0; i < events.length; i++) {
+      const row = events[i]!;
+      setBulkProgress({ total: events.length, done: i, current: row.name });
+      await handleScrapeRoster(row.rk9!.event_id);
+    }
+    setBulkProcessing(false);
+    setBulkProgress(null);
+    setSelectedIds(new Set());
+  }
+
+  async function handleBulkScrapeTeams() {
+    setBulkProcessing(true);
+    const events = teamsEligibleSelected;
+    for (let i = 0; i < events.length; i++) {
+      const row = events[i]!;
+      setBulkProgress({ total: events.length, done: i, current: row.name });
+      await handleScrapeTeams(row.rk9!.event_id);
+    }
+    setBulkProcessing(false);
+    setBulkProgress(null);
+    setSelectedIds(new Set());
+  }
+
+  async function handleBulkResetEvents() {
+    if (
+      !window.confirm(
+        `Delete roster and team data for ${resetEligibleSelected.length} event(s)? This cannot be undone.`
+      )
+    )
+      return;
+    setBulkProcessing(true);
+    const events = resetEligibleSelected;
+    for (let i = 0; i < events.length; i++) {
+      setBulkProgress({ total: events.length, done: i, current: events[i]!.name });
+      await resetRk9EventData(events[i]!.rk9!.event_id);
+    }
+    setBulkProcessing(false);
+    setBulkProgress(null);
+    setSelectedIds(new Set());
+    setRefreshKey((k) => k + 1);
+  }
+
+  async function handleBulkQueueSelected() {
+    setBulkProcessing(true);
+    const ids = limitlessQueueEligibleSelected.map(
+      (r) => r.limitless!.tournament_id
+    );
+    const result = await batchQueueTournaments(ids);
+    if (!result.success) toast.error("Failed to queue tournaments");
+    setSelectedIds(new Set());
+    setRefreshKey((k) => k + 1);
+    setBulkProcessing(false);
   }
 
   // -------------------------------------------------------------------------
@@ -922,12 +1014,96 @@ export function ExternalData() {
   // When enabled, process one pending item at a time from each source.
   // -------------------------------------------------------------------------
 
+  // RK9 sub-view: events or players
+  const [rk9View, setRk9View] = useState<"events" | "players">("events");
+
+  // Player search
+  const [playerSearch, setPlayerSearch] = useState("");
+
+  // RK9 players query — always called (Rules of Hooks), but skips fetch when not on players view
+  const { data: rk9Players, isLoading: rk9PlayersLoading } = useSupabaseQuery(
+    /* istanbul ignore next */
+    async (sb) => {
+      if (rk9View !== "players") return [];
+      const { data, error } = await sb
+        .schema("rk9")
+        .from("players")
+        .select(
+          "id, player_id_masked, first_name, last_name, country, standings(count)"
+        )
+        .order("last_name", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<{
+        id: number;
+        player_id_masked: string | null;
+        first_name: string;
+        last_name: string;
+        country: string;
+        standings: [{ count: number }];
+      }>;
+    },
+    [refreshKey, rk9View === "players" ? "load" : "skip"]
+  );
+
+  // Client-side player filter
+  const filteredPlayers = (rk9Players ?? []).filter((p) => {
+    if (!playerSearch) return true;
+    const q = playerSearch.toLowerCase();
+    return (
+      p.first_name?.toLowerCase().includes(q) ||
+      p.last_name?.toLowerCase().includes(q) ||
+      p.player_id_masked?.toLowerCase().includes(q)
+    );
+  });
+
+  // Expanded player row state
+  const [expandedPlayerId, setExpandedPlayerId] = useState<number | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
+  const playerScrollRef = useRef<HTMLDivElement>(null);
+
+  type PlayerSortCol = "name" | "id" | "country" | "events";
+  const [playerSort, setPlayerSort] = useState<{
+    column: PlayerSortCol;
+    direction: "asc" | "desc";
+  }>({ column: "name", direction: "asc" });
+
+  function togglePlayerSort(col: PlayerSortCol) {
+    setPlayerSort((prev) =>
+      prev.column === col
+        ? { column: col, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { column: col, direction: "asc" }
+    );
+  }
+
+  const sortedPlayers = [...filteredPlayers].sort((a, b) => {
+    const dir = playerSort.direction === "asc" ? 1 : -1;
+    switch (playerSort.column) {
+      case "name":
+        return `${a.first_name} ${a.last_name}`
+          .localeCompare(`${b.first_name} ${b.last_name}`) * dir;
+      case "id":
+        return (a.player_id_masked ?? "").localeCompare(b.player_id_masked ?? "") * dir;
+      case "country":
+        return (a.country ?? "").localeCompare(b.country ?? "") * dir;
+      case "events":
+        return ((a.standings[0]?.count ?? 0) - (b.standings[0]?.count ?? 0)) * dir;
+      default:
+        return 0;
+    }
+  });
 
   const rowVirtualizer = useVirtualizer({
     count: currentRows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 56,
+    overscan: 10,
+  });
+
+  const playerVirtualizer = useVirtualizer({
+    count: sortedPlayers.length,
+    getScrollElement: () => playerScrollRef.current,
+    estimateSize: () => 52,
     overscan: 10,
   });
 
@@ -966,7 +1142,17 @@ export function ExternalData() {
       {/* Sub-tabs: RK9 / Limitless */}
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "rk9" | "limitless")}
+        onValueChange={(v) => {
+          const tab = v as "rk9" | "limitless";
+          setActiveTab(tab);
+          const params = new URLSearchParams(searchParams.toString());
+          if (tab === "rk9") {
+            params.delete("tab");
+          } else {
+            params.set("tab", tab);
+          }
+          router.replace(`?${params.toString()}`, { scroll: false });
+        }}
       >
         <TabsList variant="line">
           <TabsTrigger value="rk9">
@@ -985,12 +1171,51 @@ export function ExternalData() {
 
         {/* ----- RK9 Tab ----- */}
         <TabsContent value="rk9" className="space-y-4 pt-2">
+          {/* RK9 sub-nav: Events | Players */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => { setRk9View("events"); setSelectedIds(new Set()); }}
+              className={cn(
+                "rounded px-3 py-1 text-xs font-medium",
+                rk9View === "events"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Events
+            </button>
+            <button
+              onClick={() => { setRk9View("players"); setSelectedIds(new Set()); }}
+              className={cn(
+                "rounded px-3 py-1 text-xs font-medium",
+                rk9View === "players"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Players
+            </button>
+          </div>
+
+          {rk9View === "players" ? (
+            /* Players search — filter panel is hidden in players view */
+            <div className="relative">
+              <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
+              <Input
+                placeholder="Search by name or player ID..."
+                value={playerSearch}
+                onChange={(e) => setPlayerSearch(e.target.value)}
+                className="h-8 pl-8 text-sm"
+              />
+            </div>
+          ) : (
+            <>
           {/* RK9 Stats + Actions */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-5">
               <label className="flex items-center gap-2 text-sm font-medium">
-                {rk9BackendAutoImportLoading ? (
-                  <Skeleton className="h-[18px] w-[32px] rounded-full" />
+                {configLoading ? (
+                  <Skeleton className="h-4 w-8 rounded-full" />
                 ) : (
                   <Switch
                     checked={rk9BackendAutoImport}
@@ -999,7 +1224,7 @@ export function ExternalData() {
                 )}
                 Backend
               </label>
-              {rk9TeamsPerTickLoading ? (
+              {configLoading ? (
                 <Skeleton className="h-6 w-24" />
               ) : (
                 <div className="flex items-center gap-1">
@@ -1010,6 +1235,7 @@ export function ExternalData() {
                     onChange={(e) =>
                       handleRk9TeamsPerTickChange(e.target.value)
                     }
+                    onBlur={saveRk9TeamsPerTick}
                     min={1}
                   />
                   <span className="text-muted-foreground text-xs">
@@ -1017,7 +1243,7 @@ export function ExternalData() {
                   </span>
                 </div>
               )}
-              {rk9TeamConcurrencyLoading ? (
+              {configLoading ? (
                 <Skeleton className="h-6 w-24" />
               ) : (
                 <div className="flex items-center gap-1">
@@ -1028,6 +1254,7 @@ export function ExternalData() {
                     onChange={(e) =>
                       handleRk9TeamConcurrencyChange(e.target.value)
                     }
+                    onBlur={saveRk9TeamConcurrency}
                     min={1}
                     max={10}
                   />
@@ -1036,7 +1263,7 @@ export function ExternalData() {
                   </span>
                 </div>
               )}
-              {rk9CronIntervalLoading ? (
+              {configLoading ? (
                 <Skeleton className="h-6 w-20" />
               ) : (
                 <div className="flex items-center gap-1">
@@ -1047,6 +1274,7 @@ export function ExternalData() {
                     onChange={(e) =>
                       handleRk9CronIntervalChange(e.target.value)
                     }
+                    onBlur={saveRk9CronInterval}
                     min={10}
                     step={10}
                   />
@@ -1273,6 +1501,41 @@ export function ExternalData() {
               )}
             </div>
           </div>
+
+          {/* RK9 active jobs progress strip */}
+          {activeJobs.size > 0 && (
+            <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+              {[...activeJobs.entries()].map(([eventId, job]) => {
+                const eventName =
+                  rk9Events?.find((e) => e.event_id === eventId)?.name ??
+                  eventId;
+                const pct =
+                  job.total && job.total > 0
+                    ? Math.round(((job.scraped ?? 0) / job.total) * 100)
+                    : 0;
+                return (
+                  <div key={eventId} className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                      <span className="font-medium">{eventName}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {job.type === "teams" && job.total && job.total > 0
+                          ? `Scraping teams: ${job.scraped ?? 0}/${job.total} (${pct}%)`
+                          : job.type === "teams"
+                            ? "Scraping teams…"
+                            : "Scraping roster…"}
+                      </span>
+                    </div>
+                    {job.type === "teams" && job.total && job.total > 0 && (
+                      <Progress value={pct} className="h-1.5" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+            </>
+          )}
         </TabsContent>
 
         {/* ----- Limitless Tab ----- */}
@@ -1281,8 +1544,8 @@ export function ExternalData() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-5">
               <label className="flex items-center gap-2 text-sm font-medium">
-                {limitlessBackendAutoImportLoading ? (
-                  <Skeleton className="h-[18px] w-[32px] rounded-full" />
+                {configLoading ? (
+                  <Skeleton className="h-4 w-8 rounded-full" />
                 ) : (
                   <Switch
                     checked={limitlessBackendAutoImport}
@@ -1291,7 +1554,7 @@ export function ExternalData() {
                 )}
                 Backend
               </label>
-              {limitlessBatchSizeLoading ? (
+              {configLoading ? (
                 <Skeleton className="h-6 w-24" />
               ) : (
                 <div className="flex items-center gap-1">
@@ -1302,6 +1565,7 @@ export function ExternalData() {
                     onChange={(e) =>
                       handleLimitlessBatchSizeChange(e.target.value)
                     }
+                    onBlur={saveLimitlessBatchSize}
                     min={1}
                   />
                   <span className="text-muted-foreground text-xs">
@@ -1309,7 +1573,7 @@ export function ExternalData() {
                   </span>
                 </div>
               )}
-              {limitlessCronIntervalLoading ? (
+              {configLoading ? (
                 <Skeleton className="h-6 w-20" />
               ) : (
                 <div className="flex items-center gap-1">
@@ -1320,6 +1584,7 @@ export function ExternalData() {
                     onChange={(e) =>
                       handleLimitlessCronIntervalChange(e.target.value)
                     }
+                    onBlur={saveLimitlessCronInterval}
                     min={10}
                     step={10}
                   />
@@ -1401,6 +1666,33 @@ export function ExternalData() {
                   Queue All ({limitlessPendingCount})
                 </Button>
               )}
+              {limitlessQueuedCount > 0 && (
+                <Button
+                  onClick={handleRunImport}
+                  disabled={importing}
+                  size="sm"
+                  variant="outline"
+                >
+                  {importing ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Play className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Run Import
+                </Button>
+              )}
+              {importMessage && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    importMessage.startsWith("Error")
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {importMessage}
+                </p>
+              )}
               <Button
                 onClick={handleSync}
                 disabled={syncing}
@@ -1435,7 +1727,7 @@ export function ExternalData() {
                   </span>
                   <span className="text-xs">
                     (queued{" "}
-                    {formatRelativeTime(nextQueuedItem.import_requested_at!)})
+                    {formatTimeAgo(nextQueuedItem.import_requested_at!)})
                   </span>
                 </span>
               )}
@@ -1625,6 +1917,229 @@ export function ExternalData() {
         </TabsContent>
       </Tabs>
 
+      {/* Bulk action toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 p-2.5">
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear
+          </Button>
+          <div className="bg-border h-4 w-px" />
+          {activeTab === "rk9" && rk9View === "events" && rosterEligibleSelected.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkProcessing}
+              onClick={handleBulkScrapeRosters}
+            >
+              {bulkProcessing && bulkProgress ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Scrape Rosters ({rosterEligibleSelected.length})
+            </Button>
+          )}
+          {activeTab === "rk9" && rk9View === "events" && teamsEligibleSelected.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkProcessing}
+              onClick={handleBulkScrapeTeams}
+            >
+              {bulkProcessing && bulkProgress ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CloudDownload className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Scrape Teams ({teamsEligibleSelected.length})
+            </Button>
+          )}
+          {activeTab === "rk9" && rk9View === "events" && resetEligibleSelected.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkProcessing}
+              onClick={handleBulkResetEvents}
+              className="text-destructive hover:text-destructive"
+            >
+              {bulkProcessing && bulkProgress ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Delete Data ({resetEligibleSelected.length})
+            </Button>
+          )}
+          {activeTab === "limitless" && limitlessQueueEligibleSelected.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkProcessing}
+              onClick={handleBulkQueueSelected}
+            >
+              {bulkProcessing ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Queue ({limitlessQueueEligibleSelected.length})
+            </Button>
+          )}
+          {bulkProcessing && bulkProgress && (
+            <span className="text-muted-foreground text-xs">
+              {bulkProgress.done}/{bulkProgress.total} — {bulkProgress.current}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Players Table — only shown when RK9 tab + players view */}
+      {activeTab === "rk9" && rk9View === "players" && (
+        <div className="rounded-md border">
+          <div className="text-muted-foreground flex items-center gap-2 px-4 py-2 text-xs">
+            <ListFilter className="h-3.5 w-3.5" />
+            {rk9PlayersLoading
+              ? "Loading players…"
+              : `Showing ${filteredPlayers.length} players`}
+          </div>
+
+          {/* Players table header */}
+          <div
+            className="grid border-b"
+            style={{ gridTemplateColumns: "28px 1fr 120px 60px 60px" }}
+          >
+            <div className="h-10" />
+            {(["name", "id", "country", "events"] as const).map((col) => (
+              <div key={col} className="flex h-10 items-center px-2">
+                <button
+                  className="hover:text-foreground inline-flex items-center gap-1 text-xs font-medium capitalize whitespace-nowrap"
+                  onClick={() => togglePlayerSort(col)}
+                >
+                  {col === "id" ? "RK9 ID" : col.charAt(0).toUpperCase() + col.slice(1)}
+                  {playerSort.column === col ? (
+                    playerSort.direction === "asc" ? (
+                      <ArrowUp className="h-3 w-3" />
+                    ) : (
+                      <ArrowDown className="h-3 w-3" />
+                    )
+                  ) : (
+                    <ArrowUpDown className="h-3 w-3 opacity-40" />
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {rk9PlayersLoading ? (
+            <div className="space-y-2 p-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-11 w-full" />
+              ))}
+            </div>
+          ) : filteredPlayers.length === 0 ? (
+            <div className="text-muted-foreground py-12 text-center text-sm">
+              {(rk9Players ?? []).length === 0
+                ? "No players found."
+                : "No players match your search."}
+            </div>
+          ) : (
+            /* Virtualized body */
+            <div
+              ref={playerScrollRef}
+              className="overflow-auto"
+              style={{ maxHeight: "calc(100vh - 300px)" }}
+            >
+              <div
+                style={{
+                  height: playerVirtualizer.getTotalSize(),
+                  position: "relative",
+                }}
+              >
+                {playerVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const p = sortedPlayers[virtualRow.index];
+                  if (!p) return null;
+                  const isPlayerExpanded = expandedPlayerId === p.id;
+                  const eventCount = p.standings[0]?.count ?? 0;
+                  return (
+                    <div
+                      key={p.id}
+                      ref={playerVirtualizer.measureElement}
+                      data-index={virtualRow.index}
+                      className="border-b"
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                    >
+                      <div
+                        className="grid hover:bg-muted/50 transition-colors"
+                        style={{
+                          gridTemplateColumns: "28px 1fr 120px 60px 60px",
+                        }}
+                      >
+                        {/* Chevron */}
+                        <div className="flex items-center justify-center py-3">
+                          <button
+                            className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted"
+                            onClick={() =>
+                              setExpandedPlayerId(
+                                isPlayerExpanded ? null : p.id
+                              )
+                            }
+                            aria-label={
+                              isPlayerExpanded ? "Collapse" : "Expand"
+                            }
+                          >
+                            {isPlayerExpanded ? (
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </div>
+                        {/* Name */}
+                        <div className="flex min-w-0 items-center px-3 py-3 text-xs">
+                          <span className="truncate">
+                            {[p.first_name, p.last_name].filter(Boolean).join(" ") || "—"}
+                          </span>
+                        </div>
+                        {/* Player ID */}
+                        <div className="flex items-center px-3 py-3 font-mono text-xs text-muted-foreground">
+                          {p.player_id_masked ?? "—"}
+                        </div>
+                        {/* Country */}
+                        <div className="flex items-center px-3 py-3 font-mono text-xs uppercase">
+                          {p.country ?? "—"}
+                        </div>
+                        {/* Events */}
+                        <div className="flex items-center px-3 py-3 text-xs">
+                          {eventCount}
+                        </div>
+                      </div>
+                      {isPlayerExpanded && (
+                        <PlayerExpandedData playerId={p.id} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Shared Events Table — hidden when RK9 tab is in players view */}
+      {(activeTab !== "rk9" || rk9View === "events") && (
+        <>
       {/* Shared Table */}
       {isLoading && !rk9Events && !limitlessTournaments ? (
         <div className="space-y-3">
@@ -1649,43 +2164,70 @@ export function ExternalData() {
           </div>
 
           {/* Fixed header row */}
-          <div className="grid grid-cols-12 border-b">
+          <div
+            className="grid border-b"
+            style={{
+              gridTemplateColumns:
+                activeTab === "limitless"
+                  ? "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 80px 100px"
+                  : "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
+            }}
+          >
+            <div className="flex h-10 items-center justify-center">
+              <input
+                type="checkbox"
+                checked={
+                  currentRows.length > 0 &&
+                  selectedIds.size === currentRows.length
+                }
+                ref={(el) => {
+                  if (el)
+                    el.indeterminate =
+                      selectedIds.size > 0 &&
+                      selectedIds.size < currentRows.length;
+                }}
+                onChange={(e) => {
+                  setSelectedIds(
+                    e.target.checked
+                      ? new Set(currentRows.map((r) => r.id))
+                      : new Set()
+                  );
+                }}
+                className="h-4 w-4 cursor-pointer rounded border"
+                aria-label="Select all visible"
+              />
+            </div>
+            {/* Chevron column header — empty */}
+            <div className="h-10" />
             <SortableHeader
               column="name"
               label="Event"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className={
-                activeTab === "limitless" ? "col-span-3" : "col-span-4"
-              }
             />
             <SortableHeader
               column="category"
               label="Type"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className="col-span-2"
             />
             <SortableHeader
               column="date"
               label="Date"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className="col-span-2"
             />
             <SortableHeader
               column="playerCount"
               label="Players"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className="col-span-1"
             />
             <SortableHeader
               column="status"
               label="Status"
               sort={currentSort}
               onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              className="col-span-2"
             />
             {activeTab === "limitless" && (
               <SortableHeader
@@ -1693,10 +2235,9 @@ export function ExternalData() {
                 label="Queue"
                 sort={currentSort}
                 onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-                className="col-span-1"
               />
             )}
-            <div className="col-span-1 flex h-10 items-center justify-end px-2 font-medium whitespace-nowrap">
+            <div className="flex h-10 items-center justify-end pr-2 text-xs font-medium whitespace-nowrap">
               Actions
             </div>
           </div>
@@ -1754,15 +2295,18 @@ export function ExternalData() {
                           },
                         ]
                       : [];
+                const isExpandable =
+                  row.source === "rk9"
+                    ? ["roster", "teams", "complete"].includes(
+                        row.rk9!.import_status
+                      )
+                    : row.limitless!.data_imported_at !== null;
                 return (
                   <div
                     key={row.id}
                     ref={rowVirtualizer.measureElement}
                     data-index={virtualRow.index}
-                    className={cn(
-                      "hover:bg-muted/50 grid grid-cols-12 border-b transition-colors",
-                      isUpcomingRow && "opacity-60"
-                    )}
+                    className="border-b"
                     style={{
                       position: "absolute",
                       top: 0,
@@ -1773,112 +2317,174 @@ export function ExternalData() {
                   >
                     <div
                       className={cn(
-                        "min-w-0 p-2",
-                        activeTab === "limitless" ? "col-span-3" : "col-span-4"
+                        "grid hover:bg-muted/50 transition-colors",
+                        isUpcomingRow && "opacity-60"
                       )}
+                      style={{
+                        gridTemplateColumns:
+                          activeTab === "limitless"
+                            ? "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 80px 100px"
+                            : "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
+                      }}
                     >
-                      <div className="flex items-center gap-1.5">
-                        <a
-                          href={externalUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="truncate text-sm font-medium hover:underline"
-                        >
-                          {row.name}
-                        </a>
-                        <a
-                          href={externalUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground shrink-0"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
+                      {/* Checkbox */}
+                      <div className="flex items-center justify-center py-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(row.id)}
+                          onChange={(e) => {
+                            setSelectedIds((prev) => {
+                              const next = new Set(prev);
+                              if (e.target.checked) {
+                                next.add(row.id);
+                              } else {
+                                next.delete(row.id);
+                              }
+                              return next;
+                            });
+                          }}
+                          className="h-4 w-4 cursor-pointer rounded border"
+                          aria-label={`Select ${row.name}`}
+                        />
                       </div>
-                      {row.rk9?.location_city && (
-                        <p className="text-muted-foreground truncate text-xs">
-                          {row.rk9.location_city}
-                          {row.rk9.location_country
-                            ? `, ${row.rk9.location_country}`
-                            : ""}
-                        </p>
-                      )}
-                      {subLinks.length > 0 && (
-                        <div className="mt-0.5 flex items-center gap-2 text-xs">
-                          {subLinks.map((link) => (
-                            <a
-                              key={link.label}
-                              href={link.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-muted-foreground hover:text-foreground hover:underline"
-                            >
-                              {link.label}
-                            </a>
-                          ))}
+                      {/* Chevron */}
+                      <div className="flex items-center justify-center py-2">
+                        {isExpandable && (
+                          <button
+                            className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedRowId(
+                                expandedRowId === row.id ? null : row.id
+                              );
+                            }}
+                            aria-label={expandedRowId === row.id ? "Collapse" : "Expand"}
+                          >
+                            {expandedRowId === row.id ? (
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      {/* Event name */}
+                      <div className="min-w-0 p-2">
+                        <div className="flex items-center gap-1.5">
+                          <a
+                            href={externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="truncate text-sm font-medium hover:underline"
+                          >
+                            {row.name}
+                          </a>
+                          <a
+                            href={externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground shrink-0"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </div>
+                        {row.rk9?.location_city && (
+                          <p className="text-muted-foreground truncate text-xs">
+                            {row.rk9.location_city}
+                            {row.rk9.location_country
+                              ? `, ${row.rk9.location_country}`
+                              : ""}
+                          </p>
+                        )}
+                        {subLinks.length > 0 && (
+                          <div className="mt-0.5 flex items-center gap-2 text-xs">
+                            {subLinks.map((link) => (
+                              <a
+                                key={link.label}
+                                href={link.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-foreground hover:underline"
+                              >
+                                {link.label}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        {row.error && (
+                          <p className="mt-0.5 truncate text-xs text-red-500">
+                            {row.error}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center p-2">
+                        <Badge
+                          variant="secondary"
+                          className="truncate text-xs capitalize"
+                        >
+                          {row.category}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center p-2 text-sm whitespace-nowrap">
+                        {row.date}
+                      </div>
+                      <div className="flex items-center p-2 text-sm whitespace-nowrap">
+                        {row.playerCount ?? "—"}
+                      </div>
+                      <div className="flex flex-col items-start gap-0.5 p-2">
+                        <StatusBadge row={row} activeJobs={activeJobs} />
+                        {row.source === "rk9" &&
+                          (row.rk9!.import_status === "teams" || row.rk9!.import_status === "complete") &&
+                          row.rk9!.player_count != null && (
+                            <span className="text-muted-foreground text-xs">
+                              {row.rk9!.teams_imported_count ?? 0}/{row.rk9!.player_count} teams
+                            </span>
+                          )}
+                      </div>
+                      {activeTab === "limitless" && (
+                        <div className="flex items-center p-2">
+                          {row.limitless?.import_status === "queued" &&
+                            row.limitless?.import_requested_at && (
+                              <span className="text-muted-foreground text-xs whitespace-nowrap">
+                                {formatTimeAgo(
+                                  row.limitless.import_requested_at
+                                )}
+                              </span>
+                            )}
+                          {row.limitless?.import_status === "importing" &&
+                            row.limitless?.import_requested_at && (
+                              <span className="text-xs whitespace-nowrap text-blue-600 dark:text-blue-400">
+                                started{" "}
+                                {formatTimeAgo(
+                                  row.limitless.import_requested_at
+                                )}
+                              </span>
+                            )}
                         </div>
                       )}
-                      {row.error && (
-                        <p className="mt-0.5 truncate text-xs text-red-500">
-                          {row.error}
-                        </p>
-                      )}
-                    </div>
-                    <div className="col-span-2 flex items-center p-2">
-                      <Badge
-                        variant="secondary"
-                        className="truncate text-xs capitalize"
-                      >
-                        {row.category}
-                      </Badge>
-                    </div>
-                    <div className="col-span-2 flex items-center p-2 text-sm whitespace-nowrap">
-                      {row.date}
-                    </div>
-                    <div className="col-span-1 flex items-center p-2 text-sm whitespace-nowrap">
-                      {row.playerCount ?? "—"}
-                    </div>
-                    <div className="col-span-2 flex items-center p-2">
-                      <StatusBadge row={row} activeJobs={activeJobs} />
-                    </div>
-                    {activeTab === "limitless" && (
-                      <div className="col-span-1 flex items-center p-2">
-                        {row.status === "queued" &&
-                          row.limitless?.import_requested_at && (
-                            <span className="text-muted-foreground text-xs whitespace-nowrap">
-                              {formatRelativeTime(
-                                row.limitless.import_requested_at
-                              )}
-                            </span>
-                          )}
-                        {row.status === "importing" &&
-                          row.limitless?.import_requested_at && (
-                            <span className="text-xs whitespace-nowrap text-blue-600 dark:text-blue-400">
-                              started{" "}
-                              {formatRelativeTime(
-                                row.limitless.import_requested_at
-                              )}
-                            </span>
-                          )}
+                      <div className="flex items-center justify-end gap-1 p-2">
+                        <RowActions
+                          row={row}
+                          activeJobs={activeJobs}
+                          queuingIds={queuingIds}
+                          batchQueuing={batchQueuing}
+                          isUpcomingRow={isUpcomingRow}
+                          onScrapeRoster={handleScrapeRoster}
+                          onScrapeTeams={handleScrapeTeams}
+                          onQueueOne={handleQueueOne}
+                          onResetEvent={handleResetEvent}
+                        />
                       </div>
-                    )}
-                    <div className="col-span-1 flex items-center justify-end p-2">
-                      <RowActions
-                        row={row}
-                        activeJobs={activeJobs}
-                        queuingIds={queuingIds}
-                        batchQueuing={batchQueuing}
-                        onScrapeRoster={handleScrapeRoster}
-                        onScrapeTeams={handleScrapeTeams}
-                        onQueueOne={handleQueueOne}
-                      />
                     </div>
+                    {expandedRowId === row.id && <ExpandedRowData row={row} />}
                   </div>
                 );
               })}
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
@@ -2006,45 +2612,67 @@ function RowActions({
   activeJobs,
   queuingIds,
   batchQueuing,
+  isUpcomingRow,
   onScrapeRoster,
   onScrapeTeams,
   onQueueOne,
+  onResetEvent,
 }: {
   row: UnifiedRow;
   activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
   queuingIds: Set<string>;
   batchQueuing: boolean;
+  isUpcomingRow: boolean;
   onScrapeRoster: (eventId: string) => void;
-  onScrapeTeams: (eventId: string) => void;
+  onScrapeTeams: (eventId: string, force?: boolean) => void;
   onQueueOne: (tournamentId: string) => void;
+  onResetEvent: (eventId: string) => void;
 }) {
   if (row.source === "rk9" && row.rk9) {
     const event = row.rk9;
-    const upcoming = isUpcoming(event.date_start);
-    if (upcoming) return null;
+    if (isUpcomingRow) return null;
 
     const activeJob = activeJobs.get(event.event_id);
     const isBusy = activeJob !== null && activeJob !== undefined;
 
+    const resetButton = event.import_status !== "pending" ? (
+      <button
+        className="text-muted-foreground hover:text-destructive"
+        onClick={() => onResetEvent(event.event_id)}
+        title="Reset roster and team data"
+        aria-label="Reset event"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    ) : null;
+
     if (event.import_status === "complete" && event.has_team_lists) {
-      return <CheckCircle2 className="ml-auto h-4 w-4 text-emerald-500" />;
+      return (
+        <div className="flex items-center gap-1.5">
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          {resetButton}
+        </div>
+      );
     }
 
     if (event.import_status === "pending" || event.import_status === "failed") {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onScrapeRoster(event.event_id)}
-          disabled={isBusy}
-        >
-          {activeJob?.type === "roster" ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Download className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          Roster
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onScrapeRoster(event.event_id)}
+            disabled={isBusy}
+          >
+            {activeJob?.type === "roster" ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            Roster
+          </Button>
+          {resetButton}
+        </div>
       );
     }
 
@@ -2054,19 +2682,22 @@ function RowActions({
       (event.import_status === "complete" && !event.has_team_lists)
     ) {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onScrapeTeams(event.event_id)}
-          disabled={isBusy}
-        >
-          {activeJob?.type === "teams" ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Download className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          Teams
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onScrapeTeams(event.event_id, event.import_status === "complete")}
+            disabled={isBusy}
+          >
+            {activeJob?.type === "teams" ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            Teams
+          </Button>
+          {resetButton}
+        </div>
       );
     }
 

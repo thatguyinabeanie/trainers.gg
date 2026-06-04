@@ -4139,6 +4139,7 @@ export type Database = {
           location_country: string | null
           name: string
           player_count: number | null
+          teams_imported_count: number
           tier: Database["rk9"]["Enums"]["event_tier"]
         }
         Insert: {
@@ -4154,6 +4155,7 @@ export type Database = {
           location_country?: string | null
           name: string
           player_count?: number | null
+          teams_imported_count?: number
           tier: Database["rk9"]["Enums"]["event_tier"]
         }
         Update: {
@@ -4169,6 +4171,7 @@ export type Database = {
           location_country?: string | null
           name?: string
           player_count?: number | null
+          teams_imported_count?: number
           tier?: Database["rk9"]["Enums"]["event_tier"]
         }
         Relationships: []
@@ -4284,7 +4287,7 @@ export type Database = {
           id: number
           last_name: string
           player_id_masked: string
-          trainer_name: string | null
+          trainer_names: string[]
         }
         Insert: {
           country?: string | null
@@ -4293,7 +4296,7 @@ export type Database = {
           id?: never
           last_name: string
           player_id_masked?: string
-          trainer_name?: string | null
+          trainer_names?: string[]
         }
         Update: {
           country?: string | null
@@ -4302,7 +4305,7 @@ export type Database = {
           id?: never
           last_name?: string
           player_id_masked?: string
-          trainer_name?: string | null
+          trainer_names?: string[]
         }
         Relationships: []
       }
@@ -4333,27 +4336,36 @@ export type Database = {
           drop_round: number | null
           event_id: string
           id: number
+          import_flag: string | null
           placement: number | null
-          player_id: number
+          player_id: number | null
           roster_entry_id: string | null
+          team_scrape_attempted_at: string | null
+          trainer_name: string | null
         }
         Insert: {
           division: Database["rk9"]["Enums"]["division"]
           drop_round?: number | null
           event_id: string
           id?: never
+          import_flag?: string | null
           placement?: number | null
-          player_id: number
+          player_id?: number | null
           roster_entry_id?: string | null
+          team_scrape_attempted_at?: string | null
+          trainer_name?: string | null
         }
         Update: {
           division?: Database["rk9"]["Enums"]["division"]
           drop_round?: number | null
           event_id?: string
           id?: never
+          import_flag?: string | null
           placement?: number | null
-          player_id?: number
+          player_id?: number | null
           roster_entry_id?: string | null
+          team_scrape_attempted_at?: string | null
+          trainer_name?: string | null
         }
         Relationships: [
           {
@@ -4382,6 +4394,7 @@ export type Database = {
           species: string
           species_raw: string
           standing_id: number
+          stat_alignment: string | null
           tera_type: string | null
         }
         Insert: {
@@ -4393,6 +4406,7 @@ export type Database = {
           species: string
           species_raw: string
           standing_id: number
+          stat_alignment?: string | null
           tera_type?: string | null
         }
         Update: {
@@ -4404,6 +4418,7 @@ export type Database = {
           species?: string
           species_raw?: string
           standing_id?: number
+          stat_alignment?: string | null
           tera_type?: string | null
         }
         Relationships: [

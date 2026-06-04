@@ -759,6 +759,20 @@ limitless
           return true;
         });
 
+        // Process most recent tournaments first; missing dates go last.
+        // ISO YYYY-MM-DD strings sort lexicographically. Tiebreak on id for
+        // determinism so two runs on the same data process the same order.
+        toImport.sort((a, b) => {
+          const aHas = a.date && a.date.length > 0;
+          const bHas = b.date && b.date.length > 0;
+          if (aHas && !bHas) return -1;
+          if (!aHas && bHas) return 1;
+          if (!aHas && !bHas) return a.id.localeCompare(b.id);
+          if (a.date > b.date) return -1;
+          if (a.date < b.date) return 1;
+          return a.id.localeCompare(b.id);
+        });
+
         const filterDesc = formatFilter
           ? ` (format: ${[...formatFilter].join(",")})`
           : "";

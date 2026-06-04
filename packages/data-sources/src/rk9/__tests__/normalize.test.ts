@@ -40,6 +40,12 @@ describe("normalizeSpecies", () => {
     expect(normalizeSpecies(input)).toBe(expected);
   });
 
+  it("falls back to slugifying an unknown form", () => {
+    // "Rainy Form" is not in formMap; the fallback strips the word "Form",
+    // replaces non-alphanumeric with hyphens, and appends the result.
+    expect(normalizeSpecies("Castform [Rainy Form]")).toBe("castform-rainy");
+  });
+
   it("handles pathological input without hanging", () => {
     const longSpaces = "A" + " ".repeat(1000);
     expect(normalizeSpecies(longSpaces)).toBe("a");
@@ -51,11 +57,11 @@ describe("collectUniqueSpecies", () => {
   it("collects unique species from teams", () => {
     const teams: Record<string, RK9Pokemon[]> = {
       entry1: [
-        { speciesRaw: "Pikachu", ability: "Static", heldItem: "", teraType: null, moves: [] },
-        { speciesRaw: "Charizard", ability: "Blaze", heldItem: "", teraType: null, moves: [] },
+        { speciesRaw: "Pikachu", ability: "Static", heldItem: "", teraType: null, statAlignment: null, moves: [] },
+        { speciesRaw: "Charizard", ability: "Blaze", heldItem: "", teraType: null, statAlignment: null, moves: [] },
       ],
       entry2: [
-        { speciesRaw: "Pikachu", ability: "Lightning Rod", heldItem: "", teraType: null, moves: [] },
+        { speciesRaw: "Pikachu", ability: "Lightning Rod", heldItem: "", teraType: null, statAlignment: null, moves: [] },
       ],
     };
 

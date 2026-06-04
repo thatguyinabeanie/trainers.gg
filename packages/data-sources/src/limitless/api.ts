@@ -134,26 +134,32 @@ export async function fetchTournamentList(
 
   for (let page = 2; ; page += MAX_CONCURRENT) {
     const pages = Array.from({ length: MAX_CONCURRENT }, (_, i) => page + i);
+    // No .catch() — a failed page (after 5 retries in limitlessFetch) throws and aborts
     const results = await Promise.all(
       pages.map((p) =>
         limitlessFetch<LimitlessTournament[]>(
           `/tournaments?game=VGC&limit=500&page=${p}`,
           apiKey
-        ).catch((err) => {
-          console.warn(
-            `[limitless] Page ${p} fetch failed:`,
-            err instanceof Error ? err.message : err
-          );
-          throw err;
-        })
+        )
       )
     );
 
+    let foundEmptyPage = false;
+
     for (const batch of results) {
-      if (batch.length === 0) return all;
+      if (batch.length === 0) {
+        foundEmptyPage = true;
+        break;
+      }
       all.push(...batch.filter((t) => t.game === "VGC"));
-      if (batch.length < 500) return all;
+      // A partial page means we've reached the last page
+      if (batch.length < 500) {
+        foundEmptyPage = true;
+        break;
+      }
     }
+
+    if (foundEmptyPage) return all;
   }
 }
 

@@ -75,6 +75,8 @@ export interface RK9Pokemon {
   ability: string;
   /** Held item name */
   heldItem: string;
+  /** Nature / stat alignment (null for older tournaments that did not publish natures) */
+  statAlignment: string | null;
   /** Array of up to 4 move names */
   moves: string[];
 }
@@ -109,17 +111,30 @@ export interface EventsManifest {
 }
 
 /** Download progress for a specific event */
-export interface EventDownloadState {
-  /** Tournament ID */
-  eventId: string;
-  /** Current download status */
-  status: DownloadStatus;
-  /** How many team sheets have been downloaded */
-  teamsDownloaded: number;
-  /** Total team sheets to download (from roster count) */
-  teamsTotal: number;
-  /** Error message if status is 'failed' */
-  error?: string;
-  /** Timestamp of last activity */
-  lastUpdated: string;
-}
+export type EventDownloadState =
+  | {
+      /** Tournament ID */
+      eventId: string;
+      /** Current download status (any except 'failed') */
+      status: Exclude<DownloadStatus, "failed">;
+      /** How many team sheets have been downloaded */
+      teamsDownloaded: number;
+      /** Total team sheets to download (from roster count) */
+      teamsTotal: number;
+      /** Timestamp of last activity */
+      lastUpdated: string;
+    }
+  | {
+      /** Tournament ID */
+      eventId: string;
+      /** Download failed */
+      status: "failed";
+      /** How many team sheets have been downloaded */
+      teamsDownloaded: number;
+      /** Total team sheets to download (from roster count) */
+      teamsTotal: number;
+      /** Error message explaining why download failed */
+      error: string;
+      /** Timestamp of last activity */
+      lastUpdated: string;
+    };

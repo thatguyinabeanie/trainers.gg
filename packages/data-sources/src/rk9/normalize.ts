@@ -90,7 +90,7 @@ export function normalizeSpecies(raw: string): string {
 
     // Fallback: slugify the form and append
     const sluggedForm = formLower
-      .replace(/(forme?|style|mask|form)/gi, "")
+      .replace(/\b(forme?|style|mask)\b/gi, "")
       .replace(/[^a-z0-9]/g, "-")
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "");

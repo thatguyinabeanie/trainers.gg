@@ -228,6 +228,7 @@ export function parseRosterPage(html: string): RK9RosterEntry[] {
  *     <b>Tera Type:</b> Fairy<br>
  *     <b>Ability:</b> Good as Gold &nbsp;&nbsp;
  *     <b>Held Item:</b> Choice Specs<br>
+ *     <b>Stat Alignment:</b> Bold<br>
  *     <h5>&nbsp;&nbsp;<span class="badge">Move1</span>
  *     <span class="badge">Move2</span>
  *     <span class="badge">Move3</span>
@@ -274,6 +275,10 @@ function parsePokemonBlocks($: $API, $container: $Selection): RK9Pokemon[] {
     // Extract Held Item from "<b>Held Item:</b> value"
     const heldItem = extractLabeledValue($block, $, "Held Item");
 
+    // Extract Stat Alignment (nature) from "<b>Stat Alignment:</b> value"
+    // Only present in newer formats (e.g., Champions M-A); null for older tournaments.
+    const statAlignment = extractLabeledValue($block, $, "Stat Alignment");
+
     // Extract moves from <span class="badge"> elements
     const moves: string[] = [];
     $block.find("span.badge").each((_j, badge) => {
@@ -288,6 +293,7 @@ function parsePokemonBlocks($: $API, $container: $Selection): RK9Pokemon[] {
       teraType: teraType || null,
       ability: ability || "",
       heldItem: heldItem || "",
+      statAlignment: statAlignment || null,
       moves,
     });
   });

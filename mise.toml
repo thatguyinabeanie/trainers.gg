@@ -1,7 +1,7 @@
 [env]
 BUN_JSC_forceRAMSize=25769803776
 BUN_JSC_gcMaxHeapSize=17179869184
-UV_PYTHON = { value = "{{ tools.python.path }}", tools = true }
+UV_PYTHON = { value = "{{ tools.python.path | default(value='') }}", tools = true }
 
 [settings]
 experimental = true
@@ -9,7 +9,10 @@ python.uv_venv_auto = "create|source"
 
 [tools]
 node = "22"
-pnpm = "latest"
+# Use npm backend for pnpm because the aqua registry's asset names
+# (pnpm-macos-arm64) are outdated; current pnpm releases ship
+# pnpm-darwin-arm64.tar.gz. npm:pnpm pulls from the npm registry instead.
+"npm:pnpm" = "latest"
 opencode = "latest"
 java = "zulu-21"
 ruby = "3.3"
@@ -24,23 +27,19 @@ neovim = "latest"
 #   android-sdk = "latest"
 
 [hooks]
-postinstall = "mise run install-lefthook ::: install-pnpm ::: install-python-deps"
+postinstall = "mise run install-lefthook ::: install-submodules ::: install-pnpm"
 
 [tasks.install-lefthook]
 description = "Install lefthook git hooks into the local repo"
 run = "lefthook install"
 
+[tasks.install-submodules]
+description = "Initialize git submodules (idempotent — safe to re-run)"
+run = "git submodule update --init --recursive"
+
 [tasks.install-pnpm]
 description = "Install all pnpm dependencies across the monorepo"
 run = "pnpm install"
-
-[tasks.install-python-deps]
-description = "Install Python dependencies from pyproject.toml"
-run = """
-echo "Installing Python dependencies from pyproject.toml..."
-uv sync --no-install-project --frozen
-echo "✓ Python dependencies installed"
-"""
 
 [tasks.install-ngrok]
 description = "Install ngrok for Bluesky OAuth local development"

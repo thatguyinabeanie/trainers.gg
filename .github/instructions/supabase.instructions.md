@@ -35,7 +35,7 @@ All tables use RLS with `auth.uid()`. Queries that need to bypass RLS use a serv
 - Every function must be declared in `supabase/config.toml` under `[functions.<name>]`
 - Set `verify_jwt = true` for authenticated endpoints, `verify_jwt = false` only for public endpoints (e.g., `signup`, `bluesky-auth`)
 - Never deploy manually via `supabase functions deploy` — CI handles deployment
-- Always run `pnpm supabase` from repo root, never `cd packages/supabase && supabase`
+- Always run `pnpm supabase` from `packages/supabase`, never from the repo root. The CLI writes its linked-project cache to `supabase/.temp/` in the current working directory; the package-level path is already gitignored but the root-level path is not.
 
 ## Client Selection
 
