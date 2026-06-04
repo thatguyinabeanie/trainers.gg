@@ -413,6 +413,33 @@ describe("importEvent", () => {
     expect(result.standingsInserted).toBe(0);
   });
 
+  it("creates a new player when multiple candidates exist but none match trainer name (name_collision)", async () => {
+    const supabase = buildSupabaseMock({
+      // Two existing players with the same identity but neither knows the trainer name
+      playersSelect: {
+        data: [
+          { id: 20, trainer_names: ["OtherTrainer"] },
+          { id: 21, trainer_names: ["AnotherTrainer"] },
+        ],
+        error: null,
+      },
+      playersInsert: { data: { id: 22 }, error: null },
+      standingsUpsert: { data: [{ id: 800 }], error: null },
+    });
+
+    const result = await importEvent(
+      supabase,
+      EVENT_ID,
+      [makeEntry({ trainerName: "UnknownTrainer" })],
+      {},
+      EMPTY_MAP
+    );
+
+    expect(result.playersUpserted).toBe(1);
+    expect(result.standingsInserted).toBe(1);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // importEvent error paths
 // ---------------------------------------------------------------------------
@@ -456,6 +483,8 @@ describe("importEvent error paths", () => {
     // Import does NOT throw — the entry is unlinked, not fatal
     expect(result.playersUpserted).toBe(0);
     expect(result.standingsInserted).toBe(1);
+    // Verify no teams were imported (standing exists but with no player_id due to error)
+    expect(result.teamsInserted).toBe(0);
   });
 
   it("records standings as unlinked when conflict-group player insert fails (non-fatal)", async () => {
@@ -494,6 +523,10 @@ describe("importEvent error paths", () => {
 
     // Import does NOT throw — both entries are unlinked, not fatal
     expect(result.playersUpserted).toBe(0);
+    // Both standings inserted but with no player_id due to conflict group error
+    expect(result.standingsInserted).toBe(2);
+    // Verify no teams were imported (standings exist but with no player_id)
+    expect(result.teamsInserted).toBe(0);
   });
 
   it("throws when the standings batch upsert fails", async () => {
@@ -519,32 +552,5 @@ describe("importEvent error paths", () => {
     await expect(
       importEvent(supabase, "EVT001", roster, {})
     ).rejects.toThrow("standings upsert failed");
-  });
-});
-
-  it("creates a new player when multiple candidates exist but none match trainer name (name_collision)", async () => {
-    const supabase = buildSupabaseMock({
-      // Two existing players with the same identity but neither knows the trainer name
-      playersSelect: {
-        data: [
-          { id: 20, trainer_names: ["OtherTrainer"] },
-          { id: 21, trainer_names: ["AnotherTrainer"] },
-        ],
-        error: null,
-      },
-      playersInsert: { data: { id: 22 }, error: null },
-      standingsUpsert: { data: [{ id: 800 }], error: null },
-    });
-
-    const result = await importEvent(
-      supabase,
-      EVENT_ID,
-      [makeEntry({ trainerName: "UnknownTrainer" })],
-      {},
-      EMPTY_MAP
-    );
-
-    expect(result.playersUpserted).toBe(1);
-    expect(result.standingsInserted).toBe(1);
   });
 });

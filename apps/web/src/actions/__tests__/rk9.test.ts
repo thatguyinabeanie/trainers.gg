@@ -349,5 +349,7 @@ describe("scrapeRk9TeamsBatch", () => {
 
     // With force=true, the standing should be processed (not skipped because attempted_at is set)
     expect(result.success).toBe(true);
+    // Verify the standing was actually processed, not skipped
+    expect(mockParseTeamListPage).toHaveBeenCalled();
   });
 });
