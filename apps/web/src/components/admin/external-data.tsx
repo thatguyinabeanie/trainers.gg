@@ -2443,7 +2443,7 @@ export function ExternalData() {
                       </div>
                       {activeTab === "limitless" && (
                         <div className="flex items-center p-2">
-                          {row.status === "queued" &&
+                          {row.limitless?.import_status === "queued" &&
                             row.limitless?.import_requested_at && (
                               <span className="text-muted-foreground text-xs whitespace-nowrap">
                                 {formatTimeAgo(
@@ -2451,7 +2451,7 @@ export function ExternalData() {
                                 )}
                               </span>
                             )}
-                          {row.status === "importing" &&
+                          {row.limitless?.import_status === "importing" &&
                             row.limitless?.import_requested_at && (
                               <span className="text-xs whitespace-nowrap text-blue-600 dark:text-blue-400">
                                 started{" "}

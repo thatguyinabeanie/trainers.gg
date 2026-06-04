@@ -8,9 +8,8 @@ export function normalizeLimitlessStatus(status: string | null): string {
     case "completed":
       return "complete";
     case "queued":
-      return "queued";
     case "importing":
-      return "importing";
+      return "in-progress";
     case "failed":
       return "failed";
     default:

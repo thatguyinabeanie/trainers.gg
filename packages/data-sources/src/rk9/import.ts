@@ -337,7 +337,7 @@ export async function importEvent(
     const { data: inserted, error: sErr } = await supabase
       .schema("rk9")
       .from("standings")
-      .upsert(
+      .insert(
         batch.map((s) => ({
           event_id: s.event_id,
           player_id: s.player_id,
@@ -346,8 +346,7 @@ export async function importEvent(
           roster_entry_id: s.roster_entry_id,
           trainer_name: s.trainer_name,
           import_flag: s.import_flag,
-        })),
-        { onConflict: "event_id,roster_entry_id" }
+        }))
       )
       .select("id");
 

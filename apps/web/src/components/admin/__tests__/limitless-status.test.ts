@@ -3,8 +3,8 @@ import { normalizeLimitlessStatus } from "../limitless-status";
 describe("normalizeLimitlessStatus", () => {
   it.each([
     ["completed", "complete"],
-    ["queued", "queued"],
-    ["importing", "importing"],
+    ["queued", "in-progress"],
+    ["importing", "in-progress"],
     ["failed", "failed"],
     ["unknown", "pending"],
     [null, "pending"],
