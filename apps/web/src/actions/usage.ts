@@ -1,10 +1,18 @@
 "use server";
 
+import { unstable_cache } from "next/cache";
+
 import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
-import { computeUsageRollups } from "@trainers/supabase";
-import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
+import {
+  computeUsageRollups,
+  getSpeciesUsageDetail,
+  type SpeciesUsagePeriod,
+  type SpeciesUsageDetailParams,
+} from "@trainers/supabase";
+import { createStaticClient, createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
+import { CacheTags } from "@/lib/cache";
 
 // ---------------------------------------------------------------------------
 // Usage rollup worker
@@ -131,6 +139,59 @@ export async function triggerUsageRollup(
     return {
       success: false,
       error: getErrorMessage(e, "Usage rollup failed"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: species usage detail
+// ---------------------------------------------------------------------------
+
+/**
+ * Public (non-admin) server action to fetch trailing usage periods for a
+ * species.  Data is public — all tournament usage stats are visible to
+ * everyone — so this uses `createStaticClient()` wrapped in `unstable_cache`
+ * for ISR caching.
+ *
+ * Cache revalidation: 3600s (1 hour).  Usage rollups run at most every few
+ * hours, so 1-hour staleness is acceptable. The USAGE_STATS and per-format
+ * tags can be used for on-demand invalidation after a rollup completes.
+ */
+export async function fetchSpeciesUsageDetail(
+  params: SpeciesUsageDetailParams
+): Promise<ActionResult<SpeciesUsagePeriod[]>> {
+  try {
+    const { format, species, source = "all", periodType = "week", limit = 12 } =
+      params;
+
+    const cacheKey = `usage-detail:${format}:${source}:${species}:${periodType}:${limit}`;
+
+    const getCached = unstable_cache(
+      async () => {
+        // createStaticClient() — anonymous, no cookies — required inside
+        // unstable_cache so the cached value is shared across all users.
+        const supabase = createStaticClient();
+        return getSpeciesUsageDetail(supabase, {
+          format,
+          species,
+          source,
+          periodType,
+          limit,
+        });
+      },
+      [cacheKey],
+      {
+        revalidate: 3600, // 1 hour
+        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
+      }
+    );
+
+    const data = await getCached();
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch species usage detail"),
     };
   }
 }

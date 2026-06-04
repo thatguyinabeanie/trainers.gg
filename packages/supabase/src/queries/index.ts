@@ -367,3 +367,16 @@ export {
   type DmFailureRow,
   type RoleSyncFailureRow,
 } from "./discord";
+
+// Usage stats queries
+export {
+  getSpeciesUsageDetail,
+  getSpeciesUsage,
+} from "./usage";
+
+export type {
+  UsageDetailEntry,
+  SpeciesUsagePeriod,
+  SpeciesUsageDetailParams,
+  FormatUsageRow,
+} from "./usage";
