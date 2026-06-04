@@ -68,12 +68,23 @@ CREATE INDEX IF NOT EXISTS idx_event_usage_format_date
 ALTER TABLE public.event_usage ENABLE ROW LEVEL SECURITY;
 
 -- Public read: usage stats contain no user-private data.
--- Writes are performed exclusively by the service-role client (rollup worker)
--- which bypasses RLS, so no INSERT/UPDATE/DELETE policies are needed.
 DROP POLICY IF EXISTS "event_usage_read" ON public.event_usage;
 CREATE POLICY "event_usage_read"
   ON public.event_usage FOR SELECT
   USING (true);
+
+-- Write-deny: defense-in-depth — the service-role client (rollup worker) bypasses
+-- RLS, so these policies only block authenticated user requests.  Matches the
+-- pattern used by format_meta_stats, pokemon_usage_stats, imported_team_sheets, etc.
+DROP POLICY IF EXISTS "no_user_writes_event_usage" ON public.event_usage;
+CREATE POLICY "no_user_writes_event_usage" ON public.event_usage
+  FOR INSERT TO authenticated WITH CHECK (false);
+DROP POLICY IF EXISTS "no_user_updates_event_usage" ON public.event_usage;
+CREATE POLICY "no_user_updates_event_usage" ON public.event_usage
+  FOR UPDATE TO authenticated USING (false) WITH CHECK (false);
+DROP POLICY IF EXISTS "no_user_deletes_event_usage" ON public.event_usage;
+CREATE POLICY "no_user_deletes_event_usage" ON public.event_usage
+  FOR DELETE TO authenticated USING (false);
 
 
 -- =============================================================================
@@ -94,6 +105,25 @@ ALTER TABLE public.format_meta_stats
 -- Deduplicates worker re-runs and prevents accidental double-inserts.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_format_meta_stats_dedup
   ON public.format_meta_stats (format, source, period_type, period_start);
+
+-- The new unique index above has `format` as its leading column, making the old
+-- single-column idx_format_meta_stats_format index fully redundant.
+DROP INDEX IF EXISTS idx_format_meta_stats_format;
+
+-- CHECK constraints for closed discriminator value sets
+-- (format_meta_stats columns added in this migration)
+ALTER TABLE public.format_meta_stats
+  DROP CONSTRAINT IF EXISTS format_meta_stats_source_check;
+ALTER TABLE public.format_meta_stats
+  ADD CONSTRAINT format_meta_stats_source_check
+  CHECK (source IN ('rk9', 'limitless', 'first_party', 'all'));
+  -- 'all' is valid here: represents a combined cross-source rollup
+
+ALTER TABLE public.format_meta_stats
+  DROP CONSTRAINT IF EXISTS format_meta_stats_period_type_check;
+ALTER TABLE public.format_meta_stats
+  ADD CONSTRAINT format_meta_stats_period_type_check
+  CHECK (period_type IN ('day', 'week', 'month'));
 
 
 -- =============================================================================
@@ -118,12 +148,35 @@ CREATE TABLE IF NOT EXISTS public.usage_dirty (
 ALTER TABLE public.usage_dirty ENABLE ROW LEVEL SECURITY;
 
 -- Public read: operational state only, no sensitive data.
--- Writes are performed exclusively by the service-role client (rollup worker)
--- which bypasses RLS, so no INSERT/UPDATE/DELETE policies are needed.
 DROP POLICY IF EXISTS "usage_dirty_read" ON public.usage_dirty;
 CREATE POLICY "usage_dirty_read"
   ON public.usage_dirty FOR SELECT
   USING (true);
+
+-- Write-deny: defense-in-depth — same pattern as event_usage above.
+DROP POLICY IF EXISTS "no_user_writes_usage_dirty" ON public.usage_dirty;
+CREATE POLICY "no_user_writes_usage_dirty" ON public.usage_dirty
+  FOR INSERT TO authenticated WITH CHECK (false);
+DROP POLICY IF EXISTS "no_user_updates_usage_dirty" ON public.usage_dirty;
+CREATE POLICY "no_user_updates_usage_dirty" ON public.usage_dirty
+  FOR UPDATE TO authenticated USING (false) WITH CHECK (false);
+DROP POLICY IF EXISTS "no_user_deletes_usage_dirty" ON public.usage_dirty;
+CREATE POLICY "no_user_deletes_usage_dirty" ON public.usage_dirty
+  FOR DELETE TO authenticated USING (false);
+
+-- CHECK constraint: closed source value set (division is intentionally unconstrained)
+ALTER TABLE public.usage_dirty
+  DROP CONSTRAINT IF EXISTS usage_dirty_source_check;
+ALTER TABLE public.usage_dirty
+  ADD CONSTRAINT usage_dirty_source_check
+  CHECK (source IN ('rk9', 'limitless', 'first_party'));
+
+-- CHECK constraint: closed source value set for event_usage
+ALTER TABLE public.event_usage
+  DROP CONSTRAINT IF EXISTS event_usage_source_check;
+ALTER TABLE public.event_usage
+  ADD CONSTRAINT event_usage_source_check
+  CHECK (source IN ('rk9', 'limitless', 'first_party'));
 
 
 -- =============================================================================
