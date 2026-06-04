@@ -56,6 +56,7 @@ import {
   triggerImportQueue,
 } from "@/actions/limitless";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
+import { formatTimeAgo } from "@trainers/utils";
 import { normalizeLimitlessStatus } from "./limitless-status";
 import {
   type RK9EventRow,
@@ -779,17 +780,6 @@ export function ExternalData() {
           new Date(a.import_requested_at!).getTime() -
           new Date(b.import_requested_at!).getTime()
       )[0] ?? null;
-
-  function formatRelativeTime(iso: string): string {
-    const diff = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  }
 
   // -------------------------------------------------------------------------
   // RK9 actions
@@ -1737,7 +1727,7 @@ export function ExternalData() {
                   </span>
                   <span className="text-xs">
                     (queued{" "}
-                    {formatRelativeTime(nextQueuedItem.import_requested_at!)})
+                    {formatTimeAgo(nextQueuedItem.import_requested_at!)})
                   </span>
                 </span>
               )}
@@ -2456,7 +2446,7 @@ export function ExternalData() {
                           {row.status === "queued" &&
                             row.limitless?.import_requested_at && (
                               <span className="text-muted-foreground text-xs whitespace-nowrap">
-                                {formatRelativeTime(
+                                {formatTimeAgo(
                                   row.limitless.import_requested_at
                                 )}
                               </span>
@@ -2465,7 +2455,7 @@ export function ExternalData() {
                             row.limitless?.import_requested_at && (
                               <span className="text-xs whitespace-nowrap text-blue-600 dark:text-blue-400">
                                 started{" "}
-                                {formatRelativeTime(
+                                {formatTimeAgo(
                                   row.limitless.import_requested_at
                                 )}
                               </span>

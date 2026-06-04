@@ -14,6 +14,7 @@ export function normalizeLimitlessStatus(status: string | null): string {
     case "failed":
       return "failed";
     default:
+      console.warn(`[limitless] Unknown tournament status: "${status as string}" — defaulting to pending`);
       return "pending";
   }
 }

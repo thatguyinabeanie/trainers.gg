@@ -9,20 +9,7 @@ import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSupabaseQuery } from "@/lib/supabase";
-
-// ---------------------------------------------------------------------------
-// Type definitions
-// ---------------------------------------------------------------------------
-
-interface TeamPokemonSlot {
-  position: number;
-  species: string | null;
-  ability: string | null;
-  held_item: string | null;
-  tera_type: string | null;
-  stat_alignment: string | null;
-  moves: string[] | null;
-}
+import { type TeamPokemonDisplay } from "./expanded-row-data";
 
 interface PlayerStanding {
   id: number;
@@ -30,7 +17,7 @@ interface PlayerStanding {
   placement: number | null;
   event_id: string;
   events: { name: string; date_start: string; tier: string } | null;
-  team_pokemon: TeamPokemonSlot[] | null;
+  team_pokemon: TeamPokemonDisplay[] | null;
 }
 
 // ---------------------------------------------------------------------------

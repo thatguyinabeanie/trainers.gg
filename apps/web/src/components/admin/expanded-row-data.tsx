@@ -16,7 +16,7 @@ import { type UnifiedRow } from "./external-data-shared";
 // Type definitions
 // ---------------------------------------------------------------------------
 
-interface PokemonSlot {
+export interface TeamPokemonDisplay {
   position: number;
   species: string | null;
   ability: string | null;
@@ -40,7 +40,7 @@ interface RK9StandingWithTeam {
     country: string;
     player_id_masked: string | null;
   } | null;
-  team_pokemon: PokemonSlot[] | null;
+  team_pokemon: TeamPokemonDisplay[] | null;
 }
 
 interface LimitlessStandingWithTeam {
@@ -53,7 +53,7 @@ interface LimitlessStandingWithTeam {
     display_name: string;
     country: string | null;
   } | null;
-  team_pokemon: PokemonSlot[] | null;
+  team_pokemon: TeamPokemonDisplay[] | null;
 }
 
 // ---------------------------------------------------------------------------
