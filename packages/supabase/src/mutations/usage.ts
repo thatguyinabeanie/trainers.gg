@@ -490,7 +490,7 @@ export async function computeUsageRollups(
   let bucketsWritten = 0;
 
   // ─── Step 3: For each dirty format, recompute rollups ─────────────────────
-  for (const [format, { dirtySources, dirtySince, capturedUpdatedAt }] of byFormat) {
+  for (const [format, { dirtySources, dirtySince }] of byFormat) {
     // Sources to recompute: all dirty concrete sources + 'all'
     const sourcesToRecompute = new Set([...dirtySources, "all"]);
 

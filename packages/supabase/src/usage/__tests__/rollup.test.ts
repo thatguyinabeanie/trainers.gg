@@ -14,7 +14,6 @@ import {
   mergeHistogram,
   computeDelta,
   type FactRow,
-  type PeriodType,
 } from "../rollup";
 
 // =============================================================================
