@@ -74,7 +74,14 @@ describe("fetchTournamentList", () => {
         ok: true,
         json: async () => firstPage,
       })
-      .mockRejectedValueOnce(new Error("network down"));
+      .mockRejectedValueOnce(new Error("network down"))
+      .mockResolvedValue({
+        // Pages 3-6 are initiated concurrently with page 2 — they need responses
+        // even though Promise.all already rejected from page 2's failure.
+        status: 200,
+        ok: true,
+        json: async () => [],
+      });
     jest.spyOn(globalThis, "fetch").mockImplementation(mockFetch);
 
     await expect(fetchTournamentList()).rejects.toThrow("network down");
