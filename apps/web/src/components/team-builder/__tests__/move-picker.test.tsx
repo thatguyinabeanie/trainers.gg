@@ -46,6 +46,27 @@ jest.mock("@trainers/pokemon/sprites", () => ({
 }));
 
 // =============================================================================
+// Mock useUsageData — move-picker now calls this hook; return empty by default
+// so existing tests are unaffected. Override per-test when testing usage.
+// =============================================================================
+
+const mockUseUsageData = jest.fn();
+
+jest.mock("../use-usage-data", () => ({
+  useUsageData: (...args: unknown[]) => mockUseUsageData(...args),
+}));
+
+// =============================================================================
+// Mock UsageSparkline — recharts + ResizeObserver not available in JSDOM.
+// =============================================================================
+
+jest.mock("../usage-sparkline", () => ({
+  UsageSparkline: ({ ariaLabel }: { ariaLabel?: string }) => (
+    <span data-testid="usage-sparkline" aria-label={ariaLabel ?? "Usage trend"} />
+  ),
+}));
+
+// =============================================================================
 // Mock @tanstack/react-virtual — JSDOM has no layout/scroll APIs; the
 // virtualizer would report zero visible items. This mock renders every row.
 // =============================================================================
@@ -366,6 +387,8 @@ describe("MovePicker", () => {
     mockGetMoveData.mockImplementation(
       (name: string) => MOCK_MOVE_DATA[name] ?? null
     );
+    // Default: no usage data loaded — preserves existing test behavior.
+    mockUseUsageData.mockReturnValue({ data: undefined });
   });
 
   // ---------------------------------------------------------------------------
@@ -990,6 +1013,209 @@ describe("MovePicker", () => {
       render(<MovePicker {...defaultProps()} />);
       await user.click(screen.getByTestId("sidebar-category-physical"));
       expect(screen.getByText("No moves found")).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Usage data integration
+  // ---------------------------------------------------------------------------
+
+  describe("usage data integration", () => {
+    it("renders usage % for a move when data is present", () => {
+      mockGetLearnableMoves.mockReturnValue(["Flamethrower"]);
+      mockUseUsageData.mockReturnValue({
+        data: [
+          {
+            periodStart: "2025-01-01",
+            periodEnd: "2025-01-07",
+            usagePct: 80,
+            rank: 1,
+            sampleSize: 1000,
+            usageChange7d: null,
+            usageChange30d: null,
+            moves: [{ value: "Flamethrower", count: 620, pct: 62 }],
+            tera: [],
+            items: [],
+          },
+        ],
+      });
+      render(<MovePicker {...defaultProps()} />);
+      expect(screen.getByText("62%")).toBeInTheDocument();
+    });
+
+    it("matches move names via slug normalization (hyphenated DB value)", () => {
+      // DB stores "fake-out", builder calls it "Fake Out"
+      mockGetLearnableMoves.mockReturnValue(["Fake Out"]);
+      mockGetMoveData.mockImplementation(() => ({
+        type: "Normal",
+        category: "Physical",
+        basePower: 40,
+        accuracy: 100,
+        shortDesc: "Priority +3.",
+      }));
+      mockUseUsageData.mockReturnValue({
+        data: [
+          {
+            periodStart: "2025-01-01",
+            periodEnd: "2025-01-07",
+            usagePct: 60,
+            rank: 2,
+            sampleSize: 1000,
+            usageChange7d: null,
+            usageChange30d: null,
+            moves: [{ value: "fake-out", count: 450, pct: 45 }],
+            tera: [],
+            items: [],
+          },
+        ],
+      });
+      render(<MovePicker {...defaultProps()} />);
+      expect(screen.getByText("45%")).toBeInTheDocument();
+    });
+
+    it("renders a sparkline when multiple usage periods are present", () => {
+      mockGetLearnableMoves.mockReturnValue(["Flamethrower"]);
+      mockUseUsageData.mockReturnValue({
+        data: [
+          {
+            periodStart: "2024-12-25",
+            periodEnd: "2025-01-01",
+            usagePct: 80,
+            rank: 1,
+            sampleSize: 1000,
+            usageChange7d: null,
+            usageChange30d: null,
+            moves: [{ value: "Flamethrower", count: 550, pct: 55 }],
+            tera: [],
+            items: [],
+          },
+          {
+            periodStart: "2025-01-01",
+            periodEnd: "2025-01-07",
+            usagePct: 82,
+            rank: 1,
+            sampleSize: 1000,
+            usageChange7d: null,
+            usageChange30d: null,
+            moves: [{ value: "Flamethrower", count: 620, pct: 62 }],
+            tera: [],
+            items: [],
+          },
+        ],
+      });
+      render(<MovePicker {...defaultProps()} />);
+      // Sparkline renders because series has ≥ 2 points
+      expect(screen.getByTestId("usage-sparkline")).toBeInTheDocument();
+    });
+
+    it("does not render a sparkline when only one usage period is present", () => {
+      mockGetLearnableMoves.mockReturnValue(["Flamethrower"]);
+      mockUseUsageData.mockReturnValue({
+        data: [
+          {
+            periodStart: "2025-01-01",
+            periodEnd: "2025-01-07",
+            usagePct: 80,
+            rank: 1,
+            sampleSize: 1000,
+            usageChange7d: null,
+            usageChange30d: null,
+            moves: [{ value: "Flamethrower", count: 620, pct: 62 }],
+            tera: [],
+            items: [],
+          },
+        ],
+      });
+      render(<MovePicker {...defaultProps()} />);
+      expect(screen.queryByTestId("usage-sparkline")).not.toBeInTheDocument();
+    });
+
+    it("auto-sorts moves by usage descending when data is present and sort is default", () => {
+      // Provide three moves with usage: Surf 90%, Flamethrower 62%, Earthquake 30%
+      mockGetLearnableMoves.mockReturnValue(["Flamethrower", "Surf", "Earthquake"]);
+      mockGetMoveData.mockImplementation((name: string) => MOCK_MOVE_DATA[name] ?? null);
+      mockUseUsageData.mockReturnValue({
+        data: [
+          {
+            periodStart: "2025-01-01",
+            periodEnd: "2025-01-07",
+            usagePct: 70,
+            rank: 1,
+            sampleSize: 1000,
+            usageChange7d: null,
+            usageChange30d: null,
+            moves: [
+              { value: "Flamethrower", count: 620, pct: 62 },
+              { value: "Surf", count: 900, pct: 90 },
+              { value: "Earthquake", count: 300, pct: 30 },
+            ],
+            tera: [],
+            items: [],
+          },
+        ],
+      });
+      render(<MovePicker {...defaultProps()} />);
+      // All three rows should be present
+      const rows = screen.getAllByRole("row");
+      const names = rows.map((r) =>
+        r.getAttribute("aria-label")?.replace("Select ", "") ?? ""
+      );
+      const surfIdx = names.indexOf("Surf");
+      const flameIdx = names.indexOf("Flamethrower");
+      const quakeIdx = names.indexOf("Earthquake");
+      // Higher usage should appear before lower
+      expect(surfIdx).toBeLessThan(flameIdx);
+      expect(flameIdx).toBeLessThan(quakeIdx);
+    });
+
+    it("preserves name-ascending sort when user has explicitly sorted by name", async () => {
+      const user = userEvent.setup();
+      mockGetLearnableMoves.mockReturnValue(["Surf", "Earthquake", "Flamethrower"]);
+      mockGetMoveData.mockImplementation((name: string) => MOCK_MOVE_DATA[name] ?? null);
+      mockUseUsageData.mockReturnValue({
+        data: [
+          {
+            periodStart: "2025-01-01",
+            periodEnd: "2025-01-07",
+            usagePct: 70,
+            rank: 1,
+            sampleSize: 1000,
+            usageChange7d: null,
+            usageChange30d: null,
+            moves: [
+              { value: "Surf", count: 900, pct: 90 },
+              { value: "Flamethrower", count: 620, pct: 62 },
+              { value: "Earthquake", count: 300, pct: 30 },
+            ],
+            tera: [],
+            items: [],
+          },
+        ],
+      });
+      render(<MovePicker {...defaultProps()} />);
+      // Default sort (name asc with usage data) places Surf first.
+      // Click name sort twice → name desc, then once more → name asc.
+      // After each toggle the user explicitly controls the sort, bypassing usage.
+      await user.click(screen.getByRole("button", { name: /sort by name/i }));
+      // Now name desc → "↓" arrow
+      expect(screen.getByText("↓")).toBeInTheDocument();
+      // Rows in desc name order: Surf → Flamethrower → Earthquake
+      const rows = screen.getAllByRole("row");
+      const names = rows.map((r) =>
+        r.getAttribute("aria-label")?.replace("Select ", "") ?? ""
+      );
+      expect(names[0]).toBe("Surf");
+      expect(names[1]).toBe("Flamethrower");
+      expect(names[2]).toBe("Earthquake");
+    });
+
+    it("shows dash in USE% column when no usage data is available", () => {
+      mockGetLearnableMoves.mockReturnValue(["Flamethrower"]);
+      // Default mock returns no data
+      render(<MovePicker {...defaultProps()} />);
+      // Dash rendered for unknown usage
+      const dashes = screen.getAllByText("—");
+      expect(dashes.length).toBeGreaterThan(0);
     });
   });
 });

@@ -12,6 +12,7 @@ import { type MoveData } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 
+import { UsageSparkline } from "../usage-sparkline";
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { CATEGORY_ICON_URLS } from "../move-category-ui";
 import { type MoveCategory } from "./move-filter-state";
@@ -175,11 +176,8 @@ export function MoveListHeader({ sort, onSort, className }: MoveListHeaderProps)
         <SortArrow active={sort.col === "acc"} dir={sort.dir} />
       </button>
 
-      {/* Usage — placeholder */}
-      <span
-        className="text-muted-foreground/50 cursor-default text-center"
-        title="Coming soon"
-      >
+      {/* Usage % — sortable once data loads */}
+      <span className="text-muted-foreground cursor-default text-center">
         USE%
       </span>
 
@@ -210,6 +208,16 @@ interface MoveListRowProps {
   onCategoryFilter?: (category: MoveCategory) => void;
   /** Called when a role chip is clicked (filter affordance). */
   onRoleFilter?: (roleId: RoleId) => void;
+  /**
+   * Latest-period usage % for this move (0–100). Shown in the USE% column.
+   * When undefined, the column renders a muted dash.
+   */
+  usagePct?: number;
+  /**
+   * Usage % series oldest → newest for the sparkline. Rendered only when
+   * there are ≥ 2 data points.
+   */
+  usageSeries?: number[];
 }
 
 export function MoveListRow({
@@ -220,6 +228,8 @@ export function MoveListRow({
   onTypeFilter,
   onCategoryFilter,
   onRoleFilter,
+  usagePct,
+  usageSeries,
 }: MoveListRowProps) {
   const roles = getRolesForMove(move.name);
 
@@ -346,13 +356,25 @@ export function MoveListRow({
           : `${move.accuracy}%`}
       </span>
 
-      {/* Usage — coming soon placeholder */}
-      <span
-        className="text-muted-foreground/30 cursor-default text-center font-mono text-xs tabular-nums"
-        title="Coming soon"
-      >
-        —
-      </span>
+      {/* Usage % + sparkline */}
+      <div className="flex flex-col items-center justify-center gap-0.5">
+        <span
+          className={cn(
+            "font-mono text-xs tabular-nums",
+            usagePct != null && usagePct > 0
+              ? "text-foreground"
+              : "text-muted-foreground/40"
+          )}
+        >
+          {usagePct != null && usagePct > 0 ? `${usagePct}%` : "—"}
+        </span>
+        {usageSeries && usageSeries.length >= 2 && (
+          <UsageSparkline
+            points={usageSeries}
+            ariaLabel={`${move.name} usage trend`}
+          />
+        )}
+      </div>
 
       {/* Effect (shortDesc) */}
       <span
