@@ -2051,9 +2051,6 @@ export function ExternalData() {
                   const p = sortedPlayers[virtualRow.index];
                   if (!p) return null;
                   const isPlayerExpanded = expandedPlayerId === p.id;
-                  const fullName =
-                    [p.first_name, p.last_name].filter(Boolean).join(" ") ||
-                    "—";
                   const eventCount = p.standings[0]?.count ?? 0;
                   return (
                     <div
@@ -2324,9 +2321,11 @@ export function ExternalData() {
                           onChange={(e) => {
                             setSelectedIds((prev) => {
                               const next = new Set(prev);
-                              e.target.checked
-                                ? next.add(row.id)
-                                : next.delete(row.id);
+                              if (e.target.checked) {
+                                next.add(row.id);
+                              } else {
+                                next.delete(row.id);
+                              }
                               return next;
                             });
                           }}

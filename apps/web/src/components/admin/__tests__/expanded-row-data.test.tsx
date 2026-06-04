@@ -10,6 +10,10 @@ import React from "react";
 
 const mockUseSupabaseQuery = jest.fn();
 
+jest.mock("@/actions/rk9", () => ({
+  scrapeRk9TeamForStanding: jest.fn(),
+}));
+
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: (...args: unknown[]) => mockUseSupabaseQuery(...args),
 }));
@@ -98,11 +102,13 @@ function makeRk9Standings(count = 3) {
     placement: i + 1,
     division: "masters",
     drop_round: null,
+    player_id: i + 1,
+    roster_entry_id: `entry${i + 1}`,
     players: {
       first_name: "Player",
       last_name: `${i + 1}`,
       country: "US",
-      trainer_name: `Trainer${i + 1}`,
+      player_id_masked: `${i + 1}....${i + 9}`,
     },
     team_pokemon: [
       {
@@ -111,6 +117,7 @@ function makeRk9Standings(count = 3) {
         ability: "Static",
         held_item: "Light Ball",
         tera_type: "Electric",
+        stat_alignment: "Timid",
         moves: [],
       },
     ],
@@ -160,7 +167,7 @@ afterEach(() => {
 
 describe("ExpandedRowData", () => {
   describe("standings table — RK9", () => {
-    it("renders table headers: #, Player, Team, Division", () => {
+    it("renders table headers: #, Name, Country, Team", () => {
       mockUseSupabaseQuery.mockReturnValue({
         data: makeRk9Standings(2),
         error: null,
@@ -171,12 +178,11 @@ describe("ExpandedRowData", () => {
       render(<ExpandedRowData row={rk9Row} />);
 
       expect(screen.getByRole("columnheader", { name: "#" })).toBeInTheDocument();
-      expect(screen.getByRole("columnheader", { name: /player/i })).toBeInTheDocument();
+      expect(screen.getByRole("columnheader", { name: /name/i })).toBeInTheDocument();
       expect(screen.getByRole("columnheader", { name: /team/i })).toBeInTheDocument();
-      expect(screen.getByRole("columnheader", { name: /division/i })).toBeInTheDocument();
     });
 
-    it("renders player names (trainer_name)", () => {
+    it("renders player names as first + last", () => {
       mockUseSupabaseQuery.mockReturnValue({
         data: makeRk9Standings(3),
         error: null,
@@ -186,25 +192,29 @@ describe("ExpandedRowData", () => {
 
       render(<ExpandedRowData row={rk9Row} />);
 
-      expect(screen.getByText("Trainer1")).toBeInTheDocument();
-      expect(screen.getByText("Trainer2")).toBeInTheDocument();
-      expect(screen.getByText("Trainer3")).toBeInTheDocument();
+      expect(screen.getByText("Player 1")).toBeInTheDocument();
+      expect(screen.getByText("Player 2")).toBeInTheDocument();
+      expect(screen.getByText("Player 3")).toBeInTheDocument();
     });
 
-    it("falls back to first + last name when trainer_name is null", () => {
+    it("renders player names as first + last", () => {
       mockUseSupabaseQuery.mockReturnValue({
         data: [
           {
             placement: 1,
             division: "masters",
             drop_round: null,
+            player_id: 1,
+            roster_entry_id: "entry1",
             players: {
               first_name: "John",
               last_name: "Smith",
               country: "US",
-              trainer_name: null,
+              player_id_masked: "1....9",
             },
-            team_pokemon: [],
+            team_pokemon: [
+              { position: 1, species: "pikachu", ability: "Static", held_item: null, tera_type: null, stat_alignment: null, moves: [] },
+            ],
           },
         ],
         error: null,
@@ -256,7 +266,7 @@ describe("ExpandedRowData", () => {
               first_name: "Ash",
               last_name: "K",
               country: "US",
-              trainer_name: "AshK",
+              player_id_masked: "1....9",
             },
             team_pokemon: [],
           },
@@ -386,7 +396,7 @@ describe("ExpandedRowData", () => {
               first_name: "Ash",
               last_name: "K",
               country: "US",
-              trainer_name: "AshK",
+              player_id_masked: "1....9",
             },
             team_pokemon: [],
           },
@@ -498,7 +508,7 @@ describe("ExpandedRowData", () => {
           first_name: "Player",
           last_name: `${i + 1}`,
           country: "US",
-          trainer_name: `T${i + 1}`,
+          player_id_masked: `${i + 1}....9`,
         },
         team_pokemon: [],
       }));
@@ -537,7 +547,7 @@ describe("ExpandedRowData", () => {
           first_name: "P",
           last_name: `${i}`,
           country: "US",
-          trainer_name: `T${i}`,
+          player_id_masked: `${i}....9`,
         },
         team_pokemon: [],
       }));

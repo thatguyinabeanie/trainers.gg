@@ -4337,6 +4337,7 @@ export type Database = {
           player_id: number
           roster_entry_id: string | null
           team_scrape_attempted_at: string | null
+          trainer_name: string | null
         }
         Insert: {
           division: Database["rk9"]["Enums"]["division"]
@@ -4347,6 +4348,7 @@ export type Database = {
           player_id: number
           roster_entry_id?: string | null
           team_scrape_attempted_at?: string | null
+          trainer_name?: string | null
         }
         Update: {
           division?: Database["rk9"]["Enums"]["division"]
@@ -4357,6 +4359,7 @@ export type Database = {
           player_id?: number
           roster_entry_id?: string | null
           team_scrape_attempted_at?: string | null
+          trainer_name?: string | null
         }
         Relationships: [
           {

@@ -183,6 +183,7 @@ export async function importEvent(
     division: string;
     placement: number | null;
     roster_entry_id: string | null;
+    trainer_name: string | null;
     index: number;
   }> = [];
 
@@ -200,14 +201,27 @@ export async function importEvent(
       division: entry.division,
       placement: entry.placement,
       roster_entry_id: entry.rosterEntryId ?? null,
+      trainer_name: entry.trainerName ?? null,
       index: idx,
     });
   }
 
+  // Deduplicate standings by (event_id, player_id, division) to prevent
+  // "ON CONFLICT DO UPDATE command cannot affect row a second time" errors
+  // when the same player appears twice in a roster (e.g., duplicate registrations).
+  const standingDedupeMap = new Map<string, typeof standingBatch[0]>();
+  for (const s of standingBatch) {
+    const dedupeKey = `${s.event_id}|${s.player_id}|${s.division}`;
+    if (!standingDedupeMap.has(dedupeKey)) {
+      standingDedupeMap.set(dedupeKey, s);
+    }
+  }
+  const deduplicatedBatch = [...standingDedupeMap.values()];
+
   // Upsert standings in batches (500 at a time) with SELECT to get IDs
   const standingIdByIndex = new Map<number, number>();
-  for (let i = 0; i < standingBatch.length; i += 500) {
-    const batch = standingBatch.slice(i, i + 500);
+  for (let i = 0; i < deduplicatedBatch.length; i += 500) {
+    const batch = deduplicatedBatch.slice(i, i + 500);
     const { data: inserted, error: sErr } = await supabase
       .schema("rk9")
       .from("standings")

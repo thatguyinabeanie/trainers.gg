@@ -51,11 +51,11 @@ describe("collectUniqueSpecies", () => {
   it("collects unique species from teams", () => {
     const teams: Record<string, RK9Pokemon[]> = {
       entry1: [
-        { speciesRaw: "Pikachu", ability: "Static", heldItem: "", teraType: null, moves: [] },
-        { speciesRaw: "Charizard", ability: "Blaze", heldItem: "", teraType: null, moves: [] },
+        { speciesRaw: "Pikachu", ability: "Static", heldItem: "", teraType: null, statAlignment: null, moves: [] },
+        { speciesRaw: "Charizard", ability: "Blaze", heldItem: "", teraType: null, statAlignment: null, moves: [] },
       ],
       entry2: [
-        { speciesRaw: "Pikachu", ability: "Lightning Rod", heldItem: "", teraType: null, moves: [] },
+        { speciesRaw: "Pikachu", ability: "Lightning Rod", heldItem: "", teraType: null, statAlignment: null, moves: [] },
       ],
     };
 

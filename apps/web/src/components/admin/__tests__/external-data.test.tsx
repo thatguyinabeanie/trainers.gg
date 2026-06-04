@@ -26,6 +26,12 @@ jest.mock("@/actions/rk9", () => ({
   discoverRk9Events: jest.fn(),
   scrapeRk9Roster: jest.fn(),
   scrapeRk9TeamsBatch: jest.fn(),
+  resetRk9EventData: jest.fn(),
+}));
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 jest.mock("@/actions/limitless", () => ({
@@ -164,10 +170,18 @@ describe("ExternalData slider handlers", () => {
   });
 
   it("persists limitless_batch_size when the batch-size input changes", async () => {
-    // Default tab is limitless — its inputs render after loading
-    const inputs = await renderAndWaitForInputs();
+    await renderAndWaitForInputs();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: /Limitless/i }));
+    });
 
     // Limitless tab renders 2 inputs: batch size, then cron interval
+    const inputs = await waitFor(() => {
+      const els = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+      expect(els.length).toBeGreaterThanOrEqual(2);
+      return els;
+    });
+
     await act(async () => {
       fireEvent.change(inputs[0], { target: { value: "25" } });
       fireEvent.blur(inputs[0]);
@@ -182,8 +196,16 @@ describe("ExternalData slider handlers", () => {
   });
 
   it("persists limitless_cron_interval_seconds when the limitless cron input changes", async () => {
-    const inputs = await renderAndWaitForInputs();
-    expect(inputs.length).toBeGreaterThanOrEqual(2);
+    await renderAndWaitForInputs();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: /Limitless/i }));
+    });
+
+    const inputs = await waitFor(() => {
+      const els = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+      expect(els.length).toBeGreaterThanOrEqual(2);
+      return els;
+    });
 
     await act(async () => {
       fireEvent.change(inputs[1], { target: { value: "600" } });

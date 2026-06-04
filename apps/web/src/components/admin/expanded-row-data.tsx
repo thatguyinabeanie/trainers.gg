@@ -32,6 +32,7 @@ interface RK9StandingWithTeam {
   drop_round: number | null;
   player_id: number | null;
   roster_entry_id: string | null;
+  trainer_name: string | null;
   players: {
     first_name: string;
     last_name: string;
@@ -117,7 +118,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
           .schema("rk9")
           .from("standings")
           .select(
-            "placement, division, drop_round, player_id, roster_entry_id, players(first_name, last_name, country, player_id_masked), team_pokemon(position, species, ability, held_item, tera_type, stat_alignment, moves)"
+            "placement, division, drop_round, player_id, roster_entry_id, trainer_name, players(first_name, last_name, country, player_id_masked), team_pokemon(position, species, ability, held_item, tera_type, stat_alignment, moves)"
           )
           .eq("event_id", row.rk9.event_id)
           .order("placement", { ascending: true })
@@ -214,6 +215,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                     {row.source === "rk9" ? (
                       <>
                         <th className="py-1 pr-3 text-left font-medium">Name</th>
+                        <th className="py-1 pr-3 text-left font-medium">Trainer</th>
                         <th className="py-1 pr-4 text-left font-medium">Country</th>
                       </>
                     ) : (
@@ -288,6 +290,9 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                   </div>
                                 </div>
                               </td>
+                              <td className="py-1.5 pr-3 text-xs text-muted-foreground">
+                                {s.trainer_name ?? "—"}
+                              </td>
                               <td className="py-1.5 pr-4 font-mono text-xs uppercase">
                                 {s.players?.country ?? "—"}
                               </td>
@@ -324,7 +329,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                             </tr>
                             {isExpanded && (
                               <tr>
-                                <td colSpan={5} className="px-2 pb-3">
+                                <td colSpan={6} className="px-2 pb-3">
                                   {pokemon.length === 0 ? (
                                     <p className="text-muted-foreground pt-1 text-xs">
                                       No team data
