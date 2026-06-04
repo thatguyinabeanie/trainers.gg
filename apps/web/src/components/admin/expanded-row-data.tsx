@@ -27,6 +27,7 @@ interface PokemonSlot {
 }
 
 interface RK9StandingWithTeam {
+  id: number;
   placement: number;
   division: string;
   drop_round: number | null;
@@ -118,7 +119,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
           .schema("rk9")
           .from("standings")
           .select(
-            "placement, division, drop_round, player_id, roster_entry_id, trainer_name, players(first_name, last_name, country, player_id_masked), team_pokemon(position, species, ability, held_item, tera_type, stat_alignment, moves)"
+            "id, placement, division, drop_round, player_id, roster_entry_id, trainer_name, players(first_name, last_name, country, player_id_masked), team_pokemon(position, species, ability, held_item, tera_type, stat_alignment, moves)"
           )
           .eq("event_id", row.rk9.event_id)
           .order("placement", { ascending: true })
@@ -275,12 +276,12 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                                     {s.roster_entry_id && pokemon.length === 0 && (
                                       <button
                                         className="shrink-0 text-muted-foreground hover:text-foreground"
-                                        onClick={/* istanbul ignore next */ () => handleScrapeStanding(s.player_id!, s.roster_entry_id!)}
-                                        disabled={scrapingIds.has(s.player_id!)}
+                                        onClick={/* istanbul ignore next */ () => handleScrapeStanding(s.id, s.roster_entry_id!)}
+                                        disabled={scrapingIds.has(s.id)}
                                         title="Scrape team list"
                                         aria-label="Scrape team"
                                       >
-                                        {scrapingIds.has(s.player_id!) ? (
+                                        {scrapingIds.has(s.id) ? (
                                           <Loader2 className="h-3 w-3 animate-spin" />
                                         ) : (
                                           <Download className="h-3 w-3" />

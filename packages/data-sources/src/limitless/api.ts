@@ -150,7 +150,13 @@ export async function fetchTournamentList(
     );
 
     for (const batch of results) {
-      if (!batch || batch.length === 0) return all;
+      // null means this page's fetch failed — skip it rather than aborting
+      if (batch === null) {
+        console.warn("[limitless] Skipping null page result, continuing pagination");
+        continue;
+      }
+      // Empty array means we have passed the last page
+      if (batch.length === 0) return all;
       all.push(...batch.filter((t) => t.game === "VGC"));
       if (batch.length < 500) return all;
     }

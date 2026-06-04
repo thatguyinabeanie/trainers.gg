@@ -61,6 +61,7 @@ const rk9Row: UnifiedRow = {
     has_team_lists: true,
     import_status: "complete",
     import_error: null,
+    teams_imported_count: null,
   },
 };
 
@@ -99,6 +100,7 @@ const limitlessRow: UnifiedRow = {
 
 function makeRk9Standings(count = 3) {
   return Array.from({ length: count }, (_, i) => ({
+    id: i + 100,
     placement: i + 1,
     division: "masters",
     drop_round: null,
@@ -201,6 +203,7 @@ describe("ExpandedRowData", () => {
       mockUseSupabaseQuery.mockReturnValue({
         data: [
           {
+            id: 1,
             placement: 1,
             division: "masters",
             drop_round: null,
@@ -255,10 +258,42 @@ describe("ExpandedRowData", () => {
       expect(sprites.length).toBeGreaterThanOrEqual(1);
     });
 
+    it("renders scrape button using standing id (not player_id)", () => {
+      mockUseSupabaseQuery.mockReturnValue({
+        data: [
+          {
+            id: 999,
+            placement: 1,
+            division: "masters",
+            drop_round: null,
+            player_id: null,
+            roster_entry_id: "entry-abc",
+            trainer_name: null,
+            players: null,
+            team_pokemon: [],
+          },
+        ],
+        error: null,
+        isLoading: false,
+        isFetching: false,
+      });
+
+      render(<ExpandedRowData row={rk9Row} />);
+
+      // Toggle showMissingOnly so the empty-team row becomes visible
+      const checkbox = screen.getByRole("checkbox");
+      fireEvent.click(checkbox);
+
+      // Scrape button should be present (roster_entry_id set, no team)
+      const scrapeBtn = screen.getByRole("button", { name: /scrape team/i });
+      expect(scrapeBtn).not.toBeDisabled();
+    });
+
     it("shows — when team_pokemon is empty", () => {
       mockUseSupabaseQuery.mockReturnValue({
         data: [
           {
+            id: 1,
             placement: 1,
             division: "masters",
             drop_round: null,
@@ -395,6 +430,7 @@ describe("ExpandedRowData", () => {
       mockUseSupabaseQuery.mockReturnValue({
         data: [
           {
+            id: 1,
             placement: 1,
             division: "masters",
             drop_round: null,
