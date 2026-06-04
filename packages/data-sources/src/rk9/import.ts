@@ -353,6 +353,9 @@ export async function importEvent(
 
     if (sErr) throw new Error(`Standings batch upsert: ${sErr.message}`);
 
+    // PostgREST does not guarantee upsert return order matches input order.
+    // This mapping works in practice for inserts, but keying off roster_entry_id
+    // would be more robust if this ever breaks.
     for (let j = 0; j < (inserted ?? []).length; j++) {
       const standingId = inserted![j]?.id;
       if (standingId) {

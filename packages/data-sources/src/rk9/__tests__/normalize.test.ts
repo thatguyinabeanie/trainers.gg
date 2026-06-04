@@ -40,6 +40,12 @@ describe("normalizeSpecies", () => {
     expect(normalizeSpecies(input)).toBe(expected);
   });
 
+  it("falls back to slugifying an unknown form", () => {
+    // "Rainy Form" is not in formMap; the fallback strips the word "Form",
+    // replaces non-alphanumeric with hyphens, and appends the result.
+    expect(normalizeSpecies("Castform [Rainy Form]")).toBe("castform-rainy");
+  });
+
   it("handles pathological input without hanging", () => {
     const longSpaces = "A" + " ".repeat(1000);
     expect(normalizeSpecies(longSpaces)).toBe("a");

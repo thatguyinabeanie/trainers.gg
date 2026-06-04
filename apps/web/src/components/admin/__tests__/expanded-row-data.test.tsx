@@ -184,7 +184,7 @@ describe("ExpandedRowData", () => {
       expect(screen.getByRole("columnheader", { name: /team/i })).toBeInTheDocument();
     });
 
-    it("renders player names as first + last", () => {
+    it("renders a row for each standing with first + last name", () => {
       mockUseSupabaseQuery.mockReturnValue({
         data: makeRk9Standings(3),
         error: null,
@@ -482,6 +482,27 @@ describe("ExpandedRowData", () => {
       // The Tera column renders the raw tera_type value (e.g. "Electric")
       await waitFor(() => {
         expect(screen.getByText("Electric")).toBeInTheDocument();
+      });
+    });
+
+    it("shows stat_alignment (nature) in expanded detail when present", async () => {
+      mockUseSupabaseQuery.mockReturnValue({
+        data: makeRk9Standings(1),
+        error: null,
+        isLoading: false,
+        isFetching: false,
+      });
+
+      render(<ExpandedRowData row={rk9Row} />);
+
+      const toggleBtn = screen.getByRole("button", { name: /toggle team details/i });
+      await act(async () => {
+        fireEvent.click(toggleBtn);
+      });
+
+      // makeRk9Standings sets stat_alignment: "Timid"; the expanded detail renders it
+      await waitFor(() => {
+        expect(screen.getByText("Timid")).toBeInTheDocument();
       });
     });
   });
