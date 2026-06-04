@@ -372,6 +372,7 @@ export async function importEvent(
     ability: string | null;
     held_item: string | null;
     tera_type: string | null;
+    stat_alignment: string | null;
     moves: string[] | null;
   }> = [];
 
@@ -394,6 +395,7 @@ export async function importEvent(
             ability: mon.ability || null,
             held_item: mon.heldItem || null,
             tera_type: mon.teraType || null,
+            stat_alignment: mon.statAlignment ?? null,
             moves: mon.moves.length > 0 ? mon.moves : null,
           });
         }
