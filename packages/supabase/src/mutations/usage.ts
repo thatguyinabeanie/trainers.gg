@@ -1,17 +1,26 @@
 /**
- * DB I/O for computing and persisting per-event Pokemon usage statistics.
+ * DB I/O for computing and persisting per-event Pokemon usage statistics
+ * and time-bucketed rollups.
  *
  * WHY this module exists: Three data sources (RK9, Limitless, first-party
  * tournament_team_sheets) all feed the same event_usage table via the same
  * aggregation logic, but each source has a different DB schema for its
  * event/team data. This module owns the source-specific branching and all
- * Supabase interaction; the pure math lives in usage/aggregate.ts where it
- * is unit-testable without any DB dependency.
+ * Supabase interaction; the pure math lives in usage/aggregate.ts and
+ * usage/rollup.ts where it is unit-testable without any DB dependency.
  *
  * REPLACE strategy: per-event facts are immutable once the raw data is
  * committed, so recomputing via DELETE + bulk-INSERT is safe and correct.
  * It handles re-runs, corrected imports, and partial-data situations without
  * drift between the raw source tables and the aggregated fact store.
+ *
+ * ROLLUP STRATEGY: computeUsageRollups is driven by usage_dirty flags.
+ * When any source marks a format dirty, we recompute all time-period buckets
+ * from dirty_since forward — replacing (not appending) each affected
+ * format_meta_stats row and its children. The combined 'all' source is always
+ * recomputed whenever any concrete source for a format is dirty, so the
+ * combined view stays consistent. Deltas (7d / 30d change) are computed by
+ * looking up the prior bucket's usagePct for each species.
  *
  * Only called with a service-role client (caller's responsibility, Phase 3).
  */
@@ -19,6 +28,14 @@
 import { type TypedClient } from "../client";
 import { type Json } from "../types";
 import { aggregateEventUsage, type TeamMonInput } from "../usage/aggregate";
+import {
+  bucketStart,
+  bucketEnd,
+  rollupBucket,
+  computeDelta,
+  type PeriodType,
+  type FactRow,
+} from "../usage/rollup";
 
 // =============================================================================
 // Public API
@@ -392,4 +409,406 @@ async function upsertUsageDirty(
       `computeEventUsage: failed to upsert usage_dirty for ${format}/${source}: ${upsertError.message}`
     );
   }
+}
+
+// =============================================================================
+// computeUsageRollups — time-bucketed rollup orchestration
+// =============================================================================
+
+/** All period types that rollups are computed for. */
+const PERIOD_TYPES: PeriodType[] = ["day", "week", "month"];
+
+/**
+ * Recompute time-bucketed usage rollups for all dirty formats.
+ *
+ * WHY dirty-flag-driven: Rather than recomputing everything on every run,
+ * we track which formats have changed (via usage_dirty) and only recompute
+ * buckets from the earliest dirty date forward. This keeps the job fast
+ * even as the data set grows.
+ *
+ * WHY 'all' is always recomputed with concrete sources: The combined source
+ * must stay consistent with its constituent parts. If rk9 dirties a format,
+ * the 'all' rollup for that format may now be stale, so we always include
+ * 'all' in the recompute set.
+ *
+ * WHY replace semantics: Each bucket is DELETE-children + DELETE-meta +
+ * INSERT-fresh. This is safe because the raw event_usage facts are
+ * authoritative; the rollup tables are derived views. Incremental updates
+ * would accumulate drift; a clean replace is always accurate.
+ *
+ * @param supabase Service-role Supabase client (bypasses RLS).
+ * @returns formatsProcessed — number of formats that had dirty rows;
+ *          bucketsWritten  — total (format, source, period, bucket) rows written.
+ */
+export async function computeUsageRollups(
+  supabase: TypedClient
+): Promise<{ formatsProcessed: number; bucketsWritten: number }> {
+  // ─── Step 1: Read all usage_dirty rows ────────────────────────────────────
+  const { data: dirtyRows, error: dirtyReadError } = await supabase
+    .from("usage_dirty")
+    .select("format, source, dirty_since, updated_at");
+
+  if (dirtyReadError) {
+    throw new Error(
+      `computeUsageRollups: failed to read usage_dirty: ${dirtyReadError.message}`
+    );
+  }
+
+  if (!dirtyRows || dirtyRows.length === 0) {
+    return { formatsProcessed: 0, bucketsWritten: 0 };
+  }
+
+  // ─── Step 2: Group dirty rows by format ───────────────────────────────────
+  // Map<format, { sources: Set<UsageSource>, dirtySince: string, capturedUpdatedAt: Map<UsageSource, string> }>
+  const byFormat = new Map<
+    string,
+    {
+      dirtySources: Set<string>;
+      dirtySince: string;
+      capturedUpdatedAt: Map<string, string>;
+    }
+  >();
+
+  for (const row of dirtyRows) {
+    const existing = byFormat.get(row.format);
+    if (!existing) {
+      byFormat.set(row.format, {
+        dirtySources: new Set([row.source]),
+        dirtySince: row.dirty_since,
+        capturedUpdatedAt: new Map([[row.source, row.updated_at]]),
+      });
+    } else {
+      existing.dirtySources.add(row.source);
+      // Track minimum dirty_since across sources for this format
+      if (row.dirty_since < existing.dirtySince) {
+        existing.dirtySince = row.dirty_since;
+      }
+      existing.capturedUpdatedAt.set(row.source, row.updated_at);
+    }
+  }
+
+  let bucketsWritten = 0;
+
+  // ─── Step 3: For each dirty format, recompute rollups ─────────────────────
+  for (const [format, { dirtySources, dirtySince, capturedUpdatedAt }] of byFormat) {
+    // Sources to recompute: all dirty concrete sources + 'all'
+    const sourcesToRecompute = new Set([...dirtySources, "all"]);
+
+    for (const source of sourcesToRecompute) {
+      for (const periodType of PERIOD_TYPES) {
+        // Step 3a: Read event_usage rows for this format from dirtySince forward
+        const dirtyBucketStart = bucketStart(dirtySince, periodType);
+
+        // For 'all', read all sources; for concrete sources, filter by source
+        let query = supabase
+          .from("event_usage")
+          .select(
+            "source, event_key, division, species, team_count, sample_size, details, event_date"
+          )
+          .eq("format", format)
+          .gte("event_date", dirtyBucketStart);
+
+        if (source !== "all") {
+          query = query.eq("source", source);
+        }
+
+        const { data: eventUsageRows, error: euReadError } = await query;
+
+        if (euReadError) {
+          throw new Error(
+            `computeUsageRollups: failed to read event_usage for ${format}/${source}/${periodType}: ${euReadError.message}`
+          );
+        }
+
+        if (!eventUsageRows || eventUsageRows.length === 0) {
+          continue;
+        }
+
+        // Map event_usage DB rows to FactRow[] + keep event_date for bucketing.
+        // We pair each FactRow with its event_date so we can bucket correctly
+        // without needing a secondary lookup.
+        const factsWithDate: { fact: FactRow; eventDate: string }[] =
+          eventUsageRows.map((r) => {
+            const details = r.details as {
+              moves?: { v: string; n: number }[];
+              tera?: { v: string; n: number }[];
+              item?: { v: string; n: number }[];
+            } | null;
+            return {
+              fact: {
+                source: r.source,
+                eventKey: r.event_key,
+                division: r.division,
+                species: r.species,
+                teamCount: r.team_count,
+                sampleSize: r.sample_size,
+                details: {
+                  moves: details?.moves ?? [],
+                  tera: details?.tera ?? [],
+                  item: details?.item ?? [],
+                },
+              },
+              eventDate: r.event_date,
+            };
+          });
+
+        // Step 3b: Group facts by bucket start date (derived from event_date)
+        const factsByBucket = new Map<string, FactRow[]>();
+        for (const { fact, eventDate } of factsWithDate) {
+          const bStart = bucketStart(eventDate, periodType);
+          if (!factsByBucket.has(bStart)) factsByBucket.set(bStart, []);
+          factsByBucket.get(bStart)!.push(fact);
+        }
+
+        // Step 3c & 3d: For each bucket, compute rollup, look up deltas, write to DB
+        for (const [bStart, bucketFacts] of factsByBucket) {
+          const rollup = rollupBucket(bucketFacts);
+          const bEnd = bucketEnd(bStart, periodType);
+
+          // Compute prior-bucket dates for deltas
+          const prior7dStart = bucketStart(
+            subtractDays(bStart, 7),
+            periodType
+          );
+          const prior30dStart = bucketStart(
+            subtractDays(bStart, 30),
+            periodType
+          );
+
+          // Build a map of species → usagePct for each prior bucket.
+          // We may have already computed the prior bucket in this run (if it
+          // falls within the dirty range), so first check if we have a
+          // format_meta_stats row for it; if so, read its pokemon_usage_stats.
+          const prior7dPctBySpecies = await getPriorPctMap(
+            supabase,
+            format,
+            source,
+            periodType,
+            prior7dStart
+          );
+          const prior30dPctBySpecies = await getPriorPctMap(
+            supabase,
+            format,
+            source,
+            periodType,
+            prior30dStart
+          );
+
+          // Step 3d: Replace-write the bucket
+          // Delete existing children + meta row (explicit, no cascade)
+          const { data: existingMeta, error: metaReadError } = await supabase
+            .from("format_meta_stats")
+            .select("id")
+            .eq("format", format)
+            .eq("source", source)
+            .eq("period_type", periodType)
+            .eq("period_start", bStart)
+            .maybeSingle();
+
+          if (metaReadError) {
+            throw new Error(
+              `computeUsageRollups: failed to read format_meta_stats for ${format}/${source}/${periodType}/${bStart}: ${metaReadError.message}`
+            );
+          }
+
+          if (existingMeta) {
+            // Delete children explicitly (no CASCADE on FK by design)
+            const { error: delUsageErr } = await supabase
+              .from("pokemon_usage_stats")
+              .delete()
+              .eq("meta_id", existingMeta.id);
+            if (delUsageErr) {
+              throw new Error(
+                `computeUsageRollups: failed to delete pokemon_usage_stats for meta_id=${existingMeta.id}: ${delUsageErr.message}`
+              );
+            }
+
+            const { error: delDetailErr } = await supabase
+              .from("pokemon_detail_stats")
+              .delete()
+              .eq("meta_id", existingMeta.id);
+            if (delDetailErr) {
+              throw new Error(
+                `computeUsageRollups: failed to delete pokemon_detail_stats for meta_id=${existingMeta.id}: ${delDetailErr.message}`
+              );
+            }
+
+            const { error: delMetaErr } = await supabase
+              .from("format_meta_stats")
+              .delete()
+              .eq("id", existingMeta.id);
+            if (delMetaErr) {
+              throw new Error(
+                `computeUsageRollups: failed to delete format_meta_stats id=${existingMeta.id}: ${delMetaErr.message}`
+              );
+            }
+          }
+
+          // Insert fresh meta row
+          const { data: newMeta, error: metaInsertErr } = await supabase
+            .from("format_meta_stats")
+            .insert({
+              format,
+              source,
+              period_type: periodType,
+              period_start: bStart,
+              period_end: bEnd,
+              total_teams: rollup.totalTeams,
+              total_tournaments: rollup.totalTournaments,
+              computed_at: new Date().toISOString(),
+            })
+            .select("id")
+            .single();
+
+          if (metaInsertErr || !newMeta) {
+            throw new Error(
+              `computeUsageRollups: failed to insert format_meta_stats for ${format}/${source}/${periodType}/${bStart}: ${metaInsertErr?.message ?? "no id returned"}`
+            );
+          }
+
+          const metaId = newMeta.id;
+
+          if (rollup.species.length > 0) {
+            // Bulk-insert pokemon_usage_stats
+            const usageInserts = rollup.species.map((s) => ({
+              meta_id: metaId,
+              species: s.species,
+              usage_pct: s.usagePct,
+              rank: s.rank,
+              sample_size: rollup.totalTeams,
+              usage_change_7d: computeDelta(
+                s.usagePct,
+                prior7dPctBySpecies.get(s.species) ?? null
+              ),
+              usage_change_30d: computeDelta(
+                s.usagePct,
+                prior30dPctBySpecies.get(s.species) ?? null
+              ),
+              // Remaining columns left null — populated in later phases
+              usage_pct_top_cut: null,
+              usage_pct_top8: null,
+              conversion_rate: null,
+            }));
+
+            const { error: usageInsertErr } = await supabase
+              .from("pokemon_usage_stats")
+              .insert(usageInserts);
+
+            if (usageInsertErr) {
+              throw new Error(
+                `computeUsageRollups: failed to insert pokemon_usage_stats for meta_id=${metaId}: ${usageInsertErr.message}`
+              );
+            }
+
+            // Bulk-insert pokemon_detail_stats
+            const detailInserts = rollup.species.map((s) => ({
+              meta_id: metaId,
+              species: s.species,
+              moves: s.moves as unknown as Json,
+              tera_types: s.tera as unknown as Json,
+              items: s.item as unknown as Json,
+              // abilities, spreads, teammates left as default []
+            }));
+
+            const { error: detailInsertErr } = await supabase
+              .from("pokemon_detail_stats")
+              .insert(detailInserts);
+
+            if (detailInsertErr) {
+              throw new Error(
+                `computeUsageRollups: failed to insert pokemon_detail_stats for meta_id=${metaId}: ${detailInsertErr.message}`
+              );
+            }
+          }
+
+          bucketsWritten++;
+        }
+      }
+    }
+  }
+
+  // ─── Step 4: Delete processed usage_dirty rows (optimistic concurrency) ───
+  // Delete WHERE format + source match AND updated_at equals the captured value.
+  // A concurrent re-dirty with a newer updated_at will survive for the next run.
+  for (const [format, { dirtySources, capturedUpdatedAt }] of byFormat) {
+    for (const source of dirtySources) {
+      const capturedAt = capturedUpdatedAt.get(source);
+      if (!capturedAt) continue;
+
+      const { error: deleteErr } = await supabase
+        .from("usage_dirty")
+        .delete()
+        .eq("format", format)
+        .eq("source", source)
+        .eq("updated_at", capturedAt);
+
+      if (deleteErr) {
+        throw new Error(
+          `computeUsageRollups: failed to delete usage_dirty for ${format}/${source}: ${deleteErr.message}`
+        );
+      }
+    }
+  }
+
+  return { formatsProcessed: byFormat.size, bucketsWritten };
+}
+
+// =============================================================================
+// computeUsageRollups private helpers
+// =============================================================================
+
+/**
+ * Subtract N days from an ISO date string 'YYYY-MM-DD'. UTC-safe.
+ */
+function subtractDays(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - days);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${String(y)}-${m}-${day}`;
+}
+
+/**
+ * Read a map of species → usagePct from an existing rollup bucket.
+ * Used for delta (7d / 30d change) calculations.
+ *
+ * Returns an empty map if no rollup exists for the given parameters.
+ */
+async function getPriorPctMap(
+  supabase: TypedClient,
+  format: string,
+  source: string,
+  periodType: PeriodType,
+  periodStart: string
+): Promise<Map<string, number>> {
+  const { data: meta, error: metaErr } = await supabase
+    .from("format_meta_stats")
+    .select("id")
+    .eq("format", format)
+    .eq("source", source)
+    .eq("period_type", periodType)
+    .eq("period_start", periodStart)
+    .maybeSingle();
+
+  if (metaErr) {
+    // Non-fatal: if we can't find the prior bucket, return empty map
+    // (computeDelta will return null for each species, which is correct)
+    return new Map();
+  }
+
+  if (!meta) return new Map();
+
+  const { data: stats, error: statsErr } = await supabase
+    .from("pokemon_usage_stats")
+    .select("species, usage_pct")
+    .eq("meta_id", meta.id);
+
+  if (statsErr || !stats) return new Map();
+
+  const map = new Map<string, number>();
+  for (const row of stats) {
+    map.set(row.species, Number(row.usage_pct));
+  }
+  return map;
 }

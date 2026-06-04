@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, jest } from "@jest/globals";
-import { computeEventUsage } from "../usage";
+import { computeEventUsage, computeUsageRollups } from "../usage";
 import type { TypedClient } from "../../client";
 
 // =============================================================================
@@ -50,10 +50,13 @@ function buildSequentialClient(calls: CallMock[]) {
     c["delete"] = jest.fn().mockImplementation(returnSelf);
     c["upsert"] = jest.fn().mockImplementation(returnSelf);
     c["eq"] = jest.fn().mockImplementation(returnSelf);
+    c["gte"] = jest.fn().mockImplementation(returnSelf);
     c["limit"] = jest.fn().mockImplementation(returnSelf);
 
-    // Terminal: .maybeSingle()
+    // Terminals
     c["maybeSingle"] = jest.fn().mockResolvedValue(result);
+    // .single() used by format_meta_stats INSERT + .select("id").single()
+    c["single"] = jest.fn().mockResolvedValue(result);
 
     // Terminal: direct await (delete/insert/upsert are awaited without .maybeSingle)
     c["then"] = (
@@ -301,5 +304,113 @@ describe("computeEventUsage — rowCount", () => {
 
     const result = await computeEventUsage(client, "limitless", "t42");
     expect(result.rowCount).toBe(2);
+  });
+});
+
+// =============================================================================
+// computeUsageRollups tests
+//
+// The pure math (bucketStart, rollupBucket, etc.) is exhaustively tested in
+// usage/__tests__/rollup.test.ts. Here we focus on the DB orchestration:
+// - early-exit when no dirty rows
+// - error propagation from supabase calls
+// - return value shape
+//
+// The sequential mock client is reused from the computeEventUsage section.
+// =============================================================================
+
+describe("computeUsageRollups — no dirty rows", () => {
+  it("returns zeros immediately when usage_dirty is empty", async () => {
+    const client = buildSequentialClient([
+      { data: [], error: null }, // usage_dirty SELECT → empty
+    ]);
+
+    const result = await computeUsageRollups(client);
+    expect(result).toEqual({ formatsProcessed: 0, bucketsWritten: 0 });
+  });
+
+  it("returns zeros when usage_dirty data is null", async () => {
+    const client = buildSequentialClient([
+      { data: null, error: null }, // usage_dirty SELECT → null
+    ]);
+
+    const result = await computeUsageRollups(client);
+    expect(result).toEqual({ formatsProcessed: 0, bucketsWritten: 0 });
+  });
+});
+
+describe("computeUsageRollups — usage_dirty read error", () => {
+  it("throws when reading usage_dirty fails", async () => {
+    const client = buildSequentialClient([
+      { data: null, error: { message: "connection refused" } },
+    ]);
+
+    await expect(computeUsageRollups(client)).rejects.toThrow(
+      "failed to read usage_dirty"
+    );
+  });
+});
+
+describe("computeUsageRollups — event_usage read error", () => {
+  it("throws when reading event_usage fails for a dirty format", async () => {
+    // Dirty row triggers one (format, source, periodType) computation.
+    // The event_usage query for that combination fails.
+    // Call sequence:
+    // 1. usage_dirty SELECT → one dirty row
+    // 2. event_usage SELECT for (format, rk9, day) → error
+    const client = buildSequentialClient([
+      {
+        data: [
+          {
+            format: "gen9vgc2025regg",
+            source: "rk9",
+            dirty_since: "2025-03-01",
+            updated_at: "2025-03-02T00:00:00Z",
+          },
+        ],
+        error: null,
+      }, // usage_dirty SELECT
+      { data: null, error: { message: "query failed" } }, // event_usage rk9/day
+    ]);
+
+    await expect(computeUsageRollups(client)).rejects.toThrow(
+      "failed to read event_usage"
+    );
+  });
+});
+
+describe("computeUsageRollups — no event_usage rows (empty result)", () => {
+  it("returns formatsProcessed=1 bucketsWritten=0 when event_usage is empty for all period types and sources", async () => {
+    // One dirty row → sources=[rk9, all], periods=[day,week,month] = 6 queries
+    // all return empty → no buckets written
+    // Then 1 usage_dirty DELETE
+    //
+    // Call sequence: usage_dirty + 6 event_usage reads + 1 delete
+    const client = buildSequentialClient([
+      {
+        data: [
+          {
+            format: "gen9vgc2025regg",
+            source: "rk9",
+            dirty_since: "2025-03-01",
+            updated_at: "2025-03-02T00:00:00Z",
+          },
+        ],
+        error: null,
+      }, // usage_dirty SELECT
+      // 6 event_usage reads (rk9: day, week, month; all: day, week, month) — all empty
+      { data: [], error: null },
+      { data: [], error: null },
+      { data: [], error: null },
+      { data: [], error: null },
+      { data: [], error: null },
+      { data: [], error: null },
+      // usage_dirty DELETE for rk9
+      { data: null, error: null },
+    ]);
+
+    const result = await computeUsageRollups(client);
+    expect(result.formatsProcessed).toBe(1);
+    expect(result.bucketsWritten).toBe(0);
   });
 });
