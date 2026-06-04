@@ -510,12 +510,13 @@ export async function scrapeRk9TeamsBatch(
       const importedSet = new Set<number>();
       const allIds = allStandings.map((s) => s.id);
       for (let i = 0; i < allIds.length; i += 100) {
-        const { data: chunk } = await supabase
+        const { data: chunk, error: chunkErr } = await supabase
           .schema("rk9")
           .from("team_pokemon")
           .select("standing_id")
           .in("standing_id", allIds.slice(i, i + 100))
           .limit(700); // max 100 standings × 6 pokemon + buffer
+        if (chunkErr) throw new Error(`team_pokemon count query failed: ${chunkErr.message}`);
         for (const row of chunk ?? []) importedSet.add(row.standing_id);
       }
       const importedCount = importedSet.size;
@@ -544,10 +545,12 @@ export async function scrapeRk9TeamsBatch(
       .eq("event_id", eventId);
 
     // Load species map
-    const { data: speciesMapRows } = await supabase
+    const { data: speciesMapRows, error: speciesMapErr } = await supabase
       .schema("rk9")
       .from("species_map")
       .select("raw_name, species_slug");
+    if (speciesMapErr)
+      console.warn(`[rk9-teams] species_map load failed: ${speciesMapErr.message}`);
     const speciesMap = new Map<string, string>();
     for (const row of speciesMapRows ?? []) {
       speciesMap.set(row.raw_name, row.species_slug);
@@ -626,9 +629,10 @@ export async function scrapeRk9TeamsBatch(
             }
 
             return { rows, newSpeciesEntries, scraped: 1, failed: 0 };
-          } catch {
-            // Fetch failed — no rows to insert.
-            // team_scrape_attempted_at will still be stamped for this chunk.
+          } catch (err) {
+            console.warn(
+              `[rk9-teams] Fetch failed for standing ${standing.id} (entry ${entryId}): ${err instanceof Error ? err.message : String(err)}`
+            );
             return {
               rows: [] as typeof allTeamRows,
               newSpeciesEntries: new Map<string, string>(),
@@ -688,12 +692,13 @@ export async function scrapeRk9TeamsBatch(
     const importedSet = new Set<number>();
     const allIds = allStandings.map((s) => s.id);
     for (let i = 0; i < allIds.length; i += 100) {
-      const { data: chunk } = await supabase
+      const { data: chunk, error: chunkErr } = await supabase
         .schema("rk9")
         .from("team_pokemon")
         .select("standing_id")
         .in("standing_id", allIds.slice(i, i + 100))
         .limit(700);
+      if (chunkErr) throw new Error(`team_pokemon count query failed: ${chunkErr.message}`);
       for (const row of chunk ?? []) importedSet.add(row.standing_id);
     }
     const importedCount = importedSet.size;
@@ -725,7 +730,7 @@ export async function scrapeRk9TeamsBatch(
     };
   } catch (e) {
     const supabase = createServiceRoleClient();
-    await supabase
+    const { error: statusErr } = await supabase
       .schema("rk9")
       .from("events")
       .update({
@@ -733,6 +738,7 @@ export async function scrapeRk9TeamsBatch(
         import_error: getErrorMessage(e, "Team scrape failed"),
       })
       .eq("event_id", eventId);
+    if (statusErr) console.error(`[rk9-teams] Failed to update event status to failed: ${statusErr.message}`);
 
     return {
       success: false,
@@ -764,10 +770,12 @@ export async function scrapeRk9TeamForStanding(
     const supabase = createServiceRoleClient();
 
     // Load species map for normalization
-    const { data: speciesMapRows } = await supabase
+    const { data: speciesMapRows, error: speciesMapErr } = await supabase
       .schema("rk9")
       .from("species_map")
       .select("raw_name, species_slug");
+    if (speciesMapErr)
+      console.warn(`[rk9-teams] species_map load failed: ${speciesMapErr.message}`);
     const speciesMap = new Map<string, string>();
     for (const row of speciesMapRows ?? []) {
       speciesMap.set(row.raw_name, row.species_slug);
@@ -789,10 +797,11 @@ export async function scrapeRk9TeamForStanding(
         moves: mon.moves.length > 0 ? mon.moves : null,
       }));
 
-      await supabase
+      const { error: upsertErr } = await supabase
         .schema("rk9")
         .from("team_pokemon")
         .upsert(rows, { onConflict: "standing_id,position" });
+      if (upsertErr) throw new Error(`team_pokemon upsert failed: ${upsertErr.message}`);
     }
 
     // Stamp attempt timestamp
@@ -842,7 +851,7 @@ export async function resetRk9EventData(
     // Reset event to pending
     // Note: imported_at is not nullable in the Update type; omit it to leave
     // whatever value it had (it won't be visible once status is "pending").
-    await supabase
+    const { error: resetErr } = await supabase
       .schema("rk9")
       .from("events")
       .update({
@@ -852,6 +861,7 @@ export async function resetRk9EventData(
         import_error: null,
       })
       .eq("event_id", eventId);
+    if (resetErr) throw resetErr;
 
     return { success: true, data: undefined };
   } catch (e) {

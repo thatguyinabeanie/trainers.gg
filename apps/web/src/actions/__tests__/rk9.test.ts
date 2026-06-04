@@ -14,12 +14,14 @@ function makeChain(resolve: () => { data: unknown; error: unknown }): Thenable {
     "update",
     "insert",
     "upsert",
+    "delete",
     "eq",
     "neq",
     "not",
     "in",
     "order",
     "limit",
+    "range",
     "single",
     "maybeSingle",
   ];
@@ -75,6 +77,10 @@ jest.mock("@/lib/rk9/index", () => ({
   syncEvents: jest.fn(),
   importEvent: jest.fn(),
   seedSpeciesMap: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock("@/actions/site-config", () => ({
+  getSiteConfig: jest.fn().mockResolvedValue({ success: false, error: "not set" }),
 }));
 
 // fetch needs to be mocked because the action does real HTTP requests
