@@ -61,7 +61,7 @@ function makeTableProxy(
 
 interface MockConfig {
   standingsDelete?: ChainResult;
-  standingsUpsert?: ChainResult;
+  standingsInsert?: ChainResult;
   /** Plain result (same every call) or factory (called per insert). */
   playersSelect?: ChainResult | (() => ChainResult);
   playersInsert?: ChainResult | (() => ChainResult);
@@ -73,7 +73,7 @@ interface MockConfig {
 function buildSupabaseMock(config: MockConfig = {}): SupabaseClient {
   const {
     standingsDelete = { error: null },
-    standingsUpsert = { data: [{ id: 1 }], error: null },
+    standingsInsert = { data: [{ id: 1 }], error: null },
     playersSelect = { data: [], error: null },
     playersInsert = { data: { id: 1 }, error: null },
     playersUpdate = { error: null },
@@ -87,7 +87,7 @@ function buildSupabaseMock(config: MockConfig = {}): SupabaseClient {
   const tables: Record<string, unknown> = {
     standings: makeTableProxy({
       delete: () => chain(standingsDelete),
-      upsert: () => chain(standingsUpsert),
+      insert: () => chain(standingsInsert),
     }),
     players: makeTableProxy({
       select: () => chain(resolve(playersSelect)),
@@ -230,7 +230,7 @@ describe("importEvent", () => {
     const supabase = buildSupabaseMock({
       playersSelect: { data: [], error: null },
       playersInsert: { data: { id: 42 }, error: null },
-      standingsUpsert: { data: [{ id: 100 }], error: null },
+      standingsInsert: { data: [{ id: 100 }], error: null },
     });
 
     const result = await importEvent(
@@ -252,7 +252,7 @@ describe("importEvent", () => {
         data: [{ id: 5, trainer_names: ["PikachuTrainer"] }],
         error: null,
       },
-      standingsUpsert: { data: [{ id: 200 }], error: null },
+      standingsInsert: { data: [{ id: 200 }], error: null },
     });
 
     const result = await importEvent(
@@ -272,7 +272,7 @@ describe("importEvent", () => {
       // One existing player with no trainer names on record
       playersSelect: { data: [{ id: 7, trainer_names: [] }], error: null },
       playersUpdate: { error: null },
-      standingsUpsert: { data: [{ id: 300 }], error: null },
+      standingsInsert: { data: [{ id: 300 }], error: null },
     });
 
     const result = await importEvent(
@@ -298,7 +298,7 @@ describe("importEvent", () => {
       playersSelect: { data: [], error: null },
       playersInsert: () =>
         insertResults[insertIdx++] ?? { data: { id: 99 }, error: null },
-      standingsUpsert: { data: [{ id: 400 }, { id: 401 }], error: null },
+      standingsInsert: { data: [{ id: 400 }, { id: 401 }], error: null },
     });
 
     const shared = {
@@ -328,7 +328,7 @@ describe("importEvent", () => {
     const supabase = buildSupabaseMock({
       playersSelect: { data: null, error: { message: "connection refused" } },
       // Standing still gets inserted (with null player_id and 'unlinked' flag)
-      standingsUpsert: { data: [{ id: 500 }], error: null },
+      standingsInsert: { data: [{ id: 500 }], error: null },
     });
 
     const result = await importEvent(
@@ -349,7 +349,7 @@ describe("importEvent", () => {
         data: [{ id: 9, trainer_names: ["PikachuTrainer"] }],
         error: null,
       },
-      standingsUpsert: { data: [{ id: 600 }], error: null },
+      standingsInsert: { data: [{ id: 600 }], error: null },
       teamPokemonInsert: { error: null },
     });
 
@@ -376,7 +376,7 @@ describe("importEvent", () => {
         data: [{ id: 9, trainer_names: ["PikachuTrainer"] }],
         error: null,
       },
-      standingsUpsert: { data: [{ id: 700 }], error: null },
+      standingsInsert: { data: [{ id: 700 }], error: null },
     });
 
     const entry = makeEntry({
@@ -397,7 +397,7 @@ describe("importEvent", () => {
 
   it("skips roster entries that have no name", async () => {
     const supabase = buildSupabaseMock({
-      standingsUpsert: { data: [], error: null },
+      standingsInsert: { data: [], error: null },
     });
 
     const result = await importEvent(
@@ -424,7 +424,7 @@ describe("importEvent", () => {
         error: null,
       },
       playersInsert: { data: { id: 22 }, error: null },
-      standingsUpsert: { data: [{ id: 800 }], error: null },
+      standingsInsert: { data: [{ id: 800 }], error: null },
     });
 
     const result = await importEvent(
@@ -462,7 +462,7 @@ describe("importEvent error paths", () => {
     const supabase = buildSupabaseMock({
       playersSelect: { data: [], error: null },
       playersInsert: { error: { message: "new player insert failed" } },
-      standingsUpsert: { data: [{ id: 1 }], error: null },
+      standingsInsert: { data: [{ id: 1 }], error: null },
     });
 
     const roster: RK9RosterEntry[] = [
@@ -493,7 +493,7 @@ describe("importEvent error paths", () => {
     const supabase = buildSupabaseMock({
       playersSelect: { data: [], error: null },
       playersInsert: { error: { message: "conflict insert failed" } },
-      standingsUpsert: { data: [{ id: 1 }, { id: 2 }], error: null },
+      standingsInsert: { data: [{ id: 1 }, { id: 2 }], error: null },
     });
 
     const roster: RK9RosterEntry[] = [
@@ -529,11 +529,11 @@ describe("importEvent error paths", () => {
     expect(result.teamsInserted).toBe(0);
   });
 
-  it("throws when the standings batch upsert fails", async () => {
+  it("throws when the standings batch insert fails", async () => {
     const supabase = buildSupabaseMock({
       playersSelect: { data: [], error: null },
       playersInsert: { data: { id: 1 }, error: null },
-      standingsUpsert: { error: { message: "standings upsert failed" } },
+      standingsInsert: { error: { message: "standings insert failed" } },
     });
 
     const roster: RK9RosterEntry[] = [
@@ -551,6 +551,6 @@ describe("importEvent error paths", () => {
 
     await expect(
       importEvent(supabase, "EVT001", roster, {})
-    ).rejects.toThrow("standings upsert failed");
+    ).rejects.toThrow("standings insert failed");
   });
 });
