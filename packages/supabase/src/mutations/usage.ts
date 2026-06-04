@@ -17,6 +17,7 @@
  */
 
 import { type TypedClient } from "../client";
+import { type Json } from "../types";
 import { aggregateEventUsage, type TeamMonInput } from "../usage/aggregate";
 
 // =============================================================================
@@ -89,7 +90,7 @@ export async function computeEventUsage(
       species: r.species,
       team_count: r.teamCount,
       sample_size: r.sampleSize,
-      details: r.details as unknown as Record<string, unknown>,
+      details: r.details as unknown as Json,
     }));
 
     const { error: insertError } = await supabase
