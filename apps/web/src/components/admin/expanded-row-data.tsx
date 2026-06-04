@@ -239,7 +239,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                           const isExpanded = expandedPlacements.has(expansionKey);
                           const pokemon = s.team_pokemon ?? [];
                           return (
-                            <Fragment key={i}>
+                            <Fragment key={s.roster_entry_id ?? s.id}>
                             <tr className="border-b last:border-0">
                               <td className="py-1.5">
                                 <button
@@ -431,7 +431,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                         const isExpanded = expandedPlacements.has(expansionKey);
                         const pokemon = s.team_pokemon ?? [];
                         return (
-                          <Fragment key={i}>
+                          <Fragment key={s.placement}>
                             <tr className="border-b last:border-0">
                               <td className="py-1.5">
                                 <button

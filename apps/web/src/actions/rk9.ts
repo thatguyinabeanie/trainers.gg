@@ -457,18 +457,27 @@ export async function scrapeRk9TeamsBatch(
 
     const supabase = createServiceRoleClient();
 
-    // Get all standings with roster_entry_ids, including scrape timestamp
-    // Use a high limit to bypass PostgREST's default 1000-row cap —
-    // events like Indianapolis have 1092+ standings.
-    const { data: allStandings, error: standingsErr } = await supabase
-      .schema("rk9")
-      .from("standings")
-      .select("id, roster_entry_id, team_scrape_attempted_at")
-      .eq("event_id", eventId)
-      .not("roster_entry_id", "is", null)
-      .limit(10000);
-
-    if (standingsErr) throw standingsErr;
+    // Fetch all standings for this event, paginated to stay within PostgREST
+    // max_rows (events like Indianapolis have 1092+ standings).
+    const PAGE_SIZE = 1000;
+    const allStandings: Array<{
+      id: number;
+      roster_entry_id: string | null;
+      team_scrape_attempted_at: string | null;
+    }> = [];
+    for (let offset = 0; ; offset += PAGE_SIZE) {
+      const { data: page, error: pageErr } = await supabase
+        .schema("rk9")
+        .from("standings")
+        .select("id, roster_entry_id, team_scrape_attempted_at")
+        .eq("event_id", eventId)
+        .not("roster_entry_id", "is", null)
+        .range(offset, offset + PAGE_SIZE - 1);
+      if (pageErr) throw pageErr;
+      if (!page?.length) break;
+      allStandings.push(...page);
+      if (page.length < PAGE_SIZE) break;
+    }
     if (!allStandings || allStandings.length === 0) {
       await supabase
         .schema("rk9")
@@ -531,7 +540,7 @@ export async function scrapeRk9TeamsBatch(
     await supabase
       .schema("rk9")
       .from("events")
-      .update({ import_status: "teams", import_error: null, teams_imported_count: alreadyScraped })
+      .update({ import_status: "teams", import_error: null })
       .eq("event_id", eventId);
 
     // Load species map

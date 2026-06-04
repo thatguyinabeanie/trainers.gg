@@ -172,14 +172,17 @@ export async function importEvent(
 
     try {
       // Phase A: Look up existing players matching this identity
-      const { data: candidates, error: lookupErr } = await supabase
+      const baseQuery = supabase
         .schema("rk9")
         .from("players")
         .select("id, trainer_names")
         .eq("player_id_masked", entry.playerIdMasked ?? "")
         .eq("first_name", entry.firstName)
-        .eq("last_name", entry.lastName)
-        .eq("country", entry.country ?? "");
+        .eq("last_name", entry.lastName);
+
+      const { data: candidates, error: lookupErr } = await (entry.country
+        ? baseQuery.eq("country", entry.country)
+        : baseQuery.is("country", null));
 
       if (lookupErr) throw new Error(`Player lookup: ${lookupErr.message}`);
 
