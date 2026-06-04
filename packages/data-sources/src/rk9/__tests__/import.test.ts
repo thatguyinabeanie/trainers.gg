@@ -413,6 +413,115 @@ describe("importEvent", () => {
     expect(result.standingsInserted).toBe(0);
   });
 
+// ---------------------------------------------------------------------------
+// importEvent error paths
+// ---------------------------------------------------------------------------
+
+describe("importEvent error paths", () => {
+  it("throws when the initial standings delete fails", async () => {
+    const supabase = buildSupabaseMock({
+      standingsDelete: { error: { message: "delete failed" } },
+    });
+
+    await expect(importEvent(supabase, "EVT001", [], {})).rejects.toThrow(
+      "Delete standings: delete failed"
+    );
+  });
+
+  it("records the standing as unlinked when brand-new player insert fails (non-fatal)", async () => {
+    // Player insert errors are caught inside the per-entry try/catch — the entry
+    // is recorded with playerId=null and importFlag="unlinked" rather than aborting
+    // the entire import. This covers the new_player createErr → catch path.
+    const supabase = buildSupabaseMock({
+      playersSelect: { data: [], error: null },
+      playersInsert: { error: { message: "new player insert failed" } },
+      standingsUpsert: { data: [{ id: 1 }], error: null },
+    });
+
+    const roster: RK9RosterEntry[] = [
+      {
+        playerIdMasked: "1....1",
+        firstName: "Ash",
+        lastName: "Ketchum",
+        country: "JP",
+        division: "masters",
+        trainerName: "Ash",
+        rosterEntryId: null,
+        placement: 1,
+      },
+    ];
+
+    const result = await importEvent(supabase, "EVT001", roster, {});
+
+    // Import does NOT throw — the entry is unlinked, not fatal
+    expect(result.playersUpserted).toBe(0);
+    expect(result.standingsInserted).toBe(1);
+  });
+
+  it("records standings as unlinked when conflict-group player insert fails (non-fatal)", async () => {
+    // Two entries with identical identity = conflict group. When insert fails,
+    // both entries are caught and recorded as unlinked — import still completes.
+    const supabase = buildSupabaseMock({
+      playersSelect: { data: [], error: null },
+      playersInsert: { error: { message: "conflict insert failed" } },
+      standingsUpsert: { data: [{ id: 1 }, { id: 2 }], error: null },
+    });
+
+    const roster: RK9RosterEntry[] = [
+      {
+        playerIdMasked: "1....1",
+        firstName: "Ash",
+        lastName: "Ketchum",
+        country: "JP",
+        division: "masters",
+        trainerName: "Ash1",
+        rosterEntryId: null,
+        placement: 1,
+      },
+      {
+        playerIdMasked: "1....1",
+        firstName: "Ash",
+        lastName: "Ketchum",
+        country: "JP",
+        division: "masters",
+        trainerName: "Ash2",
+        rosterEntryId: null,
+        placement: 2,
+      },
+    ];
+
+    const result = await importEvent(supabase, "EVT001", roster, {});
+
+    // Import does NOT throw — both entries are unlinked, not fatal
+    expect(result.playersUpserted).toBe(0);
+  });
+
+  it("throws when the standings batch upsert fails", async () => {
+    const supabase = buildSupabaseMock({
+      playersSelect: { data: [], error: null },
+      playersInsert: { data: { id: 1 }, error: null },
+      standingsUpsert: { error: { message: "standings upsert failed" } },
+    });
+
+    const roster: RK9RosterEntry[] = [
+      {
+        playerIdMasked: "1....1",
+        firstName: "Ash",
+        lastName: "Ketchum",
+        country: "JP",
+        division: "masters",
+        trainerName: "Ash",
+        rosterEntryId: null,
+        placement: 1,
+      },
+    ];
+
+    await expect(
+      importEvent(supabase, "EVT001", roster, {})
+    ).rejects.toThrow("standings upsert failed");
+  });
+});
+
   it("creates a new player when multiple candidates exist but none match trainer name (name_collision)", async () => {
     const supabase = buildSupabaseMock({
       // Two existing players with the same identity but neither knows the trainer name

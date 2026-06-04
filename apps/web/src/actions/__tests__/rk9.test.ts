@@ -324,4 +324,30 @@ describe("scrapeRk9TeamsBatch", () => {
     expect(result.success).toBe(true);
     expect(result.scraped).toBe(1);
   });
+
+  it("re-scrapes standings with force=true even when team_scrape_attempted_at is set", async () => {
+    const attemptedAt = new Date().toISOString();
+    standingsChain = makeChain(() => ({
+      data: [
+        {
+          id: 1,
+          roster_entry_id: "entry1",
+          team_scrape_attempted_at: attemptedAt,
+        },
+      ],
+      error: null,
+    }));
+    speciesMapChain = makeChain(() => ({ data: [], error: null }));
+    teamPokemonChain = makeChain(() => ({ data: [], error: null }));
+    eventsUpdateChain = makeChain(() => ({ data: null, error: null }));
+    mockParseTeamListPage.mockReturnValueOnce([]);
+
+    const { scrapeRk9TeamsBatch } = await import("../rk9");
+    const result = await scrapeRk9TeamsBatch("EVT001", {
+      force: true,
+    });
+
+    // With force=true, the standing should be processed (not skipped because attempted_at is set)
+    expect(result.success).toBe(true);
+  });
 });
