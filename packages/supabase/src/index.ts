@@ -53,6 +53,16 @@ export {
   extractPathFromUrl,
 } from "./storage";
 
+// Usage aggregation helpers (pure, framework-free)
+export {
+  aggregateEventUsage,
+  type TeamMonInput,
+  type HistogramEntry,
+  type UsageHistogram,
+  type UsageDetails,
+  type EventUsageRow,
+} from "./usage/aggregate";
+
 // AT Protocol extended types
 export type {
   AtprotoDatabase,
