@@ -66,6 +66,7 @@ jest.mock("@/lib/sudo/server", () => ({
 const mockParseTeamListPage = jest.fn();
 jest.mock("@/lib/rk9/scraper", () => ({
   parseEventsPage: jest.fn(),
+  parseArchivedEventsPage: jest.fn(),
   parseRosterPage: jest.fn(),
   parseTeamListPage: (...args: unknown[]) => mockParseTeamListPage(...args),
   detectEventFormat: jest.fn().mockReturnValue(null),
@@ -352,4 +353,355 @@ describe("scrapeRk9TeamsBatch", () => {
     // Verify the standing was actually processed, not skipped
     expect(mockParseTeamListPage).toHaveBeenCalled();
   });
+
+  it("returns done:true with total:0 when no standings exist for the event", async () => {
+    standingsChain = makeChain(() => ({ data: [], error: null }));
+
+    const { scrapeRk9TeamsBatch } = await import("../rk9");
+    const result = await scrapeRk9TeamsBatch("EVT001");
+
+    expect(result.success).toBe(true);
+    expect(result.done).toBe(true);
+    expect(result.total).toBe(0);
+    expect(result.scraped).toBe(0);
+  });
+
+  it("returns done:true when all standings already have team_scrape_attempted_at set", async () => {
+    const attemptedAt = new Date().toISOString();
+    standingsChain = makeChain(() => ({
+      data: [
+        {
+          id: 1,
+          roster_entry_id: "r1",
+          team_scrape_attempted_at: attemptedAt,
+        },
+        {
+          id: 2,
+          roster_entry_id: "r2",
+          team_scrape_attempted_at: attemptedAt,
+        },
+      ],
+      error: null,
+    }));
+    // team_pokemon query for counting — no rows means status stays "teams"
+    teamPokemonChain = makeChain(() => ({ data: [], error: null }));
+    eventsUpdateChain = makeChain(() => ({ data: null, error: null }));
+
+    const { scrapeRk9TeamsBatch } = await import("../rk9");
+    const result = await scrapeRk9TeamsBatch("EVT001", { force: false });
+
+    expect(result.success).toBe(true);
+    expect(result.done).toBe(true);
+    // No new scrapes because everything was already attempted
+    expect(mockParseTeamListPage).not.toHaveBeenCalled();
+  });
+});
+
+describe("discoverRk9Events", () => {
+  it("returns success:false when not authenticated", async () => {
+    const { getUserId } = jest.requireMock("@/lib/supabase/server");
+    getUserId.mockResolvedValueOnce(null);
+
+    const mod = await import("../rk9");
+    const result = await mod.discoverRk9Events();
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /not authenticated/i
+    );
+  });
+
+  it("returns success:false when not site admin", async () => {
+    const { isSiteAdmin } = jest.requireMock("@/lib/sudo/server");
+    isSiteAdmin.mockResolvedValueOnce(false);
+
+    const mod = await import("../rk9");
+    const result = await mod.discoverRk9Events();
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /requires site admin/i
+    );
+  });
+
+  it("returns success:true and events when live and archive fetches succeed", async () => {
+    const { parseEventsPage, parseArchivedEventsPage } = jest.requireMock(
+      "@/lib/rk9/scraper"
+    );
+    const { syncEvents } = jest.requireMock("@/lib/rk9/index");
+
+    parseEventsPage.mockReturnValueOnce([
+      {
+        eventId: "evt-live-1",
+        name: "Live Event",
+        tier: "regional",
+        dateStart: "2024-01-01",
+        dateEnd: "2024-01-02",
+        dateRaw: "",
+        section: "current",
+        locationCity: null,
+        locationCountry: null,
+      },
+    ]);
+    // Archive snapshots will call parseArchivedEventsPage multiple times
+    // (once per snapshot). Return one event on the first call, empty after.
+    parseArchivedEventsPage.mockReturnValueOnce([
+      {
+        eventId: "evt-arch-1",
+        name: "Archive Event",
+        tier: "regional",
+        dateStart: "2023-01-01",
+        dateEnd: "2023-01-02",
+        dateRaw: "",
+        section: "past",
+        locationCity: null,
+        locationCountry: null,
+      },
+    ]);
+    parseArchivedEventsPage.mockReturnValue([]);
+    syncEvents.mockResolvedValueOnce({ synced: 2, total: 2 });
+
+    // CDX call needs json(), HTML calls need text()
+    mockFetch.mockImplementation((url: unknown) => {
+      if (typeof url === "string" && url.includes("cdx")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          json: async () => [
+            ["timestamp", "statuscode"],
+            ["20240101120000", "200"],
+          ],
+          headers: { get: () => null },
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => "<html></html>",
+        headers: { get: () => null },
+      });
+    });
+
+    const mod = await import("../rk9");
+    const result = await mod.discoverRk9Events();
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.events).toBeDefined();
+      expect(result.events!.length).toBeGreaterThan(0);
+      expect(result.sources!.live).toBe(1);
+    }
+  });
+
+  it("returns success:false when no events found from any source", async () => {
+    const { parseEventsPage, parseArchivedEventsPage } = jest.requireMock(
+      "@/lib/rk9/scraper"
+    );
+
+    parseEventsPage.mockReturnValue([]);
+    parseArchivedEventsPage.mockReturnValue([]);
+
+    // CDX returns no snapshots, so only fallback snapshots are used,
+    // but parseArchivedEventsPage returns [] for all of them.
+    mockFetch.mockImplementation((url: unknown) => {
+      if (typeof url === "string" && url.includes("cdx")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          // Only header row — no data snapshots
+          json: async () => [["timestamp", "statuscode"]],
+          headers: { get: () => null },
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => "<html></html>",
+        headers: { get: () => null },
+      });
+    });
+
+    const mod = await import("../rk9");
+    const result = await mod.discoverRk9Events();
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /no events/i
+    );
+  });
+});
+
+describe("scrapeRk9Roster", () => {
+  it("returns success:false when not authenticated", async () => {
+    const { getUserId } = jest.requireMock("@/lib/supabase/server");
+    getUserId.mockResolvedValueOnce(null);
+
+    const mod = await import("../rk9");
+    const result = await mod.scrapeRk9Roster("EVT001");
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /not authenticated/i
+    );
+  });
+
+  it("returns success:false when not site admin", async () => {
+    const { isSiteAdmin } = jest.requireMock("@/lib/sudo/server");
+    isSiteAdmin.mockResolvedValueOnce(false);
+
+    const mod = await import("../rk9");
+    const result = await mod.scrapeRk9Roster("EVT001");
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /requires site admin/i
+    );
+  });
+
+  it("returns success:true with playerCount when roster import succeeds", async () => {
+    const { parseRosterPage, formatDetectionNeedsHtml } = jest.requireMock(
+      "@/lib/rk9/scraper"
+    );
+    const { importEvent } = jest.requireMock("@/lib/rk9/index");
+
+    // Skip the HTML-based format detection path (simpler mock path)
+    formatDetectionNeedsHtml.mockReturnValueOnce(false);
+
+    parseRosterPage.mockReturnValueOnce([
+      {
+        playerIdMasked: "p1...",
+        firstName: "Ash",
+        lastName: "Ketchum",
+        country: "US",
+        trainerName: "PikachuTrainer",
+        division: "masters",
+        placement: 1,
+        rosterEntryId: "r1",
+      },
+    ]);
+
+    importEvent.mockResolvedValueOnce({
+      standingsInserted: 1,
+      playersUpserted: 1,
+      teamsInserted: 0,
+      pokemonInserted: 0,
+      eventId: "EVT001",
+    });
+
+    const mod = await import("../rk9");
+    const result = await mod.scrapeRk9Roster("EVT001");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.playerCount).toBe(1);
+    }
+  });
+
+  it("returns success:false when HTTP fetch for roster fails", async () => {
+    const { formatDetectionNeedsHtml } = jest.requireMock("@/lib/rk9/scraper");
+    formatDetectionNeedsHtml.mockReturnValueOnce(false);
+
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Server Error",
+      text: async () => "",
+    });
+
+    const mod = await import("../rk9");
+    const result = await mod.scrapeRk9Roster("EVT001");
+
+    expect(result.success).toBe(false);
+    // fetchRk9Html throws "HTTP 500: Server Error"; getErrorMessage extracts that message
+    expect((result as { success: false; error: string }).error).toMatch(
+      /HTTP 500|failed to scrape roster/i
+    );
+  });
+});
+
+describe("scrapeRk9TeamForStanding — species map and normalizeSpeciesInline", () => {
+  beforeEach(() => {
+    standingsChain = makeChain(() => ({ data: null, error: null }));
+    teamPokemonChain = makeChain(() => ({ data: null, error: null }));
+    eventsUpdateChain = makeChain(() => ({ data: null, error: null }));
+  });
+
+  it("uses species_map row slug when available", async () => {
+    // Provide a species_map row that maps "Pikachu" to a custom slug
+    speciesMapChain = makeChain(() => ({
+      data: [{ raw_name: "Pikachu", species_slug: "pikachu-override" }],
+      error: null,
+    }));
+    mockParseTeamListPage.mockReturnValueOnce([
+      {
+        speciesRaw: "Pikachu",
+        ability: "Static",
+        heldItem: "Light Ball",
+        teraType: "Electric",
+        statAlignment: null,
+        moves: ["Thunderbolt"],
+      },
+    ]);
+
+    const mod = await import("../rk9");
+    const result = await mod.scrapeRk9TeamForStanding("EVT001", 1, "entry1");
+
+    expect(result.success).toBe(true);
+    // Ensure the upsert was called with the mapped slug
+    expect(teamPokemonChain.upsert).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ species: "pikachu-override" }),
+      ]),
+      expect.anything()
+    );
+  });
+
+  it.each([
+    // formMap hits — known form keys
+    ["Rotom [Heat Rotom]", "rotom-heat"],
+    ["Urshifu [Rapid Strike Style]", "urshifu-rapid-strike"],
+    ["Giratina [Origin Forme]", "giratina-origin"],
+    ["Ogerpon [Hearthflame Mask]", "ogerpon-hearthflame"],
+    // skipForms — returns base species without suffix
+    ["Landorus [Incarnate Forme]", "landorus"],
+    ["Tornadus [Incarnate Forme]", "tornadus"],
+    // Empty formMap value (single-strike style) — base species only
+    ["Urshifu [Single Strike Style]", "urshifu"],
+    // sluggedForm fallback — form not in formMap, not in skipForms
+    ["Maushold [Family of Three]", "maushold-family-of-three"],
+  ])(
+    "normalizes bracketed form '%s' to slug '%s'",
+    async (speciesRaw, expectedSlug) => {
+      speciesMapChain = makeChain(() => ({ data: [], error: null }));
+      mockParseTeamListPage.mockReturnValueOnce([
+        {
+          speciesRaw,
+          ability: null,
+          heldItem: null,
+          teraType: null,
+          statAlignment: null,
+          moves: [],
+        },
+      ]);
+
+      const mod = await import("../rk9");
+      const result = await mod.scrapeRk9TeamForStanding(
+        "EVT001",
+        1,
+        "entry1"
+      );
+
+      expect(result.success).toBe(true);
+      expect(teamPokemonChain.upsert).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ species: expectedSlug }),
+        ]),
+        expect.anything()
+      );
+    }
+  );
 });
