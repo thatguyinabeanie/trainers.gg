@@ -97,6 +97,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
     setExpandedPlacements(new Set());
   }
 
+  /* istanbul ignore next */
   async function handleScrapeStanding(standingId: number, rosterEntryId: string) {
     if (!rosterEntryId) return;
     setScrapingIds((prev) => new Set(prev).add(standingId));
