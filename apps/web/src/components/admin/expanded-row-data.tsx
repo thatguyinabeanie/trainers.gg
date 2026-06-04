@@ -234,7 +234,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                     ? (data as RK9StandingWithTeam[])
                         .filter((s) => s.division === divisionFilter)
                         .filter((s) => showMissingOnly ? (s.team_pokemon ?? []).length === 0 : (s.team_pokemon ?? []).length > 0)
-                        .map((s, i) => {
+                        .map((s) => {
                           const expansionKey = `${s.division}-${s.placement}`;
                           const isExpanded = expandedPlacements.has(expansionKey);
                           const pokemon = s.team_pokemon ?? [];
@@ -421,7 +421,7 @@ export function ExpandedRowData({ row }: ExpandedRowDataProps) {
                       })
                     : (data as LimitlessStandingWithTeam[])
                         .filter((s) => showMissingOnly ? (s.team_pokemon ?? []).length === 0 : (s.team_pokemon ?? []).length > 0)
-                        .map((s, i) => {
+                        .map((s) => {
                         const playerName = s.players?.display_name ?? "—";
                         const record =
                           s.record_wins != null
