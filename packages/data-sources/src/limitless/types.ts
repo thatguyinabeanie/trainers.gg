@@ -7,13 +7,7 @@ export interface LimitlessTournament {
   players: number;
 }
 
-export interface LimitlessTournamentDetails {
-  id: string;
-  game: string;
-  format: string;
-  name: string;
-  date: string;
-  players: number;
+export interface LimitlessTournamentDetails extends LimitlessTournament {
   organizer?: { id: number; name: string };
   platform?: string;
   decklists?: boolean;
