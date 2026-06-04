@@ -31,6 +31,30 @@ jest.mock("@trainers/pokemon", () => ({
   getItemShortDesc: (...args: unknown[]) => mockGetItemShortDesc(...args),
 }));
 
+// =============================================================================
+// Mock useUsageData — item-picker now calls this hook; return empty by default
+// so existing tests are unaffected. Override per-test when testing usage.
+// =============================================================================
+
+const mockUseUsageData = jest.fn();
+
+jest.mock("../use-usage-data", () => ({
+  useUsageData: (...args: unknown[]) => mockUseUsageData(...args),
+}));
+
+// =============================================================================
+// Mock UsageSparkline — recharts + ResizeObserver not available in JSDOM.
+// =============================================================================
+
+jest.mock("../usage-sparkline", () => ({
+  UsageSparkline: ({ ariaLabel }: { ariaLabel?: string }) => (
+    <span
+      data-testid="usage-sparkline"
+      aria-label={ariaLabel ?? "Usage trend"}
+    />
+  ),
+}));
+
 // JSDOM doesn't implement layout/scroll APIs, so @tanstack/react-virtual
 // reports zero visible items. Mock it to render every row.
 jest.mock("@tanstack/react-virtual", () => ({
@@ -64,6 +88,19 @@ function makeMockFormat(): GameFormat {
   } as unknown as GameFormat;
 }
 
+/** Build a minimal SpeciesUsagePeriod-shaped object for testing. */
+function makeUsagePeriod(
+  items: Array<{ value: string; pct: number }>
+) {
+  return {
+    period: "2024-01",
+    total_battles: 1000,
+    moves: [],
+    items: items.map((i) => ({ value: i.value, count: i.pct * 10, pct: i.pct })),
+    tera: [],
+  };
+}
+
 // =============================================================================
 // ItemPicker tests
 // =============================================================================
@@ -78,6 +115,8 @@ describe("ItemPicker", () => {
       if (item === "Leftovers") return "Restores HP each turn.";
       return undefined;
     });
+    // Default: no usage data
+    mockUseUsageData.mockReturnValue({ data: undefined });
   });
 
   // ---------------------------------------------------------------------------
@@ -88,6 +127,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={[]}
         onPick={jest.fn()}
@@ -101,6 +141,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={[]}
         onPick={jest.fn()}
@@ -114,6 +155,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={[]}
         onPick={jest.fn()}
@@ -131,6 +173,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={[]}
         onPick={jest.fn()}
@@ -146,6 +189,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={[]}
         onPick={jest.fn()}
@@ -163,6 +207,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={[]}
         onPick={jest.fn()}
@@ -179,6 +224,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={[]}
         onPick={jest.fn()}
@@ -202,6 +248,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={[]}
         onPick={onPick}
@@ -225,6 +272,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={["Leftovers"]}
         onPick={jest.fn()}
@@ -241,6 +289,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={[]}
         onPick={jest.fn()}
@@ -258,6 +307,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value="Leftovers"
+        species={undefined}
         format={undefined}
         teamItems={["Leftovers"]}
         onPick={jest.fn()}
@@ -281,6 +331,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={format}
         teamItems={[]}
         onPick={jest.fn()}
@@ -302,6 +353,7 @@ describe("ItemPicker", () => {
     render(
       <ItemPicker
         value={null}
+        species={undefined}
         format={undefined}
         teamItems={[]}
         onPick={onPick}
@@ -311,5 +363,193 @@ describe("ItemPicker", () => {
     await user.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onPick).not.toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Usage data display
+  // ---------------------------------------------------------------------------
+
+  describe("usage data", () => {
+    const format = makeMockFormat();
+
+    it("shows usage % when usage data is present for an item", () => {
+      mockUseUsageData.mockReturnValue({
+        data: [makeUsagePeriod([{ value: "Choice Band", pct: 45 }])],
+      });
+
+      render(
+        <ItemPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          teamItems={[]}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(screen.getByText("45%")).toBeInTheDocument();
+    });
+
+    it("shows '—' for items with no usage data when usage data exists for others", () => {
+      // Only Choice Band has data; Life Orb shows '—'
+      mockGetAllItems.mockReturnValue(["Choice Band", "Life Orb"]);
+      mockUseUsageData.mockReturnValue({
+        data: [makeUsagePeriod([{ value: "Choice Band", pct: 30 }])],
+      });
+
+      render(
+        <ItemPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          teamItems={[]}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      // Life Orb has no usage data → shows "—"
+      expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    });
+
+    it("does not render usage % column when no usage data is available", () => {
+      mockUseUsageData.mockReturnValue({ data: [] });
+
+      render(
+        <ItemPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          teamItems={[]}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      // No "%" text should appear in usage column (% is only rendered when
+      // hasUsageData is true and item has a non-zero pct)
+      expect(screen.queryByText(/^\d+%$/)).not.toBeInTheDocument();
+    });
+
+    it("renders sparklines for items with ≥2 usage period data points", () => {
+      mockGetAllItems.mockReturnValue(["Choice Band"]);
+      // Two periods → UsageSparkline should render
+      mockUseUsageData.mockReturnValue({
+        data: [
+          makeUsagePeriod([{ value: "Choice Band", pct: 30 }]),
+          makeUsagePeriod([{ value: "Choice Band", pct: 45 }]),
+        ],
+      });
+
+      render(
+        <ItemPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          teamItems={[]}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(screen.getByTestId("usage-sparkline")).toBeInTheDocument();
+    });
+
+    it("does NOT render sparkline when only 1 usage period is present", () => {
+      mockGetAllItems.mockReturnValue(["Choice Band"]);
+      // One period only → series has length 1 → no sparkline
+      mockUseUsageData.mockReturnValue({
+        data: [makeUsagePeriod([{ value: "Choice Band", pct: 45 }])],
+      });
+
+      render(
+        <ItemPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          teamItems={[]}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(screen.queryByTestId("usage-sparkline")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Usage-based sorting
+  // ---------------------------------------------------------------------------
+
+  describe("usage-based sorting", () => {
+    const format = makeMockFormat();
+
+    it("sorts items by descending usage % when usage data is present", () => {
+      mockGetAllItems.mockReturnValue([
+        "Life Orb",
+        "Leftovers",
+        "Choice Band",
+      ]);
+      // Choice Band: 50%, Leftovers: 30%, Life Orb: 10%
+      mockUseUsageData.mockReturnValue({
+        data: [
+          makeUsagePeriod([
+            { value: "Choice Band", pct: 50 },
+            { value: "Leftovers", pct: 30 },
+            { value: "Life Orb", pct: 10 },
+          ]),
+        ],
+      });
+
+      render(
+        <ItemPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          teamItems={[]}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      const buttons = screen
+        .getAllByRole("button")
+        .filter((b) => b.getAttribute("aria-label") !== "Close");
+      const names = buttons.map((b) => b.textContent?.trim() ?? "");
+      const choiceIdx = names.findIndex((n) => n.startsWith("Choice Band"));
+      const leftIdx = names.findIndex((n) => n.startsWith("Leftovers"));
+      const lifeIdx = names.findIndex((n) => n.startsWith("Life Orb"));
+      // Higher usage should appear earlier
+      expect(choiceIdx).toBeLessThan(leftIdx);
+      expect(leftIdx).toBeLessThan(lifeIdx);
+    });
+
+    it("preserves original ordering when no usage data is available", () => {
+      mockGetAllItems.mockReturnValue(["Leftovers", "Choice Band", "Life Orb"]);
+      mockUseUsageData.mockReturnValue({ data: undefined });
+
+      render(
+        <ItemPicker
+          value={null}
+          species={undefined}
+          format={undefined}
+          teamItems={[]}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      const buttons = screen
+        .getAllByRole("button")
+        .filter((b) => b.getAttribute("aria-label") !== "Close");
+      const names = buttons.map((b) => b.textContent?.trim() ?? "");
+      const leftIdx = names.findIndex((n) => n.startsWith("Leftovers"));
+      const choiceIdx = names.findIndex((n) => n.startsWith("Choice Band"));
+      const lifeIdx = names.findIndex((n) => n.startsWith("Life Orb"));
+      // Original order: Leftovers, Choice Band, Life Orb
+      expect(leftIdx).toBeLessThan(choiceIdx);
+      expect(choiceIdx).toBeLessThan(lifeIdx);
+    });
   });
 });
