@@ -8,6 +8,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  BarChart2,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -55,6 +56,7 @@ import {
   triggerLimitlessSync,
   triggerImportQueue,
 } from "@/actions/limitless";
+import { triggerUsageRollup } from "@/actions/usage";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
 import { formatTimeAgo } from "@trainers/utils";
 import { normalizeLimitlessStatus } from "./limitless-status";
@@ -309,6 +311,10 @@ export function ExternalData() {
   const [batchQueuing, setBatchQueuing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<string | null>(null);
+
+  // Usage rollup state
+  const [recomputingUsage, setRecomputingUsage] = useState(false);
+  const [usageMessage, setUsageMessage] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Load auto-import settings from DB (per-source)
@@ -909,6 +915,27 @@ export function ExternalData() {
       );
     } finally {
       setImporting(false);
+    }
+  }
+
+  async function handleRecomputeUsage() {
+    setRecomputingUsage(true);
+    setUsageMessage(null);
+    try {
+      const result = await triggerUsageRollup({ force: true });
+      if (!result.success) throw new Error(result.error);
+      const { ran, formatsProcessed, bucketsWritten } = result.data;
+      setUsageMessage(
+        ran
+          ? `Recomputed ${formatsProcessed} format(s), ${bucketsWritten} bucket(s)`
+          : "No dirty formats — skipped"
+      );
+    } catch (err) {
+      setUsageMessage(
+        `Error: ${err instanceof Error ? err.message : "Recompute failed"}`
+      );
+    } finally {
+      setRecomputingUsage(false);
     }
   }
 
@@ -1705,6 +1732,31 @@ export function ExternalData() {
                   <CloudDownload className="mr-1.5 h-3.5 w-3.5" />
                 )}
                 Sync
+              </Button>
+              {usageMessage && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    usageMessage.startsWith("Error")
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {usageMessage}
+                </p>
+              )}
+              <Button
+                onClick={handleRecomputeUsage}
+                disabled={recomputingUsage}
+                size="sm"
+                variant="outline"
+              >
+                {recomputingUsage ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <BarChart2 className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                Recompute Usage
               </Button>
             </div>
           </div>

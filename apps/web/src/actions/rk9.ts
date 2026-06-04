@@ -2,6 +2,7 @@
 
 import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
+import { computeEventUsage } from "@trainers/supabase";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import { getSiteConfig } from "@/actions/site-config";
@@ -492,6 +493,18 @@ export async function scrapeRk9TeamsBatch(
           teams_imported_count: 0,
         })
         .eq("event_id", eventId);
+
+      // Best-effort: compute per-event usage facts. Failure must never
+      // break or roll back the completed import.
+      try {
+        await computeEventUsage(supabase, "rk9", eventId);
+      } catch (usageErr) {
+        console.error(
+          `[usage] computeEventUsage failed for rk9/${eventId}:`,
+          usageErr
+        );
+      }
+
       return { success: true, data: undefined, done: true, scraped: 0, total: 0, failed: 0 };
     }
 
@@ -537,6 +550,19 @@ export async function scrapeRk9TeamsBatch(
         .eq("event_id", eventId);
       if (noStandingsStatusErr)
         console.error(`[rk9-teams] Failed to update event status: ${noStandingsStatusErr.message}`);
+
+      // Best-effort: compute per-event usage facts when all standings are in.
+      // Failure must never break or roll back the completed import.
+      if (allImported) {
+        try {
+          await computeEventUsage(supabase, "rk9", eventId);
+        } catch (usageErr) {
+          console.error(
+            `[usage] computeEventUsage failed for rk9/${eventId}:`,
+            usageErr
+          );
+        }
+      }
 
       return { success: true, data: undefined, done: true, scraped: total, total, failed: 0 };
     }
@@ -730,6 +756,19 @@ export async function scrapeRk9TeamsBatch(
       .eq("event_id", eventId);
     if (batchStatusErr)
       console.error(`[rk9-teams] Failed to update event status: ${batchStatusErr.message}`);
+
+    // Best-effort: compute per-event usage facts when all team data is in.
+    // Failure must never break or roll back the completed import.
+    if (allImported) {
+      try {
+        await computeEventUsage(supabase, "rk9", eventId);
+      } catch (usageErr) {
+        console.error(
+          `[usage] computeEventUsage failed for rk9/${eventId}:`,
+          usageErr
+        );
+      }
+    }
 
     return {
       success: true,
