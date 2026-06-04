@@ -446,14 +446,14 @@ export async function scrapeRk9TeamsBatch(
       getSiteConfig<number>("rk9_max_teams_per_tick"),
       getSiteConfig<number>("rk9_team_concurrency"),
     ]);
-    const batchSize =
-      batchSizeResult.success && batchSizeResult.data
-        ? batchSizeResult.data
-        : TEAMS_BATCH_SIZE;
-    const concurrency =
-      concurrencyResult.success && concurrencyResult.data
-        ? concurrencyResult.data
-        : 3;
+    const batchSize = Math.max(
+      1,
+      batchSizeResult.success && batchSizeResult.data ? batchSizeResult.data : TEAMS_BATCH_SIZE
+    );
+    const concurrency = Math.max(
+      1,
+      concurrencyResult.success && concurrencyResult.data ? concurrencyResult.data : 3
+    );
 
     const supabase = createServiceRoleClient();
 
