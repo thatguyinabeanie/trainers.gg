@@ -150,10 +150,10 @@ export async function fetchTournamentList(
     );
 
     for (const batch of results) {
-      // null means this page's fetch failed — skip it rather than aborting
+      // null means this page's fetch failed — return accumulated results so far
       if (batch === null) {
-        console.warn("[limitless] Skipping null page result, continuing pagination");
-        continue;
+        console.warn("[limitless] Page fetch failed, returning partial results");
+        return all;
       }
       // Empty array means we have passed the last page
       if (batch.length === 0) return all;
