@@ -15,6 +15,9 @@ ALTER TABLE rk9.standings
 
 -- Each roster registration is uniquely identified by its roster entry ID
 ALTER TABLE rk9.standings
+  DROP CONSTRAINT IF EXISTS standings_event_id_roster_entry_id_key;
+
+ALTER TABLE rk9.standings
   ADD CONSTRAINT standings_event_id_roster_entry_id_key
   UNIQUE (event_id, roster_entry_id);
 

@@ -149,17 +149,29 @@ export async function fetchTournamentList(
       )
     );
 
+    let anyValidData = false;
+    let foundEmptyPage = false;
+
     for (const batch of results) {
-      // null means this page's fetch failed — return accumulated results so far
       if (batch === null) {
-        console.warn("[limitless] Page fetch failed, returning partial results");
-        return all;
+        console.warn("[limitless] Page fetch failed, skipping");
+        continue;
       }
-      // Empty array means we have passed the last page
-      if (batch.length === 0) return all;
+      if (batch.length === 0) {
+        foundEmptyPage = true;
+        break;
+      }
       all.push(...batch.filter((t) => t.game === "VGC"));
-      if (batch.length < 500) return all;
+      anyValidData = true;
+      // A partial page means we've reached the last page
+      if (batch.length < 500) {
+        foundEmptyPage = true;
+        break;
+      }
     }
+
+    // Stop pagination if we found the end, or if all pages in this group failed
+    if (foundEmptyPage || !anyValidData) return all;
   }
 }
 

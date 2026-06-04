@@ -7,5 +7,8 @@ ALTER TABLE rk9.players
   DROP CONSTRAINT IF EXISTS players_first_name_last_name_country_key;
 
 ALTER TABLE rk9.players
+  DROP CONSTRAINT IF EXISTS players_player_id_masked_first_name_last_name_country_key;
+
+ALTER TABLE rk9.players
   ADD CONSTRAINT players_player_id_masked_first_name_last_name_country_key
   UNIQUE (player_id_masked, first_name, last_name, country);
