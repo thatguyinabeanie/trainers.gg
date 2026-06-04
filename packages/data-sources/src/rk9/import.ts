@@ -6,7 +6,7 @@
  *
  * Import flow:
  *   1. Upsert event metadata (from events.json)
- *   2. Upsert players from roster (dedup by player_id_masked + first_name + last_name + country)
+ *   2. Match or create players per roster entry (sequential, with import_flag)
  *   3. Create standings (linking players to events with placement)
  *   4. Insert team_pokemon (species, ability, item, tera, moves)
  *
@@ -92,6 +92,12 @@ export async function syncEvents(
  *
  * Idempotent: deletes existing standings + team_pokemon for the event
  * before re-inserting. Players are upserted (never deleted).
+ *
+ * Player matching algorithm:
+ *   - Phase 1: Pre-scan roster for conflict groups (same identity, 2+ entries)
+ *   - Phase 2: Per-entry sequential matching — find/create players, set import_flag
+ *   - Phase 3: Update trainer_names on existing players when a new name is discovered
+ *   - Phase 4: Batch upsert standings on (event_id, roster_entry_id)
  */
 export async function importEvent(
   supabase: SupabaseClient,
@@ -108,7 +114,7 @@ export async function importEvent(
     pokemonInserted: 0,
   };
 
-  // 1. Delete existing child data and load species_map in parallel
+  // Step 1. Delete existing child data and load species_map in parallel
   const [delErr, speciesMap] = await Promise.all([
     // Delete standings (team_pokemon cascades via ON DELETE CASCADE)
     supabase
@@ -126,75 +132,189 @@ export async function importEvent(
 
   if (delErr) throw new Error(`Delete standings: ${delErr.message}`);
 
-  // 3. Batch upsert all players first
-  const playerIdCache = new Map<string, number>();
-  const uniquePlayers = new Map<string, {
-    playerIdMasked: string;
-    firstName: string;
-    lastName: string;
-    country: string | null;
-  }>();
-
+  // ---------------------------------------------------------------------------
+  // Phase 1: Pre-scan for conflict groups
+  //
+  // Group entries by (playerIdMasked, firstName, lastName, country).
+  // Any identity key with 2+ entries in this event is a "conflict group" —
+  // we cannot pick a single player for them without ambiguity.
+  // ---------------------------------------------------------------------------
+  const identityCount = new Map<string, number>();
   for (const entry of roster) {
     if (!entry.firstName || !entry.lastName) continue;
     const key = `${entry.playerIdMasked ?? ""}|${entry.firstName}|${entry.lastName}|${entry.country ?? ""}`;
-    if (!uniquePlayers.has(key)) {
-      uniquePlayers.set(key, {
-        playerIdMasked: entry.playerIdMasked ?? "",
-        firstName: entry.firstName,
-        lastName: entry.lastName,
-        country: entry.country ?? null,
-      });
-    }
+    identityCount.set(key, (identityCount.get(key) ?? 0) + 1);
   }
 
-  // Batch upsert players (500 at a time) and build cache
-  const playerRows = Array.from(uniquePlayers.values());
-  for (let i = 0; i < playerRows.length; i += 500) {
-    const batch = playerRows.slice(i, i + 500);
-    const { data: upserted, error: pErr } = await supabase
-      .schema("rk9")
-      .from("players")
-      .upsert(
-        batch.map((p) => ({
-          player_id_masked: p.playerIdMasked,
-          first_name: p.firstName,
-          last_name: p.lastName,
-          country: p.country,
-        })),
-        { onConflict: "player_id_masked,first_name,last_name,country" }
-      )
-      .select("id, player_id_masked, first_name, last_name, country");
+  // ---------------------------------------------------------------------------
+  // Phase 2 + 3: Sequential per-entry player matching
+  //
+  // Process entries one at a time so that players created in earlier iterations
+  // are visible to later lookups (Phase A re-queries the DB each time).
+  // ---------------------------------------------------------------------------
 
-    if (pErr) throw new Error(`Player batch upsert: ${pErr.message}`);
+  // Resolved match for each roster index: playerId (null when unlinked) + flag
+  const entryMatches: Array<{
+    idx: number;
+    playerId: number | null;
+    importFlag: string | null;
+  }> = [];
 
-    for (const row of upserted ?? []) {
-      const key = `${row.player_id_masked ?? ""}|${row.first_name}|${row.last_name}|${row.country ?? ""}`;
-      playerIdCache.set(key, row.id);
+  for (const [idx, entry] of roster.entries()) {
+    // Skip entries with no real name — cannot create a meaningful player record
+    if (!entry.firstName || !entry.lastName) continue;
+
+    const identityKey = `${entry.playerIdMasked ?? ""}|${entry.firstName}|${entry.lastName}|${entry.country ?? ""}`;
+    const isConflictGroup = (identityCount.get(identityKey) ?? 0) >= 2;
+
+    let playerId: number | null = null;
+    let importFlag: string | null = null;
+
+    try {
+      // Phase A: Look up existing players matching this identity
+      const { data: candidates, error: lookupErr } = await supabase
+        .schema("rk9")
+        .from("players")
+        .select("id, trainer_names")
+        .eq("player_id_masked", entry.playerIdMasked ?? "")
+        .eq("first_name", entry.firstName)
+        .eq("last_name", entry.lastName)
+        .eq("country", entry.country ?? "");
+
+      if (lookupErr) throw new Error(`Player lookup: ${lookupErr.message}`);
+
+      const trainerName = entry.trainerName ?? null;
+
+      // Phase B: Match by trainer_name — check if any candidate already knows this name
+      const exactMatch = (candidates ?? []).find(
+        (c) =>
+          trainerName !== null &&
+          Array.isArray(c.trainer_names) &&
+          (c.trainer_names as string[]).includes(trainerName)
+      );
+
+      if (exactMatch) {
+        // Existing player with a known trainer name — use them as-is
+        playerId = exactMatch.id as number;
+        importFlag = null;
+      } else {
+        // Phase C: No trainer name match — decide based on conflict status
+        if (isConflictGroup) {
+          // Multiple roster entries share this identity in this event.
+          // We cannot reliably pick one player, so create a new isolated record.
+          const { data: created, error: createErr } = await supabase
+            .schema("rk9")
+            .from("players")
+            .insert({
+              player_id_masked: entry.playerIdMasked ?? "",
+              first_name: entry.firstName,
+              last_name: entry.lastName,
+              country: entry.country ?? null,
+              trainer_names: trainerName !== null ? [trainerName] : [],
+            })
+            .select("id")
+            .single();
+
+          if (createErr) throw new Error(`Player create (collision): ${createErr.message}`);
+          playerId = (created as { id: number }).id;
+          importFlag = "name_collision";
+        } else {
+          const candidateList = candidates ?? [];
+
+          if (candidateList.length === 0) {
+            // No existing player — create a brand-new record
+            const { data: created, error: createErr } = await supabase
+              .schema("rk9")
+              .from("players")
+              .insert({
+                player_id_masked: entry.playerIdMasked ?? "",
+                first_name: entry.firstName,
+                last_name: entry.lastName,
+                country: entry.country ?? null,
+                trainer_names: trainerName !== null ? [trainerName] : [],
+              })
+              .select("id")
+              .single();
+
+            if (createErr) throw new Error(`Player create (new): ${createErr.message}`);
+            playerId = (created as { id: number }).id;
+            importFlag = "new_player";
+          } else if (candidateList.length === 1) {
+            // Exactly one candidate — link this entry to them and learn the new trainer name
+            const candidate = candidateList[0]!;
+            playerId = candidate.id as number;
+            importFlag = "new_trainer";
+
+            // Phase 3: Append trainer_name to the player's known names
+            if (trainerName !== null) {
+              const existingNames = Array.isArray(candidate.trainer_names)
+                ? (candidate.trainer_names as string[])
+                : [];
+              if (!existingNames.includes(trainerName)) {
+                const { error: updateErr } = await supabase
+                  .schema("rk9")
+                  .from("players")
+                  .update({ trainer_names: [...existingNames, trainerName] })
+                  .eq("id", playerId);
+
+                if (updateErr) throw new Error(`Player trainer_names update: ${updateErr.message}`);
+              }
+            }
+          } else {
+            // Multiple candidates but none match the trainer name — ambiguous
+            const { data: created, error: createErr } = await supabase
+              .schema("rk9")
+              .from("players")
+              .insert({
+                player_id_masked: entry.playerIdMasked ?? "",
+                first_name: entry.firstName,
+                last_name: entry.lastName,
+                country: entry.country ?? null,
+                trainer_names: trainerName !== null ? [trainerName] : [],
+              })
+              .select("id")
+              .single();
+
+            if (createErr) throw new Error(`Player create (multi-candidate): ${createErr.message}`);
+            playerId = (created as { id: number }).id;
+            importFlag = "name_collision";
+          }
+        }
+      }
+    } catch (err) {
+      // Phase D: Matching failed entirely — record the standing as unlinked
+      // so team_pokemon can still be linked and the import is not aborted.
+      console.warn(
+        `[rk9-import] Player match failed for ${entry.firstName} ${entry.lastName} (idx ${idx}): ${err instanceof Error ? err.message : String(err)}`
+      );
+      playerId = null;
+      importFlag = "unlinked";
     }
+
+    entryMatches.push({ idx, playerId, importFlag });
   }
 
-  result.playersUpserted = playerIdCache.size;
+  result.playersUpserted = entryMatches.filter((m) => m.playerId !== null).length;
 
-  // 4. Batch upsert standings, then batch insert team_pokemon
+  // ---------------------------------------------------------------------------
+  // Phase 4: Build standings batch and upsert
+  //
+  // Unique constraint is now (event_id, roster_entry_id) — no deduplication
+  // needed since roster_entry_id is always unique per entry.
+  // ---------------------------------------------------------------------------
   const standingBatch: Array<{
     event_id: string;
-    player_id: number;
+    player_id: number | null;
     division: string;
     placement: number | null;
     roster_entry_id: string | null;
     trainer_name: string | null;
+    import_flag: string | null;
     index: number;
   }> = [];
 
-  for (const [idx, entry] of roster.entries()) {
-    if (!entry.firstName || !entry.lastName) continue;
-    const key = `${entry.playerIdMasked ?? ""}|${entry.firstName}|${entry.lastName}|${entry.country ?? ""}`;
-    const playerId = playerIdCache.get(key);
-    if (!playerId) {
-      console.warn(`[rk9-import] No player ID for ${entry.firstName} ${entry.lastName}`);
-      continue;
-    }
+  for (const { idx, playerId, importFlag } of entryMatches) {
+    const entry = roster[idx]!;
     standingBatch.push({
       event_id: eventId,
       player_id: playerId,
@@ -202,26 +322,15 @@ export async function importEvent(
       placement: entry.placement,
       roster_entry_id: entry.rosterEntryId ?? null,
       trainer_name: entry.trainerName ?? null,
+      import_flag: importFlag,
       index: idx,
     });
   }
 
-  // Deduplicate standings by (event_id, player_id, division) to prevent
-  // "ON CONFLICT DO UPDATE command cannot affect row a second time" errors
-  // when the same player appears twice in a roster (e.g., duplicate registrations).
-  const standingDedupeMap = new Map<string, typeof standingBatch[0]>();
-  for (const s of standingBatch) {
-    const dedupeKey = `${s.event_id}|${s.player_id}|${s.division}`;
-    if (!standingDedupeMap.has(dedupeKey)) {
-      standingDedupeMap.set(dedupeKey, s);
-    }
-  }
-  const deduplicatedBatch = [...standingDedupeMap.values()];
-
   // Upsert standings in batches (500 at a time) with SELECT to get IDs
   const standingIdByIndex = new Map<number, number>();
-  for (let i = 0; i < deduplicatedBatch.length; i += 500) {
-    const batch = deduplicatedBatch.slice(i, i + 500);
+  for (let i = 0; i < standingBatch.length; i += 500) {
+    const batch = standingBatch.slice(i, i + 500);
     const { data: inserted, error: sErr } = await supabase
       .schema("rk9")
       .from("standings")
@@ -232,8 +341,10 @@ export async function importEvent(
           division: s.division,
           placement: s.placement,
           roster_entry_id: s.roster_entry_id,
+          trainer_name: s.trainer_name,
+          import_flag: s.import_flag,
         })),
-        { onConflict: "event_id,player_id,division" }
+        { onConflict: "event_id,roster_entry_id" }
       )
       .select("id");
 

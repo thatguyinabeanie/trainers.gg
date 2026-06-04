@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   limitless: {
     Tables: {
       match_results: {
@@ -4287,6 +4262,7 @@ export type Database = {
           id: number
           last_name: string
           player_id_masked: string
+          trainer_names: string[]
         }
         Insert: {
           country?: string | null
@@ -4295,6 +4271,7 @@ export type Database = {
           id?: never
           last_name: string
           player_id_masked?: string
+          trainer_names?: string[]
         }
         Update: {
           country?: string | null
@@ -4303,6 +4280,7 @@ export type Database = {
           id?: never
           last_name?: string
           player_id_masked?: string
+          trainer_names?: string[]
         }
         Relationships: []
       }
@@ -4333,8 +4311,9 @@ export type Database = {
           drop_round: number | null
           event_id: string
           id: number
+          import_flag: string | null
           placement: number | null
-          player_id: number
+          player_id: number | null
           roster_entry_id: string | null
           team_scrape_attempted_at: string | null
           trainer_name: string | null
@@ -4344,8 +4323,9 @@ export type Database = {
           drop_round?: number | null
           event_id: string
           id?: never
+          import_flag?: string | null
           placement?: number | null
-          player_id: number
+          player_id?: number | null
           roster_entry_id?: string | null
           team_scrape_attempted_at?: string | null
           trainer_name?: string | null
@@ -4355,8 +4335,9 @@ export type Database = {
           drop_round?: number | null
           event_id?: string
           id?: never
+          import_flag?: string | null
           placement?: number | null
-          player_id?: number
+          player_id?: number | null
           roster_entry_id?: string | null
           team_scrape_attempted_at?: string | null
           trainer_name?: string | null
@@ -4568,9 +4549,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   limitless: {
     Enums: {},
   },
