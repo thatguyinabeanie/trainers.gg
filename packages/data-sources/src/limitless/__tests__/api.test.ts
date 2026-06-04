@@ -58,7 +58,7 @@ describe("fetchTournamentList", () => {
     expect(results.every((t) => t.game === "VGC")).toBe(true);
   });
 
-  it("returns accumulated results when a subsequent page fetch fails", async () => {
+  it("throws when a subsequent page fetch fails after retries", async () => {
     const firstPage = Array.from({ length: 500 }, (_, i) => ({
       id: `t${i}`,
       format: "SVG",
@@ -77,9 +77,7 @@ describe("fetchTournamentList", () => {
       .mockRejectedValueOnce(new Error("network down"));
     jest.spyOn(globalThis, "fetch").mockImplementation(mockFetch);
 
-    const results = await fetchTournamentList();
-
-    expect(results.length).toBe(500);
+    await expect(fetchTournamentList()).rejects.toThrow("network down");
   });
 
   it("stops paginating when a subsequent page returns an empty batch", async () => {
@@ -92,6 +90,13 @@ describe("fetchTournamentList", () => {
       game: "VGC",
     }));
     // Page 1: full 500. Page 2: empty array (signals end of data).
+    // Pages 3-6 are fetched concurrently with page 2 (MAX_CONCURRENT=5) — they
+    // must resolve even though their results are discarded once page 2 signals end.
+    const emptyResponse = {
+      status: 200,
+      ok: true,
+      json: async () => [] as typeof firstPage,
+    };
     const mockFetch = jest
       .fn()
       .mockResolvedValueOnce({
@@ -99,11 +104,7 @@ describe("fetchTournamentList", () => {
         ok: true,
         json: async () => firstPage,
       })
-      .mockResolvedValueOnce({
-        status: 200,
-        ok: true,
-        json: async () => [],
-      });
+      .mockResolvedValue(emptyResponse);
     jest.spyOn(globalThis, "fetch").mockImplementation(mockFetch);
 
     const results = await fetchTournamentList();
@@ -128,6 +129,8 @@ describe("fetchTournamentList", () => {
       players: 10,
       game: "VGC",
     }));
+    // Pages 3-6 are fetched concurrently with page 2 (MAX_CONCURRENT=5) — they
+    // must resolve even though their results are discarded once page 2 signals end.
     const mockFetch = jest
       .fn()
       .mockResolvedValueOnce({
@@ -139,6 +142,11 @@ describe("fetchTournamentList", () => {
         status: 200,
         ok: true,
         json: async () => partialSecondPage,
+      })
+      .mockResolvedValue({
+        status: 200,
+        ok: true,
+        json: async () => [],
       });
     jest.spyOn(globalThis, "fetch").mockImplementation(mockFetch);
 
