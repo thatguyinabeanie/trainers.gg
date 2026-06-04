@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   limitless: {
     Tables: {
       match_results: {
@@ -1242,6 +1217,48 @@ export type Database = {
         }
         Relationships: []
       }
+      event_usage: {
+        Row: {
+          computed_at: string
+          details: Json
+          division: string | null
+          event_date: string
+          event_key: string
+          format: string
+          id: number
+          sample_size: number
+          source: string
+          species: string
+          team_count: number
+        }
+        Insert: {
+          computed_at?: string
+          details?: Json
+          division?: string | null
+          event_date: string
+          event_key: string
+          format: string
+          id?: never
+          sample_size: number
+          source: string
+          species: string
+          team_count: number
+        }
+        Update: {
+          computed_at?: string
+          details?: Json
+          division?: string | null
+          event_date?: string
+          event_key?: string
+          format?: string
+          id?: never
+          sample_size?: number
+          source?: string
+          species?: string
+          team_count?: number
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           created_at: string
@@ -1365,6 +1382,8 @@ export type Database = {
           id: number
           period_end: string
           period_start: string
+          period_type: string
+          source: string
           total_teams: number
           total_tournaments: number
         }
@@ -1374,6 +1393,8 @@ export type Database = {
           id?: never
           period_end: string
           period_start: string
+          period_type?: string
+          source?: string
           total_teams: number
           total_tournaments: number
         }
@@ -1383,6 +1404,8 @@ export type Database = {
           id?: never
           period_end?: string
           period_start?: string
+          period_type?: string
+          source?: string
           total_teams?: number
           total_tournaments?: number
         }
@@ -3510,6 +3533,27 @@ export type Database = {
           },
         ]
       }
+      usage_dirty: {
+        Row: {
+          dirty_since: string
+          format: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          dirty_since: string
+          format: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          dirty_since?: string
+          format?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_group_roles: {
         Row: {
           created_at: string | null
@@ -4574,9 +4618,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   limitless: {
     Enums: {},
   },
