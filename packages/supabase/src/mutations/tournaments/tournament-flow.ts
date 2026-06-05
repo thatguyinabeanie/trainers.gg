@@ -72,8 +72,11 @@ export async function startTournamentEnhanced(
   try {
     await computeEventUsage(serviceClient, "first_party", String(tournamentId));
   } catch (usageErr) {
+    // Keep the dynamic tournamentId out of the first console arg — a tainted
+    // format string trips CodeQL js/tainted-format-string.
     console.error(
-      `[usage] computeEventUsage failed for first_party/${tournamentId}:`,
+      "[usage] computeEventUsage failed for first_party tournament",
+      tournamentId,
       usageErr
     );
   }

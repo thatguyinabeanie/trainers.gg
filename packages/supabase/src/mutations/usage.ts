@@ -257,11 +257,14 @@ export async function computeSourceUsage(
       eventsComputed++;
       touchedFormats.add(candidate.format);
     } catch (e) {
+      // Best-effort: log and continue so one bad event doesn't abort the batch.
+      // Keep the dynamic (DB-derived) values out of the first console arg —
+      // a tainted format string trips CodeQL js/tainted-format-string.
       console.error(
-        `computeSourceUsage[${source}]: failed to compute event ${candidate.id} — skipping:`,
+        "computeSourceUsage: failed to compute event — skipping",
+        { source, eventId: candidate.id },
         e
       );
-      // Best-effort: log and continue so one bad event doesn't abort the batch
     }
   }
 
