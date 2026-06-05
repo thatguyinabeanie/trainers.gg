@@ -151,6 +151,13 @@ export function PokemonCard({ pokemon, className }: PokemonCardProps) {
           {pokemon.ability}
         </div>
 
+        {/* Nature (stat alignment) — only shown when present (Champions formats) */}
+        {pokemon.nature ? (
+          <div className="text-primary text-[11px] font-medium">
+            {pokemon.nature}
+          </div>
+        ) : null}
+
         {/* Held item — always rendered for consistent height */}
         <div className="flex items-center gap-1">
           {pokemon.held_item ? (

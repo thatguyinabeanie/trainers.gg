@@ -82,4 +82,27 @@ describe("PokemonCard", () => {
     const genderIcon = screen.getByLabelText("Male");
     expect(genderIcon).toBeInTheDocument();
   });
+
+  describe("nature (stat alignment)", () => {
+    it("renders the nature when it is set (Champions format OTS)", () => {
+      // mockPokemon already has nature: "Modest"
+      render(<PokemonCard pokemon={mockPokemon} />);
+      expect(screen.getByText("Modest")).toBeInTheDocument();
+    });
+
+    it("renders nothing nature-related when nature is empty (non-Champions OTS)", () => {
+      const noNaturePokemon = { ...mockPokemon, nature: "" };
+      render(<PokemonCard pokemon={noNaturePokemon} />);
+      // "Modest" must not appear — no nature line rendered
+      expect(screen.queryByText("Modest")).not.toBeInTheDocument();
+    });
+
+    it("does not render nature element when nature is an empty string", () => {
+      const noNaturePokemon = { ...mockPokemon, nature: "" };
+      const { container } = render(<PokemonCard pokemon={noNaturePokemon} />);
+      // The nature span carries the font-medium + text-primary classes — should not exist
+      const natureDivs = container.querySelectorAll(".text-primary");
+      expect(natureDivs).toHaveLength(0);
+    });
+  });
 });

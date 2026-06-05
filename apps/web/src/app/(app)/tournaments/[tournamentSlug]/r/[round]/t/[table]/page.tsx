@@ -264,7 +264,8 @@ export default async function MatchPage({ params }: PageProps) {
   }
 
   // Transform OTS snapshot data (opponent team / staff view).
-  // OTS format omits EVs, IVs, nature, gender, shiny — fill with safe defaults.
+  // OTS format omits EVs, IVs, gender, shiny — fill with safe defaults.
+  // Nature is included for Champions formats (non-null); empty string for all others.
   function transformSnapshotTeam(sheet: PlayerTeamSheet | null) {
     if (!sheet) return null;
     return {
@@ -280,7 +281,9 @@ export default async function MatchPage({ params }: PageProps) {
         move2: p.move2,
         move3: p.move3,
         move4: p.move4,
-        nature: "",
+        // Nature is populated by the backend for Champions formats only;
+        // null otherwise — fall back to empty string so PokemonCard renders nothing.
+        nature: p.nature ?? "",
         gender: null,
         is_shiny: false,
         position: p.position,
