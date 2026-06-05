@@ -8,8 +8,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { fetchTournamentList, fetchTournamentData } from "./api";
-import { LIMITLESS_TO_FORMAT, KNOWN_FORMATS } from "./format";
-import type { TournamentData, SyncResult, ImportResult, LimitlessTournament } from "./types";
+import { LIMITLESS_TO_FORMAT, KNOWN_FORMATS, SKIP_FORMATS } from "./format";
+import type {
+  TournamentData,
+  SyncResult,
+  ImportResult,
+  LimitlessTournament,
+} from "./types";
 
 // Union of Limitless format codes (keys) and Showdown format IDs (values)
 // that are valid for import.
@@ -61,26 +66,43 @@ export async function syncTournamentList(
       continue;
     }
 
-    const showdownId = LIMITLESS_TO_FORMAT[rawCode];
-    if (showdownId) {
-      mapped++;
-    } else {
-      unmapped++;
+    const isSkipped = SKIP_FORMATS.has(rawCode);
+    if (isSkipped) {
+      skipped++;
       unmappedFormats[rawCode] = (unmappedFormats[rawCode] ?? 0) + 1;
+    }
+
+    const showdownId = LIMITLESS_TO_FORMAT[rawCode];
+    if (!isSkipped) {
+      if (showdownId) {
+        mapped++;
+      } else {
+        unmapped++;
+        unmappedFormats[rawCode] = (unmappedFormats[rawCode] ?? 0) + 1;
+      }
     }
 
     // format_id stores the Showdown ID (value) when mapped, raw Limitless code
     // when unmapped. The queue picker in processOne checks against
     // ALL_VALID_FORMATS which includes BOTH keys and values — see the
-    // definition above for why both are needed.
-    rows.push({
+    // definition above for the full story.
+    //
+    // Rows whose format is in SKIP_FORMATS (e.g. "CUSTOM") are stored with
+    // import_status = 'skipped' so they're recorded but never picked up by
+    // the import queue worker.
+    const row: Record<string, unknown> = {
       tournament_id: t.id,
       name: t.name,
       format_id: showdownId ?? rawCode,
       date: t.date.slice(0, 10),
       player_count: t.players ?? 0,
       imported_at: new Date().toISOString(),
-    });
+    };
+    if (isSkipped) {
+      row.import_status = "skipped";
+      row.import_error = `Skipped: ${rawCode} format`;
+    }
+    rows.push(row);
   }
 
   // Deduplicate by tournament_id — pagination can return the same tournament
@@ -247,7 +269,9 @@ export async function importTournament(
           .select("id, username");
 
         if (pErr)
-          throw new Error(`Player batch upsert at offset ${i}: ${pErr.message}`);
+          throw new Error(
+            `Player batch upsert at offset ${i}: ${pErr.message}`
+          );
         for (const row of upserted ?? []) {
           cache.set(row.username, row.id);
         }
@@ -257,8 +281,10 @@ export async function importTournament(
   ]);
 
   const _organizerId = orgResult;
-  if (tResult.error) throw new Error(`Tournament upsert failed: ${tResult.error.message}`);
-  if (pResult?.error) throw new Error(`Phases insert failed: ${pResult.error.message}`);
+  if (tResult.error)
+    throw new Error(`Tournament upsert failed: ${tResult.error.message}`);
+  if (pResult?.error)
+    throw new Error(`Phases insert failed: ${pResult.error.message}`);
 
   // 4. Standings+team_pokemon and match_results run in parallel (both need player IDs)
   const [standingIds, matchCount] = await Promise.all([
@@ -334,7 +360,9 @@ export async function importTournament(
           .insert(batch);
 
         if (pkErr)
-          throw new Error(`Team pokemon batch at offset ${i}: ${pkErr.message}`);
+          throw new Error(
+            `Team pokemon batch at offset ${i}: ${pkErr.message}`
+          );
       }
 
       return { standingIds, totalPokemon: allPokemonRows.length };
@@ -454,7 +482,10 @@ export async function processImportQueue(
     .limit(5);
 
   if (staleErr) {
-    console.error("[limitless-import] Stale import query failed:", staleErr.message);
+    console.error(
+      "[limitless-import] Stale import query failed:",
+      staleErr.message
+    );
   } else if (staleRows && staleRows.length > 0) {
     // Recover stale imports concurrently (at most 5 rows, each needs per-row attempt increment)
     await Promise.all(
@@ -466,7 +497,10 @@ export async function processImportQueue(
           .from("tournaments")
           .update({
             import_status: newStatus,
-            import_error: newStatus === "failed" ? `Timed out after ${MAX_ATTEMPTS} attempts` : null,
+            import_error:
+              newStatus === "failed"
+                ? `Timed out after ${MAX_ATTEMPTS} attempts`
+                : null,
             import_attempts: attempts,
           })
           .eq("tournament_id", row.tournament_id);
@@ -499,10 +533,17 @@ export async function processImportQueue(
   };
 
   // Start up to MAX_CONCURRENT workers
-  const workerCount = Math.min(MAX_CONCURRENT, effectiveBatch, Math.max(1, effectiveBatch));
+  const workerCount = Math.min(
+    MAX_CONCURRENT,
+    effectiveBatch,
+    Math.max(1, effectiveBatch)
+  );
   await Promise.all(Array.from({ length: workerCount }, () => worker()));
   // Trim excess results if we processed fewer than workerCount intended
-  while (results.length > effectiveBatch && !results[results.length - 1]?.processed) {
+  while (
+    results.length > effectiveBatch &&
+    !results[results.length - 1]?.processed
+  ) {
     results.pop();
   }
 
@@ -532,6 +573,13 @@ async function processOne(
     .eq("import_status", "queued")
     .not("format_id", "is", null)
     .neq("format_id", "unknown")
+    .not(
+      "format_id",
+      "in",
+      `(${Array.from(SKIP_FORMATS)
+        .map((f) => `"${f}"`)
+        .join(",")})`
+    )
     .order("import_requested_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -550,11 +598,16 @@ async function processOne(
   // (values) because syncTournamentList stores Showdown IDs — see the
   // definition above for the full story.
   if (!formatId || !ALL_VALID_FORMATS.has(formatId)) {
-    console.warn(`[limitless-import] Parking ${tournamentId}: unknown format "${formatId}"`);
+    console.warn(
+      `[limitless-import] Parking ${tournamentId}: unknown format "${formatId}"`
+    );
     await supabase
       .schema("limitless")
       .from("tournaments")
-      .update({ import_status: "failed", import_error: `Unknown format: ${formatId}` })
+      .update({
+        import_status: "failed",
+        import_error: `Unknown format: ${formatId}`,
+      })
       .eq("tournament_id", tournamentId)
       .eq("import_status", "queued");
     return { processed: false };

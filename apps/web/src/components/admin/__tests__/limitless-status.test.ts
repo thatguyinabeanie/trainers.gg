@@ -6,6 +6,7 @@ describe("normalizeLimitlessStatus", () => {
     ["queued", "in-progress"],
     ["importing", "in-progress"],
     ["failed", "failed"],
+    ["skipped", "skipped"],
     ["unknown", "pending"],
     [null, "pending"],
   ])("maps %p → %p", (input, expected) => {

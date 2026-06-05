@@ -18,3 +18,10 @@ export const ALL_VALID_FORMATS = new Set([
   ...KNOWN_FORMATS,
   ...Object.values(LIMITLESS_TO_FORMAT),
 ]);
+
+/**
+ * Limitless format codes we never want to import — bespoke tournaments that
+ * don't map to any Showdown format. Treated like an empty format code at sync
+ * time and filtered out at queue-pick time so they never spam the import logs.
+ */
+export const SKIP_FORMATS = new Set(["CUSTOM"]);

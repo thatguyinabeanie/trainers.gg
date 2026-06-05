@@ -1,6 +1,7 @@
 /**
  * Map an external Limitless sync status to the site's internal status enum.
  * "completed" (Limitless) → "complete" (site), plus passthrough for queued/importing/failed.
+ * "skipped" — synced for visibility but never imported (e.g. CUSTOM-format tournaments).
  * A null/empty/"pending" status is the normal not-yet-imported state.
  */
 export function normalizeLimitlessStatus(status: string | null): string {
@@ -12,6 +13,8 @@ export function normalizeLimitlessStatus(status: string | null): string {
       return "in-progress";
     case "failed":
       return "failed";
+    case "skipped":
+      return "skipped";
     case null:
     case "":
     case "pending":

@@ -78,6 +78,7 @@ describe("queueableIds (Limitless)", () => {
       limRow("b", "queued"),
       limRow("c", "failed"),
       limRow("d", "completed"),
+      limRow("e", "skipped"),
     ];
     expect(queueableIds(rows)).toEqual(["a", "c"]);
   });

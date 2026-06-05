@@ -2,9 +2,14 @@
 
 import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
+import { SKIP_FORMATS } from "@trainers/data-sources";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import { syncTournamentList, processImportQueue } from "@/lib/limitless";
+
+const SKIP_FORMATS_FILTER = `(${Array.from(SKIP_FORMATS)
+  .map((f) => `"${f}"`)
+  .join(",")})`;
 
 /**
  * Queue a single tournament for import.
@@ -31,12 +36,16 @@ export async function queueTournamentForImport(
         import_attempts: 0,
       })
       .eq("tournament_id", tournamentId)
+      .not("format_id", "in", SKIP_FORMATS_FILTER)
       .select("tournament_id")
       .maybeSingle();
 
     if (error) throw error;
     if (!updated) {
-      return { success: false, error: "Tournament not found — sync first?" };
+      return {
+        success: false,
+        error: "Tournament not found, or its format is in the skip list",
+      };
     }
     return { success: true, data: undefined };
   } catch (e) {
@@ -78,6 +87,7 @@ export async function batchQueueTournaments(
           import_attempts: 0,
         })
         .in("tournament_id", chunk)
+        .not("format_id", "in", SKIP_FORMATS_FILTER)
         .select("tournament_id");
 
       if (error) throw error;
@@ -127,7 +137,9 @@ export async function triggerLimitlessSync(): Promise<
  */
 export async function triggerImportQueue(
   batchSize: number = 5
-): Promise<ActionResult<{ processed: number; errors: number; remaining: number }>> {
+): Promise<
+  ActionResult<{ processed: number; errors: number; remaining: number }>
+> {
   try {
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
@@ -152,6 +164,9 @@ export async function triggerImportQueue(
       },
     };
   } catch (e) {
-    return { success: false, error: getErrorMessage(e, "Queue processing failed") };
+    return {
+      success: false,
+      error: getErrorMessage(e, "Queue processing failed"),
+    };
   }
 }
