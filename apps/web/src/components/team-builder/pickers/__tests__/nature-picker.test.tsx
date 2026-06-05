@@ -59,11 +59,11 @@ jest.mock("../../use-usage-data", () => ({
   useUsageData: () => ({ data: undefined }),
 }));
 
-jest.mock("../usage-sparkline", () => ({
+jest.mock("../../usage-sparkline", () => ({
   UsageSparkline: () => null,
 }));
 
-jest.mock("../stat-types", () => ({
+jest.mock("../../stat-types", () => ({
   STAT_LABELS: {
     attack: "Atk",
     defense: "Def",

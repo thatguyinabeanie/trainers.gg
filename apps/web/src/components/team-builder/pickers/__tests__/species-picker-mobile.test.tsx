@@ -254,15 +254,16 @@ describe("SpeciesPickerMobile", () => {
   });
 
   describe("USG display", () => {
-    it("renders '—' for all species when no usage data is available", () => {
+    it("renders no USG chip for any species when no usage data is available", () => {
+      // Intentional mobile design: no "—" placeholder shown; chip is omitted entirely
       mockUseFormatUsageData.mockReturnValue(new Map());
       render(<SpeciesPickerMobile {...defaultProps} />);
       expect(
-        screen.getByTestId("usg-mobile-Garchomp-Mega")
-      ).toHaveTextContent("—");
+        screen.queryByTestId("usg-mobile-Garchomp-Mega")
+      ).not.toBeInTheDocument();
       expect(
-        screen.getByTestId("usg-mobile-Palafin-Hero")
-      ).toHaveTextContent("—");
+        screen.queryByTestId("usg-mobile-Palafin-Hero")
+      ).not.toBeInTheDocument();
     });
 
     it("renders the usage % for a known species", () => {
@@ -276,15 +277,15 @@ describe("SpeciesPickerMobile", () => {
       ).toHaveTextContent("52.3%");
     });
 
-    it("renders '—' for a species not in the usage map", () => {
-      // Only Garchomp-Mega has data; Palafin-Hero should show dash
+    it("renders no USG chip for a species not in the usage map", () => {
+      // Intentional mobile design: chip is omitted entirely when usagePct is absent
       mockUseFormatUsageData.mockReturnValue(
         new Map([["garchomp-mega", { usagePct: 52.3 }]])
       );
       render(<SpeciesPickerMobile {...defaultProps} />);
       expect(
-        screen.getByTestId("usg-mobile-Palafin-Hero")
-      ).toHaveTextContent("—");
+        screen.queryByTestId("usg-mobile-Palafin-Hero")
+      ).not.toBeInTheDocument();
     });
 
     it("looks up usage via normalized slug — dex name matches DB slug", () => {

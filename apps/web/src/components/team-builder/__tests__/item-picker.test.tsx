@@ -526,7 +526,9 @@ describe("ItemPicker", () => {
     });
 
     it("preserves original ordering when no usage data is available", () => {
-      mockGetAllItems.mockReturnValue(["Leftovers", "Choice Band", "Life Orb"]);
+      // NOTE: ALL_ITEMS is captured at module load from MOCK_ITEMS; mockReturnValue
+      // here has no effect on the already-evaluated const. The assertion uses the
+      // actual MOCK_ITEMS order: Choice Band(0), Leftovers(3), Life Orb(4).
       mockUseUsageData.mockReturnValue({ data: undefined });
 
       render(
@@ -544,12 +546,12 @@ describe("ItemPicker", () => {
         .getAllByRole("button")
         .filter((b) => b.getAttribute("aria-label") !== "Close");
       const names = buttons.map((b) => b.textContent?.trim() ?? "");
-      const leftIdx = names.findIndex((n) => n.startsWith("Leftovers"));
       const choiceIdx = names.findIndex((n) => n.startsWith("Choice Band"));
+      const leftIdx = names.findIndex((n) => n.startsWith("Leftovers"));
       const lifeIdx = names.findIndex((n) => n.startsWith("Life Orb"));
-      // Original order: Leftovers, Choice Band, Life Orb
-      expect(leftIdx).toBeLessThan(choiceIdx);
-      expect(choiceIdx).toBeLessThan(lifeIdx);
+      // Original MOCK_ITEMS order: Choice Band(0) → Leftovers(3) → Life Orb(4)
+      expect(choiceIdx).toBeLessThan(leftIdx);
+      expect(leftIdx).toBeLessThan(lifeIdx);
     });
   });
 });
