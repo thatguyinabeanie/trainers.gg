@@ -1675,13 +1675,18 @@ export function ExternalData() {
             : "No events match your filters."}
         </div>
       ) : (
-        <div className="rounded-md border">
-          <div className="text-muted-foreground flex items-center gap-2 px-4 py-2 text-xs">
-            <ListFilter className="h-3.5 w-3.5" />
-            Showing {currentRows.length} of {totalRowCount} events
-          </div>
+        <div className={cn("rounded-md", !isMobile && "border")}>
+          {/* Results note + table header are desktop-only — on mobile the
+              filter bar already shows the count and the cards replace the table. */}
+          {!isMobile && (
+            <div className="text-muted-foreground flex items-center gap-2 px-4 py-2 text-xs">
+              <ListFilter className="h-3.5 w-3.5" />
+              Showing {currentRows.length} of {totalRowCount} events
+            </div>
+          )}
 
           {/* Fixed header row */}
+          {!isMobile && (
           <div
             className="grid border-b"
             style={{
@@ -1759,6 +1764,7 @@ export function ExternalData() {
               Actions
             </div>
           </div>
+          )}
 
           {/* Virtualized body — conditional mount: skeleton (SSR) / cards (mobile) / table (desktop) */}
           {!isClient ? (

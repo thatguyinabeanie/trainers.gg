@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 import {
@@ -156,7 +157,7 @@ function limitlessChips(
 
 // Count secondary (popover) filters that are non-default.
 // Primary filters (search, format/tier, status) are inline — only secondary
-// ones contribute to the badge count.
+// ones contribute to the badge count on desktop.
 function rk9SecondaryActiveCount(filters: RK9FilterState): number {
   let count = 0;
   if (filters.country !== INITIAL_RK9_FILTERS.country) count++;
@@ -179,6 +180,22 @@ function limitlessSecondaryActiveCount(
   return count;
 }
 
+// On mobile ALL non-search filters live in the popover, so the badge shows
+// the full count: format/tier + status + secondary.
+function rk9AllActiveCount(filters: RK9FilterState): number {
+  let count = rk9SecondaryActiveCount(filters);
+  if (filters.tier !== INITIAL_RK9_FILTERS.tier) count++;
+  if (filters.status !== INITIAL_RK9_FILTERS.status) count++;
+  return count;
+}
+
+function limitlessAllActiveCount(filters: LimitlessFilterState): number {
+  let count = limitlessSecondaryActiveCount(filters);
+  if (filters.format !== INITIAL_LIMITLESS_FILTERS.format) count++;
+  if (filters.status !== INITIAL_LIMITLESS_FILTERS.status) count++;
+  return count;
+}
+
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
@@ -197,6 +214,7 @@ export function ExternalDataFilters({
   totalCount,
 }: ExternalDataFiltersProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const isRk9 = tab === "rk9";
 
@@ -212,17 +230,295 @@ export function ExternalDataFilters({
     ? rk9Chips(rk9, handleRk9)
     : limitlessChips(lim, handleLim);
 
+  // Desktop: only secondary (popover) filters count toward the badge.
+  // Mobile: all non-search filters are inside the popover, so count all.
   const secondaryCount = isRk9
     ? rk9SecondaryActiveCount(rk9)
     : limitlessSecondaryActiveCount(lim);
 
+  const mobileFilterCount = isRk9
+    ? rk9AllActiveCount(rk9)
+    : limitlessAllActiveCount(lim);
+
+  // -------------------------------------------------------------------------
+  // Render helpers — each returns JSX for a reusable filter control.
+  // Desktop places format/tier + status inline; mobile puts them in the popover.
+  // -------------------------------------------------------------------------
+
+  function renderFormatOrTierSelect() {
+    if (isRk9) {
+      return (
+        <Select
+          value={rk9.tier}
+          onValueChange={(v) => v && handleRk9({ tier: v })}
+        >
+          <SelectTrigger
+            className={cn(
+              "h-8 w-full text-xs sm:w-32",
+              rk9.tier !== "all" && "ring-primary/50 ring-2"
+            )}
+            size="sm"
+          >
+            <SelectValue placeholder="Tier" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All tiers</SelectItem>
+            {tierOptions.map((t) => (
+              <SelectItem key={t} value={t} className="capitalize">
+                {t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+    return (
+      <Select
+        value={lim.format}
+        onValueChange={(v) => v && handleLim({ format: v })}
+      >
+        <SelectTrigger
+          className={cn(
+            "h-8 w-full text-xs sm:w-32",
+            lim.format !== "all" && "ring-primary/50 ring-2"
+          )}
+          size="sm"
+        >
+          <SelectValue placeholder="Format" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All formats</SelectItem>
+          {formatOptions.map((f) => (
+            <SelectItem key={f} value={f}>
+              {f}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  function renderStatusSelect() {
+    return (
+      <Select
+        value={isRk9 ? rk9.status : lim.status}
+        onValueChange={(v) => {
+          if (v) {
+            if (isRk9) handleRk9({ status: v });
+            else handleLim({ status: v });
+          }
+        }}
+      >
+        <SelectTrigger className="h-8 w-full text-xs sm:w-32" size="sm">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All statuses</SelectItem>
+          {isRk9 ? (
+            <>
+              <SelectItem value="upcoming">Upcoming</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="in-progress">In progress</SelectItem>
+              <SelectItem value="complete">Complete</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+            </>
+          ) : (
+            <>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="queued">Queued</SelectItem>
+              <SelectItem value="importing">Importing</SelectItem>
+              <SelectItem value="complete">Complete</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+            </>
+          )}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  function renderSecondaryFilters() {
+    if (isRk9) {
+      return (
+        <>
+          {/* Country */}
+          <div className="space-y-1">
+            <label className="text-muted-foreground text-xs font-medium">
+              Country
+            </label>
+            <Select
+              value={rk9.country}
+              onValueChange={(v) => v && handleRk9({ country: v })}
+            >
+              <SelectTrigger className="h-8 w-full text-xs" size="sm">
+                <SelectValue placeholder="All countries" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All countries</SelectItem>
+                {countryOptions.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Team Lists */}
+          <div className="space-y-1">
+            <label className="text-muted-foreground text-xs font-medium">
+              Team Lists
+            </label>
+            <Select
+              value={rk9.hasData}
+              onValueChange={(v) =>
+                v && handleRk9({ hasData: v as HasDataFilter })
+              }
+            >
+              <SelectTrigger className="h-8 w-full text-xs" size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="yes">Has teams</SelectItem>
+                <SelectItem value="no">No teams</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date Range */}
+          <div className="space-y-1">
+            <label className="text-muted-foreground text-xs font-medium">
+              Date Range
+            </label>
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="date"
+                value={rk9.dateFrom}
+                onChange={(e) => handleRk9({ dateFrom: e.target.value })}
+                className="h-7 flex-1 text-xs"
+              />
+              <span className="text-muted-foreground text-xs">to</span>
+              <Input
+                type="date"
+                value={rk9.dateTo}
+                onChange={(e) => handleRk9({ dateTo: e.target.value })}
+                className="h-7 flex-1 text-xs"
+              />
+            </div>
+          </div>
+
+          {/* Min Players */}
+          <div className="space-y-1">
+            <label className="text-muted-foreground text-xs font-medium">
+              Min Players
+            </label>
+            <Input
+              type="number"
+              placeholder="0"
+              value={rk9.minPlayers}
+              onChange={(e) => handleRk9({ minPlayers: e.target.value })}
+              className="h-7 w-24 text-xs"
+              min={0}
+            />
+          </div>
+        </>
+      );
+    }
+
+    return (
+      <>
+        {/* Platform */}
+        <div className="space-y-1">
+          <label className="text-muted-foreground text-xs font-medium">
+            Platform
+          </label>
+          <Select
+            value={lim.platform}
+            onValueChange={(v) =>
+              v && handleLim({ platform: v as PlatformFilter })
+            }
+          >
+            <SelectTrigger className="h-8 w-full text-xs" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="SWITCH">Switch</SelectItem>
+              <SelectItem value="SIM">Simulator</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Decklists */}
+        <div className="space-y-1">
+          <label className="text-muted-foreground text-xs font-medium">
+            Decklists
+          </label>
+          <Select
+            value={lim.hasData}
+            onValueChange={(v) =>
+              v && handleLim({ hasData: v as HasDataFilter })
+            }
+          >
+            <SelectTrigger className="h-8 w-full text-xs" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="yes">Has decklists</SelectItem>
+              <SelectItem value="no">No decklists</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Date Range */}
+        <div className="space-y-1">
+          <label className="text-muted-foreground text-xs font-medium">
+            Date Range
+          </label>
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="date"
+              value={lim.dateFrom}
+              onChange={(e) => handleLim({ dateFrom: e.target.value })}
+              className="h-7 flex-1 text-xs"
+            />
+            <span className="text-muted-foreground text-xs">to</span>
+            <Input
+              type="date"
+              value={lim.dateTo}
+              onChange={(e) => handleLim({ dateTo: e.target.value })}
+              className="h-7 flex-1 text-xs"
+            />
+          </div>
+        </div>
+
+        {/* Min Players */}
+        <div className="space-y-1">
+          <label className="text-muted-foreground text-xs font-medium">
+            Min Players
+          </label>
+          <Input
+            type="number"
+            placeholder="0"
+            value={lim.minPlayers}
+            onChange={(e) => handleLim({ minPlayers: e.target.value })}
+            className="h-7 w-24 text-xs"
+            min={0}
+          />
+        </div>
+      </>
+    );
+  }
+
   return (
     <div className="space-y-2">
       {/* ------------------------------------------------------------------ */}
-      {/* Row 1 — Search + primary inline dropdowns + "More filters" popover  */}
+      {/* Row 1 — mobile: Search + "Filters" button                           */}
+      {/*          desktop: Search + inline dropdowns + "More filters" popover */}
       {/* ------------------------------------------------------------------ */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Search */}
+      <div className="flex items-center gap-2">
+        {/* Search — always visible, full width on mobile */}
         <div className="relative min-w-40 flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
           <Input
@@ -236,101 +532,27 @@ export function ExternalDataFilters({
           />
         </div>
 
-        {/* Primary filter: Format (Limitless) or Tier (RK9) */}
-        {isRk9 ? (
-          <Select
-            value={rk9.tier}
-            onValueChange={(v) => v && handleRk9({ tier: v })}
-          >
-            <SelectTrigger
-              className={cn(
-                "h-8 w-full text-xs sm:w-32",
-                rk9.tier !== "all" && "ring-primary/50 ring-2"
-              )}
-              size="sm"
-            >
-              <SelectValue placeholder="Tier" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All tiers</SelectItem>
-              {tierOptions.map((t) => (
-                <SelectItem key={t} value={t} className="capitalize">
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Select
-            value={lim.format}
-            onValueChange={(v) => v && handleLim({ format: v })}
-          >
-            <SelectTrigger
-              className={cn(
-                "h-8 w-full text-xs sm:w-32",
-                lim.format !== "all" && "ring-primary/50 ring-2"
-              )}
-              size="sm"
-            >
-              <SelectValue placeholder="Format" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All formats</SelectItem>
-              {formatOptions.map((f) => (
-                <SelectItem key={f} value={f}>
-                  {f}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        {/* Desktop: Format/Tier + Status inline */}
+        {!isMobile && renderFormatOrTierSelect()}
+        {!isMobile && renderStatusSelect()}
 
-        {/* Status — same shape for both tabs */}
-        <Select
-          value={isRk9 ? rk9.status : lim.status}
-          onValueChange={(v) => {
-            if (v) {
-              if (isRk9) handleRk9({ status: v });
-              else handleLim({ status: v });
-            }
-          }}
-        >
-          <SelectTrigger className="h-8 w-full text-xs sm:w-32" size="sm">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {isRk9 ? (
-              <>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in-progress">In progress</SelectItem>
-                <SelectItem value="complete">Complete</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </>
-            ) : (
-              <>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="queued">Queued</SelectItem>
-                <SelectItem value="importing">Importing</SelectItem>
-                <SelectItem value="complete">Complete</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </>
-            )}
-          </SelectContent>
-        </Select>
-
-        {/* "More filters" popover */}
+        {/* Popover trigger — desktop: "More filters" for secondary only;
+            mobile: "Filters" for all non-search filters */}
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-          <PopoverTrigger className="relative inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors hover:bg-accent">
+          <PopoverTrigger
+            className={cn(
+              "relative inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors hover:bg-accent",
+              isMobile && "shrink-0"
+            )}
+          >
             <ListFilter className="h-3.5 w-3.5" />
-            More filters
-            {secondaryCount > 0 && (
+            {isMobile ? "Filters" : "More filters"}
+            {(isMobile ? mobileFilterCount : secondaryCount) > 0 && (
               <Badge
                 variant="secondary"
                 className="ml-0.5 h-4 min-w-4 px-1 text-[10px] leading-none"
               >
-                {secondaryCount}
+                {isMobile ? mobileFilterCount : secondaryCount}
               </Badge>
             )}
           </PopoverTrigger>
@@ -341,188 +563,25 @@ export function ExternalDataFilters({
             sideOffset={6}
           >
             <div className="space-y-3">
-              {isRk9 ? (
-                /* ---- RK9 secondary filters ---- */
+              {/* Mobile: all non-search filters live here */}
+              {isMobile && (
                 <>
-                  {/* Country */}
                   <div className="space-y-1">
                     <label className="text-muted-foreground text-xs font-medium">
-                      Country
+                      {isRk9 ? "Tier" : "Format"}
                     </label>
-                    <Select
-                      value={rk9.country}
-                      onValueChange={(v) => v && handleRk9({ country: v })}
-                    >
-                      <SelectTrigger className="h-8 w-full text-xs" size="sm">
-                        <SelectValue placeholder="All countries" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All countries</SelectItem>
-                        {countryOptions.map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {renderFormatOrTierSelect()}
                   </div>
-
-                  {/* Team Lists */}
                   <div className="space-y-1">
                     <label className="text-muted-foreground text-xs font-medium">
-                      Team Lists
+                      Status
                     </label>
-                    <Select
-                      value={rk9.hasData}
-                      onValueChange={(v) =>
-                        v && handleRk9({ hasData: v as HasDataFilter })
-                      }
-                    >
-                      <SelectTrigger className="h-8 w-full text-xs" size="sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="yes">Has teams</SelectItem>
-                        <SelectItem value="no">No teams</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Date Range */}
-                  <div className="space-y-1">
-                    <label className="text-muted-foreground text-xs font-medium">
-                      Date Range
-                    </label>
-                    <div className="flex items-center gap-1.5">
-                      <Input
-                        type="date"
-                        value={rk9.dateFrom}
-                        onChange={(e) =>
-                          handleRk9({ dateFrom: e.target.value })
-                        }
-                        className="h-7 flex-1 text-xs"
-                      />
-                      <span className="text-muted-foreground text-xs">to</span>
-                      <Input
-                        type="date"
-                        value={rk9.dateTo}
-                        onChange={(e) =>
-                          handleRk9({ dateTo: e.target.value })
-                        }
-                        className="h-7 flex-1 text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Min Players */}
-                  <div className="space-y-1">
-                    <label className="text-muted-foreground text-xs font-medium">
-                      Min Players
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={rk9.minPlayers}
-                      onChange={(e) =>
-                        handleRk9({ minPlayers: e.target.value })
-                      }
-                      className="h-7 w-24 text-xs"
-                      min={0}
-                    />
-                  </div>
-                </>
-              ) : (
-                /* ---- Limitless secondary filters ---- */
-                <>
-                  {/* Platform */}
-                  <div className="space-y-1">
-                    <label className="text-muted-foreground text-xs font-medium">
-                      Platform
-                    </label>
-                    <Select
-                      value={lim.platform}
-                      onValueChange={(v) =>
-                        v && handleLim({ platform: v as PlatformFilter })
-                      }
-                    >
-                      <SelectTrigger className="h-8 w-full text-xs" size="sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="SWITCH">Switch</SelectItem>
-                        <SelectItem value="SIM">Simulator</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Decklists */}
-                  <div className="space-y-1">
-                    <label className="text-muted-foreground text-xs font-medium">
-                      Decklists
-                    </label>
-                    <Select
-                      value={lim.hasData}
-                      onValueChange={(v) =>
-                        v && handleLim({ hasData: v as HasDataFilter })
-                      }
-                    >
-                      <SelectTrigger className="h-8 w-full text-xs" size="sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="yes">Has decklists</SelectItem>
-                        <SelectItem value="no">No decklists</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Date Range */}
-                  <div className="space-y-1">
-                    <label className="text-muted-foreground text-xs font-medium">
-                      Date Range
-                    </label>
-                    <div className="flex items-center gap-1.5">
-                      <Input
-                        type="date"
-                        value={lim.dateFrom}
-                        onChange={(e) =>
-                          handleLim({ dateFrom: e.target.value })
-                        }
-                        className="h-7 flex-1 text-xs"
-                      />
-                      <span className="text-muted-foreground text-xs">to</span>
-                      <Input
-                        type="date"
-                        value={lim.dateTo}
-                        onChange={(e) =>
-                          handleLim({ dateTo: e.target.value })
-                        }
-                        className="h-7 flex-1 text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Min Players */}
-                  <div className="space-y-1">
-                    <label className="text-muted-foreground text-xs font-medium">
-                      Min Players
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={lim.minPlayers}
-                      onChange={(e) =>
-                        handleLim({ minPlayers: e.target.value })
-                      }
-                      className="h-7 w-24 text-xs"
-                      min={0}
-                    />
+                    {renderStatusSelect()}
                   </div>
                 </>
               )}
+              {/* Secondary filters — always in the popover on both layouts */}
+              {renderSecondaryFilters()}
             </div>
           </PopoverContent>
         </Popover>
@@ -532,37 +591,37 @@ export function ExternalDataFilters({
       {/* Row 2 — Active filter chips + result count                          */}
       {/* ------------------------------------------------------------------ */}
       <div className="flex flex-wrap items-center gap-1.5">
-          {activeChips.map((chip) => (
-            <span
-              key={chip.label}
-              className="bg-secondary text-secondary-foreground inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+        {activeChips.map((chip) => (
+          <span
+            key={chip.label}
+            className="bg-secondary text-secondary-foreground inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+          >
+            {chip.label}
+            <button
+              onClick={chip.onRemove}
+              className="hover:text-foreground text-muted-foreground ml-0.5 rounded-full transition-colors"
+              aria-label={`Remove filter: ${chip.label}`}
             >
-              {chip.label}
-              <button
-                onClick={chip.onRemove}
-                className="hover:text-foreground text-muted-foreground ml-0.5 rounded-full transition-colors"
-                aria-label={`Remove filter: ${chip.label}`}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-
-          {activeChips.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClear}
-              className="text-muted-foreground h-6 gap-1 px-2 text-xs"
-            >
-              Clear all
-            </Button>
-          )}
-
-          {/* Result count — right-aligned via margin-start: auto */}
-          <span className="text-muted-foreground ml-auto text-xs">
-            Showing {resultCount} of {totalCount}
+              <X className="h-3 w-3" />
+            </button>
           </span>
+        ))}
+
+        {activeChips.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClear}
+            className="text-muted-foreground h-6 gap-1 px-2 text-xs"
+          >
+            Clear all
+          </Button>
+        )}
+
+        {/* Result count — right-aligned via margin-start: auto */}
+        <span className="text-muted-foreground ml-auto text-xs">
+          Showing {resultCount} of {totalCount}
+        </span>
       </div>
     </div>
   );
