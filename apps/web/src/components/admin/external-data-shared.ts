@@ -1,5 +1,61 @@
-// Shared types for external-data.tsx and expanded-row-data.tsx.
-// Kept in a dedicated file to avoid a sibling import cycle.
+// Shared types for external-data.tsx, external-data-filters.tsx, and
+// expanded-row-data.tsx. Kept in a dedicated file to avoid sibling import
+// cycles.
+
+// ---------------------------------------------------------------------------
+// Filter helper types
+// ---------------------------------------------------------------------------
+
+export type PlatformFilter = "all" | "SWITCH" | "SIM";
+export type HasDataFilter = "all" | "yes" | "no";
+
+// ---------------------------------------------------------------------------
+// Per-tab filter state
+// ---------------------------------------------------------------------------
+
+export interface RK9FilterState {
+  search: string;
+  tier: string;
+  status: string;
+  country: string;
+  dateFrom: string;
+  dateTo: string;
+  minPlayers: string;
+  hasData: HasDataFilter;
+}
+
+export interface LimitlessFilterState {
+  search: string;
+  format: string;
+  status: string;
+  platform: PlatformFilter;
+  dateFrom: string;
+  dateTo: string;
+  minPlayers: string;
+  hasData: HasDataFilter;
+}
+
+export const INITIAL_RK9_FILTERS: RK9FilterState = {
+  search: "",
+  tier: "all",
+  status: "all",
+  country: "all",
+  dateFrom: "",
+  dateTo: "",
+  minPlayers: "",
+  hasData: "all",
+};
+
+export const INITIAL_LIMITLESS_FILTERS: LimitlessFilterState = {
+  search: "",
+  format: "all",
+  status: "all",
+  platform: "all",
+  dateFrom: "",
+  dateTo: "",
+  minPlayers: "",
+  hasData: "all",
+};
 
 export interface RK9EventRow {
   event_id: string;

@@ -127,7 +127,7 @@ export async function triggerLimitlessSync(): Promise<
  */
 export async function triggerImportQueue(
   batchSize: number = 5
-): Promise<ActionResult<{ processed: number; errors: number }>> {
+): Promise<ActionResult<{ processed: number; errors: number; remaining: number }>> {
   try {
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
@@ -145,7 +145,11 @@ export async function triggerImportQueue(
 
     return {
       success: true,
-      data: { processed: result.totalProcessed, errors: result.totalErrors },
+      data: {
+        processed: result.totalProcessed,
+        errors: result.totalErrors,
+        remaining: result.remaining,
+      },
     };
   } catch (e) {
     return { success: false, error: getErrorMessage(e, "Queue processing failed") };

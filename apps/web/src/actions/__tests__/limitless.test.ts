@@ -95,13 +95,33 @@ describe("triggerLimitlessSync", () => {
 });
 
 describe("triggerImportQueue", () => {
-  it("triggers import successfully", async () => {
-    mockProcess.mockResolvedValue({ totalProcessed: 3, totalErrors: 0 });
+  it("triggers import successfully and surfaces remaining count", async () => {
+    mockProcess.mockResolvedValue({
+      totalProcessed: 3,
+      totalErrors: 0,
+      remaining: 7,
+    });
     process.env.LIMITLESS_API_KEY = "test-key";
 
     const result = await triggerImportQueue(5);
 
     expect(result.success).toBe(true);
-    expect(result.data).toEqual({ processed: 3, errors: 0 });
+    expect(result.data).toEqual({ processed: 3, errors: 0, remaining: 7 });
+  });
+
+  it("surfaces remaining: 0 when queue is drained", async () => {
+    mockProcess.mockResolvedValue({
+      totalProcessed: 2,
+      totalErrors: 1,
+      remaining: 0,
+    });
+    process.env.LIMITLESS_API_KEY = "test-key";
+
+    const result = await triggerImportQueue(5);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.remaining).toBe(0);
+    }
   });
 });

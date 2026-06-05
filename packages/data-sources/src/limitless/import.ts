@@ -420,6 +420,8 @@ export interface BatchQueueResult {
   results: QueueProcessResult[];
   totalProcessed: number;
   totalErrors: number;
+  /** Count of tournaments still in "queued" status after this batch completes. */
+  remaining: number;
 }
 
 /**
@@ -504,7 +506,15 @@ export async function processImportQueue(
     results.pop();
   }
 
-  return { results, totalProcessed, totalErrors };
+  // Count tournaments still queued after this batch so the client knows whether
+  // to drain further. HEAD query — no rows transferred.
+  const { count } = await supabase
+    .schema("limitless")
+    .from("tournaments")
+    .select("*", { count: "exact", head: true })
+    .eq("import_status", "queued");
+
+  return { results, totalProcessed, totalErrors, remaining: count ?? 0 };
 }
 
 /**
