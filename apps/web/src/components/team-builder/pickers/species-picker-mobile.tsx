@@ -142,7 +142,7 @@ export function SpeciesPickerMobile({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         showHandle={false}
-        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-[20px] p-0"
+        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-5 p-0"
       >
         <DrawerTitle className="sr-only">
           {view === "list" ? "Choose species" : "Filters"}
@@ -234,13 +234,14 @@ function ListView({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           aria-label="Search species"
-          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-[16px] leading-tight focus:outline-none sm:text-sm"
+          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-[16px] leading-tight focus:outline-none sm:text-sm" // text-[16px]: prevents iOS auto-zoom on focus (zoom triggers below 16px)
         />
         <button
           type="button"
           onClick={onOpenFilters}
           aria-label={`Open filters${activeFilterCount > 0 ? `, ${activeFilterCount} active` : ""}`}
           className={cn(
+            // text-[11px]: sub-12px filter button label; no Tailwind scale token
             "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
             activeFilterCount > 0
               ? "bg-primary/5 border-primary/30 text-primary hover:bg-primary/10"
@@ -250,7 +251,7 @@ function ListView({
           <Filter className="size-3" />
           Filters
           {activeFilterCount > 0 && (
-            <span className="bg-primary text-primary-foreground rounded-sm px-1 text-[9px]">
+            <span className="bg-primary text-primary-foreground rounded-sm px-1 text-[9px]"> {/* text-[9px]: sub-12px badge counter; no Tailwind scale token */}
               {activeFilterCount}
             </span>
           )}
@@ -298,6 +299,7 @@ interface ChipStripProps {
 
 function ChipStrip({ filters, onFiltersChange }: ChipStripProps) {
   const chipClass =
+    // text-[11px]: sub-12px chip label; no Tailwind scale token
     "bg-primary/5 border-primary/30 text-primary flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium";
 
   return (

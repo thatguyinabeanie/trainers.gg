@@ -206,7 +206,7 @@ export function NaturePicker({
     <PickerShell
       title={pickerTitle}
       onClose={onClose}
-      width="420px"
+      width="420px" // API-bound inline style prop to PickerShell; 420px has no Tailwind scale equivalent (max-w-md=448, max-w-sm=384)
       search={{
         value: search,
         onChange: setSearch,
@@ -214,6 +214,7 @@ export function NaturePicker({
       }}
     >
       {/* Grouped list */}
+      {/* max-h-[520px]: scroll cap for grouped nature list; 520px has no Tailwind scale token */}
       <div className="max-h-[520px] overflow-y-auto p-1">
         {groups.map((group) => (
           <div key={group.label} className="flex flex-col">

@@ -116,6 +116,8 @@ function DefenderMoveTile({
 
       <DialogContent
         showCloseButton={false}
+        // max-h-[1080px]: dialog viewport cap — no Tailwind scale token at this size
+        // max-w-[1600px]: workspace-scale cap — no Tailwind scale token at this size
         className="ring-primary/50 flex h-[calc(100vh-2rem)] max-h-[1080px] w-[calc(100vw-2rem)] max-w-[1600px] flex-col gap-0 overflow-hidden rounded-xl p-0 ring-2 sm:max-w-[1600px]"
       >
         <DialogTitle className="sr-only">Choose move</DialogTitle>

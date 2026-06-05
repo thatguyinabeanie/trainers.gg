@@ -45,7 +45,8 @@ export function AttackerChipStrip({
             onClick={() => !isEmpty && onPick(idx)}
             disabled={isEmpty}
             className={cn(
-              "relative flex size-[30px] flex-shrink-0 items-center justify-center rounded bg-card transition-opacity",
+              // size-8 (32px) is the nearest scale token to the 30px design intent
+              "relative flex size-8 flex-shrink-0 items-center justify-center rounded bg-card transition-opacity",
               isActive
                 ? "border-2 border-primary shadow-[0_0_0_2px_oklch(0.6_0.13_195_/_0.18)]"
                 : "border border-border opacity-55 hover:opacity-90",

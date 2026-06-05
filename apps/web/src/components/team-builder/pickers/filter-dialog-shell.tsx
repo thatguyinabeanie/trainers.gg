@@ -29,6 +29,7 @@ interface FilterDialogShellProps {
   /** Collapsed-state icon strip; receives an expand callback. */
   collapsedStrip?: (onExpand: () => void) => ReactNode;
   /** Tailwind width class for the expanded rail. Defaults to 340px. */
+  // w-[340px]: dialog rail cap; 340px has no Tailwind scale equivalent (w-80=320, w-96=384)
   railWidthClass?: string;
   /** Main content (right region). */
   children: ReactNode;
@@ -50,7 +51,7 @@ export function FilterDialogShell({
   rail,
   railFooter,
   collapsedStrip,
-  railWidthClass = "w-[340px]",
+  railWidthClass = "w-[340px]", // 340px cap: between w-80 (320) and w-96 (384); no clean scale token
   children,
   className,
   "data-testid": testId,

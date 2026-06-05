@@ -73,7 +73,7 @@ export function CalcAttackerBlock({
       {/* mon head — read only */}
       {attacker ? (
         <div className="mt-2.5 flex gap-2.5">
-          <div className="size-[60px] flex-shrink-0 overflow-hidden rounded-md">
+          <div className="size-15 flex-shrink-0 overflow-hidden rounded-md">
             <Sprite
               species={attacker.species ?? ""}
               types={attackerTypes}

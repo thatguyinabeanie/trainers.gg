@@ -153,7 +153,7 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
                     )}
                   </TooltipTrigger>
                   {m.hasCalc && m.desc && (
-                    <TooltipContent side="bottom" className="max-w-[560px] overflow-hidden border border-border bg-popover text-popover-foreground p-0">
+                    <TooltipContent side="bottom" className="max-w-xl overflow-hidden border border-border bg-popover text-popover-foreground p-0">
                       <div className="flex flex-col gap-1.5 p-3">
                         <p className="text-sm leading-relaxed font-mono whitespace-normal">
                           {m.desc}
@@ -253,7 +253,7 @@ export function CalcReverseColumn({ pokemon, teammates }: CalcReverseColumnProps
             )}
             </TooltipTrigger>
             {m.hasCalc && m.desc && (
-              <TooltipContent side="bottom" className="max-w-[560px] overflow-hidden border border-border bg-popover text-popover-foreground p-0">
+              <TooltipContent side="bottom" className="max-w-xl overflow-hidden border border-border bg-popover text-popover-foreground p-0">
                 <div className="flex flex-col gap-1.5 p-3">
                   <p className="text-sm leading-relaxed font-mono whitespace-normal">
                     {m.desc}

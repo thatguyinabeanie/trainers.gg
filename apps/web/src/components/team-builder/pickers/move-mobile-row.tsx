@@ -85,6 +85,7 @@ export function MoveMobileRow({
             className="h-3.5 w-auto [image-rendering:pixelated]"
           />
         ) : (
+          // text-[10px]: sub-12px em-dash fallback; no Tailwind scale token
           <span className="text-[10px] text-muted-foreground">—</span>
         )}
       </div>
@@ -98,6 +99,7 @@ export function MoveMobileRow({
           </span>
           <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
             {/* BP */}
+            {/* text-[11px]/text-[9px]: sub-12px stat labels; no Tailwind scale tokens */}
             <span className="text-[11px] text-muted-foreground">
               <span className="font-semibold uppercase text-muted-foreground/60 text-[9px] mr-0.5">
                 BP
@@ -114,7 +116,7 @@ export function MoveMobileRow({
             {/* USG chip — only when usage data exists and is non-zero */}
             {usagePct != null && usagePct > 0 && (
               <span
-                className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"
+                className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums" // text-[10px]: sub-12px usage chip; no Tailwind scale token
                 data-testid={`usg-move-${move.name}`}
               >
                 {usagePct.toFixed(1)}%
@@ -125,7 +127,7 @@ export function MoveMobileRow({
 
         {/* Line 2: short description */}
         {desc && (
-          <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+          <span className="min-w-0 truncate text-[11px] text-muted-foreground"> {/* text-[11px]: sub-12px description; no Tailwind scale token */}
             {desc}
           </span>
         )}

@@ -68,7 +68,7 @@ export function FormChip({
         render={
           <button
             type="button"
-            className={cn("grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 px-1 py-1 rounded cursor-pointer bg-transparent text-left w-full transition-colors hover:bg-muted", triggerClassName)}
+            className={cn("grid grid-cols-[3.75rem_minmax(0,1fr)] items-center gap-1.5 px-1 py-1 rounded cursor-pointer bg-transparent text-left w-full transition-colors hover:bg-muted", triggerClassName)}
           />
         }
       >

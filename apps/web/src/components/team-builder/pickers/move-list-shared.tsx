@@ -34,17 +34,21 @@ export type MoveListSortState = { col: MoveListSortCol; dir: MoveListSortDir };
 /**
  * Shared grid template for move list rows.
  *
- *   56px                — type icon
- *   56px                — category icon
- *   minmax(100px,1fr)   — name
- *   40px                — BP
- *   48px                — Accuracy
- *   56px                — Usage (coming soon)
- *   minmax(0,2fr)       — effect (short description)
- *   minmax(140px,1fr)   — roles chips
+ *   3.5rem               — type icon  (56px)
+ *   3.5rem               — category icon  (56px)
+ *   minmax(6.25rem,1fr)  — name  (100px min)
+ *   2.5rem               — BP  (40px)
+ *   3rem                 — Accuracy  (48px)
+ *   3.5rem               — Usage  (56px)
+ *   minmax(0,2fr)        — effect (short description)
+ *   minmax(8.75rem,1fr)  — roles chips  (140px min)
+ *
+ * All track sizes are in rem so header and rows share the same template string
+ * and align identically without per-cell flex (which drifts). See picker-grid
+ * alignment rule in CLAUDE.md.
  */
 export const MOVE_LIST_GRID =
-  "grid-cols-[56px_56px_minmax(100px,1fr)_40px_48px_56px_minmax(0,2fr)_minmax(140px,1fr)]";
+  "grid-cols-[3.5rem_3.5rem_minmax(6.25rem,1fr)_2.5rem_3rem_3.5rem_minmax(0,2fr)_minmax(8.75rem,1fr)]";
 
 // =============================================================================
 // Normalize move key

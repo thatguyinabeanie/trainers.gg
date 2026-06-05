@@ -37,10 +37,10 @@ export function MetaBarGhost() {
         Nickname
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="border-border bg-background text-muted-foreground/40 inline-flex h-6 items-center justify-center rounded-[5px] border px-2 font-mono text-xs font-semibold">
+        <span className="border-border bg-background text-muted-foreground/40 inline-flex h-6 items-center justify-center rounded-md border px-2 font-mono text-xs font-semibold">
           —
         </span>
-        <span className="border-border bg-background text-muted-foreground/40 inline-flex h-6 items-center justify-center rounded-[5px] border px-2 font-mono text-xs font-semibold">
+        <span className="border-border bg-background text-muted-foreground/40 inline-flex h-6 items-center justify-center rounded-md border px-2 font-mono text-xs font-semibold">
           ✦
         </span>
       </span>
@@ -54,7 +54,7 @@ export function FormRowsGhost() {
       {(["Item", "Abil", "Nat", "Type"] as const).map((label) => (
         <div
           key={label}
-          className="grid grid-cols-[60px_minmax(0,1fr)] items-center gap-1.5 rounded px-1 py-1"
+          className="grid grid-cols-[3.75rem_minmax(0,1fr)] items-center gap-1.5 rounded px-1 py-1"
         >
           <span className="text-muted-foreground/30 font-mono text-xs font-bold tracking-[0.08em] uppercase">
             {label}

@@ -147,7 +147,7 @@ function CalcDescTooltip({
       {children}
       <TooltipContent
         side="bottom"
-        className="border-border bg-popover text-popover-foreground max-w-[560px] overflow-hidden border p-0"
+        className="border-border bg-popover text-popover-foreground max-w-xl overflow-hidden border p-0"
       >
         <div className="flex flex-col gap-1.5 p-3">
           <p className="font-mono text-sm leading-relaxed whitespace-normal">
@@ -577,7 +577,7 @@ function MovesLaneGhost() {
         "flex min-w-0 flex-1 flex-col px-6 py-1 transition-[padding,flex] duration-300 ease-in-out"
       )}
     >
-      <Table className="w-full border-separate border-spacing-y-[3px]">
+      <Table className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */>
         <MovesLaneTileGhost />
         <TableBody>
           {([0, 1, 2, 3] as const).map((i) => (
@@ -631,7 +631,7 @@ function MovesLaneReal({
         "flex min-w-0 flex-1 flex-col px-6 py-1 transition-[padding,flex] duration-300 ease-in-out"
       )}
     >
-      <Table className="w-full border-separate border-spacing-y-[3px]">
+      <Table className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */>
         <MovesLaneTileGhost />
         <TableBody>
           {MOVE_SLOTS.map((slotKey) => {

@@ -150,6 +150,7 @@ export function TypePicker({
               {hasUsageData && (
                 <span
                   className={cn(
+                    // text-[10px]: sub-12px usage badge on type pill; no Tailwind scale token
                     "font-mono text-[10px] tabular-nums leading-none font-normal",
                     usagePct != null && usagePct > 0
                       ? "opacity-90"

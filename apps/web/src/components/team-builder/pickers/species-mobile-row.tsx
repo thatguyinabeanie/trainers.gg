@@ -112,12 +112,12 @@ export function SpeciesMobileRow({
                   <TypeSymbolIcon
                     key={type}
                     type={type as Parameters<typeof TypeSymbolIcon>[0]["type"]}
-                    className="size-[18px]"
+                    className="size-5"
                   />
                 ))}
                 {usagePct != null && usagePct > 0 && (
                   <span
-                    className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"
+                    className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums" // text-[10px]: sub-12px micro-label; no Tailwind scale token
                     data-testid={`usg-mobile-${entry.species}`}
                   >
                     {usagePct.toFixed(1)}%
@@ -132,7 +132,7 @@ export function SpeciesMobileRow({
                 {abilities.map((ability) => (
                   <span
                     key={ability}
-                    className="bg-primary/5 border-primary/30 text-primary rounded-md border px-1.5 py-0.5 text-[10px] font-medium"
+                    className="bg-primary/5 border-primary/30 text-primary rounded-md border px-1.5 py-0.5 text-[10px] font-medium" // text-[10px]: sub-12px micro-label; no Tailwind scale token
                   >
                     {ability}
                   </span>
@@ -141,7 +141,7 @@ export function SpeciesMobileRow({
             )}
 
             {/* Line 3 — single-line stats */}
-            <span className="flex items-baseline gap-1.5 text-[10px] tabular-nums">
+            <span className="flex items-baseline gap-1.5 text-[10px] tabular-nums"> {/* text-[10px]: sub-12px stat strip; no Tailwind scale token */}
               {STAT_DEFS.map(({ key, label, valueKey }) => (
                 <span key={key} className="inline-flex items-baseline gap-0.5">
                   <span className={cn("font-bold opacity-60", STAT_HEADER_COLORS[key])}>
@@ -193,7 +193,7 @@ function SpeciesMobileMovesPanel({ species, formatId }: SpeciesMobileMovesPanelP
   if (!legalMovesResult || legalMovesResult === LEGALITY_UNAVAILABLE) {
     return (
       <div className="border-t border-border/50 px-3 py-2">
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground"> {/* text-[11px]: sub-12px micro-copy; no Tailwind scale token */}
           Moves unavailable for this format.
         </span>
       </div>
@@ -223,7 +223,7 @@ function SpeciesMobileMovesPanel({ species, formatId }: SpeciesMobileMovesPanelP
     <div className="border-t border-border/50">
       {/* Sort controls */}
       <div className="flex items-center gap-2 border-b border-border/40 px-3 py-1.5">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"> {/* text-[10px]: sub-12px micro-label; no Tailwind scale token */}
           Sort:
         </span>
         {(["name", "bp", "acc"] as const).map((col) => (
@@ -232,6 +232,7 @@ function SpeciesMobileMovesPanel({ species, formatId }: SpeciesMobileMovesPanelP
             type="button"
             onClick={() => handleSort(col)}
             className={cn(
+              // text-[10px]: sub-12px sort label; no Tailwind scale token
               "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors",
               sort.col === col
                 ? "bg-primary/10 text-primary"
@@ -242,7 +243,7 @@ function SpeciesMobileMovesPanel({ species, formatId }: SpeciesMobileMovesPanelP
             {sortArrow(col)}
           </button>
         ))}
-        <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+        <span className="ml-auto text-[10px] tabular-nums text-muted-foreground"> {/* text-[10px]: sub-12px count; no Tailwind scale token */}
           {sorted.length}
         </span>
       </div>
@@ -288,9 +289,10 @@ function MobileMoveRow({ move }: { move: MoveData }) {
             width={32}
             height={14}
             unoptimized
-            className="h-[14px] w-auto [image-rendering:pixelated]"
+            className="h-3.5 w-auto [image-rendering:pixelated]"
           />
         ) : (
+          // text-[10px]: sub-12px em-dash fallback; no Tailwind scale token
           <span className="text-[10px] text-muted-foreground">—</span>
         )}
       </div>
@@ -302,6 +304,7 @@ function MobileMoveRow({ move }: { move: MoveData }) {
           <span className="truncate text-xs font-medium text-foreground">
             {move.name}
           </span>
+          {/* text-[10px]: sub-12px stat values; no Tailwind scale token */}
           <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
             {bp}
           </span>

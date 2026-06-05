@@ -152,7 +152,7 @@ export function MovePickerMobile({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         showHandle={false}
-        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-[20px] p-0"
+        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-5 p-0"
       >
         <DrawerTitle className="sr-only">Choose move</DrawerTitle>
 
@@ -173,7 +173,7 @@ export function MovePickerMobile({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search moves"
-              className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-[16px] leading-tight focus:outline-none sm:text-sm"
+              className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-[16px] leading-tight focus:outline-none sm:text-sm" // text-[16px]: prevents iOS auto-zoom on focus (zoom triggers below 16px)
             />
             <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
               {filtered.length}/{legalMoves.length}

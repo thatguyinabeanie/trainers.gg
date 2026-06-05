@@ -574,11 +574,11 @@ function StatRow({
       className={cn(
         showIv
           ? showBoostCol
-            ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
-            : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] items-center gap-1.5 rounded px-1 py-0.5"
+            ? "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.5rem_2.25rem_3.5rem] items-center gap-1.5 rounded px-1 py-0.5"
+            : "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.5rem_2.25rem] items-center gap-1.5 rounded px-1 py-0.5"
           : showBoostCol
-            ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
-            : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] items-center gap-1.5 rounded px-1 py-0.5",
+            ? "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem_3.5rem] items-center gap-1.5 rounded px-1 py-0.5"
+            : "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem] items-center gap-1.5 rounded px-1 py-0.5",
         statColorClass
       )}
     >
@@ -662,7 +662,7 @@ function StatRow({
       <div className={"relative h-3.5"}>
         <div
           className={
-            "bg-muted-foreground/40 pointer-events-none absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full"
+            "bg-muted-foreground/40 pointer-events-none absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full" /* h-[3px]: 3px hairline slider track — no Tailwind scale token */
           }
           aria-hidden
         />
@@ -836,11 +836,11 @@ export function StatsLane({
             "mb-0.5 py-0",
             showIv
               ? calcEnabled
-                ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
-                : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] items-center gap-1.5 rounded px-1 py-0.5"
+                ? "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.5rem_2.25rem_3.5rem] items-center gap-1.5 rounded px-1 py-0.5"
+                : "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.5rem_2.25rem] items-center gap-1.5 rounded px-1 py-0.5"
               : calcEnabled
-                ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
-                : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] items-center gap-1.5 rounded px-1 py-0.5"
+                ? "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem_3.5rem] items-center gap-1.5 rounded px-1 py-0.5"
+                : "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem] items-center gap-1.5 rounded px-1 py-0.5"
           )}
         >
           <span />
@@ -868,11 +868,11 @@ export function StatsLane({
             className={cn(
               showIv
                 ? calcEnabled
-                  ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
-                  : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] items-center gap-1.5 rounded px-1 py-0.5"
+                  ? "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.5rem_2.25rem_3.5rem] items-center gap-1.5 rounded px-1 py-0.5"
+                  : "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.5rem_2.25rem] items-center gap-1.5 rounded px-1 py-0.5"
                 : calcEnabled
-                  ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
-                  : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] items-center gap-1.5 rounded px-1 py-0.5",
+                  ? "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem_3.5rem] items-center gap-1.5 rounded px-1 py-0.5"
+                  : "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem] items-center gap-1.5 rounded px-1 py-0.5",
               colorClass
             )}
           >
@@ -901,7 +901,7 @@ export function StatsLane({
             <div className={"relative h-3.5"}>
               <div
                 className={cn(
-                  "bg-muted-foreground/40 pointer-events-none absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full",
+                  "bg-muted-foreground/40 pointer-events-none absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full" /* h-[3px]: 3px hairline slider track — no Tailwind scale token */,
                   "opacity-25"
                 )}
               />
@@ -977,11 +977,11 @@ export function StatsLane({
           "mb-0.5",
           showIv
             ? calcEnabled
-              ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
-              : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_40px_36px] items-center gap-1.5 rounded px-1 py-0.5"
+              ? "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.5rem_2.25rem_3.5rem] items-center gap-1.5 rounded px-1 py-0.5"
+              : "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.5rem_2.25rem] items-center gap-1.5 rounded px-1 py-0.5"
             : calcEnabled
-              ? "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px_56px] items-center gap-1.5 rounded px-1 py-0.5"
-              : "hover:bg-muted grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] items-center gap-1.5 rounded px-1 py-0.5",
+              ? "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem_3.5rem] items-center gap-1.5 rounded px-1 py-0.5"
+              : "hover:bg-muted grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem] items-center gap-1.5 rounded px-1 py-0.5",
           "py-0"
         )}
       >

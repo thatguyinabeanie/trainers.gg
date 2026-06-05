@@ -30,11 +30,14 @@ import {
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { StageDropdown } from "./stage-dropdown";
 import { Slider } from "@/components/ui/slider";
-const spreadRowClass = "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
-const spreadRowWithStageClass = "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_32px_36px] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
+// Grid tracks expressed in rem (scale-mapped). 30px has no clean Tailwind token (between w-7=28px and w-8=32px)
+// and is kept as 30px because rounding would shift the finely-tuned stat-panel column alignment.
+const spreadRowClass = "grid grid-cols-[2.5rem_30px_minmax(30px,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
+const spreadRowWithStageClass = "grid grid-cols-[2.5rem_30px_minmax(30px,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2rem_2.25rem] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
 const spreadLabelClass = "text-xs font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px";
 const spreadBaseClass = "font-mono text-xs text-muted-foreground text-right tabular-nums";
 const spreadSliderWrapClass = "relative h-3.5";
+// h-[3px]: intentional hairline track height (1–3px range — no scale token)
 const spreadSliderTrackClass = "absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none";
 const spreadFinalClass = "font-mono text-xs font-bold text-right tabular-nums";
 

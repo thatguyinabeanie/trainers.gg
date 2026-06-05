@@ -22,6 +22,7 @@ const midMetaBarBase =
   "grid h-9 shrink-0 items-center gap-2.5 border-b border-dashed border-border px-3 py-2";
 const midMetaBarLv = "grid-cols-[auto_1fr_auto]";
 const midMetaBarNoLvCols = "grid-cols-[1fr_auto]";
+// rounded-[5px]: intentional 5px design value — midpoint between rounded (4px) and rounded-md (6px), no clean scale token
 const midPill =
   "inline-flex h-6 shrink-0 cursor-pointer items-center justify-center whitespace-nowrap rounded-[5px] border border-border bg-background px-2 font-mono text-xs font-semibold leading-none text-muted-foreground transition-colors hover:bg-muted";
 const midNickname =

@@ -934,6 +934,7 @@ export function TeamWorkspaceV2({
                 <ResizablePanel id="editor" minSize="30%">
                   <div className="flex h-full flex-col items-center overflow-y-auto">
                     {/* Inline metadata: alt + format (left), layout toggle (right) */}
+                    {/* max-w-[1800px]: workspace-scale cap — no Tailwind scale token at this size */}
                     <div className="flex w-full max-w-[1800px] items-center gap-3 px-3 pt-2">
                       <WorkspaceMetadata
                         alts={alts}
@@ -991,6 +992,7 @@ export function TeamWorkspaceV2({
                       </div>
                     </div>
                     {/* Section wraps pokemon rows */}
+                    {/* max-w-[1800px]: workspace-scale cap — no Tailwind scale token at this size */}
                     <section className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3">
                       <div
                         className={cn(
@@ -1075,6 +1077,7 @@ export function TeamWorkspaceV2({
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto">
                   {/* Mobile: single row — name (flex-1), format, validate icon */}
+                  {/* max-w-[1800px]: workspace-scale cap — no Tailwind scale token at this size */}
                   <div className="flex w-full max-w-[1800px] items-center gap-2 px-3 py-2">
                     <EditableName
                       defaultValue={team.name}
@@ -1214,6 +1217,7 @@ export function TeamWorkspaceV2({
                     </Popover>
                   </div>
 
+                  {/* max-w-[1800px]: workspace-scale cap — no Tailwind scale token at this size */}
                   <section className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 px-3 pb-3">
                     <div
                       className={cn(
