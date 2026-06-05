@@ -93,6 +93,12 @@ jest.mock("../role-presets-panel", () => ({
   RolePresetsPanel: () => <div data-testid="role-presets-panel" />,
 }));
 
+// ── Mock useFormatUsageData — isolate from TanStack Query / server action ──
+const mockUseFormatUsageData = jest.fn<Map<string, { usagePct: number }>, []>();
+jest.mock("../../use-format-usage-data", () => ({
+  useFormatUsageData: () => mockUseFormatUsageData(),
+}));
+
 import { SpeciesPickerMobile } from "../species-picker-mobile";
 
 const defaultProps = {
@@ -105,7 +111,11 @@ const defaultProps = {
 };
 
 describe("SpeciesPickerMobile", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Default: empty usage map (no data available)
+    mockUseFormatUsageData.mockReturnValue(new Map());
+  });
 
   describe("list view (default)", () => {
     it("renders the search input", () => {
@@ -240,6 +250,58 @@ describe("SpeciesPickerMobile", () => {
       await user.click(screen.getByRole("button", { name: /open filters/i }));
       expect(screen.getByRole("heading", { name: /^filters$/i })).toBeInTheDocument();
       expect(screen.getByTestId("species-sidebar")).toBeInTheDocument();
+    });
+  });
+
+  describe("USG display", () => {
+    it("renders '—' for all species when no usage data is available", () => {
+      mockUseFormatUsageData.mockReturnValue(new Map());
+      render(<SpeciesPickerMobile {...defaultProps} />);
+      expect(
+        screen.getByTestId("usg-mobile-Garchomp-Mega")
+      ).toHaveTextContent("—");
+      expect(
+        screen.getByTestId("usg-mobile-Palafin-Hero")
+      ).toHaveTextContent("—");
+    });
+
+    it("renders the usage % for a known species", () => {
+      // Garchomp-Mega normalized slug is "garchomp-mega"
+      mockUseFormatUsageData.mockReturnValue(
+        new Map([["garchomp-mega", { usagePct: 52.3 }]])
+      );
+      render(<SpeciesPickerMobile {...defaultProps} />);
+      expect(
+        screen.getByTestId("usg-mobile-Garchomp-Mega")
+      ).toHaveTextContent("52.3%");
+    });
+
+    it("renders '—' for a species not in the usage map", () => {
+      // Only Garchomp-Mega has data; Palafin-Hero should show dash
+      mockUseFormatUsageData.mockReturnValue(
+        new Map([["garchomp-mega", { usagePct: 52.3 }]])
+      );
+      render(<SpeciesPickerMobile {...defaultProps} />);
+      expect(
+        screen.getByTestId("usg-mobile-Palafin-Hero")
+      ).toHaveTextContent("—");
+    });
+
+    it("looks up usage via normalized slug — dex name matches DB slug", () => {
+      // DB slugs are lowercase-hyphen; normalizeSpeciesSlug handles the conversion
+      mockUseFormatUsageData.mockReturnValue(
+        new Map([
+          ["garchomp-mega", { usagePct: 52.3 }],
+          ["palafin-hero", { usagePct: 30.5 }],
+        ])
+      );
+      render(<SpeciesPickerMobile {...defaultProps} />);
+      expect(
+        screen.getByTestId("usg-mobile-Garchomp-Mega")
+      ).toHaveTextContent("52.3%");
+      expect(
+        screen.getByTestId("usg-mobile-Palafin-Hero")
+      ).toHaveTextContent("30.5%");
     });
   });
 });

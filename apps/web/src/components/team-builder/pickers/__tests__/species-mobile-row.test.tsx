@@ -163,6 +163,54 @@ describe("SpeciesMobileRow", () => {
     expect(screen.getByText("Protean")).toBeInTheDocument();
   });
 
+  describe("USG display", () => {
+    it("renders '—' when usagePct is undefined", () => {
+      render(
+        <SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />
+      );
+      expect(
+        screen.getByTestId("usg-mobile-Garchomp-Mega")
+      ).toHaveTextContent("—");
+    });
+
+    it("renders '—' when usagePct is 0", () => {
+      render(
+        <SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} usagePct={0} />
+      );
+      expect(
+        screen.getByTestId("usg-mobile-Garchomp-Mega")
+      ).toHaveTextContent("—");
+    });
+
+    it("renders the formatted percentage when usagePct is > 0", () => {
+      render(
+        <SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} usagePct={52.3} />
+      );
+      expect(
+        screen.getByTestId("usg-mobile-Garchomp-Mega")
+      ).toHaveTextContent("52.3%");
+    });
+
+    it("renders one decimal place for a round percentage", () => {
+      render(
+        <SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} usagePct={30} />
+      );
+      expect(
+        screen.getByTestId("usg-mobile-Garchomp-Mega")
+      ).toHaveTextContent("30.0%");
+    });
+
+    it("renders the USG label on the stat strip line", () => {
+      render(
+        <SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} usagePct={15.7} />
+      );
+      expect(screen.getByText("USG")).toBeInTheDocument();
+      expect(
+        screen.getByTestId("usg-mobile-Garchomp-Mega")
+      ).toHaveTextContent("15.7%");
+    });
+  });
+
   describe("expand / collapse", () => {
     it("shows the expand button with aria-expanded=false initially", () => {
       render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);

@@ -30,6 +30,8 @@ interface SpeciesMobileRowProps {
   onPick: (species: string) => void;
   isSelected?: boolean;
   formatId: string;
+  /** Pre-looked-up usage % for this species, or undefined when no data exists. */
+  usagePct?: number;
 }
 
 const STAT_DEFS = [
@@ -46,6 +48,7 @@ export function SpeciesMobileRow({
   onPick,
   isSelected,
   formatId,
+  usagePct,
 }: SpeciesMobileRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -147,6 +150,24 @@ export function SpeciesMobileRow({
                 </span>
                 <span className={cn("font-bold", STAT_HEADER_COLORS.bst)}>
                   {entry.bst}
+                </span>
+              </span>
+              <span className="inline-flex items-baseline gap-0.5">
+                <span className="font-bold opacity-60 text-muted-foreground">
+                  USG
+                </span>
+                <span
+                  className={cn(
+                    "font-semibold",
+                    usagePct != null && usagePct > 0
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  )}
+                  data-testid={`usg-mobile-${entry.species}`}
+                >
+                  {usagePct != null && usagePct > 0
+                    ? `${usagePct.toFixed(1)}%`
+                    : "—"}
                 </span>
               </span>
             </span>

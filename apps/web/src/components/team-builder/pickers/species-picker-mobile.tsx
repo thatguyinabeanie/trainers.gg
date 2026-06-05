@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
+import { useFormatUsageData } from "../use-format-usage-data";
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { RolePresetsPanel } from "./role-presets-panel";
 import {
@@ -32,6 +33,7 @@ import {
 } from "./species-filter-state";
 import { SpeciesMobileRow } from "./species-mobile-row";
 import { SpeciesSidebar } from "./species-sidebar";
+import { normalizeSpeciesSlug } from "./usage-slug";
 
 // =============================================================================
 // Constants
@@ -77,6 +79,10 @@ export function SpeciesPickerMobile({
   const [filters, setFilters] = useState<SpeciesFilterState>(
     DEFAULT_SPECIES_FILTERS
   );
+
+  // Format-wide usage data — Map<normalizedSlug, FormatUsageRow>.
+  // Provides USG % for every species row without per-row fetches.
+  const usageMap = useFormatUsageData(format);
 
   // Build the species index — same logic as desktop picker.
   const fullIndex = buildSpeciesSearchIndex(
@@ -163,6 +169,7 @@ export function SpeciesPickerMobile({
               onPick={handlePick}
               currentSpecies={value}
               formatId={resolvedFormatId}
+              usageMap={usageMap}
             />
           ) : (
             <FiltersView
@@ -198,6 +205,8 @@ interface ListViewProps {
   onPick: (species: string) => void;
   currentSpecies: string | null;
   formatId: string;
+  /** Pre-built usage map — Map<normalizedSlug, FormatUsageRow>. */
+  usageMap: Map<string, { usagePct: number }>;
 }
 
 function ListView({
@@ -212,6 +221,7 @@ function ListView({
   onPick,
   currentSpecies,
   formatId,
+  usageMap,
 }: ListViewProps) {
   return (
     <>
@@ -264,6 +274,7 @@ function ListView({
             onPick={onPick}
             isSelected={entry.species === currentSpecies}
             formatId={formatId}
+            usagePct={usageMap.get(normalizeSpeciesSlug(entry.species))?.usagePct}
           />
         ))}
         {matched.length === 0 && (
