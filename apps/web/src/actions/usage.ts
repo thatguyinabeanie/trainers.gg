@@ -6,7 +6,9 @@ import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
 import {
   computeUsageRollups,
+  getSpeciesUsage,
   getSpeciesUsageDetail,
+  type FormatUsageRow,
   type SpeciesUsagePeriod,
   type SpeciesUsageDetailParams,
 } from "@trainers/supabase";
@@ -192,6 +194,61 @@ export async function fetchSpeciesUsageDetail(
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch species usage detail"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: format-wide species ranking
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchFormatUsage. */
+export interface FetchFormatUsageParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** Rollup source. Defaults to "all". */
+  source?: string;
+  /** Period granularity. Defaults to "week". */
+  periodType?: "day" | "week" | "month";
+}
+
+/**
+ * Public (non-admin) server action to fetch the latest-period species ranking
+ * for a format.
+ *
+ * Returns every `FormatUsageRow` for the most-recent rollup bucket so the
+ * species picker can show a `USG %` column for every species at once.
+ *
+ * Data is public — all tournament usage stats are visible to everyone — so
+ * this uses `createStaticClient()` wrapped in `unstable_cache` for ISR
+ * caching. Cache revalidation: 3600s (1 hour), matching `fetchSpeciesUsageDetail`.
+ */
+export async function fetchFormatUsage(
+  params: FetchFormatUsageParams
+): Promise<ActionResult<FormatUsageRow[]>> {
+  try {
+    const { format, source = "all", periodType = "week" } = params;
+
+    const cacheKey = `usage-format:${format}:${source}:${periodType}`;
+
+    const getCached = unstable_cache(
+      async () => {
+        const supabase = createStaticClient();
+        return getSpeciesUsage(supabase, { format, source, periodType });
+      },
+      [cacheKey],
+      {
+        revalidate: 3600, // 1 hour — matches fetchSpeciesUsageDetail
+        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
+      }
+    );
+
+    const data = await getCached();
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch format usage"),
     };
   }
 }

@@ -252,9 +252,27 @@ jest.mock("@tanstack/react-virtual", () => ({
 }));
 
 // =============================================================================
-// Mock CSS module
+// Mock useFormatUsageData — isolate from TanStack Query / server action
 // =============================================================================
 
+const mockUseFormatUsageData = jest.fn<Map<string, { usagePct: number; rank: number; usageChange7d: number | null }>, []>();
+jest.mock("../use-format-usage-data", () => ({
+  useFormatUsageData: () => mockUseFormatUsageData(),
+}));
+
+// =============================================================================
+// Mock usage-slug normalizer — tested separately; use the real implementation
+// here so USG lookup assertions exercise the actual slug matching.
+// =============================================================================
+
+jest.mock("../pickers/usage-slug", () => ({
+  normalizeSpeciesSlug: (name: string) =>
+    name
+      .toLowerCase()
+      .replace(/['.,:]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-"),
+}));
 
 import { SpeciesPicker } from "../pickers/species-picker";
 import { type GameFormat } from "@trainers/pokemon";
@@ -340,6 +358,8 @@ describe("SpeciesPicker", () => {
         return index.filter((e) => e.species.toLowerCase().includes(q));
       }
     );
+    // Default: no usage data available
+    mockUseFormatUsageData.mockReturnValue(new Map());
   });
 
   // ---------------------------------------------------------------------------
@@ -1058,6 +1078,171 @@ describe("SpeciesPicker", () => {
       expect(
         screen.queryByTestId("expanded-panel-Bulbasaur")
       ).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // USG column — renders % for known species, muted dash for unknown
+  // ---------------------------------------------------------------------------
+
+  describe("USG column", () => {
+    it("renders '—' for all species when no usage data is available", () => {
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+      // All three species should show the muted dash
+      for (const species of ["Bulbasaur", "Garchomp", "Pikachu"]) {
+        const cell = screen.getByTestId(`usg-cell-${species}`);
+        expect(cell).toHaveTextContent("—");
+      }
+    });
+
+    it("renders the usage % for a known species", () => {
+      // Garchomp has 52.3% usage
+      mockUseFormatUsageData.mockReturnValue(
+        new Map([["garchomp", { usagePct: 52.3, rank: 1, usageChange7d: null }]])
+      );
+
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(screen.getByTestId("usg-cell-Garchomp")).toHaveTextContent(
+        "52.3%"
+      );
+    });
+
+    it("renders '—' for a species not in the usage map", () => {
+      // Only Garchomp has data; Bulbasaur and Pikachu should show dash
+      mockUseFormatUsageData.mockReturnValue(
+        new Map([["garchomp", { usagePct: 52.3, rank: 1, usageChange7d: null }]])
+      );
+
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(screen.getByTestId("usg-cell-Bulbasaur")).toHaveTextContent("—");
+      expect(screen.getByTestId("usg-cell-Pikachu")).toHaveTextContent("—");
+    });
+
+    it("looks up usage via normalized slug — dex name matches DB slug", () => {
+      // DB slug is lowercase-hyphen; the picker normalizes the dex name to match.
+      // Pikachu → "pikachu" (no change); Bulbasaur → "bulbasaur"
+      mockUseFormatUsageData.mockReturnValue(
+        new Map([
+          ["pikachu", { usagePct: 30.5, rank: 5, usageChange7d: -0.5 }],
+          ["bulbasaur", { usagePct: 10.0, rank: 20, usageChange7d: null }],
+        ])
+      );
+
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(screen.getByTestId("usg-cell-Pikachu")).toHaveTextContent("30.5%");
+      expect(screen.getByTestId("usg-cell-Bulbasaur")).toHaveTextContent(
+        "10.0%"
+      );
+    });
+
+    it("renders the USG header column button", () => {
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+      expect(
+        screen.getByRole("button", { name: "Sort by USG" })
+      ).toBeInTheDocument();
+    });
+
+    it("clicking the USG header sorts by usage descending — species with data come first", async () => {
+      const user = userEvent.setup();
+      // Only Garchomp (52.3%) and Pikachu (30.5%) have usage; Bulbasaur is unknown.
+      mockUseFormatUsageData.mockReturnValue(
+        new Map([
+          ["garchomp", { usagePct: 52.3, rank: 1, usageChange7d: null }],
+          ["pikachu", { usagePct: 30.5, rank: 2, usageChange7d: null }],
+        ])
+      );
+
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: "Sort by USG" }));
+
+      const rows = screen.getAllByRole("row", { name: /select/i });
+      const names = rows.map((r) => r.getAttribute("aria-label") ?? "");
+      // DESC: Garchomp (52.3) → Pikachu (30.5) → Bulbasaur (unknown, always last)
+      expect(names.indexOf("Select Garchomp")).toBeLessThan(
+        names.indexOf("Select Pikachu")
+      );
+      expect(names.indexOf("Select Pikachu")).toBeLessThan(
+        names.indexOf("Select Bulbasaur")
+      );
+    });
+
+    it("USG sort places unknown species last regardless of sort direction", async () => {
+      const user = userEvent.setup();
+      mockUseFormatUsageData.mockReturnValue(
+        new Map([
+          ["garchomp", { usagePct: 52.3, rank: 1, usageChange7d: null }],
+          ["pikachu", { usagePct: 30.5, rank: 2, usageChange7d: null }],
+        ])
+      );
+
+      render(
+        <SpeciesPicker
+          value={null}
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      // Click once: DESC order
+      await user.click(screen.getByRole("button", { name: "Sort by USG" }));
+      // Click twice: ASC order
+      await user.click(screen.getByRole("button", { name: "Sort by USG" }));
+
+      const rows = screen.getAllByRole("row", { name: /select/i });
+      const names = rows.map((r) => r.getAttribute("aria-label") ?? "");
+      // ASC: Pikachu (30.5) → Garchomp (52.3) → Bulbasaur (unknown, always last)
+      expect(names.indexOf("Select Pikachu")).toBeLessThan(
+        names.indexOf("Select Garchomp")
+      );
+      // Bulbasaur (unknown) must always be last
+      expect(names[names.length - 1]).toBe("Select Bulbasaur");
     });
   });
 });

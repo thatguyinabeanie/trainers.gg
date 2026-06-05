@@ -29,6 +29,7 @@ import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "../type-symbol-icon";
+import { useFormatUsageData } from "../use-format-usage-data";
 import { AbilityCell } from "./ability-cell";
 import { FilterDialogShell } from "./filter-dialog-shell";
 import { RolePresetsPanel } from "./role-presets-panel";
@@ -45,6 +46,7 @@ import { SpeciesSidebar } from "./species-sidebar";
 import { SpeciesSmartSearch } from "./species-smart-search";
 import { SpeciesExpandedPanel } from "./species-expanded-panel";
 import { STAT_HEADER_COLORS } from "./stat-header-colors";
+import { normalizeSpeciesSlug } from "./usage-slug";
 
 // =============================================================================
 // Constants
@@ -53,29 +55,57 @@ import { STAT_HEADER_COLORS } from "./stat-header-colors";
 /** Stat threshold for the "high stat" highlight (matches the spec's 110+). */
 const HIGH_STAT_THRESHOLD = 110;
 
-/**
- * Shared Tailwind grid template for each data row.
- *
- *   20px               — expand/collapse chevron
- *   56px               — sprite circle
- *   minmax(170px,2fr)  — name
- *   72px               — types (two icons + right padding)
- *   minmax(120px,1.5fr)— abilities (stacked: ● slot1, ● slot2, ★ hidden)
- *   repeat(6,48px)     — HP/Atk/Def/SpA/SpD/Spe (label + sort arrow)
- *   48px               — BST
- *   minmax(0,2fr)      — matching move chips (collapses when empty)
- */
-const ROW_GRID =
-  "grid-cols-[20px_56px_minmax(170px,2fr)_72px_minmax(120px,1.5fr)_repeat(6,48px)_48px_minmax(0,2fr)]";
-
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
+
+// =============================================================================
+// Column width classes
+// =============================================================================
+
+/**
+ * Tailwind width classes for each column in the species picker row/header.
+ *
+ * WHY a shared const: Both the sticky header and each `SpeciesRow` must use
+ * identical classes so columns align. A single source of truth prevents drift
+ * when columns are added or modified.
+ *
+ * Width mapping (old grid → Tailwind):
+ *   20px  chevron   → w-5
+ *   56px  sprite    → w-14
+ *   grow  name      → grow min-w-44   (minmax(170px,2fr))
+ *   72px  types     → w-18            (4.5rem = 72px in Tailwind v4)
+ *   grow  abilities → grow min-w-32   (minmax(120px,1.5fr))
+ *   48px  stat×6    → w-12            (×6: HP Atk Def SpA SpD Spe)
+ *   48px  BST       → w-12
+ *   56px  USG       → w-14            (new column, right of BST)
+ *   grow  moves     → grow min-w-0    (minmax(0,2fr))
+ */
+const COLUMN_WIDTHS = {
+  chevron: "w-5 shrink-0",
+  sprite: "w-14 shrink-0",
+  name: "grow min-w-44",
+  types: "w-18 shrink-0",
+  abilities: "grow min-w-32",
+  stat: "w-12 shrink-0",
+  bst: "w-12 shrink-0",
+  usg: "w-14 shrink-0",
+  moves: "grow min-w-0",
+} as const;
 
 // =============================================================================
 // Sort
 // =============================================================================
 
-type SortCol = "name" | "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst";
+type SortCol =
+  | "name"
+  | "hp"
+  | "atk"
+  | "def"
+  | "spa"
+  | "spd"
+  | "spe"
+  | "bst"
+  | "usage";
 type SortDir = "asc" | "desc";
 
 type SortState = {
@@ -85,7 +115,8 @@ type SortState = {
 
 function sortSpecies(
   rows: SpeciesSearchEntry[],
-  sort: SortState
+  sort: SortState,
+  usageMap?: Map<string, { usagePct: number }>
 ): SpeciesSearchEntry[] {
   const out = [...rows];
   out.sort((a, b) => {
@@ -115,6 +146,23 @@ function sortSpecies(
       case "bst":
         cmp = a.bst - b.bst;
         break;
+      case "usage": {
+        // Species with no usage data sort to the end regardless of direction.
+        const aPct =
+          usageMap?.get(normalizeSpeciesSlug(a.species))?.usagePct ?? -1;
+        const bPct =
+          usageMap?.get(normalizeSpeciesSlug(b.species))?.usagePct ?? -1;
+        // Both unknown → treat as equal (fall through to name tie-break)
+        if (aPct === -1 && bPct === -1) {
+          cmp = 0;
+          break;
+        }
+        // One unknown → always place last (negate direction so it's always last)
+        if (aPct === -1) return 1;
+        if (bPct === -1) return -1;
+        cmp = aPct - bPct;
+        break;
+      }
       default:
         sort.col satisfies never;
         return 0;
@@ -223,6 +271,8 @@ interface SpeciesRowProps {
   formatId: string;
   filteredMoves: readonly string[];
   filteredRoles: readonly RoleId[];
+  /** Pre-looked-up usage %, or undefined when no data exists for this species. */
+  usagePct: number | undefined;
   onSelect: () => void;
   onToggleExpand: () => void;
   onFilterAbility: (ability: string) => void;
@@ -235,6 +285,7 @@ function SpeciesRow({
   formatId,
   filteredMoves,
   filteredRoles,
+  usagePct,
   onSelect,
   onToggleExpand,
   onFilterAbility,
@@ -281,12 +332,11 @@ function SpeciesRow({
         onClick={onSelect}
         onKeyDown={handleRowKey}
         className={cn(
-          "hover:bg-muted/60 focus-visible:bg-muted/80 focus-visible:outline-primary relative grid w-full cursor-pointer items-center gap-2 px-4 py-2 text-left transition-colors outline-none focus-visible:outline-2",
-          ROW_GRID,
+          "hover:bg-muted/60 focus-visible:bg-muted/80 focus-visible:outline-primary relative flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left transition-colors outline-none focus-visible:outline-2",
           isCurrent && "bg-primary/5"
         )}
       >
-        {/* Expand/collapse chevron */}
+        {/* Expand/collapse chevron — w-5 */}
         <button
           type="button"
           aria-label={
@@ -300,6 +350,7 @@ function SpeciesRow({
           }}
           onKeyDown={(e) => e.stopPropagation()}
           className={cn(
+            COLUMN_WIDTHS.chevron,
             "text-muted-foreground hover:text-foreground relative z-10 flex items-center justify-center transition-transform",
             isExpanded && "rotate-90"
           )}
@@ -307,8 +358,13 @@ function SpeciesRow({
           <ChevronRight className="size-4" />
         </button>
 
-        {/* Sprite — 48px circle inside 56px column */}
-        <div className="bg-primary/10 relative z-10 flex size-12 shrink-0 items-center justify-center self-center rounded-full">
+        {/* Sprite — 48px circle inside w-14 column */}
+        <div
+          className={cn(
+            COLUMN_WIDTHS.sprite,
+            "bg-primary/10 relative z-10 flex size-12 items-center justify-center self-center rounded-full"
+          )}
+        >
           <Image
             src={sprite.url}
             alt={entry.species}
@@ -322,12 +378,23 @@ function SpeciesRow({
           />
         </div>
 
-        {/* Name */}
-        <span className="text-foreground relative z-10 min-w-0 truncate text-sm font-semibold">
+        {/* Name — grows to fill available space */}
+        <span
+          className={cn(
+            COLUMN_WIDTHS.name,
+            "text-foreground relative z-10 min-w-0 truncate text-sm font-semibold"
+          )}
+        >
           {entry.species}
         </span>
 
-        <div className="relative z-10 flex min-w-0 items-center gap-1.5">
+        {/* Types — two icons */}
+        <div
+          className={cn(
+            COLUMN_WIDTHS.types,
+            "relative z-10 flex min-w-0 items-center gap-1.5"
+          )}
+        >
           {entry.types[0] ? (
             <TypeSymbolIcon
               type={
@@ -351,7 +418,12 @@ function SpeciesRow({
         </div>
 
         {/* Abilities — all slots stacked: • regular, ★ hidden */}
-        <div className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden">
+        <div
+          className={cn(
+            COLUMN_WIDTHS.abilities,
+            "relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden"
+          )}
+        >
           <div className="flex min-w-0 items-baseline gap-1">
             <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-xs">
               ●
@@ -391,6 +463,7 @@ function SpeciesRow({
         {/* HP */}
         <span
           className={cn(
+            COLUMN_WIDTHS.stat,
             "relative z-10 text-center font-mono text-xs tabular-nums",
             statValueClass(entry.baseStats.hp)
           )}
@@ -400,6 +473,7 @@ function SpeciesRow({
         {/* Atk */}
         <span
           className={cn(
+            COLUMN_WIDTHS.stat,
             "relative z-10 text-center font-mono text-xs tabular-nums",
             statValueClass(entry.baseStats.atk)
           )}
@@ -409,6 +483,7 @@ function SpeciesRow({
         {/* Def */}
         <span
           className={cn(
+            COLUMN_WIDTHS.stat,
             "relative z-10 text-center font-mono text-xs tabular-nums",
             statValueClass(entry.baseStats.def)
           )}
@@ -418,6 +493,7 @@ function SpeciesRow({
         {/* SpA */}
         <span
           className={cn(
+            COLUMN_WIDTHS.stat,
             "relative z-10 text-center font-mono text-xs tabular-nums",
             statValueClass(entry.baseStats.spa)
           )}
@@ -427,6 +503,7 @@ function SpeciesRow({
         {/* SpD */}
         <span
           className={cn(
+            COLUMN_WIDTHS.stat,
             "relative z-10 text-center font-mono text-xs tabular-nums",
             statValueClass(entry.baseStats.spd)
           )}
@@ -436,6 +513,7 @@ function SpeciesRow({
         {/* Spe */}
         <span
           className={cn(
+            COLUMN_WIDTHS.stat,
             "relative z-10 text-center font-mono text-xs tabular-nums",
             statValueClass(entry.baseStats.spe)
           )}
@@ -444,12 +522,38 @@ function SpeciesRow({
         </span>
 
         {/* BST */}
-        <span className="border-border/60 text-foreground relative z-10 border-l pl-1.5 text-center font-mono text-xs font-semibold tabular-nums">
+        <span
+          className={cn(
+            COLUMN_WIDTHS.bst,
+            "border-border/60 text-foreground relative z-10 border-l pl-1.5 text-center font-mono text-xs font-semibold tabular-nums"
+          )}
+        >
           {entry.bst}
         </span>
 
+        {/* USG — latest period usage % for this species in the active format */}
+        <span
+          className={cn(
+            COLUMN_WIDTHS.usg,
+            "relative z-10 text-center font-mono text-xs tabular-nums",
+            usagePct != null && usagePct > 0
+              ? "text-foreground"
+              : "text-muted-foreground"
+          )}
+          data-testid={`usg-cell-${entry.species}`}
+        >
+          {usagePct != null && usagePct > 0
+            ? `${usagePct.toFixed(1)}%`
+            : "—"}
+        </span>
+
         {/* Matching move chips — inline column */}
-        <div className="relative z-10 flex min-w-0 flex-wrap items-center gap-1 overflow-hidden">
+        <div
+          className={cn(
+            COLUMN_WIDTHS.moves,
+            "relative z-10 flex min-w-0 flex-wrap items-center gap-1 overflow-hidden"
+          )}
+        >
           {matchingMoveNames.map((name) => (
             <span
               key={name}
@@ -699,6 +803,10 @@ export function SpeciesPicker({
     ? fullIndex.filter((e) => isLegalSpecies(e.species, format.id))
     : fullIndex;
 
+  // Format-wide usage data — Map<normalizedSlug, FormatUsageRow>.
+  // Provides USG % for every species in the picker without per-row fetches.
+  const usageMap = useFormatUsageData(format);
+
   // Derived list — search + filter (legality already applied to index)
   const filtered = searchSpecies(speciesIndex, query, {
     types: filters.types,
@@ -708,7 +816,7 @@ export function SpeciesPicker({
     megaOnly: filters.megaOnly,
     formatId: format?.id,
   });
-  const matched = sortSpecies(filtered, sort);
+  const matched = sortSpecies(filtered, sort, usageMap);
 
   // Bucket counts — for each role, how many matched species carry it.
   // React Compiler memoizes this lookup based on the matched array identity.
@@ -998,83 +1106,120 @@ export function SpeciesPicker({
           <div>
             {/* Sticky sortable header */}
             <div
-              className={cn(
-                "bg-card sticky top-0 z-20 grid items-center gap-2 border-b px-4 py-2 text-xs font-semibold tracking-wider uppercase",
-                ROW_GRID
-              )}
+              className="bg-card sticky top-0 z-20 flex items-center gap-2 border-b px-4 py-2 text-xs font-semibold tracking-wider uppercase"
               role="row"
             >
-              <span aria-hidden="true" />
-              <span aria-hidden="true" />
-              <SortHeaderButton
-                col="name"
-                label="Name"
-                align="left"
-                sort={sort}
-                onSort={handleSort}
-              />
-              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
+              <span className={COLUMN_WIDTHS.chevron} aria-hidden="true" />
+              <span className={COLUMN_WIDTHS.sprite} aria-hidden="true" />
+              <div className={COLUMN_WIDTHS.name}>
+                <SortHeaderButton
+                  col="name"
+                  label="Name"
+                  align="left"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+              </div>
+              <span
+                className={cn(
+                  COLUMN_WIDTHS.types,
+                  "text-muted-foreground text-center text-xs whitespace-nowrap"
+                )}
+              >
                 Types
               </span>
-              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
+              <span
+                className={cn(
+                  COLUMN_WIDTHS.abilities,
+                  "text-muted-foreground text-center text-xs whitespace-nowrap"
+                )}
+              >
                 Abilities
               </span>
-              <SortHeaderButton
-                col="hp"
-                label="HP"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.hp}
-              />
-              <SortHeaderButton
-                col="atk"
-                label="ATK"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.atk}
-              />
-              <SortHeaderButton
-                col="def"
-                label="DEF"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.def}
-              />
-              <SortHeaderButton
-                col="spa"
-                label="SPA"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.spa}
-              />
-              <SortHeaderButton
-                col="spd"
-                label="SPD"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.spd}
-              />
-              <SortHeaderButton
-                col="spe"
-                label="SPE"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.spe}
-              />
-              <SortHeaderButton
-                col="bst"
-                label="BST"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-              />
-              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
+              <div className={cn(COLUMN_WIDTHS.stat, "flex justify-center")}>
+                <SortHeaderButton
+                  col="hp"
+                  label="HP"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.hp}
+                />
+              </div>
+              <div className={cn(COLUMN_WIDTHS.stat, "flex justify-center")}>
+                <SortHeaderButton
+                  col="atk"
+                  label="ATK"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.atk}
+                />
+              </div>
+              <div className={cn(COLUMN_WIDTHS.stat, "flex justify-center")}>
+                <SortHeaderButton
+                  col="def"
+                  label="DEF"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.def}
+                />
+              </div>
+              <div className={cn(COLUMN_WIDTHS.stat, "flex justify-center")}>
+                <SortHeaderButton
+                  col="spa"
+                  label="SPA"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spa}
+                />
+              </div>
+              <div className={cn(COLUMN_WIDTHS.stat, "flex justify-center")}>
+                <SortHeaderButton
+                  col="spd"
+                  label="SPD"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spd}
+                />
+              </div>
+              <div className={cn(COLUMN_WIDTHS.stat, "flex justify-center")}>
+                <SortHeaderButton
+                  col="spe"
+                  label="SPE"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spe}
+                />
+              </div>
+              <div className={cn(COLUMN_WIDTHS.bst, "flex justify-center")}>
+                <SortHeaderButton
+                  col="bst"
+                  label="BST"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+              </div>
+              <div className={cn(COLUMN_WIDTHS.usg, "flex justify-center")}>
+                <SortHeaderButton
+                  col="usage"
+                  label="USG"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+              </div>
+              <span
+                className={cn(
+                  COLUMN_WIDTHS.moves,
+                  "text-muted-foreground text-center text-xs whitespace-nowrap"
+                )}
+              >
                 Moves
               </span>
             </div>
@@ -1109,6 +1254,10 @@ export function SpeciesPicker({
                         formatId={format?.id ?? DEFAULT_FORMAT_ID}
                         filteredMoves={filters.moves}
                         filteredRoles={filters.roles}
+                        usagePct={
+                          usageMap.get(normalizeSpeciesSlug(entry.species))
+                            ?.usagePct
+                        }
                         onSelect={() => onPick(entry.species)}
                         onToggleExpand={() =>
                           setExpandedSpecies((prev) =>
