@@ -350,8 +350,8 @@ export function UsageInspector() {
                   {isExpanded && (
                     <div className="bg-muted/20 border-t px-4 py-4">
                       {detailLoading ? (
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                          {Array.from({ length: 5 }).map((_, i) => (
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                          {Array.from({ length: 6 }).map((_, i) => (
                             <Skeleton key={i} className="h-24 rounded-lg" />
                           ))}
                         </div>
@@ -360,7 +360,7 @@ export function UsageInspector() {
                           No detail data available for this period.
                         </p>
                       ) : (
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                           <DetailEntryList
                             label="Moves"
                             entries={latestDetail.moves}
@@ -376,6 +376,10 @@ export function UsageInspector() {
                           <DetailEntryList
                             label="Abilities"
                             entries={latestDetail.abilities}
+                          />
+                          <DetailEntryList
+                            label="Ability + Item"
+                            entries={latestDetail.abilityItems}
                           />
                           <DetailEntryList
                             label="Natures"

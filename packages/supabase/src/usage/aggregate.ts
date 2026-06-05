@@ -55,6 +55,8 @@ export interface UsageDetails {
   item: UsageHistogram;
   ability: UsageHistogram;
   nature: UsageHistogram;
+  /** Ability+item combo histogram. Values encoded as "${ability} + ${item}". */
+  abilityItem: UsageHistogram;
 }
 
 /** One row to be written to the event_usage table. */
@@ -169,6 +171,18 @@ export function aggregateEventUsage(mons: TeamMonInput[]): EventUsageRow[] {
       const allItems = instances.map((m) => m.heldItem);
       const allAbilities = instances.map((m) => m.ability);
       const allNatures = instances.map((m) => m.nature);
+      // Ability+item combos: emit whenever the ability is present. A missing
+      // held item is itself meaningful (e.g. no-item Talonflame running
+      // Acrobatics + Gale Wings), so encode an absent item as "No Item"
+      // rather than dropping the combo.
+      const allAbilityItems = instances
+        .filter((m) => m.ability != null && m.ability !== "")
+        .map(
+          (m) =>
+            `${m.ability as string} + ${
+              m.heldItem != null && m.heldItem !== "" ? m.heldItem : "No Item"
+            }`
+        );
 
       rows.push({
         division,
@@ -181,6 +195,7 @@ export function aggregateEventUsage(mons: TeamMonInput[]): EventUsageRow[] {
           item: buildHistogram(allItems),
           ability: buildHistogram(allAbilities),
           nature: buildHistogram(allNatures),
+          abilityItem: buildHistogram(allAbilityItems),
         },
       });
     }

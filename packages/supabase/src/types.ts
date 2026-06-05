@@ -2009,6 +2009,7 @@ export type Database = {
       pokemon_detail_stats: {
         Row: {
           abilities: Json
+          ability_items: Json
           id: number
           items: Json
           meta_id: number
@@ -2021,6 +2022,7 @@ export type Database = {
         }
         Insert: {
           abilities?: Json
+          ability_items?: Json
           id?: never
           items?: Json
           meta_id: number
@@ -2033,6 +2035,7 @@ export type Database = {
         }
         Update: {
           abilities?: Json
+          ability_items?: Json
           id?: never
           items?: Json
           meta_id?: number

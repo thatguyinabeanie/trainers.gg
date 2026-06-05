@@ -21,6 +21,8 @@ export interface SpeciesUsagePeriod {
   items: UsageDetailEntry[];
   abilities: UsageDetailEntry[];
   natures: UsageDetailEntry[];
+  /** Ability+item combo entries. Values encoded as "${ability} + ${item}". */
+  abilityItems: UsageDetailEntry[];
 }
 
 /** Parameters for fetching trailing periods for one species. */
@@ -89,7 +91,8 @@ export async function getSpeciesUsageDetail(
         tera_types,
         items,
         abilities,
-        natures
+        natures,
+        ability_items
       )
     `
     )
@@ -134,6 +137,7 @@ export async function getSpeciesUsageDetail(
       items: (detailRow?.items as UsageDetailEntry[] | null) ?? [],
       abilities: (detailRow?.abilities as UsageDetailEntry[] | null) ?? [],
       natures: (detailRow?.natures as UsageDetailEntry[] | null) ?? [],
+      abilityItems: (detailRow?.ability_items as UsageDetailEntry[] | null) ?? [],
     };
   });
 }

@@ -697,6 +697,7 @@ export async function computeUsageRollups(
               item?: { v: string; n: number }[];
               ability?: { v: string; n: number }[];
               nature?: { v: string; n: number }[];
+              abilityItem?: { v: string; n: number }[];
             } | null;
             return {
               fact: {
@@ -712,6 +713,7 @@ export async function computeUsageRollups(
                   item: details?.item ?? [],
                   ability: details?.ability ?? [],
                   nature: details?.nature ?? [],
+                  abilityItem: details?.abilityItem ?? [],
                 },
               },
               eventDate: r.event_date,
@@ -875,6 +877,7 @@ export async function computeUsageRollups(
               items: s.item as unknown as Json,
               abilities: s.ability as unknown as Json,
               natures: s.nature as unknown as Json,
+              ability_items: s.abilityItems as unknown as Json,
               // spreads, teammates left as default []
             }));
 

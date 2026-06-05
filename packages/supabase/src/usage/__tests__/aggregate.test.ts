@@ -115,6 +115,7 @@ describe("aggregateEventUsage — single division (null)", () => {
     expect(incineroar?.details.tera).toHaveLength(0);
     expect(incineroar?.details.ability).toHaveLength(0);
     expect(incineroar?.details.nature).toHaveLength(0);
+    expect(incineroar?.details.abilityItem).toHaveLength(0);
   });
 });
 
@@ -171,6 +172,133 @@ describe("aggregateEventUsage — nature histogram", () => {
     const senior = findRow(rows, "senior", "koraidon");
     expect(masters?.details.nature).toEqual([{ v: "adamant", n: 1 }]);
     expect(senior?.details.nature).toEqual([{ v: "jolly", n: 1 }]);
+  });
+});
+
+// =============================================================================
+// abilityItem histogram
+// =============================================================================
+
+describe("aggregateEventUsage — abilityItem histogram", () => {
+  it("builds combo '<ability> + <item>' when both are present", () => {
+    const input: TeamMonInput[] = [
+      mon("t1", "flutter-mane", { ability: "protosynthesis", heldItem: "choice-specs" }),
+      mon("t2", "flutter-mane", { ability: "protosynthesis", heldItem: "choice-specs" }),
+      mon("t3", "flutter-mane", { ability: "protosynthesis", heldItem: "choice-specs" }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const fm = findRow(rows, null, "flutter-mane");
+    expect(fm?.details.abilityItem).toEqual([
+      { v: "protosynthesis + choice-specs", n: 3 },
+    ]);
+  });
+
+  it("omits combo when ability is null (item present)", () => {
+    const input: TeamMonInput[] = [
+      mon("t1", "incineroar", { ability: null, heldItem: "safety-goggles" }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const inc = findRow(rows, null, "incineroar");
+    expect(inc?.details.abilityItem).toEqual([]);
+  });
+
+  it("emits combo with 'No Item' when ability is present but item is null", () => {
+    const input: TeamMonInput[] = [
+      mon("t1", "incineroar", { ability: "intimidate", heldItem: null }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const inc = findRow(rows, null, "incineroar");
+    expect(inc?.details.abilityItem).toEqual([
+      { v: "intimidate + No Item", n: 1 },
+    ]);
+  });
+
+  it("emits combo with 'No Item' when ability is present but item is empty string", () => {
+    const input: TeamMonInput[] = [
+      mon("t1", "incineroar", { ability: "intimidate", heldItem: "" }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const inc = findRow(rows, null, "incineroar");
+    expect(inc?.details.abilityItem).toEqual([
+      { v: "intimidate + No Item", n: 1 },
+    ]);
+  });
+
+  it("counts 'No Item' combos across multiple teams correctly", () => {
+    // Real-world example: Talonflame with Gale Wings and no held item (runs Acrobatics)
+    const input: TeamMonInput[] = [
+      mon("t1", "talonflame", { ability: "gale-wings", heldItem: null }),
+      mon("t2", "talonflame", { ability: "gale-wings", heldItem: null }),
+      mon("t3", "talonflame", { ability: "gale-wings", heldItem: "sharp-beak" }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const row = findRow(rows, null, "talonflame");
+    expect(row?.details.abilityItem).toEqual([
+      { v: "gale-wings + No Item", n: 2 },
+      { v: "gale-wings + sharp-beak", n: 1 },
+    ]);
+  });
+
+  it("'No Item' combo sorts by n desc: higher count appears first", () => {
+    // "No Item" combo appears 3 times; item combo appears once → No Item ranks first
+    const input: TeamMonInput[] = [
+      mon("t1", "flutter-mane", { ability: "protosynthesis", heldItem: null }),
+      mon("t2", "flutter-mane", { ability: "protosynthesis", heldItem: null }),
+      mon("t3", "flutter-mane", { ability: "protosynthesis", heldItem: null }),
+      mon("t4", "flutter-mane", { ability: "protosynthesis", heldItem: "booster-energy" }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const fm = findRow(rows, null, "flutter-mane");
+    expect(fm?.details.abilityItem).toEqual([
+      { v: "protosynthesis + No Item", n: 3 },
+      { v: "protosynthesis + booster-energy", n: 1 },
+    ]);
+  });
+
+  it("omits combo when both ability and item are null (ability is the anchor)", () => {
+    const input: TeamMonInput[] = [
+      mon("t1", "incineroar", { ability: null, heldItem: null }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const inc = findRow(rows, null, "incineroar");
+    expect(inc?.details.abilityItem).toEqual([]);
+  });
+
+  it("aggregates different combos and sorts by n desc then v asc", () => {
+    const input: TeamMonInput[] = [
+      mon("t1", "flutter-mane", { ability: "protosynthesis", heldItem: "choice-specs" }),
+      mon("t2", "flutter-mane", { ability: "protosynthesis", heldItem: "choice-specs" }),
+      mon("t3", "flutter-mane", { ability: "protosynthesis", heldItem: "focus-sash" }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const fm = findRow(rows, null, "flutter-mane");
+    expect(fm?.details.abilityItem).toEqual([
+      { v: "protosynthesis + choice-specs", n: 2 },
+      { v: "protosynthesis + focus-sash", n: 1 },
+    ]);
+  });
+
+  it("combo does not mix divisions", () => {
+    const input: TeamMonInput[] = [
+      mon("m1", "koraidon", { division: "masters", ability: "orichalcum-pulse", heldItem: "clear-amulet" }),
+      mon("s1", "koraidon", { division: "senior", ability: "orichalcum-pulse", heldItem: "assault-vest" }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const masters = findRow(rows, "masters", "koraidon");
+    const senior = findRow(rows, "senior", "koraidon");
+    expect(masters?.details.abilityItem).toEqual([{ v: "orichalcum-pulse + clear-amulet", n: 1 }]);
+    expect(senior?.details.abilityItem).toEqual([{ v: "orichalcum-pulse + assault-vest", n: 1 }]);
+  });
+
+  it("respects Species Clause: only first occurrence per (teamKey, species) contributes to combo", () => {
+    // Duplicate species on same team: only first slot counted (matches Species Clause dedupe)
+    const input: TeamMonInput[] = [
+      mon("t1", "charizard", { ability: "blaze", heldItem: "choice-band" }),
+      mon("t1", "charizard", { ability: "solar-power", heldItem: "choice-specs" }), // deduped
+    ];
+    const rows = aggregateEventUsage(input);
+    const row = findRow(rows, null, "charizard");
+    expect(row?.details.abilityItem).toEqual([{ v: "blaze + choice-band", n: 1 }]);
   });
 });
 
@@ -353,6 +481,7 @@ describe("aggregateEventUsage — edge cases", () => {
     expect(rows[0]?.details.moves).toEqual([{ v: "glacial-lance", n: 1 }]);
     expect(rows[0]?.details.ability).toEqual([{ v: "as-one", n: 1 }]);
     expect(rows[0]?.details.nature).toEqual([{ v: "adamant", n: 1 }]);
+    expect(rows[0]?.details.abilityItem).toEqual([{ v: "as-one + never-melt-ice", n: 1 }]);
   });
 
   it("correctly handles mixed null and non-null divisions in the same input", () => {

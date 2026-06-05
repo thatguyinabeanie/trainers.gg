@@ -30,7 +30,7 @@ function fact(
     division: null,
     teamCount: 1,
     sampleSize: 10,
-    details: { moves: [], tera: [], item: [], ability: [], nature: [] },
+    details: { moves: [], tera: [], item: [], ability: [], nature: [], abilityItem: [] },
     ...overrides,
   };
 }
@@ -491,6 +491,7 @@ describe("rollupBucket — detail histograms", () => {
           item: [],
           ability: [],
           nature: [],
+          abilityItem: [],
         },
       }),
       fact({
@@ -507,6 +508,7 @@ describe("rollupBucket — detail histograms", () => {
           item: [],
           ability: [],
           nature: [],
+          abilityItem: [],
         },
       }),
     ];
@@ -536,6 +538,7 @@ describe("rollupBucket — detail histograms", () => {
           item: [],
           ability: [],
           nature: [],
+          abilityItem: [],
         },
       }),
     ];
@@ -560,6 +563,7 @@ describe("rollupBucket — detail histograms", () => {
           item: [],
           ability: [],
           nature: [],
+          abilityItem: [],
         },
       }),
     ];
@@ -583,6 +587,7 @@ describe("rollupBucket — detail histograms", () => {
           item: [],
           ability: [{ v: "protosynthesis", n: 2 }],
           nature: [],
+          abilityItem: [],
         },
       }),
       fact({
@@ -596,6 +601,7 @@ describe("rollupBucket — detail histograms", () => {
           item: [],
           ability: [{ v: "protosynthesis", n: 1 }],
           nature: [],
+          abilityItem: [],
         },
       }),
     ];
@@ -611,7 +617,7 @@ describe("rollupBucket — detail histograms", () => {
         species: "incineroar",
         teamCount: 1,
         sampleSize: 1,
-        details: { moves: [], tera: [], item: [], ability: [], nature: [] },
+        details: { moves: [], tera: [], item: [], ability: [], nature: [], abilityItem: [] },
       }),
     ];
     const result = rollupBucket(facts);
@@ -625,7 +631,7 @@ describe("rollupBucket — detail histograms", () => {
         species: "incineroar",
         teamCount: 1,
         sampleSize: 1,
-        details: { moves: [], tera: [], item: [], ability: [], nature: [] },
+        details: { moves: [], tera: [], item: [], ability: [], nature: [], abilityItem: [] },
       }),
     ];
     const result = rollupBucket(facts);
@@ -635,6 +641,7 @@ describe("rollupBucket — detail histograms", () => {
     expect(inc.item).toEqual([]);
     expect(inc.ability).toEqual([]);
     expect(inc.nature).toEqual([]);
+    expect(inc.abilityItems).toEqual([]);
   });
 
   it("merges nature histograms from all facts for the same species and computes pct", () => {
@@ -649,6 +656,7 @@ describe("rollupBucket — detail histograms", () => {
           item: [],
           ability: [],
           nature: [{ v: "adamant", n: 2 }],
+          abilityItem: [],
         },
       }),
       fact({
@@ -662,6 +670,7 @@ describe("rollupBucket — detail histograms", () => {
           item: [],
           ability: [],
           nature: [{ v: "adamant", n: 1 }],
+          abilityItem: [],
         },
       }),
     ];
@@ -677,7 +686,7 @@ describe("rollupBucket — detail histograms", () => {
         species: "incineroar",
         teamCount: 1,
         sampleSize: 1,
-        details: { moves: [], tera: [], item: [], ability: [], nature: [] },
+        details: { moves: [], tera: [], item: [], ability: [], nature: [], abilityItem: [] },
       }),
     ];
     const result = rollupBucket(facts);
@@ -700,6 +709,7 @@ describe("rollupBucket — detail histograms", () => {
             { v: "timid", n: 2 },
             { v: "modest", n: 1 },
           ],
+          abilityItem: [],
         },
       }),
     ];
@@ -709,6 +719,93 @@ describe("rollupBucket — detail histograms", () => {
     expect(fm.nature[1]?.value).toBe("modest");
     // pct for timid: round(100*2/3, 2) = 66.67
     expect(fm.nature[0]?.pct).toBe(66.67);
+  });
+});
+
+// =============================================================================
+// rollupBucket — abilityItems detail histogram
+// =============================================================================
+
+describe("rollupBucket — abilityItems detail histogram", () => {
+  it("merges abilityItem histograms from all facts for the same species and computes pct", () => {
+    const facts: FactRow[] = [
+      fact({
+        species: "flutter-mane",
+        teamCount: 2,
+        sampleSize: 4,
+        details: {
+          moves: [],
+          tera: [],
+          item: [],
+          ability: [],
+          nature: [],
+          abilityItem: [{ v: "protosynthesis + choice-specs", n: 2 }],
+        },
+      }),
+      fact({
+        eventKey: "rk9:EVT002",
+        species: "flutter-mane",
+        teamCount: 1,
+        sampleSize: 6,
+        details: {
+          moves: [],
+          tera: [],
+          item: [],
+          ability: [],
+          nature: [],
+          abilityItem: [{ v: "protosynthesis + choice-specs", n: 1 }],
+        },
+      }),
+    ];
+    const result = rollupBucket(facts);
+    const fm = result.species.find((s) => s.species === "flutter-mane")!;
+    // Merged: "protosynthesis + choice-specs"=3; teamCount=3 → pct = 100
+    expect(fm.abilityItems[0]).toMatchObject({
+      value: "protosynthesis + choice-specs",
+      count: 3,
+      pct: 100,
+    });
+  });
+
+  it("returns empty abilityItems array when there are no abilityItem histogram entries", () => {
+    const facts: FactRow[] = [
+      fact({
+        species: "incineroar",
+        teamCount: 1,
+        sampleSize: 1,
+        details: { moves: [], tera: [], item: [], ability: [], nature: [], abilityItem: [] },
+      }),
+    ];
+    const result = rollupBucket(facts);
+    const inc = result.species.find((s) => s.species === "incineroar")!;
+    expect(inc.abilityItems).toEqual([]);
+  });
+
+  it("merges mixed abilityItem histograms and sorts by count desc then value asc", () => {
+    const facts: FactRow[] = [
+      fact({
+        species: "koraidon",
+        teamCount: 3,
+        sampleSize: 3,
+        details: {
+          moves: [],
+          tera: [],
+          item: [],
+          ability: [],
+          nature: [],
+          abilityItem: [
+            { v: "orichalcum-pulse + clear-amulet", n: 2 },
+            { v: "orichalcum-pulse + assault-vest", n: 1 },
+          ],
+        },
+      }),
+    ];
+    const result = rollupBucket(facts);
+    const kor = result.species.find((s) => s.species === "koraidon")!;
+    expect(kor.abilityItems[0]?.value).toBe("orichalcum-pulse + clear-amulet");
+    expect(kor.abilityItems[1]?.value).toBe("orichalcum-pulse + assault-vest");
+    // pct for clear-amulet combo: round(100*2/3, 2) = 66.67
+    expect(kor.abilityItems[0]?.pct).toBe(66.67);
   });
 });
 

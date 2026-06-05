@@ -53,6 +53,7 @@ const makeMetaRow = (overrides?: Record<string, unknown>) => ({
       items: [{ value: "Clear Amulet", count: 500, pct: 50 }],
       abilities: [{ value: "Orichalcum Pulse", count: 900, pct: 90 }],
       natures: [{ value: "Adamant", count: 700, pct: 70 }],
+      ability_items: [{ value: "Orichalcum Pulse + Clear Amulet", count: 850, pct: 85 }],
     },
   ],
   ...overrides,
@@ -149,6 +150,20 @@ describe("getSpeciesUsageDetail", () => {
     ]);
   });
 
+  it("maps abilityItems correctly from the ability_items column", async () => {
+    const row = makeMetaRow();
+    builder.limit.mockResolvedValue({ data: [row], error: null });
+
+    const [period] = await getSpeciesUsageDetail(supabase, {
+      format: "gen9vgc2025regg",
+      species: "Koraidon",
+    });
+
+    expect(period?.abilityItems).toEqual([
+      { value: "Orichalcum Pulse + Clear Amulet", count: 850, pct: 85 },
+    ]);
+  });
+
   it("maps usage stats fields correctly", async () => {
     const row = makeMetaRow();
     builder.limit.mockResolvedValue({ data: [row], error: null });
@@ -201,6 +216,7 @@ describe("getSpeciesUsageDetail", () => {
     expect(period?.items).toEqual([]);
     expect(period?.abilities).toEqual([]);
     expect(period?.natures).toEqual([]);
+    expect(period?.abilityItems).toEqual([]);
   });
 
   it("defaults empty arrays when detail row is null", async () => {
@@ -217,6 +233,7 @@ describe("getSpeciesUsageDetail", () => {
     expect(period?.items).toEqual([]);
     expect(period?.abilities).toEqual([]);
     expect(period?.natures).toEqual([]);
+    expect(period?.abilityItems).toEqual([]);
   });
 
   it("throws a descriptive error when Supabase returns an error", async () => {
@@ -295,7 +312,7 @@ describe("getSpeciesUsageDetail", () => {
     });
   });
 
-  it("uses !inner join in the select shape and includes abilities and natures", async () => {
+  it("uses !inner join in the select shape and includes abilities, natures, and ability_items", async () => {
     builder.limit.mockResolvedValue({ data: [], error: null });
 
     await getSpeciesUsageDetail(supabase, {
@@ -308,6 +325,7 @@ describe("getSpeciesUsageDetail", () => {
     expect(selectArg).toContain("pokemon_detail_stats");
     expect(selectArg).toContain("abilities");
     expect(selectArg).toContain("natures");
+    expect(selectArg).toContain("ability_items");
   });
 });
 
