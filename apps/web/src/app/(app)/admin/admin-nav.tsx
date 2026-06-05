@@ -19,8 +19,12 @@ export function AdminNav() {
 
   return (
     <nav className="mb-8 border-b">
-      <div className="-mb-px flex gap-6 overflow-x-auto">
-        {navItems.map((item) => {
+      {/* Scroll-wrapper (block) clamps to the viewport; the inner flex row can
+          exceed it and scrolls horizontally on phones. overflow-x-auto must be
+          on this wrapper, NOT on the flex row, or the row won't clamp. */}
+      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+        <div className="-mb-px flex gap-6 overflow-hidden sm:overflow-visible">
+          {navItems.map((item) => {
           const isActive =
             item.href === "/admin"
               ? pathname === "/admin"
@@ -40,7 +44,8 @@ export function AdminNav() {
               {item.label}
             </Link>
           );
-        })}
+          })}
+        </div>
       </div>
     </nav>
   );
