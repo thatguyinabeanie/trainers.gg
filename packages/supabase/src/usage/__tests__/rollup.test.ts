@@ -30,7 +30,7 @@ function fact(
     division: null,
     teamCount: 1,
     sampleSize: 10,
-    details: { moves: [], tera: [], item: [] },
+    details: { moves: [], tera: [], item: [], ability: [] },
     ...overrides,
   };
 }
@@ -489,6 +489,7 @@ describe("rollupBucket — detail histograms", () => {
           ],
           tera: [],
           item: [],
+          ability: [],
         },
       }),
       fact({
@@ -503,6 +504,7 @@ describe("rollupBucket — detail histograms", () => {
           ],
           tera: [],
           item: [],
+          ability: [],
         },
       }),
     ];
@@ -530,6 +532,7 @@ describe("rollupBucket — detail histograms", () => {
           moves: [{ v: "fake-out", n: 1 }],
           tera: [],
           item: [],
+          ability: [],
         },
       }),
     ];
@@ -552,6 +555,7 @@ describe("rollupBucket — detail histograms", () => {
             { v: "ghost", n: 1 },
           ],
           item: [],
+          ability: [],
         },
       }),
     ];
@@ -563,13 +567,59 @@ describe("rollupBucket — detail histograms", () => {
     expect(fm.tera[2]?.value).toBe("stellar");
   });
 
+  it("merges ability histograms from all facts for the same species and computes pct", () => {
+    const facts: FactRow[] = [
+      fact({
+        species: "flutter-mane",
+        teamCount: 2,
+        sampleSize: 4,
+        details: {
+          moves: [],
+          tera: [],
+          item: [],
+          ability: [{ v: "protosynthesis", n: 2 }],
+        },
+      }),
+      fact({
+        eventKey: "rk9:EVT002",
+        species: "flutter-mane",
+        teamCount: 1,
+        sampleSize: 6,
+        details: {
+          moves: [],
+          tera: [],
+          item: [],
+          ability: [{ v: "protosynthesis", n: 1 }],
+        },
+      }),
+    ];
+    const result = rollupBucket(facts);
+    const fm = result.species.find((s) => s.species === "flutter-mane")!;
+    // Merged: protosynthesis=3; teamCount=3 → pct = round(100*3/3,2) = 100
+    expect(fm.ability[0]).toMatchObject({ value: "protosynthesis", count: 3, pct: 100 });
+  });
+
+  it("returns empty ability array when there are no ability histogram entries", () => {
+    const facts: FactRow[] = [
+      fact({
+        species: "incineroar",
+        teamCount: 1,
+        sampleSize: 1,
+        details: { moves: [], tera: [], item: [], ability: [] },
+      }),
+    ];
+    const result = rollupBucket(facts);
+    const inc = result.species.find((s) => s.species === "incineroar")!;
+    expect(inc.ability).toEqual([]);
+  });
+
   it("returns empty detail arrays when there are no histogram entries", () => {
     const facts: FactRow[] = [
       fact({
         species: "incineroar",
         teamCount: 1,
         sampleSize: 1,
-        details: { moves: [], tera: [], item: [] },
+        details: { moves: [], tera: [], item: [], ability: [] },
       }),
     ];
     const result = rollupBucket(facts);
@@ -577,6 +627,7 @@ describe("rollupBucket — detail histograms", () => {
     expect(inc.moves).toEqual([]);
     expect(inc.tera).toEqual([]);
     expect(inc.item).toEqual([]);
+    expect(inc.ability).toEqual([]);
   });
 });
 

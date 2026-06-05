@@ -262,6 +262,7 @@ async function readTeamMons(
     teamKey: r.teamKey,
     division: r.division,
     species: r.species,
+    ability: r.ability,
     heldItem: r.heldItem,
     teraType: r.teraType,
     moves: (r.moves ?? []).filter((m): m is string => m != null && m !== ""),
@@ -533,6 +534,7 @@ export async function computeUsageRollups(
               moves?: { v: string; n: number }[];
               tera?: { v: string; n: number }[];
               item?: { v: string; n: number }[];
+              ability?: { v: string; n: number }[];
             } | null;
             return {
               fact: {
@@ -546,6 +548,7 @@ export async function computeUsageRollups(
                   moves: details?.moves ?? [],
                   tera: details?.tera ?? [],
                   item: details?.item ?? [],
+                  ability: details?.ability ?? [],
                 },
               },
               eventDate: r.event_date,
@@ -707,7 +710,8 @@ export async function computeUsageRollups(
               moves: s.moves as unknown as Json,
               tera_types: s.tera as unknown as Json,
               items: s.item as unknown as Json,
-              // abilities, spreads, teammates left as default []
+              abilities: s.ability as unknown as Json,
+              // spreads, teammates left as default []
             }));
 
             const { error: detailInsertErr } = await supabase

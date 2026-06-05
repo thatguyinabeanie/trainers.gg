@@ -51,6 +51,7 @@ const makeMetaRow = (overrides?: Record<string, unknown>) => ({
       ],
       tera_types: [{ value: "Fire", count: 600, pct: 60 }],
       items: [{ value: "Clear Amulet", count: 500, pct: 50 }],
+      abilities: [{ value: "Orichalcum Pulse", count: 900, pct: 90 }],
     },
   ],
   ...overrides,
@@ -119,6 +120,20 @@ describe("getSpeciesUsageDetail", () => {
     ]);
   });
 
+  it("maps abilities correctly from the abilities column", async () => {
+    const row = makeMetaRow();
+    builder.limit.mockResolvedValue({ data: [row], error: null });
+
+    const [period] = await getSpeciesUsageDetail(supabase, {
+      format: "gen9vgc2025regg",
+      species: "Koraidon",
+    });
+
+    expect(period?.abilities).toEqual([
+      { value: "Orichalcum Pulse", count: 900, pct: 90 },
+    ]);
+  });
+
   it("maps usage stats fields correctly", async () => {
     const row = makeMetaRow();
     builder.limit.mockResolvedValue({ data: [row], error: null });
@@ -169,6 +184,7 @@ describe("getSpeciesUsageDetail", () => {
     expect(period?.moves).toEqual([]);
     expect(period?.tera).toEqual([]);
     expect(period?.items).toEqual([]);
+    expect(period?.abilities).toEqual([]);
   });
 
   it("defaults empty arrays when detail row is null", async () => {
@@ -183,6 +199,7 @@ describe("getSpeciesUsageDetail", () => {
     expect(period?.moves).toEqual([]);
     expect(period?.tera).toEqual([]);
     expect(period?.items).toEqual([]);
+    expect(period?.abilities).toEqual([]);
   });
 
   it("throws a descriptive error when Supabase returns an error", async () => {
@@ -261,7 +278,7 @@ describe("getSpeciesUsageDetail", () => {
     });
   });
 
-  it("uses !inner join in the select shape", async () => {
+  it("uses !inner join in the select shape and includes abilities", async () => {
     builder.limit.mockResolvedValue({ data: [], error: null });
 
     await getSpeciesUsageDetail(supabase, {
@@ -272,6 +289,7 @@ describe("getSpeciesUsageDetail", () => {
     const selectArg = (builder.select.mock.calls[0] as string[])[0];
     expect(selectArg).toContain("pokemon_usage_stats!inner");
     expect(selectArg).toContain("pokemon_detail_stats");
+    expect(selectArg).toContain("abilities");
   });
 });
 

@@ -131,6 +131,7 @@ export interface FactRow {
     moves: { v: string; n: number }[];
     tera: { v: string; n: number }[];
     item: { v: string; n: number }[];
+    ability: { v: string; n: number }[];
   };
 }
 
@@ -156,6 +157,7 @@ export interface SpeciesRollup {
   moves: DetailEntry[];
   tera: DetailEntry[];
   item: DetailEntry[];
+  ability: DetailEntry[];
 }
 
 /** Aggregated rollup for one time bucket, ready for DB insertion. */
@@ -264,6 +266,7 @@ export function rollupBucket(facts: FactRow[]): BucketRollup {
     const mergedMoves = mergeHistogram(speciesFacts.map((f) => f.details.moves));
     const mergedTera = mergeHistogram(speciesFacts.map((f) => f.details.tera));
     const mergedItem = mergeHistogram(speciesFacts.map((f) => f.details.item));
+    const mergedAbility = mergeHistogram(speciesFacts.map((f) => f.details.ability));
 
     // Convert to DetailEntry with pct (denominator = teams running the species)
     function toDetailEntries(
@@ -284,6 +287,7 @@ export function rollupBucket(facts: FactRow[]): BucketRollup {
       moves: toDetailEntries(mergedMoves),
       tera: toDetailEntries(mergedTera),
       item: toDetailEntries(mergedItem),
+      ability: toDetailEntries(mergedAbility),
     });
   }
 

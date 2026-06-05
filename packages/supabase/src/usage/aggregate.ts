@@ -21,6 +21,8 @@ export interface TeamMonInput {
   division: string | null;
   /** Normalized species slug (e.g. 'calyrex-ice-rider'). */
   species: string;
+  /** Ability name; null if unknown or absent. */
+  ability: string | null;
   /** Held item slug; null if unknown or absent. */
   heldItem: string | null;
   /** Tera type; null if not applicable (e.g. pre-Scarlet/Violet formats). */
@@ -49,6 +51,7 @@ export interface UsageDetails {
   moves: UsageHistogram;
   tera: UsageHistogram;
   item: UsageHistogram;
+  ability: UsageHistogram;
 }
 
 /** One row to be written to the event_usage table. */
@@ -161,6 +164,7 @@ export function aggregateEventUsage(mons: TeamMonInput[]): EventUsageRow[] {
       const allMoves = instances.flatMap((m) => m.moves);
       const allTera = instances.map((m) => m.teraType);
       const allItems = instances.map((m) => m.heldItem);
+      const allAbilities = instances.map((m) => m.ability);
 
       rows.push({
         division,
@@ -171,6 +175,7 @@ export function aggregateEventUsage(mons: TeamMonInput[]): EventUsageRow[] {
           moves: buildHistogram(allMoves),
           tera: buildHistogram(allTera),
           item: buildHistogram(allItems),
+          ability: buildHistogram(allAbilities),
         },
       });
     }

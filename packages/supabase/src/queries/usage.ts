@@ -19,6 +19,7 @@ export interface SpeciesUsagePeriod {
   moves: UsageDetailEntry[];
   tera: UsageDetailEntry[];
   items: UsageDetailEntry[];
+  abilities: UsageDetailEntry[];
 }
 
 /** Parameters for fetching trailing periods for one species. */
@@ -85,7 +86,8 @@ export async function getSpeciesUsageDetail(
       pokemon_detail_stats(
         moves,
         tera_types,
-        items
+        items,
+        abilities
       )
     `
     )
@@ -128,6 +130,7 @@ export async function getSpeciesUsageDetail(
       moves: (detailRow?.moves as UsageDetailEntry[] | null) ?? [],
       tera: (detailRow?.tera_types as UsageDetailEntry[] | null) ?? [],
       items: (detailRow?.items as UsageDetailEntry[] | null) ?? [],
+      abilities: (detailRow?.abilities as UsageDetailEntry[] | null) ?? [],
     };
   });
 }

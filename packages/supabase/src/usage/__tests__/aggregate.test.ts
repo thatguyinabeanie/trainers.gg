@@ -19,6 +19,7 @@ function mon(
     teamKey,
     division: null,
     species,
+    ability: null,
     heldItem: null,
     teraType: null,
     moves: [],
@@ -51,9 +52,9 @@ describe("aggregateEventUsage — empty input", () => {
 describe("aggregateEventUsage — single division (null)", () => {
   // 3 teams: t1 has flutter-mane + urshifu, t2 has flutter-mane, t3 has incineroar
   const input: TeamMonInput[] = [
-    mon("t1", "flutter-mane", { heldItem: "focus-sash", teraType: "fairy", moves: ["moonblast", "shadow-ball"] }),
-    mon("t1", "urshifu-single-strike", { heldItem: "assault-vest", teraType: "dark", moves: ["wicked-blow"] }),
-    mon("t2", "flutter-mane", { heldItem: "choice-specs", teraType: "fairy", moves: ["moonblast", "dazzling-gleam"] }),
+    mon("t1", "flutter-mane", { ability: "protosynthesis", heldItem: "focus-sash", teraType: "fairy", moves: ["moonblast", "shadow-ball"] }),
+    mon("t1", "urshifu-single-strike", { ability: "unseen-fist", heldItem: "assault-vest", teraType: "dark", moves: ["wicked-blow"] }),
+    mon("t2", "flutter-mane", { ability: "protosynthesis", heldItem: "choice-specs", teraType: "fairy", moves: ["moonblast", "dazzling-gleam"] }),
     mon("t3", "incineroar", { heldItem: "safety-goggles", moves: ["fake-out", "flare-blitz"] }),
   ];
 
@@ -102,9 +103,16 @@ describe("aggregateEventUsage — single division (null)", () => {
     expect(items[1]).toEqual({ v: "focus-sash", n: 1 });
   });
 
-  it("null item/tera are omitted from histograms", () => {
+  it("ability histogram aggregates counts across teams, sorted by n desc then v asc", () => {
+    const fm = findRow(rows, null, "flutter-mane");
+    // protosynthesis appears on t1 and t2 → n=2
+    expect(fm?.details.ability).toEqual([{ v: "protosynthesis", n: 2 }]);
+  });
+
+  it("null item/tera/ability are omitted from histograms", () => {
     const incineroar = findRow(rows, null, "incineroar");
     expect(incineroar?.details.tera).toHaveLength(0);
+    expect(incineroar?.details.ability).toHaveLength(0);
   });
 });
 
@@ -246,14 +254,15 @@ describe("aggregateEventUsage — histogram sort order", () => {
 // =============================================================================
 
 describe("aggregateEventUsage — edge cases", () => {
-  it("handles all-null items and teras gracefully (empty histograms)", () => {
+  it("handles all-null items, teras, and abilities gracefully (empty histograms)", () => {
     const input: TeamMonInput[] = [
-      mon("t1", "flutter-mane", { heldItem: null, teraType: null }),
+      mon("t1", "flutter-mane", { ability: null, heldItem: null, teraType: null }),
     ];
     const rows = aggregateEventUsage(input);
     const fm = findRow(rows, null, "flutter-mane");
     expect(fm?.details.item).toEqual([]);
     expect(fm?.details.tera).toEqual([]);
+    expect(fm?.details.ability).toEqual([]);
   });
 
   it("handles empty moves array (no move histogram entries)", () => {
@@ -266,6 +275,7 @@ describe("aggregateEventUsage — edge cases", () => {
   it("handles a single team with a single mon", () => {
     const input: TeamMonInput[] = [
       mon("t1", "calyrex-ice-rider", {
+        ability: "as-one",
         heldItem: "never-melt-ice",
         teraType: "ice",
         moves: ["glacial-lance"],
@@ -282,6 +292,7 @@ describe("aggregateEventUsage — edge cases", () => {
     expect(rows[0]?.details.item).toEqual([{ v: "never-melt-ice", n: 1 }]);
     expect(rows[0]?.details.tera).toEqual([{ v: "ice", n: 1 }]);
     expect(rows[0]?.details.moves).toEqual([{ v: "glacial-lance", n: 1 }]);
+    expect(rows[0]?.details.ability).toEqual([{ v: "as-one", n: 1 }]);
   });
 
   it("correctly handles mixed null and non-null divisions in the same input", () => {
