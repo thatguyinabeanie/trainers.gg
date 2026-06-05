@@ -401,10 +401,12 @@ describe("scrapeRk9TeamsBatch", () => {
     expect(mockParseTeamListPage).not.toHaveBeenCalled();
   });
 
-  it("fires computeEventUsage on completion even when not all players published a team (allImported=false)", async () => {
+  it("returns done:true on completion even when not all players published a team (allImported=false)", async () => {
     // One standing with no team (empty parse result) → allImported will be false
     // because team_pokemon has no rows for that standing, but the import is
     // fully attempted (the standing has been processed this tick).
+    // computeEventUsage was removed from scrapeRk9TeamsBatch — usage computation
+    // is now triggered explicitly via calculateSourceUsage.
     mockParseTeamListPage.mockReturnValue([]);
     // team_pokemon returns no rows (player didn't publish) — allImported = false
     teamPokemonChain = makeChain(() => ({ data: [], error: null }));
@@ -415,13 +417,9 @@ describe("scrapeRk9TeamsBatch", () => {
 
     expect(result.success).toBe(true);
     expect(result.done).toBe(true);
-    // Even though allImported is false (0 team_pokemon rows out of 1 total),
-    // computeEventUsage must still be called because the import is fully attempted.
-    expect(mockComputeEventUsage).toHaveBeenCalledWith(
-      expect.anything(),
-      "rk9",
-      "EVT001"
-    );
+    // computeEventUsage was removed — usage computation is no longer triggered
+    // automatically inside scrapeRk9TeamsBatch.
+    expect(mockComputeEventUsage).not.toHaveBeenCalled();
   });
 
   it("does NOT re-fire computeEventUsage on a redundant re-tick when all standings were already attempted", async () => {
