@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { getValidNatures, NATURE_EFFECTS, type GameFormat } from "@trainers/pokemon";
+import { getValidNatures, NATURE_EFFECTS, type GameFormat, isChampionsFormat } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 
@@ -200,9 +200,11 @@ export function NaturePicker({
     onClose();
   }
 
+  const pickerTitle = isChampionsFormat(format) ? "Stat Alignment" : "Nature";
+
   return (
     <PickerShell
-      title="Nature"
+      title={pickerTitle}
       onClose={onClose}
       width="420px"
       search={{

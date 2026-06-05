@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { type StatKey, type GameFormat } from "@trainers/pokemon";
+import { type StatKey, type GameFormat, isChampionsFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -18,6 +18,27 @@ import { NaturePicker } from "../../pickers/nature-picker";
 import { FieldErrors } from "../../validation/field-error";
 import { FormChip } from "../../lanes/form-chip";
 import { cellClasses, type CellVariant } from "./shared";
+
+// =============================================================================
+// Label helpers — gate human-readable label on Champions format only.
+// Internal prop/variable names remain `nature` everywhere.
+// =============================================================================
+
+/**
+ * Full human-readable label for the nature field.
+ * "Stat Alignment" in Champions formats; "Nature" everywhere else.
+ */
+export function natureLabel(format: GameFormat | undefined): string {
+  return isChampionsFormat(format) ? "Stat Alignment" : "Nature";
+}
+
+/**
+ * Short / compact label for the nature field (used in row chip and grid cell).
+ * "ALIGN" in Champions formats; "NAT" everywhere else.
+ */
+export function natureLabelShort(format: GameFormat | undefined): string {
+  return isChampionsFormat(format) ? "Align" : "Nat";
+}
 
 // =============================================================================
 // NatureCell — nature form cell, row (compact) or grid (hero) variant
@@ -52,7 +73,7 @@ export function NatureCell({
     return (
       <div className="flex flex-col">
         <FormChip
-          label="Nat"
+          label={natureLabelShort(format)}
           value={pokemon.nature ?? ""}
           trailing={<NatureChevrons boost={natUp} reduce={natDown} />}
           triggerClassName={
@@ -84,6 +105,7 @@ export function NatureCell({
           render={
             <button
               type="button"
+              aria-label={natureLabel(format)}
               className={cn(
                 cellClasses.midFormCell,
                 errors.length > 0 && "ring-destructive/40 rounded ring-1"
@@ -91,7 +113,7 @@ export function NatureCell({
             />
           }
         >
-          <span className={cellClasses.midFormLbl}>NAT</span>
+          <span className={cellClasses.midFormLbl}>{natureLabelShort(format).toUpperCase()}</span>
           <span
             className={cn(
               cellClasses.midFormVal,
