@@ -130,6 +130,145 @@ export async function computeEventUsage(
 }
 
 // =============================================================================
+// computeSourceUsage — per-source batch event computation
+// =============================================================================
+
+/**
+ * Compute per-event usage facts for every NOT-YET-COMPUTED event of a source,
+ * then return the distinct formats those new events touched so the caller can
+ * scope a rollup to just those formats.
+ *
+ * "New" = an imported event (with team data) that has no event_usage rows yet.
+ * Already-computed events are skipped (efficiency — we never redo work).
+ * computeEventUsage uses replace semantics, so a one-off re-run is still safe.
+ *
+ * Best-effort per event: a single failing event is logged and skipped; the
+ * rest still compute. Only rk9 and limitless are supported (first-party stays
+ * auto-computed in its tournament flow).
+ *
+ * @param supabase Service-role Supabase client (bypasses RLS).
+ * @param source   Which third-party source to process.
+ * @returns eventsComputed — number of newly computed events;
+ *          formats        — distinct format IDs those events belong to.
+ */
+export async function computeSourceUsage(
+  supabase: TypedClient,
+  source: "rk9" | "limitless"
+): Promise<{ eventsComputed: number; formats: string[] }> {
+  // ─── Step 1: List candidate events with team data + their format ──────────
+  type Candidate = { id: string; format: string };
+
+  let candidates: Candidate[];
+
+  if (source === "rk9") {
+    const { data, error } = await supabase
+      .schema("rk9")
+      .from("events")
+      .select("event_id, format_id")
+      .gt("teams_imported_count", 0)
+      .not("format_id", "is", null);
+
+    if (error) {
+      throw new Error(
+        `computeSourceUsage[rk9]: failed to list candidate events: ${error.message}`
+      );
+    }
+
+    candidates = (data ?? []).map((row) => ({
+      id: String(row.event_id),
+      // format_id is non-null due to .not("format_id", "is", null) filter above
+      format: row.format_id as string,
+    }));
+  } else {
+    // limitless
+    const { data, error } = await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .select("tournament_id, format_id")
+      .not("data_imported_at", "is", null)
+      .not("format_id", "is", null);
+
+    if (error) {
+      throw new Error(
+        `computeSourceUsage[limitless]: failed to list candidate tournaments: ${error.message}`
+      );
+    }
+
+    candidates = (data ?? []).map((row) => ({
+      id: String(row.tournament_id),
+      // format_id is non-null due to .not("format_id", "is", null) filter above
+      format: row.format_id as string,
+    }));
+  }
+
+  if (candidates.length === 0) {
+    return { eventsComputed: 0, formats: [] };
+  }
+
+  // ─── Step 2: Find which candidates are already computed ───────────────────
+  // Paginate event_usage by source to collect all existing event_keys.
+  // This guards against the PostgREST default 1000-row cap: a single source
+  // can have far more than 1000 event_usage rows (many rows per event), so
+  // we page through in chunks of 1000 until a page returns fewer than 1000.
+  const PAGE_SIZE = 1000;
+  const existingKeys = new Set<string>();
+  let from = 0;
+
+  for (;;) {
+    const { data: page, error: pageError } = await supabase
+      .from("event_usage")
+      .select("event_key")
+      .eq("source", source)
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (pageError) {
+      throw new Error(
+        `computeSourceUsage[${source}]: failed to read existing event_usage keys (range ${from}-${from + PAGE_SIZE - 1}): ${pageError.message}`
+      );
+    }
+
+    const rows = page ?? [];
+    for (const row of rows) {
+      existingKeys.add(row.event_key);
+    }
+
+    if (rows.length < PAGE_SIZE) {
+      // Last page — no more rows to fetch
+      break;
+    }
+
+    from += PAGE_SIZE;
+  }
+
+  // ─── Step 3: Compute the new ones, accumulate touched formats ────────────
+  let eventsComputed = 0;
+  const touchedFormats = new Set<string>();
+
+  for (const candidate of candidates) {
+    const eventKey = `${source}:${candidate.id}`;
+
+    if (existingKeys.has(eventKey)) {
+      // Already computed — skip
+      continue;
+    }
+
+    try {
+      await computeEventUsage(supabase, source, candidate.id);
+      eventsComputed++;
+      touchedFormats.add(candidate.format);
+    } catch (e) {
+      console.error(
+        `computeSourceUsage[${source}]: failed to compute event ${candidate.id} — skipping:`,
+        e
+      );
+      // Best-effort: log and continue so one bad event doesn't abort the batch
+    }
+  }
+
+  return { eventsComputed, formats: Array.from(touchedFormats) };
+}
+
+// =============================================================================
 // Private helpers
 // =============================================================================
 
@@ -446,16 +585,27 @@ const PERIOD_TYPES: PeriodType[] = ["day", "week", "month"];
  * would accumulate drift; a clean replace is always accurate.
  *
  * @param supabase Service-role Supabase client (bypasses RLS).
+ * @param opts.formats Optional list of format IDs to scope the rollup to.
+ *   When provided and non-empty, only dirty rows for those formats are read
+ *   and recomputed; all other dirty formats are left untouched. Omit (or
+ *   pass an empty array) to recompute all dirty formats as usual.
  * @returns formatsProcessed — number of formats that had dirty rows;
  *          bucketsWritten  — total (format, source, period, bucket) rows written.
  */
 export async function computeUsageRollups(
-  supabase: TypedClient
+  supabase: TypedClient,
+  opts?: { formats?: string[] }
 ): Promise<{ formatsProcessed: number; bucketsWritten: number }> {
-  // ─── Step 1: Read all usage_dirty rows ────────────────────────────────────
-  const { data: dirtyRows, error: dirtyReadError } = await supabase
+  // ─── Step 1: Read usage_dirty rows (scoped to formats when provided) ──────
+  let dirtyQuery = supabase
     .from("usage_dirty")
     .select("format, source, dirty_since, updated_at");
+
+  if (opts?.formats && opts.formats.length > 0) {
+    dirtyQuery = dirtyQuery.in("format", opts.formats);
+  }
+
+  const { data: dirtyRows, error: dirtyReadError } = await dirtyQuery;
 
   if (dirtyReadError) {
     throw new Error(

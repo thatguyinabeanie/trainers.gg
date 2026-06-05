@@ -142,4 +142,9 @@ export {
 } from "./discord";
 
 // Usage stats mutations
-export { computeEventUsage, computeUsageRollups, type UsageSource } from "./usage";
+export {
+  computeEventUsage,
+  computeUsageRollups,
+  computeSourceUsage,
+  type UsageSource,
+} from "./usage";

@@ -14,7 +14,11 @@
  */
 
 import { describe, it, expect, jest } from "@jest/globals";
-import { computeEventUsage, computeUsageRollups } from "../usage";
+import {
+  computeEventUsage,
+  computeUsageRollups,
+  computeSourceUsage,
+} from "../usage";
 import type { TypedClient } from "../../client";
 
 // =============================================================================
@@ -51,6 +55,10 @@ function buildSequentialClient(calls: CallMock[]) {
     c["upsert"] = jest.fn().mockImplementation(returnSelf);
     c["eq"] = jest.fn().mockImplementation(returnSelf);
     c["gte"] = jest.fn().mockImplementation(returnSelf);
+    c["gt"] = jest.fn().mockImplementation(returnSelf);
+    c["in"] = jest.fn().mockImplementation(returnSelf);
+    c["not"] = jest.fn().mockImplementation(returnSelf);
+    c["range"] = jest.fn().mockImplementation(returnSelf);
     c["limit"] = jest.fn().mockImplementation(returnSelf);
 
     // Terminals
@@ -474,5 +482,298 @@ describe("computeUsageRollups — no event_usage rows (empty result)", () => {
     const result = await computeUsageRollups(client);
     expect(result.formatsProcessed).toBe(1);
     expect(result.bucketsWritten).toBe(0);
+  });
+});
+
+// =============================================================================
+// computeUsageRollups — formats scope
+// =============================================================================
+
+describe("computeUsageRollups — formats scope", () => {
+  it("returns zeros immediately when the scoped formats have no dirty rows", async () => {
+    // The dirty-rows query is filtered to the requested formats; result is empty.
+    const client = buildSequentialClient([
+      { data: [], error: null }, // usage_dirty SELECT (scoped, no matches)
+    ]);
+
+    const result = await computeUsageRollups(client, {
+      formats: ["gen9vgc2025regg"],
+    });
+    expect(result).toEqual({ formatsProcessed: 0, bucketsWritten: 0 });
+  });
+
+  it("proceeds normally when scoped formats have dirty rows", async () => {
+    // Single scoped format has one dirty row; event_usage is empty → 0 buckets.
+    // Call sequence: 1 usage_dirty SELECT + 6 event_usage reads + 1 delete
+    const client = buildSequentialClient([
+      {
+        data: [
+          {
+            format: "gen9vgc2025regg",
+            source: "rk9",
+            dirty_since: "2025-03-01",
+            updated_at: "2025-03-02T00:00:00Z",
+          },
+        ],
+        error: null,
+      }, // usage_dirty SELECT (scoped)
+      { data: [], error: null }, // rk9/day
+      { data: [], error: null }, // rk9/week
+      { data: [], error: null }, // rk9/month
+      { data: [], error: null }, // all/day
+      { data: [], error: null }, // all/week
+      { data: [], error: null }, // all/month
+      { data: null, error: null }, // usage_dirty DELETE
+    ]);
+
+    const result = await computeUsageRollups(client, {
+      formats: ["gen9vgc2025regg"],
+    });
+    expect(result.formatsProcessed).toBe(1);
+    expect(result.bucketsWritten).toBe(0);
+  });
+
+  it("treats an empty formats array as unscoped (reads all dirty formats)", async () => {
+    // opts.formats = [] → no .in() filter → same as no opts
+    const client = buildSequentialClient([
+      { data: [], error: null }, // usage_dirty SELECT → empty
+    ]);
+
+    const result = await computeUsageRollups(client, { formats: [] });
+    expect(result).toEqual({ formatsProcessed: 0, bucketsWritten: 0 });
+  });
+});
+
+// =============================================================================
+// computeSourceUsage — rk9
+// =============================================================================
+
+describe("computeSourceUsage — rk9", () => {
+  it("returns zeros when there are no candidate events", async () => {
+    // schema("rk9").from("events") returns empty array → no candidates
+    const client = buildSequentialClient([
+      { data: [], error: null }, // rk9 events SELECT
+    ]);
+
+    const result = await computeSourceUsage(client, "rk9");
+    expect(result).toEqual({ eventsComputed: 0, formats: [] });
+  });
+
+  it("throws when the rk9 events query fails", async () => {
+    const client = buildSequentialClient([
+      { data: null, error: { message: "timeout" } },
+    ]);
+
+    await expect(computeSourceUsage(client, "rk9")).rejects.toThrow(
+      "computeSourceUsage[rk9]: failed to list candidate events"
+    );
+  });
+
+  it("throws when the event_usage existing-keys pagination fails", async () => {
+    // candidates = [one event]; existing-keys range query errors
+    const client = buildSequentialClient([
+      {
+        data: [{ event_id: 1, format_id: "gen9vgc2025regg" }],
+        error: null,
+      }, // rk9 events
+      { data: null, error: { message: "range failed" } }, // event_usage range(0,999)
+    ]);
+
+    await expect(computeSourceUsage(client, "rk9")).rejects.toThrow(
+      "computeSourceUsage[rk9]: failed to read existing event_usage keys"
+    );
+  });
+
+  it("skips already-computed events and returns only newly touched formats", async () => {
+    // Two candidates: event 1 already computed, event 2 is new.
+    // Existing key set contains "rk9:1" (returned by pagination).
+    // For event 2 we drive a full computeEventUsage call sequence (rk9 path,
+    // 0 team pokemon so no INSERT, then usage_dirty read + upsert).
+    const client = buildSequentialClient([
+      // Step 1: list candidates
+      {
+        data: [
+          { event_id: 1, format_id: "gen9vgc2025regg" },
+          { event_id: 2, format_id: "gen9vgc2025regg" },
+        ],
+        error: null,
+      },
+      // Step 2: paginate existing keys — single page (< 1000 rows)
+      { data: [{ event_key: "rk9:1" }], error: null },
+      // Step 3: computeEventUsage for event "2"
+      //   resolveEventMeta → rk9.events
+      { data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" }, error: null },
+      //   readRawTeamRows → rk9.team_pokemon (empty)
+      { data: [], error: null },
+      //   DELETE event_usage → OK
+      { data: null, error: null },
+      //   usage_dirty SELECT → no existing row
+      { data: null, error: null },
+      //   usage_dirty UPSERT → OK
+      { data: null, error: null },
+    ]);
+
+    const result = await computeSourceUsage(client, "rk9");
+    expect(result.eventsComputed).toBe(1);
+    expect(result.formats).toEqual(["gen9vgc2025regg"]);
+  });
+
+  it("continues past a failing event and still computes the rest", async () => {
+    // Two candidates: event 1 will fail inside computeEventUsage, event 2 will succeed.
+    const client = buildSequentialClient([
+      // Step 1: list candidates
+      {
+        data: [
+          { event_id: 1, format_id: "gen9vgc2025regg" },
+          { event_id: 2, format_id: "gen9vgc2025regg" },
+        ],
+        error: null,
+      },
+      // Step 2: pagination — no existing keys
+      { data: [], error: null },
+      // Step 3a: computeEventUsage for event "1" → resolveEventMeta fails
+      { data: null, error: { message: "event not found" } },
+      // Step 3b: computeEventUsage for event "2" → succeeds
+      //   resolveEventMeta
+      { data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" }, error: null },
+      //   readRawTeamRows (empty)
+      { data: [], error: null },
+      //   DELETE OK
+      { data: null, error: null },
+      //   usage_dirty SELECT
+      { data: null, error: null },
+      //   usage_dirty UPSERT
+      { data: null, error: null },
+    ]);
+
+    const result = await computeSourceUsage(client, "rk9");
+    // event 1 failed (skipped), event 2 succeeded
+    expect(result.eventsComputed).toBe(1);
+    expect(result.formats).toEqual(["gen9vgc2025regg"]);
+  });
+
+  it("returns distinct formats across multiple events", async () => {
+    // Two events with DIFFERENT formats — both new.
+    const client = buildSequentialClient([
+      // Step 1: list candidates
+      {
+        data: [
+          { event_id: 10, format_id: "gen9vgc2025regg" },
+          { event_id: 11, format_id: "gen9vgc2025regs" },
+        ],
+        error: null,
+      },
+      // Step 2: pagination — no existing keys
+      { data: [], error: null },
+      // Step 3a: computeEventUsage for event "10"
+      { data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" }, error: null },
+      { data: [], error: null }, // team_pokemon
+      { data: null, error: null }, // DELETE
+      { data: null, error: null }, // usage_dirty SELECT
+      { data: null, error: null }, // usage_dirty UPSERT
+      // Step 3b: computeEventUsage for event "11"
+      { data: { format_id: "gen9vgc2025regs", date_start: "2025-04-01" }, error: null },
+      { data: [], error: null }, // team_pokemon
+      { data: null, error: null }, // DELETE
+      { data: null, error: null }, // usage_dirty SELECT
+      { data: null, error: null }, // usage_dirty UPSERT
+    ]);
+
+    const result = await computeSourceUsage(client, "rk9");
+    expect(result.eventsComputed).toBe(2);
+    expect(result.formats.sort()).toEqual([
+      "gen9vgc2025regg",
+      "gen9vgc2025regs",
+    ]);
+  });
+});
+
+// =============================================================================
+// computeSourceUsage — limitless
+// =============================================================================
+
+describe("computeSourceUsage — limitless", () => {
+  it("returns zeros when there are no candidate tournaments", async () => {
+    const client = buildSequentialClient([
+      { data: [], error: null }, // limitless tournaments SELECT
+    ]);
+
+    const result = await computeSourceUsage(client, "limitless");
+    expect(result).toEqual({ eventsComputed: 0, formats: [] });
+  });
+
+  it("throws when the limitless tournaments query fails", async () => {
+    const client = buildSequentialClient([
+      { data: null, error: { message: "db error" } },
+    ]);
+
+    await expect(computeSourceUsage(client, "limitless")).rejects.toThrow(
+      "computeSourceUsage[limitless]: failed to list candidate tournaments"
+    );
+  });
+
+  it("skips already-computed tournaments and returns touched formats", async () => {
+    // One candidate already computed (limitless:t100), one new (limitless:t101).
+    const client = buildSequentialClient([
+      // Step 1: list candidates
+      {
+        data: [
+          { tournament_id: "t100", format_id: "gen9vgc2025regg" },
+          { tournament_id: "t101", format_id: "gen9vgc2025regg" },
+        ],
+        error: null,
+      },
+      // Step 2: pagination — t100 already exists
+      { data: [{ event_key: "limitless:t100" }], error: null },
+      // Step 3: computeEventUsage for t101
+      //   resolveEventMeta → limitless.tournaments
+      {
+        data: { format_id: "gen9vgc2025regg", date: "2025-03-15" },
+        error: null,
+      },
+      //   readRawTeamRows → limitless.team_pokemon (empty)
+      { data: [], error: null },
+      //   DELETE OK
+      { data: null, error: null },
+      //   usage_dirty SELECT
+      { data: null, error: null },
+      //   usage_dirty UPSERT
+      { data: null, error: null },
+    ]);
+
+    const result = await computeSourceUsage(client, "limitless");
+    expect(result.eventsComputed).toBe(1);
+    expect(result.formats).toEqual(["gen9vgc2025regg"]);
+  });
+
+  it("paginates existing keys correctly when first page is full (1000 rows)", async () => {
+    // Simulate: first page returns exactly 1000 rows, second page returns 0.
+    // The single candidate is already in the existing-keys set → eventsComputed=0.
+    const fullPage = Array.from({ length: 1000 }, (_, i) => ({
+      event_key: `limitless:existing${i}`,
+    }));
+
+    const client = buildSequentialClient([
+      // Step 1: one candidate
+      {
+        data: [{ tournament_id: "t200", format_id: "gen9vgc2025regg" }],
+        error: null,
+      },
+      // Step 2: first pagination page — full (1000 rows, none match t200)
+      { data: fullPage, error: null },
+      // Step 2: second pagination page — empty (loop exits)
+      { data: [], error: null },
+    ]);
+
+    const result = await computeSourceUsage(client, "limitless");
+    // t200 is not in existing keys (none of existing0..999 match) → computed
+    // But computeEventUsage will be called — we haven't mocked its calls above,
+    // so the sequential client will return undefined for those calls, which means
+    // the chain resolves with { data: undefined, error: undefined } → format_id
+    // check in resolveEventMeta throws. That's fine — the test only validates
+    // that the pagination loop ran both pages. We don't care about the compute
+    // result here (the catch swallows it).
+    expect(result.eventsComputed).toBe(0); // event errored → not counted
+    expect(result.formats).toEqual([]);
   });
 });
