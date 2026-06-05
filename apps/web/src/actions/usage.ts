@@ -1,10 +1,11 @@
 "use server";
 
-import { unstable_cache } from "next/cache";
+import { unstable_cache, updateTag } from "next/cache";
 
 import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
 import {
+  computeSourceUsage,
   computeUsageRollups,
   getSpeciesUsage,
   getSpeciesUsageDetail,
@@ -141,6 +142,85 @@ export async function triggerUsageRollup(
     return {
       success: false,
       error: getErrorMessage(e, "Usage rollup failed"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Source-scoped usage computation
+// ---------------------------------------------------------------------------
+
+/**
+ * Computes usage facts for a specific data source's new/unprocessed events,
+ * then rolls up only the formats that were touched by those events.
+ *
+ * Admin-gated (requires site admin). Uses the service-role client to bypass
+ * RLS for writing usage facts and rollup buckets.
+ *
+ * Unlike `triggerUsageRollup` (which processes all formats unconditionally),
+ * this action scopes work to a single source and skips formats with no new
+ * events — making it efficient for incremental ingestion pipelines that
+ * process one source at a time.
+ *
+ * After a successful rollup the per-format and global usage caches are
+ * invalidated so the team builder reflects the new data immediately.
+ *
+ * @param source - The data source to process ("rk9" or "limitless").
+ */
+export async function calculateSourceUsage(
+  source: "rk9" | "limitless"
+): Promise<
+  ActionResult<{
+    eventsComputed: number;
+    formatsProcessed: number;
+    bucketsWritten: number;
+  }>
+> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const supabase = createServiceRoleClient();
+
+    // Compute facts for new events belonging to this source only.
+    const { eventsComputed, formats } = await computeSourceUsage(
+      supabase,
+      source
+    );
+
+    // Nothing new — skip rollup entirely and return early.
+    if (formats.length === 0) {
+      return {
+        success: true,
+        data: { eventsComputed, formatsProcessed: 0, bucketsWritten: 0 },
+      };
+    }
+
+    // Roll up only the formats that had new events.
+    const rollup = await computeUsageRollups(supabase, { formats });
+
+    // Bust caches for every touched format plus the global usage tag so the
+    // builder's species usage columns reflect the freshly written buckets.
+    updateTag(CacheTags.USAGE_STATS);
+    for (const format of formats) {
+      updateTag(CacheTags.usageStats(format));
+    }
+
+    return {
+      success: true,
+      data: {
+        eventsComputed,
+        formatsProcessed: rollup.formatsProcessed,
+        bucketsWritten: rollup.bucketsWritten,
+      },
+    };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Usage calculation failed"),
     };
   }
 }
