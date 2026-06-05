@@ -283,7 +283,7 @@ async function readRawTeamRows(
         .schema("rk9")
         .from("team_pokemon")
         .select(
-          "standing_id, species, ability, held_item, tera_type, moves, standings!inner(id, division, event_id)"
+          "standing_id, species, ability, held_item, tera_type, moves, stat_alignment, standings!inner(id, division, event_id)"
         )
         .eq("standings.event_id", eventId);
 
@@ -303,7 +303,8 @@ async function readRawTeamRows(
           species: row.species,
           ability: row.ability,
           heldItem: row.held_item,
-          nature: null, // rk9.team_pokemon has no nature column
+          // stat_alignment is RK9's nature field (Champions M-A only; null for older events)
+          nature: row.stat_alignment ?? null,
           teraType: row.tera_type,
           moves: row.moves ?? [],
         };

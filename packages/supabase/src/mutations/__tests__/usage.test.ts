@@ -308,6 +308,68 @@ describe("computeEventUsage — rowCount", () => {
 });
 
 // =============================================================================
+// RK9 — stat_alignment → nature mapping
+// =============================================================================
+
+describe("computeEventUsage — rk9 stat_alignment nature mapping", () => {
+  it("maps stat_alignment to nature when present (Champions M-A events)", async () => {
+    // rk9.team_pokemon rows with stat_alignment populated (Champions M-A)
+    const teamPokemon = [
+      {
+        standing_id: 10,
+        species: "flutter-mane",
+        ability: "protosynthesis",
+        held_item: "focus-sash",
+        tera_type: "fairy",
+        moves: ["moonblast"],
+        stat_alignment: "timid",
+        standings: { id: 10, division: "masters", event_id: "CHAMP001" },
+      },
+    ];
+
+    const client = buildSequentialClient([
+      { data: { format_id: "gen9champions", date_start: "2025-11-01" } }, // resolveEventMeta
+      { data: teamPokemon }, // readRawTeamRows
+      { data: null, error: null }, // DELETE OK
+      { data: null, error: null }, // INSERT OK
+      { data: null, error: null }, // usage_dirty SELECT
+      { data: null, error: null }, // usage_dirty UPSERT
+    ]);
+
+    const result = await computeEventUsage(client, "rk9", "CHAMP001");
+    expect(result.rowCount).toBe(1);
+  });
+
+  it("falls back to null nature when stat_alignment is null (older events)", async () => {
+    // rk9.team_pokemon rows with stat_alignment = null (older VGC events)
+    const teamPokemon = [
+      {
+        standing_id: 20,
+        species: "incineroar",
+        ability: "intimidate",
+        held_item: "safety-goggles",
+        tera_type: "fire",
+        moves: ["fake-out"],
+        stat_alignment: null,
+        standings: { id: 20, division: "masters", event_id: "OLD001" },
+      },
+    ];
+
+    const client = buildSequentialClient([
+      { data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" } }, // resolveEventMeta
+      { data: teamPokemon }, // readRawTeamRows
+      { data: null, error: null }, // DELETE OK
+      { data: null, error: null }, // INSERT OK
+      { data: null, error: null }, // usage_dirty SELECT
+      { data: null, error: null }, // usage_dirty UPSERT
+    ]);
+
+    const result = await computeEventUsage(client, "rk9", "OLD001");
+    expect(result.rowCount).toBe(1);
+  });
+});
+
+// =============================================================================
 // computeUsageRollups tests
 //
 // The pure math (bucketStart, rollupBucket, etc.) is exhaustively tested in
