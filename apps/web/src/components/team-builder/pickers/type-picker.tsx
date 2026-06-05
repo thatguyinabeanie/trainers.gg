@@ -14,9 +14,9 @@ import { TYPE_BG_COLORS } from "../type-colors";
 interface TypePickerProps {
   value: string | null | undefined;
   /** Species currently in this slot — used to fetch per-Pokemon tera usage. */
-  species: string | undefined;
+  species?: string | undefined;
   /** Active format — used alongside species to scope the usage query. */
-  format: GameFormat | undefined;
+  format?: GameFormat | undefined;
   onPick: (type: string) => void;
   onClose: () => void;
   /** Optional whitelist — only these types are enabled. Defaults to all 18. */

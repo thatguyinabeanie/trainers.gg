@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
+import { type GameFormat } from "@trainers/pokemon";
+
 // =============================================================================
 // Use the real @trainers/pokemon for nature data (getValidNatures, NATURE_EFFECTS)
 // =============================================================================
@@ -204,7 +206,7 @@ describe("NaturePicker", () => {
       id: "gen9vgc2024reg",
       label: "VGC 2024 Reg G",
       generation: 9,
-    } as any;
+    } as unknown as GameFormat;
 
     /** Build a minimal SpeciesUsagePeriod-shaped object for testing. */
     function makeUsagePeriod(
@@ -330,7 +332,7 @@ describe("NaturePicker", () => {
       id: "gen9vgc2024reg",
       label: "VGC 2024 Reg G",
       generation: 9,
-    } as any;
+    } as unknown as GameFormat;
 
     function makeUsagePeriod(
       natures: Array<{ value: string; pct: number }>

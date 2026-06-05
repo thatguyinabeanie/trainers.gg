@@ -25,7 +25,7 @@ import { PickerShell } from "./picker-shell";
 interface ItemPickerProps {
   value: string | null | undefined;
   /** Species currently in this slot — used to fetch per-Pokemon item usage. */
-  species: string | undefined;
+  species?: string | undefined;
   format: GameFormat | undefined;
   /** Items held by other team members — used for duplicate warning. */
   teamItems: string[];
