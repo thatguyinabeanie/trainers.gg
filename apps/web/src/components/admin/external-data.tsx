@@ -56,7 +56,7 @@ import {
   triggerLimitlessSync,
   triggerImportQueue,
 } from "@/actions/limitless";
-import { triggerUsageRollup } from "@/actions/usage";
+import { triggerUsageRollup, calculateSourceUsage } from "@/actions/usage";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
 import { formatTimeAgo } from "@trainers/utils";
 import { normalizeLimitlessStatus } from "./limitless-status";
@@ -315,6 +315,12 @@ export function ExternalData() {
   // Usage rollup state
   const [recomputingUsage, setRecomputingUsage] = useState(false);
   const [usageMessage, setUsageMessage] = useState<string | null>(null);
+
+  // Per-source usage calculation state
+  const [calculatingRk9, setCalculatingRk9] = useState(false);
+  const [calculateRk9Message, setCalculateRk9Message] = useState<string | null>(null);
+  const [calculatingLimitless, setCalculatingLimitless] = useState(false);
+  const [calculateLimitlessMessage, setCalculateLimitlessMessage] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Load auto-import settings from DB (per-source)
@@ -939,6 +945,32 @@ export function ExternalData() {
     }
   }
 
+  async function handleCalculateUsage(source: "rk9" | "limitless") {
+    const setCalculating =
+      source === "rk9" ? setCalculatingRk9 : setCalculatingLimitless;
+    const setMessage =
+      source === "rk9" ? setCalculateRk9Message : setCalculateLimitlessMessage;
+    setCalculating(true);
+    setMessage(null);
+    try {
+      const result = await calculateSourceUsage(source);
+      if (!result.success) throw new Error(result.error);
+      const { eventsComputed, formatsProcessed, bucketsWritten } = result.data;
+      setMessage(
+        eventsComputed === 0
+          ? "No new events"
+          : `Computed ${eventsComputed} event(s), ${formatsProcessed} format(s), ${bucketsWritten} bucket(s)`
+      );
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setMessage(
+        `Error: ${err instanceof Error ? err.message : "Calculation failed"}`
+      );
+    } finally {
+      setCalculating(false);
+    }
+  }
+
   async function handleQueueOne(tournamentId: string) {
     setQueuingIds((prev) => new Set(prev).add(tournamentId));
     try {
@@ -1357,6 +1389,31 @@ export function ExternalData() {
                 )}
                 Discover
               </Button>
+              {calculateRk9Message && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    calculateRk9Message.startsWith("Error")
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {calculateRk9Message}
+                </p>
+              )}
+              <Button
+                onClick={() => handleCalculateUsage("rk9")}
+                disabled={calculatingRk9}
+                size="sm"
+                variant="outline"
+              >
+                {calculatingRk9 ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <BarChart2 className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                Calculate Usage
+              </Button>
             </div>
           </div>
 
@@ -1757,6 +1814,31 @@ export function ExternalData() {
                   <BarChart2 className="mr-1.5 h-3.5 w-3.5" />
                 )}
                 Recompute Usage
+              </Button>
+              {calculateLimitlessMessage && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    calculateLimitlessMessage.startsWith("Error")
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {calculateLimitlessMessage}
+                </p>
+              )}
+              <Button
+                onClick={() => handleCalculateUsage("limitless")}
+                disabled={calculatingLimitless}
+                size="sm"
+                variant="outline"
+              >
+                {calculatingLimitless ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <BarChart2 className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                Calculate Usage
               </Button>
             </div>
           </div>
