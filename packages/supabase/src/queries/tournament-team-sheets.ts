@@ -3,7 +3,8 @@ import type { Tables } from "../types";
 
 /**
  * OTS (Open Team Sheet) data for a single Pokemon.
- * Contains only VGC OTS-visible fields — no EVs, IVs, nature.
+ * Contains OTS-visible fields. Nature is included for Champions formats only
+ * (null for all other formats — kept private per VGC OTS rules).
  */
 export interface TeamSheetPokemon {
   position: number;
@@ -15,6 +16,8 @@ export interface TeamSheetPokemon {
   move2: string | null;
   move3: string | null;
   move4: string | null;
+  /** Nature (stat alignment). Populated only for Champions formats; null otherwise. */
+  nature: string | null;
 }
 
 /** A player's full OTS for a tournament (up to 6 Pokemon) */
@@ -40,6 +43,8 @@ function rowToPokemon(row: TeamSheetRow): TeamSheetPokemon {
     move2: row.move2,
     move3: row.move3,
     move4: row.move4,
+    // nature is null for non-Champions formats (privacy); present for Champions
+    nature: row.nature ?? null,
   };
 }
 

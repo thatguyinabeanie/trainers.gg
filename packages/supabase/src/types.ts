@@ -3206,6 +3206,7 @@ export type Database = {
           move2: string | null
           move3: string | null
           move4: string | null
+          nature: string | null
           position: number
           registration_id: number
           species: string
@@ -3224,6 +3225,7 @@ export type Database = {
           move2?: string | null
           move3?: string | null
           move4?: string | null
+          nature?: string | null
           position: number
           registration_id: number
           species: string
@@ -3242,6 +3244,7 @@ export type Database = {
           move2?: string | null
           move3?: string | null
           move4?: string | null
+          nature?: string | null
           position?: number
           registration_id?: number
           species?: string

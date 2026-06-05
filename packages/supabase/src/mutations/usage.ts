@@ -339,12 +339,13 @@ async function readRawTeamRows(
     }
 
     case "first_party": {
-      // tournament_team_sheets — one row per Pokemon slot per registration
-      // move1..move4 columns instead of a moves[] array
+      // tournament_team_sheets — one row per Pokemon slot per registration.
+      // move1..move4 columns instead of a moves[] array.
+      // nature is populated only for Champions formats (null for standard VGC — privacy).
       const { data, error } = await supabase
         .from("tournament_team_sheets")
         .select(
-          "registration_id, species, ability, held_item, tera_type, move1, move2, move3, move4"
+          "registration_id, species, ability, held_item, tera_type, move1, move2, move3, move4, nature"
         )
         .eq("tournament_id", Number(eventId));
 
@@ -360,8 +361,8 @@ async function readRawTeamRows(
         species: row.species,
         ability: row.ability,
         heldItem: row.held_item,
-        // TODO: read tournament_team_sheets.nature once that column is added (stat alignment on OTS)
-        nature: null,
+        // nature is non-null only for Champions formats; null for standard VGC (kept private)
+        nature: row.nature ?? null,
         teraType: row.tera_type,
         moves: [row.move1, row.move2, row.move3, row.move4].filter(
           (m): m is string => m != null && m !== ""

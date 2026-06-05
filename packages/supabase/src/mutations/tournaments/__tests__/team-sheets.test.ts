@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+
 import { createTournamentTeamSheets } from "../team-sheets";
 import type { TypedClient } from "../../../client";
 
@@ -53,6 +54,7 @@ function makeRegistration(overrides?: {
                 move2: "Volt Switch",
                 move3: "Protect",
                 move4: null,
+                nature: "Timid",
               },
             },
           ],
@@ -108,6 +110,7 @@ describe("createTournamentTeamSheets", () => {
                 move2: "Volt Switch",
                 move3: "Protect",
                 move4: null,
+                nature: "Timid",
               },
             },
             {
@@ -121,6 +124,7 @@ describe("createTournamentTeamSheets", () => {
                 move2: "Dragon Claw",
                 move3: "Swords Dance",
                 move4: "Protect",
+                nature: "Jolly",
               },
             },
           ],
@@ -144,6 +148,7 @@ describe("createTournamentTeamSheets", () => {
                 move2: "Fake Out",
                 move3: "Parting Shot",
                 move4: "Darkest Lariat",
+                nature: "Brave",
               },
             },
           ],
@@ -184,6 +189,7 @@ describe("createTournamentTeamSheets", () => {
         move2: string | null;
         move3: string | null;
         move4: string | null;
+        nature: string | null;
       }>;
 
       // 3 total Pokemon across both registrations
@@ -208,12 +214,12 @@ describe("createTournamentTeamSheets", () => {
         move4: null,
       });
 
-      // Verify EVs/IVs/nature are NOT present in any row
+      // gen9vgc2026regi is NOT a Champions format — nature must be null (privacy)
       for (const row of rows) {
         expect(row).not.toHaveProperty("evs");
         expect(row).not.toHaveProperty("ivs");
-        expect(row).not.toHaveProperty("nature");
         expect(row).not.toHaveProperty("level");
+        expect(row.nature).toBeNull();
       }
 
       // Verify second player's Pokemon
@@ -293,6 +299,109 @@ describe("createTournamentTeamSheets", () => {
         format: string;
       }>;
       expect(rows[0]?.format).toBe("unknown");
+    });
+  });
+
+  describe("nature gating — Champions vs non-Champions", () => {
+    // The active Champions format id (contains "champions" in the id string).
+    const CHAMPIONS_FORMAT = "gen9championsvgc2026regma";
+    const STANDARD_FORMAT = "gen9vgc2026regi";
+
+    function makeRegWithNature(nature: string) {
+      return makeRegistration({
+        id: 1,
+        alt_id: 10,
+        team_id: 100,
+        team: {
+          id: 100,
+          team_pokemon: [
+            {
+              team_position: 1,
+              pokemon: {
+                species: "Pikachu",
+                ability: "Static",
+                held_item: "Light Ball",
+                tera_type: "Electric",
+                move1: "Thunderbolt",
+                move2: "Volt Switch",
+                move3: "Protect",
+                move4: null,
+                nature,
+              },
+            },
+          ],
+        },
+      });
+    }
+
+    it("snapshots nature for a Champions format", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      const upsertMock = jest.fn().mockResolvedValue({ error: null });
+
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { game_format: CHAMPIONS_FORMAT },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        not: jest.fn().mockResolvedValue({
+          data: [makeRegWithNature("Timid")],
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      fromSpy.mockReturnValueOnce({
+        upsert: upsertMock,
+      } as unknown as MockQueryBuilder);
+
+      await createTournamentTeamSheets(mockClient, 1);
+
+      const rows = (upsertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
+        nature: string | null;
+      }>;
+      // Champions format — nature should be the real value, not null
+      expect(rows[0]?.nature).toBe("Timid");
+    });
+
+    it("stores null nature for a non-Champions format (privacy)", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      const upsertMock = jest.fn().mockResolvedValue({ error: null });
+
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { game_format: STANDARD_FORMAT },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        not: jest.fn().mockResolvedValue({
+          data: [makeRegWithNature("Jolly")],
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      fromSpy.mockReturnValueOnce({
+        upsert: upsertMock,
+      } as unknown as MockQueryBuilder);
+
+      await createTournamentTeamSheets(mockClient, 1);
+
+      const rows = (upsertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
+        nature: string | null;
+      }>;
+      // Standard VGC — nature must be null to preserve player privacy
+      expect(rows[0]?.nature).toBeNull();
     });
   });
 
