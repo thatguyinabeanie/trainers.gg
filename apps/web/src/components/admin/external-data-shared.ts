@@ -54,3 +54,45 @@ export interface UnifiedRow {
   limitless?: LimitlessTournamentRow;
 }
 
+// ---------------------------------------------------------------------------
+// Bulk-action selectors — operate on a row list (already filtered by the
+// caller) and return the native source ids eligible for each bulk action.
+// Keeping these pure makes the filter-aware bulk logic unit-testable.
+// ---------------------------------------------------------------------------
+
+/** Limitless tournament_ids eligible to queue: never-queued (null) or failed. */
+export function queueableIds(rows: UnifiedRow[]): string[] {
+  return rows
+    .filter(
+      (r) =>
+        r.source === "limitless" &&
+        r.limitless != null &&
+        (!r.limitless.import_status || r.limitless.import_status === "failed")
+    )
+    .map((r) => r.limitless!.tournament_id);
+}
+
+/** RK9 event_ids eligible for a roster scrape: pending or failed. */
+export function rosterEligibleIds(rows: UnifiedRow[]): string[] {
+  return rows
+    .filter(
+      (r) =>
+        r.source === "rk9" &&
+        r.rk9 != null &&
+        (r.rk9.import_status === "pending" || r.rk9.import_status === "failed")
+    )
+    .map((r) => r.rk9!.event_id);
+}
+
+/** RK9 event_ids eligible for a teams scrape: roster, teams, or complete. */
+export function teamsEligibleIds(rows: UnifiedRow[]): string[] {
+  return rows
+    .filter(
+      (r) =>
+        r.source === "rk9" &&
+        r.rk9 != null &&
+        ["roster", "teams", "complete"].includes(r.rk9.import_status)
+    )
+    .map((r) => r.rk9!.event_id);
+}
+
