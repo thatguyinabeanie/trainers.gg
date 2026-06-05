@@ -47,6 +47,22 @@ export const MOVE_LIST_GRID =
   "grid-cols-[56px_56px_minmax(100px,1fr)_40px_48px_56px_minmax(0,2fr)_minmax(140px,1fr)]";
 
 // =============================================================================
+// Normalize move key
+// =============================================================================
+
+/**
+ * Normalize a move name/id to a comparison key for slug matching.
+ *
+ * The DB stores move values that may use different casing or separators than
+ * the builder's internal move id (e.g. "Fake Out" vs "fake-out" vs "fakeout").
+ * Lowercasing and stripping spaces, hyphens, and apostrophes produces a single
+ * canonical key for both sides of the lookup.
+ */
+export function normalizeMoveKey(name: string): string {
+  return name.toLowerCase().replace(/[\s\-']/g, "");
+}
+
+// =============================================================================
 // Sort logic
 // =============================================================================
 

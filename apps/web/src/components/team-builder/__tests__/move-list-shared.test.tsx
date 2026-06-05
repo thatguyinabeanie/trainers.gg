@@ -51,6 +51,7 @@ jest.mock("../move-category-ui", () => ({
 
 // Import after mocks
 import {
+  normalizeMoveKey,
   sortMoveData,
   MoveListHeader,
   MoveListRow,
@@ -68,6 +69,41 @@ const moves: MoveData[] = [
   { name: "Protect", type: "Normal", category: "Status", basePower: 0, accuracy: true, shortDesc: "Blocks" },
   { name: "Air Slash", type: "Flying", category: "Special", basePower: 75, accuracy: 95, shortDesc: "Flinch" },
 ];
+
+// =============================================================================
+// normalizeMoveKey tests
+// =============================================================================
+
+describe("normalizeMoveKey", () => {
+  it("lowercases the name", () => {
+    expect(normalizeMoveKey("Dragon Claw")).toBe("dragonclaw");
+  });
+
+  it("strips spaces", () => {
+    expect(normalizeMoveKey("Fake Out")).toBe("fakeout");
+  });
+
+  it("strips hyphens", () => {
+    expect(normalizeMoveKey("U-turn")).toBe("uturn");
+  });
+
+  it("strips apostrophes", () => {
+    expect(normalizeMoveKey("Nature's Madness")).toBe("naturesmadness");
+  });
+
+  it("strips all three separators in one pass", () => {
+    expect(normalizeMoveKey("Trick-or-Treat")).toBe("trickortrait".replace("trait", "treat"));
+  });
+
+  it("returns the same key for both display name and normalized DB slug", () => {
+    // "fakeout" stored in DB should match "Fake Out" from the builder
+    expect(normalizeMoveKey("Fake Out")).toBe(normalizeMoveKey("fakeout"));
+  });
+
+  it("handles a single-word move name", () => {
+    expect(normalizeMoveKey("Earthquake")).toBe("earthquake");
+  });
+});
 
 // =============================================================================
 // sortMoveData tests

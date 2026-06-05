@@ -9,6 +9,7 @@ import { type Tables, type TablesUpdate } from "@trainers/supabase";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent } from "@/components/ui/popover";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Table,
   TableBody,
@@ -27,6 +28,7 @@ import { type ValidationError } from "../validation-hooks";
 import { CATEGORY_ICON_URLS_MONO } from "../move-category-ui";
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { MovePicker } from "../pickers/move-picker";
+import { MovePickerMobile } from "../pickers/move-picker-mobile";
 import {
   useCalcStateContext,
   useCalcEnabled,
@@ -296,6 +298,7 @@ function MoveTile({
 
   const detailOpen = panel === "detail";
   const pickerOpen = panel === "picker";
+  const isMobile = useIsMobile();
 
   return (
     <>
@@ -462,30 +465,46 @@ function MoveTile({
         </PopoverContent>
       </Popover>
 
-      {/* Move picker — centered Dialog modal */}
-      <Dialog
-        open={pickerOpen}
-        onOpenChange={(open) => {
-          if (!open && panel === "picker") setPanel(null);
-        }}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="ring-primary/50 flex h-[calc(100vh-2rem)] max-h-[1080px] w-[calc(100vw-2rem)] max-w-[1600px] flex-col gap-0 overflow-hidden rounded-xl p-0 ring-2 sm:max-w-[1600px]"
+      {/* Move picker — mobile bottom drawer or desktop centered Dialog */}
+      {isMobile ? (
+        <MovePickerMobile
+          open={pickerOpen}
+          onOpenChange={(open) => {
+            if (!open && panel === "picker") setPanel(null);
+          }}
+          value={moveName}
+          species={species}
+          format={format}
+          onPick={(name) => {
+            onPick(slotKey, name);
+            setPanel(null);
+          }}
+        />
+      ) : (
+        <Dialog
+          open={pickerOpen}
+          onOpenChange={(open) => {
+            if (!open && panel === "picker") setPanel(null);
+          }}
         >
-          <DialogTitle className="sr-only">Choose move</DialogTitle>
-          <MovePicker
-            value={moveName}
-            species={species}
-            format={format}
-            onPick={(name) => {
-              onPick(slotKey, name);
-              setPanel(null);
-            }}
-            onClose={() => setPanel(null)}
-          />
-        </DialogContent>
-      </Dialog>
+          <DialogContent
+            showCloseButton={false}
+            className="ring-primary/50 flex h-[calc(100vh-2rem)] max-h-[1080px] w-[calc(100vw-2rem)] max-w-[1600px] flex-col gap-0 overflow-hidden rounded-xl p-0 ring-2 sm:max-w-[1600px]"
+          >
+            <DialogTitle className="sr-only">Choose move</DialogTitle>
+            <MovePicker
+              value={moveName}
+              species={species}
+              format={format}
+              onPick={(name) => {
+                onPick(slotKey, name);
+                setPanel(null);
+              }}
+              onClose={() => setPanel(null)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Inline error chips — rendered as a full-colspan row */}
       {slotErrors.length > 0 && (

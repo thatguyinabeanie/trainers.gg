@@ -34,6 +34,7 @@ import {
 import {
   MoveListHeader,
   MoveListRow,
+  normalizeMoveKey,
   type MoveListSortCol,
   type MoveListSortState,
 } from "./move-list-shared";
@@ -66,18 +67,6 @@ type MoveUsageEntry = {
 // =============================================================================
 // Helpers
 // =============================================================================
-
-/**
- * Normalize a move name/id to a comparison key for slug matching.
- *
- * The DB stores move values that may use different casing or separators than
- * the builder's internal move id (e.g. "Fake Out" vs "fake-out" vs "fakeout").
- * Lowercasing and stripping spaces, hyphens, and apostrophes produces a single
- * canonical key for both sides of the lookup.
- */
-function normalizeMoveKey(name: string): string {
-  return name.toLowerCase().replace(/[\s\-']/g, "");
-}
 
 function sortMoves(
   rows: MoveRow[],
