@@ -52,6 +52,7 @@ const makeMetaRow = (overrides?: Record<string, unknown>) => ({
       tera_types: [{ value: "Fire", count: 600, pct: 60 }],
       items: [{ value: "Clear Amulet", count: 500, pct: 50 }],
       abilities: [{ value: "Orichalcum Pulse", count: 900, pct: 90 }],
+      natures: [{ value: "Adamant", count: 700, pct: 70 }],
     },
   ],
   ...overrides,
@@ -134,6 +135,20 @@ describe("getSpeciesUsageDetail", () => {
     ]);
   });
 
+  it("maps natures correctly from the natures column", async () => {
+    const row = makeMetaRow();
+    builder.limit.mockResolvedValue({ data: [row], error: null });
+
+    const [period] = await getSpeciesUsageDetail(supabase, {
+      format: "gen9vgc2025regg",
+      species: "Koraidon",
+    });
+
+    expect(period?.natures).toEqual([
+      { value: "Adamant", count: 700, pct: 70 },
+    ]);
+  });
+
   it("maps usage stats fields correctly", async () => {
     const row = makeMetaRow();
     builder.limit.mockResolvedValue({ data: [row], error: null });
@@ -185,6 +200,7 @@ describe("getSpeciesUsageDetail", () => {
     expect(period?.tera).toEqual([]);
     expect(period?.items).toEqual([]);
     expect(period?.abilities).toEqual([]);
+    expect(period?.natures).toEqual([]);
   });
 
   it("defaults empty arrays when detail row is null", async () => {
@@ -200,6 +216,7 @@ describe("getSpeciesUsageDetail", () => {
     expect(period?.tera).toEqual([]);
     expect(period?.items).toEqual([]);
     expect(period?.abilities).toEqual([]);
+    expect(period?.natures).toEqual([]);
   });
 
   it("throws a descriptive error when Supabase returns an error", async () => {
@@ -278,7 +295,7 @@ describe("getSpeciesUsageDetail", () => {
     });
   });
 
-  it("uses !inner join in the select shape and includes abilities", async () => {
+  it("uses !inner join in the select shape and includes abilities and natures", async () => {
     builder.limit.mockResolvedValue({ data: [], error: null });
 
     await getSpeciesUsageDetail(supabase, {
@@ -290,6 +307,7 @@ describe("getSpeciesUsageDetail", () => {
     expect(selectArg).toContain("pokemon_usage_stats!inner");
     expect(selectArg).toContain("pokemon_detail_stats");
     expect(selectArg).toContain("abilities");
+    expect(selectArg).toContain("natures");
   });
 });
 

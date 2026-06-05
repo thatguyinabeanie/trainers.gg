@@ -21,6 +21,7 @@ function mon(
     species,
     ability: null,
     heldItem: null,
+    nature: null,
     teraType: null,
     moves: [],
     ...overrides,
@@ -109,10 +110,67 @@ describe("aggregateEventUsage — single division (null)", () => {
     expect(fm?.details.ability).toEqual([{ v: "protosynthesis", n: 2 }]);
   });
 
-  it("null item/tera/ability are omitted from histograms", () => {
+  it("null item/tera/ability/nature are omitted from histograms", () => {
     const incineroar = findRow(rows, null, "incineroar");
     expect(incineroar?.details.tera).toHaveLength(0);
     expect(incineroar?.details.ability).toHaveLength(0);
+    expect(incineroar?.details.nature).toHaveLength(0);
+  });
+});
+
+// =============================================================================
+// Nature histogram
+// =============================================================================
+
+describe("aggregateEventUsage — nature histogram", () => {
+  it("aggregates natures across teams, sorted by n desc then v asc", () => {
+    const input: TeamMonInput[] = [
+      mon("t1", "flutter-mane", { nature: "timid" }),
+      mon("t2", "flutter-mane", { nature: "timid" }),
+      mon("t3", "flutter-mane", { nature: "modest" }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const fm = findRow(rows, null, "flutter-mane");
+    expect(fm?.details.nature).toEqual([
+      { v: "timid", n: 2 },
+      { v: "modest", n: 1 },
+    ]);
+  });
+
+  it("omits null natures from the histogram", () => {
+    const input: TeamMonInput[] = [
+      mon("t1", "incineroar", { nature: null }),
+      mon("t2", "incineroar", { nature: null }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const inc = findRow(rows, null, "incineroar");
+    expect(inc?.details.nature).toEqual([]);
+  });
+
+  it("tie-breaks nature alphabetically when counts are equal", () => {
+    const input: TeamMonInput[] = [
+      mon("t1", "flutter-mane", { nature: "modest" }),
+      mon("t2", "flutter-mane", { nature: "adamant" }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const fm = findRow(rows, null, "flutter-mane");
+    // both n=1 → alphabetical: adamant < modest
+    expect(fm?.details.nature).toEqual([
+      { v: "adamant", n: 1 },
+      { v: "modest", n: 1 },
+    ]);
+  });
+
+  it("nature histogram does not mix divisions", () => {
+    const input: TeamMonInput[] = [
+      mon("m1", "koraidon", { division: "masters", nature: "adamant" }),
+      mon("s1", "koraidon", { division: "senior", nature: "jolly" }),
+    ];
+    const rows = aggregateEventUsage(input);
+    const masters = findRow(rows, "masters", "koraidon");
+    const senior = findRow(rows, "senior", "koraidon");
+    expect(masters?.details.nature).toEqual([{ v: "adamant", n: 1 }]);
+    expect(senior?.details.nature).toEqual([{ v: "jolly", n: 1 }]);
   });
 });
 
@@ -277,6 +335,7 @@ describe("aggregateEventUsage — edge cases", () => {
       mon("t1", "calyrex-ice-rider", {
         ability: "as-one",
         heldItem: "never-melt-ice",
+        nature: "adamant",
         teraType: "ice",
         moves: ["glacial-lance"],
       }),
@@ -293,6 +352,7 @@ describe("aggregateEventUsage — edge cases", () => {
     expect(rows[0]?.details.tera).toEqual([{ v: "ice", n: 1 }]);
     expect(rows[0]?.details.moves).toEqual([{ v: "glacial-lance", n: 1 }]);
     expect(rows[0]?.details.ability).toEqual([{ v: "as-one", n: 1 }]);
+    expect(rows[0]?.details.nature).toEqual([{ v: "adamant", n: 1 }]);
   });
 
   it("correctly handles mixed null and non-null divisions in the same input", () => {

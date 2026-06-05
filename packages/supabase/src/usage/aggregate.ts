@@ -25,6 +25,8 @@ export interface TeamMonInput {
   ability: string | null;
   /** Held item slug; null if unknown or absent. */
   heldItem: string | null;
+  /** Nature (stat alignment); null if unknown, absent, or not captured by source. */
+  nature: string | null;
   /** Tera type; null if not applicable (e.g. pre-Scarlet/Violet formats). */
   teraType: string | null;
   /** 0–4 move slugs, already filtered of null/empty values. */
@@ -52,6 +54,7 @@ export interface UsageDetails {
   tera: UsageHistogram;
   item: UsageHistogram;
   ability: UsageHistogram;
+  nature: UsageHistogram;
 }
 
 /** One row to be written to the event_usage table. */
@@ -165,6 +168,7 @@ export function aggregateEventUsage(mons: TeamMonInput[]): EventUsageRow[] {
       const allTera = instances.map((m) => m.teraType);
       const allItems = instances.map((m) => m.heldItem);
       const allAbilities = instances.map((m) => m.ability);
+      const allNatures = instances.map((m) => m.nature);
 
       rows.push({
         division,
@@ -176,6 +180,7 @@ export function aggregateEventUsage(mons: TeamMonInput[]): EventUsageRow[] {
           tera: buildHistogram(allTera),
           item: buildHistogram(allItems),
           ability: buildHistogram(allAbilities),
+          nature: buildHistogram(allNatures),
         },
       });
     }

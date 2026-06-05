@@ -30,7 +30,7 @@ function fact(
     division: null,
     teamCount: 1,
     sampleSize: 10,
-    details: { moves: [], tera: [], item: [], ability: [] },
+    details: { moves: [], tera: [], item: [], ability: [], nature: [] },
     ...overrides,
   };
 }
@@ -490,6 +490,7 @@ describe("rollupBucket — detail histograms", () => {
           tera: [],
           item: [],
           ability: [],
+          nature: [],
         },
       }),
       fact({
@@ -505,6 +506,7 @@ describe("rollupBucket — detail histograms", () => {
           tera: [],
           item: [],
           ability: [],
+          nature: [],
         },
       }),
     ];
@@ -533,6 +535,7 @@ describe("rollupBucket — detail histograms", () => {
           tera: [],
           item: [],
           ability: [],
+          nature: [],
         },
       }),
     ];
@@ -556,6 +559,7 @@ describe("rollupBucket — detail histograms", () => {
           ],
           item: [],
           ability: [],
+          nature: [],
         },
       }),
     ];
@@ -578,6 +582,7 @@ describe("rollupBucket — detail histograms", () => {
           tera: [],
           item: [],
           ability: [{ v: "protosynthesis", n: 2 }],
+          nature: [],
         },
       }),
       fact({
@@ -590,6 +595,7 @@ describe("rollupBucket — detail histograms", () => {
           tera: [],
           item: [],
           ability: [{ v: "protosynthesis", n: 1 }],
+          nature: [],
         },
       }),
     ];
@@ -605,7 +611,7 @@ describe("rollupBucket — detail histograms", () => {
         species: "incineroar",
         teamCount: 1,
         sampleSize: 1,
-        details: { moves: [], tera: [], item: [], ability: [] },
+        details: { moves: [], tera: [], item: [], ability: [], nature: [] },
       }),
     ];
     const result = rollupBucket(facts);
@@ -619,7 +625,7 @@ describe("rollupBucket — detail histograms", () => {
         species: "incineroar",
         teamCount: 1,
         sampleSize: 1,
-        details: { moves: [], tera: [], item: [], ability: [] },
+        details: { moves: [], tera: [], item: [], ability: [], nature: [] },
       }),
     ];
     const result = rollupBucket(facts);
@@ -628,6 +634,81 @@ describe("rollupBucket — detail histograms", () => {
     expect(inc.tera).toEqual([]);
     expect(inc.item).toEqual([]);
     expect(inc.ability).toEqual([]);
+    expect(inc.nature).toEqual([]);
+  });
+
+  it("merges nature histograms from all facts for the same species and computes pct", () => {
+    const facts: FactRow[] = [
+      fact({
+        species: "koraidon",
+        teamCount: 2,
+        sampleSize: 4,
+        details: {
+          moves: [],
+          tera: [],
+          item: [],
+          ability: [],
+          nature: [{ v: "adamant", n: 2 }],
+        },
+      }),
+      fact({
+        eventKey: "rk9:EVT002",
+        species: "koraidon",
+        teamCount: 1,
+        sampleSize: 6,
+        details: {
+          moves: [],
+          tera: [],
+          item: [],
+          ability: [],
+          nature: [{ v: "adamant", n: 1 }],
+        },
+      }),
+    ];
+    const result = rollupBucket(facts);
+    const kor = result.species.find((s) => s.species === "koraidon")!;
+    // Merged: adamant=3; teamCount=3 → pct = round(100*3/3,2) = 100
+    expect(kor.nature[0]).toMatchObject({ value: "adamant", count: 3, pct: 100 });
+  });
+
+  it("returns empty nature array when there are no nature histogram entries", () => {
+    const facts: FactRow[] = [
+      fact({
+        species: "incineroar",
+        teamCount: 1,
+        sampleSize: 1,
+        details: { moves: [], tera: [], item: [], ability: [], nature: [] },
+      }),
+    ];
+    const result = rollupBucket(facts);
+    const inc = result.species.find((s) => s.species === "incineroar")!;
+    expect(inc.nature).toEqual([]);
+  });
+
+  it("merges mixed nature histograms and sorts by count desc then value asc", () => {
+    const facts: FactRow[] = [
+      fact({
+        species: "flutter-mane",
+        teamCount: 3,
+        sampleSize: 3,
+        details: {
+          moves: [],
+          tera: [],
+          item: [],
+          ability: [],
+          nature: [
+            { v: "timid", n: 2 },
+            { v: "modest", n: 1 },
+          ],
+        },
+      }),
+    ];
+    const result = rollupBucket(facts);
+    const fm = result.species.find((s) => s.species === "flutter-mane")!;
+    expect(fm.nature[0]?.value).toBe("timid");
+    expect(fm.nature[1]?.value).toBe("modest");
+    // pct for timid: round(100*2/3, 2) = 66.67
+    expect(fm.nature[0]?.pct).toBe(66.67);
   });
 });
 

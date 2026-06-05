@@ -245,6 +245,7 @@ interface RawTeamRow {
   species: string;
   ability: string | null;
   heldItem: string | null;
+  nature: string | null;
   teraType: string | null;
   moves: string[] | null;
 }
@@ -264,6 +265,7 @@ async function readTeamMons(
     species: r.species,
     ability: r.ability,
     heldItem: r.heldItem,
+    nature: r.nature,
     teraType: r.teraType,
     moves: (r.moves ?? []).filter((m): m is string => m != null && m !== ""),
   }));
@@ -281,7 +283,7 @@ async function readRawTeamRows(
         .schema("rk9")
         .from("team_pokemon")
         .select(
-          "standing_id, species, ability, held_item, tera_type, moves, standings!inner(id, division, event_id)"
+          "standing_id, species, ability, held_item, nature, tera_type, moves, standings!inner(id, division, event_id)"
         )
         .eq("standings.event_id", eventId);
 
@@ -301,6 +303,7 @@ async function readRawTeamRows(
           species: row.species,
           ability: row.ability,
           heldItem: row.held_item,
+          nature: row.nature,
           teraType: row.tera_type,
           moves: row.moves ?? [],
         };
@@ -329,6 +332,7 @@ async function readRawTeamRows(
         species: row.species,
         ability: row.ability,
         heldItem: row.held_item,
+        nature: null, // limitless.team_pokemon has no nature column
         teraType: row.tera_type,
         moves: row.moves ?? [],
       }));
@@ -356,6 +360,8 @@ async function readRawTeamRows(
         species: row.species,
         ability: row.ability,
         heldItem: row.held_item,
+        // TODO: read tournament_team_sheets.nature once that column is added (stat alignment on OTS)
+        nature: null,
         teraType: row.tera_type,
         moves: [row.move1, row.move2, row.move3, row.move4].filter(
           (m): m is string => m != null && m !== ""
@@ -535,6 +541,7 @@ export async function computeUsageRollups(
               tera?: { v: string; n: number }[];
               item?: { v: string; n: number }[];
               ability?: { v: string; n: number }[];
+              nature?: { v: string; n: number }[];
             } | null;
             return {
               fact: {
@@ -549,6 +556,7 @@ export async function computeUsageRollups(
                   tera: details?.tera ?? [],
                   item: details?.item ?? [],
                   ability: details?.ability ?? [],
+                  nature: details?.nature ?? [],
                 },
               },
               eventDate: r.event_date,
@@ -711,6 +719,7 @@ export async function computeUsageRollups(
               tera_types: s.tera as unknown as Json,
               items: s.item as unknown as Json,
               abilities: s.ability as unknown as Json,
+              natures: s.nature as unknown as Json,
               // spreads, teammates left as default []
             }));
 

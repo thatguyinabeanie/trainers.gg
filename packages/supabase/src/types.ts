@@ -1988,6 +1988,7 @@ export type Database = {
           items: Json
           meta_id: number
           moves: Json
+          natures: Json
           species: string
           spreads: Json
           teammates: Json
@@ -1999,6 +2000,7 @@ export type Database = {
           items?: Json
           meta_id: number
           moves?: Json
+          natures?: Json
           species: string
           spreads?: Json
           teammates?: Json
@@ -2010,6 +2012,7 @@ export type Database = {
           items?: Json
           meta_id?: number
           moves?: Json
+          natures?: Json
           species?: string
           spreads?: Json
           teammates?: Json

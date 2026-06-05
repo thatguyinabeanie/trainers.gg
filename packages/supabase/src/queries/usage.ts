@@ -20,6 +20,7 @@ export interface SpeciesUsagePeriod {
   tera: UsageDetailEntry[];
   items: UsageDetailEntry[];
   abilities: UsageDetailEntry[];
+  natures: UsageDetailEntry[];
 }
 
 /** Parameters for fetching trailing periods for one species. */
@@ -87,7 +88,8 @@ export async function getSpeciesUsageDetail(
         moves,
         tera_types,
         items,
-        abilities
+        abilities,
+        natures
       )
     `
     )
@@ -131,6 +133,7 @@ export async function getSpeciesUsageDetail(
       tera: (detailRow?.tera_types as UsageDetailEntry[] | null) ?? [],
       items: (detailRow?.items as UsageDetailEntry[] | null) ?? [],
       abilities: (detailRow?.abilities as UsageDetailEntry[] | null) ?? [],
+      natures: (detailRow?.natures as UsageDetailEntry[] | null) ?? [],
     };
   });
 }
