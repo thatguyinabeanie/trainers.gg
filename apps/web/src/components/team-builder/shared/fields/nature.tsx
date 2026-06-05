@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { type StatKey } from "@trainers/pokemon";
+import { type StatKey, type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -25,6 +25,8 @@ import { cellClasses, type CellVariant } from "./shared";
 
 interface NatureCellProps {
   pokemon: Tables<"pokemon">;
+  /** Current format — forwarded to NaturePicker for usage data fetching. */
+  format: GameFormat | undefined;
   natUp: StatKey | null | undefined;
   natDown: StatKey | null | undefined;
   errors: ValidationError[];
@@ -34,6 +36,7 @@ interface NatureCellProps {
 
 export function NatureCell({
   pokemon,
+  format,
   natUp,
   natDown,
   errors,
@@ -41,6 +44,9 @@ export function NatureCell({
   variant,
 }: NatureCellProps) {
   const [open, setOpen] = useState(false);
+
+  // Species from the pokemon row — forwarded to NaturePicker for usage data.
+  const species = pokemon.species ?? undefined;
 
   if (variant === "row") {
     return (
@@ -59,6 +65,8 @@ export function NatureCell({
         >
           <NaturePicker
             value={pokemon.nature ?? ""}
+            species={species}
+            format={format}
             onPick={(nature) => onUpdate({ nature })}
             onClose={() => setOpen(false)}
           />
@@ -99,6 +107,8 @@ export function NatureCell({
         <PopoverContent side="bottom" align="start" className="w-auto p-0">
           <NaturePicker
             value={pokemon.nature ?? ""}
+            species={species}
+            format={format}
             onPick={(nature) => onUpdate({ nature })}
             onClose={() => setOpen(false)}
           />

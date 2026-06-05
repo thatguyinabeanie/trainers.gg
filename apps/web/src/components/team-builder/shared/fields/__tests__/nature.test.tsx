@@ -46,6 +46,7 @@ const basePokemon = {
 describe("NatureCell", () => {
   const defaultProps = {
     pokemon: basePokemon,
+    format: undefined,
     natUp: "atk" as const,
     natDown: "spa" as const,
     errors: [] as any[],

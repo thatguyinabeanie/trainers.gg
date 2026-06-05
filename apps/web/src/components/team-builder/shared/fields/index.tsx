@@ -71,6 +71,7 @@ export function FormCells({
       />
       <NatureCell
         pokemon={pokemon}
+        format={format}
         natUp={natUp}
         natDown={natDown}
         errors={natureErrors}
