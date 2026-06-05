@@ -102,9 +102,9 @@ export function SpeciesMobileRow({
           </span>
 
           <span className="flex min-w-0 flex-1 flex-col gap-1">
-            {/* Line 1 — name + types */}
+            {/* Line 1 — name + types + usage chip */}
             <span className="flex items-center justify-between gap-2">
-              <span className="truncate text-sm font-semibold text-foreground">
+              <span className="grow min-w-0 truncate text-sm font-semibold text-foreground">
                 {entry.species}
               </span>
               <span className="flex shrink-0 items-center gap-1">
@@ -115,6 +115,14 @@ export function SpeciesMobileRow({
                     className="size-[18px]"
                   />
                 ))}
+                {usagePct != null && usagePct > 0 && (
+                  <span
+                    className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"
+                    data-testid={`usg-mobile-${entry.species}`}
+                  >
+                    {usagePct.toFixed(1)}%
+                  </span>
+                )}
               </span>
             </span>
 
@@ -150,24 +158,6 @@ export function SpeciesMobileRow({
                 </span>
                 <span className={cn("font-bold", STAT_HEADER_COLORS.bst)}>
                   {entry.bst}
-                </span>
-              </span>
-              <span className="inline-flex items-baseline gap-0.5">
-                <span className="font-bold opacity-60 text-muted-foreground">
-                  USG
-                </span>
-                <span
-                  className={cn(
-                    "font-semibold",
-                    usagePct != null && usagePct > 0
-                      ? "text-foreground"
-                      : "text-muted-foreground"
-                  )}
-                  data-testid={`usg-mobile-${entry.species}`}
-                >
-                  {usagePct != null && usagePct > 0
-                    ? `${usagePct.toFixed(1)}%`
-                    : "—"}
                 </span>
               </span>
             </span>
