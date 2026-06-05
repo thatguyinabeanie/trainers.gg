@@ -204,8 +204,6 @@ jest.mock("../external-data-toolbar", () => ({
     queueMatchingCount,
     onQueueAll,
     queueAllCount,
-    onRunImport,
-    importing,
     bulkProcessing,
     tab,
   }: {
@@ -224,8 +222,6 @@ jest.mock("../external-data-toolbar", () => ({
     queueMatchingCount?: number;
     onQueueAll?: () => void;
     queueAllCount?: number;
-    onRunImport?: () => void;
-    importing?: boolean;
     bulkProcessing?: boolean;
     tab: string;
   }) => {
@@ -254,7 +250,6 @@ jest.mock("../external-data-toolbar", () => ({
               Queue Matching ({queueMatchingCount ?? 0})
             </button>
             <button onClick={onQueueAll}>Queue All ({queueAllCount ?? 0})</button>
-            <button onClick={onRunImport} disabled={importing}>Run Import</button>
           </>
         )}
         <button onClick={onRefresh} disabled={isFetching}>Refresh</button>
@@ -269,6 +264,33 @@ jest.mock("../external-data-selection-bar", () => ({
 }));
 jest.mock("../external-data-cards", () => ({
   EventList: () => <div data-testid="event-list-stub" />,
+}));
+
+// Stub QueueStrip — renders a sentinel + Run Import button so drain-loop tests can
+// trigger it; it has its own unit tests in external-data-queue-strip.test.tsx.
+jest.mock("../external-data-queue-strip", () => ({
+  QueueStrip: ({
+    onRunImport,
+    draining,
+    queuedCount,
+  }: {
+    onRunImport: () => void;
+    draining: boolean;
+    queuedCount: number;
+  }) => (
+    <div data-testid="queue-strip-stub">
+      {queuedCount > 0 && (
+        <button onClick={onRunImport} disabled={draining}>
+          Run Import
+        </button>
+      )}
+    </div>
+  ),
+}));
+
+// Stub ExternalDataFilters — its own test suite covers the filter logic.
+jest.mock("../external-data-filters", () => ({
+  ExternalDataFilters: () => <div data-testid="external-data-filters-stub" />,
 }));
 
 import React from "react";

@@ -42,8 +42,6 @@ export interface ExternalDataToolbarProps {
   queueMatchingCount?: number;
   onQueueAll?: () => void;
   queueAllCount?: number;
-  onRunImport?: () => void;
-  importing?: boolean;
   bulkProcessing?: boolean;
 }
 
@@ -137,19 +135,6 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={props.onRunImport}
-              disabled={props.importing}
-            >
-              {props.importing ? (
-                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-              ) : (
-                <Play className="mr-1.5 size-3.5" />
-              )}
-              Run Import
-            </Button>
           </>
         )}
 
@@ -185,6 +170,7 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
           onClick={props.onRefresh}
           disabled={props.isFetching}
           aria-label="Refresh"
+          title="Refresh data"
         >
           <RefreshCw
             className={props.isFetching ? "size-4 animate-spin" : "size-4"}

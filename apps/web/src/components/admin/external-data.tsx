@@ -16,26 +16,16 @@ import {
   ExternalLink,
   ListFilter,
   Loader2,
-  RefreshCw,
   Search,
   Trash2,
   Users,
-  X,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { LIMITLESS_TO_FORMAT } from "@/lib/limitless";
@@ -62,6 +52,10 @@ import {
   type RK9EventRow,
   type LimitlessTournamentRow,
   type UnifiedRow,
+  type RK9FilterState,
+  type LimitlessFilterState,
+  INITIAL_RK9_FILTERS,
+  INITIAL_LIMITLESS_FILTERS,
   queueableIds,
   rosterEligibleIds,
   teamsEligibleIds,
@@ -72,9 +66,9 @@ import { SelectionBar } from "./external-data-selection-bar";
 import { EventList } from "./external-data-cards";
 import { ExpandedRowData } from "./expanded-row-data";
 import { PlayerExpandedData } from "./player-expanded-data";
+import { QueueStrip } from "./external-data-queue-strip";
+import { ExternalDataFilters } from "./external-data-filters";
 
-type PlatformFilter = "all" | "SWITCH" | "SIM";
-type HasDataFilter = "all" | "yes" | "no";
 type SortDirection = "asc" | "desc";
 type SortColumn =
   | "name"
@@ -90,53 +84,8 @@ interface SortState {
   direction: SortDirection;
 }
 
-// Per-tab filter state
-interface RK9FilterState {
-  search: string;
-  tier: string;
-  status: string;
-  country: string;
-  dateFrom: string;
-  dateTo: string;
-  minPlayers: string;
-  hasData: HasDataFilter;
-}
-
-interface LimitlessFilterState {
-  search: string;
-  format: string;
-  status: string;
-  platform: PlatformFilter;
-  dateFrom: string;
-  dateTo: string;
-  minPlayers: string;
-  hasData: HasDataFilter;
-}
-
 // Sentinel for render-time tab-change reset (avoids useEffect for derived state)
 const UNINITIALIZED = Symbol();
-
-const INITIAL_RK9_FILTERS: RK9FilterState = {
-  search: "",
-  tier: "all",
-  status: "all",
-  country: "all",
-  dateFrom: "",
-  dateTo: "",
-  minPlayers: "",
-  hasData: "all",
-};
-
-const INITIAL_LIMITLESS_FILTERS: LimitlessFilterState = {
-  search: "",
-  format: "all",
-  status: "all",
-  platform: "all",
-  dateFrom: "",
-  dateTo: "",
-  minPlayers: "",
-  hasData: "all",
-};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -318,6 +267,10 @@ export function ExternalData() {
   const [queuingIds, setQueuingIds] = useState<Set<string>>(new Set());
   const [batchQueuing, setBatchQueuing] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
 
   // Usage rollup state
@@ -765,13 +718,6 @@ export function ExternalData() {
     ...new Set(limitlessRows.map((r) => r.category)),
   ].sort();
 
-  // Active filter counts
-  const rk9ActiveFilterCount = (
-    Object.keys(rk9Filters) as (keyof RK9FilterState)[]
-  ).filter((key) => rk9Filters[key] !== INITIAL_RK9_FILTERS[key]).length;
-  const limActiveFilterCount = (
-    Object.keys(limFilters) as (keyof LimitlessFilterState)[]
-  ).filter((key) => limFilters[key] !== INITIAL_LIMITLESS_FILTERS[key]).length;
 
   // -------------------------------------------------------------------------
   // Stats
@@ -789,8 +735,6 @@ export function ExternalData() {
   const limitlessPendingCount = (limitlessTournaments ?? []).filter(
     (t) => !t.import_status || t.import_status === "failed"
   ).length;
-
-  const rk9ActiveCount = activeJobs.size;
 
   // ---------------------------------------------------------------------------
   // Filter-aware bulk targets (toolbar "Queue/Scrape Matching" buttons)
@@ -939,21 +883,40 @@ export function ExternalData() {
   async function handleRunImport() {
     setImporting(true);
     setImportMessage(null);
+    // Snapshot total queued at start; we'll update as we learn more
+    const snapshotTotal = limitlessQueuedCount;
+    let done = 0;
+    let noProgressRounds = 0;
     try {
-      const result = await triggerImportQueue(limitlessBatchSize);
-      if (!result.success) throw new Error(result.error);
-      const { processed, errors } = result.data;
-      setImportMessage(
-        errors > 0
-          ? `Imported ${processed} (${errors} failed)`
-          : `Imported ${processed}`
-      );
+      while (true) {
+        const result = await triggerImportQueue(limitlessBatchSize);
+        if (!result.success) {
+          toast.error(result.error ?? "Import failed");
+          break;
+        }
+        const { processed, errors: _errors, remaining } = result.data;
+        done += processed;
+        setImportProgress({
+          done,
+          total: Math.max(snapshotTotal, done + remaining),
+        });
+        if (remaining === 0) break;
+        // No-progress guard: stop after 3 consecutive batches with 0 processed
+        if (processed === 0) {
+          noProgressRounds++;
+          if (noProgressRounds >= 3) break;
+        } else {
+          noProgressRounds = 0;
+        }
+      }
+      setImportMessage(`Imported ${done}`);
       setRefreshKey((k) => k + 1);
     } catch (err) {
       setImportMessage(
         `Error: ${err instanceof Error ? err.message : "Import failed"}`
       );
     } finally {
+      setImportProgress(null);
       setImporting(false);
     }
   }
@@ -1253,27 +1216,33 @@ export function ExternalData() {
 
   return (
     <div className="space-y-6">
-      {/* Header: Refresh */}
-      <div className="flex items-center justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setRefreshKey((k) => k + 1)}
-          disabled={isFetching}
-        >
-          <RefreshCw
-            className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")}
-          />
-          Refresh
-        </Button>
-      </div>
-
       {/* Error */}
       {queryError && (
         <div className="rounded-lg bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-400">
           {queryError.message}
         </div>
       )}
+
+      {/* Global queue / activity strip — above the source tabs */}
+      <QueueStrip
+        tab={activeTab}
+        queuedCount={limitlessQueuedCount}
+        nextLabel={nextQueuedItem?.name ?? null}
+        nextQueuedAgo={
+          nextQueuedItem?.import_requested_at
+            ? formatTimeAgo(nextQueuedItem.import_requested_at)
+            : null
+        }
+        importProgress={importProgress}
+        draining={importing}
+        onRunImport={handleRunImport}
+        rk9Jobs={[...activeJobs.entries()].map(([eventId, j]) => ({
+          name:
+            rk9Events?.find((e) => e.event_id === eventId)?.name ?? eventId,
+          scraped: j.scraped,
+          total: j.total,
+        }))}
+      />
 
       {/* Sub-tabs: RK9 / Limitless */}
       <Tabs
@@ -1417,224 +1386,17 @@ export function ExternalData() {
             </p>
           )}
 
-          {/* RK9 active jobs badge */}
-          {rk9ActiveCount > 0 && (
-            <Badge
-              variant="secondary"
-              className="bg-purple-500/10 text-xs text-purple-700 dark:text-purple-400"
-            >
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              {rk9ActiveCount} processing
-            </Badge>
-          )}
-
           {/* RK9 Filters */}
-          <div className="bg-muted/30 space-y-2.5 rounded-lg border p-3">
-            {/* Row 1: Search + primary filters */}
-            <div className="flex flex-wrap items-end gap-2.5">
-              <div className="min-w-44 flex-1 space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Search
-                </label>
-                <div className="relative">
-                  <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
-                  <Input
-                    placeholder="Search by name or ID..."
-                    value={rk9Filters.search}
-                    onChange={(e) =>
-                      setRk9Filters((p) => ({ ...p, search: e.target.value }))
-                    }
-                    className="h-8 pl-8 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Tier
-                </label>
-                <Select
-                  value={rk9Filters.tier}
-                  onValueChange={(v) =>
-                    v && setRk9Filters((p) => ({ ...p, tier: v }))
-                  }
-                >
-                  <SelectTrigger
-                    className={cn(
-                      "w-32",
-                      rk9Filters.tier !== "all" && "ring-primary/50 ring-2"
-                    )}
-                    size="sm"
-                  >
-                    <SelectValue className="capitalize" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    {rk9Tiers.map((t) => (
-                      <SelectItem key={t} value={t} className="capitalize">
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Status
-                </label>
-                <Select
-                  value={rk9Filters.status}
-                  onValueChange={(v) =>
-                    v && setRk9Filters((p) => ({ ...p, status: v }))
-                  }
-                >
-                  <SelectTrigger className="w-32" size="sm">
-                    <SelectValue className="capitalize" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="upcoming">Upcoming</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in-progress">In progress</SelectItem>
-                    <SelectItem value="complete">Complete</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Country
-                </label>
-                <Select
-                  value={rk9Filters.country}
-                  onValueChange={(v) =>
-                    v && setRk9Filters((p) => ({ ...p, country: v }))
-                  }
-                >
-                  <SelectTrigger className="w-32" size="sm">
-                    <SelectValue className="capitalize" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    {rk9Countries.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            {/* Row 2: Secondary filters */}
-            <div className="flex flex-wrap items-end gap-2.5">
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Team Lists
-                </label>
-                <Select
-                  value={rk9Filters.hasData}
-                  onValueChange={(v) =>
-                    v &&
-                    setRk9Filters((p) => ({
-                      ...p,
-                      hasData: v as HasDataFilter,
-                    }))
-                  }
-                >
-                  <SelectTrigger className="w-32" size="sm">
-                    <SelectValue className="capitalize" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="yes">Has teams</SelectItem>
-                    <SelectItem value="no">No teams</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Date Range
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="date"
-                    value={rk9Filters.dateFrom}
-                    onChange={(e) =>
-                      setRk9Filters((p) => ({ ...p, dateFrom: e.target.value }))
-                    }
-                    className="h-7 w-32 text-xs"
-                  />
-                  <span className="text-muted-foreground text-xs">to</span>
-                  <Input
-                    type="date"
-                    value={rk9Filters.dateTo}
-                    onChange={(e) =>
-                      setRk9Filters((p) => ({ ...p, dateTo: e.target.value }))
-                    }
-                    className="h-7 w-32 text-xs"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Min Players
-                </label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={rk9Filters.minPlayers}
-                  onChange={(e) =>
-                    setRk9Filters((p) => ({ ...p, minPlayers: e.target.value }))
-                  }
-                  className="h-7 w-20 text-xs"
-                  min={0}
-                />
-              </div>
-              {rk9ActiveFilterCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setRk9Filters(INITIAL_RK9_FILTERS)}
-                  className="text-muted-foreground h-7 gap-1 text-xs"
-                >
-                  <X className="h-3 w-3" />
-                  Clear ({rk9ActiveFilterCount})
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* RK9 active jobs progress strip */}
-          {activeJobs.size > 0 && (
-            <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-              {[...activeJobs.entries()].map(([eventId, job]) => {
-                const eventName =
-                  rk9Events?.find((e) => e.event_id === eventId)?.name ??
-                  eventId;
-                const pct =
-                  job.total && job.total > 0
-                    ? Math.round(((job.scraped ?? 0) / job.total) * 100)
-                    : 0;
-                return (
-                  <div key={eventId} className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                      <span className="font-medium">{eventName}</span>
-                      <span className="text-muted-foreground text-xs">
-                        {job.type === "teams" && job.total && job.total > 0
-                          ? `Scraping teams: ${job.scraped ?? 0}/${job.total} (${pct}%)`
-                          : job.type === "teams"
-                            ? "Scraping teams…"
-                            : "Scraping roster…"}
-                      </span>
-                    </div>
-                    {job.type === "teams" && job.total && job.total > 0 && (
-                      <Progress value={pct} className="h-1.5" />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <ExternalDataFilters
+            tab="rk9"
+            rk9Filters={rk9Filters}
+            onRk9Change={(patch) => setRk9Filters((p) => ({ ...p, ...patch }))}
+            onClear={() => setRk9Filters(INITIAL_RK9_FILTERS)}
+            tierOptions={rk9Tiers}
+            countryOptions={rk9Countries}
+            resultCount={filteredRk9Rows.length}
+            totalCount={rk9Rows.length}
+          />
             </>
           )}
         </TabsContent>
@@ -1669,8 +1431,6 @@ export function ExternalData() {
             queueMatchingCount={limitlessQueueMatchingIds.length}
             onQueueAll={handleQueueAll}
             queueAllCount={limitlessPendingCount}
-            onRunImport={handleRunImport}
-            importing={importing}
             bulkProcessing={bulkProcessing}
           />
           {/* Per-action feedback messages */}
@@ -1723,217 +1483,16 @@ export function ExternalData() {
             </p>
           )}
 
-          {/* Queue status strip */}
-          {(limitlessQueuedCount > 0 || limitlessImportingCount > 0) && (
-            <div className="bg-muted/30 flex items-center gap-4 rounded-lg border px-4 py-2 text-sm">
-              {limitlessImportingCount > 0 && (
-                <span className="flex items-center gap-1.5 font-medium text-blue-600 dark:text-blue-400">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {limitlessImportingCount} importing now
-                </span>
-              )}
-              {limitlessQueuedCount > 0 && nextQueuedItem && (
-                <span className="text-muted-foreground flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" />
-                  Next up:
-                  <span className="max-w-xs truncate font-medium">
-                    {nextQueuedItem.name}
-                  </span>
-                  <span className="text-xs">
-                    (queued{" "}
-                    {formatTimeAgo(nextQueuedItem.import_requested_at!)})
-                  </span>
-                </span>
-              )}
-              {limitlessQueuedCount > 0 && !nextQueuedItem && (
-                <span className="text-muted-foreground flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" />
-                  {limitlessQueuedCount} queued
-                </span>
-              )}
-              {limitlessQueuedCount > 0 && (
-                <span className="text-muted-foreground ml-auto text-xs">
-                  {limitlessQueuedCount} in queue
-                </span>
-              )}
-            </div>
-          )}
-
           {/* Limitless Filters */}
-          <div className="bg-muted/30 space-y-2.5 rounded-lg border p-3">
-            {/* Row 1: Search + primary filters */}
-            <div className="flex flex-wrap items-end gap-2.5">
-              <div className="min-w-44 flex-1 space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Search
-                </label>
-                <div className="relative">
-                  <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
-                  <Input
-                    placeholder="Search by name or ID..."
-                    value={limFilters.search}
-                    onChange={(e) =>
-                      setLimFilters((p) => ({ ...p, search: e.target.value }))
-                    }
-                    className="h-8 pl-8 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Format
-                </label>
-                <Select
-                  value={limFilters.format}
-                  onValueChange={(v) =>
-                    v && setLimFilters((p) => ({ ...p, format: v }))
-                  }
-                >
-                  <SelectTrigger
-                    className={cn(
-                      "w-32",
-                      limFilters.format !== "all" && "ring-primary/50 ring-2"
-                    )}
-                    size="sm"
-                  >
-                    <SelectValue className="capitalize" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    {limitlessFormats.map((f) => (
-                      <SelectItem key={f} value={f}>
-                        {f}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Status
-                </label>
-                <Select
-                  value={limFilters.status}
-                  onValueChange={(v) =>
-                    v && setLimFilters((p) => ({ ...p, status: v }))
-                  }
-                >
-                  <SelectTrigger className="w-32" size="sm">
-                    <SelectValue className="capitalize" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="queued">Queued</SelectItem>
-                    <SelectItem value="importing">Importing</SelectItem>
-                    <SelectItem value="complete">Complete</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Platform
-                </label>
-                <Select
-                  value={limFilters.platform}
-                  onValueChange={(v) =>
-                    v &&
-                    setLimFilters((p) => ({
-                      ...p,
-                      platform: v as PlatformFilter,
-                    }))
-                  }
-                >
-                  <SelectTrigger className="w-32" size="sm">
-                    <SelectValue className="capitalize" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="SWITCH">Switch</SelectItem>
-                    <SelectItem value="SIM">Simulator</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            {/* Row 2: Secondary filters */}
-            <div className="flex flex-wrap items-end gap-2.5">
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Decklists
-                </label>
-                <Select
-                  value={limFilters.hasData}
-                  onValueChange={(v) =>
-                    v &&
-                    setLimFilters((p) => ({
-                      ...p,
-                      hasData: v as HasDataFilter,
-                    }))
-                  }
-                >
-                  <SelectTrigger className="w-32" size="sm">
-                    <SelectValue className="capitalize" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="yes">Has decklists</SelectItem>
-                    <SelectItem value="no">No decklists</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Date Range
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="date"
-                    value={limFilters.dateFrom}
-                    onChange={(e) =>
-                      setLimFilters((p) => ({ ...p, dateFrom: e.target.value }))
-                    }
-                    className="h-7 w-32 text-xs"
-                  />
-                  <span className="text-muted-foreground text-xs">to</span>
-                  <Input
-                    type="date"
-                    value={limFilters.dateTo}
-                    onChange={(e) =>
-                      setLimFilters((p) => ({ ...p, dateTo: e.target.value }))
-                    }
-                    className="h-7 w-32 text-xs"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-muted-foreground block text-xs font-medium">
-                  Min Players
-                </label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={limFilters.minPlayers}
-                  onChange={(e) =>
-                    setLimFilters((p) => ({ ...p, minPlayers: e.target.value }))
-                  }
-                  className="h-7 w-20 text-xs"
-                  min={0}
-                />
-              </div>
-              {limActiveFilterCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setLimFilters(INITIAL_LIMITLESS_FILTERS)}
-                  className="text-muted-foreground h-7 gap-1 text-xs"
-                >
-                  <X className="h-3 w-3" />
-                  Clear ({limActiveFilterCount})
-                </Button>
-              )}
-            </div>
-          </div>
+          <ExternalDataFilters
+            tab="limitless"
+            limFilters={limFilters}
+            onLimChange={(patch) => setLimFilters((p) => ({ ...p, ...patch }))}
+            onClear={() => setLimFilters(INITIAL_LIMITLESS_FILTERS)}
+            formatOptions={limitlessFormats}
+            resultCount={filteredLimitlessRows.length}
+            totalCount={limitlessRows.length}
+          />
         </TabsContent>
       </Tabs>
 
