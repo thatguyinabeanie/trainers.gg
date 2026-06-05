@@ -100,19 +100,19 @@ export function QueueStrip({
           "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5"
         )}
       >
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <Clock className="size-3.5 shrink-0 text-primary" />
-          <span className="font-medium">
+          <span className="shrink-0 font-medium">
             Queue: {queuedCount} waiting
           </span>
           {nextLabel ? (
             <>
-              <span className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground truncate">
+              <span className="text-muted-foreground shrink-0">·</span>
+              <span className="text-muted-foreground min-w-0 flex-1 truncate">
                 next: {nextLabel}
               </span>
               {nextQueuedAgo ? (
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground shrink-0 text-xs">
                   {nextQueuedAgo}
                 </span>
               ) : null}
@@ -122,6 +122,7 @@ export function QueueStrip({
         <Button
           variant="default"
           size="sm"
+          className="shrink-0"
           onClick={onRunImport}
           disabled={draining}
         >
