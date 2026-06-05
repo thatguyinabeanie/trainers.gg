@@ -126,6 +126,152 @@ jest.mock("@tanstack/react-virtual", () => ({
   },
 }));
 
+// Stub useIsMobile + useIsClient so tests stay on the desktop/hydrated path
+jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+jest.mock("@/hooks/use-is-client", () => ({ useIsClient: () => true }));
+
+// Stub ExternalDataSettings to render its inputs/switch inline (no popover)
+// so the existing toggle + slider tests can still find them in the DOM.
+jest.mock("../external-data-settings", () => ({
+  ExternalDataSettings: ({
+    loading,
+    backendOn,
+    onToggleBackend,
+    teamsPerTick,
+    onTeamsPerTickChange,
+    onTeamsPerTickBlur,
+    concurrency,
+    onConcurrencyChange,
+    onConcurrencyBlur,
+    batchSize,
+    onBatchSizeChange,
+    onBatchSizeBlur,
+    intervalSeconds,
+    onIntervalChange,
+    onIntervalBlur,
+    tab,
+  }: {
+    loading: boolean;
+    backendOn: boolean;
+    onToggleBackend: (c: boolean) => void;
+    teamsPerTick?: number;
+    onTeamsPerTickChange?: (v: string) => void;
+    onTeamsPerTickBlur?: () => void;
+    concurrency?: number;
+    onConcurrencyChange?: (v: string) => void;
+    onConcurrencyBlur?: () => void;
+    batchSize?: number;
+    onBatchSizeChange?: (v: string) => void;
+    onBatchSizeBlur?: () => void;
+    intervalSeconds: number;
+    onIntervalChange: (v: string) => void;
+    onIntervalBlur: () => void;
+    tab: string;
+  }) => {
+    if (loading) return null;
+    return (
+      <div data-testid="settings-stub">
+        <button role="switch" aria-checked={backendOn} onClick={() => onToggleBackend(!backendOn)} />
+        {tab === "rk9" ? (
+          <>
+            <input type="number" role="spinbutton" value={teamsPerTick} onChange={(e) => onTeamsPerTickChange?.(e.target.value)} onBlur={onTeamsPerTickBlur} readOnly={false} />
+            <input type="number" role="spinbutton" value={concurrency} onChange={(e) => onConcurrencyChange?.(e.target.value)} onBlur={onConcurrencyBlur} readOnly={false} />
+          </>
+        ) : (
+          <input type="number" role="spinbutton" value={batchSize} onChange={(e) => onBatchSizeChange?.(e.target.value)} onBlur={onBatchSizeBlur} readOnly={false} />
+        )}
+        <input type="number" role="spinbutton" value={intervalSeconds} onChange={(e) => onIntervalChange(e.target.value)} onBlur={onIntervalBlur} readOnly={false} />
+      </div>
+    );
+  },
+}));
+
+// Stub ExternalDataToolbar to render StatusChips + the settings stub inline
+jest.mock("../external-data-toolbar", () => ({
+  ExternalDataToolbar: ({
+    settings,
+    isFetching,
+    onRefresh,
+    onDiscover,
+    isDiscovering,
+    onScrapeRostersMatching,
+    rosterMatchingCount,
+    onScrapeTeamsMatching,
+    teamsMatchingCount,
+    onSync,
+    syncing,
+    onQueueMatching,
+    queueMatchingCount,
+    onQueueAll,
+    queueAllCount,
+    onRunImport,
+    importing,
+    bulkProcessing,
+    tab,
+  }: {
+    settings: Record<string, unknown>;
+    isFetching?: boolean;
+    onRefresh?: () => void;
+    onDiscover?: () => void;
+    isDiscovering?: boolean;
+    onScrapeRostersMatching?: () => void;
+    rosterMatchingCount?: number;
+    onScrapeTeamsMatching?: () => void;
+    teamsMatchingCount?: number;
+    onSync?: () => void;
+    syncing?: boolean;
+    onQueueMatching?: () => void;
+    queueMatchingCount?: number;
+    onQueueAll?: () => void;
+    queueAllCount?: number;
+    onRunImport?: () => void;
+    importing?: boolean;
+    bulkProcessing?: boolean;
+    tab: string;
+  }) => {
+    // Lazy-require the settings stub so it participates in jest mocking
+    const { ExternalDataSettings } = jest.requireMock("../external-data-settings") as {
+      ExternalDataSettings: React.ComponentType<Record<string, unknown>>;
+    };
+    return (
+      <div data-testid={`toolbar-${tab}`}>
+        <ExternalDataSettings {...(settings as Record<string, unknown>)} />
+        {tab === "rk9" && (
+          <>
+            <button onClick={onDiscover} disabled={isDiscovering}>Discover</button>
+            <button onClick={onScrapeRostersMatching} disabled={bulkProcessing || rosterMatchingCount === 0}>
+              Scrape Rosters ({rosterMatchingCount ?? 0})
+            </button>
+            <button onClick={onScrapeTeamsMatching} disabled={bulkProcessing || teamsMatchingCount === 0}>
+              Scrape Teams ({teamsMatchingCount ?? 0})
+            </button>
+          </>
+        )}
+        {tab === "limitless" && (
+          <>
+            <button onClick={onSync} disabled={syncing}>Sync</button>
+            <button onClick={onQueueMatching} disabled={bulkProcessing || queueMatchingCount === 0}>
+              Queue Matching ({queueMatchingCount ?? 0})
+            </button>
+            <button onClick={onQueueAll}>Queue All ({queueAllCount ?? 0})</button>
+            <button onClick={onRunImport} disabled={importing}>Run Import</button>
+          </>
+        )}
+        <button onClick={onRefresh} disabled={isFetching}>Refresh</button>
+      </div>
+    );
+  },
+}));
+
+// Stub SelectionBar + EventList — their own test suites cover their behaviour
+jest.mock("../external-data-selection-bar", () => ({
+  SelectionBar: () => <div data-testid="selection-bar-stub" />,
+}));
+jest.mock("../external-data-cards", () => ({
+  EventList: () => <div data-testid="event-list-stub" />,
+}));
+
+import React from "react";
 import { ExternalData } from "../external-data";
 
 describe("ExternalData slider handlers", () => {

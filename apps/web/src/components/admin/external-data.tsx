@@ -8,18 +8,14 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  BarChart2,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   Clock,
-  CloudDownload,
   Download,
   ExternalLink,
-  Globe,
   ListFilter,
   Loader2,
-  Play,
   RefreshCw,
   Search,
   Trash2,
@@ -38,7 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -59,12 +54,22 @@ import {
 import { triggerUsageRollup, calculateSourceUsage } from "@/actions/usage";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
 import { formatTimeAgo } from "@trainers/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsClient } from "@/hooks/use-is-client";
+
 import { normalizeLimitlessStatus } from "./limitless-status";
 import {
   type RK9EventRow,
   type LimitlessTournamentRow,
   type UnifiedRow,
+  queueableIds,
+  rosterEligibleIds,
+  teamsEligibleIds,
 } from "./external-data-shared";
+import { type StatusChip } from "./external-data-status-chips";
+import { ExternalDataToolbar } from "./external-data-toolbar";
+import { SelectionBar } from "./external-data-selection-bar";
+import { EventList } from "./external-data-cards";
 import { ExpandedRowData } from "./expanded-row-data";
 import { PlayerExpandedData } from "./player-expanded-data";
 
@@ -230,6 +235,9 @@ function compareValues(
 // ---------------------------------------------------------------------------
 
 export function ExternalData() {
+  const isMobile = useIsMobile();
+  const isClient = useIsClient();
+
   const [refreshKey, setRefreshKey] = useState(0);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -784,6 +792,32 @@ export function ExternalData() {
 
   const rk9ActiveCount = activeJobs.size;
 
+  // ---------------------------------------------------------------------------
+  // Filter-aware bulk targets (toolbar "Queue/Scrape Matching" buttons)
+  // ---------------------------------------------------------------------------
+  const limitlessQueueMatchingIds = queueableIds(filteredLimitlessRows);
+  const rk9RosterMatchingIds = rosterEligibleIds(filteredRk9Rows);
+  const rk9TeamsMatchingIds = teamsEligibleIds(filteredRk9Rows);
+
+  // Status chip arrays
+  const limitlessFailedCount = (limitlessTournaments ?? []).filter(
+    (t) => t.import_status === "failed"
+  ).length;
+  const limitlessChips: StatusChip[] = [
+    { label: "synced", count: totalSynced, tone: "synced" },
+    { label: "queued", count: limitlessQueuedCount, tone: "queued" },
+    { label: "importing", count: limitlessImportingCount, tone: "importing" },
+    { label: "imported", count: totalImported, tone: "imported" },
+    { label: "failed", count: limitlessFailedCount, tone: "failed" },
+  ];
+  const rk9FailedCount =
+    rk9Events?.filter((e) => e.import_status === "failed").length ?? 0;
+  const rk9Chips: StatusChip[] = [
+    { label: "events", count: rk9Total, tone: "synced" },
+    { label: "imported", count: rk9Imported, tone: "imported" },
+    { label: "failed", count: rk9FailedCount, tone: "failed" },
+  ];
+
   const nextQueuedItem =
     (limitlessTournaments ?? [])
       .filter((t) => t.import_status === "queued" && t.import_requested_at)
@@ -1005,6 +1039,49 @@ export function ExternalData() {
     } finally {
       setBatchQueuing(false);
     }
+  }
+
+  /** Queue only the tournaments matching the active filters (pending/failed). */
+  async function handleQueueMatching() {
+    if (limitlessQueueMatchingIds.length === 0) return;
+    setBatchQueuing(true);
+    try {
+      const result = await batchQueueTournaments(limitlessQueueMatchingIds);
+      if (!result.success) throw new Error(result.error);
+      setRefreshKey((k) => k + 1);
+    } catch {
+      toast.error("Failed to queue tournaments");
+    } finally {
+      setBatchQueuing(false);
+    }
+  }
+
+  /** Scrape rosters for all RK9 events matching the active filters. */
+  async function handleScrapeRostersMatching() {
+    if (rk9RosterMatchingIds.length === 0) return;
+    setBulkProcessing(true);
+    for (let i = 0; i < rk9RosterMatchingIds.length; i++) {
+      const id = rk9RosterMatchingIds[i]!;
+      const name = rk9Events?.find((e) => e.event_id === id)?.name ?? id;
+      setBulkProgress({ total: rk9RosterMatchingIds.length, done: i, current: name });
+      await handleScrapeRoster(id);
+    }
+    setBulkProcessing(false);
+    setBulkProgress(null);
+  }
+
+  /** Scrape teams for all RK9 events matching the active filters. */
+  async function handleScrapeTeamsMatching() {
+    if (rk9TeamsMatchingIds.length === 0) return;
+    setBulkProcessing(true);
+    for (let i = 0; i < rk9TeamsMatchingIds.length; i++) {
+      const id = rk9TeamsMatchingIds[i]!;
+      const name = rk9Events?.find((e) => e.event_id === id)?.name ?? id;
+      setBulkProgress({ total: rk9TeamsMatchingIds.length, done: i, current: name });
+      await handleScrapeTeams(id);
+    }
+    setBulkProcessing(false);
+    setBulkProgress(null);
   }
 
   // -------------------------------------------------------------------------
@@ -1269,153 +1346,87 @@ export function ExternalData() {
             </div>
           ) : (
             <>
-          {/* RK9 Stats + Actions */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-5">
-              <label className="flex items-center gap-2 text-sm font-medium">
-                {configLoading ? (
-                  <Skeleton className="h-4 w-8 rounded-full" />
-                ) : (
-                  <Switch
-                    checked={rk9BackendAutoImport}
-                    onCheckedChange={handleToggleRk9Backend}
-                  />
-                )}
-                Backend
-              </label>
-              {configLoading ? (
-                <Skeleton className="h-6 w-24" />
-              ) : (
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    className="h-6 w-14 [appearance:textfield] px-1 text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    value={rk9TeamsPerTick}
-                    onChange={(e) =>
-                      handleRk9TeamsPerTickChange(e.target.value)
-                    }
-                    onBlur={saveRk9TeamsPerTick}
-                    min={1}
-                  />
-                  <span className="text-muted-foreground text-xs">
-                    teams/tick
-                  </span>
-                </div>
+          {/* RK9 Stats + Actions — grouped toolbar */}
+          <ExternalDataToolbar
+            tab="rk9"
+            chips={rk9Chips}
+            settings={{
+              tab: "rk9",
+              loading: configLoading,
+              backendOn: rk9BackendAutoImport,
+              onToggleBackend: handleToggleRk9Backend,
+              teamsPerTick: rk9TeamsPerTick,
+              onTeamsPerTickChange: handleRk9TeamsPerTickChange,
+              onTeamsPerTickBlur: saveRk9TeamsPerTick,
+              concurrency: rk9TeamConcurrency,
+              onConcurrencyChange: handleRk9TeamConcurrencyChange,
+              onConcurrencyBlur: saveRk9TeamConcurrency,
+              intervalSeconds: rk9CronInterval,
+              onIntervalChange: handleRk9CronIntervalChange,
+              onIntervalBlur: saveRk9CronInterval,
+            }}
+            isFetching={isFetching}
+            onRefresh={() => setRefreshKey((k) => k + 1)}
+            onRecomputeUsage={handleRecomputeUsage}
+            recomputingUsage={recomputingUsage}
+            onCalculateUsage={() => handleCalculateUsage("rk9")}
+            calculatingUsage={calculatingRk9}
+            onDiscover={handleDiscover}
+            isDiscovering={isDiscovering}
+            onScrapeRostersMatching={handleScrapeRostersMatching}
+            rosterMatchingCount={rk9RosterMatchingIds.length}
+            onScrapeTeamsMatching={handleScrapeTeamsMatching}
+            teamsMatchingCount={rk9TeamsMatchingIds.length}
+            bulkProcessing={bulkProcessing}
+          />
+          {/* Per-action feedback messages */}
+          {discoverMessage && (
+            <p
+              className={cn(
+                "text-xs",
+                discoverMessage.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-muted-foreground"
               )}
-              {configLoading ? (
-                <Skeleton className="h-6 w-24" />
-              ) : (
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    className="h-6 w-11 [appearance:textfield] px-1 text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    value={rk9TeamConcurrency}
-                    onChange={(e) =>
-                      handleRk9TeamConcurrencyChange(e.target.value)
-                    }
-                    onBlur={saveRk9TeamConcurrency}
-                    min={1}
-                    max={10}
-                  />
-                  <span className="text-muted-foreground text-xs">
-                    concurrent
-                  </span>
-                </div>
+            >
+              {discoverMessage}
+            </p>
+          )}
+          {calculateRk9Message && (
+            <p
+              className={cn(
+                "text-xs",
+                calculateRk9Message.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-muted-foreground"
               )}
-              {configLoading ? (
-                <Skeleton className="h-6 w-20" />
-              ) : (
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    className="h-6 w-14 [appearance:textfield] px-1 text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    value={rk9CronInterval}
-                    onChange={(e) =>
-                      handleRk9CronIntervalChange(e.target.value)
-                    }
-                    onBlur={saveRk9CronInterval}
-                    min={10}
-                    step={10}
-                  />
-                  <span className="text-muted-foreground text-xs">
-                    every (s)
-                  </span>
-                </div>
+            >
+              {calculateRk9Message}
+            </p>
+          )}
+          {usageMessage && (
+            <p
+              className={cn(
+                "text-xs",
+                usageMessage.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-muted-foreground"
               )}
-              <div className="bg-border h-5 w-px" />
-              <div className="flex items-center gap-1.5">
-                <Globe className="text-muted-foreground h-4 w-4" />
-                <span className="text-sm font-semibold">{rk9Total}</span>
-                <span className="text-muted-foreground text-xs">events</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span className="text-sm font-semibold">{rk9Imported}</span>
-                <span className="text-muted-foreground text-xs">imported</span>
-              </div>
-              {rk9ActiveCount > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="bg-purple-500/10 text-xs text-purple-700 dark:text-purple-400"
-                >
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  {rk9ActiveCount} processing
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {discoverMessage && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    discoverMessage.startsWith("Error")
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {discoverMessage}
-                </p>
-              )}
-              <Button
-                onClick={handleDiscover}
-                disabled={isDiscovering}
-                size="sm"
-                variant="outline"
-              >
-                {isDiscovering ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Discover
-              </Button>
-              {calculateRk9Message && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    calculateRk9Message.startsWith("Error")
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {calculateRk9Message}
-                </p>
-              )}
-              <Button
-                onClick={() => handleCalculateUsage("rk9")}
-                disabled={calculatingRk9}
-                size="sm"
-                variant="outline"
-              >
-                {calculatingRk9 ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <BarChart2 className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Calculate Usage
-              </Button>
-            </div>
-          </div>
+            >
+              {usageMessage}
+            </p>
+          )}
+
+          {/* RK9 active jobs badge */}
+          {rk9ActiveCount > 0 && (
+            <Badge
+              variant="secondary"
+              className="bg-purple-500/10 text-xs text-purple-700 dark:text-purple-400"
+            >
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              {rk9ActiveCount} processing
+            </Badge>
+          )}
 
           {/* RK9 Filters */}
           <div className="bg-muted/30 space-y-2.5 rounded-lg border p-3">
@@ -1447,7 +1458,13 @@ export function ExternalData() {
                     v && setRk9Filters((p) => ({ ...p, tier: v }))
                   }
                 >
-                  <SelectTrigger className="w-32" size="sm">
+                  <SelectTrigger
+                    className={cn(
+                      "w-32",
+                      rk9Filters.tier !== "all" && "ring-primary/50 ring-2"
+                    )}
+                    size="sm"
+                  >
                     <SelectValue className="capitalize" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1624,224 +1641,87 @@ export function ExternalData() {
 
         {/* ----- Limitless Tab ----- */}
         <TabsContent value="limitless" className="space-y-4 pt-2">
-          {/* Limitless Stats + Actions */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-5">
-              <label className="flex items-center gap-2 text-sm font-medium">
-                {configLoading ? (
-                  <Skeleton className="h-4 w-8 rounded-full" />
-                ) : (
-                  <Switch
-                    checked={limitlessBackendAutoImport}
-                    onCheckedChange={handleToggleLimitlessBackend}
-                  />
-                )}
-                Backend
-              </label>
-              {configLoading ? (
-                <Skeleton className="h-6 w-24" />
-              ) : (
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    className="h-6 w-14 [appearance:textfield] px-1 text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    value={limitlessBatchSize}
-                    onChange={(e) =>
-                      handleLimitlessBatchSizeChange(e.target.value)
-                    }
-                    onBlur={saveLimitlessBatchSize}
-                    min={1}
-                  />
-                  <span className="text-muted-foreground text-xs">
-                    tourneys/tick
-                  </span>
-                </div>
+          {/* Limitless Stats + Actions — grouped toolbar */}
+          <ExternalDataToolbar
+            tab="limitless"
+            chips={limitlessChips}
+            settings={{
+              tab: "limitless",
+              loading: configLoading,
+              backendOn: limitlessBackendAutoImport,
+              onToggleBackend: handleToggleLimitlessBackend,
+              batchSize: limitlessBatchSize,
+              onBatchSizeChange: handleLimitlessBatchSizeChange,
+              onBatchSizeBlur: saveLimitlessBatchSize,
+              intervalSeconds: limitlessCronInterval,
+              onIntervalChange: handleLimitlessCronIntervalChange,
+              onIntervalBlur: saveLimitlessCronInterval,
+            }}
+            isFetching={isFetching}
+            onRefresh={() => setRefreshKey((k) => k + 1)}
+            onRecomputeUsage={handleRecomputeUsage}
+            recomputingUsage={recomputingUsage}
+            onCalculateUsage={() => handleCalculateUsage("limitless")}
+            calculatingUsage={calculatingLimitless}
+            onSync={handleSync}
+            syncing={syncing}
+            onQueueMatching={handleQueueMatching}
+            queueMatchingCount={limitlessQueueMatchingIds.length}
+            onQueueAll={handleQueueAll}
+            queueAllCount={limitlessPendingCount}
+            onRunImport={handleRunImport}
+            importing={importing}
+            bulkProcessing={bulkProcessing}
+          />
+          {/* Per-action feedback messages */}
+          {syncMessage && (
+            <p
+              className={cn(
+                "text-xs",
+                syncMessage.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-muted-foreground"
               )}
-              {configLoading ? (
-                <Skeleton className="h-6 w-20" />
-              ) : (
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    className="h-6 w-14 [appearance:textfield] px-1 text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    value={limitlessCronInterval}
-                    onChange={(e) =>
-                      handleLimitlessCronIntervalChange(e.target.value)
-                    }
-                    onBlur={saveLimitlessCronInterval}
-                    min={10}
-                    step={10}
-                  />
-                  <span className="text-muted-foreground text-xs">
-                    every (s)
-                  </span>
-                </div>
+            >
+              {syncMessage}
+            </p>
+          )}
+          {importMessage && (
+            <p
+              className={cn(
+                "text-xs",
+                importMessage.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-muted-foreground"
               )}
-              <div className="bg-border h-5 w-px" />
-              {limitlessLoading && !limitlessTournaments ? (
-                <Skeleton className="h-5 w-32" />
-              ) : (
-                <>
-                  <div className="flex items-center gap-1.5">
-                    <Globe className="text-muted-foreground h-4 w-4" />
-                    <span className="text-sm font-semibold">{totalSynced}</span>
-                    <span className="text-muted-foreground text-xs">
-                      synced
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    <span className="text-sm font-semibold">
-                      {totalImported}
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      imported
-                    </span>
-                  </div>
-                </>
+            >
+              {importMessage}
+            </p>
+          )}
+          {usageMessage && (
+            <p
+              className={cn(
+                "text-xs",
+                usageMessage.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-muted-foreground"
               )}
-              {limitlessQueuedCount > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400"
-                >
-                  <Clock className="mr-1 h-3 w-3" />
-                  {limitlessQueuedCount} queued
-                </Badge>
+            >
+              {usageMessage}
+            </p>
+          )}
+          {calculateLimitlessMessage && (
+            <p
+              className={cn(
+                "text-xs",
+                calculateLimitlessMessage.startsWith("Error")
+                  ? "text-red-500"
+                  : "text-muted-foreground"
               )}
-              {limitlessImportingCount > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="bg-blue-500/10 text-xs text-blue-700 dark:text-blue-400"
-                >
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  {limitlessImportingCount} importing
-                </Badge>
-              )}
-              {limitlessError && (
-                <p className="text-xs text-red-500">{limitlessError.message}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {syncMessage && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    syncMessage.startsWith("Error")
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {syncMessage}
-                </p>
-              )}
-              {limitlessPendingCount > 0 && (
-                <Button
-                  onClick={handleQueueAll}
-                  disabled={batchQueuing}
-                  size="sm"
-                  variant="outline"
-                >
-                  {batchQueuing ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Download className="mr-1.5 h-3.5 w-3.5" />
-                  )}
-                  Queue All ({limitlessPendingCount})
-                </Button>
-              )}
-              {limitlessQueuedCount > 0 && (
-                <Button
-                  onClick={handleRunImport}
-                  disabled={importing}
-                  size="sm"
-                  variant="outline"
-                >
-                  {importing ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Play className="mr-1.5 h-3.5 w-3.5" />
-                  )}
-                  Run Import
-                </Button>
-              )}
-              {importMessage && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    importMessage.startsWith("Error")
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {importMessage}
-                </p>
-              )}
-              <Button
-                onClick={handleSync}
-                disabled={syncing}
-                size="sm"
-                variant="outline"
-              >
-                {syncing ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <CloudDownload className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Sync
-              </Button>
-              {usageMessage && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    usageMessage.startsWith("Error")
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {usageMessage}
-                </p>
-              )}
-              <Button
-                onClick={handleRecomputeUsage}
-                disabled={recomputingUsage}
-                size="sm"
-                variant="outline"
-              >
-                {recomputingUsage ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <BarChart2 className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Recompute Usage
-              </Button>
-              {calculateLimitlessMessage && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    calculateLimitlessMessage.startsWith("Error")
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {calculateLimitlessMessage}
-                </p>
-              )}
-              <Button
-                onClick={() => handleCalculateUsage("limitless")}
-                disabled={calculatingLimitless}
-                size="sm"
-                variant="outline"
-              >
-                {calculatingLimitless ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <BarChart2 className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Calculate Usage
-              </Button>
-            </div>
-          </div>
+            >
+              {calculateLimitlessMessage}
+            </p>
+          )}
 
           {/* Queue status strip */}
           {(limitlessQueuedCount > 0 || limitlessImportingCount > 0) && (
@@ -1909,7 +1789,13 @@ export function ExternalData() {
                     v && setLimFilters((p) => ({ ...p, format: v }))
                   }
                 >
-                  <SelectTrigger className="w-32" size="sm">
+                  <SelectTrigger
+                    className={cn(
+                      "w-32",
+                      limFilters.format !== "all" && "ring-primary/50 ring-2"
+                    )}
+                    size="sm"
+                  >
                     <SelectValue className="capitalize" />
                   </SelectTrigger>
                   <SelectContent>
@@ -2051,86 +1937,25 @@ export function ExternalData() {
         </TabsContent>
       </Tabs>
 
-      {/* Bulk action toolbar */}
-      {selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 p-2.5">
-          <span className="text-sm font-medium">{selectedIds.size} selected</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7"
-            onClick={() => setSelectedIds(new Set())}
-          >
-            Clear
-          </Button>
-          <div className="bg-border h-4 w-px" />
-          {activeTab === "rk9" && rk9View === "events" && rosterEligibleSelected.length > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={bulkProcessing}
-              onClick={handleBulkScrapeRosters}
-            >
-              {bulkProcessing && bulkProgress ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Download className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Scrape Rosters ({rosterEligibleSelected.length})
-            </Button>
-          )}
-          {activeTab === "rk9" && rk9View === "events" && teamsEligibleSelected.length > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={bulkProcessing}
-              onClick={handleBulkScrapeTeams}
-            >
-              {bulkProcessing && bulkProgress ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <CloudDownload className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Scrape Teams ({teamsEligibleSelected.length})
-            </Button>
-          )}
-          {activeTab === "rk9" && rk9View === "events" && resetEligibleSelected.length > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={bulkProcessing}
-              onClick={handleBulkResetEvents}
-              className="text-destructive hover:text-destructive"
-            >
-              {bulkProcessing && bulkProgress ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Delete Data ({resetEligibleSelected.length})
-            </Button>
-          )}
-          {activeTab === "limitless" && limitlessQueueEligibleSelected.length > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={bulkProcessing}
-              onClick={handleBulkQueueSelected}
-            >
-              {bulkProcessing ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Download className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Queue ({limitlessQueueEligibleSelected.length})
-            </Button>
-          )}
-          {bulkProcessing && bulkProgress && (
-            <span className="text-muted-foreground text-xs">
-              {bulkProgress.done}/{bulkProgress.total} — {bulkProgress.current}
-            </span>
-          )}
-        </div>
+      {/* Bulk action bar — shown when rows are selected */}
+      <SelectionBar
+        tab={activeTab}
+        selectedCount={selectedIds.size}
+        bulkProcessing={bulkProcessing}
+        onClear={() => setSelectedIds(new Set())}
+        rosterEligibleCount={rosterEligibleSelected.length}
+        teamsEligibleCount={teamsEligibleSelected.length}
+        resetEligibleCount={resetEligibleSelected.length}
+        onScrapeRosters={handleBulkScrapeRosters}
+        onScrapeTeams={handleBulkScrapeTeams}
+        onResetEvents={handleBulkResetEvents}
+        queueEligibleCount={limitlessQueueEligibleSelected.length}
+        onQueueSelected={handleBulkQueueSelected}
+      />
+      {bulkProcessing && bulkProgress && (
+        <span className="text-muted-foreground text-xs">
+          {bulkProgress.done}/{bulkProgress.total} — {bulkProgress.current}
+        </span>
       )}
 
       {/* Players Table — only shown when RK9 tab + players view */}
@@ -2376,7 +2201,42 @@ export function ExternalData() {
             </div>
           </div>
 
-          {/* Virtualized body */}
+          {/* Virtualized body — conditional mount: skeleton (SSR) / cards (mobile) / table (desktop) */}
+          {!isClient ? (
+            /* CLS-safe skeleton: height derived from row count so the layout
+               doesn't jump when the real table mounts. Dynamic px is justified
+               here — the Tailwind scale has no per-row granularity. */
+            <div
+              aria-hidden
+              className="bg-muted/30 animate-pulse rounded-b-md"
+              style={{
+                height: `${Math.max(currentRows.length, 3) * 56 + 32}px`,
+              }}
+            />
+          ) : isMobile ? (
+            <div className="p-3">
+              <EventList
+                rows={currentRows}
+                expandedRowId={expandedRowId}
+                onToggleExpand={(id) =>
+                  setExpandedRowId((prev) => (prev === id ? null : id))
+                }
+                renderActions={(row) => (
+                  <RowActions
+                    row={row}
+                    activeJobs={activeJobs}
+                    queuingIds={queuingIds}
+                    batchQueuing={batchQueuing}
+                    isUpcomingRow={row.status === "upcoming"}
+                    onScrapeRoster={handleScrapeRoster}
+                    onScrapeTeams={handleScrapeTeams}
+                    onQueueOne={handleQueueOne}
+                    onResetEvent={handleResetEvent}
+                  />
+                )}
+              />
+            </div>
+          ) : (
           <div
             key={activeTab}
             ref={scrollRef}
@@ -2616,8 +2476,10 @@ export function ExternalData() {
               })}
             </div>
           </div>
+          )}
         </div>
       )}
+
         </>
       )}
     </div>
