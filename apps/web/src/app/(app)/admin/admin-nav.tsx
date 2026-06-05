@@ -10,6 +10,7 @@ const navItems = [
   { href: "/admin/coaches", label: "Coaches" },
   { href: "/admin/communities", label: "Communities" },
   { href: "/admin/data", label: "Data" },
+  { href: "/admin/usage", label: "Usage" },
   { href: "/admin/config", label: "Settings" },
 ];
 
