@@ -19,12 +19,11 @@ export function AdminNav() {
 
   return (
     <nav className="mb-8 border-b">
-      {/* Scroll-wrapper (block) clamps to the viewport; the inner flex row can
-          exceed it and scrolls horizontally on phones. overflow-x-auto must be
-          on this wrapper, NOT on the flex row, or the row won't clamp. */}
-      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
-        <div className="-mb-px flex gap-6 overflow-hidden sm:overflow-visible">
-          {navItems.map((item) => {
+      {/* Wrap to multiple rows on phones (7 tabs don't fit a 390px row);
+          single row on sm+ where they fit. Wrapping is the robust fix —
+          horizontal-scroll wrappers didn't reliably clamp the page width here. */}
+      <div className="-mb-px flex flex-wrap gap-x-6 gap-y-1 sm:flex-nowrap">
+        {navItems.map((item) => {
           const isActive =
             item.href === "/admin"
               ? pathname === "/admin"
@@ -44,8 +43,7 @@ export function AdminNav() {
               {item.label}
             </Link>
           );
-          })}
-        </div>
+        })}
       </div>
     </nav>
   );
