@@ -191,7 +191,7 @@ export function UsageInspector() {
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
           {/* Format */}
-          <Select value={format} onValueChange={setFormat}>
+          <Select value={format} onValueChange={(v) => v && setFormat(v)}>
             <SelectTrigger className="h-9 w-full text-xs sm:h-8 sm:w-48">
               <SelectValue placeholder="Format" />
             </SelectTrigger>
