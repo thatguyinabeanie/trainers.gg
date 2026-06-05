@@ -2,7 +2,6 @@
 
 import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
-import { computeEventUsage } from "@trainers/supabase";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import { syncTournamentList, processImportQueue } from "@/lib/limitless";
@@ -143,24 +142,6 @@ export async function triggerImportQueue(
 
     const supabase = createServiceRoleClient();
     const result = await processImportQueue(supabase, apiKey, batchSize);
-
-    // Best-effort: compute per-event usage facts for each successfully imported
-    // tournament. Failures here must never propagate — the import already
-    // committed and a usage-compute error should not roll it back.
-    const successfulIds = result.results
-      .filter((r) => r.processed && r.tournamentId && !r.error)
-      .map((r) => r.tournamentId!);
-
-    for (const tournamentId of successfulIds) {
-      try {
-        await computeEventUsage(supabase, "limitless", tournamentId);
-      } catch (usageErr) {
-        console.error(
-          `[usage] computeEventUsage failed for limitless/${tournamentId}:`,
-          usageErr
-        );
-      }
-    }
 
     return {
       success: true,
