@@ -531,8 +531,7 @@ export function ExternalDataFilters({
       {/* ------------------------------------------------------------------ */}
       {/* Row 2 — Active filter chips + result count                          */}
       {/* ------------------------------------------------------------------ */}
-      {(activeChips.length > 0 || true) && (
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
           {activeChips.map((chip) => (
             <span
               key={chip.label}
@@ -564,8 +563,7 @@ export function ExternalDataFilters({
           <span className="text-muted-foreground ml-auto text-xs">
             Showing {resultCount} of {totalCount}
           </span>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
