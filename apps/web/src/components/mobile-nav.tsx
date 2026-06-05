@@ -15,6 +15,7 @@ import {
   Trophy,
   Home,
   Building2,
+  BarChart2,
   BarChart3,
   GraduationCap,
   Swords,
@@ -32,6 +33,7 @@ const authenticatedNavItems: NavItem[] = [
   { href: "/tournaments", label: "Tournaments", icon: Trophy },
   { href: "/communities", label: "Communities", icon: Building2 },
   { href: "/builder", label: "Builder", icon: Swords },
+  { href: "/data", label: "Data", icon: BarChart2 },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/coaching", label: "Coaching", icon: GraduationCap },
 ];
@@ -40,6 +42,7 @@ const publicNavItems: NavItem[] = [
   { href: "/tournaments", label: "Tournaments", icon: Trophy },
   { href: "/communities", label: "Communities", icon: Building2 },
   { href: "/builder", label: "Builder", icon: Swords },
+  { href: "/data", label: "Data", icon: BarChart2 },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/coaching", label: "Coaching", icon: GraduationCap },
 ];
