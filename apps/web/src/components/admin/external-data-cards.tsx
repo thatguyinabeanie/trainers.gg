@@ -37,9 +37,9 @@ export function EventList({ rows, renderActions }: EventListProps) {
       {rows.map((row) => (
         <div key={row.id} className="rounded-xl border p-3">
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1 font-semibold">
-              <span className="truncate">{row.name}</span>{" "}
-              <ExternalLink className="inline size-3 opacity-60" />
+            <div className="flex min-w-0 flex-1 items-center gap-1 font-semibold">
+              <span className="min-w-0 flex-1 truncate">{row.name}</span>
+              <ExternalLink className="size-3 shrink-0 opacity-60" />
             </div>
             {renderActions(row)}
           </div>
