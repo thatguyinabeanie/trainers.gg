@@ -551,9 +551,14 @@ export async function scrapeRk9TeamsBatch(
       if (noStandingsStatusErr)
         console.error(`[rk9-teams] Failed to update event status: ${noStandingsStatusErr.message}`);
 
-      // Best-effort: compute per-event usage facts when all standings are in.
-      // Failure must never break or roll back the completed import.
-      if (allImported) {
+      // Best-effort: compute per-event usage facts whenever the import is fully
+      // attempted (regardless of whether every player published a team).
+      // RK9 events use open team sheets, so allImported is often false even when
+      // the import is completely done — usage must not wait for 100% publish rate.
+      // Guard: only fire on the completion *transition* (alreadyScraped < total)
+      // to avoid wasteful recompute on every re-tick of an already-settled event.
+      // computeEventUsage uses replace semantics so a stray extra call is safe.
+      if (alreadyScraped < total) {
         try {
           await computeEventUsage(supabase, "rk9", eventId);
         } catch (usageErr) {
@@ -757,9 +762,16 @@ export async function scrapeRk9TeamsBatch(
     if (batchStatusErr)
       console.error(`[rk9-teams] Failed to update event status: ${batchStatusErr.message}`);
 
-    // Best-effort: compute per-event usage facts when all team data is in.
-    // Failure must never break or roll back the completed import.
-    if (allImported) {
+    // Best-effort: compute per-event usage facts whenever the import is fully
+    // attempted (regardless of whether every player published a team).
+    // RK9 events use open team sheets — allImported is usually false for most
+    // events because many players never publish. The old allImported gate meant
+    // usage never computed for those events.
+    // Guard: only fire on the completion *transition* (alreadyScraped < total,
+    // i.e., this tick processed new standings and crossed the done threshold) to
+    // avoid wasteful recompute on every re-tick of an already-settled event.
+    // computeEventUsage uses replace semantics so an extra call is safe.
+    if (done && alreadyScraped < total) {
       try {
         await computeEventUsage(supabase, "rk9", eventId);
       } catch (usageErr) {
