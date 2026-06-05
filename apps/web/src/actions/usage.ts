@@ -9,7 +9,9 @@ import {
   computeUsageRollups,
   getSpeciesUsage,
   getSpeciesUsageDetail,
+  getFormatUsageTimeseries,
   type FormatUsageRow,
+  type FormatUsageTimeseriesPoint,
   type SpeciesUsagePeriod,
   type SpeciesUsageDetailParams,
 } from "@trainers/supabase";
@@ -329,6 +331,64 @@ export async function fetchFormatUsage(
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch format usage"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: format-wide usage time-series (all species × all periods)
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchFormatUsageTimeseries. */
+export interface FetchFormatUsageTimeseriesParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** Rollup source. Defaults to "all". */
+  source?: string;
+  /** Period granularity. Defaults to "week". */
+  periodType?: "day" | "week" | "month";
+}
+
+/**
+ * Public (non-admin) server action to fetch all-species × all-periods usage
+ * data for a format.
+ *
+ * Returns a `FormatUsageTimeseriesPoint[]` ordered oldest→newest.  Each point
+ * carries a `usage` map (`species → usage_pct`) covering every tracked species
+ * in that period.  This is the data shape needed to render a streamgraph on the
+ * public /data page — existing queries return either the latest period only
+ * (`fetchFormatUsage`) or a single species over time (`fetchSpeciesUsageDetail`).
+ *
+ * Data is public — all tournament usage stats are visible to everyone — so this
+ * uses `createStaticClient()` wrapped in `unstable_cache` for ISR caching.
+ * Cache revalidation: 3600s (1 hour), matching the other usage actions.
+ */
+export async function fetchFormatUsageTimeseries(
+  params: FetchFormatUsageTimeseriesParams
+): Promise<ActionResult<FormatUsageTimeseriesPoint[]>> {
+  try {
+    const { format, source = "all", periodType = "week" } = params;
+
+    const cacheKey = `usage-timeseries:${format}:${source}:${periodType}`;
+
+    const getCached = unstable_cache(
+      async () => {
+        const supabase = createStaticClient();
+        return getFormatUsageTimeseries(supabase, { format, source, periodType });
+      },
+      [cacheKey],
+      {
+        revalidate: 3600, // 1 hour — matches fetchFormatUsage / fetchSpeciesUsageDetail
+        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
+      }
+    );
+
+    const data = await getCached();
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch format usage timeseries"),
     };
   }
 }

@@ -47,6 +47,14 @@ export interface FormatUsageRow {
   usageChange7d: number | null;
 }
 
+/** One period bucket with every species' usage % for a format. */
+export interface FormatUsageTimeseriesPoint {
+  periodStart: string;
+  periodEnd: string;
+  /** species name -> usage_pct for this period */
+  usage: Record<string, number>;
+}
+
 // =============================================================================
 // Queries
 // =============================================================================
@@ -199,4 +207,84 @@ export async function getSpeciesUsage(
     rank: row.rank,
     usageChange7d: row.usage_change_7d ?? null,
   }));
+}
+
+/**
+ * Fetch trailing N periods for every species in a given format.
+ *
+ * Returns one `FormatUsageTimeseriesPoint` per period bucket, ordered
+ * oldest→newest (left→right), each containing a `usage` map of
+ * `species → usage_pct`.  This is the all-species × all-periods variant
+ * used to render format-wide streamgraphs on the public /data page.
+ *
+ * Unlike `getSpeciesUsageDetail` (single-species) or `getSpeciesUsage`
+ * (latest period only), this query returns the full cross-product needed
+ * to build a time-series visualisation for every tracked species at once.
+ *
+ * @param supabase - Typed Supabase client (use `createStaticClient()` for
+ *   public ISR caching — this data is the same for all viewers).
+ * @param params.format - Format ID (e.g. "gen9vgc2025regg").
+ * @param params.source - Rollup source. Defaults to "all".
+ * @param params.periodType - Period granularity. Defaults to "week".
+ * @param params.limit - Trailing periods to return. Defaults to 16.
+ */
+export async function getFormatUsageTimeseries(
+  supabase: TypedClient,
+  params: {
+    format: string;
+    source?: string;
+    periodType?: "day" | "week" | "month";
+    limit?: number;
+  }
+): Promise<FormatUsageTimeseriesPoint[]> {
+  const {
+    format,
+    source = "all",
+    periodType = "week",
+    limit = 16,
+  } = params;
+
+  const { data, error } = await supabase
+    .from("format_meta_stats")
+    .select(
+      `
+      period_start,
+      period_end,
+      pokemon_usage_stats(
+        species,
+        usage_pct
+      )
+    `
+    )
+    .eq("format", format)
+    .eq("source", source)
+    .eq("period_type", periodType)
+    .order("period_start", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch format usage timeseries for ${format}: ${error.message}`
+    );
+  }
+
+  // Reverse to oldest→newest so the streamgraph series reads left→right.
+  const rows = (data ?? []).reverse();
+
+  return rows.map((row) => {
+    const usageRows = Array.isArray(row.pokemon_usage_stats)
+      ? row.pokemon_usage_stats
+      : [];
+
+    const usage: Record<string, number> = {};
+    for (const entry of usageRows) {
+      usage[entry.species] = entry.usage_pct;
+    }
+
+    return {
+      periodStart: row.period_start,
+      periodEnd: row.period_end,
+      usage,
+    };
+  });
 }

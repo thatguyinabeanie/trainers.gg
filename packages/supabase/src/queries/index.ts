@@ -372,6 +372,7 @@ export {
 export {
   getSpeciesUsageDetail,
   getSpeciesUsage,
+  getFormatUsageTimeseries,
 } from "./usage";
 
 export type {
@@ -379,4 +380,5 @@ export type {
   SpeciesUsagePeriod,
   SpeciesUsageDetailParams,
   FormatUsageRow,
+  FormatUsageTimeseriesPoint,
 } from "./usage";
