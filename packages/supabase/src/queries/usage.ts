@@ -85,6 +85,16 @@ export interface GetPipelineDataParams {
   periodEnd?: string;
 }
 
+/** One distinct event for annotation pins on the usage timeline. */
+export interface FormatEvent {
+  /** Unique event key, e.g. "rk9:00123" or "limitless:abc". */
+  eventKey: string;
+  /** ISO date string (YYYY-MM-DD). */
+  eventDate: string;
+  /** Data source: "rk9" | "limitless" | "first_party". */
+  source: string;
+}
+
 // =============================================================================
 // Queries
 // =============================================================================
@@ -430,6 +440,36 @@ export async function getPipelineData(
     periodStart: metaRow.period_start,
     periodEnd: metaRow.period_end,
   };
+}
+
+/**
+ * Fetch distinct events for a format, used to render annotation pins on the
+ * usage timeline. Delegates to the `get_format_events` RPC, which returns one
+ * row per distinct (event_key, event_date, source) ordered by event_date — see
+ * the migration for why a DISTINCT RPC is used instead of a raw table select.
+ *
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
+ * @param format - Format ID (e.g. "gen9vgc2025regg").
+ */
+export async function getFormatEvents(
+  supabase: TypedClient,
+  format: string
+): Promise<FormatEvent[]> {
+  const { data, error } = await supabase.rpc("get_format_events", {
+    p_format: format,
+  });
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch events for format ${format}: ${error.message}`
+    );
+  }
+
+  return (data ?? []).map((row) => ({
+    eventKey: row.event_key,
+    eventDate: row.event_date,
+    source: row.source,
+  }));
 }
 
 // =============================================================================

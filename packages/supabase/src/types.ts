@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   limitless: {
     Tables: {
       match_results: {
@@ -3890,6 +3865,14 @@ export type Database = {
       }
       get_current_alt_id: { Args: never; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
+      get_format_events: {
+        Args: { p_format: string }
+        Returns: {
+          event_date: string
+          event_key: string
+          source: string
+        }[]
+      }
       get_match_games_for_player: {
         Args: { p_match_id: number }
         Returns: {
@@ -4652,9 +4635,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   limitless: {
     Enums: {},
   },

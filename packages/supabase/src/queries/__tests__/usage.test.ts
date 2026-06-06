@@ -3,6 +3,7 @@ import {
   getFormatUsageTimeseries,
   _fetchUsageRowsInChunks,
   getPipelineData,
+  getFormatEvents,
 } from "../usage";
 import type { TypedClient } from "../../client";
 
@@ -481,5 +482,40 @@ describe("getPipelineData — with data", () => {
     expect(result!.data[0]!.abilities).toEqual([]);
     expect(result!.data[0]!.natures).toEqual([]);
     expect(result!.data[0]!.moves).toEqual([]);
+  });
+});
+
+// =============================================================================
+// getFormatEvents — backed by the get_format_events RPC (returns distinct rows)
+// =============================================================================
+
+describe("getFormatEvents", () => {
+  it("returns [] when no events exist for format", async () => {
+    const client = makeSequentialClient([{ data: [], error: null }]);
+    const result = await getFormatEvents(client, "gen9vgc2025regg");
+    expect(result).toEqual([]);
+  });
+
+  it("throws when the RPC errors", async () => {
+    const client = makeSequentialClient([
+      { data: null, error: { message: "DB error" } },
+    ]);
+    await expect(getFormatEvents(client, "gen9vgc2025regg")).rejects.toThrow(
+      "DB error"
+    );
+  });
+
+  it("maps RPC rows to FormatEvent shape", async () => {
+    // The RPC already returns distinct, ordered rows — no client-side dedup.
+    const rows = [
+      { event_key: "rk9:00123", event_date: "2025-01-12", source: "rk9" },
+      { event_key: "limitless:abc", event_date: "2025-02-01", source: "limitless" },
+    ];
+    const client = makeSequentialClient([{ data: rows, error: null }]);
+    const result = await getFormatEvents(client, "gen9vgc2025regg");
+    expect(result).toEqual([
+      { eventKey: "rk9:00123", eventDate: "2025-01-12", source: "rk9" },
+      { eventKey: "limitless:abc", eventDate: "2025-02-01", source: "limitless" },
+    ]);
   });
 });

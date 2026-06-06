@@ -374,6 +374,7 @@ export {
   getSpeciesUsage,
   getFormatUsageTimeseries,
   getPipelineData,
+  getFormatEvents,
 } from "./usage";
 
 export type {
@@ -385,4 +386,5 @@ export type {
   PipelineSpeciesData,
   PipelineDataResult,
   GetPipelineDataParams,
+  FormatEvent,
 } from "./usage";
