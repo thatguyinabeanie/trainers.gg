@@ -221,6 +221,12 @@ export async function getSpeciesUsage(
  * (latest period only), this query returns the full cross-product needed
  * to build a time-series visualisation for every tracked species at once.
  *
+ * Two separate queries are used instead of a single embedded-row query to
+ * avoid PostgREST's embedded-row cap. A single embedded query for
+ * 16 periods × ~200 species silently truncates the later periods, producing
+ * an incomplete timeseries without surfacing an error. Splitting into a
+ * meta query + a chunked usage-stats query avoids this problem entirely.
+ *
  * @param supabase - Typed Supabase client (use `createStaticClient()` for
  *   public ISR caching — this data is the same for all viewers).
  * @param params.format - Format ID (e.g. "gen9vgc2025regg").
@@ -244,47 +250,107 @@ export async function getFormatUsageTimeseries(
     limit = 16,
   } = params;
 
-  const { data, error } = await supabase
+  // ── Query 1: fetch the trailing N meta rows ────────────────────────────────
+  // Order desc so the DB returns newest-first; we reverse below to get the
+  // oldest→newest order required by the chart.
+  const { data: metaRows, error: metaError } = await supabase
     .from("format_meta_stats")
-    .select(
-      `
-      period_start,
-      period_end,
-      pokemon_usage_stats(
-        species,
-        usage_pct
-      )
-    `
-    )
+    .select("id, period_start, period_end")
     .eq("format", format)
     .eq("source", source)
     .eq("period_type", periodType)
     .order("period_start", { ascending: false })
     .limit(limit);
 
-  if (error) {
+  if (metaError) {
     throw new Error(
-      `Failed to fetch format usage timeseries for ${format}: ${error.message}`
+      `Failed to fetch format meta stats for ${format}: ${metaError.message}`
     );
   }
 
+  // No periods exist yet for this format/source/periodType combination.
+  if (!metaRows || metaRows.length === 0) return [];
+
   // Reverse to oldest→newest so the streamgraph series reads left→right.
-  const rows = (data ?? []).reverse();
+  const orderedMeta = [...metaRows].reverse();
+  const metaIds = orderedMeta.map((r) => r.id);
 
-  return rows.map((row) => {
-    const usageRows = Array.isArray(row.pokemon_usage_stats)
-      ? row.pokemon_usage_stats
-      : [];
+  // ── Query 2: fetch all usage rows for these meta IDs (chunked) ─────────────
+  // Chunking prevents PostgREST "URI too long" errors when the id list is large.
+  // The chunk helper throws on any chunk error so partial results are impossible.
+  const usageRows = await _fetchUsageRowsInChunks(supabase, metaIds);
 
+  // Group usage rows by meta_id for fast lookup when building the timeseries.
+  const usageByMetaId = new Map<number, Array<{ species: string; usage_pct: number }>>();
+  for (const row of usageRows) {
+    let bucket = usageByMetaId.get(row.meta_id);
+    if (!bucket) {
+      bucket = [];
+      usageByMetaId.set(row.meta_id, bucket);
+    }
+    bucket.push({ species: row.species, usage_pct: row.usage_pct });
+  }
+
+  // Build one `FormatUsageTimeseriesPoint` per meta row.
+  return orderedMeta.map((meta) => {
+    const entries = usageByMetaId.get(meta.id) ?? [];
     const usage: Record<string, number> = {};
-    for (const entry of usageRows) {
+    for (const entry of entries) {
       usage[entry.species] = entry.usage_pct;
     }
-
     return {
-      periodStart: row.period_start,
-      periodEnd: row.period_end,
+      periodStart: meta.period_start,
+      periodEnd: meta.period_end,
       usage,
     };
   });
+}
+
+// =============================================================================
+// Internal helpers
+// =============================================================================
+
+/** Max ids per PostgREST `.in()` filter to avoid "URI too long" errors. */
+const IN_QUERY_CHUNK_SIZE = 100;
+
+/** Split `items` into fixed-size chunks (the last chunk may be smaller). */
+function _chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+/**
+ * Fetch `pokemon_usage_stats` rows for the given meta IDs, chunked to stay
+ * within PostgREST's URI length limit. Throws on the first chunk error so
+ * partial results are impossible.
+ *
+ * Exported only for unit-testing — callers outside this module should use
+ * `getFormatUsageTimeseries` directly.
+ */
+export async function _fetchUsageRowsInChunks(
+  supabase: TypedClient,
+  metaIds: number[]
+): Promise<Array<{ meta_id: number; species: string; usage_pct: number }>> {
+  const rows: Array<{ meta_id: number; species: string; usage_pct: number }> =
+    [];
+
+  for (const idChunk of _chunk(metaIds, IN_QUERY_CHUNK_SIZE)) {
+    const { data, error } = await supabase
+      .from("pokemon_usage_stats")
+      .select("meta_id, species, usage_pct")
+      .in("meta_id", idChunk);
+
+    if (error) {
+      throw new Error(
+        `Failed to fetch pokemon usage stats for meta IDs [${idChunk.join(", ")}]: ${error.message}`
+      );
+    }
+
+    if (data) rows.push(...data);
+  }
+
+  return rows;
 }
