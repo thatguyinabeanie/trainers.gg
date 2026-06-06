@@ -166,22 +166,23 @@ export function MovePicker({
   // "Fake Out" vs "fake-out"), so both sides are normalized before lookup.
   const usageMap = new Map<string, MoveUsageEntry>();
   if (usagePeriods && usagePeriods.length > 0) {
-    // Collect pct across periods per move key, keeping insertion order
-    // (oldest → newest per the hook's guarantee).
-    const seriesAccumulator = new Map<string, number[]>();
-    for (const period of usagePeriods) {
+    // Dense per-period series so moves absent in later periods get 0 instead
+    // of carrying a stale last-seen pct (same pattern as ability/item/nature pickers).
+    const perPeriod = usagePeriods.map((period) => {
+      const periodMap = new Map<string, number>();
       for (const m of period.moves) {
-        const key = normalizeMoveKey(m.value);
-        const existing = seriesAccumulator.get(key);
-        if (existing) {
-          existing.push(m.pct);
-        } else {
-          seriesAccumulator.set(key, [m.pct]);
-        }
+        periodMap.set(normalizeMoveKey(m.value), m.pct);
       }
+      return periodMap;
+    });
+
+    const allKeys = new Set<string>();
+    for (const periodMap of perPeriod) {
+      for (const key of periodMap.keys()) allKeys.add(key);
     }
-    // The last period is the latest; grab currentPct from the final element.
-    for (const [key, series] of seriesAccumulator) {
+
+    for (const key of allKeys) {
+      const series = perPeriod.map((periodMap) => periodMap.get(key) ?? 0);
       const currentPct = series[series.length - 1] ?? 0;
       usageMap.set(key, { currentPct, series });
     }
