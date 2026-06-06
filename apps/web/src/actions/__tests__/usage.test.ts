@@ -22,6 +22,8 @@ jest.mock("@trainers/supabase", () => ({
   getSpeciesUsage: jest.fn(),
   getSpeciesUsageDetail: jest.fn(),
   getFormatUsageTimeseries: jest.fn(),
+  getPipelineData: jest.fn(),
+  getFormatEvents: jest.fn(),
 }));
 
 jest.mock("next/cache", () => ({
@@ -41,6 +43,8 @@ import {
   getSpeciesUsageDetail,
   getSpeciesUsage,
   getFormatUsageTimeseries,
+  getPipelineData,
+  getFormatEvents,
 } from "@trainers/supabase";
 import { updateTag } from "next/cache";
 import {
@@ -49,6 +53,8 @@ import {
   fetchSpeciesUsageDetail,
   fetchFormatUsage,
   fetchFormatUsageTimeseries,
+  fetchPipelineData,
+  fetchFormatEvents,
 } from "../usage";
 
 // ---------------------------------------------------------------------------
@@ -64,6 +70,8 @@ const mockComputeUsageRollups = computeUsageRollups as jest.Mock;
 const mockGetSpeciesUsageDetail = getSpeciesUsageDetail as jest.Mock;
 const mockGetSpeciesUsage = getSpeciesUsage as jest.Mock;
 const mockGetFormatUsageTimeseries = getFormatUsageTimeseries as jest.Mock;
+const mockGetPipelineData = getPipelineData as jest.Mock;
+const mockGetFormatEvents = getFormatEvents as jest.Mock;
 const mockUpdateTag = updateTag as jest.Mock;
 
 // ---------------------------------------------------------------------------
@@ -694,5 +702,89 @@ describe("fetchFormatUsageTimeseries", () => {
 
     expect(result.success).toBe(false);
     expect((result as { success: false; error: string }).error).toMatch(/timeseries query failed/);
+  });
+});
+
+// =============================================================================
+// fetchPipelineData
+// =============================================================================
+
+describe("fetchPipelineData", () => {
+  it("returns success with pipeline data", async () => {
+    const mockData = {
+      data: [{ species: "Sneasler", usagePct: 22, rank: 1, abilities: [], natures: [], moves: [] }],
+      periodStart: "2025-01-24",
+      periodEnd: "2025-01-31",
+    };
+    mockCreateStaticClient.mockReturnValue({});
+    mockGetPipelineData.mockResolvedValue(mockData);
+
+    const result = await fetchPipelineData({
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data?.data[0]?.species).toBe("Sneasler");
+    }
+  });
+
+  it("returns success with null when no data exists", async () => {
+    mockCreateStaticClient.mockReturnValue({});
+    mockGetPipelineData.mockResolvedValue(null);
+
+    const result = await fetchPipelineData({
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBeNull();
+    }
+  });
+
+  it("returns failure when query throws", async () => {
+    mockCreateStaticClient.mockReturnValue({});
+    mockGetPipelineData.mockRejectedValue(new Error("DB failure"));
+
+    const result = await fetchPipelineData({
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+// =============================================================================
+// fetchFormatEvents
+// =============================================================================
+
+describe("fetchFormatEvents", () => {
+  it("returns success with event list", async () => {
+    const mockEvents = [{ eventKey: "rk9:001", eventDate: "2025-01-12", source: "rk9" }];
+    mockCreateStaticClient.mockReturnValue({});
+    mockGetFormatEvents.mockResolvedValue(mockEvents);
+
+    const result = await fetchFormatEvents("gen9vgc2025regg");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toHaveLength(1);
+    }
+  });
+
+  it("returns failure when query throws", async () => {
+    mockCreateStaticClient.mockReturnValue({});
+    mockGetFormatEvents.mockRejectedValue(new Error("DB failure"));
+
+    const result = await fetchFormatEvents("gen9vgc2025regg");
+
+    expect(result.success).toBe(false);
   });
 });

@@ -10,10 +10,14 @@ import {
   getSpeciesUsage,
   getSpeciesUsageDetail,
   getFormatUsageTimeseries,
+  getPipelineData,
+  getFormatEvents,
   type FormatUsageRow,
   type FormatUsageTimeseriesPoint,
   type SpeciesUsagePeriod,
   type SpeciesUsageDetailParams,
+  type PipelineDataResult,
+  type FormatEvent,
 } from "@trainers/supabase";
 import { createStaticClient, createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
@@ -400,6 +404,106 @@ export async function fetchFormatUsageTimeseries(
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch format usage timeseries"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: pipeline data for Sankey (all species × histograms)
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchPipelineData. */
+export interface FetchPipelineDataParams {
+  format: string;
+  source?: string;
+  periodType?: "day" | "week" | "month";
+  periodStart?: string;
+  periodEnd?: string;
+}
+
+/**
+ * Public server action to fetch species + histogram data for the Meta Pipeline
+ * Sankey. Returns the latest matching period's data for all species above the
+ * caller's threshold (threshold is applied client-side, not here).
+ *
+ * Uses `createStaticClient()` + `unstable_cache` for 1h ISR caching.
+ */
+export async function fetchPipelineData(
+  params: FetchPipelineDataParams
+): Promise<ActionResult<PipelineDataResult | null>> {
+  try {
+    const {
+      format,
+      source = "all",
+      periodType = "week",
+      periodStart,
+      periodEnd,
+    } = params;
+
+    const cacheKey = `pipeline-data:${format}:${source}:${periodType}:${periodStart ?? ""}:${periodEnd ?? ""}`;
+
+    const getCached = unstable_cache(
+      async () => {
+        const supabase = createStaticClient();
+        return getPipelineData(supabase, {
+          format,
+          source: toDBSource(source),
+          periodType,
+          periodStart,
+          periodEnd,
+        });
+      },
+      [cacheKey],
+      {
+        revalidate: 3600,
+        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
+      }
+    );
+
+    const data = await getCached();
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch pipeline data"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: format events for timeline annotation pins
+// ---------------------------------------------------------------------------
+
+/**
+ * Public server action to fetch distinct event dates for a format.
+ *
+ * Returns `FormatEvent[]` for rendering annotation pins on the usage
+ * timeline's X-axis. Uses `createStaticClient()` + `unstable_cache` for 1h ISR.
+ */
+export async function fetchFormatEvents(
+  format: string
+): Promise<ActionResult<FormatEvent[]>> {
+  try {
+    const cacheKey = `format-events:${format}`;
+
+    const getCached = unstable_cache(
+      async () => {
+        const supabase = createStaticClient();
+        return getFormatEvents(supabase, format);
+      },
+      [cacheKey],
+      {
+        revalidate: 3600,
+        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
+      }
+    );
+
+    const data = await getCached();
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch format events"),
     };
   }
 }
