@@ -129,9 +129,9 @@ describe("UsageControls", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the threshold slider", () => {
-    renderControls();
-    // Slider renders as a range input — query by the wrapper aria-label
-    expect(screen.getByRole("slider")).toBeInTheDocument();
+  it("renders the threshold percentage display", () => {
+    renderControls({ filters: { threshold: 2 } });
+    // The threshold value is rendered as text next to the slider
+    expect(screen.getByText("2%")).toBeInTheDocument();
   });
 });

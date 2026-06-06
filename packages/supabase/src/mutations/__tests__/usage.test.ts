@@ -157,6 +157,16 @@ describe("computeEventUsage — limitless error paths", () => {
       computeEventUsage(client, "limitless", "MISSING")
     ).rejects.toThrow("not found in limitless.tournaments");
   });
+
+  it("throws when limitless tournament has no format_id", async () => {
+    const client = buildSequentialClient([
+      { data: { format_id: null, date: "2025-03-01" } },
+    ]);
+
+    await expect(
+      computeEventUsage(client, "limitless", "t999")
+    ).rejects.toThrow("has no format_id");
+  });
 });
 
 // =============================================================================
