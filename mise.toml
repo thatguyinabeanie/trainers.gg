@@ -13,6 +13,7 @@ node = "22"
 # (pnpm-macos-arm64) are outdated; current pnpm releases ship
 # pnpm-darwin-arm64.tar.gz. npm:pnpm pulls from the npm registry instead.
 "npm:pnpm" = "latest"
+bun = "latest"
 opencode = "latest"
 java = "zulu-21"
 ruby = "3.3"

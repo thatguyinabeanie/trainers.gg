@@ -1,8 +1,11 @@
+---
+paths:
+  - "packages/supabase/supabase/migrations/**"
+---
+
 # Supabase Migrations
 
 Rules that apply when creating or editing SQL migration files in `packages/supabase/supabase/migrations/`.
-
-Applies to: `packages/supabase/supabase/migrations/**`
 
 ## Idempotency
 
