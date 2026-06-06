@@ -3,7 +3,13 @@
  * Covers: unified standings table with inline sprites, row-level expansion,
  * skeleton loading states, error display, and Load more button.
  */
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 import React from "react";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -43,6 +49,7 @@ const rk9Row: UnifiedRow = {
   playerCount: 100,
   status: "complete",
   statusDetail: "complete",
+  displayStatus: "imported",
   error: null,
   platform: null,
   isOnline: null,
@@ -74,6 +81,7 @@ const limitlessRow: UnifiedRow = {
   playerCount: 50,
   status: "complete",
   statusDetail: "completed",
+  displayStatus: "imported",
   error: null,
   platform: "SWITCH",
   isOnline: false,
@@ -179,9 +187,15 @@ describe("ExpandedRowData", () => {
 
       render(<ExpandedRowData row={rk9Row} />);
 
-      expect(screen.getByRole("columnheader", { name: "#" })).toBeInTheDocument();
-      expect(screen.getByRole("columnheader", { name: /name/i })).toBeInTheDocument();
-      expect(screen.getByRole("columnheader", { name: /team/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("columnheader", { name: "#" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("columnheader", { name: /name/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("columnheader", { name: /team/i })
+      ).toBeInTheDocument();
     });
 
     it("renders a row for each standing with first + last name", () => {
@@ -216,7 +230,15 @@ describe("ExpandedRowData", () => {
               player_id_masked: "1....9",
             },
             team_pokemon: [
-              { position: 1, species: "pikachu", ability: "Static", held_item: null, tera_type: null, stat_alignment: null, moves: [] },
+              {
+                position: 1,
+                species: "pikachu",
+                ability: "Static",
+                held_item: null,
+                tera_type: null,
+                stat_alignment: null,
+                moves: [],
+              },
             ],
           },
         ],
@@ -334,11 +356,21 @@ describe("ExpandedRowData", () => {
 
       render(<ExpandedRowData row={limitlessRow} />);
 
-      expect(screen.getByRole("columnheader", { name: "#" })).toBeInTheDocument();
-      expect(screen.getByRole("columnheader", { name: /player/i })).toBeInTheDocument();
-      expect(screen.getByRole("columnheader", { name: /team/i })).toBeInTheDocument();
-      expect(screen.getByRole("columnheader", { name: /record/i })).toBeInTheDocument();
-      expect(screen.queryByRole("columnheader", { name: /division/i })).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("columnheader", { name: "#" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("columnheader", { name: /player/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("columnheader", { name: /team/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("columnheader", { name: /record/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("columnheader", { name: /division/i })
+      ).not.toBeInTheDocument();
     });
 
     it("renders player display names", () => {
@@ -385,7 +417,9 @@ describe("ExpandedRowData", () => {
       expect(screen.queryByText("Static")).not.toBeInTheDocument();
 
       // Click the first chevron to expand
-      const toggleButtons = screen.getAllByRole("button", { name: /toggle team details/i });
+      const toggleButtons = screen.getAllByRole("button", {
+        name: /toggle team details/i,
+      });
       await act(async () => {
         fireEvent.click(toggleButtons[0]);
       });
@@ -407,7 +441,9 @@ describe("ExpandedRowData", () => {
 
       render(<ExpandedRowData row={rk9Row} />);
 
-      const toggleBtn = screen.getByRole("button", { name: /toggle team details/i });
+      const toggleBtn = screen.getByRole("button", {
+        name: /toggle team details/i,
+      });
 
       // Expand
       await act(async () => {
@@ -454,7 +490,9 @@ describe("ExpandedRowData", () => {
       const checkbox = screen.getByRole("checkbox");
       fireEvent.click(checkbox);
 
-      const toggleBtn = screen.getByRole("button", { name: /toggle team details/i });
+      const toggleBtn = screen.getByRole("button", {
+        name: /toggle team details/i,
+      });
       await act(async () => {
         fireEvent.click(toggleBtn);
       });
@@ -474,7 +512,9 @@ describe("ExpandedRowData", () => {
 
       render(<ExpandedRowData row={rk9Row} />);
 
-      const toggleBtn = screen.getByRole("button", { name: /toggle team details/i });
+      const toggleBtn = screen.getByRole("button", {
+        name: /toggle team details/i,
+      });
       await act(async () => {
         fireEvent.click(toggleBtn);
       });
@@ -495,7 +535,9 @@ describe("ExpandedRowData", () => {
 
       render(<ExpandedRowData row={rk9Row} />);
 
-      const toggleBtn = screen.getByRole("button", { name: /toggle team details/i });
+      const toggleBtn = screen.getByRole("button", {
+        name: /toggle team details/i,
+      });
       await act(async () => {
         fireEvent.click(toggleBtn);
       });

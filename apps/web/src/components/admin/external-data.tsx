@@ -60,7 +60,7 @@ import {
   rosterEligibleIds,
   teamsEligibleIds,
 } from "./external-data-shared";
-import { deriveLimitlessDisplayStatus } from "./limitless-display-status";
+import { deriveDisplayStatus } from "./display-status";
 import { StatusTabs, type StatusTab } from "./external-data-status-tabs";
 import { type StatusChip } from "./external-data-status-chips";
 import { ExternalDataToolbar } from "./external-data-toolbar";
@@ -552,31 +552,35 @@ export function ExternalData() {
   // Build per-source rows + filter + sort
   // -------------------------------------------------------------------------
 
-  // RK9 rows
-  const rk9Rows: UnifiedRow[] = (rk9Events ?? []).map((e) => {
-    const upcoming = isUpcoming(e.date_start);
-    return {
-      id: `rk9-${e.event_id}`,
-      source: "rk9" as const,
-      name: e.name,
-      category: e.tier,
-      date: e.date_start,
-      playerCount: e.player_count,
-      status: normalizeRk9Status(e.import_status, upcoming),
-      statusDetail: upcoming ? "upcoming" : e.import_status,
-      error: e.import_error,
-      platform: null,
-      isOnline: null,
-      hasData: e.has_team_lists,
-      country: e.location_country,
-      rk9: e,
-    };
-  });
+  // RK9 rows — two-pass: build the full shape first, then derive displayStatus
+  // (deriveDisplayStatus needs the complete UnifiedRow, including rk9/limitless)
+  const rk9Rows: UnifiedRow[] = (rk9Events ?? [])
+    .map((e) => {
+      const upcoming = isUpcoming(e.date_start);
+      return {
+        id: `rk9-${e.event_id}`,
+        source: "rk9" as const,
+        name: e.name,
+        category: e.tier,
+        date: e.date_start,
+        playerCount: e.player_count,
+        status: normalizeRk9Status(e.import_status, upcoming),
+        statusDetail: upcoming ? "upcoming" : e.import_status,
+        displayStatus: "pending" as const,
+        error: e.import_error,
+        platform: null,
+        isOnline: null,
+        hasData: e.has_team_lists,
+        country: e.location_country,
+        rk9: e,
+      };
+    })
+    .map((row) => ({ ...row, displayStatus: deriveDisplayStatus(row) }));
 
   const filteredRk9Rows = rk9Rows
     .filter((row) => {
       const f = rk9Filters;
-      if (f.status !== "all" && row.status !== f.status) return false;
+      if (f.status !== "all" && row.displayStatus !== f.status) return false;
       if (f.tier !== "all" && row.category !== f.tier) return false;
       if (f.country !== "all" && row.country !== f.country) return false;
       if (f.dateFrom && row.date < f.dateFrom) return false;
@@ -618,28 +622,26 @@ export function ExternalData() {
       }
     });
 
-  // Limitless rows
-  const limitlessRows: UnifiedRow[] = (limitlessTournaments ?? []).map((t) => ({
-    id: `limitless-${t.tournament_id}`,
-    source: "limitless" as const,
-    name: t.name,
-    category: FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id,
-    date: t.date,
-    playerCount: t.player_count,
-    status: normalizeLimitlessStatus(t.import_status),
-    statusDetail: t.import_status ?? "pending",
-    error: t.import_error,
-    platform: t.platform,
-    isOnline: t.is_online,
-    hasData: t.decklists,
-    country: null,
-    limitless: t,
-    displayStatus: deriveLimitlessDisplayStatus({
-      import_status: t.import_status,
-      format_id: t.format_id,
-      data_imported_at: t.data_imported_at,
-    }),
-  }));
+  // Limitless rows — two-pass: build the full shape first, then derive displayStatus
+  const limitlessRows: UnifiedRow[] = (limitlessTournaments ?? [])
+    .map((t) => ({
+      id: `limitless-${t.tournament_id}`,
+      source: "limitless" as const,
+      name: t.name,
+      category: FORMAT_ID_TO_CODE[t.format_id] ?? t.format_id,
+      date: t.date,
+      playerCount: t.player_count,
+      status: normalizeLimitlessStatus(t.import_status),
+      statusDetail: t.import_status ?? "pending",
+      displayStatus: "pending" as const,
+      error: t.import_error,
+      platform: t.platform,
+      isOnline: t.is_online,
+      hasData: t.decklists,
+      country: null,
+      limitless: t,
+    }))
+    .map((row) => ({ ...row, displayStatus: deriveDisplayStatus(row) }));
 
   const filteredLimitlessRows = limitlessRows
     .filter((row) => {
@@ -759,11 +761,18 @@ export function ExternalData() {
     (t) => t.import_status === "failed"
   ).length;
 
-  // Per-display-status counts for the Limitless status tabs.
+  // Per-display-status counts for status tabs (both sources).
   const limitlessStatusCounts = limitlessRows.reduce(
     (acc, r) => {
-      const ds = r.displayStatus ?? "pending";
-      acc[ds] = (acc[ds] ?? 0) + 1;
+      acc[r.displayStatus] = (acc[r.displayStatus] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  const rk9StatusCounts = rk9Rows.reduce(
+    (acc, r) => {
+      acc[r.displayStatus] = (acc[r.displayStatus] ?? 0) + 1;
       return acc;
     },
     {} as Record<string, number>
@@ -1275,14 +1284,9 @@ export function ExternalData() {
       count: limitlessStatusCounts["pending"] ?? 0,
     },
     {
-      value: "queued",
-      label: "Queued",
-      count: limitlessStatusCounts["queued"] ?? 0,
-    },
-    {
-      value: "importing",
-      label: "Importing",
-      count: limitlessStatusCounts["importing"] ?? 0,
+      value: "in-progress",
+      label: "In progress",
+      count: limitlessStatusCounts["in-progress"] ?? 0,
     },
     {
       value: "imported",
@@ -1300,6 +1304,26 @@ export function ExternalData() {
       count: limitlessSkippedCount,
       tone: "skipped",
     },
+  ];
+
+  const rk9Tabs: StatusTab[] = [
+    { value: "all", label: "All", count: rk9Rows.length },
+    {
+      value: "pending",
+      label: "Pending",
+      count: rk9StatusCounts["pending"] ?? 0,
+    },
+    {
+      value: "in-progress",
+      label: "In progress",
+      count: rk9StatusCounts["in-progress"] ?? 0,
+    },
+    {
+      value: "imported",
+      label: "Imported",
+      count: rk9StatusCounts["imported"] ?? 0,
+    },
+    { value: "failed", label: "Failed", count: rk9StatusCounts["failed"] ?? 0 },
   ];
 
   // -------------------------------------------------------------------------
@@ -1486,6 +1510,13 @@ export function ExternalData() {
                   {usageMessage}
                 </p>
               )}
+
+              {/* RK9 Status Tabs */}
+              <StatusTabs
+                tabs={rk9Tabs}
+                active={rk9Filters.status}
+                onChange={(v) => setRk9Filters((p) => ({ ...p, status: v }))}
+              />
 
               {/* RK9 Filters */}
               <ExternalDataFilters

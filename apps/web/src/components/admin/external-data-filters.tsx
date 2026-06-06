@@ -63,11 +63,6 @@ function rk9Chips(
 ): FilterChip[] {
   const chips: FilterChip[] = [];
 
-  if (filters.status !== INITIAL_RK9_FILTERS.status)
-    chips.push({
-      label: `Status: ${filters.status}`,
-      onRemove: () => onChange({ status: INITIAL_RK9_FILTERS.status }),
-    });
   if (filters.tier !== INITIAL_RK9_FILTERS.tier)
     chips.push({
       label: `Tier: ${filters.tier}`,
@@ -178,7 +173,6 @@ function limitlessSecondaryActiveCount(filters: LimitlessFilterState): number {
 function rk9AllActiveCount(filters: RK9FilterState): number {
   let count = rk9SecondaryActiveCount(filters);
   if (filters.tier !== INITIAL_RK9_FILTERS.tier) count++;
-  if (filters.status !== INITIAL_RK9_FILTERS.status) count++;
   return count;
 }
 
@@ -285,44 +279,6 @@ export function ExternalDataFilters({
               {f}
             </SelectItem>
           ))}
-        </SelectContent>
-      </Select>
-    );
-  }
-
-  function renderStatusSelect() {
-    return (
-      <Select
-        value={isRk9 ? rk9.status : lim.status}
-        onValueChange={(v) => {
-          if (v) {
-            if (isRk9) handleRk9({ status: v });
-            else handleLim({ status: v });
-          }
-        }}
-      >
-        <SelectTrigger className="h-8 w-full text-xs sm:w-32" size="sm">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All statuses</SelectItem>
-          {isRk9 ? (
-            <>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="in-progress">In progress</SelectItem>
-              <SelectItem value="complete">Complete</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-            </>
-          ) : (
-            <>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="queued">Queued</SelectItem>
-              <SelectItem value="importing">Importing</SelectItem>
-              <SelectItem value="complete">Complete</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-            </>
-          )}
         </SelectContent>
       </Select>
     );
@@ -524,9 +480,8 @@ export function ExternalDataFilters({
           />
         </div>
 
-        {/* Desktop: Format/Tier + Status inline */}
+        {/* Desktop: Format/Tier inline */}
         {!isMobile && renderFormatOrTierSelect()}
-        {!isMobile && isRk9 && renderStatusSelect()}
 
         {/* Popover trigger — desktop: "More filters" for secondary only;
             mobile: "Filters" for all non-search filters */}
@@ -557,22 +512,12 @@ export function ExternalDataFilters({
             <div className="space-y-3">
               {/* Mobile: all non-search filters live here */}
               {isMobile && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-muted-foreground text-xs font-medium">
-                      {isRk9 ? "Tier" : "Format"}
-                    </label>
-                    {renderFormatOrTierSelect()}
-                  </div>
-                  {isRk9 && (
-                    <div className="space-y-1">
-                      <label className="text-muted-foreground text-xs font-medium">
-                        Status
-                      </label>
-                      {renderStatusSelect()}
-                    </div>
-                  )}
-                </>
+                <div className="space-y-1">
+                  <label className="text-muted-foreground text-xs font-medium">
+                    {isRk9 ? "Tier" : "Format"}
+                  </label>
+                  {renderFormatOrTierSelect()}
+                </div>
               )}
               {/* Secondary filters — always in the popover on both layouts */}
               {renderSecondaryFilters()}

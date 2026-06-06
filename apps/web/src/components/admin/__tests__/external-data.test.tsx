@@ -1002,7 +1002,7 @@ describe("ExternalData events table rendering", () => {
     // Status badges driven by import_status
     expect(screen.getByText(/Roster ready/i)).toBeInTheDocument();
     expect(screen.getByText(/Teams partial/i)).toBeInTheDocument();
-    // "Upcoming" appears in the status filter dropdown too — assert ≥1 match
+    // "Upcoming" appears in the StatusBadge for the upcoming row — assert ≥1 match
     expect(screen.getAllByText(/Upcoming/i).length).toBeGreaterThan(0);
 
     // Failed row shows its error text
@@ -1108,6 +1108,88 @@ describe("ExternalData events table rendering", () => {
     });
     // Bulk "Scrape Rosters" action surfaces for roster-eligible (pending/failed) rows
     expect(screen.getByText(/Scrape Rosters/i)).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// RK9 status tabs
+// =============================================================================
+
+describe("RK9 status tabs", () => {
+  beforeEach(() => {
+    setupSiteConfigMocks();
+    mockSupabaseData = {
+      events: [
+        makeEvent({
+          event_id: "e-pending-1",
+          name: "Pending A",
+          import_status: "pending",
+        }),
+        makeEvent({
+          event_id: "e-pending-2",
+          name: "Pending B",
+          import_status: "pending",
+        }),
+        makeEvent({
+          event_id: "e-complete",
+          name: "Complete A",
+          import_status: "complete",
+        }),
+        makeEvent({
+          event_id: "e-failed",
+          name: "Failed A",
+          import_status: "failed",
+        }),
+      ],
+    };
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    mockSupabaseData = {};
+  });
+
+  it("renders RK9 status tabs with correct counts", async () => {
+    render(<ExternalData />);
+    await waitFor(() =>
+      expect(screen.getByText("Pending A")).toBeInTheDocument()
+    );
+
+    // All four status tabs should render with counts
+    const allTab = screen.getByRole("tab", { name: /^All/ });
+    expect(allTab).toBeInTheDocument();
+    expect(allTab.textContent).toMatch(/4/);
+
+    const pendingTab = screen.getByRole("tab", { name: /^Pending/ });
+    expect(pendingTab).toBeInTheDocument();
+    expect(pendingTab.textContent).toMatch(/2/);
+
+    const importedTab = screen.getByRole("tab", { name: /^Imported/ });
+    expect(importedTab).toBeInTheDocument();
+    expect(importedTab.textContent).toMatch(/1/);
+
+    const failedTab = screen.getByRole("tab", { name: /^Failed/ });
+    expect(failedTab).toBeInTheDocument();
+    expect(failedTab.textContent).toMatch(/1/);
+  });
+
+  it("filters to pending rows when the Pending tab is clicked", async () => {
+    render(<ExternalData />);
+    await waitFor(() =>
+      expect(screen.getByText("Pending A")).toBeInTheDocument()
+    );
+
+    const pendingTab = screen.getByRole("tab", { name: /^Pending/ });
+    await act(async () => {
+      fireEvent.click(pendingTab);
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText("Pending A")).toBeInTheDocument()
+    );
+    expect(screen.getByText("Pending B")).toBeInTheDocument();
+    expect(screen.queryByText("Complete A")).not.toBeInTheDocument();
+    expect(screen.queryByText("Failed A")).not.toBeInTheDocument();
   });
 });
 

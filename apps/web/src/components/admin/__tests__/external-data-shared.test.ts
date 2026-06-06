@@ -59,6 +59,7 @@ function rk9Row(id: string, import_status: string): UnifiedRow {
     playerCount: 10,
     status: "pending",
     statusDetail: import_status,
+    displayStatus: "pending",
     error: null,
     platform: null,
     isOnline: null,

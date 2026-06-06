@@ -2,7 +2,7 @@
 // expanded-row-data.tsx. Kept in a dedicated file to avoid sibling import
 // cycles.
 
-import { type DisplayStatus } from "./limitless-display-status";
+import { type DisplayStatus } from "./display-status";
 
 // ---------------------------------------------------------------------------
 // Filter helper types
@@ -100,8 +100,8 @@ export interface UnifiedRow {
   date: string;
   playerCount: number | null;
   status: string; // normalized status
-  /** Fine-grained Limitless display status for the status tabs + counts. Unset for RK9 rows. */
-  displayStatus?: DisplayStatus;
+  /** Coarse unified display status (both sources) — drives status tabs + counts. */
+  displayStatus: DisplayStatus;
   statusDetail: string; // original status for display
   error: string | null;
   // Filterable extras
