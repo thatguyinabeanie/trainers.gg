@@ -43,6 +43,9 @@ export {
 // Constants
 export { COOKIE_DOMAIN } from "./constants";
 
+// PostgREST query helpers
+export { pgInList } from "./postgrest-helpers";
+
 // Storage exports
 export {
   STORAGE_BUCKETS,

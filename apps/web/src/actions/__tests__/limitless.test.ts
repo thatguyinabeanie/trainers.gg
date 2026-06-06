@@ -32,28 +32,60 @@ const mockCreateClient = createServiceRoleClient as jest.Mock;
 const mockSync = syncTournamentList as jest.Mock;
 const mockProcess = processImportQueue as jest.Mock;
 
+// Hoisted spy so tests can assert .not() call args.
+let notSpy: jest.Mock;
+
 beforeEach(() => {
   jest.clearAllMocks();
+  notSpy = jest.fn();
+
   mockGetUserId.mockResolvedValue("user-1");
   mockIsSiteAdmin.mockResolvedValue(true);
+
   mockCreateClient.mockReturnValue({
     schema: () => ({
       from: () => {
-        const chain = {
+        // Terminal results for both execution paths:
+        //   queueTournamentForImport  → .select(...).maybeSingle() → { data: {...}, error: null }
+        //   batchQueueTournaments     → .select(...) resolved directly → { data: [...], error: null }
+        const selectResult = {
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { tournament_id: "t1" },
+            error: null,
+          }),
+        };
+        Object.assign(
+          selectResult,
+          Promise.resolve({ data: [{ tournament_id: "t1" }], error: null })
+        );
+
+        const chain: Record<string, jest.Mock> = {
           update: jest.fn().mockReturnThis(),
           in: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
-          not: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnValue({
-            maybeSingle: jest
-              .fn()
-              .mockResolvedValue({
-                data: [{ tournament_id: "t1" }],
-                error: null,
-              }),
-          }),
-          maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+          not: notSpy.mockReturnThis(),
+          select: jest
+            .fn()
+            .mockResolvedValue({
+              data: [{ tournament_id: "t1" }],
+              error: null,
+            }),
         };
+
+        // queueTournamentForImport needs .select().maybeSingle()
+        // Override select to return an object that is both thenable AND has .maybeSingle
+        const selectWithMaybeSingle = jest.fn().mockImplementation(() => {
+          const p = Promise.resolve({
+            data: { tournament_id: "t1" },
+            error: null,
+          });
+          (p as unknown as Record<string, unknown>).maybeSingle = jest
+            .fn()
+            .mockResolvedValue({ data: { tournament_id: "t1" }, error: null });
+          return p;
+        });
+
+        chain.select = selectWithMaybeSingle;
         return chain;
       },
     }),
@@ -79,12 +111,31 @@ describe("queueTournamentForImport", () => {
     expect(result.success).toBe(false);
     expect(result.error).toBe("Requires site admin");
   });
+
+  it("passes a parenthesized in-list string to .not(), not a raw array", async () => {
+    await queueTournamentForImport("t1");
+    expect(notSpy).toHaveBeenCalledWith("format_id", "in", '("CUSTOM")');
+  });
 });
 
 describe("batchQueueTournaments", () => {
   it("queues multiple tournaments", async () => {
     const result = await batchQueueTournaments(["t1", "t2"]);
     expect(result.success).toBe(true);
+  });
+
+  it("passes a parenthesized in-list string to .not(), not a raw array", async () => {
+    await batchQueueTournaments(["t1", "t2"]);
+    expect(notSpy).toHaveBeenCalledWith("format_id", "in", '("CUSTOM")');
+  });
+
+  it("returns queued: 0 for empty input without calling the DB", async () => {
+    const result = await batchQueueTournaments([]);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.queued).toBe(0);
+    }
+    expect(notSpy).not.toHaveBeenCalled();
   });
 });
 

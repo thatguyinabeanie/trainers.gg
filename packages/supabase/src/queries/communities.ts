@@ -1,5 +1,6 @@
 import type { Database } from "../types";
 import type { TypedClient } from "../client";
+import { pgInList } from "../postgrest-helpers";
 type OrganizationRow = Database["public"]["Tables"]["communities"]["Row"];
 
 export type CommunityWithCounts = OrganizationRow & {
@@ -993,7 +994,7 @@ export async function searchUsersForInvite(
 
   // Exclude existing staff/owner
   if (existingUserIds.length > 0) {
-    query = query.not("id", "in", existingUserIds);
+    query = query.not("id", "in", pgInList(existingUserIds));
   }
 
   const { data: users, error } = await query;

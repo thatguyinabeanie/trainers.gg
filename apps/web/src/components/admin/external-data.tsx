@@ -43,7 +43,7 @@ import {
 } from "@/actions/limitless";
 import { triggerUsageRollup, calculateSourceUsage } from "@/actions/usage";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
-import { formatTimeAgo } from "@trainers/utils";
+import { formatTimeAgo, getErrorMessage } from "@trainers/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsClient } from "@/hooks/use-is-client";
 
@@ -279,9 +279,13 @@ export function ExternalData() {
 
   // Per-source usage calculation state
   const [calculatingRk9, setCalculatingRk9] = useState(false);
-  const [calculateRk9Message, setCalculateRk9Message] = useState<string | null>(null);
+  const [calculateRk9Message, setCalculateRk9Message] = useState<string | null>(
+    null
+  );
   const [calculatingLimitless, setCalculatingLimitless] = useState(false);
-  const [calculateLimitlessMessage, setCalculateLimitlessMessage] = useState<string | null>(null);
+  const [calculateLimitlessMessage, setCalculateLimitlessMessage] = useState<
+    string | null
+  >(null);
 
   // -------------------------------------------------------------------------
   // Load auto-import settings from DB (per-source)
@@ -718,7 +722,6 @@ export function ExternalData() {
     ...new Set(limitlessRows.map((r) => r.category)),
   ].sort();
 
-
   // -------------------------------------------------------------------------
   // Stats
   // -------------------------------------------------------------------------
@@ -850,7 +853,12 @@ export function ExternalData() {
   }
 
   async function handleResetEvent(eventId: string) {
-    if (!window.confirm("Delete all roster and team data for this event? Cannot be undone.")) return;
+    if (
+      !window.confirm(
+        "Delete all roster and team data for this event? Cannot be undone."
+      )
+    )
+      return;
     const result = await resetRk9EventData(eventId);
     if (!result.success) toast.error(result.error);
     else {
@@ -974,8 +982,8 @@ export function ExternalData() {
       const result = await queueTournamentForImport(tournamentId);
       if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
-    } catch {
-      toast.error("Failed to queue tournament");
+    } catch (e) {
+      toast.error(getErrorMessage(e, "Failed to queue tournament"));
     } finally {
       setQueuingIds((prev) => {
         const next = new Set(prev);
@@ -997,8 +1005,8 @@ export function ExternalData() {
       const result = await batchQueueTournaments(ids);
       if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
-    } catch {
-      toast.error("Failed to queue tournaments");
+    } catch (e) {
+      toast.error(getErrorMessage(e, "Failed to queue tournaments"));
     } finally {
       setBatchQueuing(false);
     }
@@ -1012,8 +1020,8 @@ export function ExternalData() {
       const result = await batchQueueTournaments(limitlessQueueMatchingIds);
       if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
-    } catch {
-      toast.error("Failed to queue tournaments");
+    } catch (e) {
+      toast.error(getErrorMessage(e, "Failed to queue tournaments"));
     } finally {
       setBatchQueuing(false);
     }
@@ -1026,7 +1034,11 @@ export function ExternalData() {
     for (let i = 0; i < rk9RosterMatchingIds.length; i++) {
       const id = rk9RosterMatchingIds[i]!;
       const name = rk9Events?.find((e) => e.event_id === id)?.name ?? id;
-      setBulkProgress({ total: rk9RosterMatchingIds.length, done: i, current: name });
+      setBulkProgress({
+        total: rk9RosterMatchingIds.length,
+        done: i,
+        current: name,
+      });
       await handleScrapeRoster(id);
     }
     setBulkProcessing(false);
@@ -1040,7 +1052,11 @@ export function ExternalData() {
     for (let i = 0; i < rk9TeamsMatchingIds.length; i++) {
       const id = rk9TeamsMatchingIds[i]!;
       const name = rk9Events?.find((e) => e.event_id === id)?.name ?? id;
-      setBulkProgress({ total: rk9TeamsMatchingIds.length, done: i, current: name });
+      setBulkProgress({
+        total: rk9TeamsMatchingIds.length,
+        done: i,
+        current: name,
+      });
       await handleScrapeTeams(id);
     }
     setBulkProcessing(false);
@@ -1087,7 +1103,11 @@ export function ExternalData() {
     setBulkProcessing(true);
     const events = resetEligibleSelected;
     for (let i = 0; i < events.length; i++) {
-      setBulkProgress({ total: events.length, done: i, current: events[i]!.name });
+      setBulkProgress({
+        total: events.length,
+        done: i,
+        current: events[i]!.name,
+      });
       await resetRk9EventData(events[i]!.rk9!.event_id);
     }
     setBulkProcessing(false);
@@ -1102,7 +1122,8 @@ export function ExternalData() {
       (r) => r.limitless!.tournament_id
     );
     const result = await batchQueueTournaments(ids);
-    if (!result.success) toast.error("Failed to queue tournaments");
+    if (!result.success)
+      toast.error(result.error ?? "Failed to queue tournaments");
     setSelectedIds(new Set());
     setRefreshKey((k) => k + 1);
     setBulkProcessing(false);
@@ -1179,14 +1200,22 @@ export function ExternalData() {
     const dir = playerSort.direction === "asc" ? 1 : -1;
     switch (playerSort.column) {
       case "name":
-        return `${a.first_name} ${a.last_name}`
-          .localeCompare(`${b.first_name} ${b.last_name}`) * dir;
+        return (
+          `${a.first_name} ${a.last_name}`.localeCompare(
+            `${b.first_name} ${b.last_name}`
+          ) * dir
+        );
       case "id":
-        return (a.player_id_masked ?? "").localeCompare(b.player_id_masked ?? "") * dir;
+        return (
+          (a.player_id_masked ?? "").localeCompare(b.player_id_masked ?? "") *
+          dir
+        );
       case "country":
         return (a.country ?? "").localeCompare(b.country ?? "") * dir;
       case "events":
-        return ((a.standings[0]?.count ?? 0) - (b.standings[0]?.count ?? 0)) * dir;
+        return (
+          ((a.standings[0]?.count ?? 0) - (b.standings[0]?.count ?? 0)) * dir
+        );
       default:
         return 0;
     }
@@ -1237,8 +1266,7 @@ export function ExternalData() {
         draining={importing}
         onRunImport={handleRunImport}
         rk9Jobs={[...activeJobs.entries()].map(([eventId, j]) => ({
-          name:
-            rk9Events?.find((e) => e.event_id === eventId)?.name ?? eventId,
+          name: rk9Events?.find((e) => e.event_id === eventId)?.name ?? eventId,
           scraped: j.scraped,
           total: j.total,
         }))}
@@ -1279,7 +1307,10 @@ export function ExternalData() {
           {/* RK9 sub-nav: Events | Players */}
           <div className="flex items-center gap-1">
             <button
-              onClick={() => { setRk9View("events"); setSelectedIds(new Set()); }}
+              onClick={() => {
+                setRk9View("events");
+                setSelectedIds(new Set());
+              }}
               className={cn(
                 "rounded px-3 py-1 text-xs font-medium",
                 rk9View === "events"
@@ -1290,7 +1321,10 @@ export function ExternalData() {
               Events
             </button>
             <button
-              onClick={() => { setRk9View("players"); setSelectedIds(new Set()); }}
+              onClick={() => {
+                setRk9View("players");
+                setSelectedIds(new Set());
+              }}
               className={cn(
                 "rounded px-3 py-1 text-xs font-medium",
                 rk9View === "players"
@@ -1315,88 +1349,90 @@ export function ExternalData() {
             </div>
           ) : (
             <>
-          {/* RK9 Stats + Actions — grouped toolbar */}
-          <ExternalDataToolbar
-            tab="rk9"
-            chips={rk9Chips}
-            settings={{
-              tab: "rk9",
-              loading: configLoading,
-              backendOn: rk9BackendAutoImport,
-              onToggleBackend: handleToggleRk9Backend,
-              teamsPerTick: rk9TeamsPerTick,
-              onTeamsPerTickChange: handleRk9TeamsPerTickChange,
-              onTeamsPerTickBlur: saveRk9TeamsPerTick,
-              concurrency: rk9TeamConcurrency,
-              onConcurrencyChange: handleRk9TeamConcurrencyChange,
-              onConcurrencyBlur: saveRk9TeamConcurrency,
-              intervalSeconds: rk9CronInterval,
-              onIntervalChange: handleRk9CronIntervalChange,
-              onIntervalBlur: saveRk9CronInterval,
-            }}
-            isFetching={isFetching}
-            onRefresh={() => setRefreshKey((k) => k + 1)}
-            onRecomputeUsage={handleRecomputeUsage}
-            recomputingUsage={recomputingUsage}
-            onCalculateUsage={() => handleCalculateUsage("rk9")}
-            calculatingUsage={calculatingRk9}
-            onDiscover={handleDiscover}
-            isDiscovering={isDiscovering}
-            onScrapeRostersMatching={handleScrapeRostersMatching}
-            rosterMatchingCount={rk9RosterMatchingIds.length}
-            onScrapeTeamsMatching={handleScrapeTeamsMatching}
-            teamsMatchingCount={rk9TeamsMatchingIds.length}
-            bulkProcessing={bulkProcessing}
-          />
-          {/* Per-action feedback messages */}
-          {discoverMessage && (
-            <p
-              className={cn(
-                "text-xs",
-                discoverMessage.startsWith("Error")
-                  ? "text-red-500"
-                  : "text-muted-foreground"
+              {/* RK9 Stats + Actions — grouped toolbar */}
+              <ExternalDataToolbar
+                tab="rk9"
+                chips={rk9Chips}
+                settings={{
+                  tab: "rk9",
+                  loading: configLoading,
+                  backendOn: rk9BackendAutoImport,
+                  onToggleBackend: handleToggleRk9Backend,
+                  teamsPerTick: rk9TeamsPerTick,
+                  onTeamsPerTickChange: handleRk9TeamsPerTickChange,
+                  onTeamsPerTickBlur: saveRk9TeamsPerTick,
+                  concurrency: rk9TeamConcurrency,
+                  onConcurrencyChange: handleRk9TeamConcurrencyChange,
+                  onConcurrencyBlur: saveRk9TeamConcurrency,
+                  intervalSeconds: rk9CronInterval,
+                  onIntervalChange: handleRk9CronIntervalChange,
+                  onIntervalBlur: saveRk9CronInterval,
+                }}
+                isFetching={isFetching}
+                onRefresh={() => setRefreshKey((k) => k + 1)}
+                onRecomputeUsage={handleRecomputeUsage}
+                recomputingUsage={recomputingUsage}
+                onCalculateUsage={() => handleCalculateUsage("rk9")}
+                calculatingUsage={calculatingRk9}
+                onDiscover={handleDiscover}
+                isDiscovering={isDiscovering}
+                onScrapeRostersMatching={handleScrapeRostersMatching}
+                rosterMatchingCount={rk9RosterMatchingIds.length}
+                onScrapeTeamsMatching={handleScrapeTeamsMatching}
+                teamsMatchingCount={rk9TeamsMatchingIds.length}
+                bulkProcessing={bulkProcessing}
+              />
+              {/* Per-action feedback messages */}
+              {discoverMessage && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    discoverMessage.startsWith("Error")
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {discoverMessage}
+                </p>
               )}
-            >
-              {discoverMessage}
-            </p>
-          )}
-          {calculateRk9Message && (
-            <p
-              className={cn(
-                "text-xs",
-                calculateRk9Message.startsWith("Error")
-                  ? "text-red-500"
-                  : "text-muted-foreground"
+              {calculateRk9Message && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    calculateRk9Message.startsWith("Error")
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {calculateRk9Message}
+                </p>
               )}
-            >
-              {calculateRk9Message}
-            </p>
-          )}
-          {usageMessage && (
-            <p
-              className={cn(
-                "text-xs",
-                usageMessage.startsWith("Error")
-                  ? "text-red-500"
-                  : "text-muted-foreground"
+              {usageMessage && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    usageMessage.startsWith("Error")
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {usageMessage}
+                </p>
               )}
-            >
-              {usageMessage}
-            </p>
-          )}
 
-          {/* RK9 Filters */}
-          <ExternalDataFilters
-            tab="rk9"
-            rk9Filters={rk9Filters}
-            onRk9Change={(patch) => setRk9Filters((p) => ({ ...p, ...patch }))}
-            onClear={() => setRk9Filters(INITIAL_RK9_FILTERS)}
-            tierOptions={rk9Tiers}
-            countryOptions={rk9Countries}
-            resultCount={filteredRk9Rows.length}
-            totalCount={rk9Rows.length}
-          />
+              {/* RK9 Filters */}
+              <ExternalDataFilters
+                tab="rk9"
+                rk9Filters={rk9Filters}
+                onRk9Change={(patch) =>
+                  setRk9Filters((p) => ({ ...p, ...patch }))
+                }
+                onClear={() => setRk9Filters(INITIAL_RK9_FILTERS)}
+                tierOptions={rk9Tiers}
+                countryOptions={rk9Countries}
+                resultCount={filteredRk9Rows.length}
+                totalCount={rk9Rows.length}
+              />
             </>
           )}
         </TabsContent>
@@ -1536,10 +1572,12 @@ export function ExternalData() {
             {(["name", "id", "country", "events"] as const).map((col) => (
               <div key={col} className="flex h-10 items-center px-2">
                 <button
-                  className="hover:text-foreground inline-flex items-center gap-1 text-xs font-medium capitalize whitespace-nowrap"
+                  className="hover:text-foreground inline-flex items-center gap-1 text-xs font-medium whitespace-nowrap capitalize"
                   onClick={() => togglePlayerSort(col)}
                 >
-                  {col === "id" ? "RK9 ID" : col.charAt(0).toUpperCase() + col.slice(1)}
+                  {col === "id"
+                    ? "RK9 ID"
+                    : col.charAt(0).toUpperCase() + col.slice(1)}
                   {playerSort.column === col ? (
                     playerSort.direction === "asc" ? (
                       <ArrowUp className="h-3 w-3" />
@@ -1599,7 +1637,7 @@ export function ExternalData() {
                       }}
                     >
                       <div
-                        className="grid hover:bg-muted/50 transition-colors"
+                        className="hover:bg-muted/50 grid transition-colors"
                         style={{
                           gridTemplateColumns: "28px 1fr 120px 60px 60px",
                         }}
@@ -1607,7 +1645,7 @@ export function ExternalData() {
                         {/* Chevron */}
                         <div className="flex items-center justify-center py-3">
                           <button
-                            className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted"
+                            className="hover:bg-muted flex h-5 w-5 items-center justify-center rounded"
                             onClick={() =>
                               setExpandedPlayerId(
                                 isPlayerExpanded ? null : p.id
@@ -1627,11 +1665,13 @@ export function ExternalData() {
                         {/* Name */}
                         <div className="flex min-w-0 items-center px-3 py-3 text-xs">
                           <span className="truncate">
-                            {[p.first_name, p.last_name].filter(Boolean).join(" ") || "—"}
+                            {[p.first_name, p.last_name]
+                              .filter(Boolean)
+                              .join(" ") || "—"}
                           </span>
                         </div>
                         {/* Player ID */}
-                        <div className="flex items-center px-3 py-3 font-mono text-xs text-muted-foreground">
+                        <div className="text-muted-foreground flex items-center px-3 py-3 font-mono text-xs">
                           {p.player_id_masked ?? "—"}
                         </div>
                         {/* Country */}
@@ -1658,393 +1698,400 @@ export function ExternalData() {
       {/* Shared Events Table — hidden when RK9 tab is in players view */}
       {(activeTab !== "rk9" || rk9View === "events") && (
         <>
-      {/* Shared Table */}
-      {isLoading && !rk9Events && !limitlessTournaments ? (
-        <div className="space-y-3">
-          <Skeleton className="h-10 w-full" />
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full" />
-          ))}
-        </div>
-      ) : currentRows.length === 0 ? (
-        <div className="text-muted-foreground py-12 text-center text-sm">
-          {totalRowCount === 0
-            ? activeTab === "rk9"
-              ? "No RK9 events found. Click Discover RK9 to import events."
-              : "No Limitless tournaments found. Click Sync Limitless to import tournaments."
-            : "No events match your filters."}
-        </div>
-      ) : (
-        <div className={cn("rounded-md", !isMobile && "border")}>
-          {/* Results note + table header are desktop-only — on mobile the
-              filter bar already shows the count and the cards replace the table. */}
-          {!isMobile && (
-            <div className="text-muted-foreground flex items-center gap-2 px-4 py-2 text-xs">
-              <ListFilter className="h-3.5 w-3.5" />
-              Showing {currentRows.length} of {totalRowCount} events
+          {/* Shared Table */}
+          {isLoading && !rk9Events && !limitlessTournaments ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full" />
+              ))}
             </div>
-          )}
-
-          {/* Fixed header row */}
-          {!isMobile && (
-          <div
-            className="grid border-b"
-            style={{
-              gridTemplateColumns:
-                activeTab === "limitless"
-                  ? "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 80px 100px"
-                  : "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
-            }}
-          >
-            <div className="flex h-10 items-center justify-center">
-              <input
-                type="checkbox"
-                checked={
-                  currentRows.length > 0 &&
-                  selectedIds.size === currentRows.length
-                }
-                ref={(el) => {
-                  if (el)
-                    el.indeterminate =
-                      selectedIds.size > 0 &&
-                      selectedIds.size < currentRows.length;
-                }}
-                onChange={(e) => {
-                  setSelectedIds(
-                    e.target.checked
-                      ? new Set(currentRows.map((r) => r.id))
-                      : new Set()
-                  );
-                }}
-                className="h-4 w-4 cursor-pointer rounded border"
-                aria-label="Select all visible"
-              />
-            </div>
-            {/* Chevron column header — empty */}
-            <div className="h-10" />
-            <SortableHeader
-              column="name"
-              label="Event"
-              sort={currentSort}
-              onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-            />
-            <SortableHeader
-              column="category"
-              label="Type"
-              sort={currentSort}
-              onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-            />
-            <SortableHeader
-              column="date"
-              label="Date"
-              sort={currentSort}
-              onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-            />
-            <SortableHeader
-              column="playerCount"
-              label="Players"
-              sort={currentSort}
-              onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-            />
-            <SortableHeader
-              column="status"
-              label="Status"
-              sort={currentSort}
-              onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-            />
-            {activeTab === "limitless" && (
-              <SortableHeader
-                column="queueOrder"
-                label="Queue"
-                sort={currentSort}
-                onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-              />
-            )}
-            <div className="flex h-10 items-center justify-end pr-2 text-xs font-medium whitespace-nowrap">
-              Actions
-            </div>
-          </div>
-          )}
-
-          {/* Virtualized body — conditional mount: skeleton (SSR) / cards (mobile) / table (desktop) */}
-          {!isClient ? (
-            /* CLS-safe skeleton: height derived from row count so the layout
-               doesn't jump when the real table mounts. Dynamic px is justified
-               here — the Tailwind scale has no per-row granularity. */
-            <div
-              aria-hidden
-              className="bg-muted/30 animate-pulse rounded-b-md"
-              style={{
-                height: `${Math.max(currentRows.length, 3) * 56 + 32}px`,
-              }}
-            />
-          ) : isMobile ? (
-            <div className="p-3">
-              <EventList
-                rows={currentRows}
-                expandedRowId={expandedRowId}
-                onToggleExpand={(id) =>
-                  setExpandedRowId((prev) => (prev === id ? null : id))
-                }
-                renderActions={(row) => (
-                  <RowActions
-                    row={row}
-                    activeJobs={activeJobs}
-                    queuingIds={queuingIds}
-                    batchQueuing={batchQueuing}
-                    isUpcomingRow={row.status === "upcoming"}
-                    onScrapeRoster={handleScrapeRoster}
-                    onScrapeTeams={handleScrapeTeams}
-                    onQueueOne={handleQueueOne}
-                    onResetEvent={handleResetEvent}
-                  />
-                )}
-              />
+          ) : currentRows.length === 0 ? (
+            <div className="text-muted-foreground py-12 text-center text-sm">
+              {totalRowCount === 0
+                ? activeTab === "rk9"
+                  ? "No RK9 events found. Click Discover RK9 to import events."
+                  : "No Limitless tournaments found. Click Sync Limitless to import tournaments."
+                : "No events match your filters."}
             </div>
           ) : (
-          <div
-            key={activeTab}
-            ref={scrollRef}
-            className="overflow-auto"
-            style={{ maxHeight: "calc(100vh - 300px)" }}
-          >
-            <div
-              style={{
-                height: rowVirtualizer.getTotalSize(),
-                position: "relative",
-              }}
-            >
-              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const row = currentRows[virtualRow.index];
-                if (!row) return null;
-                const isUpcomingRow = row.status === "upcoming";
-                const externalUrl =
-                  row.source === "rk9"
-                    ? `https://rk9.gg/tournament/${row.rk9!.event_id}`
-                    : `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}`;
-                const subLinks =
-                  row.source === "rk9" && !isUpcomingRow
-                    ? [
-                        {
-                          label: "Roster",
-                          href: `https://rk9.gg/roster/${row.rk9!.event_id}`,
-                        },
-                        {
-                          label: "Pairings",
-                          href: `https://rk9.gg/pairings/${row.rk9!.event_id}`,
-                        },
-                        {
-                          label: "Standings",
-                          href: `https://rk9.gg/standings/${row.rk9!.event_id}`,
-                        },
-                      ]
-                    : row.source === "limitless"
-                      ? [
-                          {
-                            label: "Standings",
-                            href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/standings`,
-                          },
-                          {
-                            label: "Pairings",
-                            href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/pairings`,
-                          },
-                          {
-                            label: "Players",
-                            href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/players`,
-                          },
-                        ]
-                      : [];
-                const isExpandable =
-                  row.source === "rk9"
-                    ? ["roster", "teams", "complete"].includes(
-                        row.rk9!.import_status
-                      )
-                    : row.limitless!.data_imported_at !== null;
-                return (
+            <div className={cn("rounded-md", !isMobile && "border")}>
+              {/* Results note + table header are desktop-only — on mobile the
+              filter bar already shows the count and the cards replace the table. */}
+              {!isMobile && (
+                <div className="text-muted-foreground flex items-center gap-2 px-4 py-2 text-xs">
+                  <ListFilter className="h-3.5 w-3.5" />
+                  Showing {currentRows.length} of {totalRowCount} events
+                </div>
+              )}
+
+              {/* Fixed header row */}
+              {!isMobile && (
+                <div
+                  className="grid border-b"
+                  style={{
+                    gridTemplateColumns:
+                      activeTab === "limitless"
+                        ? "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 80px 100px"
+                        : "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
+                  }}
+                >
+                  <div className="flex h-10 items-center justify-center">
+                    <input
+                      type="checkbox"
+                      checked={
+                        currentRows.length > 0 &&
+                        selectedIds.size === currentRows.length
+                      }
+                      ref={(el) => {
+                        if (el)
+                          el.indeterminate =
+                            selectedIds.size > 0 &&
+                            selectedIds.size < currentRows.length;
+                      }}
+                      onChange={(e) => {
+                        setSelectedIds(
+                          e.target.checked
+                            ? new Set(currentRows.map((r) => r.id))
+                            : new Set()
+                        );
+                      }}
+                      className="h-4 w-4 cursor-pointer rounded border"
+                      aria-label="Select all visible"
+                    />
+                  </div>
+                  {/* Chevron column header — empty */}
+                  <div className="h-10" />
+                  <SortableHeader
+                    column="name"
+                    label="Event"
+                    sort={currentSort}
+                    onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                  />
+                  <SortableHeader
+                    column="category"
+                    label="Type"
+                    sort={currentSort}
+                    onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                  />
+                  <SortableHeader
+                    column="date"
+                    label="Date"
+                    sort={currentSort}
+                    onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                  />
+                  <SortableHeader
+                    column="playerCount"
+                    label="Players"
+                    sort={currentSort}
+                    onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                  />
+                  <SortableHeader
+                    column="status"
+                    label="Status"
+                    sort={currentSort}
+                    onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                  />
+                  {activeTab === "limitless" && (
+                    <SortableHeader
+                      column="queueOrder"
+                      label="Queue"
+                      sort={currentSort}
+                      onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                    />
+                  )}
+                  <div className="flex h-10 items-center justify-end pr-2 text-xs font-medium whitespace-nowrap">
+                    Actions
+                  </div>
+                </div>
+              )}
+
+              {/* Virtualized body — conditional mount: skeleton (SSR) / cards (mobile) / table (desktop) */}
+              {!isClient ? (
+                /* CLS-safe skeleton: height derived from row count so the layout
+               doesn't jump when the real table mounts. Dynamic px is justified
+               here — the Tailwind scale has no per-row granularity. */
+                <div
+                  aria-hidden
+                  className="bg-muted/30 animate-pulse rounded-b-md"
+                  style={{
+                    height: `${Math.max(currentRows.length, 3) * 56 + 32}px`,
+                  }}
+                />
+              ) : isMobile ? (
+                <div className="p-3">
+                  <EventList
+                    rows={currentRows}
+                    expandedRowId={expandedRowId}
+                    onToggleExpand={(id) =>
+                      setExpandedRowId((prev) => (prev === id ? null : id))
+                    }
+                    renderActions={(row) => (
+                      <RowActions
+                        row={row}
+                        activeJobs={activeJobs}
+                        queuingIds={queuingIds}
+                        batchQueuing={batchQueuing}
+                        isUpcomingRow={row.status === "upcoming"}
+                        onScrapeRoster={handleScrapeRoster}
+                        onScrapeTeams={handleScrapeTeams}
+                        onQueueOne={handleQueueOne}
+                        onResetEvent={handleResetEvent}
+                      />
+                    )}
+                  />
+                </div>
+              ) : (
+                <div
+                  key={activeTab}
+                  ref={scrollRef}
+                  className="overflow-auto"
+                  style={{ maxHeight: "calc(100vh - 300px)" }}
+                >
                   <div
-                    key={row.id}
-                    ref={rowVirtualizer.measureElement}
-                    data-index={virtualRow.index}
-                    className="border-b"
                     style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      transform: `translateY(${virtualRow.start}px)`,
+                      height: rowVirtualizer.getTotalSize(),
+                      position: "relative",
                     }}
                   >
-                    <div
-                      className={cn(
-                        "grid hover:bg-muted/50 transition-colors",
-                        isUpcomingRow && "opacity-60"
-                      )}
-                      style={{
-                        gridTemplateColumns:
-                          activeTab === "limitless"
-                            ? "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 80px 100px"
-                            : "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
-                      }}
-                    >
-                      {/* Checkbox */}
-                      <div className="flex items-center justify-center py-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(row.id)}
-                          onChange={(e) => {
-                            setSelectedIds((prev) => {
-                              const next = new Set(prev);
-                              if (e.target.checked) {
-                                next.add(row.id);
-                              } else {
-                                next.delete(row.id);
-                              }
-                              return next;
-                            });
+                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const row = currentRows[virtualRow.index];
+                      if (!row) return null;
+                      const isUpcomingRow = row.status === "upcoming";
+                      const externalUrl =
+                        row.source === "rk9"
+                          ? `https://rk9.gg/tournament/${row.rk9!.event_id}`
+                          : `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}`;
+                      const subLinks =
+                        row.source === "rk9" && !isUpcomingRow
+                          ? [
+                              {
+                                label: "Roster",
+                                href: `https://rk9.gg/roster/${row.rk9!.event_id}`,
+                              },
+                              {
+                                label: "Pairings",
+                                href: `https://rk9.gg/pairings/${row.rk9!.event_id}`,
+                              },
+                              {
+                                label: "Standings",
+                                href: `https://rk9.gg/standings/${row.rk9!.event_id}`,
+                              },
+                            ]
+                          : row.source === "limitless"
+                            ? [
+                                {
+                                  label: "Standings",
+                                  href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/standings`,
+                                },
+                                {
+                                  label: "Pairings",
+                                  href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/pairings`,
+                                },
+                                {
+                                  label: "Players",
+                                  href: `https://play.limitlesstcg.com/tournament/${row.limitless!.tournament_id}/players`,
+                                },
+                              ]
+                            : [];
+                      const isExpandable =
+                        row.source === "rk9"
+                          ? ["roster", "teams", "complete"].includes(
+                              row.rk9!.import_status
+                            )
+                          : row.limitless!.data_imported_at !== null;
+                      return (
+                        <div
+                          key={row.id}
+                          ref={rowVirtualizer.measureElement}
+                          data-index={virtualRow.index}
+                          className="border-b"
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            transform: `translateY(${virtualRow.start}px)`,
                           }}
-                          className="h-4 w-4 cursor-pointer rounded border"
-                          aria-label={`Select ${row.name}`}
-                        />
-                      </div>
-                      {/* Chevron */}
-                      <div className="flex items-center justify-center py-2">
-                        {isExpandable && (
-                          <button
-                            className="flex h-5 w-5 items-center justify-center rounded hover:bg-muted"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedRowId(
-                                expandedRowId === row.id ? null : row.id
-                              );
-                            }}
-                            aria-label={expandedRowId === row.id ? "Collapse" : "Expand"}
-                          >
-                            {expandedRowId === row.id ? (
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            ) : (
-                              <ChevronRight className="h-3.5 w-3.5" />
-                            )}
-                          </button>
-                        )}
-                      </div>
-                      {/* Event name */}
-                      <div className="min-w-0 p-2">
-                        <div className="flex items-center gap-1.5">
-                          <a
-                            href={externalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="truncate text-sm font-medium hover:underline"
-                          >
-                            {row.name}
-                          </a>
-                          <a
-                            href={externalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-foreground shrink-0"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </div>
-                        {row.rk9?.location_city && (
-                          <p className="text-muted-foreground truncate text-xs">
-                            {row.rk9.location_city}
-                            {row.rk9.location_country
-                              ? `, ${row.rk9.location_country}`
-                              : ""}
-                          </p>
-                        )}
-                        {subLinks.length > 0 && (
-                          <div className="mt-0.5 flex items-center gap-2 text-xs">
-                            {subLinks.map((link) => (
-                              <a
-                                key={link.label}
-                                href={link.href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-muted-foreground hover:text-foreground hover:underline"
-                              >
-                                {link.label}
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                        {row.error && (
-                          <p className="mt-0.5 truncate text-xs text-red-500">
-                            {row.error}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center p-2">
-                        <Badge
-                          variant="secondary"
-                          className="truncate text-xs capitalize"
                         >
-                          {row.category}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center p-2 text-sm whitespace-nowrap">
-                        {row.date}
-                      </div>
-                      <div className="flex items-center p-2 text-sm whitespace-nowrap">
-                        {row.playerCount ?? "—"}
-                      </div>
-                      <div className="flex flex-col items-start gap-0.5 p-2">
-                        <StatusBadge row={row} activeJobs={activeJobs} />
-                        {row.source === "rk9" &&
-                          (row.rk9!.import_status === "teams" || row.rk9!.import_status === "complete") &&
-                          row.rk9!.player_count != null && (
-                            <span className="text-muted-foreground text-xs">
-                              {row.rk9!.teams_imported_count ?? 0}/{row.rk9!.player_count} teams
-                            </span>
+                          <div
+                            className={cn(
+                              "hover:bg-muted/50 grid transition-colors",
+                              isUpcomingRow && "opacity-60"
+                            )}
+                            style={{
+                              gridTemplateColumns:
+                                activeTab === "limitless"
+                                  ? "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 80px 100px"
+                                  : "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
+                            }}
+                          >
+                            {/* Checkbox */}
+                            <div className="flex items-center justify-center py-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.has(row.id)}
+                                onChange={(e) => {
+                                  setSelectedIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (e.target.checked) {
+                                      next.add(row.id);
+                                    } else {
+                                      next.delete(row.id);
+                                    }
+                                    return next;
+                                  });
+                                }}
+                                className="h-4 w-4 cursor-pointer rounded border"
+                                aria-label={`Select ${row.name}`}
+                              />
+                            </div>
+                            {/* Chevron */}
+                            <div className="flex items-center justify-center py-2">
+                              {isExpandable && (
+                                <button
+                                  className="hover:bg-muted flex h-5 w-5 items-center justify-center rounded"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedRowId(
+                                      expandedRowId === row.id ? null : row.id
+                                    );
+                                  }}
+                                  aria-label={
+                                    expandedRowId === row.id
+                                      ? "Collapse"
+                                      : "Expand"
+                                  }
+                                >
+                                  {expandedRowId === row.id ? (
+                                    <ChevronDown className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <ChevronRight className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                            {/* Event name */}
+                            <div className="min-w-0 p-2">
+                              <div className="flex items-center gap-1.5">
+                                <a
+                                  href={externalUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="truncate text-sm font-medium hover:underline"
+                                >
+                                  {row.name}
+                                </a>
+                                <a
+                                  href={externalUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-muted-foreground hover:text-foreground shrink-0"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
+                              {row.rk9?.location_city && (
+                                <p className="text-muted-foreground truncate text-xs">
+                                  {row.rk9.location_city}
+                                  {row.rk9.location_country
+                                    ? `, ${row.rk9.location_country}`
+                                    : ""}
+                                </p>
+                              )}
+                              {subLinks.length > 0 && (
+                                <div className="mt-0.5 flex items-center gap-2 text-xs">
+                                  {subLinks.map((link) => (
+                                    <a
+                                      key={link.label}
+                                      href={link.href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-muted-foreground hover:text-foreground hover:underline"
+                                    >
+                                      {link.label}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                              {row.error && (
+                                <p className="mt-0.5 truncate text-xs text-red-500">
+                                  {row.error}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center p-2">
+                              <Badge
+                                variant="secondary"
+                                className="truncate text-xs capitalize"
+                              >
+                                {row.category}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center p-2 text-sm whitespace-nowrap">
+                              {row.date}
+                            </div>
+                            <div className="flex items-center p-2 text-sm whitespace-nowrap">
+                              {row.playerCount ?? "—"}
+                            </div>
+                            <div className="flex flex-col items-start gap-0.5 p-2">
+                              <StatusBadge row={row} activeJobs={activeJobs} />
+                              {row.source === "rk9" &&
+                                (row.rk9!.import_status === "teams" ||
+                                  row.rk9!.import_status === "complete") &&
+                                row.rk9!.player_count != null && (
+                                  <span className="text-muted-foreground text-xs">
+                                    {row.rk9!.teams_imported_count ?? 0}/
+                                    {row.rk9!.player_count} teams
+                                  </span>
+                                )}
+                            </div>
+                            {activeTab === "limitless" && (
+                              <div className="flex items-center p-2">
+                                {row.limitless?.import_status === "queued" &&
+                                  row.limitless?.import_requested_at && (
+                                    <span className="text-muted-foreground text-xs whitespace-nowrap">
+                                      {formatTimeAgo(
+                                        row.limitless.import_requested_at
+                                      )}
+                                    </span>
+                                  )}
+                                {row.limitless?.import_status === "importing" &&
+                                  row.limitless?.import_requested_at && (
+                                    <span className="text-xs whitespace-nowrap text-blue-600 dark:text-blue-400">
+                                      started{" "}
+                                      {formatTimeAgo(
+                                        row.limitless.import_requested_at
+                                      )}
+                                    </span>
+                                  )}
+                              </div>
+                            )}
+                            <div className="flex items-center justify-end gap-1 p-2">
+                              <RowActions
+                                row={row}
+                                activeJobs={activeJobs}
+                                queuingIds={queuingIds}
+                                batchQueuing={batchQueuing}
+                                isUpcomingRow={isUpcomingRow}
+                                onScrapeRoster={handleScrapeRoster}
+                                onScrapeTeams={handleScrapeTeams}
+                                onQueueOne={handleQueueOne}
+                                onResetEvent={handleResetEvent}
+                              />
+                            </div>
+                          </div>
+                          {expandedRowId === row.id && (
+                            <ExpandedRowData row={row} />
                           )}
-                      </div>
-                      {activeTab === "limitless" && (
-                        <div className="flex items-center p-2">
-                          {row.limitless?.import_status === "queued" &&
-                            row.limitless?.import_requested_at && (
-                              <span className="text-muted-foreground text-xs whitespace-nowrap">
-                                {formatTimeAgo(
-                                  row.limitless.import_requested_at
-                                )}
-                              </span>
-                            )}
-                          {row.limitless?.import_status === "importing" &&
-                            row.limitless?.import_requested_at && (
-                              <span className="text-xs whitespace-nowrap text-blue-600 dark:text-blue-400">
-                                started{" "}
-                                {formatTimeAgo(
-                                  row.limitless.import_requested_at
-                                )}
-                              </span>
-                            )}
                         </div>
-                      )}
-                      <div className="flex items-center justify-end gap-1 p-2">
-                        <RowActions
-                          row={row}
-                          activeJobs={activeJobs}
-                          queuingIds={queuingIds}
-                          batchQueuing={batchQueuing}
-                          isUpcomingRow={isUpcomingRow}
-                          onScrapeRoster={handleScrapeRoster}
-                          onScrapeTeams={handleScrapeTeams}
-                          onQueueOne={handleQueueOne}
-                          onResetEvent={handleResetEvent}
-                        />
-                      </div>
-                    </div>
-                    {expandedRowId === row.id && <ExpandedRowData row={row} />}
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
-          </div>
           )}
-        </div>
-      )}
-
         </>
       )}
     </div>
@@ -2196,16 +2243,17 @@ function RowActions({
     const activeJob = activeJobs.get(event.event_id);
     const isBusy = activeJob !== null && activeJob !== undefined;
 
-    const resetButton = event.import_status !== "pending" ? (
-      <button
-        className="text-muted-foreground hover:text-destructive"
-        onClick={() => onResetEvent(event.event_id)}
-        title="Reset roster and team data"
-        aria-label="Reset event"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
-    ) : null;
+    const resetButton =
+      event.import_status !== "pending" ? (
+        <button
+          className="text-muted-foreground hover:text-destructive"
+          onClick={() => onResetEvent(event.event_id)}
+          title="Reset roster and team data"
+          aria-label="Reset event"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      ) : null;
 
     if (event.import_status === "complete" && event.has_team_lists) {
       return (
@@ -2247,7 +2295,9 @@ function RowActions({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onScrapeTeams(event.event_id, event.import_status === "complete")}
+            onClick={() =>
+              onScrapeTeams(event.event_id, event.import_status === "complete")
+            }
             disabled={isBusy}
           >
             {activeJob?.type === "teams" ? (
