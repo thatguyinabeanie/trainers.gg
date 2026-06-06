@@ -19,6 +19,10 @@
 - **No arbitrary pixel values in Tailwind** — Never use `w-[Npx]`, `min-w-[Npx]`, `max-w-[Npx]`, `h-[Npx]`, or similar arbitrary pixel sizing — new or pre-existing. Use Tailwind's built-in spacing/sizing scale (`w-96` = 384px, `w-80` = 320px, `max-w-lg`, etc.). Remove any `[Npx]` values encountered while working in a file.
 - **Chunk unbounded Supabase `.in()` filters** — A `.in("col", ids)` with hundreds of ids builds a PostgREST URL that overflows the server URI limit and returns `{ error: "URI too long" }`. If that error is ignored (`const { data } = await …` with no `.error` check), `data` is null and downstream logic silently drops every row. This bit the player directory: `searchPlayers` fetched ~350 users (the Supabase **preview branch DB runs `03_users.sql`**, unlike a fresh local DB), so the bulk alts `.in()` failed → every `altId` was null → all coach badges vanished. **The bug only reproduces at scale**, so a few-row local/preview seed hides it. Use `fetchInChunks()` in `packages/supabase/src/queries/players.ts` as the reference: split into ≤100-id chunks, merge, and **throw** on chunk error. Always `.error`-check `.in()` queries that fan out over an unbounded id list.
 
+## Local Dev Logs
+
+Dev server logs (Next.js + Supabase edge functions) are written to `.dev-logs/dev.log` when the user starts `pnpm dev` or `pnpm dev:web`. Read this file to troubleshoot server-side errors — use `tail -200 .dev-logs/dev.log` for recent output or `grep -a "error\|Error\|failed" .dev-logs/dev.log` to find issues. The file contains ANSI color codes; grep still works fine. The log resets on each `pnpm dev` start.
+
 ## Architecture Guidelines
 
 - **Domain knowledge location** — Domain knowledge belongs in on-demand skills, CLAUDE.md only for universal rules.
