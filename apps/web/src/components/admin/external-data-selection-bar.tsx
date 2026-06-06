@@ -1,3 +1,4 @@
+"use client";
 // apps/web/src/components/admin/external-data-selection-bar.tsx
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
