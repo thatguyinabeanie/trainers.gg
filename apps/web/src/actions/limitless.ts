@@ -7,9 +7,7 @@ import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import { syncTournamentList, processImportQueue } from "@/lib/limitless";
 
-const SKIP_FORMATS_FILTER = `(${Array.from(SKIP_FORMATS)
-  .map((f) => `"${f}"`)
-  .join(",")})`;
+const SKIP_FORMATS_ARRAY = Array.from(SKIP_FORMATS);
 
 /**
  * Queue a single tournament for import.
@@ -36,7 +34,7 @@ export async function queueTournamentForImport(
         import_attempts: 0,
       })
       .eq("tournament_id", tournamentId)
-      .not("format_id", "in", SKIP_FORMATS_FILTER)
+      .not("format_id", "in", SKIP_FORMATS_ARRAY)
       .select("tournament_id")
       .maybeSingle();
 
@@ -87,7 +85,7 @@ export async function batchQueueTournaments(
           import_attempts: 0,
         })
         .in("tournament_id", chunk)
-        .not("format_id", "in", SKIP_FORMATS_FILTER)
+        .not("format_id", "in", SKIP_FORMATS_ARRAY)
         .select("tournament_id");
 
       if (error) throw error;
