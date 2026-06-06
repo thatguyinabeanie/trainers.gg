@@ -370,6 +370,11 @@ async function resolveEventMeta(
           `computeEventUsage[limitless]: tournament ${eventId} not found in limitless.tournaments`
         );
       }
+      if (!data.format_id) {
+        throw new Error(
+          `computeEventUsage[limitless]: tournament ${eventId} has no format_id — cannot compute usage`
+        );
+      }
       return { format: data.format_id, eventDate: data.date };
     }
 
@@ -775,7 +780,9 @@ export async function computeUsageRollups(
         }
 
         // Step 3c & 3d: For each bucket, compute rollup, look up deltas, write to DB
-        for (const [bStart, bucketFacts] of factsByBucket) {
+        // Sort bucket starts ascending so prior-bucket lookups see already-written data.
+        for (const bStart of Array.from(factsByBucket.keys()).sort()) {
+          const bucketFacts = factsByBucket.get(bStart)!;
           const rollup = rollupBucket(bucketFacts);
           const bEnd = bucketEnd(bStart, periodType);
 
@@ -1009,8 +1016,9 @@ async function getPriorPctMap(
     .maybeSingle();
 
   if (metaErr) {
-    // Non-fatal: if we can't find the prior bucket, return empty map
-    // (computeDelta will return null for each species, which is correct)
+    console.error(
+      `getPriorPctMap: failed to read format_meta_stats for ${format}/${source}/${periodType}/${periodStart}: ${metaErr.message}`
+    );
     return new Map();
   }
 
@@ -1021,7 +1029,13 @@ async function getPriorPctMap(
     .select("species, usage_pct")
     .eq("meta_id", meta.id);
 
-  if (statsErr || !stats) return new Map();
+  if (statsErr) {
+    console.error(
+      `getPriorPctMap: failed to read pokemon_usage_stats for meta ${meta.id}: ${statsErr.message}`
+    );
+    return new Map();
+  }
+  if (!stats) return new Map();
 
   const map = new Map<string, number>();
   for (const row of stats) {
