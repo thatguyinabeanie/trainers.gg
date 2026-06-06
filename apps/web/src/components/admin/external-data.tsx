@@ -2234,6 +2234,23 @@ function StatusBadge({
     }
   }
 
+  // Limitless rows whose format can't be imported (e.g. CUSTOM) — surfaced as a
+  // distinct "Skipped" status rather than the default "Pending". Keyed off the
+  // derived displayStatus so it matches the Skipped tab/chip.
+  if (row.displayStatus === "skipped") {
+    return (
+      <Badge
+        variant="outline"
+        className="text-xs text-slate-600 dark:text-slate-400"
+      >
+        <span className="mr-1" aria-hidden>
+          ⊘
+        </span>
+        Skipped
+      </Badge>
+    );
+  }
+
   switch (row.status) {
     case "upcoming":
       return (
