@@ -3,7 +3,7 @@
 import { unstable_cache, updateTag } from "next/cache";
 
 import { getErrorMessage } from "@trainers/utils";
-import type { ActionResult } from "@trainers/validators";
+import { z, type ActionResult } from "@trainers/validators";
 import {
   computeSourceUsage,
   computeUsageRollups,
@@ -152,6 +152,10 @@ export async function triggerUsageRollup(
 // Source-scoped usage computation
 // ---------------------------------------------------------------------------
 
+// Runtime validation for the source parameter — TypeScript union types are
+// erased at runtime, so a forged request could pass any string.
+const usageSourceSchema = z.enum(["rk9", "limitless"]);
+
 /**
  * Computes usage facts for a specific data source's new/unprocessed events,
  * then rolls up only the formats that were touched by those events.
@@ -185,12 +189,18 @@ export async function calculateSourceUsage(
     const isAdmin = await isSiteAdmin();
     if (!isAdmin) return { success: false, error: "Requires site admin" };
 
+    const parsedSource = usageSourceSchema.safeParse(source);
+    if (!parsedSource.success) {
+      return { success: false, error: "Invalid source" };
+    }
+    const validatedSource = parsedSource.data;
+
     const supabase = createServiceRoleClient();
 
     // Compute facts for new events belonging to this source only.
     const { eventsComputed, formats } = await computeSourceUsage(
       supabase,
-      source
+      validatedSource
     );
 
     // Nothing new — skip rollup entirely and return early.

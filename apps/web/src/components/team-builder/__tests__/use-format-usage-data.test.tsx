@@ -142,11 +142,10 @@ describe("useFormatUsageData", () => {
 
     // The query will fail (throws), TanStack Query puts it in error state.
     // The hook returns an empty Map rather than throwing.
-    await waitFor(() =>
-      // After retry:false the query transitions to error state
-      // and the hook still returns a stable empty Map.
-      expect(result.current).toBeInstanceOf(Map)
-    );
+    // Wait for the fetch to run (not just for Map to exist, which is trivially true on first render).
+    await waitFor(() => expect(mockFetchFormatUsage).toHaveBeenCalledTimes(1));
+    // After retry:false the query transitions to error state and the hook still returns a stable empty Map.
+    expect(result.current).toBeInstanceOf(Map);
     expect(result.current.size).toBe(0);
   });
 

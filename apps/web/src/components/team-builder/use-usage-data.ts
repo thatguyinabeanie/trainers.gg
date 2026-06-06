@@ -8,6 +8,16 @@ import { type SpeciesUsagePeriod } from "@trainers/supabase";
 import { fetchSpeciesUsageDetail } from "@/actions/usage";
 
 // =============================================================================
+// Query key factory
+// =============================================================================
+
+export const usageQueryKeys = {
+  all: ["usage"] as const,
+  detail: (params: { source?: string; formatId?: string; species?: string }) =>
+    ["usage", params.source ?? "all", params.formatId ?? null, params.species ?? null] as const,
+};
+
+// =============================================================================
 // Hook
 // =============================================================================
 
@@ -29,7 +39,7 @@ export function useUsageData(
   source?: string
 ) {
   return useQuery<SpeciesUsagePeriod[]>({
-    queryKey: ["usage", source ?? "all", format?.id, species],
+    queryKey: usageQueryKeys.detail({ source, formatId: format?.id, species }),
     enabled: Boolean(species && format?.id),
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {

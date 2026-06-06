@@ -76,21 +76,24 @@ export function AbilityPicker({
 
   const usageMap = new Map<string, AbilityUsageEntry>();
   if (usagePeriods && usagePeriods.length > 0) {
-    // Accumulate per-ability series across periods (oldest → newest).
-    const seriesAccumulator = new Map<string, number[]>();
-    for (const period of usagePeriods) {
+    // Build a per-period lookup so absent abilities get 0 (not stale) in their
+    // series. Sparse push-based accumulation would leave the last-seen value in
+    // place for abilities that drop out of later periods.
+    const perPeriod = usagePeriods.map((period) => {
+      const periodMap = new Map<string, number>();
       for (const ability of period.abilities) {
-        const key = normalizeAbilityKey(ability.value);
-        const existing = seriesAccumulator.get(key);
-        if (existing) {
-          existing.push(ability.pct);
-        } else {
-          seriesAccumulator.set(key, [ability.pct]);
-        }
+        periodMap.set(normalizeAbilityKey(ability.value), ability.pct);
       }
+      return periodMap;
+    });
+
+    const allKeys = new Set<string>();
+    for (const periodMap of perPeriod) {
+      for (const key of periodMap.keys()) allKeys.add(key);
     }
-    // The last period is the most recent; its value is the current usage %.
-    for (const [key, series] of seriesAccumulator) {
+
+    for (const key of allKeys) {
+      const series = perPeriod.map((periodMap) => periodMap.get(key) ?? 0);
       const currentPct = series[series.length - 1] ?? 0;
       usageMap.set(key, { currentPct, series });
     }

@@ -38,7 +38,10 @@ type CallMock = {
  * both direct-await and .maybeSingle() call patterns are handled by the same
  * mock object — the correct terminal is invoked by the production code.
  */
-function buildSequentialClient(calls: CallMock[]) {
+function buildSequentialClient(
+  calls: CallMock[],
+  onInsert?: (rows: unknown) => void
+) {
   let callIndex = 0;
 
   function makeChainForCall(callDef: CallMock) {
@@ -50,7 +53,10 @@ function buildSequentialClient(calls: CallMock[]) {
     c["schema"] = jest.fn().mockImplementation(returnSelf);
     c["from"] = jest.fn().mockImplementation(returnSelf);
     c["select"] = jest.fn().mockImplementation(returnSelf);
-    c["insert"] = jest.fn().mockImplementation(returnSelf);
+    c["insert"] = jest.fn().mockImplementation((rows: unknown) => {
+      onInsert?.(rows);
+      return c;
+    });
     c["delete"] = jest.fn().mockImplementation(returnSelf);
     c["upsert"] = jest.fn().mockImplementation(returnSelf);
     c["eq"] = jest.fn().mockImplementation(returnSelf);
@@ -110,7 +116,7 @@ describe("computeEventUsage — rk9 error paths", () => {
 
   it("throws when rk9 event is not found", async () => {
     const client = buildSequentialClient([
-      { data: null }, // resolveEventMeta → maybySingle returns null
+      { data: null }, // resolveEventMeta → maybeSingle returns null
     ]);
 
     await expect(
@@ -184,7 +190,7 @@ describe("computeEventUsage — first_party error paths", () => {
 describe("computeEventUsage — delete error", () => {
   it("throws when the DELETE from event_usage fails", async () => {
     // Call sequence for rk9 with 0 team_pokemon rows:
-    // 1. resolveEventMeta → schema("rk9").from("events") → maybySingle → OK
+    // 1. resolveEventMeta → schema("rk9").from("events") → maybeSingle → OK
     // 2. readRawTeamRows  → schema("rk9").from("team_pokemon") → direct resolve → OK (empty)
     // 3. DELETE from("event_usage") → direct resolve → error
     const client = buildSequentialClient([
@@ -206,7 +212,7 @@ describe("computeEventUsage — delete error", () => {
 describe("computeEventUsage — insert error", () => {
   it("throws when the INSERT into event_usage fails (non-empty result set)", async () => {
     // Call sequence for limitless with 1 team:
-    // 1. resolveEventMeta  → schema("limitless").from("tournaments") → maybySingle → OK
+    // 1. resolveEventMeta  → schema("limitless").from("tournaments") → maybeSingle → OK
     // 2. readRawTeamRows   → schema("limitless").from("team_pokemon") → direct resolve → 1 row
     // 3. DELETE event_usage → direct resolve → OK
     // 4. INSERT event_usage → direct resolve → error
@@ -335,17 +341,30 @@ describe("computeEventUsage — rk9 stat_alignment nature mapping", () => {
       },
     ];
 
-    const client = buildSequentialClient([
-      { data: { format_id: "gen9champions", date_start: "2025-11-01" } }, // resolveEventMeta
-      { data: teamPokemon }, // readRawTeamRows
-      { data: null, error: null }, // DELETE OK
-      { data: null, error: null }, // INSERT OK
-      { data: null, error: null }, // usage_dirty SELECT
-      { data: null, error: null }, // usage_dirty UPSERT
-    ]);
+    let capturedInsert: unknown = null;
+    const client = buildSequentialClient(
+      [
+        { data: { format_id: "gen9champions", date_start: "2025-11-01" } }, // resolveEventMeta
+        { data: teamPokemon }, // readRawTeamRows
+        { data: null, error: null }, // DELETE OK
+        { data: null, error: null }, // INSERT OK
+        { data: null, error: null }, // usage_dirty SELECT
+        { data: null, error: null }, // usage_dirty UPSERT
+      ],
+      (rows) => {
+        capturedInsert = rows;
+      }
+    );
 
     const result = await computeEventUsage(client, "rk9", "CHAMP001");
     expect(result.rowCount).toBe(1);
+
+    // The aggregated event_usage row should carry a nature histogram with "timid"
+    const inserts = capturedInsert as Array<{
+      details: { nature: Array<{ v: string; n: number }> };
+    }>;
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0]?.details.nature).toEqual([{ v: "timid", n: 1 }]);
   });
 
   it("falls back to null nature when stat_alignment is null (older events)", async () => {
@@ -363,17 +382,30 @@ describe("computeEventUsage — rk9 stat_alignment nature mapping", () => {
       },
     ];
 
-    const client = buildSequentialClient([
-      { data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" } }, // resolveEventMeta
-      { data: teamPokemon }, // readRawTeamRows
-      { data: null, error: null }, // DELETE OK
-      { data: null, error: null }, // INSERT OK
-      { data: null, error: null }, // usage_dirty SELECT
-      { data: null, error: null }, // usage_dirty UPSERT
-    ]);
+    let capturedInsert: unknown = null;
+    const client = buildSequentialClient(
+      [
+        { data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" } }, // resolveEventMeta
+        { data: teamPokemon }, // readRawTeamRows
+        { data: null, error: null }, // DELETE OK
+        { data: null, error: null }, // INSERT OK
+        { data: null, error: null }, // usage_dirty SELECT
+        { data: null, error: null }, // usage_dirty UPSERT
+      ],
+      (rows) => {
+        capturedInsert = rows;
+      }
+    );
 
     const result = await computeEventUsage(client, "rk9", "OLD001");
     expect(result.rowCount).toBe(1);
+
+    // With null stat_alignment, the nature histogram should be empty (no values to bucket)
+    const inserts = capturedInsert as Array<{
+      details: { nature: Array<{ v: string; n: number }> };
+    }>;
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0]?.details.nature).toEqual([]);
   });
 });
 

@@ -148,21 +148,24 @@ export function NaturePicker({
 
   const usageMap = new Map<string, NatureUsageEntry>();
   if (usagePeriods && usagePeriods.length > 0) {
-    // Accumulate per-nature series across periods (oldest → newest).
-    const seriesAccumulator = new Map<string, number[]>();
-    for (const period of usagePeriods) {
+    // Build a per-period lookup so absent natures get 0 (not stale) in their
+    // series. Sparse push-based accumulation would leave the last-seen value in
+    // place for natures that drop out of later periods.
+    const perPeriod = usagePeriods.map((period) => {
+      const periodMap = new Map<string, number>();
       for (const nature of period.natures) {
-        const key = normalizeNatureKey(nature.value);
-        const existing = seriesAccumulator.get(key);
-        if (existing) {
-          existing.push(nature.pct);
-        } else {
-          seriesAccumulator.set(key, [nature.pct]);
-        }
+        periodMap.set(normalizeNatureKey(nature.value), nature.pct);
       }
+      return periodMap;
+    });
+
+    const allKeys = new Set<string>();
+    for (const periodMap of perPeriod) {
+      for (const key of periodMap.keys()) allKeys.add(key);
     }
-    // The last period is the most recent; its value is the current usage %.
-    for (const [key, series] of seriesAccumulator) {
+
+    for (const key of allKeys) {
+      const series = perPeriod.map((periodMap) => periodMap.get(key) ?? 0);
       const currentPct = series[series.length - 1] ?? 0;
       usageMap.set(key, { currentPct, series });
     }

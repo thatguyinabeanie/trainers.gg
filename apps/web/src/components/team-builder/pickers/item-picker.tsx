@@ -89,21 +89,24 @@ export function ItemPicker({
 
   const usageMap = new Map<string, ItemUsageEntry>();
   if (usagePeriods && usagePeriods.length > 0) {
-    // Accumulate per-item series across periods (oldest → newest).
-    const seriesAccumulator = new Map<string, number[]>();
-    for (const period of usagePeriods) {
+    // Build a per-period lookup so absent items get 0 (not stale) in their
+    // series. Sparse push-based accumulation would leave the last-seen value in
+    // place for items that drop out of later periods.
+    const perPeriod = usagePeriods.map((period) => {
+      const periodMap = new Map<string, number>();
       for (const item of period.items) {
-        const key = normalizeItemKey(item.value);
-        const existing = seriesAccumulator.get(key);
-        if (existing) {
-          existing.push(item.pct);
-        } else {
-          seriesAccumulator.set(key, [item.pct]);
-        }
+        periodMap.set(normalizeItemKey(item.value), item.pct);
       }
+      return periodMap;
+    });
+
+    const allKeys = new Set<string>();
+    for (const periodMap of perPeriod) {
+      for (const key of periodMap.keys()) allKeys.add(key);
     }
-    // The last period is the most recent; its value is the current usage %.
-    for (const [key, series] of seriesAccumulator) {
+
+    for (const key of allKeys) {
+      const series = perPeriod.map((periodMap) => periodMap.get(key) ?? 0);
       const currentPct = series[series.length - 1] ?? 0;
       usageMap.set(key, { currentPct, series });
     }

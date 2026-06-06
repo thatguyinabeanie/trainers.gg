@@ -334,75 +334,52 @@ describe("createTournamentTeamSheets", () => {
       });
     }
 
-    it("snapshots nature for a Champions format", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      const upsertMock = jest.fn().mockResolvedValue({ error: null });
+    it.each<[string, string, string | null]>([
+      ["Champions format", CHAMPIONS_FORMAT, "Timid"],
+      ["non-Champions format", STANDARD_FORMAT, null],
+    ])(
+      "maps stat_alignment to nature for %s",
+      async (_label, format, expectedNature) => {
+        const fromSpy = jest.spyOn(mockClient, "from");
+        const upsertMock = jest.fn().mockResolvedValue({ error: null });
 
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { game_format: CHAMPIONS_FORMAT },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: { game_format: format },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
 
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        not: jest.fn().mockResolvedValue({
-          data: [makeRegWithNature("Timid")],
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          not: jest.fn().mockResolvedValue({
+            data: [makeRegWithNature("Timid")],
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
 
-      fromSpy.mockReturnValueOnce({
-        upsert: upsertMock,
-      } as unknown as MockQueryBuilder);
+        fromSpy.mockReturnValueOnce({
+          upsert: upsertMock,
+        } as unknown as MockQueryBuilder);
 
-      await createTournamentTeamSheets(mockClient, 1);
+        await createTournamentTeamSheets(mockClient, 1);
 
-      const rows = (upsertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
-        nature: string | null;
-      }>;
-      // Champions format — nature should be the real value, not null
-      expect(rows[0]?.nature).toBe("Timid");
-    });
+        const rows = (upsertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
+          nature: string | null;
+        }>;
 
-    it("stores null nature for a non-Champions format (privacy)", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      const upsertMock = jest.fn().mockResolvedValue({ error: null });
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { game_format: STANDARD_FORMAT },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        not: jest.fn().mockResolvedValue({
-          data: [makeRegWithNature("Jolly")],
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        upsert: upsertMock,
-      } as unknown as MockQueryBuilder);
-
-      await createTournamentTeamSheets(mockClient, 1);
-
-      const rows = (upsertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
-        nature: string | null;
-      }>;
-      // Standard VGC — nature must be null to preserve player privacy
-      expect(rows[0]?.nature).toBeNull();
-    });
+        if (expectedNature !== null) {
+          // Champions format — nature should be the real value, not null
+          expect(rows[0]?.nature).toBe(expectedNature);
+        } else {
+          // Standard VGC — nature must be null to preserve player privacy
+          expect(rows[0]?.nature).toBeNull();
+        }
+      }
+    );
   });
 
   describe("early returns", () => {

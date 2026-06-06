@@ -52,7 +52,7 @@ interface MovePickerMobileProps {
 
 type MoveEntry = {
   name: string;
-  data: MoveData | null;
+  data: MoveData;
 };
 
 // =============================================================================
@@ -83,26 +83,15 @@ export function MovePickerMobile({
   // -------------------------------------------------------------------------
   const { data: usagePeriods } = useUsageData(species, format);
 
-  // Build normalized-key → currentPct map (same logic as desktop picker)
+  // Build normalized-key → currentPct map from the latest period only.
+  // Mobile doesn't show sparklines, so only the most recent usage % is needed.
+  // Using the latest period directly avoids stale values for moves absent from
+  // recent periods (sparse accumulation would keep the last-seen pct in place).
   const usageMap = new Map<string, number>();
-  if (usagePeriods && usagePeriods.length > 0) {
-    // Accumulate series per move key (oldest → newest)
-    const seriesAccumulator = new Map<string, number[]>();
-    for (const period of usagePeriods) {
-      for (const m of period.moves) {
-        const key = normalizeMoveKey(m.value);
-        const existing = seriesAccumulator.get(key);
-        if (existing) {
-          existing.push(m.pct);
-        } else {
-          seriesAccumulator.set(key, [m.pct]);
-        }
-      }
-    }
-    // currentPct = last element of each move's series
-    for (const [key, series] of seriesAccumulator) {
-      const currentPct = series[series.length - 1] ?? 0;
-      usageMap.set(key, currentPct);
+  const latestPeriod = usagePeriods?.[usagePeriods.length - 1];
+  if (latestPeriod) {
+    for (const move of latestPeriod.moves) {
+      usageMap.set(normalizeMoveKey(move.value), move.pct);
     }
   }
 
@@ -123,12 +112,16 @@ export function MovePickerMobile({
   const filtered: MoveEntry[] = [];
   for (const name of legalMoves) {
     const data = getMoveData(name);
+    // Skip moves with no data — excluding here keeps the counter accurate
+    // (a null entry counted in filtered.length but skipped in the render
+    // would show a mismatch between the "X/Y" chip and visible rows).
+    if (!data) continue;
     if (lower) {
       const matches =
         name.toLowerCase().includes(lower) ||
-        data?.shortDesc?.toLowerCase().includes(lower) ||
-        data?.type?.toLowerCase().includes(lower) ||
-        data?.category?.toLowerCase().includes(lower);
+        data.shortDesc?.toLowerCase().includes(lower) ||
+        data.type?.toLowerCase().includes(lower) ||
+        data.category?.toLowerCase().includes(lower);
       if (!matches) continue;
     }
     filtered.push({ name, data });
@@ -183,7 +176,6 @@ export function MovePickerMobile({
           {/* Scrollable move list */}
           <div className="min-h-0 flex-1 overflow-y-auto">
             {filtered.map(({ name, data }) => {
-              if (!data) return null;
               // Ensure move data has the canonical name from our list
               const moveData = { ...data, name };
               return (

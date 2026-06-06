@@ -84,6 +84,11 @@ export async function computeEventUsage(
 
   // ---------------------------------------------------------------------------
   // Step 4: Replace (DELETE + bulk INSERT)
+  // NOTE: Could not use .upsert() here because the unique index on event_usage
+  // uses a COALESCE expression (COALESCE(division, '')) which PostgREST cannot
+  // reference in an onConflict target without schema changes. The delete+insert
+  // pattern is intentional; if insert fails after delete, the next retry will
+  // re-compute and re-insert cleanly.
   // ---------------------------------------------------------------------------
   const { error: deleteError } = await supabase
     .from("event_usage")
@@ -160,44 +165,75 @@ export async function computeSourceUsage(
 
   let candidates: Candidate[];
 
-  if (source === "rk9") {
-    const { data, error } = await supabase
-      .schema("rk9")
-      .from("events")
-      .select("event_id, format_id")
-      .gt("teams_imported_count", 0)
-      .not("format_id", "is", null);
+  const PAGE_SIZE = 500;
 
-    if (error) {
-      throw new Error(
-        `computeSourceUsage[rk9]: failed to list candidate events: ${error.message}`
+  if (source === "rk9") {
+    const allEvents: Array<{ event_id: string; format_id: string }> = [];
+    let offset = 0;
+    while (true) {
+      const { data: page, error: pageErr } = await supabase
+        .schema("rk9")
+        .from("events")
+        .select("event_id, format_id")
+        .gt("teams_imported_count", 0)
+        .not("format_id", "is", null)
+        .range(offset, offset + PAGE_SIZE - 1);
+
+      if (pageErr) {
+        throw new Error(
+          `computeSourceUsage[rk9]: failed to fetch events: ${pageErr.message}`
+        );
+      }
+      if (!page || page.length === 0) break;
+      allEvents.push(
+        ...page.map((e) => ({
+          event_id: String(e.event_id),
+          // format_id is non-null due to .not("format_id", "is", null) filter above
+          format_id: e.format_id as string,
+        }))
       );
+      if (page.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
     }
 
-    candidates = (data ?? []).map((row) => ({
-      id: String(row.event_id),
-      // format_id is non-null due to .not("format_id", "is", null) filter above
-      format: row.format_id as string,
+    candidates = allEvents.map((row) => ({
+      id: row.event_id,
+      format: row.format_id,
     }));
   } else {
     // limitless
-    const { data, error } = await supabase
-      .schema("limitless")
-      .from("tournaments")
-      .select("tournament_id, format_id")
-      .not("data_imported_at", "is", null)
-      .not("format_id", "is", null);
+    const allTournaments: Array<{ tournament_id: string; format_id: string }> =
+      [];
+    let offset = 0;
+    while (true) {
+      const { data: page, error: pageErr } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .select("tournament_id, format_id")
+        .not("data_imported_at", "is", null)
+        .not("format_id", "is", null)
+        .range(offset, offset + PAGE_SIZE - 1);
 
-    if (error) {
-      throw new Error(
-        `computeSourceUsage[limitless]: failed to list candidate tournaments: ${error.message}`
+      if (pageErr) {
+        throw new Error(
+          `computeSourceUsage[limitless]: failed to fetch tournaments: ${pageErr.message}`
+        );
+      }
+      if (!page || page.length === 0) break;
+      allTournaments.push(
+        ...page.map((t) => ({
+          tournament_id: String(t.tournament_id),
+          // format_id is non-null due to .not("format_id", "is", null) filter above
+          format_id: t.format_id as string,
+        }))
       );
+      if (page.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
     }
 
-    candidates = (data ?? []).map((row) => ({
-      id: String(row.tournament_id),
-      // format_id is non-null due to .not("format_id", "is", null) filter above
-      format: row.format_id as string,
+    candidates = allTournaments.map((row) => ({
+      id: row.tournament_id,
+      format: row.format_id,
     }));
   }
 
@@ -338,6 +374,11 @@ async function resolveEventMeta(
     }
 
     case "first_party": {
+      if (!Number.isFinite(Number(eventId))) {
+        throw new Error(
+          `computeEventUsage[first_party]: eventId must be a numeric tournament id, got "${eventId}"`
+        );
+      }
       // tournament_team_sheets.format is on each row; get it + the tournament start_date
       // via the first sheet row for this tournament.
       // tournaments.start_date is a timestamptz — cast to date string.
@@ -482,6 +523,11 @@ async function readRawTeamRows(
     }
 
     case "first_party": {
+      if (!Number.isFinite(Number(eventId))) {
+        throw new Error(
+          `computeEventUsage[first_party]: eventId must be a numeric tournament id, got "${eventId}"`
+        );
+      }
       // tournament_team_sheets — one row per Pokemon slot per registration.
       // move1..move4 columns instead of a moves[] array.
       // nature is populated only for Champions formats (null for standard VGC — privacy).

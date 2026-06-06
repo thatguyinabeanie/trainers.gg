@@ -322,7 +322,7 @@ describe("aggregateEventUsage — Species Clause", () => {
     expect(row?.sampleSize).toBe(2);
   });
 
-  it("aggregates move histograms from both slots when deduplicating (last-one-wins is fine: moves still counted from each slot)", () => {
+  it("only first-seen slot contributes to move histogram when deduplicating by (teamKey, species)", () => {
     // Even though the species clause deduplicates for teamCount, we still only
     // see the first occurrence per (teamKey, species) pair in the histogram.
     // That is by design — we record the team's 'first-seen' slot.

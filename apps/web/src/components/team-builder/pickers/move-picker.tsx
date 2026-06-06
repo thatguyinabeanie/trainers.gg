@@ -71,7 +71,8 @@ type MoveUsageEntry = {
 function sortMoves(
   rows: MoveRow[],
   sort: MoveListSortState,
-  usageMap: Map<string, MoveUsageEntry>
+  usageMap: Map<string, MoveUsageEntry>,
+  isDefaultSort: boolean
 ): MoveRow[] {
   const out = [...rows];
 
@@ -82,7 +83,7 @@ function sortMoves(
   const hasUsageData = usageMap.size > 0;
   const isDefaultNameSort = sort.col === "name" && sort.dir === "asc";
 
-  if (hasUsageData && isDefaultNameSort) {
+  if (isDefaultSort && hasUsageData && isDefaultNameSort) {
     out.sort((a, b) => {
       const au = usageMap.get(normalizeMoveKey(a.name))?.currentPct ?? 0;
       const bu = usageMap.get(normalizeMoveKey(b.name))?.currentPct ?? 0;
@@ -145,6 +146,10 @@ export function MovePicker({
 }: MovePickerProps) {
   const [filters, setFilters] = useState<MoveFilterState>(DEFAULT_MOVE_FILTERS);
   const [sort, setSort] = useState<MoveListSortState>({ col: "name", dir: "asc" });
+  // Tracks whether the user has explicitly clicked a column header to sort.
+  // Until they do, usage data drives the default order. Once they sort, the
+  // usage-based default is suppressed so name-asc is reachable.
+  const [hasUserSorted, setHasUserSorted] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -232,7 +237,7 @@ export function MovePicker({
     rows.push({ name, data });
   }
 
-  const sorted = sortMoves(rows, sort, usageMap);
+  const sorted = sortMoves(rows, sort, usageMap, !hasUserSorted);
 
   // -------------------------------------------------------------------------
   // Bucket counts for the RolePresetsPanel
@@ -261,6 +266,7 @@ export function MovePicker({
   // -------------------------------------------------------------------------
 
   function handleSort(col: MoveListSortCol) {
+    setHasUserSorted(true);
     setSort((prev) =>
       prev.col === col
         ? { col, dir: prev.dir === "asc" ? "desc" : "asc" }
