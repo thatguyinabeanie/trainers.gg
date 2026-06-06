@@ -2,7 +2,7 @@ import { BarChart2 } from "lucide-react";
 
 import { getFormatById } from "@trainers/pokemon";
 
-import { fetchFormatUsageTimeseries } from "@/actions/usage";
+import { fetchFormatUsageTimeseries, fetchPipelineData, fetchFormatEvents } from "@/actions/usage";
 import { PageContainer } from "@/components/layout/page-container";
 import { UsageExplorer } from "@/components/data/usage-explorer";
 import { type UsageFilters } from "@/components/data/usage-controls";
@@ -53,9 +53,15 @@ export default async function DataPage({ searchParams }: DataPageProps) {
     threshold,
   };
 
-  // Fetch initial timeseries on the server — result is ISR-cached for 1 hour.
-  const result = await fetchFormatUsageTimeseries({ format, source, periodType });
-  const initialPoints = result.success ? result.data : [];
+  // Fetch initial data on the server — results are ISR-cached for 1 hour.
+  const [timeseriesResult, pipelineResult, eventsResult] = await Promise.all([
+    fetchFormatUsageTimeseries({ format, source, periodType }),
+    fetchPipelineData({ format, source, periodType }),
+    fetchFormatEvents(format),
+  ]);
+  const initialPoints = timeseriesResult.success ? timeseriesResult.data : [];
+  const initialPipelineResult = pipelineResult.success ? pipelineResult.data : null;
+  const initialEvents = eventsResult.success ? eventsResult.data : [];
 
   // Resolve the active format for the page subtitle.
   const activeFormat = getFormatById(format);
@@ -82,6 +88,8 @@ export default async function DataPage({ searchParams }: DataPageProps) {
       {/* Main explorer (client shell with TanStack Query + URL state) */}
       <UsageExplorer
         initialPoints={initialPoints}
+        initialPipelineResult={initialPipelineResult}
+        initialEvents={initialEvents}
         initialFilters={initialFilters}
       />
     </PageContainer>

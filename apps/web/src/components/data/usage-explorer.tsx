@@ -4,29 +4,27 @@ import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
-import { type FormatUsageTimeseriesPoint } from "@trainers/supabase";
+import { type FormatUsageTimeseriesPoint, type PipelineDataResult, type FormatEvent } from "@trainers/supabase";
 
-import { fetchFormatUsageTimeseries } from "@/actions/usage";
+import { fetchFormatUsageTimeseries, fetchPipelineData, fetchFormatEvents } from "@/actions/usage";
 
-import {
-  buildUsageSeries,
-  filterByThreshold,
-  insideOutOrder,
-} from "./usage-series";
+import { buildUsageSeries } from "./usage-series";
 import {
   UsageControls,
-  type ChartMode,
-  type PeriodType,
   type UsageFilters,
+  type PeriodType,
   type UsageSource,
 } from "./usage-controls";
-import { UsageStreamChart } from "./usage-stream-chart";
+import { UsagePipelineChart } from "./usage-pipeline-chart";
+import { UsageLineChart } from "./usage-line-chart";
 import {
   coerceFormat,
-  coerceMode,
   coercePeriodType,
   coerceSource,
   coerceThreshold,
+  coerceSelectedSpecies,
+  coerceRangeStart,
+  coerceRangeEnd,
 } from "./usage-filters";
 
 // =============================================================================
@@ -35,6 +33,8 @@ import {
 
 interface UsageExplorerProps {
   initialPoints: FormatUsageTimeseriesPoint[];
+  initialPipelineResult: PipelineDataResult | null;
+  initialEvents: FormatEvent[];
   initialFilters: UsageFilters;
 }
 
@@ -43,29 +43,31 @@ interface UsageExplorerProps {
 // =============================================================================
 
 /**
- * Client shell for the /data page.
+ * Client shell for the /data Meta Explorer.
  *
- * - Filter state (format, source, periodType, threshold) lives in the URL so
- *   deep links work and the browser back button restores the view.
- * - Chart mode (stream/stacked/lines) also lives in the URL.
- * - Highlight (search) is local state — it's ephemeral and not shareable.
- * - TanStack Query is keyed on [format, source, periodType] and receives the
- *   server-rendered initialData so there is no waterfall on first load.
+ * URL state: format, source, periodType, threshold, species (comma-sep),
+ * rangeStart (ISO date), rangeEnd (ISO date).
+ *
+ * Local state (ephemeral): highlight (search input substring).
+ *
+ * TanStack Query is keyed per (format, source, periodType) for the timeseries
+ * and per (format, source, periodType, rangeStart, rangeEnd) for pipeline data.
  */
 export function UsageExplorer({
   initialPoints,
+  initialPipelineResult,
+  initialEvents,
   initialFilters,
 }: UsageExplorerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  // ---- Local state (not in URL) -------------------------------------------
+  // Ephemeral search box state — dims non-matching lines in the line chart.
+  // Not URL-persisted (transient UI affordance, not a shareable filter).
   const [highlight, setHighlight] = useState("");
 
-  // ---- URL-derived state ---------------------------------------------------
-  // Each coercer validates the raw URL string and falls back to the server-
-  // rendered default when the value is absent or invalid — no unguarded `as`.
+  // ── URL-derived state ─────────────────────────────────────────────────────
   const format = coerceFormat(
     searchParams.get("format") ?? initialFilters.format
   );
@@ -75,91 +77,161 @@ export function UsageExplorer({
   const periodType: PeriodType = coercePeriodType(
     searchParams.get("periodType") ?? initialFilters.periodType
   );
-  const safeThreshold = coerceThreshold(
+  const threshold = coerceThreshold(
     searchParams.get("threshold") ?? String(initialFilters.threshold)
   );
-  const mode: ChartMode = coerceMode(searchParams.get("mode") ?? "stream");
+  const selectedSpecies = coerceSelectedSpecies(searchParams.get("species"));
+  const rangeStart = coerceRangeStart(searchParams.get("rangeStart"));
+  const rangeEnd = coerceRangeEnd(searchParams.get("rangeEnd"));
 
-  const currentFilters: UsageFilters = {
-    format,
-    source,
-    periodType,
-    threshold: safeThreshold,
-  };
+  const currentFilters: UsageFilters = { format, source, periodType, threshold };
 
-  // ---- URL updater ---------------------------------------------------------
+  // ── URL updater ───────────────────────────────────────────────────────────
   const updateUrl = (
     nextFilters: UsageFilters,
-    nextMode?: ChartMode
+    nextSpecies?: string[],
+    nextRangeStart?: string | null,
+    nextRangeEnd?: string | null
   ) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("format", nextFilters.format);
     params.set("source", nextFilters.source);
     params.set("periodType", nextFilters.periodType);
     params.set("threshold", String(nextFilters.threshold));
-    params.set("mode", nextMode ?? mode);
+
+    const species = nextSpecies ?? selectedSpecies;
+    if (species.length > 0) {
+      params.set("species", species.join(","));
+    } else {
+      params.delete("species");
+    }
+
+    const rs = nextRangeStart !== undefined ? nextRangeStart : rangeStart;
+    const re = nextRangeEnd !== undefined ? nextRangeEnd : rangeEnd;
+    if (rs) params.set("rangeStart", rs);
+    else params.delete("rangeStart");
+    if (re) params.set("rangeEnd", re);
+    else params.delete("rangeEnd");
+
     startTransition(() => {
       router.replace(`?${params.toString()}`, { scroll: false });
     });
   };
 
-  const handleFiltersChange = (next: UsageFilters) => updateUrl(next, mode);
-  const handleModeChange = (next: ChartMode) => updateUrl(currentFilters, next);
+  const handleFiltersChange = (next: UsageFilters) => updateUrl(next);
+  const handleSpeciesClick = (species: string) => {
+    const next = selectedSpecies.includes(species)
+      ? selectedSpecies.filter((s) => s !== species)
+      : [...selectedSpecies, species];
+    updateUrl(currentFilters, next);
+  };
+  const handleSelectAll = () => {
+    const all = buildUsageSeries(points)
+      .filter((s) => s.peak >= threshold)
+      .map((s) => s.species);
+    updateUrl(currentFilters, all);
+  };
+  const handleClearSelection = () => updateUrl(currentFilters, [], null, null);
+  const handleRangeChange = (start: string | null, end: string | null) =>
+    updateUrl(currentFilters, undefined, start, end);
 
-  // ---- TanStack Query -------------------------------------------------------
+  // ── TanStack Query — timeseries ───────────────────────────────────────────
   const { data: points = [] } = useQuery<FormatUsageTimeseriesPoint[]>({
     queryKey: ["usage-timeseries", format, source, periodType],
     queryFn: async () => {
-      const result = await fetchFormatUsageTimeseries({
-        format,
-        source,
-        periodType,
-      });
+      const result = await fetchFormatUsageTimeseries({ format, source, periodType });
       if (!result.success) throw new Error(result.error);
       return result.data;
     },
     initialData: initialPoints,
-    staleTime: 5 * 60 * 1000, // 5 minutes — backed by 1h server cache
+    staleTime: 5 * 60 * 1000,
   });
 
-  // ---- Derive series -------------------------------------------------------
-  const allSeries = buildUsageSeries(points);
-  const filteredSeries = filterByThreshold(allSeries, safeThreshold);
-  // For stream/stacked, use inside-out ordering; lines just use peak-desc.
-  const orderedSeries =
-    mode === "lines" ? filteredSeries : insideOutOrder(filteredSeries);
+  // ── TanStack Query — pipeline data ────────────────────────────────────────
+  const { data: pipelineResult = initialPipelineResult } =
+    useQuery<PipelineDataResult | null>({
+      queryKey: ["pipeline-data", format, source, periodType, rangeStart, rangeEnd],
+      queryFn: async () => {
+        const result = await fetchPipelineData({
+          format,
+          source,
+          periodType,
+          periodStart: rangeStart ?? undefined,
+          periodEnd: rangeEnd ?? undefined,
+        });
+        if (!result.success) throw new Error(result.error);
+        return result.data;
+      },
+      initialData: initialPipelineResult,
+      staleTime: 5 * 60 * 1000,
+    });
+
+  // ── TanStack Query — events ───────────────────────────────────────────────
+  const { data: events = [] } = useQuery<FormatEvent[]>({
+    queryKey: ["format-events", format],
+    queryFn: async () => {
+      const result = await fetchFormatEvents(format);
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    initialData: initialEvents,
+    staleTime: 60 * 60 * 1000, // events change rarely
+  });
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-4">
+      {/* Shared controls bar */}
       <UsageControls
         filters={currentFilters}
-        mode={mode}
         highlight={highlight}
-        totalCount={allSeries.length}
-        visibleCount={filteredSeries.length}
+        totalCount={buildUsageSeries(points).length}
+        visibleCount={
+          buildUsageSeries(points).filter((s) => s.peak >= threshold).length
+        }
         onFiltersChange={handleFiltersChange}
-        onModeChange={handleModeChange}
         onHighlightChange={setHighlight}
       />
 
-      <div className="bg-card rounded-2xl p-3 shadow-sm sm:p-4">
-        <UsageStreamChart
-          series={orderedSeries}
-          periods={points}
-          mode={mode}
-          highlight={highlight}
+      {/* Panel 1: Meta Pipeline (Sankey) — hero */}
+      <div className="bg-card rounded-2xl p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Meta Pipeline</h2>
+          {selectedSpecies.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              {selectedSpecies.map((sp) => (
+                <button
+                  key={sp}
+                  onClick={() => handleSpeciesClick(sp)}
+                  className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs"
+                >
+                  {sp} ×
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <UsagePipelineChart
+          pipelineResult={pipelineResult}
+          selectedSpecies={selectedSpecies}
+          threshold={threshold}
+          onSpeciesClick={handleSpeciesClick}
         />
       </div>
 
-      <p className="text-muted-foreground px-1 text-xs">
-        Default hides Pokemon under{" "}
-        <strong className="text-foreground">1%</strong> usage — drag the slider
-        to include more or fewer. Type a name to{" "}
-        <strong className="text-foreground">highlight</strong> its band.{" "}
-        <strong className="text-foreground">Stacked</strong> shows cumulative
-        share; <strong className="text-foreground">Lines</strong> shows exact
-        trajectories. Hover for a tooltip.
-      </p>
+      {/* Panel 2: Usage Over Time (line chart) — navigator */}
+      <div className="bg-card rounded-2xl p-4 shadow-sm">
+        <UsageLineChart
+          points={points}
+          selectedSpecies={selectedSpecies}
+          highlight={highlight}
+          threshold={threshold}
+          events={events}
+          onSpeciesClick={handleSpeciesClick}
+          onRangeChange={handleRangeChange}
+          onSelectAll={handleSelectAll}
+          onClearSelection={handleClearSelection}
+        />
+      </div>
     </div>
   );
 }

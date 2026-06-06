@@ -5,10 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { UsageExplorer } from "../usage-explorer";
 import { type UsageFilters } from "../usage-controls";
 
-// =============================================================================
-// Mocks
-// =============================================================================
-
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn() }),
   useSearchParams: () => new URLSearchParams(),
@@ -18,6 +14,8 @@ jest.mock("@/actions/usage", () => ({
   fetchFormatUsageTimeseries: jest
     .fn()
     .mockResolvedValue({ success: true, data: [] }),
+  fetchPipelineData: jest.fn().mockResolvedValue({ success: true, data: null }),
+  fetchFormatEvents: jest.fn().mockResolvedValue({ success: true, data: [] }),
 }));
 
 jest.mock("@trainers/pokemon", () => ({
@@ -27,28 +25,18 @@ jest.mock("@trainers/pokemon", () => ({
   getFormatById: (id: string) => ({ id }),
 }));
 
-// Stub the chart to avoid Recharts/canvas complexity
-jest.mock("../usage-stream-chart", () => ({
-  UsageStreamChart: () => <div data-testid="usage-stream-chart" />,
+// Stub the charts to avoid Recharts / SVG layout complexity in JSDOM.
+jest.mock("../usage-pipeline-chart", () => ({
+  UsagePipelineChart: () => <div data-testid="usage-pipeline-chart" />,
+}));
+jest.mock("../usage-line-chart", () => ({
+  UsageLineChart: () => <div data-testid="usage-line-chart" />,
 }));
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function makeQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        gcTime: 0,
-      },
-    },
-  });
-}
-
 function makeWrapper() {
-  const queryClient = makeQueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -61,68 +49,37 @@ const DEFAULT_FILTERS: UsageFilters = {
   format: "gen9vgc2025regg",
   source: "all",
   periodType: "week",
-  threshold: 1,
+  threshold: 2,
 };
 
-// =============================================================================
-// Tests
-// =============================================================================
+function renderExplorer() {
+  const Wrapper = makeWrapper();
+  return render(
+    <Wrapper>
+      <UsageExplorer
+        initialPoints={[]}
+        initialPipelineResult={null}
+        initialEvents={[]}
+        initialFilters={DEFAULT_FILTERS}
+      />
+    </Wrapper>
+  );
+}
 
 describe("UsageExplorer", () => {
   it("renders without crashing", () => {
-    const Wrapper = makeWrapper();
-    render(
-      <Wrapper>
-        <UsageExplorer initialPoints={[]} initialFilters={DEFAULT_FILTERS} />
-      </Wrapper>
-    );
-    // The component mounted — spot-check a stable element from UsageControls
-    // Use getAllByText since "Highlight" appears as both a label and aria-label
-    expect(screen.getAllByText(/Highlight/i).length).toBeGreaterThan(0);
+    renderExplorer();
+    expect(screen.getByText("Meta Pipeline")).toBeInTheDocument();
   });
 
-  it("renders the stream chart placeholder", () => {
-    const Wrapper = makeWrapper();
-    render(
-      <Wrapper>
-        <UsageExplorer initialPoints={[]} initialFilters={DEFAULT_FILTERS} />
-      </Wrapper>
-    );
-    expect(screen.getByTestId("usage-stream-chart")).toBeInTheDocument();
+  it("renders both chart panels", () => {
+    renderExplorer();
+    expect(screen.getByTestId("usage-pipeline-chart")).toBeInTheDocument();
+    expect(screen.getByTestId("usage-line-chart")).toBeInTheDocument();
   });
 
-  it("renders the controls section with the highlight input", () => {
-    const Wrapper = makeWrapper();
-    render(
-      <Wrapper>
-        <UsageExplorer initialPoints={[]} initialFilters={DEFAULT_FILTERS} />
-      </Wrapper>
-    );
-    expect(
-      screen.getByPlaceholderText("Type a Pokemon...")
-    ).toBeInTheDocument();
-  });
-
-  it("renders the usage legend paragraph", () => {
-    const Wrapper = makeWrapper();
-    render(
-      <Wrapper>
-        <UsageExplorer initialPoints={[]} initialFilters={DEFAULT_FILTERS} />
-      </Wrapper>
-    );
-    // The informational paragraph below the chart
-    expect(screen.getByText(/drag the slider/i)).toBeInTheDocument();
-  });
-
-  it("renders all three chart mode tabs from UsageControls", () => {
-    const Wrapper = makeWrapper();
-    render(
-      <Wrapper>
-        <UsageExplorer initialPoints={[]} initialFilters={DEFAULT_FILTERS} />
-      </Wrapper>
-    );
-    expect(screen.getByRole("tab", { name: /Stream/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Stacked/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Lines/i })).toBeInTheDocument();
+  it("renders the controls with the search input", () => {
+    renderExplorer();
+    expect(screen.getByPlaceholderText("Search Pokémon...")).toBeInTheDocument();
   });
 });
