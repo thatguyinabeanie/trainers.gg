@@ -105,34 +105,55 @@ export function buildPipelineGraph(
     const speciesId = `species:${s.species}`;
     ensureNode(speciesId, s.species, "species", assignColor(s.species));
 
+    // 1. Species → Ability
     for (const ability of s.abilities) {
       const abilityId = `ability:${ability.value}`;
       ensureNode(abilityId, ability.value, "ability", COLUMN_COLORS.ability);
-
-      // species → ability
       addLink(speciesId, abilityId, (s.usagePct * ability.pct) / 100);
+    }
 
+    if (s.abilities.length === 0) {
+      // No abilities — produce a floating species node with no outgoing links.
+      // d3-sankey can place such nodes oddly, but real Phase-1 data always has
+      // histograms, so this is acceptable; revisit if empty histograms appear.
+    } else if (s.natures.length > 0) {
+      // 2a. Ability → Nature
+      for (const ability of s.abilities) {
+        const abilityId = `ability:${ability.value}`;
+        for (const nature of s.natures) {
+          const natureId = `nature:${nature.value}`;
+          ensureNode(natureId, nature.value, "nature", COLUMN_COLORS.nature);
+          addLink(
+            abilityId,
+            natureId,
+            (s.usagePct * ability.pct * nature.pct) / 10000
+          );
+        }
+      }
+      // 3a. Nature → Move
       for (const nature of s.natures) {
         const natureId = `nature:${nature.value}`;
-        ensureNode(natureId, nature.value, "nature", COLUMN_COLORS.nature);
-
-        // ability → nature (proportional allocation)
-        addLink(
-          abilityId,
-          natureId,
-          (s.usagePct * ability.pct * nature.pct) / 10000
-        );
-
         for (const move of s.moves) {
           const moveId = `move:${move.value}`;
           ensureNode(moveId, move.value, "move", COLUMN_COLORS.move);
-
-          // nature → move — weighted by ability.pct too, so flows sum across
-          // abilities and conserve at the nature node (matches ability→nature inflow).
           addLink(
             natureId,
             moveId,
-            (s.usagePct * ability.pct * nature.pct * move.pct) / 1000000
+            (s.usagePct * nature.pct * move.pct) / 10000
+          );
+        }
+      }
+    } else {
+      // 3b. Ability → Move (fallback when no natures)
+      for (const ability of s.abilities) {
+        const abilityId = `ability:${ability.value}`;
+        for (const move of s.moves) {
+          const moveId = `move:${move.value}`;
+          ensureNode(moveId, move.value, "move", COLUMN_COLORS.move);
+          addLink(
+            abilityId,
+            moveId,
+            (s.usagePct * ability.pct * move.pct) / 10000
           );
         }
       }

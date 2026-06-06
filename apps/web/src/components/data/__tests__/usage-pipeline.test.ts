@@ -160,6 +160,55 @@ describe("buildPipelineGraph — empty abilities", () => {
 });
 
 // =============================================================================
+// buildPipelineGraph — no natures (3-column fallback)
+// =============================================================================
+
+describe("buildPipelineGraph — no natures (3-column fallback)", () => {
+  it("creates ability→move link when natures is empty", () => {
+    const species = makeSpecies({ natures: [] });
+    const result = buildPipelineGraph([species]);
+
+    // No nature nodes
+    expect(
+      result.nodes.filter((n: PipelineNode) => n.column === "nature")
+    ).toHaveLength(0);
+
+    // Move node exists
+    expect(
+      result.nodes.filter((n: PipelineNode) => n.column === "move")
+    ).toHaveLength(1);
+
+    // Ability → Move link exists
+    const link = result.links.find(
+      (l: PipelineLink) =>
+        l.source === "ability:Unburden" && l.target === "move:Fake Out"
+    );
+    expect(link).toBeDefined();
+    // value = usagePct * ability.pct * move.pct / 10000 = 20 * 100 * 90 / 10000 = 18
+    expect(link!.value).toBeCloseTo(18);
+  });
+
+  it("creates no move nodes when both natures and moves are empty", () => {
+    const species = makeSpecies({ natures: [], moves: [] });
+    const result = buildPipelineGraph([species]);
+
+    expect(
+      result.nodes.filter((n: PipelineNode) => n.column === "nature")
+    ).toHaveLength(0);
+    expect(
+      result.nodes.filter((n: PipelineNode) => n.column === "move")
+    ).toHaveLength(0);
+    // Only species + ability nodes
+    expect(
+      result.nodes.filter((n: PipelineNode) => n.column === "species")
+    ).toHaveLength(1);
+    expect(
+      result.nodes.filter((n: PipelineNode) => n.column === "ability")
+    ).toHaveLength(1);
+  });
+});
+
+// =============================================================================
 // buildPipelineGraph — multiple species sharing an ability node
 // =============================================================================
 
