@@ -21,6 +21,7 @@ jest.mock("@trainers/supabase", () => ({
   computeUsageRollups: jest.fn(),
   getSpeciesUsage: jest.fn(),
   getSpeciesUsageDetail: jest.fn(),
+  getFormatUsageTimeseries: jest.fn(),
 }));
 
 jest.mock("next/cache", () => ({
@@ -39,6 +40,7 @@ import {
   computeUsageRollups,
   getSpeciesUsageDetail,
   getSpeciesUsage,
+  getFormatUsageTimeseries,
 } from "@trainers/supabase";
 import { updateTag } from "next/cache";
 import {
@@ -46,6 +48,7 @@ import {
   triggerUsageRollup,
   fetchSpeciesUsageDetail,
   fetchFormatUsage,
+  fetchFormatUsageTimeseries,
 } from "../usage";
 
 // ---------------------------------------------------------------------------
@@ -60,6 +63,7 @@ const mockComputeSourceUsage = computeSourceUsage as jest.Mock;
 const mockComputeUsageRollups = computeUsageRollups as jest.Mock;
 const mockGetSpeciesUsageDetail = getSpeciesUsageDetail as jest.Mock;
 const mockGetSpeciesUsage = getSpeciesUsage as jest.Mock;
+const mockGetFormatUsageTimeseries = getFormatUsageTimeseries as jest.Mock;
 const mockUpdateTag = updateTag as jest.Mock;
 
 // ---------------------------------------------------------------------------
@@ -647,5 +651,48 @@ describe("fetchFormatUsage", () => {
       {},
       expect.objectContaining({ source: "all", periodType: "week" })
     );
+  });
+});
+
+describe("fetchFormatUsageTimeseries", () => {
+  beforeEach(() => {
+    mockCreateStaticClient.mockReturnValue({});
+  });
+
+  it("happy path: returns timeseries points", async () => {
+    const points = [
+      { periodStart: "2025-01-01", periodEnd: "2025-01-07", usage: { koraidon: 52.3 } },
+    ];
+    mockGetFormatUsageTimeseries.mockResolvedValueOnce(points);
+
+    const result = await fetchFormatUsageTimeseries({ format: "gen9vgc2025regg" });
+
+    expect(result.success).toBe(true);
+    if (!result.success) throw new Error("expected success");
+    expect(result.data).toEqual(points);
+    expect(mockGetFormatUsageTimeseries).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ format: "gen9vgc2025regg", source: "all", periodType: "week" })
+    );
+  });
+
+  it("passes custom source and periodType through", async () => {
+    mockGetFormatUsageTimeseries.mockResolvedValueOnce([]);
+
+    await fetchFormatUsageTimeseries({ format: "gen9vgc2025regg", source: "rk9", periodType: "month" });
+
+    expect(mockGetFormatUsageTimeseries).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ source: "rk9", periodType: "month" })
+    );
+  });
+
+  it("returns { success: false } when query throws", async () => {
+    mockGetFormatUsageTimeseries.mockRejectedValueOnce(new Error("timeseries query failed"));
+
+    const result = await fetchFormatUsageTimeseries({ format: "gen9vgc2025regg" });
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toMatch(/timeseries query failed/);
   });
 });
