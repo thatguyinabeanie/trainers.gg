@@ -19,7 +19,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export type ChartMode = "stream" | "stacked" | "lines";
 export type PeriodType = "day" | "week" | "month";
-export type UsageSource = "all" | "rk9" | "limitless" | "first_party";
+export type UsageSource = "all" | "rk9" | "limitless" | "trainers.gg";
 
 export interface UsageFilters {
   format: string;
@@ -53,7 +53,7 @@ const SOURCE_LABELS: Record<UsageSource, string> = {
   all: "All Sources",
   rk9: "RK9",
   limitless: "Limitless",
-  "first_party": "trainers.gg",
+  "trainers.gg": "trainers.gg",
 };
 
 // =============================================================================
@@ -171,7 +171,7 @@ export function UsageControls({
           </SelectTrigger>
           <SelectContent>
             {(
-              ["all", "rk9", "limitless", "first_party"] as UsageSource[]
+              ["all", "rk9", "limitless", "trainers.gg"] as UsageSource[]
             ).map((s) => (
               <SelectItem key={s} value={s}>
                 {SOURCE_LABELS[s]}

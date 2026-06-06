@@ -40,7 +40,7 @@ describe("exported constants", () => {
     expect(VALID_SOURCES).toContain("all");
     expect(VALID_SOURCES).toContain("rk9");
     expect(VALID_SOURCES).toContain("limitless");
-    expect(VALID_SOURCES).toContain("first_party");
+    expect(VALID_SOURCES).toContain("trainers.gg");
   });
 
   it("VALID_PERIOD_TYPES contains day, week, month", () => {

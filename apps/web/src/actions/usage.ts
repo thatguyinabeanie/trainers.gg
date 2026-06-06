@@ -18,6 +18,7 @@ import {
 import { createStaticClient, createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import { CacheTags } from "@/lib/cache";
+import { toDBSource } from "@/components/data/usage-filters";
 
 // ---------------------------------------------------------------------------
 // Usage rollup worker
@@ -268,7 +269,7 @@ export async function fetchSpeciesUsageDetail(
         return getSpeciesUsageDetail(supabase, {
           format,
           species,
-          source,
+          source: toDBSource(source),
           periodType,
           limit,
         });
@@ -326,7 +327,7 @@ export async function fetchFormatUsage(
     const getCached = unstable_cache(
       async () => {
         const supabase = createStaticClient();
-        return getSpeciesUsage(supabase, { format, source, periodType });
+        return getSpeciesUsage(supabase, { format, source: toDBSource(source), periodType });
       },
       [cacheKey],
       {
@@ -384,7 +385,7 @@ export async function fetchFormatUsageTimeseries(
     const getCached = unstable_cache(
       async () => {
         const supabase = createStaticClient();
-        return getFormatUsageTimeseries(supabase, { format, source, periodType });
+        return getFormatUsageTimeseries(supabase, { format, source: toDBSource(source), periodType });
       },
       [cacheKey],
       {

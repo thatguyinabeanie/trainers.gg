@@ -17,7 +17,7 @@ export const VALID_SOURCES = [
   "all",
   "rk9",
   "limitless",
-  "first_party",
+  "trainers.gg",
 ] as const;
 
 export const VALID_PERIOD_TYPES = ["day", "week", "month"] as const;
@@ -55,6 +55,14 @@ export function coerceFormat(raw: string | undefined | null): string {
   if (!raw || !raw.trim()) return DEFAULT_FORMAT;
   const trimmed = raw.trim();
   return isValidFormat(trimmed) ? trimmed : DEFAULT_FORMAT;
+}
+
+/**
+ * Translates a UI source value to the DB-stored identifier.
+ * The UI uses "trainers.gg" for first-party data; the DB stores "first_party".
+ */
+export function toDBSource(source: string): string {
+  return source === "trainers.gg" ? "first_party" : source;
 }
 
 /**
