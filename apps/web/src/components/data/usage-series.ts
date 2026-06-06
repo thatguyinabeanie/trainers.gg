@@ -116,6 +116,9 @@ export function filterByThreshold(
  * highest-peak series ends up in the centre of the stack — the visual
  * "inside-out" effect that gives streamgraphs their wave shape.
  *
+ * Re-sorts defensively so callers needn't pre-sort — passing an already
+ * peak-desc sorted array is safe and produces the same result.
+ *
  * Does NOT mutate the input array. Returns a new array of the same length.
  */
 export function insideOutOrder(series: UsageSeries[]): UsageSeries[] {

@@ -6,29 +6,28 @@ import { fetchFormatUsageTimeseries } from "@/actions/usage";
 import { PageContainer } from "@/components/layout/page-container";
 import { UsageExplorer } from "@/components/data/usage-explorer";
 import { type UsageFilters } from "@/components/data/usage-controls";
+import {
+  coerceFormat,
+  coercePeriodType,
+  coerceSource,
+  coerceThreshold,
+} from "@/components/data/usage-filters";
 
 // =============================================================================
 // Cache
 // =============================================================================
 
 /**
- * Revalidate every hour — matches the server-side unstable_cache window on
- * fetchFormatUsageTimeseries. On-demand invalidation via CacheTags.USAGE_STATS
- * also busts this route.
+ * Use on-demand tag invalidation only (via CacheTags.USAGE_STATS). The
+ * unstable_cache inside fetchFormatUsageTimeseries manages its own 1h TTL.
+ * Setting revalidate=3600 here would redundantly race against that TTL and
+ * prevent the tag-based bust from taking effect immediately.
  */
-export const revalidate = 3600;
+export const revalidate = false;
 
 // =============================================================================
 // Page
 // =============================================================================
-
-const DEFAULT_FORMAT = "gen9championsvgc2026regma";
-const DEFAULT_SOURCE = "all";
-const DEFAULT_PERIOD_TYPE = "week";
-const DEFAULT_THRESHOLD = 1;
-
-const VALID_PERIOD_TYPES = ["day", "week", "month"] as const;
-type PeriodType = (typeof VALID_PERIOD_TYPES)[number];
 
 interface DataPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -37,30 +36,19 @@ interface DataPageProps {
 export default async function DataPage({ searchParams }: DataPageProps) {
   const params = await searchParams;
 
-  // Validate + extract searchParams — never pass unvalidated strings to actions.
-  const format =
-    typeof params.format === "string" && params.format.trim()
-      ? params.format.trim()
-      : DEFAULT_FORMAT;
+  // Validate + extract searchParams via shared coercers — never pass unvalidated
+  // strings to actions. Each coercer returns a safe default on invalid input.
+  const raw = (key: string) =>
+    typeof params[key] === "string" ? (params[key] as string) : undefined;
 
-  const source =
-    typeof params.source === "string" && params.source.trim()
-      ? params.source.trim()
-      : DEFAULT_SOURCE;
-
-  const rawPeriod = typeof params.periodType === "string" ? params.periodType : DEFAULT_PERIOD_TYPE;
-  const periodType: PeriodType = (VALID_PERIOD_TYPES as readonly string[]).includes(rawPeriod)
-    ? (rawPeriod as PeriodType)
-    : DEFAULT_PERIOD_TYPE;
-
-  const rawThreshold = typeof params.threshold === "string"
-    ? parseFloat(params.threshold)
-    : DEFAULT_THRESHOLD;
-  const threshold = Number.isNaN(rawThreshold) ? DEFAULT_THRESHOLD : rawThreshold;
+  const format = coerceFormat(raw("format"));
+  const source = coerceSource(raw("source"));
+  const periodType = coercePeriodType(raw("periodType"));
+  const threshold = coerceThreshold(raw("threshold"));
 
   const initialFilters: UsageFilters = {
     format,
-    source: source as UsageFilters["source"],
+    source,
     periodType,
     threshold,
   };

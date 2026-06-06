@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { cn } from "@/lib/utils";
+import { type FormatUsageTimeseriesPoint } from "@trainers/supabase";
 
 import { type UsageSeries } from "./usage-series";
 
@@ -21,7 +21,7 @@ import { type UsageSeries } from "./usage-series";
 
 interface UsageStreamChartProps {
   series: UsageSeries[];
-  periods: { periodStart: string }[];
+  periods: FormatUsageTimeseriesPoint[];
   mode: "stream" | "stacked" | "lines";
   /** Substring filter — dims series that don't match (case-insensitive). */
   highlight: string;
@@ -67,6 +67,9 @@ export function UsageStreamChart({
   }
 
   // Build one row per period: { period: label, [species]: value, ... }
+  // The raw `usage` map from each period point is also stored so the stacked
+  // tooltip can read the original usage_pct instead of the recharts-normalized
+  // fraction (which inflates the displayed % when not all species are visible).
   const data = periods.map((p, i) => {
     const row: Record<string, string | number> = {
       period: formatPeriodLabel(p.periodStart),
@@ -74,6 +77,9 @@ export function UsageStreamChart({
     for (const s of series) {
       row[s.species] = s.values[i] ?? 0;
     }
+    // Attach the raw usage map so the tooltip can look up true usage_pct values.
+    // Cast to a wider type because recharts data rows are Record<string, unknown>.
+    (row as Record<string, unknown>)["__usage"] = p.usage;
     return row;
   });
 
@@ -92,7 +98,7 @@ export function UsageStreamChart({
   if (mode === "lines") {
     return (
       <div
-        className={cn("h-96 w-full")}
+        className="h-96 w-full"
         role="img"
         aria-label="Pokemon usage over time — line chart"
       >
@@ -149,7 +155,7 @@ export function UsageStreamChart({
 
   return (
     <div
-      className={cn("h-96 w-full")}
+      className="h-96 w-full"
       role="img"
       aria-label={`Pokemon usage over time — ${mode} chart`}
     >
@@ -176,12 +182,28 @@ export function UsageStreamChart({
             />
           )}
           <Tooltip
-            formatter={(value: number, name: string) => [
-              mode === "stacked"
-                ? `${(value * 100).toFixed(1)}%`
-                : `${(value as number).toFixed(1)}%`,
-              name,
-            ]}
+            formatter={(value: number, name: string, props) => {
+              if (mode === "stacked") {
+                // In "expand" stackOffset mode recharts normalizes values to
+                // fractions of the total, inflating the tooltip when the
+                // visible species don't sum to 100 %. Instead, look up the
+                // raw usage_pct from the original period data stored in the
+                // "__usage" key of the datum.
+                const rawUsage =
+                  (
+                    props.payload as
+                      | Record<string, unknown>
+                      | undefined
+                  )?.["__usage"];
+                const rawPct =
+                  rawUsage && typeof rawUsage === "object"
+                    ? ((rawUsage as Record<string, number>)[name] ?? value)
+                    : value;
+                return [`${rawPct.toFixed(1)}%`, name];
+              }
+              // Stream and Lines: value is already the real usage_pct.
+              return [`${value.toFixed(1)}%`, name];
+            }}
             contentStyle={{
               background: "var(--background)",
               border: "1px solid var(--border)",

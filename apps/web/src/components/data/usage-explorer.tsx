@@ -21,6 +21,13 @@ import {
   type UsageSource,
 } from "./usage-controls";
 import { UsageStreamChart } from "./usage-stream-chart";
+import {
+  coerceFormat,
+  coerceMode,
+  coercePeriodType,
+  coerceSource,
+  coerceThreshold,
+} from "./usage-filters";
 
 // =============================================================================
 // Types
@@ -57,17 +64,21 @@ export function UsageExplorer({
   const [highlight, setHighlight] = useState("");
 
   // ---- URL-derived state ---------------------------------------------------
-  const format =
-    searchParams.get("format") ?? initialFilters.format;
-  const source = (searchParams.get("source") as UsageSource) ?? initialFilters.source;
-  const periodType =
-    (searchParams.get("periodType") as PeriodType) ?? initialFilters.periodType;
-  const threshold = parseFloat(
+  // Each coercer validates the raw URL string and falls back to the server-
+  // rendered default when the value is absent or invalid — no unguarded `as`.
+  const format = coerceFormat(
+    searchParams.get("format") ?? initialFilters.format
+  );
+  const source: UsageSource = coerceSource(
+    searchParams.get("source") ?? initialFilters.source
+  );
+  const periodType: PeriodType = coercePeriodType(
+    searchParams.get("periodType") ?? initialFilters.periodType
+  );
+  const safeThreshold = coerceThreshold(
     searchParams.get("threshold") ?? String(initialFilters.threshold)
   );
-  const safeThreshold = Number.isNaN(threshold) ? initialFilters.threshold : threshold;
-  const mode =
-    (searchParams.get("mode") as ChartMode) ?? "stream";
+  const mode: ChartMode = coerceMode(searchParams.get("mode") ?? "stream");
 
   const currentFilters: UsageFilters = {
     format,
