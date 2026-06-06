@@ -6,11 +6,31 @@ import { cn } from "@/lib/utils";
 
 // Raw DB nature values mapped to their display labels.
 const NATURE_LABELS: Record<string, string> = {
-  hardy: "Hardy", lonely: "Lonely", brave: "Brave", adamant: "Adamant", naughty: "Naughty",
-  bold: "Bold", docile: "Docile", relaxed: "Relaxed", impish: "Impish", lax: "Lax",
-  timid: "Timid", hasty: "Hasty", serious: "Serious", jolly: "Jolly", naive: "Naive",
-  modest: "Modest", mild: "Mild", quiet: "Quiet", bashful: "Bashful", rash: "Rash",
-  calm: "Calm", gentle: "Gentle", sassy: "Sassy", careful: "Careful", quirky: "Quirky",
+  hardy: "Hardy",
+  lonely: "Lonely",
+  brave: "Brave",
+  adamant: "Adamant",
+  naughty: "Naughty",
+  bold: "Bold",
+  docile: "Docile",
+  relaxed: "Relaxed",
+  impish: "Impish",
+  lax: "Lax",
+  timid: "Timid",
+  hasty: "Hasty",
+  serious: "Serious",
+  jolly: "Jolly",
+  naive: "Naive",
+  modest: "Modest",
+  mild: "Mild",
+  quiet: "Quiet",
+  bashful: "Bashful",
+  rash: "Rash",
+  calm: "Calm",
+  gentle: "Gentle",
+  sassy: "Sassy",
+  careful: "Careful",
+  quirky: "Quirky",
 };
 
 export interface PokemonData {

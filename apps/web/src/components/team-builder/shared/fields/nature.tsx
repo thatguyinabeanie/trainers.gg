@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 
-import { type StatKey, type GameFormat, isChampionsFormat } from "@trainers/pokemon";
+import {
+  type StatKey,
+  type GameFormat,
+  isChampionsFormat,
+} from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -34,7 +38,7 @@ export function natureLabel(format: GameFormat | undefined): string {
 
 /**
  * Short / compact label for the nature field (used in row chip and grid cell).
- * "ALIGN" in Champions formats; "NAT" everywhere else.
+ * "Align" in Champions formats; "Nat" everywhere else (uppercased at render-time by the grid cell).
  */
 export function natureLabelShort(format: GameFormat | undefined): string {
   return isChampionsFormat(format) ? "Align" : "Nat";
@@ -77,9 +81,7 @@ export function NatureCell({
           value={pokemon.nature ?? ""}
           trailing={<NatureChevrons boost={natUp} reduce={natDown} />}
           triggerClassName={
-            errors.length > 0
-              ? "ring-1 ring-destructive/40 rounded"
-              : undefined
+            errors.length > 0 ? "ring-1 ring-destructive/40 rounded" : undefined
           }
           open={open}
           onOpenChange={setOpen}
@@ -113,7 +115,9 @@ export function NatureCell({
             />
           }
         >
-          <span className={cellClasses.midFormLbl}>{natureLabelShort(format).toUpperCase()}</span>
+          <span className={cellClasses.midFormLbl}>
+            {natureLabelShort(format).toUpperCase()}
+          </span>
           <span
             className={cn(
               cellClasses.midFormVal,
