@@ -82,9 +82,7 @@ export function UsagePipelineChart({
   // Filter species by selection and threshold
   const visibleSpecies =
     selectedSpecies.length > 0
-      ? pipelineResult.data.filter((s) =>
-          selectedSpecies.includes(s.species)
-        )
+      ? pipelineResult.data.filter((s) => selectedSpecies.includes(s.species))
       : pipelineResult.data.filter((s) => s.usagePct >= threshold);
 
   if (visibleSpecies.length === 0) {
@@ -108,7 +106,11 @@ export function UsagePipelineChart({
   // ── d3-sankey layout ─────────────────────────────────────────────────────
   // Cast to the shape d3-sankey expects (it will mutate nodes/links with layout info)
   type D3Node = PipelineNode & { index?: number };
-  type D3Link = { source: string | D3Node; target: string | D3Node; value: number };
+  type D3Link = {
+    source: string | D3Node;
+    target: string | D3Node;
+    value: number;
+  };
 
   const layoutInput: SankeyGraph<D3Node, D3Link> = {
     nodes: graph.nodes.map((n) => ({ ...n })),
@@ -121,10 +123,18 @@ export function UsagePipelineChart({
     .nodePadding(NODE_PADDING)
     .nodeAlign((node) => {
       // Align by column: species=0, ability=1, nature=2, move=3
-      const order: Record<string, number> = { species: 0, ability: 1, nature: 2, move: 3 };
+      const order: Record<string, number> = {
+        species: 0,
+        ability: 1,
+        nature: 2,
+        move: 3,
+      };
       return order[(node as D3Node).column] ?? 0;
     })
-    .extent([[0, 30], [VIEWBOX_WIDTH, VIEWBOX_HEIGHT - 10]]);
+    .extent([
+      [0, 30],
+      [VIEWBOX_WIDTH, VIEWBOX_HEIGHT - 10],
+    ]);
 
   const { nodes: layoutNodes, links: layoutLinks } = sankeyLayout(layoutInput);
 
@@ -136,13 +146,14 @@ export function UsagePipelineChart({
   // When a node is hovered, highlight all links connected to it (directly or transitively).
   // Phase 1: highlight direct links only. Dimmed = opacity 0.15.
   const connectedNodeIds = hoveredNodeId
-    ? new Set<string>([hoveredNodeId, ...
-        (layoutLinks as unknown as LayoutLink[]).flatMap((l) => {
-          if (l.sourceId === hoveredNodeId || l.targetId === hoveredNodeId) {
-            return [l.sourceId, l.targetId];
-          }
+    ? new Set<string>([
+        hoveredNodeId,
+        ...(layoutLinks as unknown as LayoutLink[]).flatMap((l) => {
+          const sId = (l.source as unknown as LayoutNode).id;
+          const tId = (l.target as unknown as LayoutNode).id;
+          if (sId === hoveredNodeId || tId === hoveredNodeId) return [sId, tId];
           return [];
-        })
+        }),
       ])
     : null;
 
@@ -153,7 +164,10 @@ export function UsagePipelineChart({
 
   const linkOpacity = (link: LayoutLink) => {
     if (!connectedNodeIds) return 0.4;
-    return connectedNodeIds.has(link.sourceId) && connectedNodeIds.has(link.targetId) ? 0.7 : 0.08;
+    return connectedNodeIds.has(link.sourceId) &&
+      connectedNodeIds.has(link.targetId)
+      ? 0.7
+      : 0.08;
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -182,7 +196,7 @@ export function UsagePipelineChart({
             x={cx}
             y={18}
             textAnchor="middle"
-            className="fill-muted-foreground text-xs font-semibold uppercase tracking-widest"
+            className="fill-muted-foreground text-xs font-semibold tracking-widest uppercase"
             style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.06em" }}
           >
             {COLUMN_LABELS[col] ?? col}
@@ -216,8 +230,7 @@ export function UsagePipelineChart({
         {/* Nodes */}
         {typedNodes.map((node) => {
           const isSpecies = node.column === "species";
-          const isSelected =
-            isSpecies && selectedSpecies.includes(node.label);
+          const isSelected = isSpecies && selectedSpecies.includes(node.label);
           return (
             <g
               key={node.id}
@@ -260,7 +273,10 @@ export function UsagePipelineChart({
 
       {/* Period label */}
       <p className="text-muted-foreground mt-1 text-right text-xs">
-        {formatPeriodRange(pipelineResult.periodStart, pipelineResult.periodEnd)}
+        {formatPeriodRange(
+          pipelineResult.periodStart,
+          pipelineResult.periodEnd
+        )}
       </p>
     </div>
   );

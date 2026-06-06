@@ -35,7 +35,11 @@ jest.mock("next/cache", () => ({
 // Imports (after mocks are registered)
 // ---------------------------------------------------------------------------
 
-import { createServiceRoleClient, createStaticClient, getUserId } from "@/lib/supabase/server";
+import {
+  createServiceRoleClient,
+  createStaticClient,
+  getUserId,
+} from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import {
   computeSourceUsage,
@@ -205,9 +209,12 @@ describe("calculateSourceUsage", () => {
     });
 
     // Rollup must receive only the formats that had new events
-    expect(mockComputeUsageRollups).toHaveBeenCalledWith(stubServiceRoleClient, {
-      formats,
-    });
+    expect(mockComputeUsageRollups).toHaveBeenCalledWith(
+      stubServiceRoleClient,
+      {
+        formats,
+      }
+    );
 
     // Global usage tag must be busted
     expect(mockUpdateTag).toHaveBeenCalledWith("usage-stats");
@@ -638,9 +645,7 @@ describe("fetchFormatUsage", () => {
   });
 
   it("returns { success: false } when getSpeciesUsage throws", async () => {
-    mockGetSpeciesUsage.mockRejectedValueOnce(
-      new Error("format query failed")
-    );
+    mockGetSpeciesUsage.mockRejectedValueOnce(new Error("format query failed"));
 
     const result = await fetchFormatUsage({ format: "gen9vgc2025regg" });
 
@@ -669,25 +674,39 @@ describe("fetchFormatUsageTimeseries", () => {
 
   it("happy path: returns timeseries points", async () => {
     const points = [
-      { periodStart: "2025-01-01", periodEnd: "2025-01-07", usage: { koraidon: 52.3 } },
+      {
+        periodStart: "2025-01-01",
+        periodEnd: "2025-01-07",
+        usage: { koraidon: 52.3 },
+      },
     ];
     mockGetFormatUsageTimeseries.mockResolvedValueOnce(points);
 
-    const result = await fetchFormatUsageTimeseries({ format: "gen9vgc2025regg" });
+    const result = await fetchFormatUsageTimeseries({
+      format: "gen9vgc2025regg",
+    });
 
     expect(result.success).toBe(true);
     if (!result.success) throw new Error("expected success");
     expect(result.data).toEqual(points);
     expect(mockGetFormatUsageTimeseries).toHaveBeenCalledWith(
       {},
-      expect.objectContaining({ format: "gen9vgc2025regg", source: "all", periodType: "week" })
+      expect.objectContaining({
+        format: "gen9vgc2025regg",
+        source: "all",
+        periodType: "week",
+      })
     );
   });
 
   it("passes custom source and periodType through", async () => {
     mockGetFormatUsageTimeseries.mockResolvedValueOnce([]);
 
-    await fetchFormatUsageTimeseries({ format: "gen9vgc2025regg", source: "rk9", periodType: "month" });
+    await fetchFormatUsageTimeseries({
+      format: "gen9vgc2025regg",
+      source: "rk9",
+      periodType: "month",
+    });
 
     expect(mockGetFormatUsageTimeseries).toHaveBeenCalledWith(
       {},
@@ -696,12 +715,18 @@ describe("fetchFormatUsageTimeseries", () => {
   });
 
   it("returns { success: false } when query throws", async () => {
-    mockGetFormatUsageTimeseries.mockRejectedValueOnce(new Error("timeseries query failed"));
+    mockGetFormatUsageTimeseries.mockRejectedValueOnce(
+      new Error("timeseries query failed")
+    );
 
-    const result = await fetchFormatUsageTimeseries({ format: "gen9vgc2025regg" });
+    const result = await fetchFormatUsageTimeseries({
+      format: "gen9vgc2025regg",
+    });
 
     expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toMatch(/timeseries query failed/);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /timeseries query failed/
+    );
   });
 });
 
@@ -712,7 +737,16 @@ describe("fetchFormatUsageTimeseries", () => {
 describe("fetchPipelineData", () => {
   it("returns success with pipeline data", async () => {
     const mockData = {
-      data: [{ species: "Sneasler", usagePct: 22, rank: 1, abilities: [], natures: [], moves: [] }],
+      data: [
+        {
+          species: "Sneasler",
+          usagePct: 22,
+          rank: 1,
+          abilities: [],
+          natures: [],
+          moves: [],
+        },
+      ],
       periodStart: "2025-01-24",
       periodEnd: "2025-01-31",
     };
@@ -729,6 +763,14 @@ describe("fetchPipelineData", () => {
     if (result.success) {
       expect(result.data?.data[0]?.species).toBe("Sneasler");
     }
+    expect(mockGetPipelineData).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        format: "gen9vgc2025regg",
+        source: "all",
+        periodType: "week",
+      })
+    );
   });
 
   it("returns success with null when no data exists", async () => {
@@ -767,7 +809,9 @@ describe("fetchPipelineData", () => {
 
 describe("fetchFormatEvents", () => {
   it("returns success with event list", async () => {
-    const mockEvents = [{ eventKey: "rk9:001", eventDate: "2025-01-12", source: "rk9" }];
+    const mockEvents = [
+      { eventKey: "rk9:001", eventDate: "2025-01-12", source: "rk9" },
+    ];
     mockCreateStaticClient.mockReturnValue({});
     mockGetFormatEvents.mockResolvedValue(mockEvents);
 
@@ -777,6 +821,7 @@ describe("fetchFormatEvents", () => {
     if (result.success) {
       expect(result.data).toHaveLength(1);
     }
+    expect(mockGetFormatEvents).toHaveBeenCalledWith({}, "gen9vgc2025regg");
   });
 
   it("returns failure when query throws", async () => {

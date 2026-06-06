@@ -16,7 +16,7 @@ function makeSpecies(
     species: "Sneasler",
     usagePct: 20,
     rank: 1,
-    abilities: [{ value: "Unburden", count: 80, pct: 80 }],
+    abilities: [{ value: "Unburden", count: 100, pct: 100 }],
     natures: [{ value: "Jolly", count: 75, pct: 75 }],
     moves: [{ value: "Fake Out", count: 90, pct: 90 }],
     ...overrides,
@@ -66,8 +66,8 @@ describe("buildPipelineGraph — single species", () => {
         l.source === "species:Sneasler" && l.target === "ability:Unburden"
     );
     expect(link).toBeDefined();
-    // value = usagePct * ability.pct / 100 = 20 * 80 / 100 = 16
-    expect(link!.value).toBeCloseTo(16);
+    // value = usagePct * ability.pct / 100 = 20 * 100 / 100 = 20
+    expect(link!.value).toBeCloseTo(20);
   });
 
   it("creates ability→nature link with proportionally allocated value", () => {
@@ -77,8 +77,8 @@ describe("buildPipelineGraph — single species", () => {
         l.source === "ability:Unburden" && l.target === "nature:Jolly"
     );
     expect(link).toBeDefined();
-    // value = usagePct * ability.pct/100 * nature.pct/100 = 20 * 0.8 * 0.75 = 12
-    expect(link!.value).toBeCloseTo(12);
+    // value = usagePct * ability.pct/100 * nature.pct/100 = 20 * 1.0 * 0.75 = 15
+    expect(link!.value).toBeCloseTo(15);
   });
 
   it("creates nature→move link with proportionally allocated value", () => {
@@ -88,18 +88,21 @@ describe("buildPipelineGraph — single species", () => {
         l.source === "nature:Jolly" && l.target === "move:Fake Out"
     );
     expect(link).toBeDefined();
-    // value = usagePct * nature.pct/100 * move.pct/100 = 20 * 0.75 * 0.90 = 13.5
+    // value = usagePct * ability.pct/100 * nature.pct/100 * move.pct/100 = 20 * 1.0 * 0.75 * 0.90 = 13.5
     expect(link!.value).toBeCloseTo(13.5);
   });
 });
 
 // =============================================================================
-// buildPipelineGraph — multi-ability does not inflate nature→move
+// buildPipelineGraph — multi-ability conserves nature→move total
 // =============================================================================
 
-describe("buildPipelineGraph — multi-ability does not inflate nature→move", () => {
-  it("nature→move value is independent of ability count", () => {
-    const oneAbility = buildPipelineGraph([makeSpecies()]); // single ability (Unburden)
+describe("buildPipelineGraph — multi-ability conserves nature→move total", () => {
+  // Invariant: splitting ability mass 50/50 across two abilities yields the same
+  // total nature→move flow as a single 100% ability, because addLink() aggregates
+  // by source+target key and the two abilities' contributions sum to the same value.
+  it("nature→move total is the same regardless of ability count", () => {
+    const oneAbility = buildPipelineGraph([makeSpecies()]); // pct=100 (Unburden)
     const twoAbility = buildPipelineGraph([
       makeSpecies({
         abilities: [
@@ -116,8 +119,10 @@ describe("buildPipelineGraph — multi-ability does not inflate nature→move", 
       (l) => l.source === "nature:Jolly" && l.target === "move:Fake Out"
     );
 
+    // Both must equal 13.5 = 20 * 1.0 * 0.75 * 0.90 (single ability)
+    //                    = 20 * (0.5 + 0.5) * 0.75 * 0.90 (two abilities, aggregated)
+    expect(nm1!.value).toBeCloseTo(13.5);
     expect(nm2!.value).toBeCloseTo(nm1!.value);
-    // = usagePct * nature.pct/100 * move.pct/100 = 20 * 0.75 * 0.90 = 13.5
     expect(nm2!.value).toBeCloseTo(13.5);
   });
 });

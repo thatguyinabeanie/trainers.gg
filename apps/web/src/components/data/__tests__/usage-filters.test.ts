@@ -285,6 +285,10 @@ describe("coerceRangeStart", () => {
   it("returns null when raw is not a valid date", () => {
     expect(coerceRangeStart("not-a-date")).toBeNull();
   });
+
+  it("rejects non-ISO but parseable dates (e.g. MM/DD/YYYY)", () => {
+    expect(coerceRangeStart("01/24/2025")).toBeNull();
+  });
 });
 
 describe("coerceRangeEnd", () => {

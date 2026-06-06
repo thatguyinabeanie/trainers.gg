@@ -29,7 +29,7 @@ export interface PipelineLink {
    * Computed using independence assumption (Phase 1):
    *   species→ability:  usagePct × ability.pct / 100
    *   ability→nature:   usagePct × ability.pct/100 × nature.pct/100
-   *   nature→move:      usagePct × nature.pct/100 × move.pct/100
+   *   nature→move:      Σ_ability usagePct × ability.pct/100 × nature.pct/100 × move.pct/100
    */
   value: number;
 }
@@ -122,19 +122,19 @@ export function buildPipelineGraph(
           natureId,
           (s.usagePct * ability.pct * nature.pct) / 10000
         );
-      }
-    }
 
-    // nature → move is independent of ability — allocate once per species,
-    // NOT once per ability (otherwise multi-ability species inflate the move column).
-    for (const nature of s.natures) {
-      const natureId = `nature:${nature.value}`;
-      for (const move of s.moves) {
-        const moveId = `move:${move.value}`;
-        ensureNode(moveId, move.value, "move", COLUMN_COLORS.move);
+        for (const move of s.moves) {
+          const moveId = `move:${move.value}`;
+          ensureNode(moveId, move.value, "move", COLUMN_COLORS.move);
 
-        // nature → move (proportional allocation)
-        addLink(natureId, moveId, (s.usagePct * nature.pct * move.pct) / 10000);
+          // nature → move — weighted by ability.pct too, so flows sum across
+          // abilities and conserve at the nature node (matches ability→nature inflow).
+          addLink(
+            natureId,
+            moveId,
+            (s.usagePct * ability.pct * nature.pct * move.pct) / 1000000
+          );
+        }
       }
     }
   }

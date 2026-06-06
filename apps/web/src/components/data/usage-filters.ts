@@ -122,17 +122,28 @@ export function coerceSelectedSpecies(
 }
 
 /**
- * Coerces a raw string to a valid ISO date string (YYYY-MM-DD).
+ * Coerces a raw string to a strict ISO date string (YYYY-MM-DD).
  *
- * Returns `null` when `raw` is absent, empty, or not a parseable date.
+ * Returns `null` when `raw` is absent/empty. A non-empty value that is not a
+ * valid `YYYY-MM-DD` date is rejected (returns null) and logged — the only
+ * legitimate source of this URL param is the chart brush, which always emits
+ * `YYYY-MM-DD`, so a non-ISO value means a malformed/tampered query string.
  */
 export function coerceRangeStart(
   raw: string | undefined | null
 ): string | null {
   if (!raw || !raw.trim()) return null;
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return null;
-  return raw.trim();
+  const trimmed = raw.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    console.warn(`coerceRangeStart: rejected non-ISO date param "${trimmed}"`);
+    return null;
+  }
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) {
+    console.warn(`coerceRangeStart: rejected invalid date param "${trimmed}"`);
+    return null;
+  }
+  return trimmed;
 }
 
 /**
