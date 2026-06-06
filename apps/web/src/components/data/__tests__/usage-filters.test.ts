@@ -12,6 +12,7 @@ import {
   coerceSource,
   coerceThreshold,
   isValidFormat,
+  toDBSource,
 } from "../usage-filters";
 
 // =============================================================================
@@ -248,5 +249,21 @@ describe("coerceThreshold", () => {
   it("handles decimal precision within range", () => {
     expect(coerceThreshold("3.14")).toBeCloseTo(3.14);
     expect(coerceThreshold("9.99")).toBeCloseTo(9.99);
+  });
+});
+
+describe("toDBSource", () => {
+  it("maps 'trainers.gg' to 'first_party' for the DB query", () => {
+    expect(toDBSource("trainers.gg")).toBe("first_party");
+  });
+
+  it("passes rk9, limitless, and all through unchanged", () => {
+    expect(toDBSource("rk9")).toBe("rk9");
+    expect(toDBSource("limitless")).toBe("limitless");
+    expect(toDBSource("all")).toBe("all");
+  });
+
+  it("passes unknown values through unchanged", () => {
+    expect(toDBSource("unknown")).toBe("unknown");
   });
 });
