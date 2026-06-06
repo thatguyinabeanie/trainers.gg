@@ -106,6 +106,7 @@ describe("processImportQueue", () => {
   it("returns { processed: false } when queue is empty", async () => {
     // Chain 1: stale rows query → no rows
     // Chain 2: pick queued tournament → null
+    // Chain 3: remaining-count HEAD query → 0
     const supabase = {
       schema: jest.fn(),
     };
@@ -118,9 +119,15 @@ describe("processImportQueue", () => {
     const queueChain = createChain();
     queueChain.maybeSingle.mockResolvedValue({ data: null, error: null });
 
+    // Third call: remaining-count HEAD query (terminates at .eq, which is
+    // chained off .select with { count: 'exact', head: true })
+    const countChain = createChain();
+    countChain.eq.mockResolvedValue({ count: 0, error: null });
+
     supabase.schema
       .mockReturnValueOnce(staleChain) // stale check
-      .mockReturnValueOnce(queueChain); // queue pick
+      .mockReturnValueOnce(queueChain) // queue pick
+      .mockReturnValueOnce(countChain); // remaining count
 
     const result = await processImportQueue(
       supabase as unknown as Parameters<typeof processImportQueue>[0],
@@ -130,6 +137,7 @@ describe("processImportQueue", () => {
 
     expect(result.results[0]!.processed).toBe(false);
     expect(result.totalProcessed).toBe(0);
+    expect(result.remaining).toBe(0);
   });
 
   it("claims a queued row and marks it completed on success", async () => {
