@@ -597,7 +597,7 @@ describe("computeSourceUsage — rk9", () => {
     ]);
 
     await expect(computeSourceUsage(client, "rk9")).rejects.toThrow(
-      "computeSourceUsage[rk9]: failed to list candidate events"
+      "computeSourceUsage[rk9]: failed to fetch events"
     );
   });
 
@@ -740,7 +740,7 @@ describe("computeSourceUsage — limitless", () => {
     ]);
 
     await expect(computeSourceUsage(client, "limitless")).rejects.toThrow(
-      "computeSourceUsage[limitless]: failed to list candidate tournaments"
+      "computeSourceUsage[limitless]: failed to fetch tournaments"
     );
   });
 
