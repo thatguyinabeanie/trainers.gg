@@ -4,8 +4,14 @@ import {
   teamsEligibleIds,
   type UnifiedRow,
 } from "../external-data-shared";
+import { deriveLimitlessDisplayStatus } from "../limitless-display-status";
 
 function limRow(id: string, import_status: string | null): UnifiedRow {
+  // Real "completed" rows carry a data_imported_at timestamp — mirror that so
+  // the derived display status resolves to "imported" (not queueable).
+  const format_id = "gen9championsvgc2026regma"; // a mapped (valid) format id
+  const data_imported_at =
+    import_status === "completed" ? "2026-06-05T00:00:00Z" : null;
   return {
     id: `limitless-${id}`,
     source: "limitless",
@@ -15,6 +21,11 @@ function limRow(id: string, import_status: string | null): UnifiedRow {
     playerCount: 10,
     status: "pending",
     statusDetail: import_status ?? "pending",
+    displayStatus: deriveLimitlessDisplayStatus({
+      import_status,
+      format_id,
+      data_imported_at,
+    }),
     error: null,
     platform: null,
     isOnline: null,
@@ -23,13 +34,13 @@ function limRow(id: string, import_status: string | null): UnifiedRow {
     limitless: {
       tournament_id: id,
       name: id,
-      format_id: "gen9vgc2025regg",
+      format_id,
       date: "2026-06-04",
       player_count: 10,
       platform: null,
       is_online: null,
       decklists: false,
-      data_imported_at: null,
+      data_imported_at,
       import_status,
       import_requested_at: null,
       import_error: null,
