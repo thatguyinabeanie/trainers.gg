@@ -84,7 +84,8 @@ describe("UsageControls", () => {
   it("displays visible/total count readout", () => {
     renderControls({ totalCount: 150, visibleCount: 42 });
     expect(screen.getByText("42")).toBeInTheDocument();
-    expect(screen.getByText(/150 Pokemon/)).toBeInTheDocument();
+    // The readout renders "42 of 150 Pokemon ≥ X% usage"
+    expect(screen.getByText(/150 Pokemon/i)).toBeInTheDocument();
   });
 
   it("calls onHighlightChange when the highlight input changes", async () => {
@@ -113,12 +114,12 @@ describe("UsageControls", () => {
 
   it("renders section labels for all control groups", () => {
     renderControls();
-    // Use exact strings to avoid substring collisions (e.g. "Source" vs "All Sources")
-    expect(screen.getByText("MIN USAGE")).toBeInTheDocument();
-    expect(screen.getByText("CHART TYPE")).toBeInTheDocument();
-    expect(screen.getByText("GRANULARITY")).toBeInTheDocument();
-    expect(screen.getByText("SOURCE")).toBeInTheDocument();
-    expect(screen.getByText("FORMAT")).toBeInTheDocument();
+    // Labels are styled with CSS text-transform:uppercase but textContent is mixed case
+    expect(screen.getByText("Min usage")).toBeInTheDocument();
+    expect(screen.getByText("Chart type")).toBeInTheDocument();
+    expect(screen.getByText("Granularity")).toBeInTheDocument();
+    expect(screen.getByText("Source")).toBeInTheDocument();
+    expect(screen.getByText("Format")).toBeInTheDocument();
   });
 
   it("renders the highlight input as aria-labelled correctly", () => {
