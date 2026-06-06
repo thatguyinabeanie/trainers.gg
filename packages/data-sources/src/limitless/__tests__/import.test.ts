@@ -106,7 +106,7 @@ describe("processImportQueue", () => {
   it("returns { processed: false } when queue is empty", async () => {
     // Chain 1: stale rows query → no rows
     // Chain 2: pick queued tournament → null
-    // Chain 3: remaining-count query at the end of processImportQueue
+    // Chain 3: remaining-count HEAD query → 0
     const supabase = {
       schema: jest.fn(),
     };
@@ -119,10 +119,10 @@ describe("processImportQueue", () => {
     const queueChain = createChain();
     queueChain.maybeSingle.mockResolvedValue({ data: null, error: null });
 
-    // Third call: trailing `remaining` count query (select count head:true).
-    // Awaiting the chain yields `count: undefined` → coerced to 0, which is the
-    // correct "queue is empty" result.
+    // Third call: remaining-count HEAD query (terminates at .eq, which is
+    // chained off .select with { count: 'exact', head: true })
     const countChain = createChain();
+    countChain.eq.mockResolvedValue({ count: 0, error: null });
 
     supabase.schema
       .mockReturnValueOnce(staleChain) // stale check
@@ -137,6 +137,7 @@ describe("processImportQueue", () => {
 
     expect(result.results[0]!.processed).toBe(false);
     expect(result.totalProcessed).toBe(0);
+    expect(result.remaining).toBe(0);
   });
 
   it("claims a queued row and marks it completed on success", async () => {
@@ -507,23 +508,33 @@ describe("syncTournamentList", () => {
 
     const result = await syncTournamentList(supabase, "key");
 
-    // Both rows are upserted, but the CUSTOM row goes in with import_status = 'skipped'
+    // Skip rows and normal rows must go in SEPARATE upsert calls — PostgREST
+    // (PGRST102) rejects a bulk upsert whose objects don't all share the same
+    // keys, so a mixed batch would throw "All object keys must match".
     expect(result.synced).toBe(2);
     expect(result.skipped).toBe(1);
     expect(result.unmappedFormats["CUSTOM"]).toBe(1);
-    const upsertArg = chain.upsert.mock.calls[0][0];
-    expect(upsertArg).toHaveLength(2);
 
-    const customRow = upsertArg.find(
-      (r: { tournament_id: string }) => r.tournament_id === "t1"
-    );
-    expect(customRow.import_status).toBe("skipped");
-    expect(customRow.import_error).toBe("Skipped: CUSTOM format");
+    // Two upsert calls: one for normal rows, one for skip rows.
+    expect(chain.upsert).toHaveBeenCalledTimes(2);
 
-    const realRow = upsertArg.find(
-      (r: { tournament_id: string }) => r.tournament_id === "t2"
-    );
-    expect(realRow.import_status).toBeUndefined();
+    type Row = Record<string, unknown> & { tournament_id: string };
+    const batches = chain.upsert.mock.calls.map((c) => c[0] as Row[]);
+
+    // Every batch must be key-homogeneous (the invariant PostgREST enforces).
+    for (const batch of batches) {
+      const keySets = batch.map((r) => Object.keys(r).sort().join(","));
+      expect(new Set(keySets).size).toBe(1);
+    }
+
+    const allRows = batches.flat();
+    const customRow = allRows.find((r) => r.tournament_id === "t1");
+    expect(customRow?.import_status).toBe("skipped");
+    expect(customRow?.import_error).toBe("Skipped: CUSTOM format");
+
+    const realRow = allRows.find((r) => r.tournament_id === "t2");
+    expect(realRow?.import_status).toBeUndefined();
+    expect(realRow && "import_status" in realRow).toBe(false);
   });
 });
 

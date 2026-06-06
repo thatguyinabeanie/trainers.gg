@@ -115,16 +115,31 @@ export async function syncTournamentList(
     return true;
   });
 
-  // Batch upsert in chunks of 500
-  for (let i = 0; i < uniqueRows.length; i += 500) {
-    const batch = uniqueRows.slice(i, i + 500);
-    const { error } = await supabase
-      .schema("limitless")
-      .from("tournaments")
-      .upsert(batch, { onConflict: "tournament_id" });
-    if (error) throw new Error(`Sync batch at offset ${i}: ${error.message}`);
-    synced += batch.length;
-  }
+  // Split rows by key shape before upserting. PostgREST rejects a bulk
+  // upsert whose objects don't all share the same keys (PGRST102 "All
+  // object keys must match"). Skip rows carry import_status/import_error;
+  // normal rows deliberately omit those keys so a re-sync never resets a
+  // tournament's existing queue/completed state. The two shapes must
+  // therefore go in separate (key-homogeneous) upsert calls.
+  const skipRows = uniqueRows.filter((r) => "import_status" in r);
+  const normalRows = uniqueRows.filter((r) => !("import_status" in r));
+
+  const upsertInChunks = async (
+    rowsToUpsert: Array<Record<string, unknown>>
+  ) => {
+    for (let i = 0; i < rowsToUpsert.length; i += 500) {
+      const batch = rowsToUpsert.slice(i, i + 500);
+      const { error } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .upsert(batch, { onConflict: "tournament_id" });
+      if (error) throw new Error(`Sync batch at offset ${i}: ${error.message}`);
+      synced += batch.length;
+    }
+  };
+
+  await upsertInChunks(normalRows);
+  await upsertInChunks(skipRows);
 
   return {
     synced,
