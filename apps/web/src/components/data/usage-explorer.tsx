@@ -92,6 +92,19 @@ export function UsageExplorer({
   const rangeStart = coerceRangeStart(searchParams.get("rangeStart"));
   const rangeEnd = coerceRangeEnd(searchParams.get("rangeEnd"));
 
+  // Capture the initial query params at mount — used to gate initialData so
+  // SSR-seeded data is only applied to the original cache entry, not new
+  // entries created when filters/brush change.
+  const [initTimeseriesKey] = useState({ format, source, periodType });
+  const [initPipelineKey] = useState({
+    format,
+    source,
+    periodType,
+    rangeStart,
+    rangeEnd,
+  });
+  const [initEventsFormat] = useState(format);
+
   const currentFilters: UsageFilters = {
     format,
     source,
@@ -150,6 +163,10 @@ export function UsageExplorer({
     updateUrl(currentFilters, undefined, start, end);
 
   // ── TanStack Query — timeseries ───────────────────────────────────────────
+  const isInitTimeseries =
+    format === initTimeseriesKey.format &&
+    source === initTimeseriesKey.source &&
+    periodType === initTimeseriesKey.periodType;
   const { data: points = [] } = useQuery<FormatUsageTimeseriesPoint[]>({
     queryKey: ["usage-timeseries", format, source, periodType],
     queryFn: async () => {
@@ -161,35 +178,42 @@ export function UsageExplorer({
       if (!result.success) throw new Error(result.error);
       return result.data;
     },
-    initialData: initialPoints,
+    initialData: isInitTimeseries ? initialPoints : undefined,
+    placeholderData: (prev) => prev,
     staleTime: 5 * 60 * 1000,
   });
 
   // ── TanStack Query — pipeline data ────────────────────────────────────────
-  const { data: pipelineResult = initialPipelineResult } =
-    useQuery<PipelineDataResult | null>({
-      queryKey: [
-        "pipeline-data",
+  const isInitPipeline =
+    format === initPipelineKey.format &&
+    source === initPipelineKey.source &&
+    periodType === initPipelineKey.periodType &&
+    rangeStart === initPipelineKey.rangeStart &&
+    rangeEnd === initPipelineKey.rangeEnd;
+  const { data: pipelineResult = null } = useQuery<PipelineDataResult | null>({
+    queryKey: [
+      "pipeline-data",
+      format,
+      source,
+      periodType,
+      rangeStart,
+      rangeEnd,
+    ],
+    queryFn: async () => {
+      const result = await fetchPipelineData({
         format,
         source,
         periodType,
-        rangeStart,
-        rangeEnd,
-      ],
-      queryFn: async () => {
-        const result = await fetchPipelineData({
-          format,
-          source,
-          periodType,
-          periodStart: rangeStart ?? undefined,
-          periodEnd: rangeEnd ?? undefined,
-        });
-        if (!result.success) throw new Error(result.error);
-        return result.data;
-      },
-      initialData: initialPipelineResult,
-      staleTime: 5 * 60 * 1000,
-    });
+        periodStart: rangeStart ?? undefined,
+        periodEnd: rangeEnd ?? undefined,
+      });
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    initialData: isInitPipeline ? initialPipelineResult : undefined,
+    placeholderData: (prev) => prev,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // ── TanStack Query — events ───────────────────────────────────────────────
   const { data: events = [] } = useQuery<FormatEvent[]>({
@@ -199,7 +223,8 @@ export function UsageExplorer({
       if (!result.success) throw new Error(result.error);
       return result.data;
     },
-    initialData: initialEvents,
+    initialData: format === initEventsFormat ? initialEvents : undefined,
+    placeholderData: (prev) => prev,
     staleTime: 60 * 60 * 1000, // events change rarely
   });
 
