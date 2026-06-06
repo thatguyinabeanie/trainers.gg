@@ -4,6 +4,7 @@
  * environment and focuses on verifying setSiteConfig is invoked with the
  * correct key/value combinations when the user changes a numeric input.
  */
+import type * as LimitlessModule from "@/lib/limitless";
 import {
   render,
   screen,
@@ -90,7 +91,11 @@ jest.mock("@/lib/supabase", () => ({
   },
 }));
 
+// Preserve ALL_VALID_FORMATS from the real module so deriveLimitlessDisplayStatus
+// can distinguish mapped format ids (e.g. "gen9championsvgc2026regma") from
+// unmappable ones (e.g. "CUSTOM") without throwing on undefined.has().
 jest.mock("@/lib/limitless", () => ({
+  ...jest.requireActual<typeof LimitlessModule>("@/lib/limitless"),
   LIMITLESS_TO_FORMAT: { svg: "fmt-svg" },
 }));
 
@@ -171,16 +176,48 @@ jest.mock("../external-data-settings", () => ({
     if (loading) return null;
     return (
       <div data-testid="settings-stub">
-        <button role="switch" aria-checked={backendOn} onClick={() => onToggleBackend(!backendOn)} />
+        <button
+          role="switch"
+          aria-checked={backendOn}
+          onClick={() => onToggleBackend(!backendOn)}
+        />
         {tab === "rk9" ? (
           <>
-            <input type="number" role="spinbutton" value={teamsPerTick} onChange={(e) => onTeamsPerTickChange?.(e.target.value)} onBlur={onTeamsPerTickBlur} readOnly={false} />
-            <input type="number" role="spinbutton" value={concurrency} onChange={(e) => onConcurrencyChange?.(e.target.value)} onBlur={onConcurrencyBlur} readOnly={false} />
+            <input
+              type="number"
+              role="spinbutton"
+              value={teamsPerTick}
+              onChange={(e) => onTeamsPerTickChange?.(e.target.value)}
+              onBlur={onTeamsPerTickBlur}
+              readOnly={false}
+            />
+            <input
+              type="number"
+              role="spinbutton"
+              value={concurrency}
+              onChange={(e) => onConcurrencyChange?.(e.target.value)}
+              onBlur={onConcurrencyBlur}
+              readOnly={false}
+            />
           </>
         ) : (
-          <input type="number" role="spinbutton" value={batchSize} onChange={(e) => onBatchSizeChange?.(e.target.value)} onBlur={onBatchSizeBlur} readOnly={false} />
+          <input
+            type="number"
+            role="spinbutton"
+            value={batchSize}
+            onChange={(e) => onBatchSizeChange?.(e.target.value)}
+            onBlur={onBatchSizeBlur}
+            readOnly={false}
+          />
         )}
-        <input type="number" role="spinbutton" value={intervalSeconds} onChange={(e) => onIntervalChange(e.target.value)} onBlur={onIntervalBlur} readOnly={false} />
+        <input
+          type="number"
+          role="spinbutton"
+          value={intervalSeconds}
+          onChange={(e) => onIntervalChange(e.target.value)}
+          onBlur={onIntervalBlur}
+          readOnly={false}
+        />
       </div>
     );
   },
@@ -190,6 +227,7 @@ jest.mock("../external-data-settings", () => ({
 jest.mock("../external-data-toolbar", () => ({
   ExternalDataToolbar: ({
     settings,
+    chips,
     isFetching,
     onRefresh,
     onDiscover,
@@ -208,6 +246,7 @@ jest.mock("../external-data-toolbar", () => ({
     tab,
   }: {
     settings: Record<string, unknown>;
+    chips?: Array<{ label: string; count: number; tone: string }>;
     isFetching?: boolean;
     onRefresh?: () => void;
     onDiscover?: () => void;
@@ -226,33 +265,58 @@ jest.mock("../external-data-toolbar", () => ({
     tab: string;
   }) => {
     // Lazy-require the settings stub so it participates in jest mocking
-    const { ExternalDataSettings } = jest.requireMock("../external-data-settings") as {
+    const { ExternalDataSettings } = jest.requireMock(
+      "../external-data-settings"
+    ) as {
       ExternalDataSettings: React.ComponentType<Record<string, unknown>>;
     };
     return (
       <div data-testid={`toolbar-${tab}`}>
+        {/* Render chips so stat-strip tests can assert on count pills */}
+        {chips?.map((c) => (
+          <span key={c.label} data-testid={`chip-${c.label}`}>
+            {c.count} {c.label}
+          </span>
+        ))}
         <ExternalDataSettings {...(settings as Record<string, unknown>)} />
         {tab === "rk9" && (
           <>
-            <button onClick={onDiscover} disabled={isDiscovering}>Discover</button>
-            <button onClick={onScrapeRostersMatching} disabled={bulkProcessing || rosterMatchingCount === 0}>
+            <button onClick={onDiscover} disabled={isDiscovering}>
+              Discover
+            </button>
+            <button
+              onClick={onScrapeRostersMatching}
+              disabled={bulkProcessing || rosterMatchingCount === 0}
+            >
               Scrape Rosters ({rosterMatchingCount ?? 0})
             </button>
-            <button onClick={onScrapeTeamsMatching} disabled={bulkProcessing || teamsMatchingCount === 0}>
+            <button
+              onClick={onScrapeTeamsMatching}
+              disabled={bulkProcessing || teamsMatchingCount === 0}
+            >
               Scrape Teams ({teamsMatchingCount ?? 0})
             </button>
           </>
         )}
         {tab === "limitless" && (
           <>
-            <button onClick={onSync} disabled={syncing}>Sync</button>
-            <button onClick={onQueueMatching} disabled={bulkProcessing || queueMatchingCount === 0}>
+            <button onClick={onSync} disabled={syncing}>
+              Sync
+            </button>
+            <button
+              onClick={onQueueMatching}
+              disabled={bulkProcessing || queueMatchingCount === 0}
+            >
               Queue Matching ({queueMatchingCount ?? 0})
             </button>
-            <button onClick={onQueueAll}>Queue All ({queueAllCount ?? 0})</button>
+            <button onClick={onQueueAll}>
+              Queue All ({queueAllCount ?? 0})
+            </button>
           </>
         )}
-        <button onClick={onRefresh} disabled={isFetching}>Refresh</button>
+        <button onClick={onRefresh} disabled={isFetching}>
+          Refresh
+        </button>
       </div>
     );
   },
@@ -571,9 +635,9 @@ describe("ExternalData toggle handlers", () => {
     });
 
     await waitFor(() => {
-      expect(
-        jest.requireMock("sonner").toast.error
-      ).toHaveBeenCalledWith("Failed to update RK9 backend setting");
+      expect(jest.requireMock("sonner").toast.error).toHaveBeenCalledWith(
+        "Failed to update RK9 backend setting"
+      );
     });
   });
 
@@ -620,9 +684,9 @@ describe("ExternalData toggle handlers", () => {
     });
 
     await waitFor(() => {
-      expect(
-        jest.requireMock("sonner").toast.error
-      ).toHaveBeenCalledWith("Failed to update Limitless backend setting");
+      expect(jest.requireMock("sonner").toast.error).toHaveBeenCalledWith(
+        "Failed to update Limitless backend setting"
+      );
     });
   });
 });
@@ -706,7 +770,9 @@ describe("ExternalData sync handler", () => {
   });
 
   it("calls triggerLimitlessSync and shows success message", async () => {
-    const syncMock = jest.requireMock("@/actions/limitless").triggerLimitlessSync;
+    const syncMock = jest.requireMock(
+      "@/actions/limitless"
+    ).triggerLimitlessSync;
     syncMock.mockResolvedValue({ success: true, data: {} });
 
     await renderAndWaitForLimitlessTab();
@@ -731,7 +797,9 @@ describe("ExternalData sync handler", () => {
   });
 
   it("shows an error message when triggerLimitlessSync fails", async () => {
-    const syncMock = jest.requireMock("@/actions/limitless").triggerLimitlessSync;
+    const syncMock = jest.requireMock(
+      "@/actions/limitless"
+    ).triggerLimitlessSync;
     syncMock.mockResolvedValue({
       success: false,
       error: "Service unavailable",
@@ -868,14 +936,22 @@ describe("ExternalData events table rendering", () => {
     setupSiteConfigMocks();
     mockSupabaseData = {
       events: [
-        makeEvent({ event_id: "e-pending", name: "Pending Event", import_status: "pending" }),
+        makeEvent({
+          event_id: "e-pending",
+          name: "Pending Event",
+          import_status: "pending",
+        }),
         makeEvent({
           event_id: "e-failed",
           name: "Failed Event",
           import_status: "failed",
           import_error: "Scrape failed",
         }),
-        makeEvent({ event_id: "e-roster", name: "Roster Event", import_status: "roster" }),
+        makeEvent({
+          event_id: "e-roster",
+          name: "Roster Event",
+          import_status: "roster",
+        }),
         makeEvent({
           event_id: "e-teams",
           name: "Teams Event",
@@ -941,7 +1017,9 @@ describe("ExternalData events table rendering", () => {
     scrapeRk9Roster.mockResolvedValue({ success: true });
 
     render(<ExternalData />);
-    await waitFor(() => expect(screen.getByText("Pending Event")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Pending Event")).toBeInTheDocument()
+    );
 
     const rosterButtons = screen.getAllByRole("button", { name: /^Roster$/i });
     await act(async () => {
@@ -961,7 +1039,9 @@ describe("ExternalData events table rendering", () => {
     });
 
     render(<ExternalData />);
-    await waitFor(() => expect(screen.getByText("Roster Event")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Roster Event")).toBeInTheDocument()
+    );
 
     const teamButtons = screen.getAllByRole("button", { name: /^Teams$/i });
     await act(async () => {
@@ -977,9 +1057,13 @@ describe("ExternalData events table rendering", () => {
     jest.spyOn(window, "confirm").mockReturnValue(true);
 
     render(<ExternalData />);
-    await waitFor(() => expect(screen.getByText("Failed Event")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Failed Event")).toBeInTheDocument()
+    );
 
-    const resetButtons = screen.getAllByRole("button", { name: /Reset event/i });
+    const resetButtons = screen.getAllByRole("button", {
+      name: /Reset event/i,
+    });
     await act(async () => {
       fireEvent.click(resetButtons[0]);
     });
@@ -989,7 +1073,9 @@ describe("ExternalData events table rendering", () => {
 
   it("expands a row to render the detail panel when the chevron is clicked", async () => {
     render(<ExternalData />);
-    await waitFor(() => expect(screen.getByText("Roster Event")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Roster Event")).toBeInTheDocument()
+    );
 
     const expandButtons = screen.getAllByRole("button", { name: /Expand/i });
     await act(async () => {
@@ -1003,16 +1089,21 @@ describe("ExternalData events table rendering", () => {
 
   it("selects all visible rows via the header checkbox and shows bulk actions", async () => {
     render(<ExternalData />);
-    await waitFor(() => expect(screen.getByText("Pending Event")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Pending Event")).toBeInTheDocument()
+    );
 
-    const selectAll = screen.getByLabelText(/Select all visible/i) as HTMLInputElement;
+    const selectAll = screen.getByLabelText(
+      /Select all visible/i
+    ) as HTMLInputElement;
     await act(async () => {
       fireEvent.click(selectAll);
     });
 
     await waitFor(() => {
       expect(
-        (screen.getByLabelText(/Select all visible/i) as HTMLInputElement).checked
+        (screen.getByLabelText(/Select all visible/i) as HTMLInputElement)
+          .checked
       ).toBe(true);
     });
     // Bulk "Scrape Rosters" action surfaces for roster-eligible (pending/failed) rows
@@ -1073,7 +1164,9 @@ describe("ExternalData players table rendering", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Players/i }));
     });
-    await waitFor(() => expect(screen.getByText(/Ash Ketchum/i)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/Ash Ketchum/i)).toBeInTheDocument()
+    );
 
     const expandButtons = screen.getAllByRole("button", { name: /Expand/i });
     await act(async () => {
@@ -1189,20 +1282,167 @@ describe("ExternalData limitless table rendering", () => {
   });
 
   it("queues a tournament when the queue action button is clicked", async () => {
-    const { queueTournamentForImport } = jest.requireMock("@/actions/limitless");
+    const { queueTournamentForImport } = jest.requireMock(
+      "@/actions/limitless"
+    );
     queueTournamentForImport.mockResolvedValue({ success: true });
 
     render(<ExternalData />);
     await act(async () => {
       fireEvent.click(screen.getByRole("tab", { name: /Limitless/i }));
     });
-    await waitFor(() => expect(screen.getByText("Failed Cup")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Failed Cup")).toBeInTheDocument()
+    );
 
     // The failed row exposes a queue (download) action button in RowActions
     const downloadButtons = screen.getAllByRole("button");
-    const queueButton = downloadButtons.find((b) =>
-      b.querySelector("svg")
-    );
+    const queueButton = downloadButtons.find((b) => b.querySelector("svg"));
     expect(queueButton).toBeDefined();
+  });
+});
+
+// =============================================================================
+// Limitless status tabs + skipped chip/banner/queue-exclusion
+// =============================================================================
+
+// A known-mappable format id — present in ALL_VALID_FORMATS so the row
+// resolves to "pending" (or "failed") rather than "skipped".
+const MAPPED_FORMAT = "gen9championsvgc2026regma";
+// An unmappable format id — absent from ALL_VALID_FORMATS so the row resolves
+// to "skipped" regardless of import_status.
+const UNMAPPED_FORMAT = "CUSTOM";
+
+function makeLimitlessTournament(
+  overrides: Partial<{
+    tournament_id: string;
+    name: string;
+    format_id: string;
+    import_status: string | null;
+    data_imported_at: string | null;
+    import_requested_at: string | null;
+    import_error: string | null;
+    import_attempts: number;
+  }>
+) {
+  return {
+    tournament_id: "t-default",
+    name: "Default Cup",
+    format_id: MAPPED_FORMAT,
+    date: "2024-03-01",
+    player_count: 32,
+    platform: "limitless",
+    is_online: true,
+    decklists: false,
+    data_imported_at: null,
+    import_status: null,
+    import_requested_at: null,
+    import_error: null,
+    import_attempts: 0,
+    ...overrides,
+  };
+}
+
+describe("Limitless status tabs + skipped", () => {
+  beforeEach(() => {
+    setupSiteConfigMocks();
+    // Fixture:
+    //   - 1 mapped pending row  → displayStatus "pending"  (queueable)
+    //   - 1 mapped failed row   → displayStatus "failed"   (queueable)
+    //   - 1 CUSTOM skipped row  → displayStatus "skipped"  (NOT queueable)
+    // Expected: skippedCount=1, queueMatchingCount=2
+    mockSupabaseData = {
+      tournaments: [
+        makeLimitlessTournament({
+          tournament_id: "t-pending",
+          name: "Pending Cup",
+          format_id: MAPPED_FORMAT,
+          import_status: null,
+        }),
+        makeLimitlessTournament({
+          tournament_id: "t-failed",
+          name: "Failed Cup",
+          format_id: MAPPED_FORMAT,
+          import_status: "failed",
+          import_error: "timeout",
+          import_attempts: 1,
+        }),
+        makeLimitlessTournament({
+          tournament_id: "t-skipped",
+          name: "Custom Cup",
+          format_id: UNMAPPED_FORMAT,
+          import_status: "skipped",
+        }),
+      ],
+    };
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    mockSupabaseData = {};
+  });
+
+  async function openLimitlessTab() {
+    render(<ExternalData />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: /Limitless/i }));
+    });
+    // Wait until the Limitless toolbar is rendered (confirms data has resolved)
+    await waitFor(() =>
+      expect(screen.getByTestId("toolbar-limitless")).toBeInTheDocument()
+    );
+  }
+
+  it("renders a Skipped status tab with the correct count", async () => {
+    await openLimitlessTab();
+
+    // The StatusTabs component is NOT stubbed — it renders the real tab list.
+    const skippedTab = await waitFor(() =>
+      screen.getByRole("tab", { name: /Skipped/i })
+    );
+    expect(skippedTab).toBeInTheDocument();
+    // The tab badge should contain "1" (one CUSTOM row)
+    expect(skippedTab.textContent).toMatch(/1/);
+  });
+
+  it("shows a skipped chip in the stat strip with the correct count", async () => {
+    await openLimitlessTab();
+
+    // The toolbar stub renders chips as "<count> <label>" spans.
+    await waitFor(() => {
+      expect(screen.getByTestId("chip-skipped")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("chip-skipped").textContent).toMatch(/1 skipped/);
+  });
+
+  it("shows the breakdown banner when the Skipped tab is active", async () => {
+    await openLimitlessTab();
+
+    // Click the Skipped status tab to filter to skipped rows
+    const skippedTab = await waitFor(() =>
+      screen.getByRole("tab", { name: /Skipped/i })
+    );
+    await act(async () => {
+      fireEvent.click(skippedTab);
+    });
+
+    // The breakdown banner should appear with event count and format pill
+    await waitFor(() => {
+      expect(screen.getByText(/events skipped/i)).toBeInTheDocument();
+    });
+    // The CUSTOM format pill should be present in the banner (at least one match)
+    expect(screen.getAllByText(/CUSTOM/i).length).toBeGreaterThan(0);
+  });
+
+  it("Queue Matching button count excludes skipped rows", async () => {
+    await openLimitlessTab();
+
+    // The toolbar stub renders "Queue Matching (N)" — assert N=2 (pending+failed,
+    // not 3 which would include the CUSTOM skipped row).
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /Queue Matching \(2\)/i })
+      ).toBeInTheDocument();
+    });
   });
 });
