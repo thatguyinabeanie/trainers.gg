@@ -11,6 +11,13 @@ jest.mock("next/image", () => ({
   default: (props: Record<string, unknown>) => <img {...props} />,
 }));
 
+// UsageSparkline uses recharts + ResizeObserver which are not available in JSDOM.
+jest.mock("../usage-sparkline", () => ({
+  UsageSparkline: ({ ariaLabel }: { ariaLabel?: string }) => (
+    <span data-testid="usage-sparkline" aria-label={ariaLabel ?? "Usage trend"} />
+  ),
+}));
+
 jest.mock("../type-symbol-icon", () => ({
   TypeSymbolIcon: ({ type }: { type: string }) => (
     <span data-testid={`type-icon-${type}`}>{type}</span>
@@ -44,6 +51,7 @@ jest.mock("../move-category-ui", () => ({
 
 // Import after mocks
 import {
+  normalizeMoveKey,
   sortMoveData,
   MoveListHeader,
   MoveListRow,
@@ -61,6 +69,41 @@ const moves: MoveData[] = [
   { name: "Protect", type: "Normal", category: "Status", basePower: 0, accuracy: true, shortDesc: "Blocks" },
   { name: "Air Slash", type: "Flying", category: "Special", basePower: 75, accuracy: 95, shortDesc: "Flinch" },
 ];
+
+// =============================================================================
+// normalizeMoveKey tests
+// =============================================================================
+
+describe("normalizeMoveKey", () => {
+  it("lowercases the name", () => {
+    expect(normalizeMoveKey("Dragon Claw")).toBe("dragonclaw");
+  });
+
+  it("strips spaces", () => {
+    expect(normalizeMoveKey("Fake Out")).toBe("fakeout");
+  });
+
+  it("strips hyphens", () => {
+    expect(normalizeMoveKey("U-turn")).toBe("uturn");
+  });
+
+  it("strips apostrophes", () => {
+    expect(normalizeMoveKey("Nature's Madness")).toBe("naturesmadness");
+  });
+
+  it("strips all three separators in one pass", () => {
+    expect(normalizeMoveKey("Trick-or-Treat")).toBe("trickortreat");
+  });
+
+  it("returns the same key for both display name and normalized DB slug", () => {
+    // "fakeout" stored in DB should match "Fake Out" from the builder
+    expect(normalizeMoveKey("Fake Out")).toBe(normalizeMoveKey("fakeout"));
+  });
+
+  it("handles a single-word move name", () => {
+    expect(normalizeMoveKey("Earthquake")).toBe("earthquake");
+  });
+});
 
 // =============================================================================
 // sortMoveData tests
@@ -197,6 +240,52 @@ describe("MoveListRow", () => {
   it("renders without role=row when onSelect is not provided", () => {
     render(<MoveListRow move={baseMove} />);
     expect(screen.queryByRole("row")).not.toBeInTheDocument();
+  });
+
+  describe("usage column", () => {
+    it("shows usage % when usagePct is provided and > 0", () => {
+      render(<MoveListRow move={baseMove} usagePct={62} />);
+      expect(screen.getByText("62%")).toBeInTheDocument();
+    });
+
+    it("shows dash when usagePct is 0", () => {
+      render(<MoveListRow move={baseMove} usagePct={0} />);
+      const dashes = screen.getAllByText("—");
+      expect(dashes.length).toBeGreaterThan(0);
+    });
+
+    it("shows dash when usagePct is undefined", () => {
+      render(<MoveListRow move={baseMove} />);
+      const dashes = screen.getAllByText("—");
+      expect(dashes.length).toBeGreaterThan(0);
+    });
+
+    it("renders sparkline when usageSeries has 2+ points", () => {
+      render(
+        <MoveListRow
+          move={baseMove}
+          usagePct={62}
+          usageSeries={[55, 58, 62]}
+        />
+      );
+      expect(screen.getByTestId("usage-sparkline")).toBeInTheDocument();
+    });
+
+    it("does not render sparkline when usageSeries has fewer than 2 points", () => {
+      render(
+        <MoveListRow
+          move={baseMove}
+          usagePct={62}
+          usageSeries={[62]}
+        />
+      );
+      expect(screen.queryByTestId("usage-sparkline")).not.toBeInTheDocument();
+    });
+
+    it("does not render sparkline when usageSeries is undefined", () => {
+      render(<MoveListRow move={baseMove} usagePct={62} />);
+      expect(screen.queryByTestId("usage-sparkline")).not.toBeInTheDocument();
+    });
   });
 });
 

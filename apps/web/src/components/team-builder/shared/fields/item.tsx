@@ -112,6 +112,7 @@ export function ItemCell({
         >
           <ItemPicker
             value={pokemon.held_item}
+            species={pokemon.species ?? undefined}
             format={format}
             teamItems={teamItems}
             onPick={(item) => onUpdate({ held_item: item })}
@@ -154,6 +155,7 @@ export function ItemCell({
         <PopoverContent side="bottom" align="start" className="w-auto p-0">
           <ItemPicker
             value={pokemon.held_item}
+            species={pokemon.species ?? undefined}
             format={format}
             teamItems={teamItems}
             onPick={(item) => onUpdate({ held_item: item })}

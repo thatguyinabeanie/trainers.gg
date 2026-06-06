@@ -1,12 +1,17 @@
+import { isChampionsFormatId } from "@trainers/pokemon";
+
 import type { TypedClient } from "../../client";
 
 /**
  * Create OTS (Open Team Sheet) snapshots for all seeded players in a tournament.
  *
  * Called at tournament start. Reads each player's private team data via service
- * role, then writes only VGC OTS-format fields (species, ability, item, tera type,
- * moves) to tournament_team_sheets. EVs, IVs, nature, and other private details
- * are intentionally excluded — players keep those secret.
+ * role, then writes VGC OTS-format fields (species, ability, item, tera type,
+ * moves) to tournament_team_sheets. EVs and IVs are always excluded.
+ *
+ * Nature (stat alignment) is included ONLY for Champions formats — the Champions
+ * ruleset mandates nature disclosure on OTS. For all other formats, nature is
+ * stored as NULL to preserve player privacy.
  *
  * IMPORTANT: Must be called with a service role client because:
  * 1. It reads private team data that the calling user may not own
@@ -54,7 +59,8 @@ export async function createTournamentTeamSheets(
             move1,
             move2,
             move3,
-            move4
+            move4,
+            nature
           )
         )
       )
@@ -69,6 +75,10 @@ export async function createTournamentTeamSheets(
   }
 
   if (!registrations || registrations.length === 0) return;
+
+  // Determine whether to include nature on OTS.
+  // Champions formats require nature disclosure; all other formats keep it private.
+  const includeNature = isChampionsFormatId(format);
 
   // Build snapshot rows — one per Pokemon per player
   const snapshotRows: Array<{
@@ -86,6 +96,7 @@ export async function createTournamentTeamSheets(
     move2: string | null;
     move3: string | null;
     move4: string | null;
+    nature: string | null;
   }> = [];
 
   for (const reg of registrations) {
@@ -105,6 +116,7 @@ export async function createTournamentTeamSheets(
           move2: string | null;
           move3: string | null;
           move4: string | null;
+          nature: string;
         } | null;
       }>;
     };
@@ -127,6 +139,8 @@ export async function createTournamentTeamSheets(
         move2: tp.pokemon.move2,
         move3: tp.pokemon.move3,
         move4: tp.pokemon.move4,
+        // Nature is included only for Champions formats (OTS rule); null = private
+        nature: includeNature ? tp.pokemon.nature : null,
       });
     }
   }

@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 
-import { type StatKey } from "@trainers/pokemon";
+import {
+  type StatKey,
+  type GameFormat,
+  isChampionsFormat,
+} from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
@@ -20,11 +24,34 @@ import { FormChip } from "../../lanes/form-chip";
 import { cellClasses, type CellVariant } from "./shared";
 
 // =============================================================================
+// Label helpers — gate human-readable label on Champions format only.
+// Internal prop/variable names remain `nature` everywhere.
+// =============================================================================
+
+/**
+ * Full human-readable label for the nature field.
+ * "Stat Alignment" in Champions formats; "Nature" everywhere else.
+ */
+export function natureLabel(format: GameFormat | undefined): string {
+  return isChampionsFormat(format) ? "Stat Alignment" : "Nature";
+}
+
+/**
+ * Short / compact label for the nature field (used in row chip and grid cell).
+ * "Align" in Champions formats; "Nat" everywhere else (uppercased at render-time by the grid cell).
+ */
+export function natureLabelShort(format: GameFormat | undefined): string {
+  return isChampionsFormat(format) ? "Align" : "Nat";
+}
+
+// =============================================================================
 // NatureCell — nature form cell, row (compact) or grid (hero) variant
 // =============================================================================
 
 interface NatureCellProps {
   pokemon: Tables<"pokemon">;
+  /** Current format — forwarded to NaturePicker for usage data fetching. */
+  format: GameFormat | undefined;
   natUp: StatKey | null | undefined;
   natDown: StatKey | null | undefined;
   errors: ValidationError[];
@@ -34,6 +61,7 @@ interface NatureCellProps {
 
 export function NatureCell({
   pokemon,
+  format,
   natUp,
   natDown,
   errors,
@@ -42,23 +70,26 @@ export function NatureCell({
 }: NatureCellProps) {
   const [open, setOpen] = useState(false);
 
+  // Species from the pokemon row — forwarded to NaturePicker for usage data.
+  const species = pokemon.species ?? undefined;
+
   if (variant === "row") {
     return (
       <div className="flex flex-col">
         <FormChip
-          label="Nat"
+          label={natureLabelShort(format)}
           value={pokemon.nature ?? ""}
           trailing={<NatureChevrons boost={natUp} reduce={natDown} />}
           triggerClassName={
-            errors.length > 0
-              ? "ring-1 ring-destructive/40 rounded"
-              : undefined
+            errors.length > 0 ? "ring-1 ring-destructive/40 rounded" : undefined
           }
           open={open}
           onOpenChange={setOpen}
         >
           <NaturePicker
             value={pokemon.nature ?? ""}
+            species={species}
+            format={format}
             onPick={(nature) => onUpdate({ nature })}
             onClose={() => setOpen(false)}
           />
@@ -76,6 +107,7 @@ export function NatureCell({
           render={
             <button
               type="button"
+              aria-label={natureLabel(format)}
               className={cn(
                 cellClasses.midFormCell,
                 errors.length > 0 && "ring-destructive/40 rounded ring-1"
@@ -83,7 +115,9 @@ export function NatureCell({
             />
           }
         >
-          <span className={cellClasses.midFormLbl}>NAT</span>
+          <span className={cellClasses.midFormLbl}>
+            {natureLabelShort(format).toUpperCase()}
+          </span>
           <span
             className={cn(
               cellClasses.midFormVal,
@@ -99,6 +133,8 @@ export function NatureCell({
         <PopoverContent side="bottom" align="start" className="w-auto p-0">
           <NaturePicker
             value={pokemon.nature ?? ""}
+            species={species}
+            format={format}
             onPick={(nature) => onUpdate({ nature })}
             onClose={() => setOpen(false)}
           />

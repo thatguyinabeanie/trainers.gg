@@ -2,7 +2,12 @@
  * @jest-environment node
  */
 
-import { LIMITLESS_TO_FORMAT, KNOWN_FORMATS, ALL_VALID_FORMATS } from "../format";
+import {
+  LIMITLESS_TO_FORMAT,
+  KNOWN_FORMATS,
+  ALL_VALID_FORMATS,
+  SKIP_FORMATS,
+} from "../format";
 
 describe("LIMITLESS_TO_FORMAT", () => {
   it("maps known Limitless codes to Showdown format IDs", () => {
@@ -49,5 +54,16 @@ describe("ALL_VALID_FORMATS", () => {
     for (const val of Object.values(LIMITLESS_TO_FORMAT)) {
       expect(ALL_VALID_FORMATS.has(val)).toBe(true);
     }
+  });
+});
+
+describe("SKIP_FORMATS", () => {
+  it("contains CUSTOM", () => {
+    expect(SKIP_FORMATS.has("CUSTOM")).toBe(true);
+  });
+
+  it("does not contain real format codes", () => {
+    expect(SKIP_FORMATS.has("SVI")).toBe(false);
+    expect(SKIP_FORMATS.has("M-A")).toBe(false);
   });
 });

@@ -23,6 +23,7 @@ type TeamSheetRow = {
   move2: string | null;
   move3: string | null;
   move4: string | null;
+  nature: string | null;
 };
 
 function makeRow(overrides?: Partial<TeamSheetRow>): TeamSheetRow {
@@ -42,6 +43,7 @@ function makeRow(overrides?: Partial<TeamSheetRow>): TeamSheetRow {
     move2: "Volt Switch",
     move3: "Protect",
     move4: null,
+    nature: null,
     ...overrides,
   };
 }
@@ -176,6 +178,7 @@ describe("getTournamentTeamSheets", () => {
       move2: "Shadow Ball",
       move3: "Calm Mind",
       move4: "Protect",
+      nature: null,
     });
     const mockClient = createMockClient({ data: [row], error: null });
 
@@ -195,6 +198,27 @@ describe("getTournamentTeamSheets", () => {
     // Spot-check that snake_case keys are NOT present
     expect(pokemon).not.toHaveProperty("held_item");
     expect(pokemon).not.toHaveProperty("tera_type");
+  });
+
+  it("maps nature=null for non-Champions format rows", async () => {
+    const row = makeRow({ format: "gen9vgc2026regi", nature: null });
+    const mockClient = createMockClient({ data: [row], error: null });
+
+    const [sheet] = await getTournamentTeamSheets(mockClient, 10);
+
+    expect(sheet?.pokemon[0]?.nature).toBeNull();
+  });
+
+  it("maps nature for Champions format rows", async () => {
+    const row = makeRow({
+      format: "gen9championsvgc2026regma",
+      nature: "Timid",
+    });
+    const mockClient = createMockClient({ data: [row], error: null });
+
+    const [sheet] = await getTournamentTeamSheets(mockClient, 10);
+
+    expect(sheet?.pokemon[0]?.nature).toBe("Timid");
   });
 
   it("queries the correct tournament via eq filter", async () => {

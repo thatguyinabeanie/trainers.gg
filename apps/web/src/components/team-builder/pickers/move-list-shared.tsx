@@ -12,6 +12,7 @@ import { type MoveData } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 
+import { UsageSparkline } from "../usage-sparkline";
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { CATEGORY_ICON_URLS } from "../move-category-ui";
 import { type MoveCategory } from "./move-filter-state";
@@ -33,17 +34,37 @@ export type MoveListSortState = { col: MoveListSortCol; dir: MoveListSortDir };
 /**
  * Shared grid template for move list rows.
  *
- *   56px                — type icon
- *   56px                — category icon
- *   minmax(100px,1fr)   — name
- *   40px                — BP
- *   48px                — Accuracy
- *   56px                — Usage (coming soon)
- *   minmax(0,2fr)       — effect (short description)
- *   minmax(140px,1fr)   — roles chips
+ *   3.5rem               — type icon  (56px)
+ *   3.5rem               — category icon  (56px)
+ *   minmax(6.25rem,1fr)  — name  (100px min)
+ *   2.5rem               — BP  (40px)
+ *   3rem                 — Accuracy  (48px)
+ *   3.5rem               — Usage  (56px)
+ *   minmax(0,2fr)        — effect (short description)
+ *   minmax(8.75rem,1fr)  — roles chips  (140px min)
+ *
+ * All track sizes are in rem so header and rows share the same template string
+ * and align identically without per-cell flex (which drifts). See picker-grid
+ * alignment rule in CLAUDE.md.
  */
 export const MOVE_LIST_GRID =
-  "grid-cols-[56px_56px_minmax(100px,1fr)_40px_48px_56px_minmax(0,2fr)_minmax(140px,1fr)]";
+  "grid-cols-[3.5rem_3.5rem_minmax(6.25rem,1fr)_2.5rem_3rem_3.5rem_minmax(0,2fr)_minmax(8.75rem,1fr)]";
+
+// =============================================================================
+// Normalize move key
+// =============================================================================
+
+/**
+ * Normalize a move name/id to a comparison key for slug matching.
+ *
+ * The DB stores move values that may use different casing or separators than
+ * the builder's internal move id (e.g. "Fake Out" vs "fake-out" vs "fakeout").
+ * Lowercasing and stripping spaces, hyphens, and apostrophes produces a single
+ * canonical key for both sides of the lookup.
+ */
+export function normalizeMoveKey(name: string): string {
+  return name.toLowerCase().replace(/[\s\-']/g, "");
+}
 
 // =============================================================================
 // Sort logic
@@ -175,11 +196,8 @@ export function MoveListHeader({ sort, onSort, className }: MoveListHeaderProps)
         <SortArrow active={sort.col === "acc"} dir={sort.dir} />
       </button>
 
-      {/* Usage — placeholder */}
-      <span
-        className="text-muted-foreground/50 cursor-default text-center"
-        title="Coming soon"
-      >
+      {/* Usage % — display-only, not sortable */}
+      <span className="text-muted-foreground cursor-default text-center">
         USE%
       </span>
 
@@ -210,6 +228,16 @@ interface MoveListRowProps {
   onCategoryFilter?: (category: MoveCategory) => void;
   /** Called when a role chip is clicked (filter affordance). */
   onRoleFilter?: (roleId: RoleId) => void;
+  /**
+   * Latest-period usage % for this move (0–100). Shown in the USE% column.
+   * When undefined, the column renders a muted dash.
+   */
+  usagePct?: number;
+  /**
+   * Usage % series oldest → newest for the sparkline. Rendered only when
+   * there are ≥ 2 data points.
+   */
+  usageSeries?: number[];
 }
 
 export function MoveListRow({
@@ -220,6 +248,8 @@ export function MoveListRow({
   onTypeFilter,
   onCategoryFilter,
   onRoleFilter,
+  usagePct,
+  usageSeries,
 }: MoveListRowProps) {
   const roles = getRolesForMove(move.name);
 
@@ -346,13 +376,25 @@ export function MoveListRow({
           : `${move.accuracy}%`}
       </span>
 
-      {/* Usage — coming soon placeholder */}
-      <span
-        className="text-muted-foreground/30 cursor-default text-center font-mono text-xs tabular-nums"
-        title="Coming soon"
-      >
-        —
-      </span>
+      {/* Usage % + sparkline */}
+      <div className="flex flex-col items-center justify-center gap-0.5">
+        <span
+          className={cn(
+            "font-mono text-xs tabular-nums",
+            usagePct != null && usagePct > 0
+              ? "text-foreground"
+              : "text-muted-foreground/40"
+          )}
+        >
+          {usagePct != null && usagePct > 0 ? `${usagePct}%` : "—"}
+        </span>
+        {usageSeries && usageSeries.length >= 2 && (
+          <UsageSparkline
+            points={usageSeries}
+            ariaLabel={`${move.name} usage trend`}
+          />
+        )}
+      </div>
 
       {/* Effect (shortDesc) */}
       <span

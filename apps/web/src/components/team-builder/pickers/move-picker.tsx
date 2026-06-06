@@ -25,6 +25,7 @@ import {
 } from "@trainers/pokemon";
 import { cn } from "@/lib/utils";
 
+import { useUsageData } from "../use-usage-data";
 import {
   DEFAULT_MOVE_FILTERS,
   type MoveCategory,
@@ -33,6 +34,7 @@ import {
 import {
   MoveListHeader,
   MoveListRow,
+  normalizeMoveKey,
   type MoveListSortCol,
   type MoveListSortState,
 } from "./move-list-shared";
@@ -57,12 +59,40 @@ type MoveRow = {
   data: MoveData | null;
 };
 
+type MoveUsageEntry = {
+  currentPct: number;
+  series: number[];
+};
+
 // =============================================================================
 // Helpers
 // =============================================================================
 
-function sortMoves(rows: MoveRow[], sort: MoveListSortState): MoveRow[] {
+function sortMoves(
+  rows: MoveRow[],
+  sort: MoveListSortState,
+  usageMap: Map<string, MoveUsageEntry>,
+  isDefaultSort: boolean
+): MoveRow[] {
   const out = [...rows];
+
+  // When usage data is available and no explicit column sort has been chosen by
+  // the user (default "name" asc state), sort descending by latest usage % so
+  // the most commonly used moves float to the top. Moves with no usage data
+  // (pct === 0) sort after moves with data, tie-broken by name.
+  const hasUsageData = usageMap.size > 0;
+  const isDefaultNameSort = sort.col === "name" && sort.dir === "asc";
+
+  if (isDefaultSort && hasUsageData && isDefaultNameSort) {
+    out.sort((a, b) => {
+      const au = usageMap.get(normalizeMoveKey(a.name))?.currentPct ?? 0;
+      const bu = usageMap.get(normalizeMoveKey(b.name))?.currentPct ?? 0;
+      if (bu !== au) return bu - au; // higher usage first
+      return a.name.localeCompare(b.name); // tie-break by name
+    });
+    return out;
+  }
+
   out.sort((a, b) => {
     let cmp = 0;
     switch (sort.col) {
@@ -116,8 +146,47 @@ export function MovePicker({
 }: MovePickerProps) {
   const [filters, setFilters] = useState<MoveFilterState>(DEFAULT_MOVE_FILTERS);
   const [sort, setSort] = useState<MoveListSortState>({ col: "name", dir: "asc" });
+  // Tracks whether the user has explicitly clicked a column header to sort.
+  // Until they do, usage data drives the default order. Once they sort, the
+  // usage-based default is suppressed so name-asc is reachable.
+  const [hasUserSorted, setHasUserSorted] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // -------------------------------------------------------------------------
+  // Usage data — fetch rollup for the species in the current format.
+  // Provides per-move currentPct (latest period) and series (oldest→newest)
+  // for the USE% column and sparklines.
+  // -------------------------------------------------------------------------
+
+  const { data: usagePeriods } = useUsageData(species, format);
+
+  // Build slug-normalized map: normalizedMoveName → { currentPct, series }.
+  // The DB move values may not match the builder's internal ids exactly (e.g.
+  // "Fake Out" vs "fake-out"), so both sides are normalized before lookup.
+  const usageMap = new Map<string, MoveUsageEntry>();
+  if (usagePeriods && usagePeriods.length > 0) {
+    // Dense per-period series so moves absent in later periods get 0 instead
+    // of carrying a stale last-seen pct (same pattern as ability/item/nature pickers).
+    const perPeriod = usagePeriods.map((period) => {
+      const periodMap = new Map<string, number>();
+      for (const m of period.moves) {
+        periodMap.set(normalizeMoveKey(m.value), m.pct);
+      }
+      return periodMap;
+    });
+
+    const allKeys = new Set<string>();
+    for (const periodMap of perPeriod) {
+      for (const key of periodMap.keys()) allKeys.add(key);
+    }
+
+    for (const key of allKeys) {
+      const series = perPeriod.map((periodMap) => periodMap.get(key) ?? 0);
+      const currentPct = series[series.length - 1] ?? 0;
+      usageMap.set(key, { currentPct, series });
+    }
+  }
 
   // -------------------------------------------------------------------------
   // Candidate move list — species-legal in format or all learnable
@@ -169,7 +238,7 @@ export function MovePicker({
     rows.push({ name, data });
   }
 
-  const sorted = sortMoves(rows, sort);
+  const sorted = sortMoves(rows, sort, usageMap, !hasUserSorted);
 
   // -------------------------------------------------------------------------
   // Bucket counts for the RolePresetsPanel
@@ -198,6 +267,7 @@ export function MovePicker({
   // -------------------------------------------------------------------------
 
   function handleSort(col: MoveListSortCol) {
+    setHasUserSorted(true);
     setSort((prev) =>
       prev.col === col
         ? { col, dir: prev.dir === "asc" ? "desc" : "asc" }
@@ -377,6 +447,13 @@ export function MovePicker({
                           handleCategoryFilter(cat)
                         }
                         onRoleFilter={handleRoleFilter}
+                        usagePct={
+                          usageMap.get(normalizeMoveKey(item.name))
+                            ?.currentPct
+                        }
+                        usageSeries={
+                          usageMap.get(normalizeMoveKey(item.name))?.series
+                        }
                       />
                     </div>
                   );

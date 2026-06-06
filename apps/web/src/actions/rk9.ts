@@ -492,6 +492,7 @@ export async function scrapeRk9TeamsBatch(
           teams_imported_count: 0,
         })
         .eq("event_id", eventId);
+
       return { success: true, data: undefined, done: true, scraped: 0, total: 0, failed: 0 };
     }
 

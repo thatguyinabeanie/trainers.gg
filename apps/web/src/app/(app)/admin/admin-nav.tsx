@@ -10,6 +10,7 @@ const navItems = [
   { href: "/admin/coaches", label: "Coaches" },
   { href: "/admin/communities", label: "Communities" },
   { href: "/admin/data", label: "Data" },
+  { href: "/admin/usage", label: "Usage" },
   { href: "/admin/config", label: "Settings" },
 ];
 
@@ -18,7 +19,10 @@ export function AdminNav() {
 
   return (
     <nav className="mb-8 border-b">
-      <div className="-mb-px flex gap-6 overflow-x-auto">
+      {/* Wrap to multiple rows on phones (7 tabs don't fit a 390px row);
+          single row on sm+ where they fit. Wrapping is the robust fix —
+          horizontal-scroll wrappers didn't reliably clamp the page width here. */}
+      <div className="-mb-px flex flex-wrap gap-x-6 gap-y-1 sm:flex-nowrap">
         {navItems.map((item) => {
           const isActive =
             item.href === "/admin"

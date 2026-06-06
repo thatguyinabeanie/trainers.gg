@@ -6,6 +6,7 @@ import {
 import { createAdminSupabaseClient } from "../../client";
 import { recalculateStandings } from "./standings";
 import { createTournamentTeamSheets } from "./team-sheets";
+import { computeEventUsage } from "../usage";
 
 /**
  * Enhanced tournament start: lock teams, activate first phase, create Round 1.
@@ -64,6 +65,21 @@ export async function startTournamentEnhanced(
   // tournament_team_sheets which only allows service role INSERT.
   const serviceClient = createAdminSupabaseClient();
   await createTournamentTeamSheets(serviceClient, tournamentId);
+
+  // 1c. Best-effort: compute per-event usage facts from the locked team sheets.
+  // Failures must never propagate — tournament start already committed and
+  // a usage-compute error should not roll back the start sequence.
+  try {
+    await computeEventUsage(serviceClient, "first_party", String(tournamentId));
+  } catch (usageErr) {
+    // Keep the dynamic tournamentId out of the first console arg — a tainted
+    // format string trips CodeQL js/tainted-format-string.
+    console.error(
+      "[usage] computeEventUsage failed for first_party tournament",
+      tournamentId,
+      usageErr
+    );
+  }
 
   // 2. Activate the first phase
   const { data: phases, error: phasesError } = await supabase

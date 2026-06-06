@@ -29,6 +29,7 @@ import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { cn } from "@/lib/utils";
 
 import { TypeSymbolIcon } from "../type-symbol-icon";
+import { useFormatUsageData } from "../use-format-usage-data";
 import { AbilityCell } from "./ability-cell";
 import { FilterDialogShell } from "./filter-dialog-shell";
 import { RolePresetsPanel } from "./role-presets-panel";
@@ -45,6 +46,7 @@ import { SpeciesSidebar } from "./species-sidebar";
 import { SpeciesSmartSearch } from "./species-smart-search";
 import { SpeciesExpandedPanel } from "./species-expanded-panel";
 import { STAT_HEADER_COLORS } from "./stat-header-colors";
+import { normalizeSpeciesSlug } from "./usage-slug";
 
 // =============================================================================
 // Constants
@@ -53,29 +55,51 @@ import { STAT_HEADER_COLORS } from "./stat-header-colors";
 /** Stat threshold for the "high stat" highlight (matches the spec's 110+). */
 const HIGH_STAT_THRESHOLD = 110;
 
-/**
- * Shared Tailwind grid template for each data row.
- *
- *   20px               — expand/collapse chevron
- *   56px               — sprite circle
- *   minmax(170px,2fr)  — name
- *   72px               — types (two icons + right padding)
- *   minmax(120px,1.5fr)— abilities (stacked: ● slot1, ● slot2, ★ hidden)
- *   repeat(6,48px)     — HP/Atk/Def/SpA/SpD/Spe (label + sort arrow)
- *   48px               — BST
- *   minmax(0,2fr)      — matching move chips (collapses when empty)
- */
-const ROW_GRID =
-  "grid-cols-[20px_56px_minmax(170px,2fr)_72px_minmax(120px,1.5fr)_repeat(6,48px)_48px_minmax(0,2fr)]";
-
 /** Default format ID used when no format is active. */
 const DEFAULT_FORMAT_ID = "gen9vgc2025regg";
+
+// =============================================================================
+// Shared grid template
+// =============================================================================
+
+/**
+ * ONE shared grid template applied to BOTH the sticky header row and every
+ * `SpeciesRow` container. Using a CSS grid (not flex) guarantees that every
+ * column track is defined once, so header cells and row cells are always
+ * aligned — flex per-cell widths drift when cell content differs.
+ *
+ * Column order (left → right):
+ *   1.25rem  chevron   (expand/collapse toggle)
+ *   3.5rem   sprite    (Pokémon image)
+ *   minmax(11rem,2fr)  name      (species name, truncated)
+ *   4.5rem   types     (1–2 type icons)
+ *   minmax(8rem,1.5fr) abilities (slot1/slot2/hidden)
+ *   repeat(6,3rem)     stats     (HP Atk Def SpA SpD Spe)
+ *   3rem     BST
+ *   3.5rem   USG       (usage %, right of BST)
+ *   minmax(0,2fr)      moves     (matching move chips)
+ *
+ * rem values map to the Tailwind spacing scale:
+ *   1.25rem = w-5 (20px), 3rem = w-12 (48px), 3.5rem = w-14 (56px),
+ *   4.5rem = w-18 (72px), 8rem = min-w-32, 11rem = min-w-44
+ */
+const ROW_GRID =
+  "grid grid-cols-[1.25rem_3.5rem_minmax(11rem,2fr)_4.5rem_minmax(8rem,1.5fr)_repeat(6,3rem)_3rem_3.5rem_minmax(0,2fr)] items-center gap-2";
 
 // =============================================================================
 // Sort
 // =============================================================================
 
-type SortCol = "name" | "hp" | "atk" | "def" | "spa" | "spd" | "spe" | "bst";
+type SortCol =
+  | "name"
+  | "hp"
+  | "atk"
+  | "def"
+  | "spa"
+  | "spd"
+  | "spe"
+  | "bst"
+  | "usage";
 type SortDir = "asc" | "desc";
 
 type SortState = {
@@ -85,7 +109,8 @@ type SortState = {
 
 function sortSpecies(
   rows: SpeciesSearchEntry[],
-  sort: SortState
+  sort: SortState,
+  usageMap?: Map<string, { usagePct: number }>
 ): SpeciesSearchEntry[] {
   const out = [...rows];
   out.sort((a, b) => {
@@ -115,6 +140,23 @@ function sortSpecies(
       case "bst":
         cmp = a.bst - b.bst;
         break;
+      case "usage": {
+        // Species with no usage data sort to the end regardless of direction.
+        const aPct =
+          usageMap?.get(normalizeSpeciesSlug(a.species))?.usagePct ?? -1;
+        const bPct =
+          usageMap?.get(normalizeSpeciesSlug(b.species))?.usagePct ?? -1;
+        // Both unknown → treat as equal (fall through to name tie-break)
+        if (aPct === -1 && bPct === -1) {
+          cmp = 0;
+          break;
+        }
+        // One unknown → always place last (negate direction so it's always last)
+        if (aPct === -1) return 1;
+        if (bPct === -1) return -1;
+        cmp = aPct - bPct;
+        break;
+      }
       default:
         sort.col satisfies never;
         return 0;
@@ -223,6 +265,8 @@ interface SpeciesRowProps {
   formatId: string;
   filteredMoves: readonly string[];
   filteredRoles: readonly RoleId[];
+  /** Pre-looked-up usage %, or undefined when no data exists for this species. */
+  usagePct: number | undefined;
   onSelect: () => void;
   onToggleExpand: () => void;
   onFilterAbility: (ability: string) => void;
@@ -235,6 +279,7 @@ function SpeciesRow({
   formatId,
   filteredMoves,
   filteredRoles,
+  usagePct,
   onSelect,
   onToggleExpand,
   onFilterAbility,
@@ -281,12 +326,12 @@ function SpeciesRow({
         onClick={onSelect}
         onKeyDown={handleRowKey}
         className={cn(
-          "hover:bg-muted/60 focus-visible:bg-muted/80 focus-visible:outline-primary relative grid w-full cursor-pointer items-center gap-2 px-4 py-2 text-left transition-colors outline-none focus-visible:outline-2",
           ROW_GRID,
+          "hover:bg-muted/60 focus-visible:bg-muted/80 focus-visible:outline-primary relative w-full cursor-pointer px-4 py-2 text-left transition-colors outline-none focus-visible:outline-2",
           isCurrent && "bg-primary/5"
         )}
       >
-        {/* Expand/collapse chevron */}
+        {/* Track 1: Expand/collapse chevron */}
         <button
           type="button"
           aria-label={
@@ -307,8 +352,8 @@ function SpeciesRow({
           <ChevronRight className="size-4" />
         </button>
 
-        {/* Sprite — 48px circle inside 56px column */}
-        <div className="bg-primary/10 relative z-10 flex size-12 shrink-0 items-center justify-center self-center rounded-full">
+        {/* Track 2: Sprite — 48px circle inside the 3.5rem track */}
+        <div className="bg-primary/10 relative z-10 flex size-12 items-center justify-center self-center rounded-full">
           <Image
             src={sprite.url}
             alt={entry.species}
@@ -322,11 +367,12 @@ function SpeciesRow({
           />
         </div>
 
-        {/* Name */}
+        {/* Track 3: Name */}
         <span className="text-foreground relative z-10 min-w-0 truncate text-sm font-semibold">
           {entry.species}
         </span>
 
+        {/* Track 4: Types — two icons */}
         <div className="relative z-10 flex min-w-0 items-center gap-1.5">
           {entry.types[0] ? (
             <TypeSymbolIcon
@@ -350,7 +396,7 @@ function SpeciesRow({
           )}
         </div>
 
-        {/* Abilities — all slots stacked: • regular, ★ hidden */}
+        {/* Track 5: Abilities — all slots stacked: • regular, ★ hidden */}
         <div className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5 overflow-hidden">
           <div className="flex min-w-0 items-baseline gap-1">
             <span className="text-muted-foreground/50 inline-block w-2.5 shrink-0 text-center text-xs">
@@ -388,6 +434,7 @@ function SpeciesRow({
           )}
         </div>
 
+        {/* Tracks 6–11: Stats (HP Atk Def SpA SpD Spe) */}
         {/* HP */}
         <span
           className={cn(
@@ -443,12 +490,27 @@ function SpeciesRow({
           {entry.baseStats.spe}
         </span>
 
-        {/* BST */}
+        {/* Track 12: BST */}
         <span className="border-border/60 text-foreground relative z-10 border-l pl-1.5 text-center font-mono text-xs font-semibold tabular-nums">
           {entry.bst}
         </span>
 
-        {/* Matching move chips — inline column */}
+        {/* Track 13: USG — latest period usage % for this species */}
+        <span
+          className={cn(
+            "relative z-10 text-center font-mono text-xs tabular-nums",
+            usagePct != null && usagePct > 0
+              ? "text-foreground"
+              : "text-muted-foreground"
+          )}
+          data-testid={`usg-cell-${entry.species}`}
+        >
+          {usagePct != null && usagePct > 0
+            ? `${usagePct.toFixed(1)}%`
+            : "—"}
+        </span>
+
+        {/* Track 14: Matching move chips */}
         <div className="relative z-10 flex min-w-0 flex-wrap items-center gap-1 overflow-hidden">
           {matchingMoveNames.map((name) => (
             <span
@@ -699,6 +761,10 @@ export function SpeciesPicker({
     ? fullIndex.filter((e) => isLegalSpecies(e.species, format.id))
     : fullIndex;
 
+  // Format-wide usage data — Map<normalizedSlug, FormatUsageRow>.
+  // Provides USG % for every species in the picker without per-row fetches.
+  const usageMap = useFormatUsageData(format);
+
   // Derived list — search + filter (legality already applied to index)
   const filtered = searchSpecies(speciesIndex, query, {
     types: filters.types,
@@ -708,7 +774,7 @@ export function SpeciesPicker({
     megaOnly: filters.megaOnly,
     formatId: format?.id,
   });
-  const matched = sortSpecies(filtered, sort);
+  const matched = sortSpecies(filtered, sort, usageMap);
 
   // Bucket counts — for each role, how many matched species carry it.
   // React Compiler memoizes this lookup based on the matched array identity.
@@ -996,85 +1062,124 @@ export function SpeciesPicker({
           )}
 
           <div>
-            {/* Sticky sortable header */}
+            {/* Sticky sortable header — same ROW_GRID as SpeciesRow */}
             <div
               className={cn(
-                "bg-card sticky top-0 z-20 grid items-center gap-2 border-b px-4 py-2 text-xs font-semibold tracking-wider uppercase",
-                ROW_GRID
+                ROW_GRID,
+                "bg-card sticky top-0 z-20 border-b px-4 py-2 text-xs font-semibold tracking-wider uppercase"
               )}
               role="row"
             >
+              {/* Track 1: chevron placeholder */}
               <span aria-hidden="true" />
+              {/* Track 2: sprite placeholder */}
               <span aria-hidden="true" />
-              <SortHeaderButton
-                col="name"
-                label="Name"
-                align="left"
-                sort={sort}
-                onSort={handleSort}
-              />
+              {/* Track 3: Name */}
+              <div>
+                <SortHeaderButton
+                  col="name"
+                  label="Name"
+                  align="left"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+              </div>
+              {/* Track 4: Types */}
               <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
                 Types
               </span>
-              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
+              {/* Track 5: Abilities */}
+              <span className="text-muted-foreground min-w-0 truncate text-center text-xs whitespace-nowrap">
                 Abilities
               </span>
-              <SortHeaderButton
-                col="hp"
-                label="HP"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.hp}
-              />
-              <SortHeaderButton
-                col="atk"
-                label="ATK"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.atk}
-              />
-              <SortHeaderButton
-                col="def"
-                label="DEF"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.def}
-              />
-              <SortHeaderButton
-                col="spa"
-                label="SPA"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.spa}
-              />
-              <SortHeaderButton
-                col="spd"
-                label="SPD"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.spd}
-              />
-              <SortHeaderButton
-                col="spe"
-                label="SPE"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-                colorClass={STAT_HEADER_COLORS.spe}
-              />
-              <SortHeaderButton
-                col="bst"
-                label="BST"
-                align="center"
-                sort={sort}
-                onSort={handleSort}
-              />
-              <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
+              {/* Track 6: HP */}
+              <div className="flex justify-center">
+                <SortHeaderButton
+                  col="hp"
+                  label="HP"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.hp}
+                />
+              </div>
+              {/* Track 7: ATK */}
+              <div className="flex justify-center">
+                <SortHeaderButton
+                  col="atk"
+                  label="ATK"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.atk}
+                />
+              </div>
+              {/* Track 8: DEF */}
+              <div className="flex justify-center">
+                <SortHeaderButton
+                  col="def"
+                  label="DEF"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.def}
+                />
+              </div>
+              {/* Track 9: SPA */}
+              <div className="flex justify-center">
+                <SortHeaderButton
+                  col="spa"
+                  label="SPA"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spa}
+                />
+              </div>
+              {/* Track 10: SPD */}
+              <div className="flex justify-center">
+                <SortHeaderButton
+                  col="spd"
+                  label="SPD"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spd}
+                />
+              </div>
+              {/* Track 11: SPE */}
+              <div className="flex justify-center">
+                <SortHeaderButton
+                  col="spe"
+                  label="SPE"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                  colorClass={STAT_HEADER_COLORS.spe}
+                />
+              </div>
+              {/* Track 12: BST */}
+              <div className="flex justify-center">
+                <SortHeaderButton
+                  col="bst"
+                  label="BST"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+              </div>
+              {/* Track 13: USG */}
+              <div className="flex justify-center">
+                <SortHeaderButton
+                  col="usage"
+                  label="USG"
+                  align="center"
+                  sort={sort}
+                  onSort={handleSort}
+                />
+              </div>
+              {/* Track 14: Moves */}
+              <span className="text-muted-foreground min-w-0 truncate text-center text-xs whitespace-nowrap">
                 Moves
               </span>
             </div>
@@ -1109,6 +1214,10 @@ export function SpeciesPicker({
                         formatId={format?.id ?? DEFAULT_FORMAT_ID}
                         filteredMoves={filters.moves}
                         filteredRoles={filters.roles}
+                        usagePct={
+                          usageMap.get(normalizeSpeciesSlug(entry.species))
+                            ?.usagePct
+                        }
                         onSelect={() => onPick(entry.species)}
                         onToggleExpand={() =>
                           setExpandedSpecies((prev) =>

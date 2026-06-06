@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
+import { type FormatUsageRow } from "@trainers/supabase";
+
+import { useFormatUsageData } from "../use-format-usage-data";
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { RolePresetsPanel } from "./role-presets-panel";
 import {
@@ -32,6 +35,7 @@ import {
 } from "./species-filter-state";
 import { SpeciesMobileRow } from "./species-mobile-row";
 import { SpeciesSidebar } from "./species-sidebar";
+import { normalizeSpeciesSlug } from "./usage-slug";
 
 // =============================================================================
 // Constants
@@ -77,6 +81,10 @@ export function SpeciesPickerMobile({
   const [filters, setFilters] = useState<SpeciesFilterState>(
     DEFAULT_SPECIES_FILTERS
   );
+
+  // Format-wide usage data — Map<normalizedSlug, FormatUsageRow>.
+  // Provides USG % for every species row without per-row fetches.
+  const usageMap = useFormatUsageData(format);
 
   // Build the species index — same logic as desktop picker.
   const fullIndex = buildSpeciesSearchIndex(
@@ -136,7 +144,7 @@ export function SpeciesPickerMobile({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         showHandle={false}
-        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-[20px] p-0"
+        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-2xl p-0"
       >
         <DrawerTitle className="sr-only">
           {view === "list" ? "Choose species" : "Filters"}
@@ -163,6 +171,7 @@ export function SpeciesPickerMobile({
               onPick={handlePick}
               currentSpecies={value}
               formatId={resolvedFormatId}
+              usageMap={usageMap}
             />
           ) : (
             <FiltersView
@@ -198,6 +207,8 @@ interface ListViewProps {
   onPick: (species: string) => void;
   currentSpecies: string | null;
   formatId: string;
+  /** Pre-built usage map — Map<normalizedSlug, FormatUsageRow>. */
+  usageMap: Map<string, FormatUsageRow>;
 }
 
 function ListView({
@@ -212,6 +223,7 @@ function ListView({
   onPick,
   currentSpecies,
   formatId,
+  usageMap,
 }: ListViewProps) {
   return (
     <>
@@ -224,13 +236,14 @@ function ListView({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           aria-label="Search species"
-          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-[16px] leading-tight focus:outline-none sm:text-sm"
+          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-[16px] leading-tight focus:outline-none sm:text-sm" // text-[16px]: prevents iOS auto-zoom on focus (zoom triggers below 16px)
         />
         <button
           type="button"
           onClick={onOpenFilters}
           aria-label={`Open filters${activeFilterCount > 0 ? `, ${activeFilterCount} active` : ""}`}
           className={cn(
+            // text-[11px]: sub-12px filter button label; no Tailwind scale token
             "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
             activeFilterCount > 0
               ? "bg-primary/5 border-primary/30 text-primary hover:bg-primary/10"
@@ -240,7 +253,7 @@ function ListView({
           <Filter className="size-3" />
           Filters
           {activeFilterCount > 0 && (
-            <span className="bg-primary text-primary-foreground rounded-sm px-1 text-[9px]">
+            <span className="bg-primary text-primary-foreground rounded-sm px-1 text-[9px]"> {/* text-[9px]: sub-12px badge counter; no Tailwind scale token */}
               {activeFilterCount}
             </span>
           )}
@@ -264,6 +277,7 @@ function ListView({
             onPick={onPick}
             isSelected={entry.species === currentSpecies}
             formatId={formatId}
+            usagePct={usageMap.get(normalizeSpeciesSlug(entry.species))?.usagePct}
           />
         ))}
         {matched.length === 0 && (
@@ -287,6 +301,7 @@ interface ChipStripProps {
 
 function ChipStrip({ filters, onFiltersChange }: ChipStripProps) {
   const chipClass =
+    // text-[11px]: sub-12px chip label; no Tailwind scale token
     "bg-primary/5 border-primary/30 text-primary flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium";
 
   return (

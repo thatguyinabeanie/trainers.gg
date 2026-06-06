@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 import { SpeciesPicker } from "./species-picker";
 import { SpeciesPickerMobile } from "./species-picker-mobile";
+import { SELECTOR_DIALOG_CONTENT_CLASS } from "./selector-dialog-class";
 
 // =============================================================================
 // Types
@@ -40,7 +41,7 @@ export function SpeciesPickerDialog(props: SpeciesPickerDialogProps) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="ring-primary/50 flex h-[min(calc(100vh-2rem),1400px)] w-[calc(100vw-2rem)] max-w-[1600px] flex-col gap-0 overflow-hidden rounded-xl p-0 ring-2 sm:max-w-[1600px]"
+        className={SELECTOR_DIALOG_CONTENT_CLASS}
       >
         <DialogTitle className="sr-only">Choose species</DialogTitle>
         <SpeciesPicker

@@ -12,6 +12,7 @@ jest.mock("../api", () => ({
 jest.mock("../format", () => ({
   LIMITLESS_TO_FORMAT: { "VGC 2024": "gen9vgc2024regg" },
   KNOWN_FORMATS: new Set(["VGC 2024"]),
+  SKIP_FORMATS: new Set(["CUSTOM"]),
 }));
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -41,7 +42,7 @@ type MockChain = {
   maybeSingle: jest.Mock;
   single: jest.Mock;
   rpc: jest.Mock;
-}
+};
 
 function createChain(terminal: Record<string, unknown> = {}): MockChain {
   const chain: MockChain = {} as MockChain;
@@ -105,6 +106,7 @@ describe("processImportQueue", () => {
   it("returns { processed: false } when queue is empty", async () => {
     // Chain 1: stale rows query → no rows
     // Chain 2: pick queued tournament → null
+    // Chain 3: remaining-count HEAD query → 0
     const supabase = {
       schema: jest.fn(),
     };
@@ -117,14 +119,25 @@ describe("processImportQueue", () => {
     const queueChain = createChain();
     queueChain.maybeSingle.mockResolvedValue({ data: null, error: null });
 
+    // Third call: remaining-count HEAD query (terminates at .eq, which is
+    // chained off .select with { count: 'exact', head: true })
+    const countChain = createChain();
+    countChain.eq.mockResolvedValue({ count: 0, error: null });
+
     supabase.schema
       .mockReturnValueOnce(staleChain) // stale check
-      .mockReturnValueOnce(queueChain); // queue pick
+      .mockReturnValueOnce(queueChain) // queue pick
+      .mockReturnValueOnce(countChain); // remaining count
 
-    const result = await processImportQueue(supabase as unknown as Parameters<typeof processImportQueue>[0], "key", 1);
+    const result = await processImportQueue(
+      supabase as unknown as Parameters<typeof processImportQueue>[0],
+      "key",
+      1
+    );
 
     expect(result.results[0]!.processed).toBe(false);
     expect(result.totalProcessed).toBe(0);
+    expect(result.remaining).toBe(0);
   });
 
   it("claims a queued row and marks it completed on success", async () => {
@@ -175,7 +188,11 @@ describe("processImportQueue", () => {
 
     supabase.schema.mockReturnValue(genericChain);
 
-    const result = await processImportQueue(supabase as unknown as SupabaseClient, "key", 1);
+    const result = await processImportQueue(
+      supabase as unknown as SupabaseClient,
+      "key",
+      1
+    );
 
     expect(result.totalProcessed).toBe(1);
     expect(result.results[0]!.processed).toBe(true);
@@ -211,7 +228,11 @@ describe("processImportQueue", () => {
       .mockReturnValueOnce(claimChain)
       .mockReturnValue(emptyChain);
 
-    const result = await processImportQueue(supabase as unknown as SupabaseClient, "key", 1);
+    const result = await processImportQueue(
+      supabase as unknown as SupabaseClient,
+      "key",
+      1
+    );
 
     expect(result.results[0]!.recovered).toBeUndefined();
     expect(result.results[0]!.processed).toBe(false);
@@ -240,7 +261,11 @@ describe("processImportQueue", () => {
       .mockReturnValueOnce(updateChain)
       .mockReturnValue(waitChain);
 
-    const result = await processImportQueue(supabase as unknown as SupabaseClient, "key", 1);
+    const result = await processImportQueue(
+      supabase as unknown as SupabaseClient,
+      "key",
+      1
+    );
 
     expect(result.results[0]!.recovered).toBe(true);
     expect(result.results[0]!.processed).toBe(false);
@@ -275,7 +300,11 @@ describe("processImportQueue", () => {
       .mockReturnValueOnce(updateChain)
       .mockReturnValue(waitChain);
 
-    const result = await processImportQueue(supabase as unknown as SupabaseClient, "key", 1);
+    const result = await processImportQueue(
+      supabase as unknown as SupabaseClient,
+      "key",
+      1
+    );
 
     expect(result.results[0]!.recovered).toBe(true);
     expect(updateChain.update).toHaveBeenCalledWith(
@@ -296,7 +325,11 @@ describe("processImportQueue", () => {
     // Queue pick → found one with unknown format
     const pickChain = createChain();
     pickChain.maybeSingle.mockResolvedValue({
-      data: { tournament_id: "t-unknown", format_id: "UNKNOWN_CODE", import_attempts: 0 },
+      data: {
+        tournament_id: "t-unknown",
+        format_id: "UNKNOWN_CODE",
+        import_attempts: 0,
+      },
       error: null,
     });
 
@@ -309,7 +342,11 @@ describe("processImportQueue", () => {
       .mockReturnValueOnce(pickChain)
       .mockReturnValue(emptyChain);
 
-    const result = await processImportQueue(supabase as unknown as SupabaseClient, "key", 1);
+    const result = await processImportQueue(
+      supabase as unknown as SupabaseClient,
+      "key",
+      1
+    );
 
     expect(result.totalProcessed).toBe(0);
   });
@@ -329,8 +366,20 @@ describe("syncTournamentList", () => {
   it("syncs tournaments from the API into the DB", async () => {
     const { fetchTournamentList: mockList } = jest.requireMock("../api");
     mockList.mockResolvedValue([
-      { id: "t1", name: "Cup 1", format: "SVG", date: "2024-06-01T00:00:00Z", players: 100 },
-      { id: "t2", name: "Cup 2", format: "SVI", date: "2025-01-15T00:00:00Z", players: 50 },
+      {
+        id: "t1",
+        name: "Cup 1",
+        format: "SVG",
+        date: "2024-06-01T00:00:00Z",
+        players: 100,
+      },
+      {
+        id: "t2",
+        name: "Cup 2",
+        format: "SVI",
+        date: "2025-01-15T00:00:00Z",
+        players: 50,
+      },
     ]);
 
     const chain = createChain();
@@ -355,7 +404,13 @@ describe("syncTournamentList", () => {
   it("skips tournaments with empty format codes", async () => {
     const { fetchTournamentList: mockList } = jest.requireMock("../api");
     mockList.mockResolvedValue([
-      { id: "t1", name: "No Format", format: "", date: "2024-01-01T00:00:00Z", players: 10 },
+      {
+        id: "t1",
+        name: "No Format",
+        format: "",
+        date: "2024-01-01T00:00:00Z",
+        players: 10,
+      },
     ]);
 
     const chain = createChain();
@@ -374,8 +429,20 @@ describe("syncTournamentList", () => {
   it("deduplicates tournaments by id", async () => {
     const { fetchTournamentList: mockList } = jest.requireMock("../api");
     mockList.mockResolvedValue([
-      { id: "t1", name: "Duplicate", format: "VGC 2024", date: "2024-06-01T00:00:00Z", players: 50 },
-      { id: "t1", name: "Duplicate", format: "VGC 2024", date: "2024-06-01T00:00:00Z", players: 50 },
+      {
+        id: "t1",
+        name: "Duplicate",
+        format: "VGC 2024",
+        date: "2024-06-01T00:00:00Z",
+        players: 50,
+      },
+      {
+        id: "t1",
+        name: "Duplicate",
+        format: "VGC 2024",
+        date: "2024-06-01T00:00:00Z",
+        players: 50,
+      },
     ]);
 
     const chain = createChain();
@@ -393,7 +460,13 @@ describe("syncTournamentList", () => {
   it("reports unmapped formats", async () => {
     const { fetchTournamentList: mockList } = jest.requireMock("../api");
     mockList.mockResolvedValue([
-      { id: "t1", name: "Unknown Format", format: "CUSTOM", date: "2024-06-01T00:00:00Z", players: 10 },
+      {
+        id: "t1",
+        name: "Unknown Format",
+        format: "WEIRD-CODE",
+        date: "2024-06-01T00:00:00Z",
+        players: 10,
+      },
     ]);
 
     const chain = createChain();
@@ -406,6 +479,62 @@ describe("syncTournamentList", () => {
 
     expect(result.synced).toBe(1);
     expect(result.unmapped).toBe(1);
+  });
+
+  it("skips CUSTOM format tournaments", async () => {
+    const { fetchTournamentList: mockList } = jest.requireMock("../api");
+    mockList.mockResolvedValue([
+      {
+        id: "t1",
+        name: "Custom Tour",
+        format: "CUSTOM",
+        date: "2024-06-01T00:00:00Z",
+        players: 10,
+      },
+      {
+        id: "t2",
+        name: "Real Tour",
+        format: "VGC 2024",
+        date: "2025-01-15T00:00:00Z",
+        players: 50,
+      },
+    ]);
+
+    const chain = createChain();
+    chain.upsert = jest.fn().mockResolvedValue({ error: null });
+    const fromMock = jest.fn().mockReturnValue({ upsert: chain.upsert });
+    const schemaMock = jest.fn().mockReturnValue({ from: fromMock });
+    const supabase = { schema: schemaMock } as unknown as SupabaseClient;
+
+    const result = await syncTournamentList(supabase, "key");
+
+    // Skip rows and normal rows must go in SEPARATE upsert calls — PostgREST
+    // (PGRST102) rejects a bulk upsert whose objects don't all share the same
+    // keys, so a mixed batch would throw "All object keys must match".
+    expect(result.synced).toBe(2);
+    expect(result.skipped).toBe(1);
+    expect(result.unmappedFormats["CUSTOM"]).toBe(1);
+
+    // Two upsert calls: one for normal rows, one for skip rows.
+    expect(chain.upsert).toHaveBeenCalledTimes(2);
+
+    type Row = Record<string, unknown> & { tournament_id: string };
+    const batches = chain.upsert.mock.calls.map((c) => c[0] as Row[]);
+
+    // Every batch must be key-homogeneous (the invariant PostgREST enforces).
+    for (const batch of batches) {
+      const keySets = batch.map((r) => Object.keys(r).sort().join(","));
+      expect(new Set(keySets).size).toBe(1);
+    }
+
+    const allRows = batches.flat();
+    const customRow = allRows.find((r) => r.tournament_id === "t1");
+    expect(customRow?.import_status).toBe("skipped");
+    expect(customRow?.import_error).toBe("Skipped: CUSTOM format");
+
+    const realRow = allRows.find((r) => r.tournament_id === "t2");
+    expect(realRow?.import_status).toBeUndefined();
+    expect(realRow && "import_status" in realRow).toBe(false);
   });
 });
 
@@ -430,11 +559,44 @@ describe("importTournament", () => {
         decklists: false,
       },
       standings: [
-        { player: "player1", name: "Player One", country: "US", placing: 1, record: { wins: 5, losses: 0, ties: 0 }, drop: null, decklist: [{ id: "pikachu", name: "Pikachu", ability: undefined, item: undefined, tera: undefined, attacks: [] }] },
-        { player: "player2", name: "Player Two", country: "CA", placing: 2, record: { wins: 4, losses: 1, ties: 0 }, drop: null, decklist: [] },
+        {
+          player: "player1",
+          name: "Player One",
+          country: "US",
+          placing: 1,
+          record: { wins: 5, losses: 0, ties: 0 },
+          drop: null,
+          decklist: [
+            {
+              id: "pikachu",
+              name: "Pikachu",
+              ability: undefined,
+              item: undefined,
+              tera: undefined,
+              attacks: [],
+            },
+          ],
+        },
+        {
+          player: "player2",
+          name: "Player Two",
+          country: "CA",
+          placing: 2,
+          record: { wins: 4, losses: 1, ties: 0 },
+          drop: null,
+          decklist: [],
+        },
       ],
       pairings: [
-        { phase: 1, round: 1, table: 1, match: "1", player1: "player1", player2: "player2", winner: "player1" },
+        {
+          phase: 1,
+          round: 1,
+          table: 1,
+          match: "1",
+          player1: "player1",
+          player2: "player2",
+          winner: "player1",
+        },
       ],
     };
 
@@ -460,7 +622,9 @@ describe("importTournament", () => {
     expect(result.tournamentId).toBe("t1");
     expect(result.standings).toBe(2);
     expect(schemaMock).toHaveBeenCalledWith("limitless");
-    expect(chain.rpc).toHaveBeenCalledWith("atomic_clear_tournament", { p_tournament_id: "t1" });
+    expect(chain.rpc).toHaveBeenCalledWith("atomic_clear_tournament", {
+      p_tournament_id: "t1",
+    });
   });
 
   it("imports tournament without phases or pairings", async () => {
@@ -479,7 +643,15 @@ describe("importTournament", () => {
         decklists: false,
       },
       standings: [
-        { player: "p1", name: "P1", country: "US", placing: 1, record: { wins: 3, losses: 0, ties: 0 }, drop: null, decklist: [] },
+        {
+          player: "p1",
+          name: "P1",
+          country: "US",
+          placing: 1,
+          record: { wins: 3, losses: 0, ties: 0 },
+          drop: null,
+          decklist: [],
+        },
       ],
       pairings: [],
     };

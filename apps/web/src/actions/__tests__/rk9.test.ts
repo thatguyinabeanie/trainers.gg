@@ -84,6 +84,11 @@ jest.mock("@/actions/site-config", () => ({
   getSiteConfig: jest.fn().mockResolvedValue({ success: false, error: "not set" }),
 }));
 
+const mockComputeEventUsage = jest.fn().mockResolvedValue(undefined);
+jest.mock("@trainers/supabase", () => ({
+  computeEventUsage: (...args: unknown[]) => mockComputeEventUsage(...args),
+}));
+
 // fetch needs to be mocked because the action does real HTTP requests
 const mockFetch = jest.fn().mockResolvedValue({
   ok: true,
@@ -394,6 +399,60 @@ describe("scrapeRk9TeamsBatch", () => {
     expect(result.done).toBe(true);
     // No new scrapes because everything was already attempted
     expect(mockParseTeamListPage).not.toHaveBeenCalled();
+  });
+
+  it("returns done:true on completion even when not all players published a team (allImported=false)", async () => {
+    // One standing with no team (empty parse result) → allImported will be false
+    // because team_pokemon has no rows for that standing, but the import is
+    // fully attempted (the standing has been processed this tick).
+    // computeEventUsage was removed from scrapeRk9TeamsBatch — usage computation
+    // is now triggered explicitly via calculateSourceUsage.
+    mockParseTeamListPage.mockReturnValue([]);
+    // team_pokemon returns no rows (player didn't publish) — allImported = false
+    teamPokemonChain = makeChain(() => ({ data: [], error: null }));
+    eventsUpdateChain = makeChain(() => ({ data: null, error: null }));
+
+    const { scrapeRk9TeamsBatch } = await import("../rk9");
+    const result = await scrapeRk9TeamsBatch("EVT001");
+
+    expect(result.success).toBe(true);
+    expect(result.done).toBe(true);
+    // computeEventUsage was removed — usage computation is no longer triggered
+    // automatically inside scrapeRk9TeamsBatch.
+    expect(mockComputeEventUsage).not.toHaveBeenCalled();
+  });
+
+  it("does NOT re-fire computeEventUsage on a redundant re-tick when all standings were already attempted", async () => {
+    // All standings already have team_scrape_attempted_at set → toProcess is
+    // empty → the action enters the early-return completion block.
+    // alreadyScraped === total so the transition guard prevents re-firing.
+    const attemptedAt = new Date().toISOString();
+    standingsChain = makeChain(() => ({
+      data: [
+        {
+          id: 1,
+          roster_entry_id: "r1",
+          team_scrape_attempted_at: attemptedAt,
+        },
+        {
+          id: 2,
+          roster_entry_id: "r2",
+          team_scrape_attempted_at: attemptedAt,
+        },
+      ],
+      error: null,
+    }));
+    teamPokemonChain = makeChain(() => ({ data: [], error: null }));
+    eventsUpdateChain = makeChain(() => ({ data: null, error: null }));
+
+    const { scrapeRk9TeamsBatch } = await import("../rk9");
+    const result = await scrapeRk9TeamsBatch("EVT001", { force: false });
+
+    expect(result.success).toBe(true);
+    expect(result.done).toBe(true);
+    // Guard: alreadyScraped === total means no work happened this tick →
+    // computeEventUsage must NOT be called (already settled event, avoid recompute).
+    expect(mockComputeEventUsage).not.toHaveBeenCalled();
   });
 });
 

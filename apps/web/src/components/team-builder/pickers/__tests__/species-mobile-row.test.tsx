@@ -163,6 +163,60 @@ describe("SpeciesMobileRow", () => {
     expect(screen.getByText("Protean")).toBeInTheDocument();
   });
 
+  describe("USG display", () => {
+    it("renders nothing usage-related when usagePct is undefined", () => {
+      render(
+        <SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />
+      );
+      // No chip testid, no USG label, no dash placeholder
+      expect(
+        screen.queryByTestId("usg-mobile-Garchomp-Mega")
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText("USG")).not.toBeInTheDocument();
+    });
+
+    it("renders nothing usage-related when usagePct is 0", () => {
+      render(
+        <SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} usagePct={0} />
+      );
+      expect(
+        screen.queryByTestId("usg-mobile-Garchomp-Mega")
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText("USG")).not.toBeInTheDocument();
+    });
+
+    it("renders the formatted percentage chip on the name line when usagePct is > 0", () => {
+      render(
+        <SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} usagePct={52.3} />
+      );
+      const chip = screen.getByTestId("usg-mobile-Garchomp-Mega");
+      expect(chip).toHaveTextContent("52.3%");
+      // Chip must be a sibling of the type icons, not in the stat strip
+      expect(chip.closest("span")).toHaveClass("tabular-nums");
+    });
+
+    it("renders one decimal place for a round percentage", () => {
+      render(
+        <SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} usagePct={30} />
+      );
+      expect(
+        screen.getByTestId("usg-mobile-Garchomp-Mega")
+      ).toHaveTextContent("30.0%");
+    });
+
+    it("does not render a USG label on the stat strip", () => {
+      render(
+        <SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} usagePct={15.7} />
+      );
+      // The stat strip no longer has a "USG" text label
+      expect(screen.queryByText("USG")).not.toBeInTheDocument();
+      // But the chip itself is still present on the name line
+      expect(
+        screen.getByTestId("usg-mobile-Garchomp-Mega")
+      ).toHaveTextContent("15.7%");
+    });
+  });
+
   describe("expand / collapse", () => {
     it("shows the expand button with aria-expanded=false initially", () => {
       render(<SpeciesMobileRow entry={baseEntry} onPick={jest.fn()} formatId={FORMAT_ID} />);

@@ -12,6 +12,8 @@ import {
 
 import { cn } from "@/lib/utils";
 
+import { UsageSparkline } from "../usage-sparkline";
+import { useUsageData } from "../use-usage-data";
 import { PickerShell } from "./picker-shell";
 
 // =============================================================================
@@ -27,12 +29,34 @@ interface AbilityPickerProps {
 }
 
 // =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * Normalize an ability name to a comparison key.
+ *
+ * DB ability values may differ in casing or separators from the builder's
+ * internal ability names (e.g. "Rough Skin" vs "rough-skin"). Lowercasing and
+ * stripping spaces, hyphens, and apostrophes produces a canonical key.
+ */
+function normalizeAbilityKey(name: string): string {
+  return name.toLowerCase().replace(/[\s\-']/g, "");
+}
+
+type AbilityUsageEntry = { currentPct: number; series: number[] };
+
+// =============================================================================
 // AbilityPicker
 // =============================================================================
 
 /**
  * Ability picker scoped to species-legal abilities in the given format.
  * Shows short descriptions under each ability name.
+ *
+ * When usage data is available (via `useUsageData`), also shows a usage %
+ * label and sparkline on each row, and auto-sorts abilities by descending
+ * latest usage % (unknown/0 last), falling back to the original order when
+ * no usage data is present. Reuses the same map-building pattern as ItemPicker.
  */
 export function AbilityPicker({
   value,
@@ -43,7 +67,44 @@ export function AbilityPicker({
 }: AbilityPickerProps) {
   const [search, setSearch] = useState("");
 
+  // ---------------------------------------------------------------------------
+  // Usage data — fetch rollup for this species + format.
+  // Build a normalized map: abilityKey → { currentPct, series }.
+  // ---------------------------------------------------------------------------
+
+  const { data: usagePeriods } = useUsageData(species || undefined, format);
+
+  const usageMap = new Map<string, AbilityUsageEntry>();
+  if (usagePeriods && usagePeriods.length > 0) {
+    // Build a per-period lookup so absent abilities get 0 (not stale) in their
+    // series. Sparse push-based accumulation would leave the last-seen value in
+    // place for abilities that drop out of later periods.
+    const perPeriod = usagePeriods.map((period) => {
+      const periodMap = new Map<string, number>();
+      for (const ability of period.abilities) {
+        periodMap.set(normalizeAbilityKey(ability.value), ability.pct);
+      }
+      return periodMap;
+    });
+
+    const allKeys = new Set<string>();
+    for (const periodMap of perPeriod) {
+      for (const key of periodMap.keys()) allKeys.add(key);
+    }
+
+    for (const key of allKeys) {
+      const series = perPeriod.map((periodMap) => periodMap.get(key) ?? 0);
+      const currentPct = series[series.length - 1] ?? 0;
+      usageMap.set(key, { currentPct, series });
+    }
+  }
+
+  const hasUsageData = usageMap.size > 0;
+
+  // ---------------------------------------------------------------------------
   // Format-legal abilities with graceful fallback to species abilities
+  // ---------------------------------------------------------------------------
+
   const abilities = format
     ? Array.from(
         legalSetOrPermissive(getLegalAbilities(species, format.id)) ??
@@ -51,9 +112,24 @@ export function AbilityPicker({
       )
     : getValidAbilities(species);
 
+  // ---------------------------------------------------------------------------
+  // Search + sort pipeline
+  // ---------------------------------------------------------------------------
+
   const filtered = abilities.filter((a) =>
     a.toLowerCase().includes(search.toLowerCase())
   );
+
+  // When usage data is present, sort descending by latest usage % (unknown/0
+  // last). Falls back to original list order when no usage data is available.
+  const sorted = hasUsageData
+    ? [...filtered].sort((a, b) => {
+        const au = usageMap.get(normalizeAbilityKey(a))?.currentPct ?? 0;
+        const bu = usageMap.get(normalizeAbilityKey(b))?.currentPct ?? 0;
+        if (bu !== au) return bu - au; // higher usage first
+        return a.localeCompare(b); // tie-break alphabetically
+      })
+    : filtered;
 
   return (
     <PickerShell
@@ -68,9 +144,12 @@ export function AbilityPicker({
     >
       {/* Ability list */}
       <div className="max-h-48 overflow-y-auto p-1">
-        {filtered.map((ability) => {
+        {sorted.map((ability) => {
           const desc = getAbilityShortDesc(ability);
           const isSelected = ability === value;
+          const usageEntry = usageMap.get(normalizeAbilityKey(ability));
+          const usagePct = usageEntry?.currentPct;
+          const usageSeries = usageEntry?.series;
 
           return (
             <button
@@ -86,14 +165,36 @@ export function AbilityPicker({
                 isSelected && "bg-accent text-accent-foreground"
               )}
             >
-              <span
-                className={cn(
-                  "text-sm font-medium",
-                  isSelected && "font-semibold"
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span
+                  className={cn(
+                    "min-w-0 flex-1 text-sm font-medium",
+                    isSelected && "font-semibold"
+                  )}
+                >
+                  {ability}
+                </span>
+                {/* Usage % — tabular-nums, muted when 0/unknown */}
+                {hasUsageData && (
+                  <span
+                    className={cn(
+                      "shrink-0 font-mono text-xs tabular-nums",
+                      usagePct != null && usagePct > 0
+                        ? "text-foreground"
+                        : "text-muted-foreground/40"
+                    )}
+                  >
+                    {usagePct != null && usagePct > 0 ? `${usagePct}%` : "—"}
+                  </span>
                 )}
-              >
-                {ability}
-              </span>
+                {/* Sparkline — only when there are ≥2 data points */}
+                {usageSeries && usageSeries.length >= 2 && (
+                  <UsageSparkline
+                    points={usageSeries}
+                    ariaLabel={`${ability} usage trend`}
+                  />
+                )}
+              </div>
               {desc && (
                 <span className="text-muted-foreground mt-0.5 text-xs leading-tight">
                   {desc}
@@ -103,7 +204,7 @@ export function AbilityPicker({
           );
         })}
 
-        {filtered.length === 0 && (
+        {sorted.length === 0 && (
           <p className="text-muted-foreground py-4 text-center text-sm">
             No abilities found
           </p>

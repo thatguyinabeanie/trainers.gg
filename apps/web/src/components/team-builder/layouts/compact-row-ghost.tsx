@@ -140,7 +140,7 @@ function BannerGhost() {
 function StatsGhost() {
   // Match the StatsLane null branch grid (without IV / without calc — sane default)
   const rowGrid =
-    "grid grid-cols-[40px_30px_minmax(30px,0.8fr)_40px_minmax(60px,1.6fr)_36px] gap-1.5 items-center px-1 py-0.5 rounded";
+    "grid grid-cols-[2.5rem_1.875rem_minmax(1.875rem,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem] gap-1.5 items-center px-1 py-0.5 rounded";
   return (
     <div className="border-border/60 flex min-w-0 flex-1 flex-col justify-center gap-0.5 border-r border-dashed px-3 py-1">
       <div className={cn("mb-0.5", rowGrid)}>
@@ -168,6 +168,7 @@ function StatsGhost() {
           <div className="bg-muted relative h-2 min-w-0 overflow-hidden rounded-full" />
           <div className="border-border/30 h-5 w-9 rounded border border-dashed" />
           <div className="relative h-3.5">
+            {/* h-[3px]: 3px hairline slider track ghost — no Tailwind scale token */}
             <div className="bg-muted-foreground/40 pointer-events-none absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full opacity-25" />
           </div>
           <span className="text-muted-foreground/25 text-right font-mono text-xs font-bold tabular-nums">
@@ -184,7 +185,7 @@ function MovesGhost() {
     <div className="flex min-w-0 flex-1 flex-col px-3 py-1">
       <div className="flex flex-col gap-1">
         {/* Header row */}
-        <div className="grid grid-cols-[24px_32px_1fr_44px_48px] items-center gap-1 pb-0.5">
+        <div className="grid grid-cols-[1.5rem_2rem_1fr_2.75rem_3rem] items-center gap-1 pb-0.5">
           <span />
           <span />
           <span className="text-muted-foreground/30 text-xs font-medium tracking-[0.04em] uppercase">
@@ -201,7 +202,7 @@ function MovesGhost() {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="grid grid-cols-[24px_32px_1fr_44px_48px] items-center gap-1 px-1 py-1"
+            className="grid grid-cols-[1.5rem_2rem_1fr_2.75rem_3rem] items-center gap-1 px-1 py-1"
           >
             <span />
             <span />

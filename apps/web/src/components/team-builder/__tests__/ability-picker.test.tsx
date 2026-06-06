@@ -19,6 +19,30 @@ jest.mock("@trainers/pokemon", () => ({
   getAbilityShortDesc: (...args: unknown[]) => mockGetAbilityShortDesc(...args),
 }));
 
+// =============================================================================
+// Mock useUsageData — ability-picker now calls this hook; return empty by default
+// so existing tests are unaffected. Override per-test when testing usage.
+// =============================================================================
+
+const mockUseUsageData = jest.fn();
+
+jest.mock("../use-usage-data", () => ({
+  useUsageData: (...args: unknown[]) => mockUseUsageData(...args),
+}));
+
+// =============================================================================
+// Mock UsageSparkline — recharts + ResizeObserver not available in JSDOM.
+// =============================================================================
+
+jest.mock("../usage-sparkline", () => ({
+  UsageSparkline: ({ ariaLabel }: { ariaLabel?: string }) => (
+    <span
+      data-testid="usage-sparkline"
+      aria-label={ariaLabel ?? "Usage trend"}
+    />
+  ),
+}));
+
 import { AbilityPicker } from "../pickers/ability-picker";
 import { type GameFormat } from "@trainers/pokemon";
 
@@ -53,6 +77,8 @@ describe("AbilityPicker", () => {
       if (ability === "Sand Veil") return "Raises evasion in sandstorm.";
       return undefined;
     });
+    // Default: no usage data
+    mockUseUsageData.mockReturnValue({ data: undefined });
   });
 
   // ---------------------------------------------------------------------------
@@ -242,5 +268,231 @@ describe("AbilityPicker", () => {
     await user.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onPick).not.toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Usage data display
+  // ---------------------------------------------------------------------------
+
+  describe("usage data", () => {
+    const format = makeMockFormat();
+
+    /** Build a minimal SpeciesUsagePeriod-shaped object for testing. */
+    function makeUsagePeriod(
+      abilities: Array<{ value: string; pct: number }>
+    ) {
+      return {
+        period: "2024-01",
+        total_battles: 1000,
+        moves: [],
+        items: [],
+        tera: [],
+        natures: [],
+        abilities: abilities.map((a) => ({
+          value: a.value,
+          count: a.pct * 10,
+          pct: a.pct,
+        })),
+      };
+    }
+
+    it("shows usage % when usage data is present for an ability", () => {
+      mockUseUsageData.mockReturnValue({
+        data: [makeUsagePeriod([{ value: "Rough Skin", pct: 72 }])],
+      });
+
+      render(
+        <AbilityPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(screen.getByText("72%")).toBeInTheDocument();
+    });
+
+    it("shows '—' for abilities with no usage data when usage data exists for others", () => {
+      // Rough Skin has data; Sand Veil and Sand Force show '—'
+      mockUseUsageData.mockReturnValue({
+        data: [makeUsagePeriod([{ value: "Rough Skin", pct: 72 }])],
+      });
+
+      render(
+        <AbilityPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      // Sand Veil and Sand Force have no usage data → muted "—"
+      const dashes = screen.getAllByText("—");
+      expect(dashes.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("does not render usage % column when no usage data is available", () => {
+      mockUseUsageData.mockReturnValue({ data: [] });
+
+      render(
+        <AbilityPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      // No "%" text should appear (hasUsageData is false)
+      expect(screen.queryByText(/^\d+%$/)).not.toBeInTheDocument();
+    });
+
+    it("renders sparklines for abilities with ≥2 usage period data points", () => {
+      // Two periods → UsageSparkline should render
+      mockUseUsageData.mockReturnValue({
+        data: [
+          makeUsagePeriod([{ value: "Rough Skin", pct: 60 }]),
+          makeUsagePeriod([{ value: "Rough Skin", pct: 72 }]),
+        ],
+      });
+
+      render(
+        <AbilityPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(screen.getByTestId("usage-sparkline")).toBeInTheDocument();
+    });
+
+    it("does NOT render sparkline when only 1 usage period is present", () => {
+      mockUseUsageData.mockReturnValue({
+        data: [makeUsagePeriod([{ value: "Rough Skin", pct: 72 }])],
+      });
+
+      render(
+        <AbilityPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      expect(screen.queryByTestId("usage-sparkline")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Usage-based sorting
+  // ---------------------------------------------------------------------------
+
+  describe("usage-based sorting", () => {
+    const format = makeMockFormat();
+
+    function makeUsagePeriod(
+      abilities: Array<{ value: string; pct: number }>
+    ) {
+      return {
+        period: "2024-01",
+        total_battles: 1000,
+        moves: [],
+        items: [],
+        tera: [],
+        natures: [],
+        abilities: abilities.map((a) => ({
+          value: a.value,
+          count: a.pct * 10,
+          pct: a.pct,
+        })),
+      };
+    }
+
+    it("sorts abilities by descending usage % when usage data is present", () => {
+      // Rough Skin: 72%, Sand Veil: 20%, Sand Force: 8%
+      mockUseUsageData.mockReturnValue({
+        data: [
+          makeUsagePeriod([
+            { value: "Rough Skin", pct: 72 },
+            { value: "Sand Veil", pct: 20 },
+            { value: "Sand Force", pct: 8 },
+          ]),
+        ],
+      });
+
+      render(
+        <AbilityPicker
+          value={null}
+          species="Garchomp"
+          format={format}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      // The buttons inside the picker list (excluding Close)
+      const buttons = screen
+        .getAllByRole("button")
+        .filter((b) => b.getAttribute("aria-label") !== "Close");
+      const names = buttons.map((b) => {
+        // First line of the button text is the ability name
+        const text = b.textContent ?? "";
+        for (const ability of GARCHOMP_ABILITIES) {
+          if (text.includes(ability)) return ability;
+        }
+        return "";
+      });
+      const roughIdx = names.findIndex((n) => n === "Rough Skin");
+      const veilIdx = names.findIndex((n) => n === "Sand Veil");
+      const forceIdx = names.findIndex((n) => n === "Sand Force");
+      expect(roughIdx).toBeLessThan(veilIdx);
+      expect(veilIdx).toBeLessThan(forceIdx);
+    });
+
+    it("preserves original list order when no usage data is available", () => {
+      mockGetValidAbilities.mockReturnValue([
+        "Sand Veil",
+        "Rough Skin",
+        "Sand Force",
+      ]);
+      mockUseUsageData.mockReturnValue({ data: undefined });
+
+      render(
+        <AbilityPicker
+          value={null}
+          species="Garchomp"
+          format={undefined}
+          onPick={jest.fn()}
+          onClose={jest.fn()}
+        />
+      );
+
+      const buttons = screen
+        .getAllByRole("button")
+        .filter((b) => b.getAttribute("aria-label") !== "Close");
+      const names = buttons.map((b) => {
+        const text = b.textContent ?? "";
+        for (const ability of ["Sand Veil", "Rough Skin", "Sand Force"]) {
+          if (text.includes(ability)) return ability;
+        }
+        return "";
+      });
+      const veilIdx = names.findIndex((n) => n === "Sand Veil");
+      const roughIdx = names.findIndex((n) => n === "Rough Skin");
+      const forceIdx = names.findIndex((n) => n === "Sand Force");
+      // Original order: Sand Veil, Rough Skin, Sand Force
+      expect(veilIdx).toBeLessThan(roughIdx);
+      expect(roughIdx).toBeLessThan(forceIdx);
+    });
   });
 });

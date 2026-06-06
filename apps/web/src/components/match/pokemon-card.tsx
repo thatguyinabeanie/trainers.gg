@@ -4,6 +4,35 @@ import { TypeSprite } from "@/components/tournament/type-sprite";
 import { getTypeStyle } from "@/lib/pokemon/type-colors";
 import { cn } from "@/lib/utils";
 
+// Raw DB nature values mapped to their display labels.
+const NATURE_LABELS: Record<string, string> = {
+  hardy: "Hardy",
+  lonely: "Lonely",
+  brave: "Brave",
+  adamant: "Adamant",
+  naughty: "Naughty",
+  bold: "Bold",
+  docile: "Docile",
+  relaxed: "Relaxed",
+  impish: "Impish",
+  lax: "Lax",
+  timid: "Timid",
+  hasty: "Hasty",
+  serious: "Serious",
+  jolly: "Jolly",
+  naive: "Naive",
+  modest: "Modest",
+  mild: "Mild",
+  quiet: "Quiet",
+  bashful: "Bashful",
+  rash: "Rash",
+  calm: "Calm",
+  gentle: "Gentle",
+  sassy: "Sassy",
+  careful: "Careful",
+  quirky: "Quirky",
+};
+
 export interface PokemonData {
   species: string;
   nickname: string | null;
@@ -150,6 +179,13 @@ export function PokemonCard({ pokemon, className }: PokemonCardProps) {
         >
           {pokemon.ability}
         </div>
+
+        {/* Nature (stat alignment) — only shown when present (Champions formats) */}
+        {pokemon.nature ? (
+          <div className="text-primary text-[11px] font-medium">
+            {NATURE_LABELS[pokemon.nature.toLowerCase()] ?? pokemon.nature}
+          </div>
+        ) : null}
 
         {/* Held item — always rendered for consistent height */}
         <div className="flex items-center gap-1">

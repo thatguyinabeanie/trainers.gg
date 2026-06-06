@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 
-import { getValidNatures, NATURE_EFFECTS } from "@trainers/pokemon";
+import { getValidNatures, NATURE_EFFECTS, type GameFormat, isChampionsFormat } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 
+import { UsageSparkline } from "../usage-sparkline";
+import { useUsageData } from "../use-usage-data";
 import { type StatKey, STAT_LABELS } from "../stat-types";
 import { PickerShell } from "./picker-shell";
 
@@ -15,9 +17,15 @@ import { PickerShell } from "./picker-shell";
 
 interface NaturePickerProps {
   value: string;
+  /** Optional — when provided, enables usage % display per nature. */
+  species?: string | undefined;
+  /** Optional — when provided alongside species, fetches per-format usage. */
+  format?: GameFormat | undefined;
   onPick: (nature: string) => void;
   onClose: () => void;
 }
+
+type NatureUsageEntry = { currentPct: number; series: number[] };
 
 interface NatureGroup {
   label: string;
@@ -43,7 +51,27 @@ const BOOST_GROUP_ORDER: StatKey[] = [
 // Helpers
 // =============================================================================
 
-function buildGroups(natures: string[]): NatureGroup[] {
+/**
+ * Normalize a nature name to a comparison key.
+ *
+ * DB nature values may differ in casing from the builder's internal nature
+ * names. Lowercasing produces a canonical key for both sides.
+ */
+function normalizeNatureKey(name: string): string {
+  return name.toLowerCase();
+}
+
+/**
+ * @param natures - Nature names to group. Filtered for visibility and grouped
+ *   by boost stat.
+ * @param preserveOrder - When true, the natures within each group retain the
+ *   input order (used when the caller has already sorted by usage %). When
+ *   false (default), each group is sorted alphabetically.
+ */
+function buildGroups(
+  natures: string[],
+  preserveOrder = false
+): NatureGroup[] {
   const visible = natures.filter((n) => !HIDDEN_NEUTRAL_NATURES.has(n));
   const neutrals: string[] = [];
   const byBoost = new Map<StatKey, string[]>();
@@ -59,13 +87,16 @@ function buildGroups(natures: string[]): NatureGroup[] {
     byBoost.set(effect.boost, list);
   }
 
+  const sortOrKeep = (list: string[]) =>
+    preserveOrder ? list.slice() : list.slice().sort((a, b) => a.localeCompare(b));
+
   const groups: NatureGroup[] = [];
 
   if (neutrals.length > 0) {
     groups.push({
       label: "Neutral",
       boost: null,
-      natures: neutrals.slice().sort((a, b) => a.localeCompare(b)),
+      natures: sortOrKeep(neutrals),
     });
   }
 
@@ -75,7 +106,7 @@ function buildGroups(natures: string[]): NatureGroup[] {
     groups.push({
       label: `+ ${STAT_LABELS[stat]}`,
       boost: stat,
-      natures: list.slice().sort((a, b) => a.localeCompare(b)),
+      natures: sortOrKeep(list),
     });
   }
 
@@ -89,26 +120,96 @@ function buildGroups(natures: string[]): NatureGroup[] {
 /**
  * Searchable nature picker grouped by boost stat.
  * Shows only Serious for neutral (hides the 4 redundant Hardy/Docile/etc.).
+ *
+ * When optional `species` and `format` are provided, fetches per-Pokemon nature
+ * usage rollups (via `useUsageData`) and:
+ *   - Shows a usage % label and sparkline (when ≥2 periods) on each row.
+ *   - Within each group, re-sorts natures by descending latest usage % (0 last),
+ *     falling back to alphabetical order when no usage data is available.
+ *
+ * Nature usage data is currently sparse (only RK9 Champions), so most natures
+ * will show 0/unknown — rendered gracefully as a muted dash.
  */
-export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
+export function NaturePicker({
+  value,
+  species,
+  format,
+  onPick,
+  onClose,
+}: NaturePickerProps) {
   const [search, setSearch] = useState("");
+
+  // ---------------------------------------------------------------------------
+  // Usage data — fetch rollup for this species + format.
+  // Build a normalized map: natureKey → { currentPct, series }.
+  // ---------------------------------------------------------------------------
+
+  const { data: usagePeriods } = useUsageData(species, format);
+
+  const usageMap = new Map<string, NatureUsageEntry>();
+  if (usagePeriods && usagePeriods.length > 0) {
+    // Build a per-period lookup so absent natures get 0 (not stale) in their
+    // series. Sparse push-based accumulation would leave the last-seen value in
+    // place for natures that drop out of later periods.
+    const perPeriod = usagePeriods.map((period) => {
+      const periodMap = new Map<string, number>();
+      for (const nature of period.natures) {
+        periodMap.set(normalizeNatureKey(nature.value), nature.pct);
+      }
+      return periodMap;
+    });
+
+    const allKeys = new Set<string>();
+    for (const periodMap of perPeriod) {
+      for (const key of periodMap.keys()) allKeys.add(key);
+    }
+
+    for (const key of allKeys) {
+      const series = perPeriod.map((periodMap) => periodMap.get(key) ?? 0);
+      const currentPct = series[series.length - 1] ?? 0;
+      usageMap.set(key, { currentPct, series });
+    }
+  }
+
+  const hasUsageData = usageMap.size > 0;
+
+  // ---------------------------------------------------------------------------
+  // Search + sort pipeline
+  // ---------------------------------------------------------------------------
 
   const allNatures = getValidNatures();
   const filtered = allNatures.filter((n) =>
     n.toLowerCase().includes(search.toLowerCase())
   );
-  const groups = buildGroups(filtered);
+
+  // When usage data is present, re-sort within groups by descending usage %.
+  // buildGroups already applies alphabetical sort within each group; we
+  // override that sort here so high-usage natures bubble up.
+  const sortedForGroups = hasUsageData
+    ? [...filtered].sort((a, b) => {
+        const au = usageMap.get(normalizeNatureKey(a))?.currentPct ?? 0;
+        const bu = usageMap.get(normalizeNatureKey(b))?.currentPct ?? 0;
+        if (bu !== au) return bu - au; // higher usage first
+        return a.localeCompare(b); // tie-break alphabetically
+      })
+    : filtered;
+
+  // Pass preserveOrder=true when usage-sorted so buildGroups doesn't re-sort
+  // alphabetically and undo the usage-based ordering.
+  const groups = buildGroups(sortedForGroups, hasUsageData);
 
   function handleSelect(nature: string) {
     onPick(nature);
     onClose();
   }
 
+  const pickerTitle = isChampionsFormat(format) ? "Stat Alignment" : "Nature";
+
   return (
     <PickerShell
-      title="Nature"
+      title={pickerTitle}
       onClose={onClose}
-      width="420px"
+      width="420px" // API-bound inline style prop to PickerShell; 420px has no Tailwind scale equivalent (max-w-md=448, max-w-sm=384)
       search={{
         value: search,
         onChange: setSearch,
@@ -116,6 +217,7 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
       }}
     >
       {/* Grouped list */}
+      {/* max-h-[520px]: scroll cap for grouped nature list; 520px has no Tailwind scale token */}
       <div className="max-h-[520px] overflow-y-auto p-1">
         {groups.map((group) => (
           <div key={group.label} className="flex flex-col">
@@ -126,6 +228,9 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
               const effect = NATURE_EFFECTS[nature];
               const isNeutral = !effect?.boost;
               const isSelected = nature === value;
+              const usageEntry = usageMap.get(normalizeNatureKey(nature));
+              const usagePct = usageEntry?.currentPct;
+              const usageSeries = usageEntry?.series;
 
               return (
                 <button
@@ -142,6 +247,7 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
                     {nature}
                   </span>
                   <span className="flex items-center gap-1 font-mono text-xs">
+                    {/* Boost/reduce stat badges */}
                     {isNeutral ? (
                       <span className="text-muted-foreground">—</span>
                     ) : (
@@ -157,6 +263,28 @@ export function NaturePicker({ value, onPick, onClose }: NaturePickerProps) {
                           </span>
                         )}
                       </>
+                    )}
+                    {/* Usage % — tabular-nums, muted when 0/unknown */}
+                    {hasUsageData && (
+                      <span
+                        className={cn(
+                          "tabular-nums",
+                          usagePct != null && usagePct > 0
+                            ? "text-foreground"
+                            : "text-muted-foreground/40"
+                        )}
+                      >
+                        {usagePct != null && usagePct > 0
+                          ? `${usagePct}%`
+                          : "—"}
+                      </span>
+                    )}
+                    {/* Sparkline — only when there are ≥2 data points */}
+                    {usageSeries && usageSeries.length >= 2 && (
+                      <UsageSparkline
+                        points={usageSeries}
+                        ariaLabel={`${nature} usage trend`}
+                      />
                     )}
                   </span>
                 </button>

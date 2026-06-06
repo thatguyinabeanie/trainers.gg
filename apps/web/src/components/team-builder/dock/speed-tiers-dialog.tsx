@@ -89,6 +89,7 @@ export function SpeedTiersDialog(props: SpeedTiersDialogProps) {
       <Drawer open={props.open} onOpenChange={props.onOpenChange}>
         <DrawerContent
           showHandle={false}
+          // rounded-t-[20px]: 20px sits between rounded-2xl (16px) and rounded-3xl (24px) — no clean scale token
           className="data-[vaul-drawer-direction=bottom]:max-h-[95dvh] h-[95dvh] overflow-hidden rounded-t-[20px] p-0"
         >
           <DrawerTitle className="sr-only">Speed tiers</DrawerTitle>
@@ -113,6 +114,7 @@ export function SpeedTiersDialog(props: SpeedTiersDialogProps) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent
         showCloseButton={false}
+        // max-w-[1100px]: dialog viewport cap — no Tailwind scale token at this size
         className="ring-primary/50 flex h-[min(calc(100vh-2rem),1000px)] w-[calc(100vw-2rem)] max-w-[1100px] flex-col gap-0 overflow-hidden rounded-xl p-0 ring-2 sm:max-w-[1100px]"
       >
         <DialogTitle className="sr-only">Speed tiers</DialogTitle>

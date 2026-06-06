@@ -1242,6 +1242,48 @@ export type Database = {
         }
         Relationships: []
       }
+      event_usage: {
+        Row: {
+          computed_at: string
+          details: Json
+          division: string | null
+          event_date: string
+          event_key: string
+          format: string
+          id: number
+          sample_size: number
+          source: string
+          species: string
+          team_count: number
+        }
+        Insert: {
+          computed_at?: string
+          details?: Json
+          division?: string | null
+          event_date: string
+          event_key: string
+          format: string
+          id?: never
+          sample_size: number
+          source: string
+          species: string
+          team_count: number
+        }
+        Update: {
+          computed_at?: string
+          details?: Json
+          division?: string | null
+          event_date?: string
+          event_key?: string
+          format?: string
+          id?: never
+          sample_size?: number
+          source?: string
+          species?: string
+          team_count?: number
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           created_at: string
@@ -1365,6 +1407,8 @@ export type Database = {
           id: number
           period_end: string
           period_start: string
+          period_type: string
+          source: string
           total_teams: number
           total_tournaments: number
         }
@@ -1374,6 +1418,8 @@ export type Database = {
           id?: never
           period_end: string
           period_start: string
+          period_type?: string
+          source?: string
           total_teams: number
           total_tournaments: number
         }
@@ -1383,6 +1429,8 @@ export type Database = {
           id?: never
           period_end?: string
           period_start?: string
+          period_type?: string
+          source?: string
           total_teams?: number
           total_tournaments?: number
         }
@@ -1961,10 +2009,12 @@ export type Database = {
       pokemon_detail_stats: {
         Row: {
           abilities: Json
+          ability_items: Json
           id: number
           items: Json
           meta_id: number
           moves: Json
+          natures: Json
           species: string
           spreads: Json
           teammates: Json
@@ -1972,10 +2022,12 @@ export type Database = {
         }
         Insert: {
           abilities?: Json
+          ability_items?: Json
           id?: never
           items?: Json
           meta_id: number
           moves?: Json
+          natures?: Json
           species: string
           spreads?: Json
           teammates?: Json
@@ -1983,10 +2035,12 @@ export type Database = {
         }
         Update: {
           abilities?: Json
+          ability_items?: Json
           id?: never
           items?: Json
           meta_id?: number
           moves?: Json
+          natures?: Json
           species?: string
           spreads?: Json
           teammates?: Json
@@ -3180,6 +3234,7 @@ export type Database = {
           move2: string | null
           move3: string | null
           move4: string | null
+          nature: string | null
           position: number
           registration_id: number
           species: string
@@ -3198,6 +3253,7 @@ export type Database = {
           move2?: string | null
           move3?: string | null
           move4?: string | null
+          nature?: string | null
           position: number
           registration_id: number
           species: string
@@ -3216,6 +3272,7 @@ export type Database = {
           move2?: string | null
           move3?: string | null
           move4?: string | null
+          nature?: string | null
           position?: number
           registration_id?: number
           species?: string
@@ -3509,6 +3566,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      usage_dirty: {
+        Row: {
+          dirty_since: string
+          format: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          dirty_since: string
+          format: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          dirty_since?: string
+          format?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_group_roles: {
         Row: {

@@ -140,3 +140,11 @@ export {
   markChannelEmailSent,
   recordDeliveryFailure,
 } from "./discord";
+
+// Usage stats mutations
+export {
+  computeEventUsage,
+  computeUsageRollups,
+  computeSourceUsage,
+  type UsageSource,
+} from "./usage";

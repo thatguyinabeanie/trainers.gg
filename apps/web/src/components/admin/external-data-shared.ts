@@ -1,5 +1,61 @@
-// Shared types for external-data.tsx and expanded-row-data.tsx.
-// Kept in a dedicated file to avoid a sibling import cycle.
+// Shared types for external-data.tsx, external-data-filters.tsx, and
+// expanded-row-data.tsx. Kept in a dedicated file to avoid sibling import
+// cycles.
+
+// ---------------------------------------------------------------------------
+// Filter helper types
+// ---------------------------------------------------------------------------
+
+export type PlatformFilter = "all" | "SWITCH" | "SIM";
+export type HasDataFilter = "all" | "yes" | "no";
+
+// ---------------------------------------------------------------------------
+// Per-tab filter state
+// ---------------------------------------------------------------------------
+
+export interface RK9FilterState {
+  search: string;
+  tier: string;
+  status: string;
+  country: string;
+  dateFrom: string;
+  dateTo: string;
+  minPlayers: string;
+  hasData: HasDataFilter;
+}
+
+export interface LimitlessFilterState {
+  search: string;
+  format: string;
+  status: string;
+  platform: PlatformFilter;
+  dateFrom: string;
+  dateTo: string;
+  minPlayers: string;
+  hasData: HasDataFilter;
+}
+
+export const INITIAL_RK9_FILTERS: RK9FilterState = {
+  search: "",
+  tier: "all",
+  status: "all",
+  country: "all",
+  dateFrom: "",
+  dateTo: "",
+  minPlayers: "",
+  hasData: "all",
+};
+
+export const INITIAL_LIMITLESS_FILTERS: LimitlessFilterState = {
+  search: "",
+  format: "all",
+  status: "all",
+  platform: "all",
+  dateFrom: "",
+  dateTo: "",
+  minPlayers: "",
+  hasData: "all",
+};
 
 export interface RK9EventRow {
   event_id: string;
@@ -52,5 +108,47 @@ export interface UnifiedRow {
   // Source-specific extras
   rk9?: RK9EventRow;
   limitless?: LimitlessTournamentRow;
+}
+
+// ---------------------------------------------------------------------------
+// Bulk-action selectors — operate on a row list (already filtered by the
+// caller) and return the native source ids eligible for each bulk action.
+// Keeping these pure makes the filter-aware bulk logic unit-testable.
+// ---------------------------------------------------------------------------
+
+/** Limitless tournament_ids eligible to queue: never-queued (null) or failed. */
+export function queueableIds(rows: UnifiedRow[]): string[] {
+  return rows
+    .filter(
+      (r) =>
+        r.source === "limitless" &&
+        r.limitless != null &&
+        (!r.limitless.import_status || r.limitless.import_status === "failed")
+    )
+    .map((r) => r.limitless!.tournament_id);
+}
+
+/** RK9 event_ids eligible for a roster scrape: pending or failed. */
+export function rosterEligibleIds(rows: UnifiedRow[]): string[] {
+  return rows
+    .filter(
+      (r) =>
+        r.source === "rk9" &&
+        r.rk9 != null &&
+        (r.rk9.import_status === "pending" || r.rk9.import_status === "failed")
+    )
+    .map((r) => r.rk9!.event_id);
+}
+
+/** RK9 event_ids eligible for a teams scrape: roster, teams, or complete. */
+export function teamsEligibleIds(rows: UnifiedRow[]): string[] {
+  return rows
+    .filter(
+      (r) =>
+        r.source === "rk9" &&
+        r.rk9 != null &&
+        ["roster", "teams", "complete"].includes(r.rk9.import_status)
+    )
+    .map((r) => r.rk9!.event_id);
 }
 

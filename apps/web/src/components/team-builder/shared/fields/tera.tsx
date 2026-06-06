@@ -43,6 +43,8 @@ export function TeraCell({
   const picker = (
     <TypePicker
       value={pokemon.tera_type}
+      species={pokemon.species ?? undefined}
+      format={format}
       onPick={(type) => onUpdate({ tera_type: type })}
       onClose={() => setOpen(false)}
     />

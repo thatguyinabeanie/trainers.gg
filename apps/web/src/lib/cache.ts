@@ -98,4 +98,16 @@ export const CacheTags = {
 
   /** Tag for a specific coach profile page */
   coachProfile: (handle: string) => `coach-profile:${handle}`,
+
+  /**
+   * Tag for pokemon usage stats — covers all format/source/period combinations.
+   * Invalidated when the usage rollup worker writes new data.
+   */
+  USAGE_STATS: "usage-stats",
+
+  /**
+   * Generate a tag for a specific format's usage stats.
+   * Allows targeted invalidation when only one format's rollup completes.
+   */
+  usageStats: (format: string) => `usage-stats:${format}`,
 } as const;
