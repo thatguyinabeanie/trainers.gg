@@ -77,7 +77,8 @@ describe("UsageExplorer", () => {
       </Wrapper>
     );
     // The component mounted — spot-check a stable element from UsageControls
-    expect(screen.getByText(/Highlight/i)).toBeInTheDocument();
+    // Use getAllByText since "Highlight" appears as both a label and aria-label
+    expect(screen.getAllByText(/Highlight/i).length).toBeGreaterThan(0);
   });
 
   it("renders the stream chart placeholder", () => {
