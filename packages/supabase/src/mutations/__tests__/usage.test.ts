@@ -528,6 +528,91 @@ describe("computeUsageRollups — no event_usage rows (empty result)", () => {
 });
 
 // =============================================================================
+// computeUsageRollups — write path
+// =============================================================================
+
+describe("computeUsageRollups — write path (non-empty event_usage)", () => {
+  it("writes format_meta_stats + pokemon rows and returns bucketsWritten=1", async () => {
+    // One dirty row for rk9. rk9/day returns one real event_usage row →
+    // triggers the full write path. All other period/source combos are empty.
+    //
+    // Per-bucket call sequence:
+    //  1. event_usage read (rk9/day) → one row
+    //  2. getPriorPctMap prior7d → format_meta_stats null (no prior)
+    //  3. getPriorPctMap prior30d → format_meta_stats null (no prior)
+    //  4. Check existing meta → null (first run, nothing to delete)
+    //  5. Insert format_meta_stats → { id: 1 }
+    //  6. Insert pokemon_usage_stats → ok
+    //  7. Insert pokemon_detail_stats → ok
+    //
+    // Then rk9/(week,month) and all/(day,week,month) all return empty.
+    // Finally: usage_dirty DELETE.
+    const eventUsageRow = {
+      source: "rk9",
+      event_key: "rk9:101",
+      division: null,
+      species: "koraidon",
+      team_count: 10,
+      sample_size: 10,
+      details: {
+        moves: [{ v: "protect", n: 10 }],
+        tera: [],
+        item: [],
+        ability: [],
+        nature: [],
+        abilityItem: [],
+      },
+      event_date: "2025-03-03",
+    };
+
+    const client = buildSequentialClient([
+      // usage_dirty SELECT
+      {
+        data: [
+          {
+            format: "gen9vgc2025regg",
+            source: "rk9",
+            dirty_since: "2025-03-01",
+            updated_at: "2025-03-04T00:00:00Z",
+          },
+        ],
+        error: null,
+      },
+      // rk9/day → one event_usage row (triggers write path)
+      { data: [eventUsageRow], error: null },
+      // getPriorPctMap prior7d → no prior meta
+      { data: null, error: null },
+      // getPriorPctMap prior30d → no prior meta
+      { data: null, error: null },
+      // Check existing meta → null (no prior bucket to replace)
+      { data: null, error: null },
+      // Insert format_meta_stats → return { id: 1 }
+      { data: { id: 1 }, error: null },
+      // Insert pokemon_usage_stats
+      { data: null, error: null },
+      // Insert pokemon_detail_stats
+      { data: null, error: null },
+      // rk9/week → empty
+      { data: [], error: null },
+      // rk9/month → empty
+      { data: [], error: null },
+      // all/day → empty
+      { data: [], error: null },
+      // all/week → empty
+      { data: [], error: null },
+      // all/month → empty
+      { data: [], error: null },
+      // usage_dirty DELETE
+      { data: null, error: null },
+    ]);
+
+    const result = await computeUsageRollups(client);
+    expect(result.formatsProcessed).toBe(1);
+    expect(result.bucketsWritten).toBe(1);
+  });
+});
+
+// =============================================================================
 // computeUsageRollups — formats scope
 // =============================================================================
 
