@@ -60,6 +60,8 @@ import {
   rosterEligibleIds,
   teamsEligibleIds,
 } from "./external-data-shared";
+import { deriveLimitlessDisplayStatus } from "./limitless-display-status";
+import { StatusTabs, type StatusTab } from "./external-data-status-tabs";
 import { type StatusChip } from "./external-data-status-chips";
 import { ExternalDataToolbar } from "./external-data-toolbar";
 import { SelectionBar } from "./external-data-selection-bar";
@@ -632,12 +634,18 @@ export function ExternalData() {
     hasData: t.decklists,
     country: null,
     limitless: t,
+    displayStatus: deriveLimitlessDisplayStatus({
+      import_status: t.import_status,
+      format_id: t.format_id,
+      data_imported_at: t.data_imported_at,
+    }),
   }));
 
   const filteredLimitlessRows = limitlessRows
     .filter((row) => {
       const f = limFilters;
-      if (f.status !== "all" && row.status !== f.status) return false;
+      // was: if (f.status !== "all" && row.status !== f.status) return false;
+      if (f.status !== "all" && row.displayStatus !== f.status) return false;
       if (f.format !== "all" && row.category !== f.format) return false;
       if (f.platform !== "all" && row.platform !== f.platform) return false;
       if (f.dateFrom && row.date < f.dateFrom) return false;
@@ -750,12 +758,36 @@ export function ExternalData() {
   const limitlessFailedCount = (limitlessTournaments ?? []).filter(
     (t) => t.import_status === "failed"
   ).length;
+
+  // Per-display-status counts for the Limitless status tabs.
+  const limitlessStatusCounts = limitlessRows.reduce(
+    (acc, r) => {
+      const ds = r.displayStatus ?? "pending";
+      acc[ds] = (acc[ds] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+  const limitlessSkippedCount = limitlessStatusCounts["skipped"] ?? 0;
+
+  // Skipped breakdown by raw format code (for the explainer banner).
+  const limitlessSkippedByFormat = limitlessRows
+    .filter((r) => r.displayStatus === "skipped")
+    .reduce(
+      (acc, r) => {
+        acc[r.category] = (acc[r.category] ?? 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
   const limitlessChips: StatusChip[] = [
     { label: "synced", count: totalSynced, tone: "synced" },
     { label: "queued", count: limitlessQueuedCount, tone: "queued" },
     { label: "importing", count: limitlessImportingCount, tone: "importing" },
     { label: "imported", count: totalImported, tone: "imported" },
     { label: "failed", count: limitlessFailedCount, tone: "failed" },
+    { label: "skipped", count: limitlessSkippedCount, tone: "skipped" },
   ];
   const rk9FailedCount =
     rk9Events?.filter((e) => e.import_status === "failed").length ?? 0;
@@ -1235,6 +1267,41 @@ export function ExternalData() {
     overscan: 10,
   });
 
+  const limitlessTabs: StatusTab[] = [
+    { value: "all", label: "All", count: limitlessRows.length },
+    {
+      value: "pending",
+      label: "Pending",
+      count: limitlessStatusCounts["pending"] ?? 0,
+    },
+    {
+      value: "queued",
+      label: "Queued",
+      count: limitlessStatusCounts["queued"] ?? 0,
+    },
+    {
+      value: "importing",
+      label: "Importing",
+      count: limitlessStatusCounts["importing"] ?? 0,
+    },
+    {
+      value: "imported",
+      label: "Imported",
+      count: limitlessStatusCounts["imported"] ?? 0,
+    },
+    {
+      value: "failed",
+      label: "Failed",
+      count: limitlessStatusCounts["failed"] ?? 0,
+    },
+    {
+      value: "skipped",
+      label: "Skipped",
+      count: limitlessSkippedCount,
+      tone: "skipped",
+    },
+  ];
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -1517,6 +1584,34 @@ export function ExternalData() {
             >
               {calculateLimitlessMessage}
             </p>
+          )}
+
+          {/* Limitless Status Tabs */}
+          <StatusTabs
+            tabs={limitlessTabs}
+            active={limFilters.status}
+            onChange={(value) =>
+              setLimFilters((p) => ({ ...p, status: value }))
+            }
+          />
+          {limFilters.status === "skipped" && limitlessSkippedCount > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+              <span aria-hidden>⊘</span>
+              <span className="font-semibold">
+                {limitlessSkippedCount.toLocaleString()} events skipped
+              </span>
+              <span>— their format isn&apos;t supported for import:</span>
+              {Object.entries(limitlessSkippedByFormat)
+                .sort((a, b) => b[1] - a[1])
+                .map(([code, n]) => (
+                  <span
+                    key={code}
+                    className="rounded-full bg-amber-200/60 px-2 py-px font-medium dark:bg-amber-900/40"
+                  >
+                    {code} ×{n.toLocaleString()}
+                  </span>
+                ))}
+            </div>
           )}
 
           {/* Limitless Filters */}

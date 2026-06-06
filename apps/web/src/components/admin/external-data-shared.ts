@@ -2,6 +2,8 @@
 // expanded-row-data.tsx. Kept in a dedicated file to avoid sibling import
 // cycles.
 
+import { type DisplayStatus } from "./limitless-display-status";
+
 // ---------------------------------------------------------------------------
 // Filter helper types
 // ---------------------------------------------------------------------------
@@ -98,6 +100,8 @@ export interface UnifiedRow {
   date: string;
   playerCount: number | null;
   status: string; // normalized status
+  /** Fine-grained Limitless display status for the status tabs + counts. Unset for RK9 rows. */
+  displayStatus?: DisplayStatus;
   statusDetail: string; // original status for display
   error: string | null;
   // Filterable extras
@@ -116,14 +120,14 @@ export interface UnifiedRow {
 // Keeping these pure makes the filter-aware bulk logic unit-testable.
 // ---------------------------------------------------------------------------
 
-/** Limitless tournament_ids eligible to queue: never-queued (null) or failed. */
+/** Limitless tournament_ids eligible to queue: pending or failed (keyed off displayStatus). */
 export function queueableIds(rows: UnifiedRow[]): string[] {
   return rows
     .filter(
       (r) =>
         r.source === "limitless" &&
         r.limitless != null &&
-        (!r.limitless.import_status || r.limitless.import_status === "failed")
+        (r.displayStatus === "pending" || r.displayStatus === "failed")
     )
     .map((r) => r.limitless!.tournament_id);
 }
@@ -151,4 +155,3 @@ export function teamsEligibleIds(rows: UnifiedRow[]): string[] {
     )
     .map((r) => r.rk9!.event_id);
 }
-
