@@ -165,7 +165,7 @@ export async function computeSourceUsage(
 
   let candidates: Candidate[];
 
-  const PAGE_SIZE = 500;
+  const CANDIDATE_PAGE_SIZE = 500;
 
   if (source === "rk9") {
     const allEvents: Array<{ event_id: string; format_id: string }> = [];
@@ -177,7 +177,7 @@ export async function computeSourceUsage(
         .select("event_id, format_id")
         .gt("teams_imported_count", 0)
         .not("format_id", "is", null)
-        .range(offset, offset + PAGE_SIZE - 1);
+        .range(offset, offset + CANDIDATE_PAGE_SIZE - 1);
 
       if (pageErr) {
         throw new Error(
@@ -192,8 +192,8 @@ export async function computeSourceUsage(
           format_id: e.format_id as string,
         }))
       );
-      if (page.length < PAGE_SIZE) break;
-      offset += PAGE_SIZE;
+      if (page.length < CANDIDATE_PAGE_SIZE) break;
+      offset += CANDIDATE_PAGE_SIZE;
     }
 
     candidates = allEvents.map((row) => ({
@@ -212,7 +212,7 @@ export async function computeSourceUsage(
         .select("tournament_id, format_id")
         .not("data_imported_at", "is", null)
         .not("format_id", "is", null)
-        .range(offset, offset + PAGE_SIZE - 1);
+        .range(offset, offset + CANDIDATE_PAGE_SIZE - 1);
 
       if (pageErr) {
         throw new Error(
@@ -227,8 +227,8 @@ export async function computeSourceUsage(
           format_id: t.format_id as string,
         }))
       );
-      if (page.length < PAGE_SIZE) break;
-      offset += PAGE_SIZE;
+      if (page.length < CANDIDATE_PAGE_SIZE) break;
+      offset += CANDIDATE_PAGE_SIZE;
     }
 
     candidates = allTournaments.map((row) => ({
