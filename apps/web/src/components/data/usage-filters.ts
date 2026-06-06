@@ -17,7 +17,7 @@ export const VALID_SOURCES = [
   "all",
   "rk9",
   "limitless",
-  "first-party",
+  "first_party",
 ] as const;
 
 export const VALID_PERIOD_TYPES = ["day", "week", "month"] as const;
