@@ -21,7 +21,7 @@
 
 ## Local Dev Logs
 
-Dev server logs (Next.js + Supabase edge functions) are written to `.dev-logs/dev.log` when the user starts `pnpm dev` or `pnpm dev:web`. Read this file to troubleshoot server-side errors — use `tail -200 .dev-logs/dev.log` for recent output or `grep -a "error\|Error\|failed" .dev-logs/dev.log` to find issues. The file contains ANSI color codes; grep still works fine. The log resets on each `pnpm dev` start.
+Dev server logs (Next.js + Supabase edge functions) are written to `.dev-logs/` when the user starts `pnpm dev` or `pnpm dev:web`. Each run creates a timestamped file (e.g. `dev-20260606-143022.log`); `.dev-logs/dev.log` is a symlink to the latest. Use `tail -200 .dev-logs/dev.log` for recent output or `grep -a "error\|Error\|failed" .dev-logs/dev.log` to find issues. The file contains ANSI color codes; grep still works fine.
 
 ## Architecture Guidelines
 
