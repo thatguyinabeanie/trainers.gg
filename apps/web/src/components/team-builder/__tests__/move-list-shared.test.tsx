@@ -92,7 +92,7 @@ describe("normalizeMoveKey", () => {
   });
 
   it("strips all three separators in one pass", () => {
-    expect(normalizeMoveKey("Trick-or-Treat")).toBe("trickortrait".replace("trait", "treat"));
+    expect(normalizeMoveKey("Trick-or-Treat")).toBe("trickortreat");
   });
 
   it("returns the same key for both display name and normalized DB slug", () => {
