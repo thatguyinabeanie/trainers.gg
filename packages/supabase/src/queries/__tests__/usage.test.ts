@@ -2,6 +2,7 @@ import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import {
   getFormatUsageTimeseries,
   _fetchUsageRowsInChunks,
+  getPipelineData,
 } from "../usage";
 import type { TypedClient } from "../../client";
 
@@ -9,16 +10,6 @@ import type { TypedClient } from "../../client";
 // Mock client helpers
 // =============================================================================
 
-/**
- * A query builder mock where every chaining method returns itself and the
- * builder can be resolved by awaiting it (via `then`) or via terminal methods
- * like `.limit()` resolving to the configured result.
- *
- * Both `.limit()` (for the meta query) and direct-await (for the usage query)
- * are handled: callers in production code do `await supabase.from(...).select()
- * .eq()...limit(n)` for the meta rows, and `await supabase.from(...).select()
- * .in(...)` for the usage rows.
- */
 type MockResult = { data: unknown; error: unknown };
 
 function makeQueryBuilder(result: MockResult) {
@@ -28,9 +19,14 @@ function makeQueryBuilder(result: MockResult) {
   builder["eq"] = returnSelf;
   builder["order"] = returnSelf;
   builder["in"] = returnSelf;
-  // `.limit()` is the terminal for the meta query — resolves to result.
-  builder["limit"] = jest.fn().mockResolvedValue(result);
-  // Direct await is the terminal for the usage query — `.then` makes it thenable.
+  builder["gte"] = returnSelf;
+  builder["lte"] = returnSelf;
+  // `.limit()` chains (returns the builder) — both `await …limit(n)` (via `.then`)
+  // and `.limit(1).maybeSingle()` resolve correctly.
+  builder["limit"] = returnSelf;
+  // `.maybeSingle()` is the terminal for the single-row meta query in getPipelineData.
+  builder["maybeSingle"] = jest.fn().mockResolvedValue(result);
+  // Direct await is the terminal for list queries — `.then` makes it thenable.
   builder["then"] = (
     resolve: (v: unknown) => unknown,
     reject: (e: unknown) => unknown
@@ -39,17 +35,20 @@ function makeQueryBuilder(result: MockResult) {
 }
 
 /**
- * Build a TypedClient that returns different builders (and thus different
- * results) for each sequential call to `.from()`. This mirrors the two-query
- * structure of `getFormatUsageTimeseries`.
+ * Build a TypedClient that returns a different result for each sequential call.
+ * Both `.from()` and `.rpc()` consume from the same shared result queue, mirroring
+ * the multi-query structure of getFormatUsageTimeseries / getPipelineData and the
+ * single `.rpc()` call in getFormatEvents.
  */
 function makeSequentialClient(results: MockResult[]) {
   let callIndex = 0;
+  const nextBuilder = () => {
+    const result = results[callIndex++] ?? { data: null, error: null };
+    return makeQueryBuilder(result);
+  };
   const client = {
-    from: jest.fn(() => {
-      const result = results[callIndex++] ?? { data: null, error: null };
-      return makeQueryBuilder(result);
-    }),
+    from: jest.fn(() => nextBuilder()),
+    rpc: jest.fn(() => nextBuilder()),
   };
   return client as unknown as TypedClient;
 }
@@ -379,5 +378,108 @@ describe("_fetchUsageRowsInChunks", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+});
+
+// =============================================================================
+// Test data factories for getPipelineData
+// =============================================================================
+
+const makeDetailRow = (overrides?: Partial<{
+  species: string;
+  abilities: unknown;
+  natures: unknown;
+  moves: unknown;
+}>) => ({
+  species: "Sneasler",
+  abilities: [{ value: "Unburden", count: 91, pct: 91 }],
+  natures: [{ value: "Jolly", count: 78, pct: 78 }],
+  moves: [{ value: "Fake Out", count: 94, pct: 94 }],
+  ...overrides,
+});
+
+// =============================================================================
+// getPipelineData — no data
+// =============================================================================
+
+describe("getPipelineData — no data", () => {
+  it("returns empty data when no meta row exists", async () => {
+    const client = makeSequentialClient([
+      { data: null, error: null }, // meta query returns null
+    ]);
+    const result = await getPipelineData(client, {
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+    expect(result).toBeNull();
+  });
+
+  it("throws when meta query errors", async () => {
+    const client = makeSequentialClient([
+      { data: null, error: { message: "DB error" } },
+    ]);
+    await expect(
+      getPipelineData(client, {
+        format: "gen9vgc2025regg",
+        source: "all",
+        periodType: "week",
+      })
+    ).rejects.toThrow("DB error");
+  });
+});
+
+// =============================================================================
+// getPipelineData — with data
+// =============================================================================
+
+describe("getPipelineData — with data", () => {
+  it("returns PipelineDataResult with species from usage + detail rows", async () => {
+    const metaRow = { id: 5, period_start: "2025-01-24", period_end: "2025-01-31" };
+    const usageRow = { species: "Sneasler", usage_pct: 22.5, rank: 1 };
+    const detailRow = makeDetailRow();
+
+    const client = makeSequentialClient([
+      { data: metaRow, error: null },       // maybeSingle meta
+      { data: [usageRow], error: null },    // usage_stats query
+      { data: [detailRow], error: null },   // detail_stats query
+    ]);
+
+    const result = await getPipelineData(client, {
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.periodStart).toBe("2025-01-24");
+    expect(result!.periodEnd).toBe("2025-01-31");
+    expect(result!.data).toHaveLength(1);
+    expect(result!.data[0]!.species).toBe("Sneasler");
+    expect(result!.data[0]!.usagePct).toBe(22.5);
+    expect(result!.data[0]!.abilities).toEqual([
+      { value: "Unburden", count: 91, pct: 91 },
+    ]);
+  });
+
+  it("fills missing detail stats with empty arrays", async () => {
+    const metaRow = { id: 5, period_start: "2025-01-24", period_end: "2025-01-31" };
+    const usageRow = { species: "Koraidon", usage_pct: 18.0, rank: 2 };
+
+    const client = makeSequentialClient([
+      { data: metaRow, error: null },
+      { data: [usageRow], error: null },
+      { data: [], error: null }, // no detail row for Koraidon
+    ]);
+
+    const result = await getPipelineData(client, {
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+
+    expect(result!.data[0]!.abilities).toEqual([]);
+    expect(result!.data[0]!.natures).toEqual([]);
+    expect(result!.data[0]!.moves).toEqual([]);
   });
 });

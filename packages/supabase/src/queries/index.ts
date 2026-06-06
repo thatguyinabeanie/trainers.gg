@@ -373,6 +373,7 @@ export {
   getSpeciesUsageDetail,
   getSpeciesUsage,
   getFormatUsageTimeseries,
+  getPipelineData,
 } from "./usage";
 
 export type {
@@ -381,4 +382,7 @@ export type {
   SpeciesUsageDetailParams,
   FormatUsageRow,
   FormatUsageTimeseriesPoint,
+  PipelineSpeciesData,
+  PipelineDataResult,
+  GetPipelineDataParams,
 } from "./usage";

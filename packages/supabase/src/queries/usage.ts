@@ -55,6 +55,36 @@ export interface FormatUsageTimeseriesPoint {
   usage: Record<string, number>;
 }
 
+/** One species' pipeline data — usage % plus marginal histograms. */
+export interface PipelineSpeciesData {
+  species: string;
+  usagePct: number;
+  rank: number;
+  abilities: UsageDetailEntry[];
+  natures: UsageDetailEntry[];
+  moves: UsageDetailEntry[];
+}
+
+/** Result shape returned by `getPipelineData`. */
+export interface PipelineDataResult {
+  data: PipelineSpeciesData[];
+  /** ISO date string for the period start of the resolved bucket. */
+  periodStart: string;
+  /** ISO date string for the period end of the resolved bucket. */
+  periodEnd: string;
+}
+
+/** Parameters for `getPipelineData`. */
+export interface GetPipelineDataParams {
+  format: string;
+  source: string;
+  periodType: "day" | "week" | "month";
+  /** If provided, resolves the latest period whose start is >= this date. */
+  periodStart?: string;
+  /** If provided, restricts to periods whose end is <= this date. */
+  periodEnd?: string;
+}
+
 // =============================================================================
 // Queries
 // =============================================================================
@@ -304,6 +334,102 @@ export async function getFormatUsageTimeseries(
       usage,
     };
   });
+}
+
+/**
+ * Fetch all species + histogram data for a single period in a given format.
+ *
+ * Resolves the latest `format_meta_stats` row matching the given
+ * (format, source, period_type) — optionally restricted to a date range.
+ * Returns the full Species → Ability / Nature / Move histograms needed to
+ * render the Meta Pipeline Sankey. Returns `null` if no matching period exists.
+ *
+ * Three queries are used:
+ *   1. Resolve the latest matching meta bucket (maybeSingle).
+ *   2. Fetch all pokemon_usage_stats for that bucket.
+ *   3. Fetch all pokemon_detail_stats for that bucket.
+ *
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
+ */
+export async function getPipelineData(
+  supabase: TypedClient,
+  params: GetPipelineDataParams
+): Promise<PipelineDataResult | null> {
+  const { format, source, periodType, periodStart, periodEnd } = params;
+
+  // ── Query 1: resolve latest matching meta bucket ──────────────────────────
+  let metaQuery = supabase
+    .from("format_meta_stats")
+    .select("id, period_start, period_end")
+    .eq("format", format)
+    .eq("source", source)
+    .eq("period_type", periodType)
+    .order("period_start", { ascending: false });
+
+  if (periodStart) {
+    metaQuery = metaQuery.gte("period_start", periodStart);
+  }
+  if (periodEnd) {
+    metaQuery = metaQuery.lte("period_end", periodEnd);
+  }
+
+  const { data: metaRow, error: metaError } = await metaQuery.limit(1).maybeSingle();
+
+  if (metaError) {
+    throw new Error(
+      `Failed to fetch meta bucket for pipeline data (${format}): ${metaError.message}`
+    );
+  }
+
+  if (!metaRow) return null;
+
+  // ── Query 2: all usage rows for this meta bucket ──────────────────────────
+  const { data: usageRows, error: usageError } = await supabase
+    .from("pokemon_usage_stats")
+    .select("species, usage_pct, rank")
+    .eq("meta_id", metaRow.id)
+    .order("rank", { ascending: true });
+
+  if (usageError) {
+    throw new Error(
+      `Failed to fetch usage stats for meta ${metaRow.id}: ${usageError.message}`
+    );
+  }
+
+  // ── Query 3: all detail rows for this meta bucket ─────────────────────────
+  const { data: detailRows, error: detailError } = await supabase
+    .from("pokemon_detail_stats")
+    .select("species, abilities, natures, moves")
+    .eq("meta_id", metaRow.id);
+
+  if (detailError) {
+    throw new Error(
+      `Failed to fetch detail stats for meta ${metaRow.id}: ${detailError.message}`
+    );
+  }
+
+  // Index detail rows by species for O(1) lookup.
+  const detailBySpecies = new Map(
+    (detailRows ?? []).map((d) => [d.species, d])
+  );
+
+  const data: PipelineSpeciesData[] = (usageRows ?? []).map((row) => {
+    const detail = detailBySpecies.get(row.species);
+    return {
+      species: row.species,
+      usagePct: row.usage_pct,
+      rank: row.rank,
+      abilities: (detail?.abilities as UsageDetailEntry[] | null) ?? [],
+      natures: (detail?.natures as UsageDetailEntry[] | null) ?? [],
+      moves: (detail?.moves as UsageDetailEntry[] | null) ?? [],
+    };
+  });
+
+  return {
+    data,
+    periodStart: metaRow.period_start,
+    periodEnd: metaRow.period_end,
+  };
 }
 
 // =============================================================================
