@@ -15,7 +15,7 @@
  * Examples:
  *   normalizeSpeciesSlug("Ogerpon-Hearthflame") → "ogerpon-hearthflame"
  *   normalizeSpeciesSlug("ogerpon-hearthflame")  → "ogerpon-hearthflame"   (DB value)
- *   normalizeSpeciesSlug("Flabébé")              → "flabébé"
+ *   normalizeSpeciesSlug("Flabébé")              → "flabebe"               (diacritics stripped)
  *   normalizeSpeciesSlug("Mr. Mime")             → "mr-mime"               (spaces→-,  .→"")
  *   normalizeSpeciesSlug("Farfetch'd")           → "farfetchd"             (apostrophe stripped)
  *   normalizeSpeciesSlug("Type: Null")           → "type-null"             (colon stripped, space→-)
@@ -23,6 +23,8 @@
 export function normalizeSpeciesSlug(name: string): string {
   return name
     .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // strip combining diacritics (é→e, etc.)
     .replace(/['.,:]/g, "") // strip punctuation the DB omits
     .replace(/\s+/g, "-") // spaces → hyphens
     .replace(/-+/g, "-"); // collapse consecutive hyphens

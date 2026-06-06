@@ -81,7 +81,7 @@ describe("normalizeSpeciesSlug", () => {
     ["Jangmo-o", "jangmo-o"],
     ["Kommo-o", "kommo-o"],
     ["Hakamo-o", "hakamo-o"],
-    ["Flabébé", "flabébé"], // accented character — preserved
+    ["Flabébé", "flabebe"], // diacritics stripped to match DB-stored ASCII slugs
     ["Mime Jr.", "mime-jr"],
     ["Mr. Rime", "mr-rime"],
   ])("normalizeSpeciesSlug(%s) = %s", (input, expected) => {
