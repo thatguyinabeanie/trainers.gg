@@ -196,7 +196,7 @@ export function MoveListHeader({ sort, onSort, className }: MoveListHeaderProps)
         <SortArrow active={sort.col === "acc"} dir={sort.dir} />
       </button>
 
-      {/* Usage % — sortable once data loads */}
+      {/* Usage % — display-only, not sortable */}
       <span className="text-muted-foreground cursor-default text-center">
         USE%
       </span>

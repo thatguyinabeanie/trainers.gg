@@ -21,6 +21,7 @@ const STATUS_TONE: Record<string, string> = {
   failed: "bg-red-500/10 text-red-700 dark:text-red-400",
   upcoming: "bg-muted text-muted-foreground",
   pending: "bg-muted text-muted-foreground",
+  skipped: "bg-muted text-muted-foreground opacity-50",
 };
 
 /** Mobile card list mirroring the desktop events table. */

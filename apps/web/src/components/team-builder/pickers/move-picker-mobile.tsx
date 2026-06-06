@@ -145,7 +145,7 @@ export function MovePickerMobile({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         showHandle={false}
-        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-5 p-0"
+        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-2xl p-0"
       >
         <DrawerTitle className="sr-only">Choose move</DrawerTitle>
 

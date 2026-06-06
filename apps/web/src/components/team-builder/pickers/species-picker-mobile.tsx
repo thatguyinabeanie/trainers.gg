@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
+import { type FormatUsageRow } from "@trainers/supabase";
+
 import { useFormatUsageData } from "../use-format-usage-data";
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { RolePresetsPanel } from "./role-presets-panel";
@@ -142,7 +144,7 @@ export function SpeciesPickerMobile({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         showHandle={false}
-        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-5 p-0"
+        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-2xl p-0"
       >
         <DrawerTitle className="sr-only">
           {view === "list" ? "Choose species" : "Filters"}
@@ -206,7 +208,7 @@ interface ListViewProps {
   currentSpecies: string | null;
   formatId: string;
   /** Pre-built usage map — Map<normalizedSlug, FormatUsageRow>. */
-  usageMap: Map<string, { usagePct: number }>;
+  usageMap: Map<string, FormatUsageRow>;
 }
 
 function ListView({

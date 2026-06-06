@@ -261,8 +261,8 @@ jest.mock("../use-format-usage-data", () => ({
 }));
 
 // =============================================================================
-// Mock usage-slug normalizer — tested separately; use the real implementation
-// here so USG lookup assertions exercise the actual slug matching.
+// Mock usage-slug normalizer with a simplified inline implementation so USG
+// lookup assertions exercise the slug-matching behavior without a full module dep.
 // =============================================================================
 
 jest.mock("../pickers/usage-slug", () => ({
