@@ -96,8 +96,7 @@ function rk9Chips(
   if (filters.minPlayers !== INITIAL_RK9_FILTERS.minPlayers)
     chips.push({
       label: `Min players: ${filters.minPlayers}`,
-      onRemove: () =>
-        onChange({ minPlayers: INITIAL_RK9_FILTERS.minPlayers }),
+      onRemove: () => onChange({ minPlayers: INITIAL_RK9_FILTERS.minPlayers }),
     });
 
   return chips;
@@ -112,14 +111,12 @@ function limitlessChips(
   if (filters.format !== INITIAL_LIMITLESS_FILTERS.format)
     chips.push({
       label: `Format: ${filters.format}`,
-      onRemove: () =>
-        onChange({ format: INITIAL_LIMITLESS_FILTERS.format }),
+      onRemove: () => onChange({ format: INITIAL_LIMITLESS_FILTERS.format }),
     });
   if (filters.status !== INITIAL_LIMITLESS_FILTERS.status)
     chips.push({
       label: `Status: ${filters.status}`,
-      onRemove: () =>
-        onChange({ status: INITIAL_LIMITLESS_FILTERS.status }),
+      onRemove: () => onChange({ status: INITIAL_LIMITLESS_FILTERS.status }),
     });
   if (filters.platform !== INITIAL_LIMITLESS_FILTERS.platform)
     chips.push({
@@ -130,8 +127,7 @@ function limitlessChips(
   if (filters.hasData !== INITIAL_LIMITLESS_FILTERS.hasData)
     chips.push({
       label: `Decklists: ${filters.hasData === "yes" ? "Has decklists" : "No decklists"}`,
-      onRemove: () =>
-        onChange({ hasData: INITIAL_LIMITLESS_FILTERS.hasData }),
+      onRemove: () => onChange({ hasData: INITIAL_LIMITLESS_FILTERS.hasData }),
     });
   if (filters.dateFrom !== INITIAL_LIMITLESS_FILTERS.dateFrom)
     chips.push({
@@ -142,8 +138,7 @@ function limitlessChips(
   if (filters.dateTo !== INITIAL_LIMITLESS_FILTERS.dateTo)
     chips.push({
       label: `To: ${filters.dateTo}`,
-      onRemove: () =>
-        onChange({ dateTo: INITIAL_LIMITLESS_FILTERS.dateTo }),
+      onRemove: () => onChange({ dateTo: INITIAL_LIMITLESS_FILTERS.dateTo }),
     });
   if (filters.minPlayers !== INITIAL_LIMITLESS_FILTERS.minPlayers)
     chips.push({
@@ -168,9 +163,7 @@ function rk9SecondaryActiveCount(filters: RK9FilterState): number {
   return count;
 }
 
-function limitlessSecondaryActiveCount(
-  filters: LimitlessFilterState
-): number {
+function limitlessSecondaryActiveCount(filters: LimitlessFilterState): number {
   let count = 0;
   if (filters.platform !== INITIAL_LIMITLESS_FILTERS.platform) count++;
   if (filters.hasData !== INITIAL_LIMITLESS_FILTERS.hasData) count++;
@@ -192,7 +185,6 @@ function rk9AllActiveCount(filters: RK9FilterState): number {
 function limitlessAllActiveCount(filters: LimitlessFilterState): number {
   let count = limitlessSecondaryActiveCount(filters);
   if (filters.format !== INITIAL_LIMITLESS_FILTERS.format) count++;
-  if (filters.status !== INITIAL_LIMITLESS_FILTERS.status) count++;
   return count;
 }
 
@@ -534,14 +526,14 @@ export function ExternalDataFilters({
 
         {/* Desktop: Format/Tier + Status inline */}
         {!isMobile && renderFormatOrTierSelect()}
-        {!isMobile && renderStatusSelect()}
+        {!isMobile && isRk9 && renderStatusSelect()}
 
         {/* Popover trigger — desktop: "More filters" for secondary only;
             mobile: "Filters" for all non-search filters */}
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
           <PopoverTrigger
             className={cn(
-              "relative inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors hover:bg-accent",
+              "hover:bg-accent relative inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors",
               isMobile && "shrink-0"
             )}
           >
@@ -572,12 +564,14 @@ export function ExternalDataFilters({
                     </label>
                     {renderFormatOrTierSelect()}
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-muted-foreground text-xs font-medium">
-                      Status
-                    </label>
-                    {renderStatusSelect()}
-                  </div>
+                  {isRk9 && (
+                    <div className="space-y-1">
+                      <label className="text-muted-foreground text-xs font-medium">
+                        Status
+                      </label>
+                      {renderStatusSelect()}
+                    </div>
+                  )}
                 </>
               )}
               {/* Secondary filters — always in the popover on both layouts */}

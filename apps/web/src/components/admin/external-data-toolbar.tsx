@@ -1,6 +1,13 @@
 "use client";
 
-import { BarChart2, ChevronDown, Loader2, Play, Plus, RefreshCw } from "lucide-react";
+import {
+  BarChart2,
+  ChevronDown,
+  Loader2,
+  Play,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -62,7 +69,7 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
         // Mobile: condensed row — Actions menu + settings + refresh
         <div className="flex items-center gap-2">
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md border bg-background px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
+            <DropdownMenuTrigger className="bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
               Actions <ChevronDown className="size-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -117,6 +124,7 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
                       props.bulkProcessing ||
                       (props.queueMatchingCount ?? 0) === 0
                     }
+                    title="Queues the events matching your current tab + filters (skipped events are never queued)"
                   >
                     Queue Matching ({props.queueMatchingCount ?? 0})
                   </DropdownMenuItem>
@@ -183,8 +191,7 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
                 size="sm"
                 onClick={props.onScrapeRostersMatching}
                 disabled={
-                  props.bulkProcessing ||
-                  (props.rosterMatchingCount ?? 0) === 0
+                  props.bulkProcessing || (props.rosterMatchingCount ?? 0) === 0
                 }
               >
                 Scrape Rosters ({props.rosterMatchingCount ?? 0})
@@ -226,13 +233,14 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
                     props.bulkProcessing ||
                     (props.queueMatchingCount ?? 0) === 0
                   }
+                  title="Queues the events matching your current tab + filters (skipped events are never queued)"
                 >
                   <Plus className="mr-1.5 size-3.5" /> Queue Matching (
                   {props.queueMatchingCount ?? 0})
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger
-                    className="inline-flex h-8 cursor-pointer items-center justify-center rounded-l-none rounded-r-md border-l border-l-white/20 bg-primary px-2 text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 cursor-pointer items-center justify-center rounded-l-none rounded-r-md border-l border-l-white/20 px-2 transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
                     aria-label="More queue options"
                   >
                     ▾
@@ -250,7 +258,7 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
           <span className="bg-border h-5 w-px" />
           <span className={LABEL}>Usage</span>
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
+            <DropdownMenuTrigger className="hover:bg-accent hover:text-accent-foreground inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
               <BarChart2 className="mr-1.5 size-3.5" /> Usage ▾
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
