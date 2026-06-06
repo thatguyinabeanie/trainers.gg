@@ -26,7 +26,7 @@ import { buildUsageSeries, filterByThreshold } from "./usage-series";
 interface UsageLineChartProps {
   /** All-species timeseries data, oldest → newest. */
   points: FormatUsageTimeseriesPoint[];
-  /** Currently selected species. Empty = none selected (show all dimmed). */
+  /** Currently selected species. Empty = no selection filter (all species shown normally). */
   selectedSpecies: string[];
   /** Case-insensitive search substring; non-matching lines are dimmed. Empty = no filter. */
   highlight: string;

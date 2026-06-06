@@ -234,10 +234,19 @@ export function UsagePipelineChart({
           return (
             <g
               key={node.id}
+              role={isSpecies ? "button" : undefined}
+              tabIndex={isSpecies ? 0 : undefined}
+              aria-label={isSpecies ? `Select ${node.label}` : undefined}
               opacity={nodeOpacity(node.id)}
               onMouseEnter={() => setHoveredNodeId(node.id)}
               onMouseLeave={() => setHoveredNodeId(null)}
               onClick={() => isSpecies && onSpeciesClick(node.label)}
+              onKeyDown={(e) => {
+                if (isSpecies && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  onSpeciesClick(node.label);
+                }
+              }}
               style={{
                 cursor: isSpecies ? "pointer" : "default",
                 transition: "opacity 0.15s",

@@ -64,19 +64,17 @@ beforeEach(() => {
           in: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
           not: notSpy.mockReturnThis(),
-          select: jest
-            .fn()
-            .mockResolvedValue({
-              data: [{ tournament_id: "t1" }],
-              error: null,
-            }),
+          select: jest.fn().mockResolvedValue({
+            data: [{ tournament_id: "t1" }],
+            error: null,
+          }),
         };
 
         // queueTournamentForImport needs .select().maybeSingle()
         // Override select to return an object that is both thenable AND has .maybeSingle
         const selectWithMaybeSingle = jest.fn().mockImplementation(() => {
           const p = Promise.resolve({
-            data: { tournament_id: "t1" },
+            data: [{ tournament_id: "t1" }],
             error: null,
           });
           (p as unknown as Record<string, unknown>).maybeSingle = jest
@@ -122,6 +120,9 @@ describe("batchQueueTournaments", () => {
   it("queues multiple tournaments", async () => {
     const result = await batchQueueTournaments(["t1", "t2"]);
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.queued).toBeGreaterThan(0);
+    }
   });
 
   it("passes a parenthesized in-list string to .not(), not a raw array", async () => {
