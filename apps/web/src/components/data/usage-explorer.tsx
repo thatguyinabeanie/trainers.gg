@@ -4,9 +4,17 @@ import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
-import { type FormatUsageTimeseriesPoint, type PipelineDataResult, type FormatEvent } from "@trainers/supabase";
+import {
+  type FormatUsageTimeseriesPoint,
+  type PipelineDataResult,
+  type FormatEvent,
+} from "@trainers/supabase";
 
-import { fetchFormatUsageTimeseries, fetchPipelineData, fetchFormatEvents } from "@/actions/usage";
+import {
+  fetchFormatUsageTimeseries,
+  fetchPipelineData,
+  fetchFormatEvents,
+} from "@/actions/usage";
 
 import { buildUsageSeries } from "./usage-series";
 import {
@@ -84,7 +92,12 @@ export function UsageExplorer({
   const rangeStart = coerceRangeStart(searchParams.get("rangeStart"));
   const rangeEnd = coerceRangeEnd(searchParams.get("rangeEnd"));
 
-  const currentFilters: UsageFilters = { format, source, periodType, threshold };
+  const currentFilters: UsageFilters = {
+    format,
+    source,
+    periodType,
+    threshold,
+  };
 
   // ── URL updater ───────────────────────────────────────────────────────────
   const updateUrl = (
@@ -118,7 +131,8 @@ export function UsageExplorer({
     });
   };
 
-  const handleFiltersChange = (next: UsageFilters) => updateUrl(next);
+  const handleFiltersChange = (next: UsageFilters) =>
+    updateUrl(next, next.format !== format ? [] : undefined);
   const handleSpeciesClick = (species: string) => {
     const next = selectedSpecies.includes(species)
       ? selectedSpecies.filter((s) => s !== species)
@@ -139,7 +153,11 @@ export function UsageExplorer({
   const { data: points = [] } = useQuery<FormatUsageTimeseriesPoint[]>({
     queryKey: ["usage-timeseries", format, source, periodType],
     queryFn: async () => {
-      const result = await fetchFormatUsageTimeseries({ format, source, periodType });
+      const result = await fetchFormatUsageTimeseries({
+        format,
+        source,
+        periodType,
+      });
       if (!result.success) throw new Error(result.error);
       return result.data;
     },
@@ -150,7 +168,14 @@ export function UsageExplorer({
   // ── TanStack Query — pipeline data ────────────────────────────────────────
   const { data: pipelineResult = initialPipelineResult } =
     useQuery<PipelineDataResult | null>({
-      queryKey: ["pipeline-data", format, source, periodType, rangeStart, rangeEnd],
+      queryKey: [
+        "pipeline-data",
+        format,
+        source,
+        periodType,
+        rangeStart,
+        rangeEnd,
+      ],
       queryFn: async () => {
         const result = await fetchPipelineData({
           format,
@@ -178,16 +203,16 @@ export function UsageExplorer({
     staleTime: 60 * 60 * 1000, // events change rarely
   });
 
+  const allSeries = buildUsageSeries(points);
+
   return (
     <div className="flex flex-col gap-4">
       {/* Shared controls bar */}
       <UsageControls
         filters={currentFilters}
         highlight={highlight}
-        totalCount={buildUsageSeries(points).length}
-        visibleCount={
-          buildUsageSeries(points).filter((s) => s.peak >= threshold).length
-        }
+        totalCount={allSeries.length}
+        visibleCount={allSeries.filter((s) => s.peak >= threshold).length}
         onFiltersChange={handleFiltersChange}
         onHighlightChange={setHighlight}
       />

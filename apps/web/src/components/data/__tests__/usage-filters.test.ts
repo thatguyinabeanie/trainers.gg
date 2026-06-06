@@ -3,11 +3,9 @@ import {
   DEFAULT_PERIOD_TYPE,
   DEFAULT_SOURCE,
   DEFAULT_THRESHOLD,
-  VALID_MODES,
   VALID_PERIOD_TYPES,
   VALID_SOURCES,
   coerceFormat,
-  coerceMode,
   coercePeriodType,
   coerceRangeEnd,
   coerceRangeStart,
@@ -51,12 +49,6 @@ describe("exported constants", () => {
     expect(VALID_PERIOD_TYPES).toContain("day");
     expect(VALID_PERIOD_TYPES).toContain("week");
     expect(VALID_PERIOD_TYPES).toContain("month");
-  });
-
-  it("VALID_MODES contains stream, stacked, lines", () => {
-    expect(VALID_MODES).toContain("stream");
-    expect(VALID_MODES).toContain("stacked");
-    expect(VALID_MODES).toContain("lines");
   });
 });
 
@@ -173,35 +165,6 @@ describe("coercePeriodType", () => {
     "returns DEFAULT_PERIOD_TYPE for invalid value '%s'",
     (value) => {
       expect(coercePeriodType(value)).toBe(DEFAULT_PERIOD_TYPE);
-    }
-  );
-});
-
-// =============================================================================
-// coerceMode
-// =============================================================================
-
-describe("coerceMode", () => {
-  it.each(VALID_MODES)("passes through valid mode '%s'", (mode) => {
-    expect(coerceMode(mode)).toBe(mode);
-  });
-
-  it("returns 'stream' for undefined", () => {
-    expect(coerceMode(undefined)).toBe("stream");
-  });
-
-  it("returns 'stream' for null", () => {
-    expect(coerceMode(null)).toBe("stream");
-  });
-
-  it("returns 'stream' for an empty string", () => {
-    expect(coerceMode("")).toBe("stream");
-  });
-
-  it.each(["stream2", "STACKED", "area", "bar"])(
-    "returns 'stream' for invalid value '%s'",
-    (value) => {
-      expect(coerceMode(value)).toBe("stream");
     }
   );
 });

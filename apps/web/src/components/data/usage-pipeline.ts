@@ -64,7 +64,9 @@ const COLUMN_COLORS: Record<"ability" | "nature" | "move", string> = {
  *
  * Returns `{ nodes: [], links: [] }` when `species` is empty.
  */
-export function buildPipelineGraph(species: PipelineSpeciesData[]): PipelineGraph {
+export function buildPipelineGraph(
+  species: PipelineSpeciesData[]
+): PipelineGraph {
   if (species.length === 0) return { nodes: [], links: [] };
 
   // ── Accumulate nodes (deduplicated by id) ──────────────────────────────────
@@ -108,25 +110,31 @@ export function buildPipelineGraph(species: PipelineSpeciesData[]): PipelineGrap
       ensureNode(abilityId, ability.value, "ability", COLUMN_COLORS.ability);
 
       // species → ability
-      const saValue = (s.usagePct * ability.pct) / 100;
-      addLink(speciesId, abilityId, saValue);
+      addLink(speciesId, abilityId, (s.usagePct * ability.pct) / 100);
 
       for (const nature of s.natures) {
         const natureId = `nature:${nature.value}`;
         ensureNode(natureId, nature.value, "nature", COLUMN_COLORS.nature);
 
         // ability → nature (proportional allocation)
-        const anValue = (s.usagePct * ability.pct * nature.pct) / 10000;
-        addLink(abilityId, natureId, anValue);
+        addLink(
+          abilityId,
+          natureId,
+          (s.usagePct * ability.pct * nature.pct) / 10000
+        );
+      }
+    }
 
-        for (const move of s.moves) {
-          const moveId = `move:${move.value}`;
-          ensureNode(moveId, move.value, "move", COLUMN_COLORS.move);
+    // nature → move is independent of ability — allocate once per species,
+    // NOT once per ability (otherwise multi-ability species inflate the move column).
+    for (const nature of s.natures) {
+      const natureId = `nature:${nature.value}`;
+      for (const move of s.moves) {
+        const moveId = `move:${move.value}`;
+        ensureNode(moveId, move.value, "move", COLUMN_COLORS.move);
 
-          // nature → move (proportional allocation)
-          const nmValue = (s.usagePct * nature.pct * move.pct) / 10000;
-          addLink(natureId, moveId, nmValue);
-        }
+        // nature → move (proportional allocation)
+        addLink(natureId, moveId, (s.usagePct * nature.pct * move.pct) / 10000);
       }
     }
   }

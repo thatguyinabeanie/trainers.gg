@@ -185,7 +185,8 @@ export async function getSpeciesUsageDetail(
       items: (detailRow?.items as UsageDetailEntry[] | null) ?? [],
       abilities: (detailRow?.abilities as UsageDetailEntry[] | null) ?? [],
       natures: (detailRow?.natures as UsageDetailEntry[] | null) ?? [],
-      abilityItems: (detailRow?.ability_items as UsageDetailEntry[] | null) ?? [],
+      abilityItems:
+        (detailRow?.ability_items as UsageDetailEntry[] | null) ?? [],
     };
   });
 }
@@ -283,12 +284,7 @@ export async function getFormatUsageTimeseries(
     limit?: number;
   }
 ): Promise<FormatUsageTimeseriesPoint[]> {
-  const {
-    format,
-    source = "all",
-    periodType = "week",
-    limit = 16,
-  } = params;
+  const { format, source = "all", periodType = "week", limit = 16 } = params;
 
   // ── Query 1: fetch the trailing N meta rows ────────────────────────────────
   // Order desc so the DB returns newest-first; we reverse below to get the
@@ -321,7 +317,10 @@ export async function getFormatUsageTimeseries(
   const usageRows = await _fetchUsageRowsInChunks(supabase, metaIds);
 
   // Group usage rows by meta_id for fast lookup when building the timeseries.
-  const usageByMetaId = new Map<number, Array<{ species: string; usage_pct: number }>>();
+  const usageByMetaId = new Map<
+    number,
+    Array<{ species: string; usage_pct: number }>
+  >();
   for (const row of usageRows) {
     let bucket = usageByMetaId.get(row.meta_id);
     if (!bucket) {
@@ -383,7 +382,9 @@ export async function getPipelineData(
     metaQuery = metaQuery.lte("period_end", periodEnd);
   }
 
-  const { data: metaRow, error: metaError } = await metaQuery.limit(1).maybeSingle();
+  const { data: metaRow, error: metaError } = await metaQuery
+    .limit(1)
+    .maybeSingle();
 
   if (metaError) {
     throw new Error(
@@ -393,24 +394,27 @@ export async function getPipelineData(
 
   if (!metaRow) return null;
 
-  // ── Query 2: all usage rows for this meta bucket ──────────────────────────
-  const { data: usageRows, error: usageError } = await supabase
-    .from("pokemon_usage_stats")
-    .select("species, usage_pct, rank")
-    .eq("meta_id", metaRow.id)
-    .order("rank", { ascending: true });
+  // ── Queries 2 + 3: fetch usage and detail rows in parallel ───────────────
+  const [
+    { data: usageRows, error: usageError },
+    { data: detailRows, error: detailError },
+  ] = await Promise.all([
+    supabase
+      .from("pokemon_usage_stats")
+      .select("species, usage_pct, rank")
+      .eq("meta_id", metaRow.id)
+      .order("rank", { ascending: true }),
+    supabase
+      .from("pokemon_detail_stats")
+      .select("species, abilities, natures, moves")
+      .eq("meta_id", metaRow.id),
+  ]);
 
   if (usageError) {
     throw new Error(
       `Failed to fetch usage stats for meta ${metaRow.id}: ${usageError.message}`
     );
   }
-
-  // ── Query 3: all detail rows for this meta bucket ─────────────────────────
-  const { data: detailRows, error: detailError } = await supabase
-    .from("pokemon_detail_stats")
-    .select("species, abilities, natures, moves")
-    .eq("meta_id", metaRow.id);
 
   if (detailError) {
     throw new Error(

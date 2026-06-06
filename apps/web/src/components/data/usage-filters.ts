@@ -22,11 +22,6 @@ export const VALID_SOURCES = [
 
 export const VALID_PERIOD_TYPES = ["day", "week", "month"] as const;
 
-export const VALID_MODES = ["stream", "stacked", "lines"] as const;
-
-/** The chart display mode. */
-export type ChartMode = (typeof VALID_MODES)[number];
-
 // =============================================================================
 // Validators
 // =============================================================================
@@ -94,18 +89,6 @@ export function coercePeriodType(
 }
 
 /**
- * Coerces a raw string to a valid `ChartMode`.
- *
- * Returns `"stream"` when `raw` is not one of the allowed values.
- */
-export function coerceMode(raw: string | undefined | null): ChartMode {
-  if (raw && (VALID_MODES as readonly string[]).includes(raw)) {
-    return raw as ChartMode;
-  }
-  return "stream";
-}
-
-/**
  * Coerces a raw string to a threshold number, clamped to [1, 20].
  *
  * Returns `DEFAULT_THRESHOLD` when `raw` is undefined, non-numeric, or NaN.
@@ -158,8 +141,6 @@ export function coerceRangeStart(
  * Identical behaviour to `coerceRangeStart` — both coercers validate the same
  * way; separate functions keep call-sites self-documenting.
  */
-export function coerceRangeEnd(
-  raw: string | undefined | null
-): string | null {
+export function coerceRangeEnd(raw: string | undefined | null): string | null {
   return coerceRangeStart(raw);
 }

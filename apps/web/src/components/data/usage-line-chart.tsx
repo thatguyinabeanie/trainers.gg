@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef } from "react";
+
 import {
   LineChart,
   Line,
@@ -10,7 +12,10 @@ import {
   Brush,
 } from "recharts";
 
-import { type FormatUsageTimeseriesPoint, type FormatEvent } from "@trainers/supabase";
+import {
+  type FormatUsageTimeseriesPoint,
+  type FormatEvent,
+} from "@trainers/supabase";
 
 import { buildUsageSeries, filterByThreshold } from "./usage-series";
 
@@ -57,7 +62,7 @@ function XAxisTickWithPin({
   const date = payload?.value;
   if (!date) return null;
 
-  const pin = events.find((e) => e.eventDate === date);
+  const pin = events[0]; // events is already pre-filtered to this tick by eventsForTick()
   const cx = x ?? 0;
   const cy = y ?? 0;
 
@@ -69,7 +74,11 @@ function XAxisTickWithPin({
           {pin.source === "rk9" ? "🏆" : "🌐"}
         </text>
       )}
-      <text y={14} textAnchor="middle" style={{ fontSize: 10, fill: "var(--muted-foreground)" }}>
+      <text
+        y={14}
+        textAnchor="middle"
+        style={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+      >
         {formatAxisLabel(date)}
       </text>
     </g>
@@ -92,17 +101,29 @@ export function UsageLineChart({
   onClearSelection,
 }: UsageLineChartProps) {
   // Map period points to Recharts data shape: { periodStart, [species]: pct, ... }
-  const chartData = points.map((p) => ({ periodStart: p.periodStart, ...p.usage }));
+  const chartData = points.map((p) => ({
+    periodStart: p.periodStart,
+    ...p.usage,
+  }));
 
   const allSeries = buildUsageSeries(points);
   const visibleSeries = filterByThreshold(allSeries, threshold);
 
-  const handleBrushChange = (range: { startIndex?: number; endIndex?: number }) => {
+  const rangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleBrushChange = (range: {
+    startIndex?: number;
+    endIndex?: number;
+  }) => {
     const start =
-      range.startIndex !== undefined ? points[range.startIndex]?.periodStart ?? null : null;
+      range.startIndex !== undefined
+        ? (points[range.startIndex]?.periodStart ?? null)
+        : null;
     const end =
-      range.endIndex !== undefined ? points[range.endIndex]?.periodEnd ?? null : null;
-    onRangeChange(start, end);
+      range.endIndex !== undefined
+        ? (points[range.endIndex]?.periodEnd ?? null)
+        : null;
+    if (rangeTimer.current) clearTimeout(rangeTimer.current);
+    rangeTimer.current = setTimeout(() => onRangeChange(start, end), 250);
   };
 
   const handleLineClick = (data: unknown) => {
@@ -114,14 +135,18 @@ export function UsageLineChart({
 
   // Events that fall within the visible time range
   const visibleEvents = events.filter((e) =>
-    points.some((p) => p.periodStart <= e.eventDate && e.eventDate <= p.periodEnd)
+    points.some(
+      (p) => p.periodStart <= e.eventDate && e.eventDate <= p.periodEnd
+    )
   );
 
   // Events mapped to the closest period start for X-axis tick rendering
   const eventsForTick = (periodStart: string) =>
     visibleEvents.filter((e) => {
       const closest = points.reduce((best, p) => {
-        const d = Math.abs(new Date(p.periodStart).getTime() - new Date(e.eventDate).getTime());
+        const d = Math.abs(
+          new Date(p.periodStart).getTime() - new Date(e.eventDate).getTime()
+        );
         const bd = Math.abs(
           new Date(best.periodStart).getTime() - new Date(e.eventDate).getTime()
         );
@@ -144,8 +169,13 @@ export function UsageLineChart({
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold">Usage Over Time</span>
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-xs">{visibleSeries.length} Pokémon</span>
-          <button onClick={onSelectAll} className="text-primary text-xs hover:underline">
+          <span className="text-muted-foreground text-xs">
+            {visibleSeries.length} Pokémon
+          </span>
+          <button
+            onClick={onSelectAll}
+            className="text-primary text-xs hover:underline"
+          >
             Select All
           </button>
           <button
@@ -160,11 +190,17 @@ export function UsageLineChart({
       {/* Chart */}
       <div className="bg-card rounded-xl border p-2">
         <ResponsiveContainer width="100%" height={180}>
-          <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 20, left: 0 }}>
+          <LineChart
+            data={chartData}
+            margin={{ top: 4, right: 16, bottom: 20, left: 0 }}
+          >
             <XAxis
               dataKey="periodStart"
               tick={(props) => (
-                <XAxisTickWithPin {...props} events={eventsForTick(props.payload?.value ?? "")} />
+                <XAxisTickWithPin
+                  {...props}
+                  events={eventsForTick(props.payload?.value ?? "")}
+                />
               )}
               interval="preserveStartEnd"
               tickLine={false}
@@ -182,9 +218,14 @@ export function UsageLineChart({
                 if (!active || !payload?.length) return null;
                 return (
                   <div className="bg-popover border-border rounded-md border px-2 py-1 text-xs shadow-sm">
-                    <p className="text-muted-foreground mb-1">{formatAxisLabel(label)}</p>
+                    <p className="text-muted-foreground mb-1">
+                      {formatAxisLabel(label)}
+                    </p>
                     {payload.slice(0, 8).map((entry) => (
-                      <p key={entry.dataKey as string} style={{ color: entry.color as string }}>
+                      <p
+                        key={entry.dataKey as string}
+                        style={{ color: entry.color as string }}
+                      >
                         {entry.dataKey}: {Number(entry.value).toFixed(1)}%
                       </p>
                     ))}
@@ -196,9 +237,11 @@ export function UsageLineChart({
               // A line is "active" (highlighted) when it passes BOTH the
               // selection filter and the search filter. Inactive lines dim.
               const matchesHighlight =
-                !highlight || s.species.toLowerCase().includes(highlight.toLowerCase());
+                !highlight ||
+                s.species.toLowerCase().includes(highlight.toLowerCase());
               const isActive =
-                (selectedSpecies.length === 0 || selectedSpecies.includes(s.species)) &&
+                (selectedSpecies.length === 0 ||
+                  selectedSpecies.includes(s.species)) &&
                 matchesHighlight;
               return (
                 <Line
@@ -236,7 +279,10 @@ export function UsageLineChart({
               <span
                 key={sp}
                 className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
-                style={{ background: s?.color ?? "var(--muted)", color: "white" }}
+                style={{
+                  background: s?.color ?? "var(--muted)",
+                  color: "white",
+                }}
               >
                 {sp}
               </span>
