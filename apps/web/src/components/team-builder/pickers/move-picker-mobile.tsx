@@ -64,7 +64,7 @@ type MoveEntry = {
  *
  * Opens as a bottom-sheet Drawer. Provides:
  * - Full-width search input (name, type, category, shortDesc)
- * - Scrollable virtualized list of species-legal moves
+ * - Scrollable list of species-legal moves
  * - Per-row USG chip when usage data is available
  * - Tap-to-select with current selection highlight
  */
