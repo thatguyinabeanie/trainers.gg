@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import {
   LineChart,
@@ -110,6 +110,18 @@ export function UsageLineChart({
   const visibleSeries = filterByThreshold(allSeries, threshold);
 
   const rangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear the debounce timer on unmount to prevent calling onRangeChange
+  // after the component has been torn down.
+  useEffect(() => {
+    return () => {
+      if (rangeTimer.current) {
+        clearTimeout(rangeTimer.current);
+        rangeTimer.current = null;
+      }
+    };
+  }, []);
+
   const handleBrushChange = (range: {
     startIndex?: number;
     endIndex?: number;

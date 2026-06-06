@@ -30,7 +30,6 @@ globalThis.ResizeObserver =
 // Recharts to render its children and exercises series-mapping + XAxisTick code.
 // =============================================================================
 jest.mock("recharts", () => {
-   
   const actual = jest.requireActual("recharts") as Record<string, unknown>;
   const OriginalResponsiveContainer = actual[
     "ResponsiveContainer"

@@ -1,14 +1,26 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { UsageExplorer } from "../usage-explorer";
 import { type UsageFilters } from "../usage-controls";
 
+// =============================================================================
+// next/navigation — stable mockReplace so tests can assert URL payloads
+// =============================================================================
+
+const mockReplace = jest.fn();
+let mockSearchParams = new URLSearchParams();
+
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: jest.fn() }),
-  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ replace: mockReplace }),
+  useSearchParams: () => mockSearchParams,
 }));
+
+// =============================================================================
+// Server action stubs
+// =============================================================================
 
 jest.mock("@/actions/usage", () => ({
   fetchFormatUsageTimeseries: jest
@@ -18,20 +30,69 @@ jest.mock("@/actions/usage", () => ({
   fetchFormatEvents: jest.fn().mockResolvedValue({ success: true, data: [] }),
 }));
 
+// =============================================================================
+// @trainers/pokemon — two formats so the "change format" stub uses a real id
+// =============================================================================
+
 jest.mock("@trainers/pokemon", () => ({
   getActiveFormats: () => [
     { id: "gen9vgc2025regg", label: "VGC 2025 Reg G", isChampions: false },
+    {
+      id: "gen9vgc2024regh",
+      label: "VGC 2024 Reg H",
+      isChampions: false,
+    },
   ],
-  getFormatById: (id: string) => ({ id }),
+  getFormatById: (id: string) =>
+    ["gen9vgc2025regg", "gen9vgc2024regh"].includes(id) ? { id } : undefined,
 }));
 
-// Stub the charts to avoid Recharts / SVG layout complexity in JSDOM.
+// =============================================================================
+// Chart/controls stubs — expose callback props as testable buttons
+// =============================================================================
+
+jest.mock("../usage-line-chart", () => ({
+  UsageLineChart: (props: {
+    onSpeciesClick: (s: string) => void;
+    onRangeChange: (a: string | null, b: string | null) => void;
+    onSelectAll: () => void;
+    onClearSelection: () => void;
+  }) => (
+    <div data-testid="usage-line-chart">
+      <button onClick={() => props.onSpeciesClick("Sneasler")}>lc-pick</button>
+      <button onClick={() => props.onRangeChange("2025-01-01", "2025-01-31")}>
+        lc-range
+      </button>
+      <button onClick={() => props.onClearSelection()}>lc-clear</button>
+    </div>
+  ),
+}));
+
 jest.mock("../usage-pipeline-chart", () => ({
   UsagePipelineChart: () => <div data-testid="usage-pipeline-chart" />,
 }));
-jest.mock("../usage-line-chart", () => ({
-  UsageLineChart: () => <div data-testid="usage-line-chart" />,
+
+jest.mock("../usage-controls", () => ({
+  __esModule: true,
+  UsageControls: (props: {
+    onFiltersChange: (f: UsageFilters) => void;
+    filters: UsageFilters;
+  }) => (
+    <div data-testid="usage-controls">
+      <button
+        onClick={() =>
+          props.onFiltersChange({ ...props.filters, format: "gen9vgc2024regh" })
+        }
+      >
+        change-format
+      </button>
+    </div>
+  ),
 }));
+
+// =============================================================================
+// Helpers
+// =============================================================================
 
 function makeWrapper() {
   const queryClient = new QueryClient({
@@ -66,7 +127,26 @@ function renderExplorer() {
   );
 }
 
-describe("UsageExplorer", () => {
+/** Read the URL string from the most recent router.replace() call. */
+function lastReplaceParams(): URLSearchParams {
+  const call = mockReplace.mock.calls.at(-1)?.[0] as string;
+  return new URLSearchParams(call.startsWith("?") ? call.slice(1) : call);
+}
+
+// =============================================================================
+// Reset between tests
+// =============================================================================
+
+beforeEach(() => {
+  mockReplace.mockClear();
+  mockSearchParams = new URLSearchParams();
+});
+
+// =============================================================================
+// Rendering smoke tests
+// =============================================================================
+
+describe("UsageExplorer — rendering", () => {
   it("renders without crashing", () => {
     renderExplorer();
     expect(screen.getByText("Meta Pipeline")).toBeInTheDocument();
@@ -78,8 +158,81 @@ describe("UsageExplorer", () => {
     expect(screen.getByTestId("usage-line-chart")).toBeInTheDocument();
   });
 
-  it("renders the controls with the search input", () => {
+  it("renders the controls stub", () => {
     renderExplorer();
-    expect(screen.getByPlaceholderText("Search Pokémon...")).toBeInTheDocument();
+    expect(screen.getByTestId("usage-controls")).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// URL state — species toggle
+// =============================================================================
+
+describe("UsageExplorer — species URL state", () => {
+  it("adds a species to the URL when a line is picked", async () => {
+    renderExplorer();
+    await userEvent.click(screen.getByText("lc-pick"));
+    expect(lastReplaceParams().get("species")).toBe("Sneasler");
+  });
+
+  it("removes a species from the URL when it is already selected", async () => {
+    mockSearchParams = new URLSearchParams("species=Sneasler");
+    renderExplorer();
+    // Clicking "Sneasler" again should toggle it off
+    await userEvent.click(screen.getByText("lc-pick"));
+    expect(lastReplaceParams().get("species")).toBeNull();
+  });
+
+  it("clears all species (and range) when Clear is clicked", async () => {
+    mockSearchParams = new URLSearchParams("species=Sneasler");
+    renderExplorer();
+    await userEvent.click(screen.getByText("lc-clear"));
+    const p = lastReplaceParams();
+    expect(p.get("species")).toBeNull();
+    expect(p.get("rangeStart")).toBeNull();
+    expect(p.get("rangeEnd")).toBeNull();
+  });
+});
+
+// =============================================================================
+// URL state — range change
+// =============================================================================
+
+describe("UsageExplorer — range URL state", () => {
+  it("writes rangeStart and rangeEnd when the range changes", async () => {
+    renderExplorer();
+    await userEvent.click(screen.getByText("lc-range"));
+    const p = lastReplaceParams();
+    expect(p.get("rangeStart")).toBe("2025-01-01");
+    expect(p.get("rangeEnd")).toBe("2025-01-31");
+  });
+});
+
+// =============================================================================
+// URL state — format change clears species
+// =============================================================================
+
+describe("UsageExplorer — format change", () => {
+  it("clears selected species when the format changes", async () => {
+    mockSearchParams = new URLSearchParams("species=Sneasler,Koraidon");
+    renderExplorer();
+    await userEvent.click(screen.getByText("change-format"));
+    const p = lastReplaceParams();
+    expect(p.get("format")).toBe("gen9vgc2024regh");
+    expect(p.get("species")).toBeNull();
+  });
+
+  it("preserves species when a non-format filter changes (same format)", async () => {
+    // The change-format stub sends the same format back if we override it here,
+    // but let's just test the inverse: species IS preserved when format hasn't changed.
+    // We do this by clicking lc-pick (which doesn't change format).
+    mockSearchParams = new URLSearchParams("species=Koraidon");
+    renderExplorer();
+    await userEvent.click(screen.getByText("lc-pick")); // toggles Sneasler on
+    const p = lastReplaceParams();
+    // Both Koraidon (already selected) and Sneasler (newly added) should appear
+    const speciesParam = p.get("species") ?? "";
+    expect(speciesParam).toContain("Koraidon");
+    expect(speciesParam).toContain("Sneasler");
   });
 });

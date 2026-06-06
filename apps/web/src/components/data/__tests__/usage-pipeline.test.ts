@@ -128,6 +128,38 @@ describe("buildPipelineGraph — multi-ability conserves nature→move total", (
 });
 
 // =============================================================================
+// buildPipelineGraph — empty abilities
+// =============================================================================
+
+describe("buildPipelineGraph — empty abilities", () => {
+  it("produces no dangling links and keeps node/link refs consistent", () => {
+    const result = buildPipelineGraph([makeSpecies({ abilities: [] })]);
+
+    // No nature→move (or any ability/nature/move) links when abilities is empty.
+    expect(
+      result.links.some(
+        (l) => l.source.startsWith("nature:") && l.target.startsWith("move:")
+      )
+    ).toBe(false);
+
+    // Every link endpoint references an existing node id.
+    const ids = new Set(result.nodes.map((n) => n.id));
+    for (const l of result.links) {
+      expect(ids.has(l.source)).toBe(true);
+      expect(ids.has(l.target)).toBe(true);
+    }
+
+    // The species node itself still exists even with no abilities.
+    expect(result.nodes.some((n) => n.id === "species:Sneasler")).toBe(true);
+  });
+
+  it("produces zero links when abilities is empty", () => {
+    const result = buildPipelineGraph([makeSpecies({ abilities: [] })]);
+    expect(result.links).toHaveLength(0);
+  });
+});
+
+// =============================================================================
 // buildPipelineGraph — multiple species sharing an ability node
 // =============================================================================
 
