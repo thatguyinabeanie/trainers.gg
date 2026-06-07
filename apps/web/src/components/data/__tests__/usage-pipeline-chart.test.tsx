@@ -387,4 +387,19 @@ describe("UsagePipelineChart — tooltip", () => {
     fireEvent.mouseLeave(svg);
     expect(screen.queryByText("Sneasler")).not.toBeInTheDocument();
   });
+
+  it("does not show usage percentage for non-species tooltip", () => {
+    const { container } = renderChart({
+      pipelineResult: makePipelineResult({
+        data: [makePipelineSpecies({ species: "Sneasler", usagePct: 30 })],
+      }),
+    });
+    // Non-species groups have cursor=default
+    const groups = Array.from(container.querySelectorAll("g"));
+    const nonSpeciesGroup = groups.find((g) => g.style.cursor === "default");
+    expect(nonSpeciesGroup).toBeTruthy();
+    fireEvent.mouseEnter(nonSpeciesGroup!);
+    // Should show the node label but NOT a percentage
+    expect(screen.queryByText(/\d+%/)).not.toBeInTheDocument();
+  });
 });

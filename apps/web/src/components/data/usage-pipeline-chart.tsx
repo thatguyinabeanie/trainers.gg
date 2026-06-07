@@ -75,7 +75,11 @@ export function UsagePipelineChart({
 }: UsagePipelineChartProps) {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [tooltipNode, setTooltipNode] = useState<LayoutNode | null>(null);
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [tooltipPos, setTooltipPos] = useState({
+    x: 0,
+    y: 0,
+    containerWidth: 400,
+  });
   const containerRef = useRef<HTMLDivElement>(null);
 
   if (!pipelineResult || pipelineResult.data.length === 0) {
@@ -256,6 +260,7 @@ export function UsagePipelineChart({
                   setTooltipPos({
                     x: e.clientX - rect.left,
                     y: e.clientY - rect.top,
+                    containerWidth: containerRef.current.offsetWidth,
                   });
                   setTooltipNode(node);
                 }
@@ -319,7 +324,10 @@ export function UsagePipelineChart({
       {tooltipNode && (
         <div
           className="bg-popover pointer-events-none absolute z-10 rounded-md border px-2.5 py-1.5 text-xs shadow-md"
-          style={{ left: tooltipPos.x + 14, top: tooltipPos.y - 28 }}
+          style={{
+            left: Math.min(tooltipPos.x + 14, tooltipPos.containerWidth - 120),
+            top: Math.max(4, tooltipPos.y - 28),
+          }}
         >
           <span className="font-medium">{tooltipNode.label}</span>
           {tooltipNode.column === "species" && (
