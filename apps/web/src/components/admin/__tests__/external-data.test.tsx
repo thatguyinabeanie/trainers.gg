@@ -1363,7 +1363,7 @@ describe("ExternalData limitless table rendering", () => {
     expect(screen.getAllByText(/Imported/i).length).toBeGreaterThan(0);
   });
 
-  it("queues a tournament when the queue action button is clicked", async () => {
+  it("Import on a Limitless row queues the tournament", async () => {
     const { queueTournamentForImport } = jest.requireMock(
       "@/actions/limitless"
     );
@@ -1379,10 +1379,18 @@ describe("ExternalData limitless table rendering", () => {
       expect(screen.getByText("Failed Cup")).toBeInTheDocument()
     );
 
-    // The failed row exposes a queue (download) action button in RowActions
-    const downloadButtons = screen.getAllByRole("button");
-    const queueButton = downloadButtons.find((b) => b.querySelector("svg"));
-    expect(queueButton).toBeDefined();
+    // The unified "Import" action on a Limitless row dispatches to the queue.
+    const failedRow = screen
+      .getByText("Failed Cup")
+      .closest("div.grid") as HTMLElement;
+    await act(async () => {
+      fireEvent.click(
+        within(failedRow).getByRole("button", { name: /^Import$/i })
+      );
+    });
+    await waitFor(() =>
+      expect(queueTournamentForImport).toHaveBeenCalledWith("t-failed")
+    );
   });
 });
 
