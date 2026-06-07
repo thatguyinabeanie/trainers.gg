@@ -41,7 +41,7 @@ import {
   triggerLimitlessSync,
   triggerImportQueue,
 } from "@/actions/limitless";
-import { triggerUsageRollup, calculateSourceUsage } from "@/actions/usage";
+import { triggerUsageRollup, calculateAllSourceUsage } from "@/actions/usage";
 import { getSiteConfig, setSiteConfig } from "@/actions/site-config";
 import { formatTimeAgo, getErrorMessage } from "@trainers/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -277,17 +277,12 @@ export function ExternalData() {
 
   // Usage rollup state
   const [recomputingUsage, setRecomputingUsage] = useState(false);
-  const [usageMessage, setUsageMessage] = useState<string | null>(null);
 
-  // Per-source usage calculation state
-  const [calculatingRk9, setCalculatingRk9] = useState(false);
-  const [calculateRk9Message, setCalculateRk9Message] = useState<string | null>(
-    null
-  );
-  const [calculatingLimitless, setCalculatingLimitless] = useState(false);
-  const [calculateLimitlessMessage, setCalculateLimitlessMessage] = useState<
-    string | null
-  >(null);
+  // Global cross-source usage calculation state
+  const [calculatingUsage, setCalculatingUsage] = useState(false);
+
+  // Last time usage was calculated/recomputed successfully (ISO string)
+  const [lastCalculatedAt, setLastCalculatedAt] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Load auto-import settings from DB (per-source)
@@ -972,48 +967,44 @@ export function ExternalData() {
 
   async function handleRecomputeUsage() {
     setRecomputingUsage(true);
-    setUsageMessage(null);
     try {
       const result = await triggerUsageRollup({ force: true });
       if (!result.success) throw new Error(result.error);
       const { ran, formatsProcessed, bucketsWritten } = result.data;
-      setUsageMessage(
-        ran
-          ? `Recomputed ${formatsProcessed} format(s), ${bucketsWritten} bucket(s)`
-          : "No dirty formats — skipped"
-      );
+      if (ran) {
+        toast.success(
+          `Recomputed ${formatsProcessed} format(s) · ${bucketsWritten} bucket(s)`
+        );
+        setLastCalculatedAt(new Date().toISOString());
+      } else {
+        toast.success("No dirty formats — skipped");
+      }
     } catch (err) {
-      setUsageMessage(
-        `Error: ${err instanceof Error ? err.message : "Recompute failed"}`
-      );
+      toast.error(getErrorMessage(err, "Recompute failed"));
     } finally {
       setRecomputingUsage(false);
     }
   }
 
-  async function handleCalculateUsage(source: "rk9" | "limitless") {
-    const setCalculating =
-      source === "rk9" ? setCalculatingRk9 : setCalculatingLimitless;
-    const setMessage =
-      source === "rk9" ? setCalculateRk9Message : setCalculateLimitlessMessage;
-    setCalculating(true);
-    setMessage(null);
+  async function handleCalculateUsage() {
+    setCalculatingUsage(true);
     try {
-      const result = await calculateSourceUsage(source);
+      const result = await calculateAllSourceUsage();
       if (!result.success) throw new Error(result.error);
       const { eventsComputed, formatsProcessed, bucketsWritten } = result.data;
-      setMessage(
-        eventsComputed === 0
-          ? "No new events"
-          : `Computed ${eventsComputed} event(s), ${formatsProcessed} format(s), ${bucketsWritten} bucket(s)`
-      );
+      if (eventsComputed === 0) {
+        toast.success("No new events");
+      } else {
+        toast.success(
+          `Computed ${eventsComputed} event(s) · ${formatsProcessed} format(s) · ${bucketsWritten} bucket(s)`
+        );
+      }
+      setLastCalculatedAt(new Date().toISOString());
       setRefreshKey((k) => k + 1);
     } catch (err) {
-      setMessage(
-        `Error: ${err instanceof Error ? err.message : "Calculation failed"}`
-      );
+      toast.error(getErrorMessage(err, "Calculation failed"));
     } finally {
-      setCalculating(false);
+      setCalculatingUsage(false);
     }
   }
 
@@ -1463,8 +1454,9 @@ export function ExternalData() {
                 onRefresh={() => setRefreshKey((k) => k + 1)}
                 onRecomputeUsage={handleRecomputeUsage}
                 recomputingUsage={recomputingUsage}
-                onCalculateUsage={() => handleCalculateUsage("rk9")}
-                calculatingUsage={calculatingRk9}
+                onCalculateUsage={handleCalculateUsage}
+                calculatingUsage={calculatingUsage}
+                lastCalculatedAt={lastCalculatedAt}
                 onDiscover={handleDiscover}
                 isDiscovering={isDiscovering}
                 onScrapeRostersMatching={handleScrapeRostersMatching}
@@ -1486,31 +1478,6 @@ export function ExternalData() {
                   {discoverMessage}
                 </p>
               )}
-              {calculateRk9Message && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    calculateRk9Message.startsWith("Error")
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {calculateRk9Message}
-                </p>
-              )}
-              {usageMessage && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    usageMessage.startsWith("Error")
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {usageMessage}
-                </p>
-              )}
-
               {/* RK9 Status Tabs */}
               <StatusTabs
                 tabs={rk9Tabs}
@@ -1557,8 +1524,9 @@ export function ExternalData() {
             onRefresh={() => setRefreshKey((k) => k + 1)}
             onRecomputeUsage={handleRecomputeUsage}
             recomputingUsage={recomputingUsage}
-            onCalculateUsage={() => handleCalculateUsage("limitless")}
-            calculatingUsage={calculatingLimitless}
+            onCalculateUsage={handleCalculateUsage}
+            calculatingUsage={calculatingUsage}
+            lastCalculatedAt={lastCalculatedAt}
             onSync={handleSync}
             syncing={syncing}
             onQueueMatching={handleQueueMatching}
@@ -1592,31 +1560,6 @@ export function ExternalData() {
               {importMessage}
             </p>
           )}
-          {usageMessage && (
-            <p
-              className={cn(
-                "text-xs",
-                usageMessage.startsWith("Error")
-                  ? "text-red-500"
-                  : "text-muted-foreground"
-              )}
-            >
-              {usageMessage}
-            </p>
-          )}
-          {calculateLimitlessMessage && (
-            <p
-              className={cn(
-                "text-xs",
-                calculateLimitlessMessage.startsWith("Error")
-                  ? "text-red-500"
-                  : "text-muted-foreground"
-              )}
-            >
-              {calculateLimitlessMessage}
-            </p>
-          )}
-
           {/* Limitless Status Tabs */}
           <StatusTabs
             tabs={limitlessTabs}

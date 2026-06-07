@@ -9,6 +9,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 
+import { formatTimeAgo } from "@trainers/utils";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -37,6 +39,7 @@ export interface ExternalDataToolbarProps {
   recomputingUsage: boolean;
   onCalculateUsage: () => void;
   calculatingUsage: boolean;
+  lastCalculatedAt?: string | null;
   // RK9 import group
   onDiscover?: () => void;
   isDiscovering?: boolean;
@@ -257,25 +260,45 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
 
           <span className="bg-border h-5 w-px" />
           <span className={LABEL}>Usage</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="hover:bg-accent hover:text-accent-foreground inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
-              <BarChart2 className="mr-1.5 size-3.5" /> Usage ▾
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={props.onRecomputeUsage}
-                disabled={props.recomputingUsage}
+          <div className="flex items-center gap-1.5">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                disabled={props.recomputingUsage || props.calculatingUsage}
+                className="hover:bg-accent hover:text-accent-foreground inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
               >
-                Recompute Usage
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={props.onCalculateUsage}
-                disabled={props.calculatingUsage}
-              >
-                Calculate Usage
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {props.recomputingUsage || props.calculatingUsage ? (
+                  <>
+                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                    Recalculating usage…
+                  </>
+                ) : (
+                  <>
+                    <BarChart2 className="mr-1.5 size-3.5" /> Usage{" "}
+                    <ChevronDown className="size-3" />
+                  </>
+                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={props.onRecomputeUsage}
+                  disabled={props.recomputingUsage}
+                >
+                  Recompute Usage
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={props.onCalculateUsage}
+                  disabled={props.calculatingUsage}
+                >
+                  Calculate Usage
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {props.lastCalculatedAt && (
+              <span className="text-muted-foreground text-xs">
+                {formatTimeAgo(props.lastCalculatedAt)}
+              </span>
+            )}
+          </div>
 
           <span className="bg-border h-5 w-px" />
           <ExternalDataSettings {...props.settings} />

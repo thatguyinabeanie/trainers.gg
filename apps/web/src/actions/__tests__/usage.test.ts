@@ -53,6 +53,7 @@ import {
 import { updateTag } from "next/cache";
 import {
   calculateSourceUsage,
+  calculateAllSourceUsage,
   triggerUsageRollup,
   fetchSpeciesUsageDetail,
   fetchFormatUsage,
@@ -831,5 +832,114 @@ describe("fetchFormatEvents", () => {
     const result = await fetchFormatEvents("gen9vgc2025regg");
 
     expect(result.success).toBe(false);
+  });
+});
+
+// =============================================================================
+// calculateAllSourceUsage
+// =============================================================================
+
+describe("calculateAllSourceUsage", () => {
+  it("sums results across all sources (rk9 + limitless)", async () => {
+    // rk9: 2 events, 1 format, 3 buckets
+    mockComputeSourceUsage
+      .mockResolvedValueOnce({
+        eventsComputed: 2,
+        formats: ["gen9vgc2025regg"],
+      })
+      .mockResolvedValueOnce({
+        eventsComputed: 5,
+        formats: ["gen9vgc2025regg", "gen9vgc2025regs"],
+      });
+    mockComputeUsageRollups
+      .mockResolvedValueOnce({ formatsProcessed: 1, bucketsWritten: 3 })
+      .mockResolvedValueOnce({ formatsProcessed: 2, bucketsWritten: 4 });
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        eventsComputed: 7,
+        formatsProcessed: 3,
+        bucketsWritten: 7,
+      });
+    }
+  });
+
+  it("returns zero counts when both sources have no new events", async () => {
+    mockComputeSourceUsage
+      .mockResolvedValueOnce({ eventsComputed: 0, formats: [] })
+      .mockResolvedValueOnce({ eventsComputed: 0, formats: [] });
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        eventsComputed: 0,
+        formatsProcessed: 0,
+        bucketsWritten: 0,
+      });
+    }
+    // No new events → rollup must be skipped for both sources
+    expect(mockComputeUsageRollups).not.toHaveBeenCalled();
+  });
+
+  it("returns failure if any source fails", async () => {
+    // First source (rk9) fails immediately
+    mockComputeSourceUsage.mockRejectedValueOnce(new Error("boom"));
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/boom/);
+    }
+  });
+
+  it("returns failure if second source fails", async () => {
+    // rk9 succeeds, limitless fails
+    mockComputeSourceUsage
+      .mockResolvedValueOnce({
+        eventsComputed: 2,
+        formats: ["gen9vgc2025regg"],
+      })
+      .mockRejectedValueOnce(new Error("limitless boom"));
+    mockComputeUsageRollups.mockResolvedValueOnce({
+      formatsProcessed: 1,
+      bucketsWritten: 2,
+    });
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/limitless boom/);
+    }
+  });
+
+  it("returns error when not authenticated", async () => {
+    mockGetUserId.mockResolvedValueOnce(null);
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Not authenticated");
+    }
+    expect(mockComputeSourceUsage).not.toHaveBeenCalled();
+  });
+
+  it("returns error when user is not a site admin", async () => {
+    mockIsSiteAdmin.mockResolvedValueOnce(false);
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Requires site admin");
+    }
+    expect(mockComputeSourceUsage).not.toHaveBeenCalled();
   });
 });
