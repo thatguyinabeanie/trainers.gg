@@ -1768,10 +1768,10 @@ export function ExternalData() {
             <div className="text-muted-foreground py-12 text-center text-sm">
               {totalRowCount === 0
                 ? filters.source === "rk9"
-                  ? "No RK9 events found. Click Discover RK9 to import events."
+                  ? "No RK9 events found. Click Sync to fetch events."
                   : filters.source === "limitless"
-                    ? "No Limitless tournaments found. Click Sync Limitless to import tournaments."
-                    : "No events found. Click Discover or Sync to import events."
+                    ? "No Limitless tournaments found. Click Sync to fetch tournaments."
+                    : "No events found. Click Sync to fetch the latest from each source."
                 : "No events match your filters."}
             </div>
           ) : (
