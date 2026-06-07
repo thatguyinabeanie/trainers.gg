@@ -7,6 +7,13 @@ import {
   type PipelineSpeciesData,
 } from "@trainers/supabase";
 
+jest.mock("@trainers/pokemon/sprites", () => ({
+  getPokemonSprite: (species: string) => ({
+    url: `https://sprites.test/${species}.png`,
+    pixelated: true,
+  }),
+}));
+
 // =============================================================================
 // Test data helpers
 // =============================================================================
@@ -281,39 +288,33 @@ describe("UsagePipelineChart — multiple species", () => {
 });
 
 // =============================================================================
-// Long species name truncation
+// Species sprite labels
 // =============================================================================
 
-describe("UsagePipelineChart — label truncation", () => {
-  it("truncates species names longer than 12 characters with ellipsis", () => {
-    // "Iron Valiant" is 12 chars, "Great Tusk" is 9 — use something >12
+describe("UsagePipelineChart — species sprite labels", () => {
+  it("renders a sprite <image> element for each species node", () => {
     const { container } = renderChart({
       pipelineResult: makePipelineResult({
-        data: [
-          makePipelineSpecies({
-            species: "Flutter Mane", // 12 chars — boundary
-            usagePct: 30,
-          }),
-        ],
+        data: [makePipelineSpecies({ species: "Sneasler" })],
       }),
     });
-    // The component truncates at >12 chars (label.length > 12)
-    // "Flutter Mane" is exactly 12 — should NOT be truncated
-    expect(container.textContent).toContain("Flutter Mane");
+    const images = container.querySelectorAll("image");
+    expect(images.length).toBeGreaterThan(0);
+    const spriteImg = Array.from(images).find((img) =>
+      img.getAttribute("href")?.includes("Sneasler")
+    );
+    expect(spriteImg).toBeTruthy();
   });
 
-  it("truncates species names of 13+ characters", () => {
+  it("does NOT render species name as a <text> label", () => {
     const { container } = renderChart({
       pipelineResult: makePipelineResult({
-        data: [
-          makePipelineSpecies({
-            species: "Raging Bolt VGC", // >12 chars
-            usagePct: 30,
-          }),
-        ],
+        data: [makePipelineSpecies({ species: "Sneasler" })],
       }),
     });
-    // Should be truncated: first 11 chars + "…"
-    expect(container.textContent).toContain("Raging Bolt…");
+    const speciesTexts = Array.from(container.querySelectorAll("text")).filter(
+      (t) => t.textContent === "Sneasler"
+    );
+    expect(speciesTexts.length).toBe(0);
   });
 });

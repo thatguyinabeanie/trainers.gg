@@ -4,6 +4,7 @@ import { useState } from "react";
 import { sankey, sankeyLinkHorizontal, type SankeyGraph } from "d3-sankey";
 
 import { type PipelineDataResult } from "@trainers/supabase";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
 import { buildPipelineGraph, type PipelineNode } from "./usage-pipeline";
 
@@ -28,6 +29,7 @@ interface LayoutNode extends PipelineNode {
   x1: number;
   y0: number;
   y1: number;
+  value: number; // d3-sankey: sum of outgoing link values (≈ usagePct for species)
   index?: number;
 }
 
@@ -51,6 +53,8 @@ const VIEWBOX_WIDTH = 1000;
 const VIEWBOX_HEIGHT = 420;
 const NODE_WIDTH = 18;
 const NODE_PADDING = 12;
+const SPRITE_BAND = 32; // SVG units reserved on the left for species sprites
+const SPRITE_GAP = 4; // gap between sprite right-edge and species bar
 
 const COLUMN_LABELS: Record<string, string> = {
   species: "Species",
@@ -132,7 +136,7 @@ export function UsagePipelineChart({
       return order[(node as D3Node).column] ?? 0;
     })
     .extent([
-      [0, 30],
+      [SPRITE_BAND + SPRITE_GAP, 30], // was [0, 30] — reserve left band for sprites
       [VIEWBOX_WIDTH, VIEWBOX_HEIGHT - 10],
     ]);
 
@@ -262,19 +266,39 @@ export function UsagePipelineChart({
                 stroke={isSelected ? "white" : "transparent"}
                 strokeWidth={isSelected ? 2 : 0}
               />
-              {/* Label — show if tall enough */}
-              {node.y1 - node.y0 > 14 && (
-                <text
-                  x={node.x1 + 6}
-                  y={(node.y0 + node.y1) / 2}
-                  dominantBaseline="middle"
-                  style={{ fontSize: 10, fill: "var(--foreground)" }}
-                >
-                  {node.label.length > 12
-                    ? node.label.slice(0, 11) + "…"
-                    : node.label}
-                </text>
-              )}
+              {/* Species: sprite icon in the left band. Others: text label to the right. */}
+              {isSpecies
+                ? (() => {
+                    const sprite = getPokemonSprite(node.label);
+                    const midY = (node.y0 + node.y1) / 2;
+                    const size = Math.min(SPRITE_BAND, node.y1 - node.y0);
+                    return (
+                      <image
+                        href={sprite.url}
+                        x={node.x0 - SPRITE_BAND - SPRITE_GAP}
+                        y={midY - size / 2}
+                        width={size}
+                        height={size}
+                        style={
+                          sprite.pixelated
+                            ? { imageRendering: "pixelated" }
+                            : undefined
+                        }
+                      />
+                    );
+                  })()
+                : node.y1 - node.y0 > 14 && (
+                    <text
+                      x={node.x1 + 6}
+                      y={(node.y0 + node.y1) / 2}
+                      dominantBaseline="middle"
+                      style={{ fontSize: 10, fill: "var(--foreground)" }}
+                    >
+                      {node.label.length > 12
+                        ? node.label.slice(0, 11) + "…"
+                        : node.label}
+                    </text>
+                  )}
             </g>
           );
         })}
