@@ -338,3 +338,53 @@ describe("UsagePipelineChart — non-species text labels", () => {
     expect(abilityText).toBeTruthy();
   });
 });
+
+// =============================================================================
+// Tooltip
+// =============================================================================
+
+describe("UsagePipelineChart — tooltip", () => {
+  it("shows a tooltip with the species name when mouseEnter fires on a species node", () => {
+    const { container } = renderChart({
+      pipelineResult: makePipelineResult({
+        data: [makePipelineSpecies({ species: "Sneasler", usagePct: 30 })],
+      }),
+    });
+    const groups = Array.from(container.querySelectorAll("g"));
+    const speciesGroup = groups.find((g) => g.style.cursor === "pointer");
+    expect(speciesGroup).toBeTruthy();
+
+    fireEvent.mouseEnter(speciesGroup!);
+
+    expect(screen.getByText("Sneasler")).toBeInTheDocument();
+  });
+
+  it("shows usage percentage for species tooltip", () => {
+    const { container } = renderChart({
+      pipelineResult: makePipelineResult({
+        data: [makePipelineSpecies({ species: "Sneasler", usagePct: 30 })],
+      }),
+    });
+    const groups = Array.from(container.querySelectorAll("g"));
+    const speciesGroup = groups.find((g) => g.style.cursor === "pointer");
+    fireEvent.mouseEnter(speciesGroup!);
+    // Tooltip shows "· 30%" alongside the name
+    expect(screen.getByText(/30%/)).toBeInTheDocument();
+  });
+
+  it("hides the tooltip when mouse leaves the SVG", () => {
+    const { container } = renderChart({
+      pipelineResult: makePipelineResult({
+        data: [makePipelineSpecies({ species: "Sneasler", usagePct: 30 })],
+      }),
+    });
+    const groups = Array.from(container.querySelectorAll("g"));
+    const speciesGroup = groups.find((g) => g.style.cursor === "pointer");
+    fireEvent.mouseEnter(speciesGroup!);
+    expect(screen.getByText("Sneasler")).toBeInTheDocument();
+
+    const svg = container.querySelector("svg")!;
+    fireEvent.mouseLeave(svg);
+    expect(screen.queryByText("Sneasler")).not.toBeInTheDocument();
+  });
+});

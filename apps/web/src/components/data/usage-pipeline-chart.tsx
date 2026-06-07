@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { sankey, sankeyLinkHorizontal, type SankeyGraph } from "d3-sankey";
 
 import { type PipelineDataResult } from "@trainers/supabase";
@@ -74,6 +74,9 @@ export function UsagePipelineChart({
   onSpeciesClick,
 }: UsagePipelineChartProps) {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [tooltipNode, setTooltipNode] = useState<LayoutNode | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   if (!pipelineResult || pipelineResult.data.length === 0) {
     return (
@@ -186,12 +189,13 @@ export function UsagePipelineChart({
   }
 
   return (
-    <div className="w-full">
+    <div ref={containerRef} className="relative w-full">
       <svg
         viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
         className="w-full"
         style={{ height: "clamp(400px, 65vh, 720px)" }}
         aria-label="Meta Pipeline Sankey diagram"
+        onMouseLeave={() => setTooltipNode(null)}
       >
         {/* Column headers */}
         {Object.entries(columnHeaderX).map(([col, cx]) => (
@@ -245,7 +249,17 @@ export function UsagePipelineChart({
               tabIndex={isSpecies ? 0 : undefined}
               aria-label={isSpecies ? `Select ${node.label}` : undefined}
               opacity={nodeOpacity(node.id)}
-              onMouseEnter={() => setHoveredNodeId(node.id)}
+              onMouseEnter={(e) => {
+                setHoveredNodeId(node.id);
+                if (containerRef.current) {
+                  const rect = containerRef.current.getBoundingClientRect();
+                  setTooltipPos({
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top,
+                  });
+                  setTooltipNode(node);
+                }
+              }}
               onMouseLeave={() => setHoveredNodeId(null)}
               onClick={() => isSpecies && onSpeciesClick(node.label)}
               onKeyDown={(e) => {
@@ -300,6 +314,21 @@ export function UsagePipelineChart({
           );
         })}
       </svg>
+
+      {/* Floating tooltip */}
+      {tooltipNode && (
+        <div
+          className="bg-popover pointer-events-none absolute z-10 rounded-md border px-2.5 py-1.5 text-xs shadow-md"
+          style={{ left: tooltipPos.x + 14, top: tooltipPos.y - 28 }}
+        >
+          <span className="font-medium">{tooltipNode.label}</span>
+          {tooltipNode.column === "species" && (
+            <span className="text-muted-foreground ml-1">
+              · {Math.round(tooltipNode.value)}%
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Period label */}
       <p className="text-muted-foreground mt-1 text-right text-xs">
