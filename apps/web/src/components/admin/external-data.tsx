@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
 import {
@@ -24,7 +24,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
@@ -52,10 +51,8 @@ import {
   type RK9EventRow,
   type LimitlessTournamentRow,
   type UnifiedRow,
-  type RK9FilterState,
-  type LimitlessFilterState,
-  INITIAL_RK9_FILTERS,
-  INITIAL_LIMITLESS_FILTERS,
+  type ImportFilterState,
+  INITIAL_IMPORT_FILTERS,
   queueableIds,
   rosterEligibleIds,
   teamsEligibleIds,
@@ -190,12 +187,7 @@ export function ExternalData() {
   const isClient = useIsClient();
 
   const [refreshKey, setRefreshKey] = useState(0);
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<"rk9" | "limitless">(
-    tabParam === "limitless" ? "limitless" : "rk9"
-  );
 
   // Expanded row state
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
@@ -209,30 +201,30 @@ export function ExternalData() {
     current: string;
   } | null>(null);
 
-  // Render-time tab-change reset — collapses any open row when switching tabs
-  const [prevTab, setPrevTab] = useState<typeof activeTab | symbol>(
-    UNINITIALIZED
-  );
-  if (activeTab !== prevTab) {
-    setPrevTab(activeTab);
+  // Render-time source-change reset — collapses any open row when switching source
+  const [prevSource, setPrevSource] = useState<
+    ImportFilterState["source"] | symbol
+  >(UNINITIALIZED);
+
+  // Unified filter + sort state
+  const [filters, setFilters] = useState<ImportFilterState>(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "rk9" || tabParam === "limitless") {
+      return { ...INITIAL_IMPORT_FILTERS, source: tabParam };
+    }
+    return INITIAL_IMPORT_FILTERS;
+  });
+  const [sort, setSort] = useState<SortState>({
+    column: "date",
+    direction: "desc",
+  });
+
+  // Reset row expansion + selection on source change (render-time, no effect)
+  if (filters.source !== prevSource) {
+    setPrevSource(filters.source);
     setExpandedRowId(null);
     setSelectedIds(new Set());
   }
-
-  // Per-tab filter state
-  const [rk9Filters, setRk9Filters] =
-    useState<RK9FilterState>(INITIAL_RK9_FILTERS);
-  const [rk9Sort, setRk9Sort] = useState<SortState>({
-    column: "date",
-    direction: "desc",
-  });
-  const [limFilters, setLimFilters] = useState<LimitlessFilterState>(
-    INITIAL_LIMITLESS_FILTERS
-  );
-  const [limSort, setLimSort] = useState<SortState>({
-    column: "date",
-    direction: "desc",
-  });
 
   // Auto-import state (backend = pg_cron)
   const [rk9BackendAutoImport, setRk9BackendAutoImport] = useState(false);
@@ -552,11 +544,16 @@ export function ExternalData() {
   const rk9Rows: UnifiedRow[] = (rk9Events ?? [])
     .map((e) => {
       const upcoming = isUpcoming(e.date_start);
+      // Derive a regulation label from format_id (same lookup Limitless uses),
+      // falling back to tier so rows without a format_id still show something.
+      const rk9Category =
+        (e.format_id != null ? FORMAT_ID_TO_CODE[e.format_id] : undefined) ??
+        e.tier;
       return {
         id: `rk9-${e.event_id}`,
         source: "rk9" as const,
         name: e.name,
-        category: e.tier,
+        category: rk9Category,
         date: e.date_start,
         playerCount: e.player_count,
         status: normalizeRk9Status(e.import_status, upcoming),
@@ -571,51 +568,6 @@ export function ExternalData() {
       };
     })
     .map((row) => ({ ...row, displayStatus: deriveDisplayStatus(row) }));
-
-  const filteredRk9Rows = rk9Rows
-    .filter((row) => {
-      const f = rk9Filters;
-      if (f.status !== "all" && row.displayStatus !== f.status) return false;
-      if (f.tier !== "all" && row.category !== f.tier) return false;
-      if (f.country !== "all" && row.country !== f.country) return false;
-      if (f.dateFrom && row.date < f.dateFrom) return false;
-      if (f.dateTo && row.date > f.dateTo) return false;
-      if (
-        f.minPlayers &&
-        row.playerCount !== null &&
-        row.playerCount < Number(f.minPlayers)
-      )
-        return false;
-      if (f.hasData === "yes" && !row.hasData) return false;
-      if (f.hasData === "no" && row.hasData) return false;
-      if (f.search) {
-        const q = f.search.toLowerCase();
-        if (
-          !row.name.toLowerCase().includes(q) &&
-          !row.id.toLowerCase().includes(q) &&
-          !row.category.toLowerCase().includes(q)
-        )
-          return false;
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      const { column, direction } = rk9Sort;
-      switch (column) {
-        case "name":
-          return compareValues(a.name, b.name, direction);
-        case "category":
-          return compareValues(a.category, b.category, direction);
-        case "date":
-          return compareValues(a.date, b.date, direction);
-        case "playerCount":
-          return compareValues(a.playerCount, b.playerCount, direction);
-        case "status":
-          return compareValues(a.status, b.status, direction);
-        default:
-          return 0;
-      }
-    });
 
   // Limitless rows — two-pass: build the full shape first, then derive displayStatus
   const limitlessRows: UnifiedRow[] = (limitlessTournaments ?? [])
@@ -638,23 +590,53 @@ export function ExternalData() {
     }))
     .map((row) => ({ ...row, displayStatus: deriveDisplayStatus(row) }));
 
-  const filteredLimitlessRows = limitlessRows
+  // All rows from both sources
+  const allRows: UnifiedRow[] = [...rk9Rows, ...limitlessRows];
+
+  // Source-filtered rows (before status/other filters) — used for counts
+  const sourceRows =
+    filters.source === "all"
+      ? allRows
+      : allRows.filter((r) => r.source === filters.source);
+
+  // Unified filtered + sorted rows
+  const filteredRows = allRows
     .filter((row) => {
-      const f = limFilters;
-      // was: if (f.status !== "all" && row.status !== f.status) return false;
+      const f = filters;
+      // Source filter
+      if (f.source !== "all" && row.source !== f.source) return false;
+      // Status filter (unified display status)
       if (f.status !== "all" && row.displayStatus !== f.status) return false;
+      // Format filter (regulation code for both sources)
       if (f.format !== "all" && row.category !== f.format) return false;
-      if (f.platform !== "all" && row.platform !== f.platform) return false;
+      // Platform — only applies to Limitless rows
+      if (
+        f.platform !== "all" &&
+        row.source === "limitless" &&
+        row.platform !== f.platform
+      )
+        return false;
+      // Country — only applies to RK9 rows
+      if (
+        f.country !== "all" &&
+        row.source === "rk9" &&
+        row.country !== f.country
+      )
+        return false;
+      // Data available
+      if (f.hasData === "yes" && !row.hasData) return false;
+      if (f.hasData === "no" && row.hasData) return false;
+      // Date range
       if (f.dateFrom && row.date < f.dateFrom) return false;
       if (f.dateTo && row.date > f.dateTo) return false;
+      // Min players
       if (
         f.minPlayers &&
         row.playerCount !== null &&
         row.playerCount < Number(f.minPlayers)
       )
         return false;
-      if (f.hasData === "yes" && !row.hasData) return false;
-      if (f.hasData === "no" && row.hasData) return false;
+      // Search
       if (f.search) {
         const q = f.search.toLowerCase();
         if (
@@ -667,8 +649,10 @@ export function ExternalData() {
       return true;
     })
     .sort((a, b) => {
-      const { column, direction } = limSort;
+      const { column, direction } = sort;
       switch (column) {
+        case "source":
+          return compareValues(a.source, b.source, direction);
         case "name":
           return compareValues(a.name, b.name, direction);
         case "category":
@@ -679,28 +663,17 @@ export function ExternalData() {
           return compareValues(a.playerCount, b.playerCount, direction);
         case "status":
           return compareValues(a.status, b.status, direction);
-        case "queueOrder": {
-          const aTime = a.limitless?.import_requested_at ?? "";
-          const bTime = b.limitless?.import_requested_at ?? "";
-          return compareValues(aTime, bTime, direction);
-        }
         default:
           return 0;
       }
     });
 
-  // Current tab's rows for the virtualizer
-  const currentRows =
-    activeTab === "rk9" ? filteredRk9Rows : filteredLimitlessRows;
-  const totalRowCount =
-    activeTab === "rk9" ? rk9Rows.length : limitlessRows.length;
-  const currentSort = activeTab === "rk9" ? rk9Sort : limSort;
-  const setCurrentSort =
-    activeTab === "rk9"
-      ? (s: SortState) => setRk9Sort(s)
-      : (s: SortState) => setLimSort(s);
+  // Alias for the virtualizer
+  const currentRows = filteredRows;
+  const totalRowCount = sourceRows.length;
 
-  // Bulk action eligibility
+  // Bulk action eligibility — operate on full unfiltered rows so selection
+  // counts are always accurate regardless of active filters
   const selectedRk9Rows = rk9Rows.filter((r) => selectedIds.has(r.id));
   const rosterEligibleSelected = selectedRk9Rows.filter(
     (r) =>
@@ -718,13 +691,12 @@ export function ExternalData() {
       (!r.limitless!.import_status || r.limitless!.import_status === "failed")
   );
 
-  // Derive unique filter options from data
-  const rk9Tiers = [...new Set(rk9Rows.map((r) => r.category))].sort();
-  const rk9Countries = [
+  // Derive unique filter options from ALL rows (both sources)
+  const allCountries = [
     ...new Set(rk9Rows.map((r) => r.country).filter(Boolean) as string[]),
   ].sort();
-  const limitlessFormats = [
-    ...new Set(limitlessRows.map((r) => r.category)),
+  const allFormats = [
+    ...new Set(allRows.map((r) => r.category).filter(Boolean)),
   ].sort();
 
   // -------------------------------------------------------------------------
@@ -746,18 +718,23 @@ export function ExternalData() {
 
   // ---------------------------------------------------------------------------
   // Filter-aware bulk targets (toolbar "Queue/Scrape Matching" buttons)
+  // Use the currently filtered+source-scoped rows so counts stay coherent.
   // ---------------------------------------------------------------------------
-  const limitlessQueueMatchingIds = queueableIds(filteredLimitlessRows);
-  const rk9RosterMatchingIds = rosterEligibleIds(filteredRk9Rows);
-  const rk9TeamsMatchingIds = teamsEligibleIds(filteredRk9Rows);
+  const rk9FilteredRows = filteredRows.filter((r) => r.source === "rk9");
+  const limitlessFilteredRows = filteredRows.filter(
+    (r) => r.source === "limitless"
+  );
+  const limitlessQueueMatchingIds = queueableIds(limitlessFilteredRows);
+  const rk9RosterMatchingIds = rosterEligibleIds(rk9FilteredRows);
+  const rk9TeamsMatchingIds = teamsEligibleIds(rk9FilteredRows);
 
   // Status chip arrays
   const limitlessFailedCount = (limitlessTournaments ?? []).filter(
     (t) => t.import_status === "failed"
   ).length;
 
-  // Per-display-status counts for status tabs (both sources).
-  const limitlessStatusCounts = limitlessRows.reduce(
+  // Per-display-status counts for unified status tabs — over source-scoped rows
+  const sourceStatusCounts = sourceRows.reduce(
     (acc, r) => {
       acc[r.displayStatus] = (acc[r.displayStatus] ?? 0) + 1;
       return acc;
@@ -765,7 +742,8 @@ export function ExternalData() {
     {} as Record<string, number>
   );
 
-  const rk9StatusCounts = rk9Rows.reduce(
+  // Limitless-specific counts for chips + skipped banner
+  const limitlessStatusCounts = limitlessRows.reduce(
     (acc, r) => {
       acc[r.displayStatus] = (acc[r.displayStatus] ?? 0) + 1;
       return acc;
@@ -800,6 +778,26 @@ export function ExternalData() {
     { label: "imported", count: rk9Imported, tone: "imported" },
     { label: "failed", count: rk9FailedCount, tone: "failed" },
   ];
+  const allChips: StatusChip[] = [
+    { label: "rk9 events", count: rk9Total, tone: "synced" as const },
+    { label: "lim synced", count: totalSynced, tone: "synced" as const },
+    {
+      label: "imported",
+      count: rk9Imported + totalImported,
+      tone: "imported" as const,
+    },
+    {
+      label: "failed",
+      count: rk9FailedCount + limitlessFailedCount,
+      tone: "failed" as const,
+    },
+  ];
+  const activeChips =
+    filters.source === "rk9"
+      ? rk9Chips
+      : filters.source === "limitless"
+        ? limitlessChips
+        : allChips;
 
   const nextQueuedItem =
     (limitlessTournaments ?? [])
@@ -1267,54 +1265,41 @@ export function ExternalData() {
     overscan: 10,
   });
 
-  const limitlessTabs: StatusTab[] = [
-    { value: "all", label: "All", count: limitlessRows.length },
+  // Unified status tabs — counts over source-scoped rows.
+  // Skipped tab only shown when viewing Limitless or All (RK9 has no skipped concept).
+  const showSkippedTab = filters.source !== "rk9" && limitlessSkippedCount > 0;
+  const statusTabs: StatusTab[] = [
+    { value: "all", label: "All", count: sourceRows.length },
     {
       value: "pending",
       label: "Pending",
-      count: limitlessStatusCounts["pending"] ?? 0,
+      count: sourceStatusCounts["pending"] ?? 0,
     },
     {
       value: "in-progress",
       label: "In progress",
-      count: limitlessStatusCounts["in-progress"] ?? 0,
+      count: sourceStatusCounts["in-progress"] ?? 0,
     },
     {
       value: "imported",
       label: "Imported",
-      count: limitlessStatusCounts["imported"] ?? 0,
+      count: sourceStatusCounts["imported"] ?? 0,
     },
     {
       value: "failed",
       label: "Failed",
-      count: limitlessStatusCounts["failed"] ?? 0,
+      count: sourceStatusCounts["failed"] ?? 0,
     },
-    {
-      value: "skipped",
-      label: "Skipped",
-      count: limitlessSkippedCount,
-      tone: "skipped",
-    },
-  ];
-
-  const rk9Tabs: StatusTab[] = [
-    { value: "all", label: "All", count: rk9Rows.length },
-    {
-      value: "pending",
-      label: "Pending",
-      count: rk9StatusCounts["pending"] ?? 0,
-    },
-    {
-      value: "in-progress",
-      label: "In progress",
-      count: rk9StatusCounts["in-progress"] ?? 0,
-    },
-    {
-      value: "imported",
-      label: "Imported",
-      count: rk9StatusCounts["imported"] ?? 0,
-    },
-    { value: "failed", label: "Failed", count: rk9StatusCounts["failed"] ?? 0 },
+    ...(showSkippedTab
+      ? [
+          {
+            value: "skipped",
+            label: "Skipped",
+            count: limitlessSkippedCount,
+            tone: "skipped" as const,
+          },
+        ]
+      : []),
   ];
 
   // -------------------------------------------------------------------------
@@ -1334,9 +1319,9 @@ export function ExternalData() {
         </div>
       )}
 
-      {/* Global queue / activity strip — above the source tabs */}
+      {/* Global queue / activity strip */}
       <QueueStrip
-        tab={activeTab}
+        tab={filters.source === "rk9" ? "rk9" : "limitless"}
         queuedCount={limitlessQueuedCount}
         nextLabel={nextQueuedItem?.name ?? null}
         nextQueuedAgo={
@@ -1354,39 +1339,9 @@ export function ExternalData() {
         }))}
       />
 
-      {/* Sub-tabs: RK9 / Limitless */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => {
-          const tab = v as "rk9" | "limitless";
-          setActiveTab(tab);
-          const params = new URLSearchParams(searchParams.toString());
-          if (tab === "rk9") {
-            params.delete("tab");
-          } else {
-            params.set("tab", tab);
-          }
-          router.replace(`?${params.toString()}`, { scroll: false });
-        }}
-      >
-        <TabsList variant="line">
-          <TabsTrigger value="rk9">
-            RK9
-            <Badge variant="secondary" className="ml-1.5 text-xs">
-              {rk9Rows.length}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="limitless">
-            Limitless
-            <Badge variant="secondary" className="ml-1.5 text-xs">
-              {limitlessRows.length}
-            </Badge>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* ----- RK9 Tab ----- */}
-        <TabsContent value="rk9" className="space-y-4 pt-2">
-          {/* RK9 sub-nav: Events | Players */}
+      <div className="space-y-4">
+        {/* RK9 sub-nav — only shown when source is "rk9" */}
+        {filters.source === "rk9" && (
           <div className="flex items-center gap-1">
             <button
               onClick={() => {
@@ -1417,193 +1372,173 @@ export function ExternalData() {
               Players
             </button>
           </div>
+        )}
 
-          {rk9View === "players" ? (
-            /* Players search — filter panel is hidden in players view */
-            <div className="relative">
-              <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
-              <Input
-                placeholder="Search by name or player ID..."
-                value={playerSearch}
-                onChange={(e) => setPlayerSearch(e.target.value)}
-                className="h-8 pl-8 text-sm"
-              />
-            </div>
-          ) : (
-            <>
-              {/* RK9 Stats + Actions — grouped toolbar */}
-              <ExternalDataToolbar
-                tab="rk9"
-                chips={rk9Chips}
-                settings={{
-                  tab: "rk9",
-                  loading: configLoading,
-                  backendOn: rk9BackendAutoImport,
-                  onToggleBackend: handleToggleRk9Backend,
-                  teamsPerTick: rk9TeamsPerTick,
-                  onTeamsPerTickChange: handleRk9TeamsPerTickChange,
-                  onTeamsPerTickBlur: saveRk9TeamsPerTick,
-                  concurrency: rk9TeamConcurrency,
-                  onConcurrencyChange: handleRk9TeamConcurrencyChange,
-                  onConcurrencyBlur: saveRk9TeamConcurrency,
-                  intervalSeconds: rk9CronInterval,
-                  onIntervalChange: handleRk9CronIntervalChange,
-                  onIntervalBlur: saveRk9CronInterval,
-                }}
-                isFetching={isFetching}
-                onRefresh={() => setRefreshKey((k) => k + 1)}
-                onRecomputeUsage={handleRecomputeUsage}
-                recomputingUsage={recomputingUsage}
-                onCalculateUsage={handleCalculateUsage}
-                calculatingUsage={calculatingUsage}
-                lastCalculatedAt={lastCalculatedAt}
-                onDiscover={handleDiscover}
-                isDiscovering={isDiscovering}
-                onScrapeRostersMatching={handleScrapeRostersMatching}
-                rosterMatchingCount={rk9RosterMatchingIds.length}
-                onScrapeTeamsMatching={handleScrapeTeamsMatching}
-                teamsMatchingCount={rk9TeamsMatchingIds.length}
-                bulkProcessing={bulkProcessing}
-              />
-              {/* Per-action feedback messages */}
-              {discoverMessage && (
-                <p
-                  className={cn(
-                    "text-xs",
-                    discoverMessage.startsWith("Error")
-                      ? "text-red-500"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {discoverMessage}
-                </p>
-              )}
-              {/* RK9 Status Tabs */}
-              <StatusTabs
-                tabs={rk9Tabs}
-                active={rk9Filters.status}
-                onChange={(v) => setRk9Filters((p) => ({ ...p, status: v }))}
-              />
+        {/* Players search input — only in RK9 players view */}
+        {filters.source === "rk9" && rk9View === "players" ? (
+          <div className="relative">
+            <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
+            <Input
+              placeholder="Search by name or player ID..."
+              value={playerSearch}
+              onChange={(e) => setPlayerSearch(e.target.value)}
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
+        ) : (
+          <>
+            {/* Single toolbar — shows source-contextual actions */}
+            <ExternalDataToolbar
+              tab={filters.source === "limitless" ? "limitless" : "rk9"}
+              chips={activeChips}
+              settings={
+                filters.source === "limitless"
+                  ? {
+                      tab: "limitless",
+                      loading: configLoading,
+                      backendOn: limitlessBackendAutoImport,
+                      onToggleBackend: handleToggleLimitlessBackend,
+                      batchSize: limitlessBatchSize,
+                      onBatchSizeChange: handleLimitlessBatchSizeChange,
+                      onBatchSizeBlur: saveLimitlessBatchSize,
+                      intervalSeconds: limitlessCronInterval,
+                      onIntervalChange: handleLimitlessCronIntervalChange,
+                      onIntervalBlur: saveLimitlessCronInterval,
+                    }
+                  : {
+                      tab: "rk9",
+                      loading: configLoading,
+                      backendOn: rk9BackendAutoImport,
+                      onToggleBackend: handleToggleRk9Backend,
+                      teamsPerTick: rk9TeamsPerTick,
+                      onTeamsPerTickChange: handleRk9TeamsPerTickChange,
+                      onTeamsPerTickBlur: saveRk9TeamsPerTick,
+                      concurrency: rk9TeamConcurrency,
+                      onConcurrencyChange: handleRk9TeamConcurrencyChange,
+                      onConcurrencyBlur: saveRk9TeamConcurrency,
+                      intervalSeconds: rk9CronInterval,
+                      onIntervalChange: handleRk9CronIntervalChange,
+                      onIntervalBlur: saveRk9CronInterval,
+                    }
+              }
+              isFetching={isFetching}
+              onRefresh={() => setRefreshKey((k) => k + 1)}
+              onRecomputeUsage={handleRecomputeUsage}
+              recomputingUsage={recomputingUsage}
+              onCalculateUsage={handleCalculateUsage}
+              calculatingUsage={calculatingUsage}
+              lastCalculatedAt={lastCalculatedAt}
+              // RK9 actions — shown when source is rk9 or all
+              onDiscover={
+                filters.source !== "limitless" ? handleDiscover : undefined
+              }
+              isDiscovering={isDiscovering}
+              onScrapeRostersMatching={
+                filters.source !== "limitless"
+                  ? handleScrapeRostersMatching
+                  : undefined
+              }
+              rosterMatchingCount={rk9RosterMatchingIds.length}
+              onScrapeTeamsMatching={
+                filters.source !== "limitless"
+                  ? handleScrapeTeamsMatching
+                  : undefined
+              }
+              teamsMatchingCount={rk9TeamsMatchingIds.length}
+              // Limitless actions — shown when source is limitless or all
+              onSync={filters.source !== "rk9" ? handleSync : undefined}
+              syncing={syncing}
+              onQueueMatching={
+                filters.source !== "rk9" ? handleQueueMatching : undefined
+              }
+              queueMatchingCount={limitlessQueueMatchingIds.length}
+              onQueueAll={filters.source !== "rk9" ? handleQueueAll : undefined}
+              queueAllCount={limitlessPendingCount}
+              bulkProcessing={bulkProcessing}
+            />
+            {/* Per-action feedback messages */}
+            {discoverMessage && (
+              <p
+                className={cn(
+                  "text-xs",
+                  discoverMessage.startsWith("Error")
+                    ? "text-red-500"
+                    : "text-muted-foreground"
+                )}
+              >
+                {discoverMessage}
+              </p>
+            )}
+            {syncMessage && (
+              <p
+                className={cn(
+                  "text-xs",
+                  syncMessage.startsWith("Error")
+                    ? "text-red-500"
+                    : "text-muted-foreground"
+                )}
+              >
+                {syncMessage}
+              </p>
+            )}
+            {importMessage && (
+              <p
+                className={cn(
+                  "text-xs",
+                  importMessage.startsWith("Error")
+                    ? "text-red-500"
+                    : "text-muted-foreground"
+                )}
+              >
+                {importMessage}
+              </p>
+            )}
 
-              {/* RK9 Filters */}
-              <ExternalDataFilters
-                tab="rk9"
-                rk9Filters={rk9Filters}
-                onRk9Change={(patch) =>
-                  setRk9Filters((p) => ({ ...p, ...patch }))
-                }
-                onClear={() => setRk9Filters(INITIAL_RK9_FILTERS)}
-                tierOptions={rk9Tiers}
-                countryOptions={rk9Countries}
-                resultCount={filteredRk9Rows.length}
-                totalCount={rk9Rows.length}
-              />
-            </>
-          )}
-        </TabsContent>
+            {/* Unified status tabs */}
+            <StatusTabs
+              tabs={statusTabs}
+              active={filters.status}
+              onChange={(v) => setFilters((p) => ({ ...p, status: v }))}
+            />
 
-        {/* ----- Limitless Tab ----- */}
-        <TabsContent value="limitless" className="space-y-4 pt-2">
-          {/* Limitless Stats + Actions — grouped toolbar */}
-          <ExternalDataToolbar
-            tab="limitless"
-            chips={limitlessChips}
-            settings={{
-              tab: "limitless",
-              loading: configLoading,
-              backendOn: limitlessBackendAutoImport,
-              onToggleBackend: handleToggleLimitlessBackend,
-              batchSize: limitlessBatchSize,
-              onBatchSizeChange: handleLimitlessBatchSizeChange,
-              onBatchSizeBlur: saveLimitlessBatchSize,
-              intervalSeconds: limitlessCronInterval,
-              onIntervalChange: handleLimitlessCronIntervalChange,
-              onIntervalBlur: saveLimitlessCronInterval,
-            }}
-            isFetching={isFetching}
-            onRefresh={() => setRefreshKey((k) => k + 1)}
-            onRecomputeUsage={handleRecomputeUsage}
-            recomputingUsage={recomputingUsage}
-            onCalculateUsage={handleCalculateUsage}
-            calculatingUsage={calculatingUsage}
-            lastCalculatedAt={lastCalculatedAt}
-            onSync={handleSync}
-            syncing={syncing}
-            onQueueMatching={handleQueueMatching}
-            queueMatchingCount={limitlessQueueMatchingIds.length}
-            onQueueAll={handleQueueAll}
-            queueAllCount={limitlessPendingCount}
-            bulkProcessing={bulkProcessing}
-          />
-          {/* Per-action feedback messages */}
-          {syncMessage && (
-            <p
-              className={cn(
-                "text-xs",
-                syncMessage.startsWith("Error")
-                  ? "text-red-500"
-                  : "text-muted-foreground"
-              )}
-            >
-              {syncMessage}
-            </p>
-          )}
-          {importMessage && (
-            <p
-              className={cn(
-                "text-xs",
-                importMessage.startsWith("Error")
-                  ? "text-red-500"
-                  : "text-muted-foreground"
-              )}
-            >
-              {importMessage}
-            </p>
-          )}
-          {/* Limitless Status Tabs */}
-          <StatusTabs
-            tabs={limitlessTabs}
-            active={limFilters.status}
-            onChange={(value) =>
-              setLimFilters((p) => ({ ...p, status: value }))
-            }
-          />
-          {limFilters.status === "skipped" && limitlessSkippedCount > 0 && (
-            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
-              <span aria-hidden>⊘</span>
-              <span className="font-semibold">
-                {limitlessSkippedCount.toLocaleString()} events skipped
-              </span>
-              <span>— their format isn&apos;t supported for import:</span>
-              {Object.entries(limitlessSkippedByFormat)
-                .sort((a, b) => b[1] - a[1])
-                .map(([code, n]) => (
-                  <span
-                    key={code}
-                    className="rounded-full bg-amber-200/60 px-2 py-px font-medium dark:bg-amber-900/40"
-                  >
-                    {code} ×{n.toLocaleString()}
-                  </span>
-                ))}
-            </div>
-          )}
+            {/* Skipped breakdown banner — visible when skipped tab active */}
+            {filters.status === "skipped" && limitlessSkippedCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+                <span aria-hidden>⊘</span>
+                <span className="font-semibold">
+                  {limitlessSkippedCount.toLocaleString()} events skipped
+                </span>
+                <span>— their format isn&apos;t supported for import:</span>
+                {Object.entries(limitlessSkippedByFormat)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([code, n]) => (
+                    <span
+                      key={code}
+                      className="rounded-full bg-amber-200/60 px-2 py-px font-medium dark:bg-amber-900/40"
+                    >
+                      {code} ×{n.toLocaleString()}
+                    </span>
+                  ))}
+              </div>
+            )}
 
-          {/* Limitless Filters */}
-          <ExternalDataFilters
-            tab="limitless"
-            limFilters={limFilters}
-            onLimChange={(patch) => setLimFilters((p) => ({ ...p, ...patch }))}
-            onClear={() => setLimFilters(INITIAL_LIMITLESS_FILTERS)}
-            formatOptions={limitlessFormats}
-            resultCount={filteredLimitlessRows.length}
-            totalCount={limitlessRows.length}
-          />
-        </TabsContent>
-      </Tabs>
+            {/* Unified filters */}
+            <ExternalDataFilters
+              filters={filters}
+              onChange={(patch) => setFilters((p) => ({ ...p, ...patch }))}
+              onClear={() => setFilters(INITIAL_IMPORT_FILTERS)}
+              countryOptions={allCountries}
+              formatOptions={allFormats}
+              resultCount={filteredRows.length}
+              totalCount={sourceRows.length}
+            />
+          </>
+        )}
+      </div>
 
       {/* Bulk action bar — shown when rows are selected */}
       <SelectionBar
-        tab={activeTab}
+        tab={filters.source === "limitless" ? "limitless" : "rk9"}
         selectedCount={selectedIds.size}
         bulkProcessing={bulkProcessing}
         onClear={() => setSelectedIds(new Set())}
@@ -1622,8 +1557,8 @@ export function ExternalData() {
         </span>
       )}
 
-      {/* Players Table — only shown when RK9 tab + players view */}
-      {activeTab === "rk9" && rk9View === "players" && (
+      {/* Players Table — only shown when source=rk9 + players view */}
+      {filters.source === "rk9" && rk9View === "players" && (
         <div className="rounded-md border">
           <div className="text-muted-foreground flex items-center gap-2 px-4 py-2 text-xs">
             <ListFilter className="h-3.5 w-3.5" />
@@ -1764,8 +1699,8 @@ export function ExternalData() {
         </div>
       )}
 
-      {/* Shared Events Table — hidden when RK9 tab is in players view */}
-      {(activeTab !== "rk9" || rk9View === "events") && (
+      {/* Shared Events Table — hidden when source=rk9 and players view active */}
+      {(filters.source !== "rk9" || rk9View === "events") && (
         <>
           {/* Shared Table */}
           {isLoading && !rk9Events && !limitlessTournaments ? (
@@ -1778,9 +1713,11 @@ export function ExternalData() {
           ) : currentRows.length === 0 ? (
             <div className="text-muted-foreground py-12 text-center text-sm">
               {totalRowCount === 0
-                ? activeTab === "rk9"
+                ? filters.source === "rk9"
                   ? "No RK9 events found. Click Discover RK9 to import events."
-                  : "No Limitless tournaments found. Click Sync Limitless to import tournaments."
+                  : filters.source === "limitless"
+                    ? "No Limitless tournaments found. Click Sync Limitless to import tournaments."
+                    : "No events found. Click Discover or Sync to import events."
                 : "No events match your filters."}
             </div>
           ) : (
@@ -1794,15 +1731,13 @@ export function ExternalData() {
                 </div>
               )}
 
-              {/* Fixed header row */}
+              {/* Fixed header row — unified columns: checkbox · chevron · Source · Event · Format · Date · Players · Status · Actions */}
               {!isMobile && (
                 <div
                   className="grid border-b"
                   style={{
                     gridTemplateColumns:
-                      activeTab === "limitless"
-                        ? "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 80px 100px"
-                        : "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
+                      "32px 28px 80px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
                   }}
                 >
                   <div className="flex h-10 items-center justify-center">
@@ -1831,44 +1766,43 @@ export function ExternalData() {
                   </div>
                   {/* Chevron column header — empty */}
                   <div className="h-10" />
+                  {/* Source column */}
+                  <SortableHeader
+                    column="source"
+                    label="Source"
+                    sort={sort}
+                    onSort={(c) => setSort(toggleSort(sort, c))}
+                  />
                   <SortableHeader
                     column="name"
                     label="Event"
-                    sort={currentSort}
-                    onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                    sort={sort}
+                    onSort={(c) => setSort(toggleSort(sort, c))}
                   />
                   <SortableHeader
                     column="category"
-                    label="Type"
-                    sort={currentSort}
-                    onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                    label="Format"
+                    sort={sort}
+                    onSort={(c) => setSort(toggleSort(sort, c))}
                   />
                   <SortableHeader
                     column="date"
                     label="Date"
-                    sort={currentSort}
-                    onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                    sort={sort}
+                    onSort={(c) => setSort(toggleSort(sort, c))}
                   />
                   <SortableHeader
                     column="playerCount"
                     label="Players"
-                    sort={currentSort}
-                    onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                    sort={sort}
+                    onSort={(c) => setSort(toggleSort(sort, c))}
                   />
                   <SortableHeader
                     column="status"
                     label="Status"
-                    sort={currentSort}
-                    onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
+                    sort={sort}
+                    onSort={(c) => setSort(toggleSort(sort, c))}
                   />
-                  {activeTab === "limitless" && (
-                    <SortableHeader
-                      column="queueOrder"
-                      label="Queue"
-                      sort={currentSort}
-                      onSort={(c) => setCurrentSort(toggleSort(currentSort, c))}
-                    />
-                  )}
                   <div className="flex h-10 items-center justify-end pr-2 text-xs font-medium whitespace-nowrap">
                     Actions
                   </div>
@@ -1912,7 +1846,7 @@ export function ExternalData() {
                 </div>
               ) : (
                 <div
-                  key={activeTab}
+                  key={filters.source}
                   ref={scrollRef}
                   className="overflow-auto"
                   style={{ maxHeight: "calc(100vh - 300px)" }}
@@ -1990,9 +1924,7 @@ export function ExternalData() {
                             )}
                             style={{
                               gridTemplateColumns:
-                                activeTab === "limitless"
-                                  ? "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 80px 100px"
-                                  : "32px 28px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
+                                "32px 28px 80px minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 90px minmax(0,1.5fr) 100px",
                             }}
                           >
                             {/* Checkbox */}
@@ -2039,6 +1971,19 @@ export function ExternalData() {
                                   )}
                                 </button>
                               )}
+                            </div>
+                            {/* Source */}
+                            <div className="flex items-center py-2">
+                              <span
+                                className={cn(
+                                  "rounded px-1.5 py-0.5 text-[10px] font-bold",
+                                  row.source === "rk9"
+                                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                                    : "bg-blue-500/15 text-blue-700 dark:text-blue-400"
+                                )}
+                              >
+                                {row.source === "rk9" ? "RK9" : "Limitless"}
+                              </span>
                             </div>
                             {/* Event name */}
                             <div className="min-w-0 p-2">
@@ -2115,27 +2060,6 @@ export function ExternalData() {
                                   </span>
                                 )}
                             </div>
-                            {activeTab === "limitless" && (
-                              <div className="flex items-center p-2">
-                                {row.limitless?.import_status === "queued" &&
-                                  row.limitless?.import_requested_at && (
-                                    <span className="text-muted-foreground text-xs whitespace-nowrap">
-                                      {formatTimeAgo(
-                                        row.limitless.import_requested_at
-                                      )}
-                                    </span>
-                                  )}
-                                {row.limitless?.import_status === "importing" &&
-                                  row.limitless?.import_requested_at && (
-                                    <span className="text-xs whitespace-nowrap text-blue-600 dark:text-blue-400">
-                                      started{" "}
-                                      {formatTimeAgo(
-                                        row.limitless.import_requested_at
-                                      )}
-                                    </span>
-                                  )}
-                              </div>
-                            )}
                             <div className="flex items-center justify-end gap-1 p-2">
                               <RowActions
                                 row={row}

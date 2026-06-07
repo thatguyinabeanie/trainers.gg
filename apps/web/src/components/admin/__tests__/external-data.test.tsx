@@ -352,9 +352,22 @@ jest.mock("../external-data-queue-strip", () => ({
   ),
 }));
 
-// Stub ExternalDataFilters — its own test suite covers the filter logic.
+// Stub ExternalDataFilters — expose source buttons so tests can switch source
+// without coupling to the real filter component's internal UI (popover, selects).
 jest.mock("../external-data-filters", () => ({
-  ExternalDataFilters: () => <div data-testid="external-data-filters-stub" />,
+  ExternalDataFilters: ({
+    onChange,
+  }: {
+    onChange: (patch: { source: string }) => void;
+  }) => (
+    <div data-testid="external-data-filters-stub">
+      <button onClick={() => onChange({ source: "all" })}>Source: All</button>
+      <button onClick={() => onChange({ source: "rk9" })}>Source: RK9</button>
+      <button onClick={() => onChange({ source: "limitless" })}>
+        Source: Limitless
+      </button>
+    </div>
+  ),
 }));
 
 import React from "react";
@@ -391,10 +404,10 @@ describe("ExternalData slider handlers", () => {
   }
 
   it("persists rk9_max_teams_per_tick when the teams-per-tick input changes", async () => {
-    // RK9 tab is not the default — switch to it so the RK9 inputs render
+    // Switch to RK9 source so the RK9 inputs render
     await renderAndWaitForInputs();
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: /RK9/i }));
+      fireEvent.click(screen.getByRole("button", { name: /Source: RK9/i }));
     });
 
     const inputs = await waitFor(() => {
@@ -420,7 +433,7 @@ describe("ExternalData slider handlers", () => {
   it("persists rk9_team_concurrency when the concurrency input changes", async () => {
     await renderAndWaitForInputs();
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: /RK9/i }));
+      fireEvent.click(screen.getByRole("button", { name: /Source: RK9/i }));
     });
 
     const inputs = await waitFor(() => {
@@ -442,7 +455,7 @@ describe("ExternalData slider handlers", () => {
   it("persists rk9_cron_interval_seconds when the cron-interval input changes", async () => {
     await renderAndWaitForInputs();
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: /RK9/i }));
+      fireEvent.click(screen.getByRole("button", { name: /Source: RK9/i }));
     });
 
     const inputs = await waitFor(() => {
@@ -467,7 +480,9 @@ describe("ExternalData slider handlers", () => {
   it("persists limitless_batch_size when the batch-size input changes", async () => {
     await renderAndWaitForInputs();
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: /Limitless/i }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Source: Limitless/i })
+      );
     });
 
     // Limitless tab renders 2 inputs: batch size, then cron interval
@@ -493,7 +508,9 @@ describe("ExternalData slider handlers", () => {
   it("persists limitless_cron_interval_seconds when the limitless cron input changes", async () => {
     await renderAndWaitForInputs();
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: /Limitless/i }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Source: Limitless/i })
+      );
     });
 
     const inputs = await waitFor(() => {
@@ -560,9 +577,9 @@ function setupSiteConfigMocks() {
 
 async function renderAndWaitForRk9Tab() {
   render(<ExternalData />);
-  // Switch to RK9 tab — it is not the default
+  // Switch source to RK9 via the ExternalDataFilters stub
   await act(async () => {
-    fireEvent.click(screen.getByRole("tab", { name: /RK9/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Source: RK9/i }));
   });
   // Wait for the config loading state to resolve so controls render
   await waitFor(() =>
@@ -572,8 +589,9 @@ async function renderAndWaitForRk9Tab() {
 
 async function renderAndWaitForLimitlessTab() {
   render(<ExternalData />);
+  // Switch source to Limitless via the ExternalDataFilters stub
   await act(async () => {
-    fireEvent.click(screen.getByRole("tab", { name: /Limitless/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Source: Limitless/i }));
   });
   // Wait for the config loading state to resolve so controls render
   await waitFor(() =>
@@ -1230,6 +1248,11 @@ describe("ExternalData players table rendering", () => {
   it("renders RK9 player rows when the Players sub-nav is active", async () => {
     render(<ExternalData />);
 
+    // Switch source to RK9 first — Players sub-nav only renders when source=rk9
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Source: RK9/i }));
+    });
+
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Players/i }));
     });
@@ -1242,6 +1265,11 @@ describe("ExternalData players table rendering", () => {
 
   it("expands a player row to render the player detail panel", async () => {
     render(<ExternalData />);
+
+    // Switch source to RK9 first — Players sub-nav only renders when source=rk9
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Source: RK9/i }));
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Players/i }));
@@ -1343,7 +1371,9 @@ describe("ExternalData limitless table rendering", () => {
     render(<ExternalData />);
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: /Limitless/i }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Source: Limitless/i })
+      );
     });
 
     // "Queued Cup" appears both in its table row and the "Next up:" queue
@@ -1371,7 +1401,9 @@ describe("ExternalData limitless table rendering", () => {
 
     render(<ExternalData />);
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: /Limitless/i }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Source: Limitless/i })
+      );
     });
     await waitFor(() =>
       expect(screen.getByText("Failed Cup")).toBeInTheDocument()
@@ -1466,8 +1498,11 @@ describe("Limitless status tabs + skipped", () => {
 
   async function openLimitlessTab() {
     render(<ExternalData />);
+    // Switch source to Limitless via the ExternalDataFilters stub
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: /Limitless/i }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Source: Limitless/i })
+      );
     });
     // Wait until the Limitless toolbar is rendered (confirms data has resolved)
     await waitFor(() =>

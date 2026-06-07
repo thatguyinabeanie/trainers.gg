@@ -12,51 +12,38 @@ export type PlatformFilter = "all" | "SWITCH" | "SIM";
 export type HasDataFilter = "all" | "yes" | "no";
 
 // ---------------------------------------------------------------------------
-// Per-tab filter state
+// Unified filter state (replaces per-tab RK9FilterState + LimitlessFilterState)
 // ---------------------------------------------------------------------------
 
-export interface RK9FilterState {
+export interface ImportFilterState {
+  /** Which source to view: "all" shows both, "rk9" or "limitless" shows one. */
+  source: "all" | "rk9" | "limitless";
   search: string;
-  tier: string;
+  /** Unified display status ("all" | DisplayStatus string) */
   status: string;
-  country: string;
-  dateFrom: string;
-  dateTo: string;
-  minPlayers: string;
-  hasData: HasDataFilter;
-}
-
-export interface LimitlessFilterState {
-  search: string;
+  /** Regulation/format code ("all" or a specific code) */
   format: string;
-  status: string;
+  /** Limitless-relevant; ignored when source === "rk9" */
   platform: PlatformFilter;
+  /** RK9-relevant; ignored when source === "limitless" */
+  country: string;
+  hasData: HasDataFilter;
   dateFrom: string;
   dateTo: string;
   minPlayers: string;
-  hasData: HasDataFilter;
 }
 
-export const INITIAL_RK9_FILTERS: RK9FilterState = {
+export const INITIAL_IMPORT_FILTERS: ImportFilterState = {
+  source: "all",
   search: "",
-  tier: "all",
   status: "all",
-  country: "all",
-  dateFrom: "",
-  dateTo: "",
-  minPlayers: "",
-  hasData: "all",
-};
-
-export const INITIAL_LIMITLESS_FILTERS: LimitlessFilterState = {
-  search: "",
   format: "all",
-  status: "all",
   platform: "all",
+  country: "all",
+  hasData: "all",
   dateFrom: "",
   dateTo: "",
   minPlayers: "",
-  hasData: "all",
 };
 
 export interface RK9EventRow {
