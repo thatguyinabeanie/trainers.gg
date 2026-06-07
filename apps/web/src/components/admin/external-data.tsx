@@ -8,20 +8,12 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Clock,
-  Download,
   ExternalLink,
   ListFilter,
-  Loader2,
   Search,
-  Trash2,
-  Users,
-  XCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -64,21 +56,14 @@ import { ExpandedRowData } from "./expanded-row-data";
 import { PlayerExpandedData } from "./player-expanded-data";
 import { QueueStrip } from "./external-data-queue-strip";
 import { ExternalDataFilters } from "./external-data-filters";
-
-type SortDirection = "asc" | "desc";
-type SortColumn =
-  | "name"
-  | "source"
-  | "category"
-  | "date"
-  | "playerCount"
-  | "status"
-  | "queueOrder";
-
-interface SortState {
-  column: SortColumn;
-  direction: SortDirection;
-}
+import { StatusBadge } from "./external-data-status-badge";
+import { RowActions } from "./external-data-row-actions";
+import {
+  SortableHeader,
+  toggleSort,
+  compareValues,
+  type SortState,
+} from "./external-data-table-helpers";
 
 // Sentinel for render-time tab-change reset (avoids useEffect for derived state)
 const UNINITIALIZED = Symbol();
@@ -110,70 +95,6 @@ function normalizeRk9Status(status: string, upcoming: boolean): string {
 
 // Normalize Limitless status
 // (moved to ./limitless-status.ts so it can be unit tested in isolation)
-
-// Sortable header cell
-function SortableHeader({
-  column,
-  label,
-  sort,
-  onSort,
-  className,
-}: {
-  column: SortColumn;
-  label: string;
-  sort: SortState;
-  onSort: (column: SortColumn) => void;
-  className?: string;
-}) {
-  const isActive = sort.column === column;
-  return (
-    <div
-      className={cn(
-        "flex h-10 items-center px-2 font-medium whitespace-nowrap",
-        className
-      )}
-    >
-      <button
-        className="hover:text-foreground inline-flex items-center gap-1"
-        onClick={() => onSort(column)}
-      >
-        {label}
-        {isActive ? (
-          sort.direction === "asc" ? (
-            <ArrowUp className="h-3.5 w-3.5" />
-          ) : (
-            <ArrowDown className="h-3.5 w-3.5" />
-          )
-        ) : (
-          <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
-        )}
-      </button>
-    </div>
-  );
-}
-
-function toggleSort(current: SortState, column: SortColumn): SortState {
-  if (current.column === column) {
-    return { column, direction: current.direction === "asc" ? "desc" : "asc" };
-  }
-  return { column, direction: "asc" };
-}
-
-function compareValues(
-  a: string | number | null | undefined,
-  b: string | number | null | undefined,
-  direction: SortDirection
-): number {
-  const aVal = a ?? "";
-  const bVal = b ?? "";
-  let result: number;
-  if (typeof aVal === "number" && typeof bVal === "number") {
-    result = aVal - bVal;
-  } else {
-    result = String(aVal).localeCompare(String(bVal));
-  }
-  return direction === "desc" ? -result : result;
-}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -2139,245 +2060,4 @@ export function ExternalData() {
       )}
     </div>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Status Badge
-// ---------------------------------------------------------------------------
-
-function StatusBadge({
-  row,
-  activeJobs,
-}: {
-  row: UnifiedRow;
-  activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
-}) {
-  // RK9 active job display
-  if (row.rk9) {
-    const activeJob = activeJobs.get(row.rk9.event_id);
-    if (activeJob) {
-      if (
-        activeJob.type === "teams" &&
-        activeJob.total &&
-        activeJob.total > 0
-      ) {
-        const pct = Math.round(
-          ((activeJob.scraped ?? 0) / activeJob.total) * 100
-        );
-        return (
-          <Badge variant="secondary" className="text-xs">
-            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            Teams {activeJob.scraped}/{activeJob.total} ({pct}%)
-          </Badge>
-        );
-      }
-      return (
-        <Badge variant="secondary" className="text-xs">
-          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          {activeJob.type === "roster"
-            ? "Scraping roster..."
-            : "Scraping teams..."}
-        </Badge>
-      );
-    }
-  }
-
-  // Limitless rows whose format can't be imported (e.g. CUSTOM) — surfaced as a
-  // distinct "Skipped" status rather than the default "Pending". Keyed off the
-  // derived displayStatus so it matches the Skipped tab/chip.
-  if (row.displayStatus === "skipped") {
-    return (
-      <Badge
-        variant="outline"
-        className="text-xs text-slate-600 dark:text-slate-400"
-      >
-        <span className="mr-1" aria-hidden>
-          ⊘
-        </span>
-        Skipped
-      </Badge>
-    );
-  }
-
-  switch (row.status) {
-    case "upcoming":
-      return (
-        <Badge variant="outline" className="text-xs text-blue-600">
-          <Clock className="mr-1 h-3 w-3" />
-          Upcoming
-        </Badge>
-      );
-    case "complete":
-      return (
-        <Badge variant="default" className="text-xs">
-          <CheckCircle2 className="mr-1 h-3 w-3" />
-          {row.source === "limitless" ? "Imported" : "Complete"}
-        </Badge>
-      );
-    case "in-progress":
-      if (row.limitless?.import_status === "queued") {
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400"
-          >
-            <Clock className="mr-1 h-3 w-3" />
-            Queued
-          </Badge>
-        );
-      }
-      if (row.limitless?.import_status === "importing") {
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-blue-500/10 text-xs text-blue-700 dark:text-blue-400"
-          >
-            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            Importing
-          </Badge>
-        );
-      }
-      // RK9 in-progress states
-      if (row.rk9?.import_status === "roster") {
-        return (
-          <Badge variant="secondary" className="text-xs">
-            <Users className="mr-1 h-3 w-3" />
-            Roster ready
-          </Badge>
-        );
-      }
-      return (
-        <Badge variant="secondary" className="text-xs">
-          <Clock className="mr-1 h-3 w-3" />
-          Teams partial
-        </Badge>
-      );
-    case "failed":
-      return (
-        <Badge variant="destructive" className="text-xs">
-          <XCircle className="mr-1 h-3 w-3" />
-          Failed
-          {row.limitless?.import_attempts
-            ? ` (${row.limitless.import_attempts}x)`
-            : ""}
-        </Badge>
-      );
-    default:
-      return (
-        <Badge variant="outline" className="text-xs">
-          Pending
-        </Badge>
-      );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Row Actions
-// ---------------------------------------------------------------------------
-
-interface RowActionsProps {
-  row: UnifiedRow;
-  activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
-  queuingIds: Set<string>;
-  batchQueuing: boolean;
-  isUpcomingRow: boolean;
-  onImport: (row: UnifiedRow) => void;
-  onResetEvent: (eventId: string) => void;
-}
-
-function RowActions({
-  row,
-  activeJobs,
-  queuingIds,
-  batchQueuing,
-  isUpcomingRow,
-  onImport,
-  onResetEvent,
-}: RowActionsProps) {
-  if (row.source === "rk9" && row.rk9) {
-    const event = row.rk9;
-    if (isUpcomingRow) return null;
-
-    const activeJob = activeJobs.get(event.event_id);
-    const isBusy = activeJob !== null && activeJob !== undefined;
-
-    const resetButton =
-      event.import_status !== "pending" ? (
-        <button
-          className="text-muted-foreground hover:text-destructive"
-          onClick={() => onResetEvent(event.event_id)}
-          title="Reset roster and team data"
-          aria-label="Reset event"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      ) : null;
-
-    // Fully imported with team lists — show check + reset only
-    if (event.import_status === "complete" && event.has_team_lists) {
-      return (
-        <div className="flex items-center gap-1.5">
-          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          {resetButton}
-        </div>
-      );
-    }
-
-    // Show Import button for pending, failed, roster, teams, or complete-without-teams
-    if (
-      event.import_status === "pending" ||
-      event.import_status === "failed" ||
-      event.import_status === "roster" ||
-      event.import_status === "teams" ||
-      (event.import_status === "complete" && !event.has_team_lists)
-    ) {
-      return (
-        <div className="flex items-center gap-1.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onImport(row)}
-            disabled={isBusy}
-          >
-            {isBusy ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            Import
-          </Button>
-          {resetButton}
-        </div>
-      );
-    }
-
-    return null;
-  }
-
-  if (row.source === "limitless" && row.limitless) {
-    const t = row.limitless;
-    const isQueuing = queuingIds.has(t.tournament_id);
-
-    if (!t.import_status || t.import_status === "failed") {
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onImport(row)}
-          disabled={isQueuing || batchQueuing}
-        >
-          {isQueuing ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Download className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          Import
-        </Button>
-      );
-    }
-
-    return null;
-  }
-
-  return null;
 }
