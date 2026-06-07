@@ -186,7 +186,7 @@ export function UsagePipelineChart({
       <svg
         viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
         className="w-full"
-        style={{ height: "clamp(260px, 40vh, 460px)" }}
+        style={{ height: "clamp(400px, 65vh, 720px)" }}
         aria-label="Meta Pipeline Sankey diagram"
       >
         {/* Column headers */}
