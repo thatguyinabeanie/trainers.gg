@@ -235,6 +235,9 @@ export function UsagePipelineChart({
         {typedNodes.map((node) => {
           const isSpecies = node.column === "species";
           const isSelected = isSpecies && selectedSpecies.includes(node.label);
+          const sprite = isSpecies ? getPokemonSprite(node.label) : null;
+          const midY = (node.y0 + node.y1) / 2;
+          const spriteSize = Math.min(SPRITE_BAND, node.y1 - node.y0);
           return (
             <g
               key={node.id}
@@ -267,38 +270,32 @@ export function UsagePipelineChart({
                 strokeWidth={isSelected ? 2 : 0}
               />
               {/* Species: sprite icon in the left band. Others: text label to the right. */}
-              {isSpecies
-                ? (() => {
-                    const sprite = getPokemonSprite(node.label);
-                    const midY = (node.y0 + node.y1) / 2;
-                    const size = Math.min(SPRITE_BAND, node.y1 - node.y0);
-                    return (
-                      <image
-                        href={sprite.url}
-                        x={node.x0 - SPRITE_BAND - SPRITE_GAP}
-                        y={midY - size / 2}
-                        width={size}
-                        height={size}
-                        style={
-                          sprite.pixelated
-                            ? { imageRendering: "pixelated" }
-                            : undefined
-                        }
-                      />
-                    );
-                  })()
-                : node.y1 - node.y0 > 14 && (
-                    <text
-                      x={node.x1 + 6}
-                      y={(node.y0 + node.y1) / 2}
-                      dominantBaseline="middle"
-                      style={{ fontSize: 10, fill: "var(--foreground)" }}
-                    >
-                      {node.label.length > 12
-                        ? node.label.slice(0, 11) + "…"
-                        : node.label}
-                    </text>
-                  )}
+              {isSpecies && sprite ? (
+                <image
+                  href={sprite.url}
+                  x={node.x0 - SPRITE_BAND - SPRITE_GAP}
+                  y={midY - spriteSize / 2}
+                  width={spriteSize}
+                  height={spriteSize}
+                  aria-hidden="true"
+                  style={
+                    sprite.pixelated
+                      ? { imageRendering: "pixelated" }
+                      : undefined
+                  }
+                />
+              ) : node.y1 - node.y0 > 14 ? (
+                <text
+                  x={node.x1 + 6}
+                  y={(node.y0 + node.y1) / 2}
+                  dominantBaseline="middle"
+                  style={{ fontSize: 10, fill: "var(--foreground)" }}
+                >
+                  {node.label.length > 12
+                    ? node.label.slice(0, 11) + "…"
+                    : node.label}
+                </text>
+              ) : null}
             </g>
           );
         })}

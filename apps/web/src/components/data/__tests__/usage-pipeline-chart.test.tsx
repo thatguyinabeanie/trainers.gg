@@ -10,6 +10,8 @@ import {
 jest.mock("@trainers/pokemon/sprites", () => ({
   getPokemonSprite: (species: string) => ({
     url: `https://sprites.test/${species}.png`,
+    w: 96,
+    h: 96,
     pixelated: true,
   }),
 }));
@@ -316,5 +318,23 @@ describe("UsagePipelineChart — species sprite labels", () => {
       (t) => t.textContent === "Sneasler"
     );
     expect(speciesTexts.length).toBe(0);
+  });
+});
+
+// =============================================================================
+// Non-species text labels
+// =============================================================================
+
+describe("UsagePipelineChart — non-species text labels", () => {
+  it("still renders a <text> label for non-species nodes after sprite band added", () => {
+    const { container } = renderChart({
+      pipelineResult: makePipelineResult({
+        data: [makePipelineSpecies({ species: "Sneasler" })],
+      }),
+    });
+    // Ability "Unburden" should still render as a text element
+    const texts = Array.from(container.querySelectorAll("text"));
+    const abilityText = texts.find((t) => t.textContent === "Unburden");
+    expect(abilityText).toBeTruthy();
   });
 });
