@@ -11,6 +11,7 @@ import {
   fireEvent,
   waitFor,
   act,
+  within,
 } from "@testing-library/react";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -230,39 +231,25 @@ jest.mock("../external-data-toolbar", () => ({
     chips,
     isFetching,
     onRefresh,
-    onDiscover,
-    isDiscovering,
-    onScrapeRostersMatching,
-    rosterMatchingCount,
-    onScrapeTeamsMatching,
-    teamsMatchingCount,
     onSync,
     syncing,
-    onQueueMatching,
-    queueMatchingCount,
-    onQueueAll,
-    queueAllCount,
+    onImportMatching,
+    importMatchingCount,
+    onImportAll,
+    importAllCount,
     bulkProcessing,
-    tab,
   }: {
     settings: Record<string, unknown>;
     chips?: Array<{ label: string; count: number; tone: string }>;
     isFetching?: boolean;
     onRefresh?: () => void;
-    onDiscover?: () => void;
-    isDiscovering?: boolean;
-    onScrapeRostersMatching?: () => void;
-    rosterMatchingCount?: number;
-    onScrapeTeamsMatching?: () => void;
-    teamsMatchingCount?: number;
     onSync?: () => void;
     syncing?: boolean;
-    onQueueMatching?: () => void;
-    queueMatchingCount?: number;
-    onQueueAll?: () => void;
-    queueAllCount?: number;
+    onImportMatching?: () => void;
+    importMatchingCount?: number;
+    onImportAll?: () => void;
+    importAllCount?: number;
     bulkProcessing?: boolean;
-    tab: string;
   }) => {
     // Lazy-require the settings stub so it participates in jest mocking
     const { ExternalDataSettings } = jest.requireMock(
@@ -271,7 +258,7 @@ jest.mock("../external-data-toolbar", () => ({
       ExternalDataSettings: React.ComponentType<Record<string, unknown>>;
     };
     return (
-      <div data-testid={`toolbar-${tab}`}>
+      <div data-testid="toolbar">
         {/* Render chips so stat-strip tests can assert on count pills */}
         {chips?.map((c) => (
           <span key={c.label} data-testid={`chip-${c.label}`}>
@@ -279,41 +266,18 @@ jest.mock("../external-data-toolbar", () => ({
           </span>
         ))}
         <ExternalDataSettings {...(settings as Record<string, unknown>)} />
-        {tab === "rk9" && (
-          <>
-            <button onClick={onDiscover} disabled={isDiscovering}>
-              Discover
-            </button>
-            <button
-              onClick={onScrapeRostersMatching}
-              disabled={bulkProcessing || rosterMatchingCount === 0}
-            >
-              Scrape Rosters ({rosterMatchingCount ?? 0})
-            </button>
-            <button
-              onClick={onScrapeTeamsMatching}
-              disabled={bulkProcessing || teamsMatchingCount === 0}
-            >
-              Scrape Teams ({teamsMatchingCount ?? 0})
-            </button>
-          </>
-        )}
-        {tab === "limitless" && (
-          <>
-            <button onClick={onSync} disabled={syncing}>
-              Sync
-            </button>
-            <button
-              onClick={onQueueMatching}
-              disabled={bulkProcessing || queueMatchingCount === 0}
-            >
-              Queue Matching ({queueMatchingCount ?? 0})
-            </button>
-            <button onClick={onQueueAll}>
-              Queue All ({queueAllCount ?? 0})
-            </button>
-          </>
-        )}
+        <button onClick={onSync} disabled={syncing}>
+          Sync
+        </button>
+        <button
+          onClick={onImportMatching}
+          disabled={bulkProcessing || importMatchingCount === 0}
+        >
+          Import matching ({importMatchingCount ?? 0})
+        </button>
+        <button onClick={onImportAll}>
+          Import all ({importAllCount ?? 0})
+        </button>
         <button onClick={onRefresh} disabled={isFetching}>
           Refresh
         </button>
@@ -733,7 +697,7 @@ describe("ExternalData discover handler", () => {
     await renderAndWaitForRk9Tab();
 
     const discoverButton = await waitFor(() =>
-      screen.getByRole("button", { name: /Discover/i })
+      screen.getByRole("button", { name: /Sync/i })
     );
 
     await act(async () => {
@@ -761,7 +725,7 @@ describe("ExternalData discover handler", () => {
     await renderAndWaitForRk9Tab();
 
     const discoverButton = await waitFor(() =>
-      screen.getByRole("button", { name: /Discover/i })
+      screen.getByRole("button", { name: /Sync/i })
     );
 
     await act(async () => {
@@ -908,9 +872,7 @@ describe("ExternalData RK9 players sub-nav", () => {
 
     // The Discover button is in the events view — it should be visible again
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: /Discover/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Sync/i })).toBeInTheDocument();
     });
   });
 });
@@ -1039,9 +1001,13 @@ describe("ExternalData events table rendering", () => {
       expect(screen.getByText("Pending Event")).toBeInTheDocument()
     );
 
-    const rosterButtons = screen.getAllByRole("button", { name: /^Roster$/i });
+    const pendingRow = screen
+      .getByText("Pending Event")
+      .closest("div.grid") as HTMLElement;
     await act(async () => {
-      fireEvent.click(rosterButtons[0]);
+      fireEvent.click(
+        within(pendingRow).getByRole("button", { name: /^Import$/i })
+      );
     });
 
     await waitFor(() => expect(scrapeRk9Roster).toHaveBeenCalled());
@@ -1061,9 +1027,13 @@ describe("ExternalData events table rendering", () => {
       expect(screen.getByText("Roster Event")).toBeInTheDocument()
     );
 
-    const teamButtons = screen.getAllByRole("button", { name: /^Teams$/i });
+    const rosterRow = screen
+      .getByText("Roster Event")
+      .closest("div.grid") as HTMLElement;
     await act(async () => {
-      fireEvent.click(teamButtons[0]);
+      fireEvent.click(
+        within(rosterRow).getByRole("button", { name: /^Import$/i })
+      );
     });
 
     await waitFor(() => expect(scrapeRk9TeamsBatch).toHaveBeenCalled());
@@ -1124,8 +1094,8 @@ describe("ExternalData events table rendering", () => {
           .checked
       ).toBe(true);
     });
-    // Bulk "Scrape Rosters" action surfaces for roster-eligible (pending/failed) rows
-    expect(screen.getByText(/Scrape Rosters/i)).toBeInTheDocument();
+    // The unified "Import matching" toolbar action surfaces for importable rows
+    expect(screen.getByText(/Import matching/i)).toBeInTheDocument();
   });
 });
 
@@ -1506,7 +1476,7 @@ describe("Limitless status tabs + skipped", () => {
     });
     // Wait until the Limitless toolbar is rendered (confirms data has resolved)
     await waitFor(() =>
-      expect(screen.getByTestId("toolbar-limitless")).toBeInTheDocument()
+      expect(screen.getByTestId("toolbar")).toBeInTheDocument()
     );
   }
 
@@ -1551,14 +1521,14 @@ describe("Limitless status tabs + skipped", () => {
     expect(screen.getAllByText(/CUSTOM/i).length).toBeGreaterThan(0);
   });
 
-  it("Queue Matching button count excludes skipped rows", async () => {
+  it("Import matching button count excludes skipped rows", async () => {
     await openLimitlessTab();
 
-    // The toolbar stub renders "Queue Matching (N)" — assert N=2 (pending+failed,
+    // The toolbar stub renders "Import matching (N)" — assert N=2 (pending+failed,
     // not 3 which would include the CUSTOM skipped row).
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /Queue Matching \(2\)/i })
+        screen.getByRole("button", { name: /Import matching \(2\)/i })
       ).toBeInTheDocument();
     });
   });
