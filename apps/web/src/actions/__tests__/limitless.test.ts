@@ -214,14 +214,11 @@ describe("importLimitlessTournament", () => {
       error: null,
     });
 
-    // Track every update call's argument so we can assert final status writes
-    const updateResults: Array<jest.Mock> = [];
     updateSpy.mockImplementation(() => {
       const result = {
         eq: jest.fn().mockReturnThis(),
         select: jest.fn().mockResolvedValue({ data: null, error: null }),
       };
-      updateResults.push(result as unknown as jest.Mock);
       return result;
     });
 

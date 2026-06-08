@@ -214,6 +214,7 @@ export function ExternalData() {
             "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count"
           )
           .order("date_start", { ascending: false })
+          .order("event_id", { ascending: false })
           .range(from, from + PAGE - 1);
         if (error) throw error;
         const rows = (data ?? []) as RK9EventRow[];
@@ -249,6 +250,7 @@ export function ExternalData() {
             "tournament_id, name, format_id, date, player_count, platform, is_online, decklists, data_imported_at, import_status, import_requested_at, import_error, import_attempts"
           )
           .order("date", { ascending: false })
+          .order("tournament_id", { ascending: false })
           .range(from, from + PAGE - 1);
         if (error) throw error;
         const rows = (data ?? []) as LimitlessTournamentRow[];
