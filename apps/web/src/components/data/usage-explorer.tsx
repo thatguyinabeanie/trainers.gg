@@ -212,7 +212,7 @@ export function UsageExplorer({
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
+    <div className="flex w-full">
       {/* Sidebar */}
       <DataSidebar
         filters={currentFilters}
@@ -223,9 +223,9 @@ export function UsageExplorer({
       />
 
       {/* Main area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col">
         {/* Page header */}
-        <div className="flex flex-shrink-0 items-center gap-2 px-5 pt-4 pb-2">
+        <div className="flex items-center gap-2 px-5 pt-4 pb-2">
           <BarChart2 className="text-muted-foreground size-5" />
           <h1 className="text-xl font-bold tracking-tight">Data</h1>
           <span className="text-muted-foreground text-sm">
@@ -234,15 +234,15 @@ export function UsageExplorer({
         </div>
 
         {/* Charts */}
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-5 pb-4">
+        <div className="flex flex-col gap-3 px-5 pb-4">
           {/* Meta Pipeline (Sankey) */}
-          <div className="bg-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl shadow-sm">
-            <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-2.5">
+          <div className="bg-card flex flex-col rounded-xl shadow-sm">
+            <div className="flex items-center justify-between border-b px-4 py-2.5">
               <span className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
                 Meta Pipeline
               </span>
             </div>
-            <div className="min-h-0 flex-1 overflow-hidden">
+            <div>
               <UsagePipelineChart
                 pipelineResult={pipelineResult}
                 selectedSpecies={effectiveSelected}
@@ -252,7 +252,7 @@ export function UsageExplorer({
           </div>
 
           {/* Usage Over Time (line chart) */}
-          <div className="bg-card h-36 flex-shrink-0 overflow-hidden rounded-xl shadow-sm">
+          <div className="bg-card h-36 overflow-hidden rounded-xl shadow-sm">
             <UsageLineChart
               points={points}
               selectedSpecies={effectiveSelected}

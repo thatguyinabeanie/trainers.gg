@@ -100,7 +100,7 @@ export function DataSidebar({
 
   if (collapsed) {
     return (
-      <div className="flex h-full w-10 flex-shrink-0 flex-col items-center border-r pt-3">
+      <div className="sticky top-16 flex h-[calc(100dvh-4rem)] w-10 flex-shrink-0 flex-col items-center border-r pt-3">
         <button
           onClick={handleCollapse}
           aria-label="Expand sidebar"
@@ -113,7 +113,7 @@ export function DataSidebar({
   }
 
   return (
-    <div className="flex h-full w-52 flex-shrink-0 flex-col overflow-hidden border-r">
+    <div className="sticky top-16 flex h-[calc(100dvh-4rem)] w-52 flex-shrink-0 flex-col overflow-hidden border-r">
       {/* Header */}
       <div className="flex flex-shrink-0 items-center justify-between px-3 pt-3 pb-2">
         <span className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">

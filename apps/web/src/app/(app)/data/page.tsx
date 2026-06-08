@@ -66,7 +66,7 @@ export default async function DataPage({ searchParams }: DataPageProps) {
   const initialEvents = eventsResult.success ? eventsResult.data : [];
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1">
       <UsageExplorer
         initialPoints={initialPoints}
         initialPipelineResult={initialPipelineResult}
