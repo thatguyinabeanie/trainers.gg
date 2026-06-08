@@ -229,7 +229,12 @@ export async function importLimitlessTournament(
       throw new Error(`Failed to fetch tournament: ${rowErr.message}`);
     if (!row) return { success: false, error: "Tournament not found" };
 
-    const formatId = row.format_id ?? "";
+    if (!row.format_id)
+      return {
+        success: false,
+        error: "Tournament has no format ID configured",
+      };
+    const formatId = row.format_id;
     capturedAttempts = row.import_attempts ?? 0;
 
     // Mark the row as in-progress so the UI reflects state and the stale-recovery
