@@ -14,8 +14,8 @@ import type { RK9Pokemon } from "./types";
  * verified overrides for cases where heuristics fail.
  */
 export function normalizeSpecies(raw: string): string {
-  const open = raw.indexOf('[');
-  const close = raw.lastIndexOf(']');
+  const open = raw.indexOf("[");
+  const close = raw.lastIndexOf("]");
   let species: string;
   let form: string | null;
   if (open !== -1 && close > open) {
@@ -80,6 +80,10 @@ export function normalizeSpecies(raw: string): string {
       "hisuian form": "hisui",
       "paldean form": "paldea",
       bloodmoon: "bloodmoon",
+      // "Eternal Flower" is the form name RK9 uses for AZ's Floette; it maps
+      // to the canonical slug suffix "eternal" (i.e. floette-eternal), not
+      // the literal slugification "eternal-flower".
+      "eternal flower": "eternal",
       female: "f",
     };
 
