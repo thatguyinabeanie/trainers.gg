@@ -68,10 +68,6 @@ export function UsageExplorer({
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  // Ephemeral search box state — dims non-matching lines in the line chart.
-  // Not URL-persisted (transient UI affordance, not a shareable filter).
-  const [highlight, _setHighlight] = useState("");
-
   // ── URL-derived state ─────────────────────────────────────────────────────
   const format = coerceFormat(
     searchParams.get("format") ?? initialFilters.format
@@ -146,13 +142,6 @@ export function UsageExplorer({
       : [...selectedSpecies, species];
     updateUrl(currentFilters, next);
   };
-  const handleSelectAll = () => {
-    const all = buildUsageSeries(points)
-      .filter((s) => s.peak >= threshold)
-      .map((s) => s.species);
-    updateUrl(currentFilters, all);
-  };
-  const handleClearSelection = () => updateUrl(currentFilters, [], null, null);
   const handleRangeChange = (start: string | null, end: string | null) =>
     updateUrl(currentFilters, undefined, start, end);
 
@@ -247,7 +236,6 @@ export function UsageExplorer({
         <UsagePipelineChart
           pipelineResult={pipelineResult}
           selectedSpecies={selectedSpecies}
-          threshold={threshold}
           onSpeciesClick={handleSpeciesClick}
         />
       </div>
@@ -257,13 +245,9 @@ export function UsageExplorer({
         <UsageLineChart
           points={points}
           selectedSpecies={selectedSpecies}
-          highlight={highlight}
-          threshold={threshold}
           events={events}
           onSpeciesClick={handleSpeciesClick}
           onRangeChange={handleRangeChange}
-          onSelectAll={handleSelectAll}
-          onClearSelection={handleClearSelection}
         />
       </div>
     </div>

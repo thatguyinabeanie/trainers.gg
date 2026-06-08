@@ -102,13 +102,9 @@ const TWO_POINTS: FormatUsageTimeseriesPoint[] = [
 const DEFAULT_PROPS = {
   points: TWO_POINTS,
   selectedSpecies: [] as string[],
-  highlight: "",
-  threshold: 2,
   events: [] as FormatEvent[],
   onSpeciesClick: jest.fn(),
   onRangeChange: jest.fn(),
-  onSelectAll: jest.fn(),
-  onClearSelection: jest.fn(),
 };
 
 function renderChart(overrides: Partial<typeof DEFAULT_PROPS> = {}) {
@@ -116,8 +112,6 @@ function renderChart(overrides: Partial<typeof DEFAULT_PROPS> = {}) {
     ...DEFAULT_PROPS,
     onSpeciesClick: jest.fn(),
     onRangeChange: jest.fn(),
-    onSelectAll: jest.fn(),
-    onClearSelection: jest.fn(),
     ...overrides,
   };
   return { ...render(<UsageLineChart {...props} />), props };

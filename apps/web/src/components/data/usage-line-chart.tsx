@@ -17,7 +17,7 @@ import {
   type FormatEvent,
 } from "@trainers/supabase";
 
-import { buildUsageSeries, filterByThreshold } from "./usage-series";
+import { buildUsageSeries } from "./usage-series";
 
 // =============================================================================
 // Types
@@ -26,22 +26,14 @@ import { buildUsageSeries, filterByThreshold } from "./usage-series";
 interface UsageLineChartProps {
   /** All-species timeseries data, oldest → newest. */
   points: FormatUsageTimeseriesPoint[];
-  /** Currently selected species. Empty = no selection filter (all species shown normally). */
+  /** Currently selected species. Empty = show all series. */
   selectedSpecies: string[];
-  /** Case-insensitive search substring; non-matching lines are dimmed. Empty = no filter. */
-  highlight: string;
-  /** Min usage % to show a line. */
-  threshold: number;
   /** Events for annotation pins on X axis. */
   events: FormatEvent[];
   /** Called when user clicks a line. */
   onSpeciesClick: (species: string) => void;
   /** Called when brush selection changes. Arguments are ISO date strings. */
   onRangeChange: (start: string | null, end: string | null) => void;
-  /** Called when "Select All" is clicked. */
-  onSelectAll: () => void;
-  /** Called when "Clear" is clicked. */
-  onClearSelection: () => void;
 }
 
 // =============================================================================
@@ -92,13 +84,9 @@ function XAxisTickWithPin({
 export function UsageLineChart({
   points,
   selectedSpecies,
-  highlight,
-  threshold,
   events,
   onSpeciesClick,
   onRangeChange,
-  onSelectAll,
-  onClearSelection,
 }: UsageLineChartProps) {
   // Map period points to Recharts data shape: { periodStart, [species]: pct, ... }
   const chartData = points.map((p) => ({
@@ -107,7 +95,10 @@ export function UsageLineChart({
   }));
 
   const allSeries = buildUsageSeries(points);
-  const visibleSeries = filterByThreshold(allSeries, threshold);
+  const visibleSeries =
+    selectedSpecies.length > 0
+      ? allSeries.filter((s) => selectedSpecies.includes(s.species))
+      : allSeries;
 
   const rangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -180,23 +171,9 @@ export function UsageLineChart({
       {/* Panel header */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold">Usage Over Time</span>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-xs">
-            {visibleSeries.length} Pokémon
-          </span>
-          <button
-            onClick={onSelectAll}
-            className="text-primary text-xs hover:underline"
-          >
-            Select All
-          </button>
-          <button
-            onClick={onClearSelection}
-            className="text-muted-foreground text-xs hover:underline"
-          >
-            Clear
-          </button>
-        </div>
+        <span className="text-muted-foreground text-xs">
+          {visibleSeries.length} Pokémon
+        </span>
       </div>
 
       {/* Chart */}
@@ -245,31 +222,20 @@ export function UsageLineChart({
                 );
               }}
             />
-            {visibleSeries.map((s) => {
-              // A line is "active" (highlighted) when it passes BOTH the
-              // selection filter and the search filter. Inactive lines dim.
-              const matchesHighlight =
-                !highlight ||
-                s.species.toLowerCase().includes(highlight.toLowerCase());
-              const isActive =
-                (selectedSpecies.length === 0 ||
-                  selectedSpecies.includes(s.species)) &&
-                matchesHighlight;
-              return (
-                <Line
-                  key={s.species}
-                  type="monotone"
-                  dataKey={s.species}
-                  stroke={isActive ? s.color : "var(--muted)"}
-                  strokeWidth={isActive ? 2.5 : 1}
-                  strokeOpacity={isActive ? 1 : 0.3}
-                  dot={false}
-                  activeDot={isActive ? { r: 3 } : false}
-                  onClick={handleLineClick}
-                  style={{ cursor: "pointer" }}
-                />
-              );
-            })}
+            {visibleSeries.map((s) => (
+              <Line
+                key={s.species}
+                type="monotone"
+                dataKey={s.species}
+                stroke={s.color}
+                strokeWidth={2.5}
+                strokeOpacity={1}
+                dot={false}
+                activeDot={{ r: 3 }}
+                onClick={handleLineClick}
+                style={{ cursor: "pointer" }}
+              />
+            ))}
             <Brush
               dataKey="periodStart"
               height={20}
@@ -282,24 +248,26 @@ export function UsageLineChart({
         </ResponsiveContainer>
       </div>
 
-      {/* Legend strip */}
+      {/* Inline legend */}
       {selectedSpecies.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {selectedSpecies.map((sp) => {
-            const s = allSeries.find((x) => x.species === sp);
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+          {selectedSpecies.slice(0, 10).map((sp) => {
+            const series = allSeries.find((s) => s.species === sp);
             return (
-              <span
-                key={sp}
-                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
-                style={{
-                  background: s?.color ?? "var(--muted)",
-                  color: "white",
-                }}
-              >
-                {sp}
-              </span>
+              <div key={sp} className="flex items-center gap-1">
+                <div
+                  className="h-0.5 w-3 flex-shrink-0 rounded-full"
+                  style={{ background: series?.color ?? "#94a3b8" }}
+                />
+                <span className="text-muted-foreground text-xs">{sp}</span>
+              </div>
             );
           })}
+          {selectedSpecies.length > 10 && (
+            <span className="text-muted-foreground text-xs">
+              +{selectedSpecies.length - 10} more
+            </span>
+          )}
         </div>
       )}
     </div>

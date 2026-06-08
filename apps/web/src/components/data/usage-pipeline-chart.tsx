@@ -15,10 +15,8 @@ import { buildPipelineGraph, type PipelineNode } from "./usage-pipeline";
 interface UsagePipelineChartProps {
   /** Pipeline data from server. Null when no period data exists. */
   pipelineResult: PipelineDataResult | null;
-  /** Species names to filter to. Empty = show all above threshold. */
+  /** Species names to show. Sidebar presets always provide an explicit list. */
   selectedSpecies: string[];
-  /** Min usage % to include (applied to species nodes). */
-  threshold: number;
   /** Called when user clicks a species node to select/deselect it. */
   onSpeciesClick: (species: string) => void;
 }
@@ -70,7 +68,6 @@ const COLUMN_LABELS: Record<string, string> = {
 export function UsagePipelineChart({
   pipelineResult,
   selectedSpecies,
-  threshold,
   onSpeciesClick,
 }: UsagePipelineChartProps) {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -90,16 +87,15 @@ export function UsagePipelineChart({
     );
   }
 
-  // Filter species by selection and threshold
-  const visibleSpecies =
-    selectedSpecies.length > 0
-      ? pipelineResult.data.filter((s) => selectedSpecies.includes(s.species))
-      : pipelineResult.data.filter((s) => s.usagePct >= threshold);
+  // Filter to only the explicitly selected species
+  const visibleSpecies = pipelineResult.data.filter((s) =>
+    selectedSpecies.includes(s.species)
+  );
 
   if (visibleSpecies.length === 0) {
     return (
       <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">
-        No species above {threshold}% threshold.
+        No Pokémon selected. Use the sidebar to choose species.
       </div>
     );
   }

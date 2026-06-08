@@ -47,8 +47,8 @@ function makePipelineResult(
 
 const DEFAULT_PROPS = {
   pipelineResult: makePipelineResult(),
-  selectedSpecies: [] as string[],
-  threshold: 2,
+  // Default includes "Sneasler" so the chart renders (matches makePipelineSpecies default)
+  selectedSpecies: ["Sneasler"] as string[],
   onSpeciesClick: jest.fn(),
 };
 
@@ -79,16 +79,18 @@ describe("UsagePipelineChart — empty states", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows threshold message when all species are below threshold", () => {
-    // species has usagePct 1, threshold is 50 → none above threshold
+  it("shows sidebar prompt when selectedSpecies is empty", () => {
+    // No species selected → visibleSpecies is empty
     renderChart({
       pipelineResult: makePipelineResult({
-        data: [makePipelineSpecies({ usagePct: 1 })],
+        data: [makePipelineSpecies({ usagePct: 30 })],
       }),
-      threshold: 50,
+      selectedSpecies: [],
     });
     expect(
-      screen.getByText("No species above 50% threshold.")
+      screen.getByText(
+        "No Pokémon selected. Use the sidebar to choose species."
+      )
     ).toBeInTheDocument();
   });
 });
@@ -169,7 +171,7 @@ describe("UsagePipelineChart — selectedSpecies filter", () => {
     expect(selectedRect).toBeTruthy();
   });
 
-  it("shows empty threshold message when selectedSpecies matches no data species", () => {
+  it("shows sidebar prompt when selectedSpecies matches no data species", () => {
     // selectedSpecies filter produces empty visibleSpecies
     renderChart({
       pipelineResult: makePipelineResult({
@@ -178,7 +180,9 @@ describe("UsagePipelineChart — selectedSpecies filter", () => {
       selectedSpecies: ["Koraidon"],
     });
     expect(
-      screen.getByText("No species above 2% threshold.")
+      screen.getByText(
+        "No Pokémon selected. Use the sidebar to choose species."
+      )
     ).toBeInTheDocument();
   });
 });
@@ -245,7 +249,7 @@ describe("UsagePipelineChart — hover interactions", () => {
 // =============================================================================
 
 describe("UsagePipelineChart — multiple species", () => {
-  it("renders both species when two species are above threshold", () => {
+  it("renders both species when two species are selected", () => {
     const { container } = renderChart({
       pipelineResult: makePipelineResult({
         data: [
@@ -259,6 +263,7 @@ describe("UsagePipelineChart — multiple species", () => {
           }),
         ],
       }),
+      selectedSpecies: ["Sneasler", "Koraidon"],
     });
     const rects = container.querySelectorAll("rect");
     // Should have more nodes for two species
@@ -280,6 +285,7 @@ describe("UsagePipelineChart — multiple species", () => {
           }),
         ],
       }),
+      selectedSpecies: ["Sneasler", "Hawlucha"],
     });
     // "Unburden" text should appear exactly once (deduplicated node)
     const abilityTexts = Array.from(container.querySelectorAll("text")).filter(
