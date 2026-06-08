@@ -22,7 +22,7 @@ import {
   resetRk9EventData,
 } from "@/actions/rk9";
 import {
-  queueTournamentForImport,
+  importLimitlessTournament,
   batchQueueTournaments,
   triggerLimitlessSync,
   triggerImportQueue,
@@ -769,14 +769,19 @@ export function ExternalData() {
     }
   }
 
-  async function handleQueueOne(tournamentId: string) {
+  /**
+   * One-pass per-row import for a single Limitless tournament.
+   * Calls importLimitlessTournament directly (full fetch+insert, not enqueue).
+   * Uses queuingIds for spinner feedback while in flight.
+   */
+  async function handleImportLimitlessOne(tournamentId: string) {
     setQueuingIds((prev) => new Set(prev).add(tournamentId));
     try {
-      const result = await queueTournamentForImport(tournamentId);
+      const result = await importLimitlessTournament(tournamentId);
       if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      toast.error(getErrorMessage(e, "Failed to queue tournament"));
+      toast.error(getErrorMessage(e, "Failed to import tournament"));
     } finally {
       setQueuingIds((prev) => {
         const next = new Set(prev);
@@ -787,17 +792,36 @@ export function ExternalData() {
   }
 
   /**
-   * Unified per-row import dispatcher. Dispatches to the source-appropriate
-   * import handler based on the row's source and current import_status:
-   * - Limitless: queues the tournament via handleQueueOne
-   * - RK9 pending/failed: scrapes the roster first
-   * - RK9 roster/teams/complete (no team lists): scrapes teams
+   * One-pass per-row import for a single RK9 event.
+   * Scrapes the roster first, then immediately scrapes teams — both in one
+   * click. This replaces the old two-step flow where separate buttons advanced
+   * the import one stage at a time.
+   */
+  async function handleImportRk9(eventId: string) {
+    await handleScrapeRoster(eventId);
+    await handleScrapeTeams(eventId);
+  }
+
+  /**
+   * Per-row import dispatcher for the one-pass Import button.
+   * - Limitless: full fetch+insert via handleImportLimitlessOne
+   * - RK9: roster then teams in sequence via handleImportRk9
    */
   async function handleImport(row: UnifiedRow) {
     if (row.source === "limitless") {
-      await handleQueueOne(row.limitless!.tournament_id);
+      await handleImportLimitlessOne(row.limitless!.tournament_id);
       return;
     }
+    await handleImportRk9(row.rk9!.event_id);
+  }
+
+  /**
+   * Legacy per-row RK9 step handler used by BULK operations only.
+   * Bulk operations stay on the old per-step strategy (roster only for
+   * pending/failed, teams for roster/teams/complete) so the worker pipeline
+   * can advance them incrementally without blocking the full batch.
+   */
+  async function handleEnqueueRk9(row: UnifiedRow) {
     const s = row.rk9!.import_status;
     if (s === "pending" || s === "failed") {
       await handleScrapeRoster(row.rk9!.event_id);
@@ -845,7 +869,7 @@ export function ExternalData() {
       for (let i = 0; i < rk9Rows.length; i++) {
         const row = rk9Rows[i]!;
         setBulkProgress({ total: rk9Rows.length, done: i, current: row.name });
-        await handleImport(row);
+        await handleEnqueueRk9(row);
       }
       setBulkProcessing(false);
       setBulkProgress(null);
@@ -895,7 +919,7 @@ export function ExternalData() {
           done: i,
           current: row.name,
         });
-        await handleImport(row);
+        await handleEnqueueRk9(row);
       }
       setBulkProcessing(false);
       setBulkProgress(null);
@@ -981,7 +1005,7 @@ export function ExternalData() {
           done: i,
           current: row.name,
         });
-        await handleImport(row);
+        await handleEnqueueRk9(row);
       }
       setBulkProcessing(false);
       setBulkProgress(null);
