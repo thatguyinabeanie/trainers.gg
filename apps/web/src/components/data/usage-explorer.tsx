@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { BarChart2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
@@ -16,21 +17,19 @@ import {
   fetchFormatEvents,
 } from "@/actions/usage";
 
-import { buildUsageSeries } from "./usage-series";
+import { DataSidebar } from "./data-sidebar";
+import { UsagePipelineChart } from "./usage-pipeline-chart";
+import { UsageLineChart } from "./usage-line-chart";
 import {
   type UsageFilters,
-  type PeriodType,
-  type UsageSource,
   coerceFormat,
   coercePeriodType,
   coerceSource,
-  coerceThreshold,
   coerceSelectedSpecies,
   coerceRangeStart,
   coerceRangeEnd,
+  applyPreset,
 } from "./usage-filters";
-import { UsagePipelineChart } from "./usage-pipeline-chart";
-import { UsageLineChart } from "./usage-line-chart";
 
 // =============================================================================
 // Types
@@ -50,13 +49,9 @@ interface UsageExplorerProps {
 /**
  * Client shell for the /data Meta Explorer.
  *
- * URL state: format, source, periodType, threshold, species (comma-sep),
+ * URL state: format, source, periodType, species (comma-sep),
  * rangeStart (ISO date), rangeEnd (ISO date).
- *
- * Local state (ephemeral): highlight (search input substring).
- *
- * TanStack Query is keyed per (format, source, periodType) for the timeseries
- * and per (format, source, periodType, rangeStart, rangeEnd) for pipeline data.
+ * threshold is no longer URL-persisted — sidebar presets replace it.
  */
 export function UsageExplorer({
   initialPoints,
@@ -72,20 +67,16 @@ export function UsageExplorer({
   const format = coerceFormat(
     searchParams.get("format") ?? initialFilters.format
   );
-  const source: UsageSource = coerceSource(
+  const source = coerceSource(
     searchParams.get("source") ?? initialFilters.source
   );
-  const periodType: PeriodType = coercePeriodType(
+  const periodType = coercePeriodType(
     searchParams.get("periodType") ?? initialFilters.periodType
   );
-  const threshold = coerceThreshold(searchParams.get("threshold"));
   const selectedSpecies = coerceSelectedSpecies(searchParams.get("species"));
   const rangeStart = coerceRangeStart(searchParams.get("rangeStart"));
   const rangeEnd = coerceRangeEnd(searchParams.get("rangeEnd"));
 
-  // Capture the initial query params at mount — used to gate initialData so
-  // SSR-seeded data is only applied to the original cache entry, not new
-  // entries created when filters/brush change.
   const [initTimeseriesKey] = useState({ format, source, periodType });
   const [initPipelineKey] = useState({
     format,
@@ -96,11 +87,7 @@ export function UsageExplorer({
   });
   const [initEventsFormat] = useState(format);
 
-  const currentFilters: UsageFilters = {
-    format,
-    source,
-    periodType,
-  };
+  const currentFilters: UsageFilters = { format, source, periodType };
 
   // ── URL updater ───────────────────────────────────────────────────────────
   const updateUrl = (
@@ -113,7 +100,7 @@ export function UsageExplorer({
     params.set("format", nextFilters.format);
     params.set("source", nextFilters.source);
     params.set("periodType", nextFilters.periodType);
-    params.set("threshold", String(threshold));
+    params.delete("threshold"); // clean up any legacy threshold param
 
     const species = nextSpecies ?? selectedSpecies;
     if (species.length > 0) {
@@ -134,14 +121,12 @@ export function UsageExplorer({
     });
   };
 
-  const _handleFiltersChange = (next: UsageFilters) =>
+  const handleFiltersChange = (next: UsageFilters) =>
     updateUrl(next, next.format !== format ? [] : undefined);
-  const handleSpeciesClick = (species: string) => {
-    const next = selectedSpecies.includes(species)
-      ? selectedSpecies.filter((s) => s !== species)
-      : [...selectedSpecies, species];
+
+  const handleSelectionChange = (next: string[]) =>
     updateUrl(currentFilters, next);
-  };
+
   const handleRangeChange = (start: string | null, end: string | null) =>
     updateUrl(currentFilters, undefined, start, end);
 
@@ -208,47 +193,75 @@ export function UsageExplorer({
     },
     initialData: format === initEventsFormat ? initialEvents : undefined,
     placeholderData: (prev) => prev,
-    staleTime: 60 * 60 * 1000, // events change rarely
+    staleTime: 60 * 60 * 1000,
   });
 
-  const _allSeries = buildUsageSeries(points);
+  const allSpecies = pipelineResult?.data ?? [];
+
+  // When no species are URL-selected, default to top 20 from pipeline data.
+  const effectiveSelected =
+    selectedSpecies.length > 0
+      ? selectedSpecies
+      : applyPreset(allSpecies, "top20");
+
+  const handleSpeciesClick = (species: string) => {
+    const next = effectiveSelected.includes(species)
+      ? effectiveSelected.filter((s) => s !== species)
+      : [...effectiveSelected, species];
+    updateUrl(currentFilters, next);
+  };
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Panel 1: Meta Pipeline (Sankey) — hero */}
-      <div className="bg-card rounded-2xl p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Meta Pipeline</h2>
-          {selectedSpecies.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1">
-              {selectedSpecies.map((sp) => (
-                <button
-                  key={sp}
-                  onClick={() => handleSpeciesClick(sp)}
-                  className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs"
-                >
-                  {sp} ×
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <UsagePipelineChart
-          pipelineResult={pipelineResult}
-          selectedSpecies={selectedSpecies}
-          onSpeciesClick={handleSpeciesClick}
-        />
-      </div>
+    <div className="flex h-full w-full overflow-hidden">
+      {/* Sidebar */}
+      <DataSidebar
+        filters={currentFilters}
+        allSpecies={allSpecies}
+        selectedSpecies={effectiveSelected}
+        onFiltersChange={handleFiltersChange}
+        onSelectionChange={handleSelectionChange}
+      />
 
-      {/* Panel 2: Usage Over Time (line chart) — navigator */}
-      <div className="bg-card rounded-2xl p-4 shadow-sm">
-        <UsageLineChart
-          points={points}
-          selectedSpecies={selectedSpecies}
-          events={events}
-          onSpeciesClick={handleSpeciesClick}
-          onRangeChange={handleRangeChange}
-        />
+      {/* Main area */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* Page header */}
+        <div className="flex flex-shrink-0 items-center gap-2 px-5 pt-4 pb-2">
+          <BarChart2 className="text-muted-foreground size-5" />
+          <h1 className="text-xl font-bold tracking-tight">Data</h1>
+          <span className="text-muted-foreground text-sm">
+            Pokémon usage across tournaments
+          </span>
+        </div>
+
+        {/* Charts */}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-5 pb-4">
+          {/* Meta Pipeline (Sankey) */}
+          <div className="bg-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl shadow-sm">
+            <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-2.5">
+              <span className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+                Meta Pipeline
+              </span>
+            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <UsagePipelineChart
+                pipelineResult={pipelineResult}
+                selectedSpecies={effectiveSelected}
+                onSpeciesClick={handleSpeciesClick}
+              />
+            </div>
+          </div>
+
+          {/* Usage Over Time (line chart) */}
+          <div className="bg-card h-36 flex-shrink-0 overflow-hidden rounded-xl shadow-sm">
+            <UsageLineChart
+              points={points}
+              selectedSpecies={effectiveSelected}
+              events={events}
+              onSpeciesClick={handleSpeciesClick}
+              onRangeChange={handleRangeChange}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -55,15 +55,12 @@ jest.mock("../usage-line-chart", () => ({
   UsageLineChart: (props: {
     onSpeciesClick: (s: string) => void;
     onRangeChange: (a: string | null, b: string | null) => void;
-    onSelectAll: () => void;
-    onClearSelection: () => void;
   }) => (
     <div data-testid="usage-line-chart">
       <button onClick={() => props.onSpeciesClick("Sneasler")}>lc-pick</button>
       <button onClick={() => props.onRangeChange("2025-01-01", "2025-01-31")}>
         lc-range
       </button>
-      <button onClick={() => props.onClearSelection()}>lc-clear</button>
     </div>
   ),
 }));
@@ -72,13 +69,12 @@ jest.mock("../usage-pipeline-chart", () => ({
   UsagePipelineChart: () => <div data-testid="usage-pipeline-chart" />,
 }));
 
-jest.mock("../usage-controls", () => ({
-  __esModule: true,
-  UsageControls: (props: {
+jest.mock("../data-sidebar", () => ({
+  DataSidebar: (props: {
     onFiltersChange: (f: UsageFilters) => void;
     filters: UsageFilters;
   }) => (
-    <div data-testid="usage-controls">
+    <div data-testid="data-sidebar">
       <button
         onClick={() =>
           props.onFiltersChange({ ...props.filters, format: "gen9vgc2024regh" })
@@ -110,7 +106,6 @@ const DEFAULT_FILTERS: UsageFilters = {
   format: "gen9vgc2025regg",
   source: "all",
   periodType: "week",
-  threshold: 2,
 };
 
 function renderExplorer() {
@@ -149,7 +144,7 @@ beforeEach(() => {
 describe("UsageExplorer — rendering", () => {
   it("renders without crashing", () => {
     renderExplorer();
-    expect(screen.getByText("Meta Pipeline")).toBeInTheDocument();
+    expect(screen.getByText("Data")).toBeInTheDocument();
   });
 
   it("renders both chart panels", () => {
@@ -158,9 +153,9 @@ describe("UsageExplorer — rendering", () => {
     expect(screen.getByTestId("usage-line-chart")).toBeInTheDocument();
   });
 
-  it("renders the controls stub", () => {
+  it("renders the sidebar stub", () => {
     renderExplorer();
-    expect(screen.getByTestId("usage-controls")).toBeInTheDocument();
+    expect(screen.getByTestId("data-sidebar")).toBeInTheDocument();
   });
 });
 
@@ -183,14 +178,13 @@ describe("UsageExplorer — species URL state", () => {
     expect(lastReplaceParams().get("species")).toBeNull();
   });
 
-  it("clears all species (and range) when Clear is clicked", async () => {
+  it("clears species when the DataSidebar triggers an empty selection", async () => {
     mockSearchParams = new URLSearchParams("species=Sneasler");
     renderExplorer();
-    await userEvent.click(screen.getByText("lc-clear"));
+    // Clicking "Sneasler" again (when it's the only selection) should clear the param
+    await userEvent.click(screen.getByText("lc-pick"));
     const p = lastReplaceParams();
     expect(p.get("species")).toBeNull();
-    expect(p.get("rangeStart")).toBeNull();
-    expect(p.get("rangeEnd")).toBeNull();
   });
 });
 
