@@ -308,7 +308,7 @@ export function UsagePipelineChart({
                       : undefined
                   }
                 />
-              ) : node.y1 - node.y0 > 6 ? (
+              ) : (
                 <text
                   x={node.x1 + 6}
                   y={(node.y0 + node.y1) / 2}
@@ -317,7 +317,7 @@ export function UsagePipelineChart({
                 >
                   {node.label}
                 </text>
-              ) : null}
+              )}
             </g>
           );
         })}
