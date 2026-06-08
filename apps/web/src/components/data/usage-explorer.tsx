@@ -13,7 +13,7 @@ import {
 
 import {
   fetchFormatUsageTimeseries,
-  fetchPipelineData,
+  fetchDirectPipelineData,
   fetchFormatEvents,
 } from "@/actions/usage";
 
@@ -30,6 +30,8 @@ import {
   coerceRangeStart,
   coerceRangeEnd,
   coerceColumns,
+  coerceMinPlayers,
+  DEFAULT_MIN_PLAYERS,
   applyPreset,
 } from "./usage-filters";
 
@@ -79,6 +81,7 @@ export function UsageExplorer({
   const rangeStart = coerceRangeStart(searchParams.get("rangeStart"));
   const rangeEnd = coerceRangeEnd(searchParams.get("rangeEnd"));
   const columns = coerceColumns(searchParams.get("columns") ?? undefined);
+  const minPlayers = coerceMinPlayers(searchParams.get("minPlayers"));
 
   const [initTimeseriesKey] = useState({ format, source, periodType });
   const [initPipelineKey] = useState({
@@ -87,6 +90,7 @@ export function UsageExplorer({
     periodType,
     rangeStart,
     rangeEnd,
+    minPlayers,
   });
   const [initEventsFormat] = useState(format);
 
@@ -98,7 +102,8 @@ export function UsageExplorer({
     nextSpecies?: string[],
     nextRangeStart?: string | null,
     nextRangeEnd?: string | null,
-    nextColumns?: PipelineColumn[]
+    nextColumns?: PipelineColumn[],
+    nextMinPlayers?: number
   ) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("format", nextFilters.format);
@@ -123,6 +128,13 @@ export function UsageExplorer({
     const cols = nextColumns ?? columns;
     params.set("columns", cols.join(","));
 
+    const mp = nextMinPlayers !== undefined ? nextMinPlayers : minPlayers;
+    if (mp !== DEFAULT_MIN_PLAYERS) {
+      params.set("minPlayers", String(mp));
+    } else {
+      params.delete("minPlayers"); // keep URLs clean at the default value
+    }
+
     startTransition(() => {
       router.replace(`?${params.toString()}`, { scroll: false });
     });
@@ -139,6 +151,9 @@ export function UsageExplorer({
 
   const handleColumnsChange = (next: PipelineColumn[]) =>
     updateUrl(currentFilters, undefined, undefined, undefined, next);
+
+  const handleMinPlayersChange = (n: number) =>
+    updateUrl(currentFilters, undefined, undefined, undefined, undefined, n);
 
   // ── TanStack Query — timeseries ───────────────────────────────────────────
   const isInitTimeseries =
@@ -167,7 +182,8 @@ export function UsageExplorer({
     source === initPipelineKey.source &&
     periodType === initPipelineKey.periodType &&
     rangeStart === initPipelineKey.rangeStart &&
-    rangeEnd === initPipelineKey.rangeEnd;
+    rangeEnd === initPipelineKey.rangeEnd &&
+    minPlayers === initPipelineKey.minPlayers;
   const { data: pipelineResult = null } = useQuery<PipelineDataResult | null>({
     queryKey: [
       "pipeline-data",
@@ -176,14 +192,15 @@ export function UsageExplorer({
       periodType,
       rangeStart,
       rangeEnd,
+      minPlayers,
     ],
     queryFn: async () => {
-      const result = await fetchPipelineData({
+      const result = await fetchDirectPipelineData({
         format,
         source,
-        periodType,
         periodStart: rangeStart ?? undefined,
         periodEnd: rangeEnd ?? undefined,
+        minPlayers,
       });
       if (!result.success) throw new Error(result.error);
       return result.data;
@@ -229,9 +246,11 @@ export function UsageExplorer({
         allSpecies={allSpecies}
         selectedSpecies={effectiveSelected}
         columns={columns}
+        minPlayers={minPlayers}
         onFiltersChange={handleFiltersChange}
         onSelectionChange={handleSelectionChange}
         onColumnsChange={handleColumnsChange}
+        onMinPlayersChange={handleMinPlayersChange}
       />
 
       {/* Main area */}

@@ -52,9 +52,11 @@ interface DataSidebarProps {
   allSpecies: PipelineSpeciesData[];
   selectedSpecies: string[];
   columns: PipelineColumn[];
+  minPlayers: number;
   onFiltersChange: (filters: UsageFilters) => void;
   onSelectionChange: (selected: string[]) => void;
   onColumnsChange: (columns: PipelineColumn[]) => void;
+  onMinPlayersChange: (n: number) => void;
 }
 
 // =============================================================================
@@ -66,9 +68,11 @@ export function DataSidebar({
   allSpecies,
   selectedSpecies,
   columns,
+  minPlayers,
   onFiltersChange,
   onSelectionChange,
   onColumnsChange,
+  onMinPlayersChange,
 }: DataSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [query, setQuery] = useState("");
@@ -298,6 +302,26 @@ export function DataSidebar({
               </div>
             )
           )}
+        </div>
+      </div>
+
+      {/* Min. players filter */}
+      <div className="flex flex-shrink-0 flex-col gap-2 px-3 pb-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+            Min. Players
+          </span>
+          <input
+            type="number"
+            min={0}
+            step={8}
+            value={minPlayers}
+            onChange={(e) => {
+              const n = parseInt(e.target.value, 10);
+              if (Number.isFinite(n) && n >= 0) onMinPlayersChange(n);
+            }}
+            className="border-input bg-background text-foreground focus:ring-ring h-7 w-full rounded-md border px-2 text-xs focus:ring-1 focus:outline-none"
+          />
         </div>
       </div>
 

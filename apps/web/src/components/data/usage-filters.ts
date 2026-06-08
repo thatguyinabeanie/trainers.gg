@@ -258,3 +258,20 @@ export function coerceColumns(raw: string | undefined): PipelineColumn[] {
   });
   return deduped.length > 0 ? deduped : DEFAULT_PIPELINE_COLUMNS;
 }
+
+// =============================================================================
+// Min-players filter
+// =============================================================================
+
+/** Default minimum tournament size for the /data pipeline filter. */
+export const DEFAULT_MIN_PLAYERS = 64;
+
+/**
+ * Parse and validate the "minPlayers" URL param.
+ * Must be a non-negative integer. Defaults to DEFAULT_MIN_PLAYERS.
+ */
+export function coerceMinPlayers(raw: string | null | undefined): number {
+  if (!raw) return DEFAULT_MIN_PLAYERS;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n >= 0 ? n : DEFAULT_MIN_PLAYERS;
+}

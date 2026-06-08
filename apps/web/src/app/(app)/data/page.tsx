@@ -1,6 +1,6 @@
 import {
   fetchFormatUsageTimeseries,
-  fetchPipelineData,
+  fetchDirectPipelineData,
   fetchFormatEvents,
 } from "@/actions/usage";
 import { UsageExplorer } from "@/components/data/usage-explorer";
@@ -11,6 +11,7 @@ import {
   coerceRangeEnd,
   coerceRangeStart,
   coerceSource,
+  coerceMinPlayers,
 } from "@/components/data/usage-filters";
 
 // =============================================================================
@@ -44,17 +45,18 @@ export default async function DataPage({ searchParams }: DataPageProps) {
   const periodType = coercePeriodType(raw("periodType"));
   const rangeStart = coerceRangeStart(raw("rangeStart"));
   const rangeEnd = coerceRangeEnd(raw("rangeEnd"));
+  const minPlayers = coerceMinPlayers(raw("minPlayers"));
 
   const initialFilters: UsageFilters = { format, source, periodType };
 
   const [timeseriesResult, pipelineResult, eventsResult] = await Promise.all([
     fetchFormatUsageTimeseries({ format, source, periodType }),
-    fetchPipelineData({
+    fetchDirectPipelineData({
       format,
       source,
-      periodType,
       periodStart: rangeStart ?? undefined,
       periodEnd: rangeEnd ?? undefined,
+      minPlayers,
     }),
     fetchFormatEvents(format),
   ]);
