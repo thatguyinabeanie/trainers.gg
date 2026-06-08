@@ -103,16 +103,17 @@ export function buildPipelineGraph(
     const speciesId = `species:${s.species}`;
     ensureNode(speciesId, s.species, "species", assignColor(s.species));
 
-    // Only include columns that have data for this species
-    const activeColumns = columns.filter(
-      (col) => s[COLUMN_DATA_KEY[col]].length > 0
-    );
+    // Only include columns that have data for this species.
+    // Guard with ?? [] so stale cached rows missing `items` don't crash.
+    const getEntries = (col: PipelineColumn) => s[COLUMN_DATA_KEY[col]] ?? [];
+
+    const activeColumns = columns.filter((col) => getEntries(col).length > 0);
 
     if (activeColumns.length === 0) continue;
 
     // species → first active column
     const firstCol = activeColumns[0]!;
-    for (const entry of s[COLUMN_DATA_KEY[firstCol]]) {
+    for (const entry of getEntries(firstCol)) {
       const nodeId = `${firstCol}:${entry.value}`;
       ensureNode(nodeId, entry.value, firstCol, COLUMN_COLORS[firstCol]);
       addLink(speciesId, nodeId, (s.usagePct * entry.pct) / 100);
@@ -122,9 +123,9 @@ export function buildPipelineGraph(
     for (let i = 0; i < activeColumns.length - 1; i++) {
       const colA = activeColumns[i]!;
       const colB = activeColumns[i + 1]!;
-      for (const entryA of s[COLUMN_DATA_KEY[colA]]) {
+      for (const entryA of getEntries(colA)) {
         const nodeIdA = `${colA}:${entryA.value}`;
-        for (const entryB of s[COLUMN_DATA_KEY[colB]]) {
+        for (const entryB of getEntries(colB)) {
           const nodeIdB = `${colB}:${entryB.value}`;
           ensureNode(nodeIdB, entryB.value, colB, COLUMN_COLORS[colB]);
           addLink(
