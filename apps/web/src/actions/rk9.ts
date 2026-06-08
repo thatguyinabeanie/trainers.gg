@@ -145,7 +145,9 @@ async function fetchWaybackSnapshots(): Promise<string[]> {
     });
 
     if (!response.ok) {
-      throw new Error(`CDX API HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        `CDX API HTTP ${response.status}: ${response.statusText}`
+      );
     }
 
     const rows = (await response.json()) as string[][];
@@ -209,7 +211,10 @@ function sleep(ms: number): Promise<void> {
  * one per season for maximum coverage with minimal requests.
  */
 export async function discoverRk9Events(): Promise<
-  ActionResult & { events?: RK9Event[]; sources?: { live: number; archive: number } }
+  ActionResult & {
+    events?: RK9Event[];
+    sources?: { live: number; archive: number };
+  }
 > {
   try {
     const userId = await getUserId();
@@ -230,7 +235,10 @@ export async function discoverRk9Events(): Promise<
       liveCount = liveEvents.length;
     } catch (e) {
       // Live fetch failing shouldn't block archive recovery
-      console.warn("[discoverRk9Events] Live RK9 fetch failed:", getErrorMessage(e, "unknown"));
+      console.warn(
+        "[discoverRk9Events] Live RK9 fetch failed:",
+        getErrorMessage(e, "unknown")
+      );
     }
 
     // Source 2: Wayback Machine (all historical seasons)
@@ -249,7 +257,10 @@ export async function discoverRk9Events(): Promise<
       const snapshots = await fetchWaybackSnapshots();
       snapshotPicks = pickSnapshotsPerSeason(snapshots);
     } catch (e) {
-      console.warn("[discoverRk9Events] Wayback CDX query failed, using fallback timestamps:", getErrorMessage(e, "unknown"));
+      console.warn(
+        "[discoverRk9Events] Wayback CDX query failed, using fallback timestamps:",
+        getErrorMessage(e, "unknown")
+      );
       snapshotPicks = FALLBACK_SNAPSHOTS;
     }
 
@@ -400,7 +411,9 @@ export async function scrapeRk9Roster(
       })
       .eq("event_id", eventId);
     if (rosterStatusErr)
-      console.error(`[rk9-roster] Failed to update event status to failed: ${rosterStatusErr.message}`);
+      console.error(
+        `[rk9-roster] Failed to update event status to failed: ${rosterStatusErr.message}`
+      );
 
     return {
       success: false,
@@ -450,11 +463,15 @@ export async function scrapeRk9TeamsBatch(
     ]);
     const batchSize = Math.max(
       1,
-      batchSizeResult.success && batchSizeResult.data ? batchSizeResult.data : TEAMS_BATCH_SIZE
+      batchSizeResult.success && batchSizeResult.data
+        ? batchSizeResult.data
+        : TEAMS_BATCH_SIZE
     );
     const concurrency = Math.max(
       1,
-      concurrencyResult.success && concurrencyResult.data ? concurrencyResult.data : 3
+      concurrencyResult.success && concurrencyResult.data
+        ? concurrencyResult.data
+        : 3
     );
 
     const supabase = createServiceRoleClient();
@@ -481,19 +498,43 @@ export async function scrapeRk9TeamsBatch(
       if (page.length < PAGE_SIZE) break;
     }
     if (!allStandings || allStandings.length === 0) {
+      // No standings linked yet. Use player_count as a heuristic to decide
+      // whether this is a genuinely empty event or standings just aren't linked:
+      // - player_count === 0: empty event — mark complete (no team lists possible)
+      // - player_count > 0: roster exists but standings aren't linked yet — leave
+      //   as "teams" so the batch can be retried once standings are linked.
+      const { data: evt } = await supabase
+        .schema("rk9")
+        .from("events")
+        .select("player_count")
+        .eq("event_id", eventId)
+        .maybeSingle();
+
+      const statusWhenNoStandings =
+        (evt?.player_count ?? 0) > 0 ? "teams" : "complete";
+
       await supabase
         .schema("rk9")
         .from("events")
         .update({
-          import_status: "complete",
+          import_status: statusWhenNoStandings,
           import_error: null,
           has_team_lists: false,
-          imported_at: new Date().toISOString(),
+          ...(statusWhenNoStandings === "complete"
+            ? { imported_at: new Date().toISOString() }
+            : {}),
           teams_imported_count: 0,
         })
         .eq("event_id", eventId);
 
-      return { success: true, data: undefined, done: true, scraped: 0, total: 0, failed: 0 };
+      return {
+        success: true,
+        data: undefined,
+        done: true,
+        scraped: 0,
+        total: 0,
+        failed: 0,
+      };
     }
 
     // Skip standings that already have a scrape attempt recorded.
@@ -519,7 +560,10 @@ export async function scrapeRk9TeamsBatch(
           .select("standing_id")
           .in("standing_id", allIds.slice(i, i + 100))
           .limit(700); // max 100 standings × 6 pokemon + buffer
-        if (chunkErr) throw new Error(`team_pokemon count query failed: ${chunkErr.message}`);
+        if (chunkErr)
+          throw new Error(
+            `team_pokemon count query failed: ${chunkErr.message}`
+          );
         for (const row of chunk ?? []) importedSet.add(row.standing_id);
       }
       const importedCount = importedSet.size;
@@ -537,9 +581,18 @@ export async function scrapeRk9TeamsBatch(
         })
         .eq("event_id", eventId);
       if (noStandingsStatusErr)
-        console.error(`[rk9-teams] Failed to update event status: ${noStandingsStatusErr.message}`);
+        console.error(
+          `[rk9-teams] Failed to update event status: ${noStandingsStatusErr.message}`
+        );
 
-      return { success: true, data: undefined, done: true, scraped: total, total, failed: 0 };
+      return {
+        success: true,
+        data: undefined,
+        done: true,
+        scraped: total,
+        total,
+        failed: 0,
+      };
     }
 
     // Update status to "teams" if not already
@@ -549,7 +602,9 @@ export async function scrapeRk9TeamsBatch(
       .update({ import_status: "teams", import_error: null })
       .eq("event_id", eventId);
     if (teamsStatusErr)
-      console.error(`[rk9-teams] Failed to update event status: ${teamsStatusErr.message}`);
+      console.error(
+        `[rk9-teams] Failed to update event status: ${teamsStatusErr.message}`
+      );
 
     // Load species map
     const { data: speciesMapRows, error: speciesMapErr } = await supabase
@@ -557,7 +612,9 @@ export async function scrapeRk9TeamsBatch(
       .from("species_map")
       .select("raw_name, species_slug");
     if (speciesMapErr)
-      console.warn(`[rk9-teams] species_map load failed: ${speciesMapErr.message}`);
+      console.warn(
+        `[rk9-teams] species_map load failed: ${speciesMapErr.message}`
+      );
     const speciesMap = new Map<string, string>();
     for (const row of speciesMapRows ?? []) {
       speciesMap.set(row.raw_name, row.species_slug);
@@ -671,7 +728,9 @@ export async function scrapeRk9TeamsBatch(
           .from("team_pokemon")
           .upsert(chunk, { onConflict: "standing_id,position" });
         if (error) {
-          console.error(`Team pokemon bulk insert chunk failed: ${error.message}`);
+          console.error(
+            `Team pokemon bulk insert chunk failed: ${error.message}`
+          );
         }
       }
     }
@@ -706,7 +765,9 @@ export async function scrapeRk9TeamsBatch(
         .in("standing_id", allIds.slice(i, i + 100))
         .limit(700);
       if (chunkErr) {
-        console.error(`[rk9-teams] team_pokemon count query failed: ${chunkErr.message}`);
+        console.error(
+          `[rk9-teams] team_pokemon count query failed: ${chunkErr.message}`
+        );
         break;
       }
       for (const row of chunk ?? []) importedSet.add(row.standing_id);
@@ -730,7 +791,9 @@ export async function scrapeRk9TeamsBatch(
       })
       .eq("event_id", eventId);
     if (batchStatusErr)
-      console.error(`[rk9-teams] Failed to update event status: ${batchStatusErr.message}`);
+      console.error(
+        `[rk9-teams] Failed to update event status: ${batchStatusErr.message}`
+      );
 
     return {
       success: true,
@@ -750,7 +813,10 @@ export async function scrapeRk9TeamsBatch(
         import_error: getErrorMessage(e, "Team scrape failed"),
       })
       .eq("event_id", eventId);
-    if (statusErr) console.error(`[rk9-teams] Failed to update event status to failed: ${statusErr.message}`);
+    if (statusErr)
+      console.error(
+        `[rk9-teams] Failed to update event status to failed: ${statusErr.message}`
+      );
 
     return {
       success: false,
@@ -787,20 +853,26 @@ export async function scrapeRk9TeamForStanding(
       .from("species_map")
       .select("raw_name, species_slug");
     if (speciesMapErr)
-      console.warn(`[rk9-teams] species_map load failed: ${speciesMapErr.message}`);
+      console.warn(
+        `[rk9-teams] species_map load failed: ${speciesMapErr.message}`
+      );
     const speciesMap = new Map<string, string>();
     for (const row of speciesMapRows ?? []) {
       speciesMap.set(row.raw_name, row.species_slug);
     }
 
-    const html = await fetchRk9Html(`/teamlist/public/${eventId}/${rosterEntryId}`);
+    const html = await fetchRk9Html(
+      `/teamlist/public/${eventId}/${rosterEntryId}`
+    );
     const pokemon = parseTeamListPage(html);
 
     if (pokemon.length > 0) {
       const rows = pokemon.map((mon, i) => ({
         standing_id: standingId,
         position: i + 1,
-        species: speciesMap.get(mon.speciesRaw) ?? normalizeSpeciesInline(mon.speciesRaw),
+        species:
+          speciesMap.get(mon.speciesRaw) ??
+          normalizeSpeciesInline(mon.speciesRaw),
         species_raw: mon.speciesRaw,
         ability: mon.ability || null,
         held_item: mon.heldItem || null,
@@ -813,7 +885,8 @@ export async function scrapeRk9TeamForStanding(
         .schema("rk9")
         .from("team_pokemon")
         .upsert(rows, { onConflict: "standing_id,position" });
-      if (upsertErr) throw new Error(`team_pokemon upsert failed: ${upsertErr.message}`);
+      if (upsertErr)
+        throw new Error(`team_pokemon upsert failed: ${upsertErr.message}`);
     }
 
     // Stamp attempt timestamp
@@ -873,11 +946,15 @@ export async function resetRk9EventData(
         import_error: null,
       })
       .eq("event_id", eventId);
-    if (resetErr) throw new Error(`Failed to reset event status: ${resetErr.message}`);
+    if (resetErr)
+      throw new Error(`Failed to reset event status: ${resetErr.message}`);
 
     return { success: true, data: undefined };
   } catch (e) {
-    return { success: false, error: getErrorMessage(e, "Failed to reset event") };
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to reset event"),
+    };
   }
 }
 
