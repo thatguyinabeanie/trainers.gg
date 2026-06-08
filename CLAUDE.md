@@ -86,6 +86,7 @@ packages/
   atproto/      # AT Protocol / Bluesky utilities
   theme/        # Shared OKLCH color tokens
   validators/   # Zod schemas + team parsing
+  data-sources/ # External tournament data sources (RK9, Limitless)
 
 tooling/        # eslint, prettier, tailwind, typescript, test-utils configs
 infra/
@@ -168,12 +169,24 @@ After `pnpm db:reset`, these test users are available (password: `Password123!`)
 
 Store all Playwright MCP screenshots in `.playwright-mcp/screenshots/`. This directory is gitignored.
 
+### Dev Server Logs
+
+Dev server logs (Next.js + Supabase edge functions) are written to `.dev-logs/` when `pnpm dev` or `pnpm dev:web` starts. Each run creates a timestamped file (e.g. `dev-20260606-143022.log`); `.dev-logs/dev.log` is a symlink to the latest.
+
+- `tail -200 .dev-logs/dev.log` — recent output
+- `grep -a "error\|Error\|failed" .dev-logs/dev.log` — find issues
+
+The file contains ANSI color codes; grep still works fine.
+
 ### Gotchas
 
 - **Always run `pnpm supabase` from `packages/supabase`** — never from the repo root. The Supabase CLI writes its linked-project cache to a `supabase/.temp/` subdirectory in the current working directory; running from root pollutes the repo root with an untracked `supabase/.temp/linked-project.json`. The package-level path is already gitignored at `packages/supabase/supabase/.temp/`.
 - `pnpm dev` always reconfigures `.env.local` for local Supabase — set `SKIP_LOCAL_SUPABASE=1` to use remote instead
 - All env vars live in root `.env.local`, symlinked into apps/packages via `postinstall.sh`
 - When adding build-time env vars, declare them in `turbo.json` under the task's `env` array (cache invalidation)
+- **`@smogon/calc` is a git submodule — do NOT re-pin it to a git tarball** — `apps/web` depends on `@smogon/calc` via `file:../../vendor/damage-calc/calc`, a git submodule of the fork `thatguyinabeanie/damage-calc` (`vendor/damage-calc`, pinned to a commit that **commits the built `calc/dist/`**). Never change it back to `github:thatguyinabeanie/damage-calc#<sha>&path:/calc`. That git-tarball form **cannot be resolved by pnpm 11 under `--frozen-lockfile`** in CI/Vercel: it lands with no `dist/` (`Cannot find module '@smogon/calc'`) or as the fork's private monorepo root (`undefined@0.0.0` store mismatch). It only works in non-frozen local installs that build it, which masks the failure. The submodule + `file:` makes pnpm **symlink** the committed `dist/` deterministically. Requirements: all GitHub Actions `actions/checkout` steps use `submodules: recursive`; keep the Vercel project's "Git submodules" setting enabled; a root `preinstall` runs `git submodule update --init --recursive`; `@smogon/calc` is **absent** from `allowBuilds` in `pnpm-workspace.yaml`. To update calc: bump the submodule pointer (keep `dist/` committed in the fork).
+- **pnpm config lives in `pnpm-workspace.yaml`, not `package.json`** — pnpm 11 **does not read** the `pnpm` field in `package.json` (prints `[WARN]` and silently ignores `overrides`, `packageExtensions`, `onlyBuiltDependencies`, `ignoredBuiltDependencies`). Never add a `pnpm` field back to `package.json`. Put `overrides:`, `packageExtensions:`, and `allowBuilds:` directly in `pnpm-workspace.yaml`.
+- **Chunk unbounded Supabase `.in()` filters** — A `.in("col", ids)` with hundreds of ids builds a PostgREST URL that overflows the server URI limit and returns `{ error: "URI too long" }`. If that error is ignored, `data` is null and downstream logic silently drops every row. Use `fetchInChunks()` in `packages/supabase/src/queries/players.ts` as the reference: split into ≤100-id chunks, merge, and **throw** on chunk error. Always `.error`-check `.in()` queries that fan out over an unbounded id list. **The bug only reproduces at scale** — a few-row seed hides it.
 
 ## Critical Rules
 
@@ -203,6 +216,8 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 ### Styling: Tailwind Over CSS Modules
 
 **Always use Tailwind CSS utility classes instead of writing or editing CSS module files.** Do not add new rules to `.module.css` files — express all styling via Tailwind classes in the component JSX. Existing CSS module rules may remain for legacy reasons, but new work should never introduce more. If a design requires something Tailwind cannot express (e.g., complex selectors, animations with multiple keyframes), use inline `style` props or a `<style>` tag scoped to the component before reaching for a CSS module.
+
+**Never use arbitrary pixel values** (`w-[Npx]`, `min-w-[Npx]`, `max-w-[Npx]`, `h-[Npx]`, etc.) — new or pre-existing. Use Tailwind's built-in spacing/sizing scale (`w-96` = 384px, `w-80` = 320px, `max-w-lg`, etc.). Remove any `[Npx]` values encountered while working in a file.
 
 ### React Compiler
 
@@ -234,7 +249,7 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 ## Product Vision
 
-trainers.gg is the all-in-one integrated platform for Pokemon fans — one place that connects tools that currently exist in isolation. Not an esports site. Community-first. See `product-vision` and `competitive-landscape` skills for full details.
+Community-first, not an esports site. See `product-vision` and `competitive-landscape` skills for vision, roadmap, differentiators, and positioning.
 
 ## Design Principles
 

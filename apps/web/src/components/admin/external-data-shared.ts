@@ -2,6 +2,8 @@
 // expanded-row-data.tsx. Kept in a dedicated file to avoid sibling import
 // cycles.
 
+import { type DisplayStatus } from "./display-status";
+
 // ---------------------------------------------------------------------------
 // Filter helper types
 // ---------------------------------------------------------------------------
@@ -10,51 +12,38 @@ export type PlatformFilter = "all" | "SWITCH" | "SIM";
 export type HasDataFilter = "all" | "yes" | "no";
 
 // ---------------------------------------------------------------------------
-// Per-tab filter state
+// Unified filter state (replaces per-tab RK9FilterState + LimitlessFilterState)
 // ---------------------------------------------------------------------------
 
-export interface RK9FilterState {
+export interface ImportFilterState {
+  /** Which source to view: "all" shows both, "rk9" or "limitless" shows one. */
+  source: "all" | "rk9" | "limitless";
   search: string;
-  tier: string;
+  /** Unified display status ("all" | DisplayStatus string) */
   status: string;
-  country: string;
-  dateFrom: string;
-  dateTo: string;
-  minPlayers: string;
-  hasData: HasDataFilter;
-}
-
-export interface LimitlessFilterState {
-  search: string;
+  /** Regulation/format code ("all" or a specific code) */
   format: string;
-  status: string;
+  /** Limitless-relevant; ignored when source === "rk9" */
   platform: PlatformFilter;
+  /** RK9-relevant; ignored when source === "limitless" */
+  country: string;
+  hasData: HasDataFilter;
   dateFrom: string;
   dateTo: string;
   minPlayers: string;
-  hasData: HasDataFilter;
 }
 
-export const INITIAL_RK9_FILTERS: RK9FilterState = {
+export const INITIAL_IMPORT_FILTERS: ImportFilterState = {
+  source: "all",
   search: "",
-  tier: "all",
   status: "all",
-  country: "all",
-  dateFrom: "",
-  dateTo: "",
-  minPlayers: "",
-  hasData: "all",
-};
-
-export const INITIAL_LIMITLESS_FILTERS: LimitlessFilterState = {
-  search: "",
   format: "all",
-  status: "all",
   platform: "all",
+  country: "all",
+  hasData: "all",
   dateFrom: "",
   dateTo: "",
   minPlayers: "",
-  hasData: "all",
 };
 
 export interface RK9EventRow {
@@ -98,6 +87,8 @@ export interface UnifiedRow {
   date: string;
   playerCount: number | null;
   status: string; // normalized status
+  /** Coarse unified display status (both sources) — drives status tabs + counts. */
+  displayStatus: DisplayStatus;
   statusDetail: string; // original status for display
   error: string | null;
   // Filterable extras
@@ -116,14 +107,14 @@ export interface UnifiedRow {
 // Keeping these pure makes the filter-aware bulk logic unit-testable.
 // ---------------------------------------------------------------------------
 
-/** Limitless tournament_ids eligible to queue: never-queued (null) or failed. */
+/** Limitless tournament_ids eligible to queue: pending or failed (keyed off displayStatus). */
 export function queueableIds(rows: UnifiedRow[]): string[] {
   return rows
     .filter(
       (r) =>
         r.source === "limitless" &&
         r.limitless != null &&
-        (!r.limitless.import_status || r.limitless.import_status === "failed")
+        (r.displayStatus === "pending" || r.displayStatus === "failed")
     )
     .map((r) => r.limitless!.tournament_id);
 }
@@ -151,4 +142,3 @@ export function teamsEligibleIds(rows: UnifiedRow[]): string[] {
     )
     .map((r) => r.rk9!.event_id);
 }
-

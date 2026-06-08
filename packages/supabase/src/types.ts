@@ -3890,6 +3890,14 @@ export type Database = {
       }
       get_current_alt_id: { Args: never; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
+      get_format_events: {
+        Args: { p_format: string }
+        Returns: {
+          event_date: string
+          event_key: string
+          source: string
+        }[]
+      }
       get_match_games_for_player: {
         Args: { p_match_id: number }
         Returns: {

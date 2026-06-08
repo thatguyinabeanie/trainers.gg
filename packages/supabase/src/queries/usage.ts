@@ -55,6 +55,46 @@ export interface FormatUsageTimeseriesPoint {
   usage: Record<string, number>;
 }
 
+/** One species' pipeline data — usage % plus marginal histograms. */
+export interface PipelineSpeciesData {
+  species: string;
+  usagePct: number;
+  rank: number;
+  abilities: UsageDetailEntry[];
+  natures: UsageDetailEntry[];
+  moves: UsageDetailEntry[];
+}
+
+/** Result shape returned by `getPipelineData`. */
+export interface PipelineDataResult {
+  data: PipelineSpeciesData[];
+  /** ISO date string for the period start of the resolved bucket. */
+  periodStart: string;
+  /** ISO date string for the period end of the resolved bucket. */
+  periodEnd: string;
+}
+
+/** Parameters for `getPipelineData`. */
+export interface GetPipelineDataParams {
+  format: string;
+  source: string;
+  periodType: "day" | "week" | "month";
+  /** If provided, resolves the latest period whose start is >= this date. */
+  periodStart?: string;
+  /** If provided, restricts to periods whose end is <= this date. */
+  periodEnd?: string;
+}
+
+/** One distinct event for annotation pins on the usage timeline. */
+export interface FormatEvent {
+  /** Unique event key, e.g. "rk9:00123" or "limitless:abc". */
+  eventKey: string;
+  /** ISO date string (YYYY-MM-DD). */
+  eventDate: string;
+  /** Data source: "rk9" | "limitless" | "first_party". */
+  source: string;
+}
+
 // =============================================================================
 // Queries
 // =============================================================================
@@ -145,7 +185,8 @@ export async function getSpeciesUsageDetail(
       items: (detailRow?.items as UsageDetailEntry[] | null) ?? [],
       abilities: (detailRow?.abilities as UsageDetailEntry[] | null) ?? [],
       natures: (detailRow?.natures as UsageDetailEntry[] | null) ?? [],
-      abilityItems: (detailRow?.ability_items as UsageDetailEntry[] | null) ?? [],
+      abilityItems:
+        (detailRow?.ability_items as UsageDetailEntry[] | null) ?? [],
     };
   });
 }
@@ -243,12 +284,7 @@ export async function getFormatUsageTimeseries(
     limit?: number;
   }
 ): Promise<FormatUsageTimeseriesPoint[]> {
-  const {
-    format,
-    source = "all",
-    periodType = "week",
-    limit = 16,
-  } = params;
+  const { format, source = "all", periodType = "week", limit = 16 } = params;
 
   // ── Query 1: fetch the trailing N meta rows ────────────────────────────────
   // Order desc so the DB returns newest-first; we reverse below to get the
@@ -281,7 +317,10 @@ export async function getFormatUsageTimeseries(
   const usageRows = await _fetchUsageRowsInChunks(supabase, metaIds);
 
   // Group usage rows by meta_id for fast lookup when building the timeseries.
-  const usageByMetaId = new Map<number, Array<{ species: string; usage_pct: number }>>();
+  const usageByMetaId = new Map<
+    number,
+    Array<{ species: string; usage_pct: number }>
+  >();
   for (const row of usageRows) {
     let bucket = usageByMetaId.get(row.meta_id);
     if (!bucket) {
@@ -304,6 +343,137 @@ export async function getFormatUsageTimeseries(
       usage,
     };
   });
+}
+
+/**
+ * Fetch all species + histogram data for a single period in a given format.
+ *
+ * Resolves the latest `format_meta_stats` row matching the given
+ * (format, source, period_type) — optionally restricted to a date range.
+ * Returns the full Species → Ability / Nature / Move histograms needed to
+ * render the Meta Pipeline Sankey. Returns `null` if no matching period exists.
+ *
+ * Three queries are used:
+ *   1. Resolve the latest matching meta bucket (maybeSingle).
+ *   2. Fetch all pokemon_usage_stats for that bucket.
+ *   3. Fetch all pokemon_detail_stats for that bucket.
+ *
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
+ */
+export async function getPipelineData(
+  supabase: TypedClient,
+  params: GetPipelineDataParams
+): Promise<PipelineDataResult | null> {
+  const { format, source, periodType, periodStart, periodEnd } = params;
+
+  // ── Query 1: resolve latest matching meta bucket ──────────────────────────
+  let metaQuery = supabase
+    .from("format_meta_stats")
+    .select("id, period_start, period_end")
+    .eq("format", format)
+    .eq("source", source)
+    .eq("period_type", periodType)
+    .order("period_start", { ascending: false });
+
+  if (periodStart) {
+    metaQuery = metaQuery.gte("period_start", periodStart);
+  }
+  if (periodEnd) {
+    metaQuery = metaQuery.lte("period_end", periodEnd);
+  }
+
+  const { data: metaRow, error: metaError } = await metaQuery
+    .limit(1)
+    .maybeSingle();
+
+  if (metaError) {
+    throw new Error(
+      `Failed to fetch meta bucket for pipeline data (${format}): ${metaError.message}`
+    );
+  }
+
+  if (!metaRow) return null;
+
+  // ── Queries 2 + 3: fetch usage and detail rows in parallel ───────────────
+  const [
+    { data: usageRows, error: usageError },
+    { data: detailRows, error: detailError },
+  ] = await Promise.all([
+    supabase
+      .from("pokemon_usage_stats")
+      .select("species, usage_pct, rank")
+      .eq("meta_id", metaRow.id)
+      .order("rank", { ascending: true }),
+    supabase
+      .from("pokemon_detail_stats")
+      .select("species, abilities, natures, moves")
+      .eq("meta_id", metaRow.id),
+  ]);
+
+  if (usageError) {
+    throw new Error(
+      `Failed to fetch usage stats for meta ${metaRow.id}: ${usageError.message}`
+    );
+  }
+
+  if (detailError) {
+    throw new Error(
+      `Failed to fetch detail stats for meta ${metaRow.id}: ${detailError.message}`
+    );
+  }
+
+  // Index detail rows by species for O(1) lookup.
+  const detailBySpecies = new Map(
+    (detailRows ?? []).map((d) => [d.species, d])
+  );
+
+  const data: PipelineSpeciesData[] = (usageRows ?? []).map((row) => {
+    const detail = detailBySpecies.get(row.species);
+    return {
+      species: row.species,
+      usagePct: row.usage_pct,
+      rank: row.rank,
+      abilities: (detail?.abilities as UsageDetailEntry[] | null) ?? [],
+      natures: (detail?.natures as UsageDetailEntry[] | null) ?? [],
+      moves: (detail?.moves as UsageDetailEntry[] | null) ?? [],
+    };
+  });
+
+  return {
+    data,
+    periodStart: metaRow.period_start,
+    periodEnd: metaRow.period_end,
+  };
+}
+
+/**
+ * Fetch distinct events for a format, used to render annotation pins on the
+ * usage timeline. Delegates to the `get_format_events` RPC, which returns one
+ * row per distinct (event_key, event_date, source) ordered by event_date — see
+ * the migration for why a DISTINCT RPC is used instead of a raw table select.
+ *
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
+ * @param format - Format ID (e.g. "gen9vgc2025regg").
+ */
+export async function getFormatEvents(
+  supabase: TypedClient,
+  format: string
+): Promise<FormatEvent[]> {
+  const { data, error } = await supabase.rpc("get_format_events", {
+    p_format: format,
+  });
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch events for format ${format}: ${error.message}`
+    );
+  }
+
+  return (data ?? []).map((row) => ({
+    eventKey: row.event_key,
+    eventDate: row.event_date,
+    source: row.source,
+  }));
 }
 
 // =============================================================================

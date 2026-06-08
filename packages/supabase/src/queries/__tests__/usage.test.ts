@@ -2,6 +2,8 @@ import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import {
   getFormatUsageTimeseries,
   _fetchUsageRowsInChunks,
+  getPipelineData,
+  getFormatEvents,
 } from "../usage";
 import type { TypedClient } from "../../client";
 
@@ -9,16 +11,6 @@ import type { TypedClient } from "../../client";
 // Mock client helpers
 // =============================================================================
 
-/**
- * A query builder mock where every chaining method returns itself and the
- * builder can be resolved by awaiting it (via `then`) or via terminal methods
- * like `.limit()` resolving to the configured result.
- *
- * Both `.limit()` (for the meta query) and direct-await (for the usage query)
- * are handled: callers in production code do `await supabase.from(...).select()
- * .eq()...limit(n)` for the meta rows, and `await supabase.from(...).select()
- * .in(...)` for the usage rows.
- */
 type MockResult = { data: unknown; error: unknown };
 
 function makeQueryBuilder(result: MockResult) {
@@ -28,9 +20,14 @@ function makeQueryBuilder(result: MockResult) {
   builder["eq"] = returnSelf;
   builder["order"] = returnSelf;
   builder["in"] = returnSelf;
-  // `.limit()` is the terminal for the meta query — resolves to result.
-  builder["limit"] = jest.fn().mockResolvedValue(result);
-  // Direct await is the terminal for the usage query — `.then` makes it thenable.
+  builder["gte"] = returnSelf;
+  builder["lte"] = returnSelf;
+  // `.limit()` chains (returns the builder) — both `await …limit(n)` (via `.then`)
+  // and `.limit(1).maybeSingle()` resolve correctly.
+  builder["limit"] = returnSelf;
+  // `.maybeSingle()` is the terminal for the single-row meta query in getPipelineData.
+  builder["maybeSingle"] = jest.fn().mockResolvedValue(result);
+  // Direct await is the terminal for list queries — `.then` makes it thenable.
   builder["then"] = (
     resolve: (v: unknown) => unknown,
     reject: (e: unknown) => unknown
@@ -39,17 +36,20 @@ function makeQueryBuilder(result: MockResult) {
 }
 
 /**
- * Build a TypedClient that returns different builders (and thus different
- * results) for each sequential call to `.from()`. This mirrors the two-query
- * structure of `getFormatUsageTimeseries`.
+ * Build a TypedClient that returns a different result for each sequential call.
+ * Both `.from()` and `.rpc()` consume from the same shared result queue, mirroring
+ * the multi-query structure of getFormatUsageTimeseries / getPipelineData and the
+ * single `.rpc()` call in getFormatEvents.
  */
 function makeSequentialClient(results: MockResult[]) {
   let callIndex = 0;
+  const nextBuilder = () => {
+    const result = results[callIndex++] ?? { data: null, error: null };
+    return makeQueryBuilder(result);
+  };
   const client = {
-    from: jest.fn(() => {
-      const result = results[callIndex++] ?? { data: null, error: null };
-      return makeQueryBuilder(result);
-    }),
+    from: jest.fn(() => nextBuilder()),
+    rpc: jest.fn(() => nextBuilder()),
   };
   return client as unknown as TypedClient;
 }
@@ -58,17 +58,27 @@ function makeSequentialClient(results: MockResult[]) {
 // Test data factories
 // =============================================================================
 
-const makeMetaRow = (overrides?: Partial<{ id: number; period_start: string; period_end: string }>) => ({
+const makeMetaRow = (
+  overrides?: Partial<{ id: number; period_start: string; period_end: string }>
+) => ({
   id: 1,
   period_start: "2025-01-01",
   period_end: "2025-01-07",
   ...overrides,
 });
 
-const makeUsageRow = (overrides?: Partial<{ meta_id: number; species: string; usage_pct: number }>) => ({
+const makeUsageRow = (
+  overrides?: Partial<{
+    meta_id: number;
+    species: string;
+    usage_pct: number;
+    rank: number;
+  }>
+) => ({
   meta_id: 1,
   species: "Koraidon",
   usage_pct: 42.5,
+  rank: 1,
   ...overrides,
 });
 
@@ -138,13 +148,21 @@ describe("getFormatUsageTimeseries — error handling", () => {
 describe("getFormatUsageTimeseries — data pivoting", () => {
   it("returns one point per meta row with the correct periodStart/periodEnd", async () => {
     const metaRows = [
-      makeMetaRow({ id: 2, period_start: "2025-01-08", period_end: "2025-01-14" }),
-      makeMetaRow({ id: 1, period_start: "2025-01-01", period_end: "2025-01-07" }),
+      makeMetaRow({
+        id: 2,
+        period_start: "2025-01-08",
+        period_end: "2025-01-14",
+      }),
+      makeMetaRow({
+        id: 1,
+        period_start: "2025-01-01",
+        period_end: "2025-01-07",
+      }),
     ];
 
     const client = makeSequentialClient([
-      { data: metaRows, error: null },   // meta query (newest-first from DB)
-      { data: [], error: null },          // usage query (no species)
+      { data: metaRows, error: null }, // meta query (newest-first from DB)
+      { data: [], error: null }, // usage query (no species)
     ]);
 
     const result = await getFormatUsageTimeseries(client, {
@@ -181,8 +199,16 @@ describe("getFormatUsageTimeseries — data pivoting", () => {
   it("produces an empty usage map for periods with no usage rows", async () => {
     // DB returns newest-first; after .reverse() id=5 (Jan 1) is first, id=6 (Jan 8) second.
     const metaRows = [
-      makeMetaRow({ id: 6, period_start: "2025-01-08", period_end: "2025-01-14" }),
-      makeMetaRow({ id: 5, period_start: "2025-01-01", period_end: "2025-01-07" }),
+      makeMetaRow({
+        id: 6,
+        period_start: "2025-01-08",
+        period_end: "2025-01-14",
+      }),
+      makeMetaRow({
+        id: 5,
+        period_start: "2025-01-01",
+        period_end: "2025-01-07",
+      }),
     ];
     // Only period id=6 has usage rows
     const usageRows = [
@@ -261,14 +287,17 @@ describe("getFormatUsageTimeseries — chunked usage query", () => {
   it("makes two usage queries when there are more than 100 meta IDs", async () => {
     // 101 meta rows → chunk size 100 → 2 usage queries
     const metaRows = Array.from({ length: 101 }, (_, i) =>
-      makeMetaRow({ id: i + 1, period_start: `2025-01-${String(i + 1).padStart(2, "0")}` })
+      makeMetaRow({
+        id: i + 1,
+        period_start: `2025-01-${String(i + 1).padStart(2, "0")}`,
+      })
     );
 
     // For the sequential client we need: 1 meta call + 2 usage calls
     const client = makeSequentialClient([
       { data: metaRows, error: null }, // meta
-      { data: [], error: null },         // first usage chunk (ids 1-100)
-      { data: [], error: null },         // second usage chunk (id 101)
+      { data: [], error: null }, // first usage chunk (ids 1-100)
+      { data: [], error: null }, // second usage chunk (id 101)
     ]);
 
     const result = await getFormatUsageTimeseries(client, {
@@ -289,13 +318,17 @@ describe("getFormatUsageTimeseries — chunked usage query", () => {
     );
 
     // id=1 is in chunk 1 (ids 1-100); id=101 is in chunk 2 (ids 101-102)
-    const chunk1Usage = [makeUsageRow({ meta_id: 1, species: "Koraidon", usage_pct: 50 })];
-    const chunk2Usage = [makeUsageRow({ meta_id: 101, species: "Miraidon", usage_pct: 30 })];
+    const chunk1Usage = [
+      makeUsageRow({ meta_id: 1, species: "Koraidon", usage_pct: 50 }),
+    ];
+    const chunk2Usage = [
+      makeUsageRow({ meta_id: 101, species: "Miraidon", usage_pct: 30 }),
+    ];
 
     const client = makeSequentialClient([
       { data: metaRows, error: null },
-      { data: chunk1Usage, error: null },  // chunk 1 (ids 1-100)
-      { data: chunk2Usage, error: null },  // chunk 2 (ids 101-102)
+      { data: chunk1Usage, error: null }, // chunk 1 (ids 1-100)
+      { data: chunk2Usage, error: null }, // chunk 2 (ids 101-102)
     ]);
 
     const result = await getFormatUsageTimeseries(client, {
@@ -379,5 +412,161 @@ describe("_fetchUsageRowsInChunks", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+});
+
+// =============================================================================
+// Test data factories for getPipelineData
+// =============================================================================
+
+const makeDetailRow = (
+  overrides?: Partial<{
+    species: string;
+    abilities: unknown;
+    natures: unknown;
+    moves: unknown;
+  }>
+) => ({
+  species: "Sneasler",
+  abilities: [{ value: "Unburden", count: 91, pct: 91 }],
+  natures: [{ value: "Jolly", count: 78, pct: 78 }],
+  moves: [{ value: "Fake Out", count: 94, pct: 94 }],
+  ...overrides,
+});
+
+// =============================================================================
+// getPipelineData — no data
+// =============================================================================
+
+describe("getPipelineData — no data", () => {
+  it("returns empty data when no meta row exists", async () => {
+    const client = makeSequentialClient([
+      { data: null, error: null }, // meta query returns null
+    ]);
+    const result = await getPipelineData(client, {
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+    expect(result).toBeNull();
+  });
+
+  it("throws when meta query errors", async () => {
+    const client = makeSequentialClient([
+      { data: null, error: { message: "DB error" } },
+    ]);
+    await expect(
+      getPipelineData(client, {
+        format: "gen9vgc2025regg",
+        source: "all",
+        periodType: "week",
+      })
+    ).rejects.toThrow("DB error");
+  });
+});
+
+// =============================================================================
+// getPipelineData — with data
+// =============================================================================
+
+describe("getPipelineData — with data", () => {
+  it("returns PipelineDataResult with species from usage + detail rows", async () => {
+    const metaRow = {
+      id: 5,
+      period_start: "2025-01-24",
+      period_end: "2025-01-31",
+    };
+    const usageRow = { species: "Sneasler", usage_pct: 22.5, rank: 1 };
+    const detailRow = makeDetailRow();
+
+    const client = makeSequentialClient([
+      { data: metaRow, error: null }, // maybeSingle meta
+      { data: [usageRow], error: null }, // usage_stats query
+      { data: [detailRow], error: null }, // detail_stats query
+    ]);
+
+    const result = await getPipelineData(client, {
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+
+    expect(result).not.toBeNull();
+    expect(result!.periodStart).toBe("2025-01-24");
+    expect(result!.periodEnd).toBe("2025-01-31");
+    expect(result!.data).toHaveLength(1);
+    expect(result!.data[0]!.species).toBe("Sneasler");
+    expect(result!.data[0]!.usagePct).toBe(22.5);
+    expect(result!.data[0]!.abilities).toEqual([
+      { value: "Unburden", count: 91, pct: 91 },
+    ]);
+  });
+
+  it("fills missing detail stats with empty arrays", async () => {
+    const metaRow = {
+      id: 5,
+      period_start: "2025-01-24",
+      period_end: "2025-01-31",
+    };
+    const usageRow = { species: "Koraidon", usage_pct: 18.0, rank: 2 };
+
+    const client = makeSequentialClient([
+      { data: metaRow, error: null },
+      { data: [usageRow], error: null },
+      { data: [], error: null }, // no detail row for Koraidon
+    ]);
+
+    const result = await getPipelineData(client, {
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+
+    expect(result!.data[0]!.abilities).toEqual([]);
+    expect(result!.data[0]!.natures).toEqual([]);
+    expect(result!.data[0]!.moves).toEqual([]);
+  });
+});
+
+// =============================================================================
+// getFormatEvents — backed by the get_format_events RPC (returns distinct rows)
+// =============================================================================
+
+describe("getFormatEvents", () => {
+  it("returns [] when no events exist for format", async () => {
+    const client = makeSequentialClient([{ data: [], error: null }]);
+    const result = await getFormatEvents(client, "gen9vgc2025regg");
+    expect(result).toEqual([]);
+  });
+
+  it("throws when the RPC errors", async () => {
+    const client = makeSequentialClient([
+      { data: null, error: { message: "DB error" } },
+    ]);
+    await expect(getFormatEvents(client, "gen9vgc2025regg")).rejects.toThrow(
+      "DB error"
+    );
+  });
+
+  it("maps RPC rows to FormatEvent shape", async () => {
+    // The RPC already returns distinct, ordered rows — no client-side dedup.
+    const rows = [
+      { event_key: "rk9:00123", event_date: "2025-01-12", source: "rk9" },
+      {
+        event_key: "limitless:abc",
+        event_date: "2025-02-01",
+        source: "limitless",
+      },
+    ];
+    const client = makeSequentialClient([{ data: rows, error: null }]);
+    const result = await getFormatEvents(client, "gen9vgc2025regg");
+    expect(result).toEqual([
+      { eventKey: "rk9:00123", eventDate: "2025-01-12", source: "rk9" },
+      {
+        eventKey: "limitless:abc",
+        eventDate: "2025-02-01",
+        source: "limitless",
+      },
+    ]);
   });
 });

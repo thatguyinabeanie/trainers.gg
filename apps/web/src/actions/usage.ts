@@ -10,12 +10,20 @@ import {
   getSpeciesUsage,
   getSpeciesUsageDetail,
   getFormatUsageTimeseries,
+  getPipelineData,
+  getFormatEvents,
   type FormatUsageRow,
   type FormatUsageTimeseriesPoint,
   type SpeciesUsagePeriod,
   type SpeciesUsageDetailParams,
+  type PipelineDataResult,
+  type FormatEvent,
 } from "@trainers/supabase";
-import { createStaticClient, createServiceRoleClient, getUserId } from "@/lib/supabase/server";
+import {
+  createStaticClient,
+  createServiceRoleClient,
+  getUserId,
+} from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import { CacheTags } from "@/lib/cache";
 import { toDBSource } from "@/components/data/usage-filters";
@@ -51,9 +59,9 @@ type RollupResult = {
  * On success the worker upserts `usage_rollup_last_run_at` to the current
  * timestamp so the next scheduled invocation respects the cooldown window.
  */
-export async function triggerUsageRollup(
-  opts?: { force?: boolean }
-): Promise<ActionResult<RollupResult>> {
+export async function triggerUsageRollup(opts?: {
+  force?: boolean;
+}): Promise<ActionResult<RollupResult>> {
   try {
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
@@ -77,7 +85,10 @@ export async function triggerUsageRollup(
         (configRows ?? []).map((r) => [r.key, r.value])
       );
 
-      const enabled = cfg.get("usage_rollup_enabled") as boolean | null | undefined;
+      const enabled = cfg.get("usage_rollup_enabled") as
+        | boolean
+        | null
+        | undefined;
       if (enabled === false) {
         // Rollup is administratively disabled.
         return {
@@ -239,6 +250,49 @@ export async function calculateSourceUsage(
 }
 
 // ---------------------------------------------------------------------------
+// Cross-source usage computation
+// ---------------------------------------------------------------------------
+
+/**
+ * Calculate usage across ALL sources (cross-source). Usage stats aggregate
+ * every source, so this is a single global operation — not scoped to one source.
+ *
+ * Admin-gated. Calls `calculateSourceUsage` sequentially for each known source
+ * and sums the totals. Returns a merged result even when some sources had no
+ * new events (those contribute zeros). Fails fast on any source error.
+ */
+export async function calculateAllSourceUsage(): Promise<
+  ActionResult<{
+    eventsComputed: number;
+    formatsProcessed: number;
+    bucketsWritten: number;
+  }>
+> {
+  try {
+    const sources = ["rk9", "limitless"] as const;
+    let eventsComputed = 0,
+      formatsProcessed = 0,
+      bucketsWritten = 0;
+    for (const s of sources) {
+      const r = await calculateSourceUsage(s);
+      if (!r.success) throw new Error(r.error);
+      eventsComputed += r.data.eventsComputed;
+      formatsProcessed += r.data.formatsProcessed;
+      bucketsWritten += r.data.bucketsWritten;
+    }
+    return {
+      success: true,
+      data: { eventsComputed, formatsProcessed, bucketsWritten },
+    };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to calculate usage"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Public read: species usage detail
 // ---------------------------------------------------------------------------
 
@@ -256,8 +310,13 @@ export async function fetchSpeciesUsageDetail(
   params: SpeciesUsageDetailParams
 ): Promise<ActionResult<SpeciesUsagePeriod[]>> {
   try {
-    const { format, species, source = "all", periodType = "week", limit = 12 } =
-      params;
+    const {
+      format,
+      species,
+      source = "all",
+      periodType = "week",
+      limit = 12,
+    } = params;
 
     const cacheKey = `usage-detail:${format}:${source}:${species}:${periodType}:${limit}`;
 
@@ -327,7 +386,11 @@ export async function fetchFormatUsage(
     const getCached = unstable_cache(
       async () => {
         const supabase = createStaticClient();
-        return getSpeciesUsage(supabase, { format, source: toDBSource(source), periodType });
+        return getSpeciesUsage(supabase, {
+          format,
+          source: toDBSource(source),
+          periodType,
+        });
       },
       [cacheKey],
       {
@@ -385,7 +448,11 @@ export async function fetchFormatUsageTimeseries(
     const getCached = unstable_cache(
       async () => {
         const supabase = createStaticClient();
-        return getFormatUsageTimeseries(supabase, { format, source: toDBSource(source), periodType });
+        return getFormatUsageTimeseries(supabase, {
+          format,
+          source: toDBSource(source),
+          periodType,
+        });
       },
       [cacheKey],
       {
@@ -400,6 +467,106 @@ export async function fetchFormatUsageTimeseries(
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch format usage timeseries"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: pipeline data for Sankey (all species × histograms)
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchPipelineData. */
+export interface FetchPipelineDataParams {
+  format: string;
+  source?: string;
+  periodType?: "day" | "week" | "month";
+  periodStart?: string;
+  periodEnd?: string;
+}
+
+/**
+ * Public server action to fetch species + histogram data for the Meta Pipeline
+ * Sankey. Returns the latest matching period's data for all species above the
+ * caller's threshold (threshold is applied client-side, not here).
+ *
+ * Uses `createStaticClient()` + `unstable_cache` for 1h ISR caching.
+ */
+export async function fetchPipelineData(
+  params: FetchPipelineDataParams
+): Promise<ActionResult<PipelineDataResult | null>> {
+  try {
+    const {
+      format,
+      source = "all",
+      periodType = "week",
+      periodStart,
+      periodEnd,
+    } = params;
+
+    const cacheKey = `pipeline-data:${format}:${source}:${periodType}:${periodStart ?? ""}:${periodEnd ?? ""}`;
+
+    const getCached = unstable_cache(
+      async () => {
+        const supabase = createStaticClient();
+        return getPipelineData(supabase, {
+          format,
+          source: toDBSource(source),
+          periodType,
+          periodStart,
+          periodEnd,
+        });
+      },
+      [cacheKey],
+      {
+        revalidate: 3600,
+        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
+      }
+    );
+
+    const data = await getCached();
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch pipeline data"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: format events for timeline annotation pins
+// ---------------------------------------------------------------------------
+
+/**
+ * Public server action to fetch distinct event dates for a format.
+ *
+ * Returns `FormatEvent[]` for rendering annotation pins on the usage
+ * timeline's X-axis. Uses `createStaticClient()` + `unstable_cache` for 1h ISR.
+ */
+export async function fetchFormatEvents(
+  format: string
+): Promise<ActionResult<FormatEvent[]>> {
+  try {
+    const cacheKey = `format-events:${format}`;
+
+    const getCached = unstable_cache(
+      async () => {
+        const supabase = createStaticClient();
+        return getFormatEvents(supabase, format);
+      },
+      [cacheKey],
+      {
+        revalidate: 3600,
+        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
+      }
+    );
+
+    const data = await getCached();
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch format events"),
     };
   }
 }

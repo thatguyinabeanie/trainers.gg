@@ -7,7 +7,7 @@ import { getFormatById } from "@trainers/pokemon";
 export const DEFAULT_FORMAT = "gen9championsvgc2026regma";
 export const DEFAULT_SOURCE = "all";
 export const DEFAULT_PERIOD_TYPE = "week";
-export const DEFAULT_THRESHOLD = 1;
+export const DEFAULT_THRESHOLD = 2;
 
 // =============================================================================
 // Allowed value sets
@@ -21,11 +21,6 @@ export const VALID_SOURCES = [
 ] as const;
 
 export const VALID_PERIOD_TYPES = ["day", "week", "month"] as const;
-
-export const VALID_MODES = ["stream", "stacked", "lines"] as const;
-
-/** The chart display mode. */
-export type ChartMode = (typeof VALID_MODES)[number];
 
 // =============================================================================
 // Validators
@@ -94,26 +89,69 @@ export function coercePeriodType(
 }
 
 /**
- * Coerces a raw string to a valid `ChartMode`.
- *
- * Returns `"stream"` when `raw` is not one of the allowed values.
- */
-export function coerceMode(raw: string | undefined | null): ChartMode {
-  if (raw && (VALID_MODES as readonly string[]).includes(raw)) {
-    return raw as ChartMode;
-  }
-  return "stream";
-}
-
-/**
- * Coerces a raw string to a threshold number, clamped to [0, 10].
+ * Coerces a raw string to a threshold number, clamped to [1, 20].
  *
  * Returns `DEFAULT_THRESHOLD` when `raw` is undefined, non-numeric, or NaN.
- * Clamps the parsed value to [0, 10] inclusive.
+ * The [1, 20] range matches the Min-usage slider (spec: "≥1%–20%, default 2%").
  */
 export function coerceThreshold(raw: string | undefined | null): number {
   if (raw === undefined || raw === null) return DEFAULT_THRESHOLD;
   const parsed = parseFloat(raw);
   if (Number.isNaN(parsed)) return DEFAULT_THRESHOLD;
-  return Math.min(10, Math.max(0, parsed));
+  return Math.min(20, Math.max(1, parsed));
+}
+
+// =============================================================================
+// Species selection + time range coercers
+// =============================================================================
+
+/**
+ * Coerces a comma-separated raw string to an array of species names.
+ *
+ * Returns `[]` when `raw` is null, empty, or contains only whitespace/commas.
+ * Each name is trimmed; empty strings after trimming are discarded.
+ */
+export function coerceSelectedSpecies(
+  raw: string | undefined | null
+): string[] {
+  if (!raw || !raw.trim()) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Coerces a raw string to a strict ISO date string (YYYY-MM-DD).
+ *
+ * Returns `null` when `raw` is absent/empty. A non-empty value that is not a
+ * valid `YYYY-MM-DD` date is rejected (returns null) and logged — the only
+ * legitimate source of this URL param is the chart brush, which always emits
+ * `YYYY-MM-DD`, so a non-ISO value means a malformed/tampered query string.
+ */
+export function coerceRangeStart(
+  raw: string | undefined | null
+): string | null {
+  if (!raw || !raw.trim()) return null;
+  const trimmed = raw.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    console.warn(`coerceRangeStart: rejected non-ISO date param "${trimmed}"`);
+    return null;
+  }
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) {
+    console.warn(`coerceRangeStart: rejected invalid date param "${trimmed}"`);
+    return null;
+  }
+  return trimmed;
+}
+
+/**
+ * Coerces a raw string to a valid ISO date string (YYYY-MM-DD).
+ *
+ * Identical behaviour to `coerceRangeStart` — both coercers validate the same
+ * way; separate functions keep call-sites self-documenting.
+ */
+export function coerceRangeEnd(raw: string | undefined | null): string | null {
+  return coerceRangeStart(raw);
 }

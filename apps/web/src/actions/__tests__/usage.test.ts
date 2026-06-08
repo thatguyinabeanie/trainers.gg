@@ -22,6 +22,8 @@ jest.mock("@trainers/supabase", () => ({
   getSpeciesUsage: jest.fn(),
   getSpeciesUsageDetail: jest.fn(),
   getFormatUsageTimeseries: jest.fn(),
+  getPipelineData: jest.fn(),
+  getFormatEvents: jest.fn(),
 }));
 
 jest.mock("next/cache", () => ({
@@ -33,7 +35,11 @@ jest.mock("next/cache", () => ({
 // Imports (after mocks are registered)
 // ---------------------------------------------------------------------------
 
-import { createServiceRoleClient, createStaticClient, getUserId } from "@/lib/supabase/server";
+import {
+  createServiceRoleClient,
+  createStaticClient,
+  getUserId,
+} from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import {
   computeSourceUsage,
@@ -41,14 +47,19 @@ import {
   getSpeciesUsageDetail,
   getSpeciesUsage,
   getFormatUsageTimeseries,
+  getPipelineData,
+  getFormatEvents,
 } from "@trainers/supabase";
 import { updateTag } from "next/cache";
 import {
   calculateSourceUsage,
+  calculateAllSourceUsage,
   triggerUsageRollup,
   fetchSpeciesUsageDetail,
   fetchFormatUsage,
   fetchFormatUsageTimeseries,
+  fetchPipelineData,
+  fetchFormatEvents,
 } from "../usage";
 
 // ---------------------------------------------------------------------------
@@ -64,6 +75,8 @@ const mockComputeUsageRollups = computeUsageRollups as jest.Mock;
 const mockGetSpeciesUsageDetail = getSpeciesUsageDetail as jest.Mock;
 const mockGetSpeciesUsage = getSpeciesUsage as jest.Mock;
 const mockGetFormatUsageTimeseries = getFormatUsageTimeseries as jest.Mock;
+const mockGetPipelineData = getPipelineData as jest.Mock;
+const mockGetFormatEvents = getFormatEvents as jest.Mock;
 const mockUpdateTag = updateTag as jest.Mock;
 
 // ---------------------------------------------------------------------------
@@ -197,9 +210,12 @@ describe("calculateSourceUsage", () => {
     });
 
     // Rollup must receive only the formats that had new events
-    expect(mockComputeUsageRollups).toHaveBeenCalledWith(stubServiceRoleClient, {
-      formats,
-    });
+    expect(mockComputeUsageRollups).toHaveBeenCalledWith(
+      stubServiceRoleClient,
+      {
+        formats,
+      }
+    );
 
     // Global usage tag must be busted
     expect(mockUpdateTag).toHaveBeenCalledWith("usage-stats");
@@ -630,9 +646,7 @@ describe("fetchFormatUsage", () => {
   });
 
   it("returns { success: false } when getSpeciesUsage throws", async () => {
-    mockGetSpeciesUsage.mockRejectedValueOnce(
-      new Error("format query failed")
-    );
+    mockGetSpeciesUsage.mockRejectedValueOnce(new Error("format query failed"));
 
     const result = await fetchFormatUsage({ format: "gen9vgc2025regg" });
 
@@ -661,25 +675,39 @@ describe("fetchFormatUsageTimeseries", () => {
 
   it("happy path: returns timeseries points", async () => {
     const points = [
-      { periodStart: "2025-01-01", periodEnd: "2025-01-07", usage: { koraidon: 52.3 } },
+      {
+        periodStart: "2025-01-01",
+        periodEnd: "2025-01-07",
+        usage: { koraidon: 52.3 },
+      },
     ];
     mockGetFormatUsageTimeseries.mockResolvedValueOnce(points);
 
-    const result = await fetchFormatUsageTimeseries({ format: "gen9vgc2025regg" });
+    const result = await fetchFormatUsageTimeseries({
+      format: "gen9vgc2025regg",
+    });
 
     expect(result.success).toBe(true);
     if (!result.success) throw new Error("expected success");
     expect(result.data).toEqual(points);
     expect(mockGetFormatUsageTimeseries).toHaveBeenCalledWith(
       {},
-      expect.objectContaining({ format: "gen9vgc2025regg", source: "all", periodType: "week" })
+      expect.objectContaining({
+        format: "gen9vgc2025regg",
+        source: "all",
+        periodType: "week",
+      })
     );
   });
 
   it("passes custom source and periodType through", async () => {
     mockGetFormatUsageTimeseries.mockResolvedValueOnce([]);
 
-    await fetchFormatUsageTimeseries({ format: "gen9vgc2025regg", source: "rk9", periodType: "month" });
+    await fetchFormatUsageTimeseries({
+      format: "gen9vgc2025regg",
+      source: "rk9",
+      periodType: "month",
+    });
 
     expect(mockGetFormatUsageTimeseries).toHaveBeenCalledWith(
       {},
@@ -688,11 +716,230 @@ describe("fetchFormatUsageTimeseries", () => {
   });
 
   it("returns { success: false } when query throws", async () => {
-    mockGetFormatUsageTimeseries.mockRejectedValueOnce(new Error("timeseries query failed"));
+    mockGetFormatUsageTimeseries.mockRejectedValueOnce(
+      new Error("timeseries query failed")
+    );
 
-    const result = await fetchFormatUsageTimeseries({ format: "gen9vgc2025regg" });
+    const result = await fetchFormatUsageTimeseries({
+      format: "gen9vgc2025regg",
+    });
 
     expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toMatch(/timeseries query failed/);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /timeseries query failed/
+    );
+  });
+});
+
+// =============================================================================
+// fetchPipelineData
+// =============================================================================
+
+describe("fetchPipelineData", () => {
+  it("returns success with pipeline data", async () => {
+    const mockData = {
+      data: [
+        {
+          species: "Sneasler",
+          usagePct: 22,
+          rank: 1,
+          abilities: [],
+          natures: [],
+          moves: [],
+        },
+      ],
+      periodStart: "2025-01-24",
+      periodEnd: "2025-01-31",
+    };
+    mockCreateStaticClient.mockReturnValue({});
+    mockGetPipelineData.mockResolvedValue(mockData);
+
+    const result = await fetchPipelineData({
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data?.data[0]?.species).toBe("Sneasler");
+    }
+    expect(mockGetPipelineData).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        format: "gen9vgc2025regg",
+        source: "all",
+        periodType: "week",
+      })
+    );
+  });
+
+  it("returns success with null when no data exists", async () => {
+    mockCreateStaticClient.mockReturnValue({});
+    mockGetPipelineData.mockResolvedValue(null);
+
+    const result = await fetchPipelineData({
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBeNull();
+    }
+  });
+
+  it("returns failure when query throws", async () => {
+    mockCreateStaticClient.mockReturnValue({});
+    mockGetPipelineData.mockRejectedValue(new Error("DB failure"));
+
+    const result = await fetchPipelineData({
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodType: "week",
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+// =============================================================================
+// fetchFormatEvents
+// =============================================================================
+
+describe("fetchFormatEvents", () => {
+  it("returns success with event list", async () => {
+    const mockEvents = [
+      { eventKey: "rk9:001", eventDate: "2025-01-12", source: "rk9" },
+    ];
+    mockCreateStaticClient.mockReturnValue({});
+    mockGetFormatEvents.mockResolvedValue(mockEvents);
+
+    const result = await fetchFormatEvents("gen9vgc2025regg");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toHaveLength(1);
+    }
+    expect(mockGetFormatEvents).toHaveBeenCalledWith({}, "gen9vgc2025regg");
+  });
+
+  it("returns failure when query throws", async () => {
+    mockCreateStaticClient.mockReturnValue({});
+    mockGetFormatEvents.mockRejectedValue(new Error("DB failure"));
+
+    const result = await fetchFormatEvents("gen9vgc2025regg");
+
+    expect(result.success).toBe(false);
+  });
+});
+
+// =============================================================================
+// calculateAllSourceUsage
+// =============================================================================
+
+describe("calculateAllSourceUsage", () => {
+  it("sums results across all sources (rk9 + limitless)", async () => {
+    // rk9: 2 events, 1 format, 3 buckets
+    mockComputeSourceUsage
+      .mockResolvedValueOnce({
+        eventsComputed: 2,
+        formats: ["gen9vgc2025regg"],
+      })
+      .mockResolvedValueOnce({
+        eventsComputed: 5,
+        formats: ["gen9vgc2025regg", "gen9vgc2025regs"],
+      });
+    mockComputeUsageRollups
+      .mockResolvedValueOnce({ formatsProcessed: 1, bucketsWritten: 3 })
+      .mockResolvedValueOnce({ formatsProcessed: 2, bucketsWritten: 4 });
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        eventsComputed: 7,
+        formatsProcessed: 3,
+        bucketsWritten: 7,
+      });
+    }
+  });
+
+  it("returns zero counts when both sources have no new events", async () => {
+    mockComputeSourceUsage
+      .mockResolvedValueOnce({ eventsComputed: 0, formats: [] })
+      .mockResolvedValueOnce({ eventsComputed: 0, formats: [] });
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        eventsComputed: 0,
+        formatsProcessed: 0,
+        bucketsWritten: 0,
+      });
+    }
+    // No new events → rollup must be skipped for both sources
+    expect(mockComputeUsageRollups).not.toHaveBeenCalled();
+  });
+
+  it("returns failure if any source fails", async () => {
+    // First source (rk9) fails immediately
+    mockComputeSourceUsage.mockRejectedValueOnce(new Error("boom"));
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/boom/);
+    }
+  });
+
+  it("returns failure if second source fails", async () => {
+    // rk9 succeeds, limitless fails
+    mockComputeSourceUsage
+      .mockResolvedValueOnce({
+        eventsComputed: 2,
+        formats: ["gen9vgc2025regg"],
+      })
+      .mockRejectedValueOnce(new Error("limitless boom"));
+    mockComputeUsageRollups.mockResolvedValueOnce({
+      formatsProcessed: 1,
+      bucketsWritten: 2,
+    });
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/limitless boom/);
+    }
+  });
+
+  it("returns error when not authenticated", async () => {
+    mockGetUserId.mockResolvedValueOnce(null);
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Not authenticated");
+    }
+    expect(mockComputeSourceUsage).not.toHaveBeenCalled();
+  });
+
+  it("returns error when user is not a site admin", async () => {
+    mockIsSiteAdmin.mockResolvedValueOnce(false);
+
+    const result = await calculateAllSourceUsage();
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Requires site admin");
+    }
+    expect(mockComputeSourceUsage).not.toHaveBeenCalled();
   });
 });

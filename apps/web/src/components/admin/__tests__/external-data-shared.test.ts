@@ -4,9 +4,17 @@ import {
   teamsEligibleIds,
   type UnifiedRow,
 } from "../external-data-shared";
+import { deriveDisplayStatus } from "../display-status";
 
 function limRow(id: string, import_status: string | null): UnifiedRow {
-  return {
+  // Real "completed" rows carry a data_imported_at timestamp — mirror that so
+  // the derived display status resolves to "imported" (not queueable).
+  const format_id = "gen9championsvgc2026regma"; // a mapped (valid) format id
+  const data_imported_at =
+    import_status === "completed" ? "2026-06-05T00:00:00Z" : null;
+  // Build the row first, then derive the unified (coarse) displayStatus the same
+  // way production does — keeps the fixture consistent with deriveDisplayStatus.
+  const row: UnifiedRow = {
     id: `limitless-${id}`,
     source: "limitless",
     name: id,
@@ -15,6 +23,7 @@ function limRow(id: string, import_status: string | null): UnifiedRow {
     playerCount: 10,
     status: "pending",
     statusDetail: import_status ?? "pending",
+    displayStatus: "pending",
     error: null,
     platform: null,
     isOnline: null,
@@ -23,19 +32,20 @@ function limRow(id: string, import_status: string | null): UnifiedRow {
     limitless: {
       tournament_id: id,
       name: id,
-      format_id: "gen9vgc2025regg",
+      format_id,
       date: "2026-06-04",
       player_count: 10,
       platform: null,
       is_online: null,
       decklists: false,
-      data_imported_at: null,
+      data_imported_at,
       import_status,
       import_requested_at: null,
       import_error: null,
       import_attempts: 0,
     },
   };
+  return { ...row, displayStatus: deriveDisplayStatus(row) };
 }
 
 function rk9Row(id: string, import_status: string): UnifiedRow {
@@ -48,6 +58,7 @@ function rk9Row(id: string, import_status: string): UnifiedRow {
     playerCount: 10,
     status: "pending",
     statusDetail: import_status,
+    displayStatus: "pending",
     error: null,
     platform: null,
     isOnline: null,

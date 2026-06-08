@@ -1,6 +1,8 @@
 "use client";
 
-import { BarChart2, ChevronDown, Loader2, Play, Plus, RefreshCw } from "lucide-react";
+import { BarChart2, ChevronDown, Loader2, Plus, RefreshCw } from "lucide-react";
+
+import { formatTimeAgo } from "@trainers/utils";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,20 +32,14 @@ export interface ExternalDataToolbarProps {
   recomputingUsage: boolean;
   onCalculateUsage: () => void;
   calculatingUsage: boolean;
-  // RK9 import group
-  onDiscover?: () => void;
-  isDiscovering?: boolean;
-  onScrapeRostersMatching?: () => void;
-  rosterMatchingCount?: number;
-  onScrapeTeamsMatching?: () => void;
-  teamsMatchingCount?: number;
-  // Limitless import group
+  lastCalculatedAt?: string | null;
+  // Unified import actions
   onSync?: () => void;
   syncing?: boolean;
-  onQueueMatching?: () => void;
-  queueMatchingCount?: number;
-  onQueueAll?: () => void;
-  queueAllCount?: number;
+  onImportMatching?: () => void;
+  importMatchingCount?: number;
+  onImportAll?: () => void;
+  importAllCount?: number;
   bulkProcessing?: boolean;
 }
 
@@ -62,72 +58,35 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
         // Mobile: condensed row — Actions menu + settings + refresh
         <div className="flex items-center gap-2">
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md border bg-background px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
+            <DropdownMenuTrigger className="bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
               Actions <ChevronDown className="size-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {props.tab === "rk9" ? (
-                <>
-                  <DropdownMenuItem
-                    onClick={props.onDiscover}
-                    disabled={props.isDiscovering}
-                  >
-                    {props.isDiscovering ? (
-                      <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                    ) : (
-                      <RefreshCw className="mr-1.5 size-3.5" />
-                    )}
-                    Discover
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={props.onScrapeRostersMatching}
-                    disabled={
-                      props.bulkProcessing ||
-                      (props.rosterMatchingCount ?? 0) === 0
-                    }
-                  >
-                    Scrape Rosters ({props.rosterMatchingCount ?? 0})
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={props.onScrapeTeamsMatching}
-                    disabled={
-                      props.bulkProcessing ||
-                      (props.teamsMatchingCount ?? 0) === 0
-                    }
-                  >
-                    Scrape Teams ({props.teamsMatchingCount ?? 0})
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <>
-                  <DropdownMenuItem
-                    onClick={props.onSync}
-                    disabled={props.syncing}
-                  >
-                    {props.syncing ? (
-                      <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                    ) : (
-                      <RefreshCw className="mr-1.5 size-3.5" />
-                    )}
-                    Sync
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={props.onQueueMatching}
-                    disabled={
-                      props.bulkProcessing ||
-                      (props.queueMatchingCount ?? 0) === 0
-                    }
-                  >
-                    Queue Matching ({props.queueMatchingCount ?? 0})
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={props.onQueueAll}
-                    disabled={props.bulkProcessing}
-                  >
-                    Queue all pending ({props.queueAllCount ?? 0})
-                  </DropdownMenuItem>
-                </>
-              )}
+              <DropdownMenuItem onClick={props.onSync} disabled={props.syncing}>
+                {props.syncing ? (
+                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-1.5 size-3.5" />
+                )}
+                Sync
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={props.onImportMatching}
+                disabled={
+                  props.bulkProcessing || (props.importMatchingCount ?? 0) === 0
+                }
+                title="Imports the events matching your current filters (skipped events are never imported)."
+              >
+                Import matching ({props.importMatchingCount ?? 0})
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={props.onImportAll}
+                disabled={
+                  props.bulkProcessing || (props.importAllCount ?? 0) === 0
+                }
+              >
+                Import all ({props.importAllCount ?? 0})
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={props.onRecomputeUsage}
@@ -163,111 +122,94 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
         <div className="flex flex-wrap items-center gap-2">
           <span className={LABEL}>Import</span>
 
-          {props.tab === "rk9" ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={props.onDiscover}
-                disabled={props.isDiscovering}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={props.onSync}
+            disabled={props.syncing}
+          >
+            {props.syncing ? (
+              <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-1.5 size-3.5" />
+            )}
+            Sync
+          </Button>
+          <div className="flex">
+            <Button
+              variant="default"
+              size="sm"
+              className="rounded-r-none"
+              onClick={props.onImportMatching}
+              disabled={
+                props.bulkProcessing || (props.importMatchingCount ?? 0) === 0
+              }
+              title="Imports the events matching your current filters (skipped events are never imported)."
+            >
+              <Plus className="mr-1.5 size-3.5" /> Import matching (
+              {props.importMatchingCount ?? 0})
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 cursor-pointer items-center justify-center rounded-l-none rounded-r-md border-l border-l-white/20 px-2 transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                aria-label="More import options"
               >
-                {props.isDiscovering ? (
-                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-1.5 size-3.5" />
-                )}
-                Discover
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={props.onScrapeRostersMatching}
-                disabled={
-                  props.bulkProcessing ||
-                  (props.rosterMatchingCount ?? 0) === 0
-                }
-              >
-                Scrape Rosters ({props.rosterMatchingCount ?? 0})
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={props.onScrapeTeamsMatching}
-                disabled={
-                  props.bulkProcessing || (props.teamsMatchingCount ?? 0) === 0
-                }
-              >
-                <Play className="mr-1.5 size-3.5" /> Scrape Teams (
-                {props.teamsMatchingCount ?? 0})
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={props.onSync}
-                disabled={props.syncing}
-              >
-                {props.syncing ? (
-                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-1.5 size-3.5" />
-                )}
-                Sync
-              </Button>
-              <div className="flex">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="rounded-r-none"
-                  onClick={props.onQueueMatching}
+                ▾
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={props.onImportAll}
                   disabled={
-                    props.bulkProcessing ||
-                    (props.queueMatchingCount ?? 0) === 0
+                    props.bulkProcessing || (props.importAllCount ?? 0) === 0
                   }
                 >
-                  <Plus className="mr-1.5 size-3.5" /> Queue Matching (
-                  {props.queueMatchingCount ?? 0})
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    className="inline-flex h-8 cursor-pointer items-center justify-center rounded-l-none rounded-r-md border-l border-l-white/20 bg-primary px-2 text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
-                    aria-label="More queue options"
-                  >
-                    ▾
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={props.onQueueAll}>
-                      Queue all pending ({props.queueAllCount ?? 0})
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </>
-          )}
+                  Import all ({props.importAllCount ?? 0})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           <span className="bg-border h-5 w-px" />
           <span className={LABEL}>Usage</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
-              <BarChart2 className="mr-1.5 size-3.5" /> Usage ▾
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={props.onRecomputeUsage}
-                disabled={props.recomputingUsage}
+          <div className="flex items-center gap-1.5">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                disabled={props.recomputingUsage || props.calculatingUsage}
+                className="hover:bg-accent hover:text-accent-foreground inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
               >
-                Recompute Usage
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={props.onCalculateUsage}
-                disabled={props.calculatingUsage}
-              >
-                Calculate Usage
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {props.recomputingUsage || props.calculatingUsage ? (
+                  <>
+                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                    Recalculating usage…
+                  </>
+                ) : (
+                  <>
+                    <BarChart2 className="mr-1.5 size-3.5" /> Usage{" "}
+                    <ChevronDown className="size-3" />
+                  </>
+                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={props.onRecomputeUsage}
+                  disabled={props.recomputingUsage}
+                >
+                  Recompute Usage
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={props.onCalculateUsage}
+                  disabled={props.calculatingUsage}
+                >
+                  Calculate Usage
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {props.lastCalculatedAt && (
+              <span className="text-muted-foreground text-xs">
+                {formatTimeAgo(props.lastCalculatedAt)}
+              </span>
+            )}
+          </div>
 
           <span className="bg-border h-5 w-px" />
           <ExternalDataSettings {...props.settings} />

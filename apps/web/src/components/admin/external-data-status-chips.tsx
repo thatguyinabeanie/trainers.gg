@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export interface StatusChip {
   label: string;
   count: number;
-  tone: "synced" | "queued" | "importing" | "imported" | "failed";
+  tone: "synced" | "queued" | "importing" | "imported" | "failed" | "skipped";
 }
 
 const TONE_CLASS: Record<StatusChip["tone"], string> = {
@@ -13,6 +13,7 @@ const TONE_CLASS: Record<StatusChip["tone"], string> = {
   importing: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
   imported: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   failed: "bg-red-500/10 text-red-700 dark:text-red-400",
+  skipped: "bg-slate-500/10 text-slate-600 dark:text-slate-400",
 };
 
 /** Scannable colored count pills for the import console toolbar. */

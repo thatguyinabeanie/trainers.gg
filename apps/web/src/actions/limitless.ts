@@ -3,6 +3,7 @@
 import { getErrorMessage } from "@trainers/utils";
 import type { ActionResult } from "@trainers/validators";
 import { SKIP_FORMATS } from "@trainers/data-sources";
+import { pgInList } from "@trainers/supabase";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import { syncTournamentList, processImportQueue } from "@/lib/limitless";
@@ -24,7 +25,7 @@ export async function queueTournamentForImport(
 
     const supabase = createServiceRoleClient();
 
-    const { data: updated, error } = await supabase
+    let query = supabase
       .schema("limitless")
       .from("tournaments")
       .update({
@@ -33,8 +34,13 @@ export async function queueTournamentForImport(
         import_error: null,
         import_attempts: 0,
       })
-      .eq("tournament_id", tournamentId)
-      .not("format_id", "in", SKIP_FORMATS_ARRAY)
+      .eq("tournament_id", tournamentId);
+
+    if (SKIP_FORMATS_ARRAY.length > 0) {
+      query = query.not("format_id", "in", pgInList(SKIP_FORMATS_ARRAY));
+    }
+
+    const { data: updated, error } = await query
       .select("tournament_id")
       .maybeSingle();
 
@@ -75,7 +81,8 @@ export async function batchQueueTournaments(
 
     for (let i = 0; i < tournamentIds.length; i += CHUNK_SIZE) {
       const chunk = tournamentIds.slice(i, i + CHUNK_SIZE);
-      const { data: updated, error } = await supabase
+
+      let query = supabase
         .schema("limitless")
         .from("tournaments")
         .update({
@@ -84,9 +91,13 @@ export async function batchQueueTournaments(
           import_error: null,
           import_attempts: 0,
         })
-        .in("tournament_id", chunk)
-        .not("format_id", "in", SKIP_FORMATS_ARRAY)
-        .select("tournament_id");
+        .in("tournament_id", chunk);
+
+      if (SKIP_FORMATS_ARRAY.length > 0) {
+        query = query.not("format_id", "in", pgInList(SKIP_FORMATS_ARRAY));
+      }
+
+      const { data: updated, error } = await query.select("tournament_id");
 
       if (error) throw error;
       totalQueued += updated?.length ?? 0;

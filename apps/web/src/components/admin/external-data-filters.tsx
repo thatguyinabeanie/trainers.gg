@@ -22,26 +22,19 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 import {
-  INITIAL_LIMITLESS_FILTERS,
-  INITIAL_RK9_FILTERS,
+  INITIAL_IMPORT_FILTERS,
   type HasDataFilter,
-  type LimitlessFilterState,
+  type ImportFilterState,
   type PlatformFilter,
-  type RK9FilterState,
 } from "./external-data-shared";
 
 export interface ExternalDataFiltersProps {
-  tab: "rk9" | "limitless";
-  rk9Filters?: RK9FilterState;
-  limFilters?: LimitlessFilterState;
-  onRk9Change?: (patch: Partial<RK9FilterState>) => void;
-  onLimChange?: (patch: Partial<LimitlessFilterState>) => void;
+  filters: ImportFilterState;
+  onChange: (patch: Partial<ImportFilterState>) => void;
   onClear: () => void;
-  /** Distinct tier values for RK9 tab */
-  tierOptions?: string[];
-  /** Distinct country values for RK9 tab */
+  /** Distinct country values from RK9 rows */
   countryOptions?: string[];
-  /** Distinct format codes for Limitless tab */
+  /** Distinct format/regulation codes from all rows */
   formatOptions?: string[];
   resultCount: number;
   totalCount: number;
@@ -53,146 +46,92 @@ export interface ExternalDataFiltersProps {
 
 interface FilterChip {
   label: string;
-  /** Call this to reset just this field */
   onRemove: () => void;
 }
 
-function rk9Chips(
-  filters: RK9FilterState,
-  onChange: (patch: Partial<RK9FilterState>) => void
+function buildChips(
+  filters: ImportFilterState,
+  onChange: (patch: Partial<ImportFilterState>) => void
 ): FilterChip[] {
   const chips: FilterChip[] = [];
 
-  if (filters.status !== INITIAL_RK9_FILTERS.status)
+  if (filters.source !== INITIAL_IMPORT_FILTERS.source)
     chips.push({
-      label: `Status: ${filters.status}`,
-      onRemove: () => onChange({ status: INITIAL_RK9_FILTERS.status }),
+      label: `Source: ${filters.source.toUpperCase()}`,
+      onRemove: () => onChange({ source: INITIAL_IMPORT_FILTERS.source }),
     });
-  if (filters.tier !== INITIAL_RK9_FILTERS.tier)
-    chips.push({
-      label: `Tier: ${filters.tier}`,
-      onRemove: () => onChange({ tier: INITIAL_RK9_FILTERS.tier }),
-    });
-  if (filters.country !== INITIAL_RK9_FILTERS.country)
-    chips.push({
-      label: `Country: ${filters.country}`,
-      onRemove: () => onChange({ country: INITIAL_RK9_FILTERS.country }),
-    });
-  if (filters.hasData !== INITIAL_RK9_FILTERS.hasData)
-    chips.push({
-      label: `Team Lists: ${filters.hasData === "yes" ? "Has teams" : "No teams"}`,
-      onRemove: () => onChange({ hasData: INITIAL_RK9_FILTERS.hasData }),
-    });
-  if (filters.dateFrom !== INITIAL_RK9_FILTERS.dateFrom)
-    chips.push({
-      label: `From: ${filters.dateFrom}`,
-      onRemove: () => onChange({ dateFrom: INITIAL_RK9_FILTERS.dateFrom }),
-    });
-  if (filters.dateTo !== INITIAL_RK9_FILTERS.dateTo)
-    chips.push({
-      label: `To: ${filters.dateTo}`,
-      onRemove: () => onChange({ dateTo: INITIAL_RK9_FILTERS.dateTo }),
-    });
-  if (filters.minPlayers !== INITIAL_RK9_FILTERS.minPlayers)
-    chips.push({
-      label: `Min players: ${filters.minPlayers}`,
-      onRemove: () =>
-        onChange({ minPlayers: INITIAL_RK9_FILTERS.minPlayers }),
-    });
-
-  return chips;
-}
-
-function limitlessChips(
-  filters: LimitlessFilterState,
-  onChange: (patch: Partial<LimitlessFilterState>) => void
-): FilterChip[] {
-  const chips: FilterChip[] = [];
-
-  if (filters.format !== INITIAL_LIMITLESS_FILTERS.format)
+  if (filters.format !== INITIAL_IMPORT_FILTERS.format)
     chips.push({
       label: `Format: ${filters.format}`,
-      onRemove: () =>
-        onChange({ format: INITIAL_LIMITLESS_FILTERS.format }),
+      onRemove: () => onChange({ format: INITIAL_IMPORT_FILTERS.format }),
     });
-  if (filters.status !== INITIAL_LIMITLESS_FILTERS.status)
+  if (
+    filters.country !== INITIAL_IMPORT_FILTERS.country &&
+    filters.source !== "limitless"
+  )
     chips.push({
-      label: `Status: ${filters.status}`,
-      onRemove: () =>
-        onChange({ status: INITIAL_LIMITLESS_FILTERS.status }),
+      label: `Country: ${filters.country}`,
+      onRemove: () => onChange({ country: INITIAL_IMPORT_FILTERS.country }),
     });
-  if (filters.platform !== INITIAL_LIMITLESS_FILTERS.platform)
+  if (
+    filters.platform !== INITIAL_IMPORT_FILTERS.platform &&
+    filters.source !== "rk9"
+  )
     chips.push({
       label: `Platform: ${filters.platform}`,
-      onRemove: () =>
-        onChange({ platform: INITIAL_LIMITLESS_FILTERS.platform }),
+      onRemove: () => onChange({ platform: INITIAL_IMPORT_FILTERS.platform }),
     });
-  if (filters.hasData !== INITIAL_LIMITLESS_FILTERS.hasData)
+  if (filters.hasData !== INITIAL_IMPORT_FILTERS.hasData)
     chips.push({
-      label: `Decklists: ${filters.hasData === "yes" ? "Has decklists" : "No decklists"}`,
-      onRemove: () =>
-        onChange({ hasData: INITIAL_LIMITLESS_FILTERS.hasData }),
+      label: `Data: ${filters.hasData === "yes" ? "Has data" : "No data"}`,
+      onRemove: () => onChange({ hasData: INITIAL_IMPORT_FILTERS.hasData }),
     });
-  if (filters.dateFrom !== INITIAL_LIMITLESS_FILTERS.dateFrom)
+  if (filters.dateFrom !== INITIAL_IMPORT_FILTERS.dateFrom)
     chips.push({
       label: `From: ${filters.dateFrom}`,
-      onRemove: () =>
-        onChange({ dateFrom: INITIAL_LIMITLESS_FILTERS.dateFrom }),
+      onRemove: () => onChange({ dateFrom: INITIAL_IMPORT_FILTERS.dateFrom }),
     });
-  if (filters.dateTo !== INITIAL_LIMITLESS_FILTERS.dateTo)
+  if (filters.dateTo !== INITIAL_IMPORT_FILTERS.dateTo)
     chips.push({
       label: `To: ${filters.dateTo}`,
-      onRemove: () =>
-        onChange({ dateTo: INITIAL_LIMITLESS_FILTERS.dateTo }),
+      onRemove: () => onChange({ dateTo: INITIAL_IMPORT_FILTERS.dateTo }),
     });
-  if (filters.minPlayers !== INITIAL_LIMITLESS_FILTERS.minPlayers)
+  if (filters.minPlayers !== INITIAL_IMPORT_FILTERS.minPlayers)
     chips.push({
       label: `Min players: ${filters.minPlayers}`,
       onRemove: () =>
-        onChange({ minPlayers: INITIAL_LIMITLESS_FILTERS.minPlayers }),
+        onChange({ minPlayers: INITIAL_IMPORT_FILTERS.minPlayers }),
     });
 
   return chips;
 }
 
 // Count secondary (popover) filters that are non-default.
-// Primary filters (search, format/tier, status) are inline — only secondary
-// ones contribute to the badge count on desktop.
-function rk9SecondaryActiveCount(filters: RK9FilterState): number {
+// Primary filters (search, format, source segmented control) are inline.
+function secondaryActiveCount(filters: ImportFilterState): number {
   let count = 0;
-  if (filters.country !== INITIAL_RK9_FILTERS.country) count++;
-  if (filters.hasData !== INITIAL_RK9_FILTERS.hasData) count++;
-  if (filters.dateFrom !== INITIAL_RK9_FILTERS.dateFrom) count++;
-  if (filters.dateTo !== INITIAL_RK9_FILTERS.dateTo) count++;
-  if (filters.minPlayers !== INITIAL_RK9_FILTERS.minPlayers) count++;
+  if (
+    filters.country !== INITIAL_IMPORT_FILTERS.country &&
+    filters.source !== "limitless"
+  )
+    count++;
+  if (
+    filters.platform !== INITIAL_IMPORT_FILTERS.platform &&
+    filters.source !== "rk9"
+  )
+    count++;
+  if (filters.hasData !== INITIAL_IMPORT_FILTERS.hasData) count++;
+  if (filters.dateFrom !== INITIAL_IMPORT_FILTERS.dateFrom) count++;
+  if (filters.dateTo !== INITIAL_IMPORT_FILTERS.dateTo) count++;
+  if (filters.minPlayers !== INITIAL_IMPORT_FILTERS.minPlayers) count++;
   return count;
 }
 
-function limitlessSecondaryActiveCount(
-  filters: LimitlessFilterState
-): number {
-  let count = 0;
-  if (filters.platform !== INITIAL_LIMITLESS_FILTERS.platform) count++;
-  if (filters.hasData !== INITIAL_LIMITLESS_FILTERS.hasData) count++;
-  if (filters.dateFrom !== INITIAL_LIMITLESS_FILTERS.dateFrom) count++;
-  if (filters.dateTo !== INITIAL_LIMITLESS_FILTERS.dateTo) count++;
-  if (filters.minPlayers !== INITIAL_LIMITLESS_FILTERS.minPlayers) count++;
-  return count;
-}
-
-// On mobile ALL non-search filters live in the popover, so the badge shows
-// the full count: format/tier + status + secondary.
-function rk9AllActiveCount(filters: RK9FilterState): number {
-  let count = rk9SecondaryActiveCount(filters);
-  if (filters.tier !== INITIAL_RK9_FILTERS.tier) count++;
-  if (filters.status !== INITIAL_RK9_FILTERS.status) count++;
-  return count;
-}
-
-function limitlessAllActiveCount(filters: LimitlessFilterState): number {
-  let count = limitlessSecondaryActiveCount(filters);
-  if (filters.format !== INITIAL_LIMITLESS_FILTERS.format) count++;
-  if (filters.status !== INITIAL_LIMITLESS_FILTERS.status) count++;
+// On mobile ALL non-search filters live in the popover.
+function mobileActiveCount(filters: ImportFilterState): number {
+  let count = secondaryActiveCount(filters);
+  if (filters.format !== INITIAL_IMPORT_FILTERS.format) count++;
+  if (filters.source !== INITIAL_IMPORT_FILTERS.source) count++;
   return count;
 }
 
@@ -201,13 +140,9 @@ function limitlessAllActiveCount(filters: LimitlessFilterState): number {
 // ---------------------------------------------------------------------------
 
 export function ExternalDataFilters({
-  tab,
-  rk9Filters,
-  limFilters,
-  onRk9Change,
-  onLimChange,
+  filters,
+  onChange,
   onClear,
-  tierOptions = [],
   countryOptions = [],
   formatOptions = [],
   resultCount,
@@ -216,71 +151,25 @@ export function ExternalDataFilters({
   const [popoverOpen, setPopoverOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  const isRk9 = tab === "rk9";
+  const activeChips = buildChips(filters, onChange);
+  const secondaryCount = secondaryActiveCount(filters);
+  const mobileCount = mobileActiveCount(filters);
 
-  // Safe accessors — fall back to initial values so we never dereference
-  // undefined even when the parent hasn't wired up one of the two tabs yet.
-  const rk9 = rk9Filters ?? INITIAL_RK9_FILTERS;
-  const lim = limFilters ?? INITIAL_LIMITLESS_FILTERS;
+  // Show platform filter unless viewing RK9 exclusively
+  const showPlatform = filters.source !== "rk9";
+  // Show country filter unless viewing Limitless exclusively
+  const showCountry = filters.source !== "limitless";
 
-  const handleRk9 = onRk9Change ?? (() => {});
-  const handleLim = onLimChange ?? (() => {});
-
-  const activeChips = isRk9
-    ? rk9Chips(rk9, handleRk9)
-    : limitlessChips(lim, handleLim);
-
-  // Desktop: only secondary (popover) filters count toward the badge.
-  // Mobile: all non-search filters are inside the popover, so count all.
-  const secondaryCount = isRk9
-    ? rk9SecondaryActiveCount(rk9)
-    : limitlessSecondaryActiveCount(lim);
-
-  const mobileFilterCount = isRk9
-    ? rk9AllActiveCount(rk9)
-    : limitlessAllActiveCount(lim);
-
-  // -------------------------------------------------------------------------
-  // Render helpers — each returns JSX for a reusable filter control.
-  // Desktop places format/tier + status inline; mobile puts them in the popover.
-  // -------------------------------------------------------------------------
-
-  function renderFormatOrTierSelect() {
-    if (isRk9) {
-      return (
-        <Select
-          value={rk9.tier}
-          onValueChange={(v) => v && handleRk9({ tier: v })}
-        >
-          <SelectTrigger
-            className={cn(
-              "h-8 w-full text-xs sm:w-32",
-              rk9.tier !== "all" && "ring-primary/50 ring-2"
-            )}
-            size="sm"
-          >
-            <SelectValue placeholder="Tier" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All tiers</SelectItem>
-            {tierOptions.map((t) => (
-              <SelectItem key={t} value={t} className="capitalize">
-                {t}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      );
-    }
+  function renderFormatSelect() {
     return (
       <Select
-        value={lim.format}
-        onValueChange={(v) => v && handleLim({ format: v })}
+        value={filters.format}
+        onValueChange={(v) => v && onChange({ format: v })}
       >
         <SelectTrigger
           className={cn(
             "h-8 w-full text-xs sm:w-32",
-            lim.format !== "all" && "ring-primary/50 ring-2"
+            filters.format !== "all" && "ring-primary/50 ring-2"
           )}
           size="sm"
         >
@@ -298,56 +187,18 @@ export function ExternalDataFilters({
     );
   }
 
-  function renderStatusSelect() {
-    return (
-      <Select
-        value={isRk9 ? rk9.status : lim.status}
-        onValueChange={(v) => {
-          if (v) {
-            if (isRk9) handleRk9({ status: v });
-            else handleLim({ status: v });
-          }
-        }}
-      >
-        <SelectTrigger className="h-8 w-full text-xs sm:w-32" size="sm">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All statuses</SelectItem>
-          {isRk9 ? (
-            <>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="in-progress">In progress</SelectItem>
-              <SelectItem value="complete">Complete</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-            </>
-          ) : (
-            <>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="queued">Queued</SelectItem>
-              <SelectItem value="importing">Importing</SelectItem>
-              <SelectItem value="complete">Complete</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-            </>
-          )}
-        </SelectContent>
-      </Select>
-    );
-  }
-
   function renderSecondaryFilters() {
-    if (isRk9) {
-      return (
-        <>
-          {/* Country */}
+    return (
+      <>
+        {/* Country — hidden when viewing Limitless exclusively */}
+        {showCountry && (
           <div className="space-y-1">
             <label className="text-muted-foreground text-xs font-medium">
               Country
             </label>
             <Select
-              value={rk9.country}
-              onValueChange={(v) => v && handleRk9({ country: v })}
+              value={filters.country}
+              onValueChange={(v) => v && onChange({ country: v })}
             >
               <SelectTrigger className="h-8 w-full text-xs" size="sm">
                 <SelectValue placeholder="All countries" />
@@ -362,16 +213,18 @@ export function ExternalDataFilters({
               </SelectContent>
             </Select>
           </div>
+        )}
 
-          {/* Team Lists */}
+        {/* Platform — hidden when viewing RK9 exclusively */}
+        {showPlatform && (
           <div className="space-y-1">
             <label className="text-muted-foreground text-xs font-medium">
-              Team Lists
+              Platform
             </label>
             <Select
-              value={rk9.hasData}
+              value={filters.platform}
               onValueChange={(v) =>
-                v && handleRk9({ hasData: v as HasDataFilter })
+                v && onChange({ platform: v as PlatformFilter })
               }
             >
               <SelectTrigger className="h-8 w-full text-xs" size="sm">
@@ -379,63 +232,22 @@ export function ExternalDataFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                <SelectItem value="yes">Has teams</SelectItem>
-                <SelectItem value="no">No teams</SelectItem>
+                <SelectItem value="SWITCH">Switch</SelectItem>
+                <SelectItem value="SIM">Simulator</SelectItem>
               </SelectContent>
             </Select>
           </div>
+        )}
 
-          {/* Date Range */}
-          <div className="space-y-1">
-            <label className="text-muted-foreground text-xs font-medium">
-              Date Range
-            </label>
-            <div className="flex items-center gap-1.5">
-              <Input
-                type="date"
-                value={rk9.dateFrom}
-                onChange={(e) => handleRk9({ dateFrom: e.target.value })}
-                className="h-7 flex-1 text-xs"
-              />
-              <span className="text-muted-foreground text-xs">to</span>
-              <Input
-                type="date"
-                value={rk9.dateTo}
-                onChange={(e) => handleRk9({ dateTo: e.target.value })}
-                className="h-7 flex-1 text-xs"
-              />
-            </div>
-          </div>
-
-          {/* Min Players */}
-          <div className="space-y-1">
-            <label className="text-muted-foreground text-xs font-medium">
-              Min Players
-            </label>
-            <Input
-              type="number"
-              placeholder="0"
-              value={rk9.minPlayers}
-              onChange={(e) => handleRk9({ minPlayers: e.target.value })}
-              className="h-7 w-24 text-xs"
-              min={0}
-            />
-          </div>
-        </>
-      );
-    }
-
-    return (
-      <>
-        {/* Platform */}
+        {/* Data available */}
         <div className="space-y-1">
           <label className="text-muted-foreground text-xs font-medium">
-            Platform
+            Data
           </label>
           <Select
-            value={lim.platform}
+            value={filters.hasData}
             onValueChange={(v) =>
-              v && handleLim({ platform: v as PlatformFilter })
+              v && onChange({ hasData: v as HasDataFilter })
             }
           >
             <SelectTrigger className="h-8 w-full text-xs" size="sm">
@@ -443,30 +255,8 @@ export function ExternalDataFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              <SelectItem value="SWITCH">Switch</SelectItem>
-              <SelectItem value="SIM">Simulator</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Decklists */}
-        <div className="space-y-1">
-          <label className="text-muted-foreground text-xs font-medium">
-            Decklists
-          </label>
-          <Select
-            value={lim.hasData}
-            onValueChange={(v) =>
-              v && handleLim({ hasData: v as HasDataFilter })
-            }
-          >
-            <SelectTrigger className="h-8 w-full text-xs" size="sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="yes">Has decklists</SelectItem>
-              <SelectItem value="no">No decklists</SelectItem>
+              <SelectItem value="yes">Has data</SelectItem>
+              <SelectItem value="no">No data</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -479,15 +269,15 @@ export function ExternalDataFilters({
           <div className="flex items-center gap-1.5">
             <Input
               type="date"
-              value={lim.dateFrom}
-              onChange={(e) => handleLim({ dateFrom: e.target.value })}
+              value={filters.dateFrom}
+              onChange={(e) => onChange({ dateFrom: e.target.value })}
               className="h-7 flex-1 text-xs"
             />
             <span className="text-muted-foreground text-xs">to</span>
             <Input
               type="date"
-              value={lim.dateTo}
-              onChange={(e) => handleLim({ dateTo: e.target.value })}
+              value={filters.dateTo}
+              onChange={(e) => onChange({ dateTo: e.target.value })}
               className="h-7 flex-1 text-xs"
             />
           </div>
@@ -501,8 +291,8 @@ export function ExternalDataFilters({
           <Input
             type="number"
             placeholder="0"
-            value={lim.minPlayers}
-            onChange={(e) => handleLim({ minPlayers: e.target.value })}
+            value={filters.minPlayers}
+            onChange={(e) => onChange({ minPlayers: e.target.value })}
             className="h-7 w-24 text-xs"
             min={0}
           />
@@ -514,45 +304,58 @@ export function ExternalDataFilters({
   return (
     <div className="space-y-2">
       {/* ------------------------------------------------------------------ */}
-      {/* Row 1 — mobile: Search + "Filters" button                           */}
-      {/*          desktop: Search + inline dropdowns + "More filters" popover */}
+      {/* Row 1 — Source segmented control + Search + Format + More filters   */}
       {/* ------------------------------------------------------------------ */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Source segmented control — always visible */}
+        <div className="flex items-center rounded-md border text-xs font-medium">
+          {(["all", "rk9", "limitless"] as const).map((src) => (
+            <button
+              key={src}
+              onClick={() => onChange({ source: src })}
+              className={cn(
+                "h-8 cursor-pointer px-3 capitalize transition-colors first:rounded-l-md last:rounded-r-md",
+                filters.source === src
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              {src === "all" ? "All" : src.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
         {/* Search — always visible, full width on mobile */}
         <div className="relative min-w-40 flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
           <Input
             placeholder="Search by name or ID…"
-            value={isRk9 ? rk9.search : lim.search}
-            onChange={(e) => {
-              if (isRk9) handleRk9({ search: e.target.value });
-              else handleLim({ search: e.target.value });
-            }}
+            value={filters.search}
+            onChange={(e) => onChange({ search: e.target.value })}
             className="h-8 w-full pl-8 text-sm"
           />
         </div>
 
-        {/* Desktop: Format/Tier + Status inline */}
-        {!isMobile && renderFormatOrTierSelect()}
-        {!isMobile && renderStatusSelect()}
+        {/* Desktop: Format inline */}
+        {!isMobile && renderFormatSelect()}
 
         {/* Popover trigger — desktop: "More filters" for secondary only;
             mobile: "Filters" for all non-search filters */}
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
           <PopoverTrigger
             className={cn(
-              "relative inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors hover:bg-accent",
+              "hover:bg-accent relative inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors",
               isMobile && "shrink-0"
             )}
           >
             <ListFilter className="h-3.5 w-3.5" />
             {isMobile ? "Filters" : "More filters"}
-            {(isMobile ? mobileFilterCount : secondaryCount) > 0 && (
+            {(isMobile ? mobileCount : secondaryCount) > 0 && (
               <Badge
                 variant="secondary"
                 className="ml-0.5 h-4 min-w-4 px-1 text-[10px] leading-none"
               >
-                {isMobile ? mobileFilterCount : secondaryCount}
+                {isMobile ? mobileCount : secondaryCount}
               </Badge>
             )}
           </PopoverTrigger>
@@ -563,24 +366,41 @@ export function ExternalDataFilters({
             sideOffset={6}
           >
             <div className="space-y-3">
-              {/* Mobile: all non-search filters live here */}
+              {/* Mobile: format + source live in the popover too */}
               {isMobile && (
                 <>
                   <div className="space-y-1">
                     <label className="text-muted-foreground text-xs font-medium">
-                      {isRk9 ? "Tier" : "Format"}
+                      Source
                     </label>
-                    {renderFormatOrTierSelect()}
+                    <div className="flex items-center rounded-md border text-xs font-medium">
+                      {(["all", "rk9", "limitless"] as const).map((src) => (
+                        <button
+                          key={src}
+                          onClick={() => {
+                            onChange({ source: src });
+                            setPopoverOpen(false);
+                          }}
+                          className={cn(
+                            "h-8 flex-1 cursor-pointer capitalize transition-colors first:rounded-l-md last:rounded-r-md",
+                            filters.source === src
+                              ? "bg-primary text-primary-foreground"
+                              : "hover:bg-accent hover:text-accent-foreground"
+                          )}
+                        >
+                          {src === "all" ? "All" : src.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <label className="text-muted-foreground text-xs font-medium">
-                      Status
+                      Format
                     </label>
-                    {renderStatusSelect()}
+                    {renderFormatSelect()}
                   </div>
                 </>
               )}
-              {/* Secondary filters — always in the popover on both layouts */}
               {renderSecondaryFilters()}
             </div>
           </PopoverContent>
