@@ -270,7 +270,10 @@ export function UsagePipelineChart({
                   setTooltipNode(node);
                 }
               }}
-              onMouseLeave={() => setHoveredNodeId(null)}
+              onMouseLeave={() => {
+                setHoveredNodeId(null);
+                setTooltipNode(null);
+              }}
               onClick={() => isSpecies && onSpeciesClick(node.label)}
               onKeyDown={(e) => {
                 if (isSpecies && (e.key === "Enter" || e.key === " ")) {
