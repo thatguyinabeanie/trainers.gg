@@ -1,16 +1,11 @@
-import { BarChart2 } from "lucide-react";
-
-import { getFormatById } from "@trainers/pokemon";
-
 import {
   fetchFormatUsageTimeseries,
   fetchPipelineData,
   fetchFormatEvents,
 } from "@/actions/usage";
-import { PageContainer } from "@/components/layout/page-container";
 import { UsageExplorer } from "@/components/data/usage-explorer";
-import { type UsageFilters } from "@/components/data/usage-filters";
 import {
+  type UsageFilters,
   coerceFormat,
   coercePeriodType,
   coerceRangeEnd,
@@ -41,8 +36,6 @@ interface DataPageProps {
 export default async function DataPage({ searchParams }: DataPageProps) {
   const params = await searchParams;
 
-  // Validate + extract searchParams via shared coercers — never pass unvalidated
-  // strings to actions. Each coercer returns a safe default on invalid input.
   const raw = (key: string) =>
     typeof params[key] === "string" ? (params[key] as string) : undefined;
 
@@ -52,13 +45,8 @@ export default async function DataPage({ searchParams }: DataPageProps) {
   const rangeStart = coerceRangeStart(raw("rangeStart"));
   const rangeEnd = coerceRangeEnd(raw("rangeEnd"));
 
-  const initialFilters: UsageFilters = {
-    format,
-    source,
-    periodType,
-  };
+  const initialFilters: UsageFilters = { format, source, periodType };
 
-  // Fetch initial data on the server — results are ISR-cached for 1 hour.
   const [timeseriesResult, pipelineResult, eventsResult] = await Promise.all([
     fetchFormatUsageTimeseries({ format, source, periodType }),
     fetchPipelineData({
@@ -70,41 +58,21 @@ export default async function DataPage({ searchParams }: DataPageProps) {
     }),
     fetchFormatEvents(format),
   ]);
+
   const initialPoints = timeseriesResult.success ? timeseriesResult.data : [];
   const initialPipelineResult = pipelineResult.success
     ? pipelineResult.data
     : null;
   const initialEvents = eventsResult.success ? eventsResult.data : [];
 
-  // Resolve the active format for the page subtitle.
-  const activeFormat = getFormatById(format);
-
   return (
-    <PageContainer>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-          <BarChart2 className="h-8 w-8" />
-          Data
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Every{" "}
-          <strong className="text-foreground">
-            {activeFormat?.showdownName ?? "format"}
-          </strong>{" "}
-          legal Pokemon&apos;s usage across each tournament since launch.
-          Changing the format reshapes the legal pool — tune the view with the
-          controls below.
-        </p>
-      </div>
-
-      {/* Main explorer (client shell with TanStack Query + URL state) */}
+    <div className="flex flex-1 overflow-hidden">
       <UsageExplorer
         initialPoints={initialPoints}
         initialPipelineResult={initialPipelineResult}
         initialEvents={initialEvents}
         initialFilters={initialFilters}
       />
-    </PageContainer>
+    </div>
   );
 }
