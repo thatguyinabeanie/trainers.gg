@@ -596,10 +596,15 @@ export function ExternalData() {
     }
   }
 
-  async function handleScrapeRoster(eventId: string) {
+  async function handleScrapeRoster(eventId: string): Promise<boolean> {
     setActiveJobs((prev) => new Map(prev).set(eventId, { type: "roster" }));
     try {
-      await scrapeRk9Roster(eventId);
+      const result = await scrapeRk9Roster(eventId);
+      if (!result.success) {
+        toast.error(getErrorMessage(result.error, "Failed to scrape roster"));
+        return false;
+      }
+      return true;
     } finally {
       setActiveJobs((prev) => {
         const next = new Map(prev);
@@ -798,7 +803,8 @@ export function ExternalData() {
    * the import one stage at a time.
    */
   async function handleImportRk9(eventId: string) {
-    await handleScrapeRoster(eventId);
+    const rosterOk = await handleScrapeRoster(eventId);
+    if (!rosterOk) return;
     await handleScrapeTeams(eventId);
   }
 
