@@ -109,9 +109,9 @@ describe("computeEventUsage — rk9 error paths", () => {
       { error: { message: "connection refused" } }, // resolveEventMeta
     ]);
 
-    await expect(
-      computeEventUsage(client, "rk9", "EVENT001")
-    ).rejects.toThrow("failed to fetch event EVENT001");
+    await expect(computeEventUsage(client, "rk9", "EVENT001")).rejects.toThrow(
+      "failed to fetch event EVENT001"
+    );
   });
 
   it("throws when rk9 event is not found", async () => {
@@ -119,9 +119,9 @@ describe("computeEventUsage — rk9 error paths", () => {
       { data: null }, // resolveEventMeta → maybeSingle returns null
     ]);
 
-    await expect(
-      computeEventUsage(client, "rk9", "MISSING")
-    ).rejects.toThrow("not found in rk9.events");
+    await expect(computeEventUsage(client, "rk9", "MISSING")).rejects.toThrow(
+      "not found in rk9.events"
+    );
   });
 
   it("throws when rk9 event has no format_id", async () => {
@@ -141,9 +141,7 @@ describe("computeEventUsage — rk9 error paths", () => {
 
 describe("computeEventUsage — limitless error paths", () => {
   it("throws when limitless.tournaments lookup fails", async () => {
-    const client = buildSequentialClient([
-      { error: { message: "timeout" } },
-    ]);
+    const client = buildSequentialClient([{ error: { message: "timeout" } }]);
 
     await expect(
       computeEventUsage(client, "limitless", "abc123")
@@ -209,9 +207,9 @@ describe("computeEventUsage — delete error", () => {
       { error: { message: "delete failed" } }, // DELETE event_usage
     ]);
 
-    await expect(
-      computeEventUsage(client, "rk9", "EVT001")
-    ).rejects.toThrow("failed to delete existing rows");
+    await expect(computeEventUsage(client, "rk9", "EVT001")).rejects.toThrow(
+      "failed to delete existing rows"
+    );
   });
 });
 
@@ -243,9 +241,9 @@ describe("computeEventUsage — insert error", () => {
       { error: { message: "insert failed" } }, // INSERT
     ]);
 
-    await expect(
-      computeEventUsage(client, "limitless", "t1")
-    ).rejects.toThrow("failed to insert rows");
+    await expect(computeEventUsage(client, "limitless", "t1")).rejects.toThrow(
+      "failed to insert rows"
+    );
   });
 });
 
@@ -269,9 +267,9 @@ describe("computeEventUsage — usage_dirty error", () => {
       { error: { message: "dirty read failed" } }, // usage_dirty SELECT
     ]);
 
-    await expect(
-      computeEventUsage(client, "rk9", "EVT002")
-    ).rejects.toThrow("failed to read usage_dirty");
+    await expect(computeEventUsage(client, "rk9", "EVT002")).rejects.toThrow(
+      "failed to read usage_dirty"
+    );
   });
 });
 
@@ -416,6 +414,46 @@ describe("computeEventUsage — rk9 stat_alignment nature mapping", () => {
     }>;
     expect(inserts).toHaveLength(1);
     expect(inserts[0]?.details.nature).toEqual([]);
+  });
+});
+
+// =============================================================================
+// RK9 — is_legal filter
+// =============================================================================
+
+describe("computeEventUsage — rk9 is_legal filter", () => {
+  it("includes .eq('is_legal', true) in the rk9 team_pokemon query chain", async () => {
+    // Minimal rk9 path: resolveEventMeta → readRawTeamRows (empty) → DELETE → usage_dirty
+    const client = buildSequentialClient([
+      { data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" } }, // resolveEventMeta
+      { data: [] }, // readRawTeamRows (empty)
+      { data: null, error: null }, // DELETE OK
+      { data: null, error: null }, // usage_dirty SELECT
+      { data: null, error: null }, // usage_dirty UPSERT
+    ]);
+
+    await computeEventUsage(client, "rk9", "EVT_LEGAL_FILTER");
+
+    // The top-level client is cast to Record<string,unknown>; retrieve the
+    // schema mock to inspect the chain it returned for readRawTeamRows (call #2).
+    // Call #1 = resolveEventMeta (rk9.events), call #2 = readRawTeamRows (rk9.team_pokemon).
+    const schemaMock = (client as unknown as Record<string, unknown>)[
+      "schema"
+    ] as ReturnType<typeof jest.fn>;
+
+    // The second .schema() call dispensed the team_pokemon chain.
+    const teamPokemonChain = schemaMock.mock.results[1]?.value as Record<
+      string,
+      ReturnType<typeof jest.fn>
+    >;
+
+    // Assert that .eq("is_legal", true) was called somewhere on that chain.
+    const eqCalls: Array<[unknown, unknown]> = teamPokemonChain["eq"].mock
+      .calls as Array<[unknown, unknown]>;
+    const hasIsLegalFilter = eqCalls.some(
+      ([col, val]) => col === "is_legal" && val === true
+    );
+    expect(hasIsLegalFilter).toBe(true);
   });
 });
 
@@ -729,7 +767,10 @@ describe("computeSourceUsage — rk9", () => {
       { data: [{ event_key: "rk9:1" }], error: null },
       // Step 3: computeEventUsage for event "2"
       //   resolveEventMeta → rk9.events
-      { data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" }, error: null },
+      {
+        data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" },
+        error: null,
+      },
       //   readRawTeamRows → rk9.team_pokemon (empty)
       { data: [], error: null },
       //   DELETE event_usage → OK
@@ -762,7 +803,10 @@ describe("computeSourceUsage — rk9", () => {
       { data: null, error: { message: "event not found" } },
       // Step 3b: computeEventUsage for event "2" → succeeds
       //   resolveEventMeta
-      { data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" }, error: null },
+      {
+        data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" },
+        error: null,
+      },
       //   readRawTeamRows (empty)
       { data: [], error: null },
       //   DELETE OK
@@ -793,13 +837,19 @@ describe("computeSourceUsage — rk9", () => {
       // Step 2: pagination — no existing keys
       { data: [], error: null },
       // Step 3a: computeEventUsage for event "10"
-      { data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" }, error: null },
+      {
+        data: { format_id: "gen9vgc2025regg", date_start: "2025-03-01" },
+        error: null,
+      },
       { data: [], error: null }, // team_pokemon
       { data: null, error: null }, // DELETE
       { data: null, error: null }, // usage_dirty SELECT
       { data: null, error: null }, // usage_dirty UPSERT
       // Step 3b: computeEventUsage for event "11"
-      { data: { format_id: "gen9vgc2025regs", date_start: "2025-04-01" }, error: null },
+      {
+        data: { format_id: "gen9vgc2025regs", date_start: "2025-04-01" },
+        error: null,
+      },
       { data: [], error: null }, // team_pokemon
       { data: null, error: null }, // DELETE
       { data: null, error: null }, // usage_dirty SELECT
