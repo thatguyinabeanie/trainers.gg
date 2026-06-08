@@ -1052,6 +1052,33 @@ describe("ExternalData events table rendering", () => {
     await waitFor(() => expect(scrapeRk9TeamsBatch).toHaveBeenCalled());
   });
 
+  it("does not scrape teams if roster scrape fails", async () => {
+    const { scrapeRk9Roster, scrapeRk9TeamsBatch } =
+      jest.requireMock("@/actions/rk9");
+    scrapeRk9Roster.mockResolvedValue({
+      success: false,
+      error: "Network error",
+    });
+
+    render(<ExternalData />);
+    await waitFor(() =>
+      expect(screen.getByText("Pending Event")).toBeInTheDocument()
+    );
+
+    const pendingRow = screen
+      .getByText("Pending Event")
+      .closest("div.grid") as HTMLElement;
+    await act(async () => {
+      fireEvent.click(
+        within(pendingRow).getByRole("button", { name: /^Import$/i })
+      );
+    });
+
+    await waitFor(() => expect(scrapeRk9Roster).toHaveBeenCalled());
+    // Teams must NOT be scraped if roster failed
+    expect(scrapeRk9TeamsBatch).not.toHaveBeenCalled();
+  });
+
   it("resets event data after confirmation when the reset button is clicked", async () => {
     const { resetRk9EventData } = jest.requireMock("@/actions/rk9");
     resetRk9EventData.mockResolvedValue({ success: true });
