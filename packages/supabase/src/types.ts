@@ -1226,10 +1226,10 @@ export type Database = {
           event_key: string
           format: string
           id: number
-          sample_size: number
           source: string
           species: string
           team_count: number
+          total_teams: number
         }
         Insert: {
           computed_at?: string
@@ -1239,10 +1239,10 @@ export type Database = {
           event_key: string
           format: string
           id?: never
-          sample_size: number
           source: string
           species: string
           team_count: number
+          total_teams: number
         }
         Update: {
           computed_at?: string
@@ -1252,10 +1252,10 @@ export type Database = {
           event_key?: string
           format?: string
           id?: never
-          sample_size?: number
           source?: string
           species?: string
           team_count?: number
+          total_teams?: number
         }
         Relationships: []
       }

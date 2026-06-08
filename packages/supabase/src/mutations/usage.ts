@@ -115,7 +115,7 @@ export async function computeEventUsage(
       event_date: eventDate,
       species: r.species,
       team_count: r.teamCount,
-      sample_size: r.sampleSize,
+      total_teams: r.sampleSize,
       details: r.details as unknown as Json,
     }));
 
@@ -609,17 +609,15 @@ async function upsertUsageDirty(
       ? existing.dirty_since
       : newDate;
 
-  const { error: upsertError } = await supabase
-    .from("usage_dirty")
-    .upsert(
-      {
-        format,
-        source,
-        dirty_since: dirtySince,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "format,source" }
-    );
+  const { error: upsertError } = await supabase.from("usage_dirty").upsert(
+    {
+      format,
+      source,
+      dirty_since: dirtySince,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "format,source" }
+  );
 
   if (upsertError) {
     throw new Error(
@@ -731,7 +729,7 @@ export async function computeUsageRollups(
         let query = supabase
           .from("event_usage")
           .select(
-            "source, event_key, division, species, team_count, sample_size, details, event_date"
+            "source, event_key, division, species, team_count, total_teams, details, event_date"
           )
           .eq("format", format)
           .gte("event_date", dirtyBucketStart);
@@ -772,7 +770,7 @@ export async function computeUsageRollups(
                 division: r.division,
                 species: r.species,
                 teamCount: r.team_count,
-                sampleSize: r.sample_size,
+                sampleSize: r.total_teams,
                 details: {
                   moves: details?.moves ?? [],
                   tera: details?.tera ?? [],
