@@ -89,7 +89,9 @@ export function RowActions({
     const t = row.limitless;
     const isQueuing = queuingIds.has(t.tournament_id);
 
-    if (!t.import_status || t.import_status === "failed") {
+    // Gate on the unified display status (not raw import_status) so skipped /
+    // unmappable rows never show an Import that would fail server-side.
+    if (row.displayStatus === "pending" || row.displayStatus === "failed") {
       return (
         <Button
           variant="outline"

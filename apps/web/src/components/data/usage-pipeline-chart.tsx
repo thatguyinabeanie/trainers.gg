@@ -216,7 +216,7 @@ export function UsagePipelineChart({
         ))}
 
         {/* Links — map the laid-out links (correctly typed for linkPath) */}
-        {layoutLinks.map((link, i) => {
+        {layoutLinks.map((link) => {
           // After layout, source/target are node objects; reconstruct ids for
           // the highlight logic.
           const sourceNode = link.source as unknown as LayoutNode;
@@ -228,7 +228,7 @@ export function UsagePipelineChart({
           };
           return (
             <path
-              key={i}
+              key={`${enrichedLink.sourceId}-${enrichedLink.targetId}`}
               d={linkPath(link) ?? ""}
               fill="none"
               stroke={sourceNode.color}
@@ -251,7 +251,12 @@ export function UsagePipelineChart({
               key={node.id}
               role={isSpecies ? "button" : undefined}
               tabIndex={isSpecies ? 0 : undefined}
-              aria-label={isSpecies ? `Select ${node.label}` : undefined}
+              aria-label={
+                isSpecies
+                  ? `${isSelected ? "Deselect" : "Select"} ${node.label}`
+                  : undefined
+              }
+              aria-pressed={isSpecies ? isSelected : undefined}
               opacity={nodeOpacity(node.id)}
               onMouseEnter={(e) => {
                 setHoveredNodeId(node.id);

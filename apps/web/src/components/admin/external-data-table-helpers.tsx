@@ -41,6 +41,7 @@ export function SortableHeader({
       )}
     >
       <button
+        type="button"
         className="hover:text-foreground inline-flex items-center gap-1"
         onClick={() => onSort(column)}
       >

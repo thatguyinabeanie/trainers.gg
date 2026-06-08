@@ -4,7 +4,7 @@ import {
   teamsEligibleIds,
   type UnifiedRow,
 } from "../external-data-shared";
-import { deriveLimitlessDisplayStatus } from "../limitless-display-status";
+import { deriveDisplayStatus } from "../display-status";
 
 function limRow(id: string, import_status: string | null): UnifiedRow {
   // Real "completed" rows carry a data_imported_at timestamp — mirror that so
@@ -12,7 +12,9 @@ function limRow(id: string, import_status: string | null): UnifiedRow {
   const format_id = "gen9championsvgc2026regma"; // a mapped (valid) format id
   const data_imported_at =
     import_status === "completed" ? "2026-06-05T00:00:00Z" : null;
-  return {
+  // Build the row first, then derive the unified (coarse) displayStatus the same
+  // way production does — keeps the fixture consistent with deriveDisplayStatus.
+  const row: UnifiedRow = {
     id: `limitless-${id}`,
     source: "limitless",
     name: id,
@@ -21,11 +23,7 @@ function limRow(id: string, import_status: string | null): UnifiedRow {
     playerCount: 10,
     status: "pending",
     statusDetail: import_status ?? "pending",
-    displayStatus: deriveLimitlessDisplayStatus({
-      import_status,
-      format_id,
-      data_imported_at,
-    }),
+    displayStatus: "pending",
     error: null,
     platform: null,
     isOnline: null,
@@ -47,6 +45,7 @@ function limRow(id: string, import_status: string | null): UnifiedRow {
       import_attempts: 0,
     },
   };
+  return { ...row, displayStatus: deriveDisplayStatus(row) };
 }
 
 function rk9Row(id: string, import_status: string): UnifiedRow {
