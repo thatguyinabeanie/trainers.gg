@@ -503,17 +503,33 @@ export async function scrapeRk9TeamsBatch(
       // - player_count === 0: empty event — mark complete (no team lists possible)
       // - player_count > 0: roster exists but standings aren't linked yet — leave
       //   as "teams" so the batch can be retried once standings are linked.
-      const { data: evt } = await supabase
+      const { data: evt, error: evtErr } = await supabase
         .schema("rk9")
         .from("events")
         .select("player_count")
         .eq("event_id", eventId)
         .maybeSingle();
 
+      // Fail safe: if the lookup errors, leave as "teams" (retryable) rather
+      // than falling through to "complete" which would hide the missing data.
+      if (evtErr) {
+        console.error(
+          `[rk9-teams] player_count lookup failed for ${eventId}: ${evtErr.message}`
+        );
+        return {
+          success: true,
+          data: undefined,
+          done: false,
+          scraped: 0,
+          total: 0,
+          failed: 0,
+        };
+      }
+
       const statusWhenNoStandings =
         (evt?.player_count ?? 0) > 0 ? "teams" : "complete";
 
-      await supabase
+      const { error: updateErr } = await supabase
         .schema("rk9")
         .from("events")
         .update({
@@ -526,6 +542,11 @@ export async function scrapeRk9TeamsBatch(
           teams_imported_count: 0,
         })
         .eq("event_id", eventId);
+
+      if (updateErr)
+        console.error(
+          `[rk9-teams] Failed to write no-standings status for ${eventId}: ${updateErr.message}`
+        );
 
       return {
         success: true,
