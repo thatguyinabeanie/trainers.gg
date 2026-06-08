@@ -7,6 +7,7 @@ import { type PipelineDataResult } from "@trainers/supabase";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
 import { buildPipelineGraph, type PipelineNode } from "./usage-pipeline";
+import { type PipelineColumn } from "./usage-filters";
 
 // =============================================================================
 // Types
@@ -17,6 +18,8 @@ interface UsagePipelineChartProps {
   pipelineResult: PipelineDataResult | null;
   /** Species names to show. Sidebar presets always provide an explicit list. */
   selectedSpecies: string[];
+  /** Which Sankey columns to display and in what order. */
+  columns: PipelineColumn[];
   /** Called when user clicks a species node to select/deselect it. */
   onSpeciesClick: (species: string) => void;
 }
@@ -58,6 +61,7 @@ const LABEL_MARGIN = 160; // SVG units reserved on the right for node text label
 const COLUMN_LABELS: Record<string, string> = {
   species: "Species",
   ability: "Ability",
+  item: "Item",
   nature: "Nature",
   move: "Move",
 };
@@ -69,6 +73,7 @@ const COLUMN_LABELS: Record<string, string> = {
 export function UsagePipelineChart({
   pipelineResult,
   selectedSpecies,
+  columns,
   onSpeciesClick,
 }: UsagePipelineChartProps) {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -101,7 +106,7 @@ export function UsagePipelineChart({
     );
   }
 
-  const graph = buildPipelineGraph(visibleSpecies);
+  const graph = buildPipelineGraph(visibleSpecies, columns);
 
   if (graph.nodes.length === 0) {
     return (
@@ -130,14 +135,11 @@ export function UsagePipelineChart({
     .nodeWidth(NODE_WIDTH)
     .nodePadding(NODE_PADDING)
     .nodeAlign((node) => {
-      // Align by column: species=0, ability=1, nature=2, move=3
-      const order: Record<string, number> = {
-        species: 0,
-        ability: 1,
-        nature: 2,
-        move: 3,
-      };
-      return order[(node as D3Node).column] ?? 0;
+      // Align by column: species=0, then each active column in order
+      const col = (node as D3Node).column;
+      if (col === "species") return 0;
+      const idx = columns.indexOf(col as PipelineColumn);
+      return idx === -1 ? 0 : idx + 1;
     })
     .extent([
       [SPRITE_BAND + SPRITE_GAP, 30], // was [0, 30] — reserve left band for sprites

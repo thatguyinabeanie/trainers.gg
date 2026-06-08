@@ -28,6 +28,7 @@ function makePipelineSpecies(
     usagePct: 30,
     rank: 1,
     abilities: [{ value: "Unburden", count: 100, pct: 100 }],
+    items: [],
     natures: [{ value: "Jolly", count: 80, pct: 80 }],
     moves: [{ value: "Close Combat", count: 90, pct: 90 }],
     ...overrides,
@@ -49,6 +50,12 @@ const DEFAULT_PROPS = {
   pipelineResult: makePipelineResult(),
   // Default includes "Sneasler" so the chart renders (matches makePipelineSpecies default)
   selectedSpecies: ["Sneasler"] as string[],
+  columns: ["ability", "nature", "move"] as (
+    | "ability"
+    | "item"
+    | "nature"
+    | "move"
+  )[],
   onSpeciesClick: jest.fn(),
 };
 

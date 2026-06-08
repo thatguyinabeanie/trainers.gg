@@ -313,11 +313,16 @@ import { applyPreset, getActivePreset } from "../usage-filters";
 // Preset helpers
 // =============================================================================
 
-function makeSpecies(
-  species: string,
-  usagePct: number
-): PipelineSpeciesData {
-  return { species, usagePct, rank: 0, abilities: [], natures: [], moves: [] };
+function makeSpecies(species: string, usagePct: number): PipelineSpeciesData {
+  return {
+    species,
+    usagePct,
+    rank: 0,
+    abilities: [],
+    items: [],
+    natures: [],
+    moves: [],
+  };
 }
 
 const THIRTY_SPECIES = Array.from({ length: 30 }, (_, i) =>
@@ -373,7 +378,9 @@ describe("getActivePreset", () => {
   });
 
   it("returns null for a custom (non-preset) selection", () => {
-    expect(getActivePreset(THIRTY_SPECIES, ["Species1", "Species5"])).toBeNull();
+    expect(
+      getActivePreset(THIRTY_SPECIES, ["Species1", "Species5"])
+    ).toBeNull();
   });
 
   it("returns null for an empty selection", () => {
@@ -385,5 +392,65 @@ describe("getActivePreset", () => {
     const threeSpecies = THIRTY_SPECIES.slice(0, 3);
     // top10 of a 3-item list = all 3
     expect(getActivePreset(threeSpecies, shuffled)).toBe("top10");
+  });
+});
+
+// =============================================================================
+// coerceColumns
+// =============================================================================
+
+import { coerceColumns, DEFAULT_PIPELINE_COLUMNS } from "../usage-filters";
+
+describe("coerceColumns", () => {
+  it("returns DEFAULT_PIPELINE_COLUMNS when raw is undefined", () => {
+    expect(coerceColumns(undefined)).toEqual(DEFAULT_PIPELINE_COLUMNS);
+  });
+
+  it("returns DEFAULT_PIPELINE_COLUMNS when raw is empty string", () => {
+    expect(coerceColumns("")).toEqual(DEFAULT_PIPELINE_COLUMNS);
+  });
+
+  it("parses a valid comma-separated column list", () => {
+    expect(coerceColumns("ability,nature,move")).toEqual([
+      "ability",
+      "nature",
+      "move",
+    ]);
+  });
+
+  it("includes item in parsed output", () => {
+    expect(coerceColumns("ability,item,nature,move")).toEqual([
+      "ability",
+      "item",
+      "nature",
+      "move",
+    ]);
+  });
+
+  it("filters out unknown column names", () => {
+    expect(coerceColumns("ability,invalid,nature")).toEqual([
+      "ability",
+      "nature",
+    ]);
+  });
+
+  it("returns DEFAULT_PIPELINE_COLUMNS when all values are invalid", () => {
+    expect(coerceColumns("foo,bar,baz")).toEqual(DEFAULT_PIPELINE_COLUMNS);
+  });
+
+  it("deduplicates repeated columns while preserving first occurrence order", () => {
+    expect(coerceColumns("ability,nature,ability,move")).toEqual([
+      "ability",
+      "nature",
+      "move",
+    ]);
+  });
+
+  it("preserves custom order (move before nature)", () => {
+    expect(coerceColumns("ability,move,nature")).toEqual([
+      "ability",
+      "move",
+      "nature",
+    ]);
   });
 });

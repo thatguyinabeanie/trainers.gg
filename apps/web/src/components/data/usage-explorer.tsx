@@ -22,12 +22,14 @@ import { UsagePipelineChart } from "./usage-pipeline-chart";
 import { UsageLineChart } from "./usage-line-chart";
 import {
   type UsageFilters,
+  type PipelineColumn,
   coerceFormat,
   coercePeriodType,
   coerceSource,
   coerceSelectedSpecies,
   coerceRangeStart,
   coerceRangeEnd,
+  coerceColumns,
   applyPreset,
 } from "./usage-filters";
 
@@ -76,6 +78,7 @@ export function UsageExplorer({
   const selectedSpecies = coerceSelectedSpecies(searchParams.get("species"));
   const rangeStart = coerceRangeStart(searchParams.get("rangeStart"));
   const rangeEnd = coerceRangeEnd(searchParams.get("rangeEnd"));
+  const columns = coerceColumns(searchParams.get("columns") ?? undefined);
 
   const [initTimeseriesKey] = useState({ format, source, periodType });
   const [initPipelineKey] = useState({
@@ -94,7 +97,8 @@ export function UsageExplorer({
     nextFilters: UsageFilters,
     nextSpecies?: string[],
     nextRangeStart?: string | null,
-    nextRangeEnd?: string | null
+    nextRangeEnd?: string | null,
+    nextColumns?: PipelineColumn[]
   ) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("format", nextFilters.format);
@@ -116,6 +120,9 @@ export function UsageExplorer({
     if (re) params.set("rangeEnd", re);
     else params.delete("rangeEnd");
 
+    const cols = nextColumns ?? columns;
+    params.set("columns", cols.join(","));
+
     startTransition(() => {
       router.replace(`?${params.toString()}`, { scroll: false });
     });
@@ -129,6 +136,9 @@ export function UsageExplorer({
 
   const handleRangeChange = (start: string | null, end: string | null) =>
     updateUrl(currentFilters, undefined, start, end);
+
+  const handleColumnsChange = (next: PipelineColumn[]) =>
+    updateUrl(currentFilters, undefined, undefined, undefined, next);
 
   // ── TanStack Query — timeseries ───────────────────────────────────────────
   const isInitTimeseries =
@@ -218,8 +228,10 @@ export function UsageExplorer({
         filters={currentFilters}
         allSpecies={allSpecies}
         selectedSpecies={effectiveSelected}
+        columns={columns}
         onFiltersChange={handleFiltersChange}
         onSelectionChange={handleSelectionChange}
+        onColumnsChange={handleColumnsChange}
       />
 
       {/* Main area */}
@@ -246,6 +258,7 @@ export function UsageExplorer({
               <UsagePipelineChart
                 pipelineResult={pipelineResult}
                 selectedSpecies={effectiveSelected}
+                columns={columns}
                 onSpeciesClick={handleSpeciesClick}
               />
             </div>

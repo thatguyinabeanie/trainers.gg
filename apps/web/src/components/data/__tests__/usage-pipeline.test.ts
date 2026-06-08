@@ -17,6 +17,7 @@ function makeSpecies(
     usagePct: 20,
     rank: 1,
     abilities: [{ value: "Unburden", count: 100, pct: 100 }],
+    items: [],
     natures: [{ value: "Jolly", count: 75, pct: 75 }],
     moves: [{ value: "Fake Out", count: 90, pct: 90 }],
     ...overrides,
@@ -41,7 +42,10 @@ describe("buildPipelineGraph — empty", () => {
 
 describe("buildPipelineGraph — single species", () => {
   it("creates one species node per species", () => {
-    const result = buildPipelineGraph([makeSpecies()]);
+    const result = buildPipelineGraph(
+      [makeSpecies()],
+      ["ability", "nature", "move"]
+    );
     const speciesNodes = result.nodes.filter(
       (n: PipelineNode) => n.column === "species"
     );
@@ -51,7 +55,10 @@ describe("buildPipelineGraph — single species", () => {
   });
 
   it("creates one ability node per distinct ability", () => {
-    const result = buildPipelineGraph([makeSpecies()]);
+    const result = buildPipelineGraph(
+      [makeSpecies()],
+      ["ability", "nature", "move"]
+    );
     const abilityNodes = result.nodes.filter(
       (n: PipelineNode) => n.column === "ability"
     );
@@ -60,7 +67,10 @@ describe("buildPipelineGraph — single species", () => {
   });
 
   it("creates species→ability link with correct value", () => {
-    const result = buildPipelineGraph([makeSpecies()]);
+    const result = buildPipelineGraph(
+      [makeSpecies()],
+      ["ability", "nature", "move"]
+    );
     const link = result.links.find(
       (l: PipelineLink) =>
         l.source === "species:Sneasler" && l.target === "ability:Unburden"
@@ -71,7 +81,10 @@ describe("buildPipelineGraph — single species", () => {
   });
 
   it("creates ability→nature link with proportionally allocated value", () => {
-    const result = buildPipelineGraph([makeSpecies()]);
+    const result = buildPipelineGraph(
+      [makeSpecies()],
+      ["ability", "nature", "move"]
+    );
     const link = result.links.find(
       (l: PipelineLink) =>
         l.source === "ability:Unburden" && l.target === "nature:Jolly"
@@ -82,7 +95,10 @@ describe("buildPipelineGraph — single species", () => {
   });
 
   it("creates nature→move link with proportionally allocated value", () => {
-    const result = buildPipelineGraph([makeSpecies()]);
+    const result = buildPipelineGraph(
+      [makeSpecies()],
+      ["ability", "nature", "move"]
+    );
     const link = result.links.find(
       (l: PipelineLink) =>
         l.source === "nature:Jolly" && l.target === "move:Fake Out"
@@ -102,15 +118,21 @@ describe("buildPipelineGraph — multi-ability conserves nature→move total", (
   // total nature→move flow as a single 100% ability, because addLink() aggregates
   // by source+target key and the two abilities' contributions sum to the same value.
   it("nature→move total is the same regardless of ability count", () => {
-    const oneAbility = buildPipelineGraph([makeSpecies()]); // pct=100 (Unburden)
-    const twoAbility = buildPipelineGraph([
-      makeSpecies({
-        abilities: [
-          { value: "Unburden", count: 50, pct: 50 },
-          { value: "Pickpocket", count: 50, pct: 50 },
-        ],
-      }),
-    ]);
+    const oneAbility = buildPipelineGraph(
+      [makeSpecies()],
+      ["ability", "nature", "move"]
+    ); // pct=100 (Unburden)
+    const twoAbility = buildPipelineGraph(
+      [
+        makeSpecies({
+          abilities: [
+            { value: "Unburden", count: 50, pct: 50 },
+            { value: "Pickpocket", count: 50, pct: 50 },
+          ],
+        }),
+      ],
+      ["ability", "nature", "move"]
+    );
 
     const nm1 = oneAbility.links.find(
       (l) => l.source === "nature:Jolly" && l.target === "move:Fake Out"
@@ -128,47 +150,84 @@ describe("buildPipelineGraph — multi-ability conserves nature→move total", (
 });
 
 // =============================================================================
-// buildPipelineGraph — empty abilities
+// buildPipelineGraph — empty abilities (graceful skip)
 // =============================================================================
 
 describe("buildPipelineGraph — empty abilities", () => {
-  it("produces no dangling links and keeps node/link refs consistent", () => {
-    const result = buildPipelineGraph([makeSpecies({ abilities: [] })]);
+  // With the new configurable-column algorithm, empty columns are skipped per
+  // species. With columns=["ability","nature","move"] and abilities=[]:
+  //   activeColumns = ["nature","move"] (ability skipped)
+  //   → species→nature and nature→move links are produced
+  it("skips ability column and links species→nature when abilities is empty", () => {
+    const result = buildPipelineGraph(
+      [makeSpecies({ abilities: [] })],
+      ["ability", "nature", "move"]
+    );
 
-    // No nature→move (or any ability/nature/move) links when abilities is empty.
+    // No ability nodes
     expect(
-      result.links.some(
-        (l) => l.source.startsWith("nature:") && l.target.startsWith("move:")
-      )
-    ).toBe(false);
+      result.nodes.filter((n: PipelineNode) => n.column === "ability")
+    ).toHaveLength(0);
 
-    // Every link endpoint references an existing node id.
-    const ids = new Set(result.nodes.map((n) => n.id));
+    // Species node still exists
+    expect(
+      result.nodes.some((n: PipelineNode) => n.id === "species:Sneasler")
+    ).toBe(true);
+
+    // Nature and move nodes exist
+    expect(
+      result.nodes.filter((n: PipelineNode) => n.column === "nature")
+    ).toHaveLength(1);
+    expect(
+      result.nodes.filter((n: PipelineNode) => n.column === "move")
+    ).toHaveLength(1);
+
+    // Every link endpoint references an existing node id
+    const ids = new Set(result.nodes.map((n: PipelineNode) => n.id));
     for (const l of result.links) {
       expect(ids.has(l.source)).toBe(true);
       expect(ids.has(l.target)).toBe(true);
     }
-
-    // The species node itself still exists even with no abilities.
-    expect(result.nodes.some((n) => n.id === "species:Sneasler")).toBe(true);
   });
 
-  it("produces zero links when abilities is empty", () => {
-    const result = buildPipelineGraph([makeSpecies({ abilities: [] })]);
+  it("produces species→nature link with correct value when abilities is empty", () => {
+    const result = buildPipelineGraph(
+      [makeSpecies({ abilities: [] })],
+      ["ability", "nature", "move"]
+    );
+    const link = result.links.find(
+      (l: PipelineLink) =>
+        l.source === "species:Sneasler" && l.target === "nature:Jolly"
+    );
+    expect(link).toBeDefined();
+    // value = usagePct * nature.pct / 100 = 20 * 75 / 100 = 15
+    expect(link!.value).toBeCloseTo(15);
+  });
+
+  it("produces zero links when all columns are empty", () => {
+    const result = buildPipelineGraph(
+      [makeSpecies({ abilities: [], natures: [], moves: [] })],
+      ["ability", "nature", "move"]
+    );
+    // activeColumns is empty → species floats with no outgoing links
     expect(result.links).toHaveLength(0);
+    // Species node still exists
+    expect(
+      result.nodes.some((n: PipelineNode) => n.id === "species:Sneasler")
+    ).toBe(true);
   });
 });
 
 // =============================================================================
-// buildPipelineGraph — no natures (3-column fallback)
+// buildPipelineGraph — no natures (ability directly connects to move)
 // =============================================================================
 
-describe("buildPipelineGraph — no natures (3-column fallback)", () => {
+describe("buildPipelineGraph — no natures (2-column fallback)", () => {
   it("creates ability→move link when natures is empty", () => {
     const species = makeSpecies({ natures: [] });
-    const result = buildPipelineGraph([species]);
+    const result = buildPipelineGraph([species], ["ability", "nature", "move"]);
 
-    // No nature nodes
+    // No nature nodes (empty natures skipped)
     expect(
       result.nodes.filter((n: PipelineNode) => n.column === "nature")
     ).toHaveLength(0);
@@ -190,7 +249,7 @@ describe("buildPipelineGraph — no natures (3-column fallback)", () => {
 
   it("creates no move nodes when both natures and moves are empty", () => {
     const species = makeSpecies({ natures: [], moves: [] });
-    const result = buildPipelineGraph([species]);
+    const result = buildPipelineGraph([species], ["ability", "nature", "move"]);
 
     expect(
       result.nodes.filter((n: PipelineNode) => n.column === "nature")
@@ -223,7 +282,10 @@ describe("buildPipelineGraph — shared ability node", () => {
       moves: [{ value: "Fake Out", count: 100, pct: 100 }],
     });
 
-    const result = buildPipelineGraph([sneasler, koraidon]);
+    const result = buildPipelineGraph(
+      [sneasler, koraidon],
+      ["ability", "nature", "move"]
+    );
 
     // Only one "Unburden" ability node
     const abilityNodes = result.nodes.filter(
@@ -236,5 +298,94 @@ describe("buildPipelineGraph — shared ability node", () => {
       (l: PipelineLink) => l.target === "ability:Unburden"
     );
     expect(linksToUnburden).toHaveLength(2);
+  });
+});
+
+// =============================================================================
+// buildPipelineGraph — configurable columns
+// =============================================================================
+
+describe("buildPipelineGraph — configurable columns", () => {
+  it("includes item nodes when items data is present", () => {
+    const species = makeSpecies({
+      items: [{ value: "Life Orb", count: 80, pct: 80 }],
+    });
+    const result = buildPipelineGraph(
+      [species],
+      ["ability", "item", "nature", "move"]
+    );
+
+    const itemNodes = result.nodes.filter(
+      (n: PipelineNode) => n.column === "item"
+    );
+    expect(itemNodes).toHaveLength(1);
+    expect(itemNodes[0]!.id).toBe("item:Life Orb");
+  });
+
+  it("creates ability→item link with correct value", () => {
+    const species = makeSpecies({
+      items: [{ value: "Life Orb", count: 80, pct: 80 }],
+    });
+    const result = buildPipelineGraph(
+      [species],
+      ["ability", "item", "nature", "move"]
+    );
+
+    const link = result.links.find(
+      (l: PipelineLink) =>
+        l.source === "ability:Unburden" && l.target === "item:Life Orb"
+    );
+    expect(link).toBeDefined();
+    // value = usagePct * ability.pct * item.pct / 10000 = 20 * 100 * 80 / 10000 = 16
+    expect(link!.value).toBeCloseTo(16);
+  });
+
+  it("skips item column when items array is empty", () => {
+    const result = buildPipelineGraph(
+      [makeSpecies({ items: [] })],
+      ["ability", "item", "nature", "move"]
+    );
+
+    expect(
+      result.nodes.filter((n: PipelineNode) => n.column === "item")
+    ).toHaveLength(0);
+    // ability→nature link should still exist (item is skipped)
+    const link = result.links.find(
+      (l: PipelineLink) =>
+        l.source === "ability:Unburden" && l.target === "nature:Jolly"
+    );
+    expect(link).toBeDefined();
+  });
+
+  it("returns empty graph when columns is empty array", () => {
+    const result = buildPipelineGraph([makeSpecies()], []);
+    expect(result.nodes).toEqual([]);
+    expect(result.links).toEqual([]);
+  });
+
+  it("respects custom column order (move before nature)", () => {
+    const species = makeSpecies();
+    const result = buildPipelineGraph([species], ["ability", "move", "nature"]);
+
+    // ability→move link should exist
+    const abToMove = result.links.find(
+      (l: PipelineLink) =>
+        l.source === "ability:Unburden" && l.target === "move:Fake Out"
+    );
+    expect(abToMove).toBeDefined();
+
+    // move→nature link should exist
+    const moveToNat = result.links.find(
+      (l: PipelineLink) =>
+        l.source === "move:Fake Out" && l.target === "nature:Jolly"
+    );
+    expect(moveToNat).toBeDefined();
+
+    // ability→nature link should NOT exist (nature is after move now)
+    const abToNat = result.links.find(
+      (l: PipelineLink) =>
+        l.source === "ability:Unburden" && l.target === "nature:Jolly"
+    );
+    expect(abToNat).toBeUndefined();
   });
 });
