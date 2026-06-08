@@ -425,16 +425,13 @@ export async function importEvent(
           const heldItem = mon.heldItem || null;
           const moves = mon.moves.length > 0 ? mon.moves : null;
 
-          // Validate using speciesRaw (display name, e.g. "Garchomp") — the
-          // legality sets use PascalCase display names, not normalized slugs.
-          // Bracket-notation forms (e.g. "Landorus [Therian Forme]") won't
-          // match the validator's set and will be flagged as illegal; that is
-          // a known limitation that is strictly better than the alternative
-          // (slug lookup which flags every species illegal).
-          // Fail open when we have no format (formatId === null): everything legal.
+          // Validate against the resolved species slug — validatePokemonLegality
+          // canonicalizes it to the @pkmn display name the legality sets use, so
+          // form Pokemon (Ogerpon-Wellspring, Rotom-Wash, etc.) validate
+          // correctly. Fail open when we have no format (everything legal).
           const legality = formatId
             ? validatePokemonLegality(
-                mon.speciesRaw,
+                species,
                 ability,
                 heldItem,
                 moves,

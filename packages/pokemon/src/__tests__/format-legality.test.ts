@@ -499,4 +499,29 @@ describe("validatePokemonLegality", () => {
       )
     ).toEqual({ isLegal: true, reason: null });
   });
+
+  it("form Pokemon passed as a lowercase slug is legal (slug canonicalization regression)", () => {
+    // "rotom-wash" is the normalized slug that RK9 import produces.
+    // SimDex.species.get("rotom-wash") resolves to "Rotom-Wash", which IS in
+    // the Champions M-A species set — this was the bug: every form Pokemon
+    // (Rotom-Wash, Ogerpon-Wellspring, Urshifu-Rapid-Strike, etc.) was wrongly
+    // flagged illegal because the slug didn't match the Set.has() lookup.
+    expect(
+      validatePokemonLegality("rotom-wash", null, null, null, CHAMPIONS)
+    ).toEqual({ isLegal: true, reason: null });
+  });
+
+  it("illegal form species reason shows the canonical name, not the raw slug", () => {
+    // "landorus-therian" slug → canonical "Landorus-Therian" (not in Champions M-A)
+    // The reason string must use the canonical name so it's human-readable.
+    const result = validatePokemonLegality(
+      "landorus-therian",
+      null,
+      null,
+      null,
+      CHAMPIONS
+    );
+    expect(result.isLegal).toBe(false);
+    expect(result.reason).toBe("Illegal species: Landorus-Therian");
+  });
 });

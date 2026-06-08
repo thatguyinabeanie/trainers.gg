@@ -1584,9 +1584,18 @@ export function validatePokemonLegality(
   moves: string[] | null,
   formatId: string
 ): PokemonLegalityResult {
+  // Canonicalize to the PascalCase display name the legality sets use
+  // (e.g. "ogerpon-wellspring" -> "Ogerpon-Wellspring"). The isLegal* helpers
+  // do an exact Set.has() against canonical names, but data-import callers pass
+  // a normalized slug. Fall back to the raw input when @pkmn can't resolve it
+  // so a genuinely-unknown species still flags illegal rather than silently
+  // passing.
+  const resolved = SimDex.species.get(species);
+  const canonical = resolved.exists ? resolved.name : species;
+
   // 1. Species
-  if (!isLegalSpecies(species, formatId)) {
-    return { isLegal: false, reason: `Illegal species: ${species}` };
+  if (!isLegalSpecies(canonical, formatId)) {
+    return { isLegal: false, reason: `Illegal species: ${canonical}` };
   }
 
   // 2. Held item (skip when empty/null — isLegalItem also treats "" as legal)
@@ -1595,13 +1604,13 @@ export function validatePokemonLegality(
   }
 
   // 3. Ability (skip when empty/null)
-  if (ability && !isLegalAbility(ability, species, formatId)) {
+  if (ability && !isLegalAbility(ability, canonical, formatId)) {
     return { isLegal: false, reason: `Illegal ability: ${ability}` };
   }
 
   // 4. Moves (skip empty strings)
   for (const move of moves ?? []) {
-    if (move && !isLegalMove(move, species, formatId)) {
+    if (move && !isLegalMove(move, canonical, formatId)) {
       return { isLegal: false, reason: `Illegal move: ${move}` };
     }
   }
