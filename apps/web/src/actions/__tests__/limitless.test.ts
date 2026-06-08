@@ -292,6 +292,12 @@ describe("importLimitlessTournament", () => {
     expect(updateSpy).toHaveBeenCalledWith(
       expect.objectContaining({ import_status: "completed" })
     );
+    // The "importing" write must include import_started_at so the stale-recovery
+    // sweep can reclaim stuck rows via import_started_at < staleThreshold.
+    const importingWrite = updateSpy.mock.calls.find(
+      ([obj]: [Record<string, unknown>]) => obj.import_status === "importing"
+    );
+    expect(importingWrite?.[0]).toHaveProperty("import_started_at");
   });
 
   it("(c) on importTournament error: returns { success:false } and writes non-importing status", async () => {

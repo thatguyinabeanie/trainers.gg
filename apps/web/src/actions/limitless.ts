@@ -207,42 +207,49 @@ export async function importLimitlessTournament(
     return { success: false, error: "LIMITLESS_API_KEY not configured" };
   }
 
-  const supabase = createServiceRoleClient();
-
-  // Mark the row as in-progress immediately so the UI reflects state.
-  await supabase
-    .schema("limitless")
-    .from("tournaments")
-    .update({
-      import_status: "importing",
-      import_requested_at: new Date().toISOString(),
-      import_error: null,
-    })
-    .eq("tournament_id", tournamentId);
-
-  // Look up format_id and current attempt count — needed for importTournament
-  // and failure-attempts logic below.
-  const { data: row } = await supabase
-    .schema("limitless")
-    .from("tournaments")
-    .select("format_id, import_attempts")
-    .eq("tournament_id", tournamentId)
-    .maybeSingle();
-
-  if (!row) {
-    return { success: false, error: "Tournament not found" };
-  }
-
-  const formatId = row.format_id as string;
-  const currentAttempts = (row.import_attempts as number) ?? 0;
+  // Captured inside the try so the catch block can use it for the failure write.
+  let capturedAttempts = 0;
+  let capturedSupabase: ReturnType<typeof createServiceRoleClient> | null =
+    null;
 
   try {
+    const supabase = createServiceRoleClient();
+    capturedSupabase = supabase;
+
+    // Look up format_id and current attempt count BEFORE marking importing —
+    // if the row doesn't exist, we bail early without a phantom "importing" write.
+    const { data: row, error: rowErr } = await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .select("format_id, import_attempts")
+      .eq("tournament_id", tournamentId)
+      .maybeSingle();
+
+    if (rowErr)
+      throw new Error(`Failed to fetch tournament: ${rowErr.message}`);
+    if (!row) return { success: false, error: "Tournament not found" };
+
+    const formatId = row.format_id ?? "";
+    capturedAttempts = row.import_attempts ?? 0;
+
+    // Mark the row as in-progress so the UI reflects state and the stale-recovery
+    // sweep can reclaim stuck rows via import_started_at < staleThreshold.
+    await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .update({
+        import_status: "importing",
+        import_started_at: new Date().toISOString(),
+        import_requested_at: new Date().toISOString(),
+        import_error: null,
+      })
+      .eq("tournament_id", tournamentId);
+
     const data = await fetchTournamentData(tournamentId, apiKey);
     await importTournament(supabase, data, formatId);
 
-    // Explicit success write — importTournament writes "completed" internally,
-    // but since the function is mocked in tests we also write it here so the
-    // row is never left at "importing" regardless of mock depth.
+    // Explicit success write — importTournament sets "completed" internally,
+    // but this ensures the row is never stuck at "importing" if that contract changes.
     await supabase
       .schema("limitless")
       .from("tournaments")
@@ -259,18 +266,20 @@ export async function importLimitlessTournament(
 
     // Replicate processOne failure logic: increment attempt counter, escalate
     // to "failed" once MAX_IMPORT_ATTEMPTS is reached, else re-queue.
-    const attempts = currentAttempts + 1;
+    const attempts = capturedAttempts + 1;
     const newStatus = attempts >= MAX_IMPORT_ATTEMPTS ? "failed" : "queued";
 
-    await supabase
-      .schema("limitless")
-      .from("tournaments")
-      .update({
-        import_status: newStatus,
-        import_error: errorMsg,
-        import_attempts: attempts,
-      })
-      .eq("tournament_id", tournamentId);
+    if (capturedSupabase) {
+      await capturedSupabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_status: newStatus,
+          import_error: errorMsg,
+          import_attempts: attempts,
+        })
+        .eq("tournament_id", tournamentId);
+    }
 
     return {
       success: false,
