@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { BarChart2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
@@ -16,23 +17,20 @@ import {
   fetchFormatEvents,
 } from "@/actions/usage";
 
-import { buildUsageSeries } from "./usage-series";
-import {
-  UsageControls,
-  type UsageFilters,
-  type PeriodType,
-  type UsageSource,
-} from "./usage-controls";
+import { DataSidebar } from "./data-sidebar";
 import { UsagePipelineChart } from "./usage-pipeline-chart";
 import { UsageLineChart } from "./usage-line-chart";
 import {
+  type UsageFilters,
+  type PipelineColumn,
   coerceFormat,
   coercePeriodType,
   coerceSource,
-  coerceThreshold,
   coerceSelectedSpecies,
   coerceRangeStart,
   coerceRangeEnd,
+  coerceColumns,
+  applyPreset,
 } from "./usage-filters";
 
 // =============================================================================
@@ -53,13 +51,9 @@ interface UsageExplorerProps {
 /**
  * Client shell for the /data Meta Explorer.
  *
- * URL state: format, source, periodType, threshold, species (comma-sep),
+ * URL state: format, source, periodType, species (comma-sep),
  * rangeStart (ISO date), rangeEnd (ISO date).
- *
- * Local state (ephemeral): highlight (search input substring).
- *
- * TanStack Query is keyed per (format, source, periodType) for the timeseries
- * and per (format, source, periodType, rangeStart, rangeEnd) for pipeline data.
+ * threshold is no longer URL-persisted — sidebar presets replace it.
  */
 export function UsageExplorer({
   initialPoints,
@@ -71,30 +65,21 @@ export function UsageExplorer({
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  // Ephemeral search box state — dims non-matching lines in the line chart.
-  // Not URL-persisted (transient UI affordance, not a shareable filter).
-  const [highlight, setHighlight] = useState("");
-
   // ── URL-derived state ─────────────────────────────────────────────────────
   const format = coerceFormat(
     searchParams.get("format") ?? initialFilters.format
   );
-  const source: UsageSource = coerceSource(
+  const source = coerceSource(
     searchParams.get("source") ?? initialFilters.source
   );
-  const periodType: PeriodType = coercePeriodType(
+  const periodType = coercePeriodType(
     searchParams.get("periodType") ?? initialFilters.periodType
-  );
-  const threshold = coerceThreshold(
-    searchParams.get("threshold") ?? String(initialFilters.threshold)
   );
   const selectedSpecies = coerceSelectedSpecies(searchParams.get("species"));
   const rangeStart = coerceRangeStart(searchParams.get("rangeStart"));
   const rangeEnd = coerceRangeEnd(searchParams.get("rangeEnd"));
+  const columns = coerceColumns(searchParams.get("columns") ?? undefined);
 
-  // Capture the initial query params at mount — used to gate initialData so
-  // SSR-seeded data is only applied to the original cache entry, not new
-  // entries created when filters/brush change.
   const [initTimeseriesKey] = useState({ format, source, periodType });
   const [initPipelineKey] = useState({
     format,
@@ -105,25 +90,21 @@ export function UsageExplorer({
   });
   const [initEventsFormat] = useState(format);
 
-  const currentFilters: UsageFilters = {
-    format,
-    source,
-    periodType,
-    threshold,
-  };
+  const currentFilters: UsageFilters = { format, source, periodType };
 
   // ── URL updater ───────────────────────────────────────────────────────────
   const updateUrl = (
     nextFilters: UsageFilters,
     nextSpecies?: string[],
     nextRangeStart?: string | null,
-    nextRangeEnd?: string | null
+    nextRangeEnd?: string | null,
+    nextColumns?: PipelineColumn[]
   ) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("format", nextFilters.format);
     params.set("source", nextFilters.source);
     params.set("periodType", nextFilters.periodType);
-    params.set("threshold", String(nextFilters.threshold));
+    params.delete("threshold"); // clean up any legacy threshold param
 
     const species = nextSpecies ?? selectedSpecies;
     if (species.length > 0) {
@@ -139,6 +120,9 @@ export function UsageExplorer({
     if (re) params.set("rangeEnd", re);
     else params.delete("rangeEnd");
 
+    const cols = nextColumns ?? columns;
+    params.set("columns", cols.join(","));
+
     startTransition(() => {
       router.replace(`?${params.toString()}`, { scroll: false });
     });
@@ -146,21 +130,15 @@ export function UsageExplorer({
 
   const handleFiltersChange = (next: UsageFilters) =>
     updateUrl(next, next.format !== format ? [] : undefined);
-  const handleSpeciesClick = (species: string) => {
-    const next = selectedSpecies.includes(species)
-      ? selectedSpecies.filter((s) => s !== species)
-      : [...selectedSpecies, species];
+
+  const handleSelectionChange = (next: string[]) =>
     updateUrl(currentFilters, next);
-  };
-  const handleSelectAll = () => {
-    const all = buildUsageSeries(points)
-      .filter((s) => s.peak >= threshold)
-      .map((s) => s.species);
-    updateUrl(currentFilters, all);
-  };
-  const handleClearSelection = () => updateUrl(currentFilters, [], null, null);
+
   const handleRangeChange = (start: string | null, end: string | null) =>
     updateUrl(currentFilters, undefined, start, end);
+
+  const handleColumnsChange = (next: PipelineColumn[]) =>
+    updateUrl(currentFilters, undefined, undefined, undefined, next);
 
   // ── TanStack Query — timeseries ───────────────────────────────────────────
   const isInitTimeseries =
@@ -225,62 +203,78 @@ export function UsageExplorer({
     },
     initialData: format === initEventsFormat ? initialEvents : undefined,
     placeholderData: (prev) => prev,
-    staleTime: 60 * 60 * 1000, // events change rarely
+    staleTime: 60 * 60 * 1000,
   });
 
-  const allSeries = buildUsageSeries(points);
+  const allSpecies = pipelineResult?.data ?? [];
+
+  // When no species are URL-selected, default to top 20 from pipeline data.
+  const effectiveSelected =
+    selectedSpecies.length > 0
+      ? selectedSpecies
+      : applyPreset(allSpecies, "top20");
+
+  const handleSpeciesClick = (species: string) => {
+    const next = effectiveSelected.includes(species)
+      ? effectiveSelected.filter((s) => s !== species)
+      : [...effectiveSelected, species];
+    updateUrl(currentFilters, next);
+  };
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Shared controls bar */}
-      <UsageControls
+    <div className="flex w-full">
+      {/* Sidebar */}
+      <DataSidebar
         filters={currentFilters}
-        highlight={highlight}
-        totalCount={allSeries.length}
-        visibleCount={allSeries.filter((s) => s.peak >= threshold).length}
+        allSpecies={allSpecies}
+        selectedSpecies={effectiveSelected}
+        columns={columns}
         onFiltersChange={handleFiltersChange}
-        onHighlightChange={setHighlight}
+        onSelectionChange={handleSelectionChange}
+        onColumnsChange={handleColumnsChange}
       />
 
-      {/* Panel 1: Meta Pipeline (Sankey) — hero */}
-      <div className="bg-card rounded-2xl p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Meta Pipeline</h2>
-          {selectedSpecies.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1">
-              {selectedSpecies.map((sp) => (
-                <button
-                  key={sp}
-                  onClick={() => handleSpeciesClick(sp)}
-                  className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs"
-                >
-                  {sp} ×
-                </button>
-              ))}
-            </div>
-          )}
+      {/* Main area */}
+      <div className="flex flex-1 flex-col">
+        {/* Page header */}
+        <div className="flex items-center gap-2 px-5 pt-4 pb-2">
+          <BarChart2 className="text-muted-foreground size-5" />
+          <h1 className="text-xl font-bold tracking-tight">Data</h1>
+          <span className="text-muted-foreground text-sm">
+            Pokémon usage across tournaments
+          </span>
         </div>
-        <UsagePipelineChart
-          pipelineResult={pipelineResult}
-          selectedSpecies={selectedSpecies}
-          threshold={threshold}
-          onSpeciesClick={handleSpeciesClick}
-        />
-      </div>
 
-      {/* Panel 2: Usage Over Time (line chart) — navigator */}
-      <div className="bg-card rounded-2xl p-4 shadow-sm">
-        <UsageLineChart
-          points={points}
-          selectedSpecies={selectedSpecies}
-          highlight={highlight}
-          threshold={threshold}
-          events={events}
-          onSpeciesClick={handleSpeciesClick}
-          onRangeChange={handleRangeChange}
-          onSelectAll={handleSelectAll}
-          onClearSelection={handleClearSelection}
-        />
+        {/* Charts */}
+        <div className="flex flex-col gap-3 px-5 pb-4">
+          {/* Meta Pipeline (Sankey) */}
+          <div className="bg-card flex flex-col rounded-xl shadow-sm">
+            <div className="flex items-center justify-between border-b px-4 py-2.5">
+              <span className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+                Meta Pipeline
+              </span>
+            </div>
+            <div>
+              <UsagePipelineChart
+                pipelineResult={pipelineResult}
+                selectedSpecies={effectiveSelected}
+                columns={columns}
+                onSpeciesClick={handleSpeciesClick}
+              />
+            </div>
+          </div>
+
+          {/* Usage Over Time (line chart) */}
+          <div className="bg-card h-36 overflow-hidden rounded-xl shadow-sm">
+            <UsageLineChart
+              points={points}
+              selectedSpecies={effectiveSelected}
+              events={events}
+              onSpeciesClick={handleSpeciesClick}
+              onRangeChange={handleRangeChange}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

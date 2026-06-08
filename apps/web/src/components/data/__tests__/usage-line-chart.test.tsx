@@ -1,6 +1,5 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { type ResponsiveContainerProps } from "recharts";
 
 import { UsageLineChart } from "../usage-line-chart";
@@ -80,13 +79,9 @@ const TWO_POINTS: FormatUsageTimeseriesPoint[] = [
 const DEFAULT_PROPS = {
   points: TWO_POINTS,
   selectedSpecies: [] as string[],
-  highlight: "",
-  threshold: 2,
   events: [] as FormatEvent[],
   onSpeciesClick: jest.fn(),
   onRangeChange: jest.fn(),
-  onSelectAll: jest.fn(),
-  onClearSelection: jest.fn(),
 };
 
 function renderChart(overrides: Partial<typeof DEFAULT_PROPS> = {}) {
@@ -94,8 +89,6 @@ function renderChart(overrides: Partial<typeof DEFAULT_PROPS> = {}) {
     ...DEFAULT_PROPS,
     onSpeciesClick: jest.fn(),
     onRangeChange: jest.fn(),
-    onSelectAll: jest.fn(),
-    onClearSelection: jest.fn(),
     ...overrides,
   };
   return { ...render(<UsageLineChart {...props} />), props };
@@ -113,10 +106,9 @@ describe("UsageLineChart — empty state", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not render the header or buttons when points is empty", () => {
+  it("does not render the header when points is empty", () => {
     renderChart({ points: [] });
     expect(screen.queryByText("Usage Over Time")).not.toBeInTheDocument();
-    expect(screen.queryByText("Select All")).not.toBeInTheDocument();
   });
 });
 
@@ -130,62 +122,42 @@ describe("UsageLineChart — happy path", () => {
     expect(screen.getByText("Usage Over Time")).toBeInTheDocument();
   });
 
-  it("renders the Pokémon count readout", () => {
+  it("renders the Pokémon count readout (all species when none selected)", () => {
     renderChart();
-    // 2 species above the default threshold of 2%
+    // 2 species in the dataset, none selected → all visible
     expect(screen.getByText("2 Pokémon")).toBeInTheDocument();
   });
 
-  it("renders the 'Select All' button", () => {
+  it("does not render 'Select All' or 'Clear' buttons", () => {
     renderChart();
     expect(
-      screen.getByRole("button", { name: "Select All" })
-    ).toBeInTheDocument();
-  });
-
-  it("renders the 'Clear' button", () => {
-    renderChart();
-    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Select All" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Clear" })
+    ).not.toBeInTheDocument();
   });
 });
 
 // =============================================================================
-// Callback wiring
+// Selected species filtering
 // =============================================================================
 
-describe("UsageLineChart — callbacks", () => {
-  it("calls onSelectAll when 'Select All' is clicked", async () => {
-    const { props } = renderChart();
-    await userEvent.click(screen.getByRole("button", { name: "Select All" }));
-    expect(props.onSelectAll).toHaveBeenCalledTimes(1);
-  });
-
-  it("calls onClearSelection when 'Clear' is clicked", async () => {
-    const { props } = renderChart();
-    await userEvent.click(screen.getByRole("button", { name: "Clear" }));
-    expect(props.onClearSelection).toHaveBeenCalledTimes(1);
-  });
-});
-
-// =============================================================================
-// Threshold filtering
-// =============================================================================
-
-describe("UsageLineChart — threshold filtering", () => {
-  it("shows 0 Pokémon when threshold exceeds all series peaks", () => {
+describe("UsageLineChart — selectedSpecies filtering", () => {
+  it("shows 1 Pokémon when only one species is selected", () => {
     renderChart({
       points: TWO_POINTS,
-      threshold: 99,
-    });
-    expect(screen.getByText("0 Pokémon")).toBeInTheDocument();
-  });
-
-  it("shows 1 Pokémon when only one series is above threshold", () => {
-    renderChart({
-      points: [makePoint("2025-01-01", { Sneasler: 30, Koraidon: 1 })],
-      threshold: 5,
+      selectedSpecies: ["Sneasler"],
     });
     expect(screen.getByText("1 Pokémon")).toBeInTheDocument();
+  });
+
+  it("shows all Pokémon when selectedSpecies is empty", () => {
+    renderChart({
+      points: TWO_POINTS,
+      selectedSpecies: [],
+    });
+    expect(screen.getByText("2 Pokémon")).toBeInTheDocument();
   });
 });
 
@@ -193,43 +165,31 @@ describe("UsageLineChart — threshold filtering", () => {
 // Selected species (legend strip)
 // =============================================================================
 
-describe("UsageLineChart — selected species legend", () => {
-  it("renders the selected-species legend strip when selectedSpecies is non-empty", () => {
+describe("UsageLineChart — inline legend", () => {
+  it("renders the inline legend when selectedSpecies is non-empty", () => {
     renderChart({ selectedSpecies: ["Sneasler"] });
     expect(screen.getByText("Sneasler")).toBeInTheDocument();
   });
 
-  it("renders multiple chips in the legend when multiple species are selected", () => {
+  it("renders all selected species in the legend", () => {
     renderChart({ selectedSpecies: ["Sneasler", "Koraidon"] });
     expect(screen.getByText("Sneasler")).toBeInTheDocument();
     expect(screen.getByText("Koraidon")).toBeInTheDocument();
   });
 
-  it("does not render the legend strip when no species are selected", () => {
+  it("does not render the legend when no species are selected", () => {
     renderChart({ selectedSpecies: [] });
-    // The two species labels should not appear as standalone chips
-    // (they would only show up in the Recharts axis/tooltip which JSDOM may not render)
-    const legendArea = screen
+    // Species names should not appear as legend labels
+    const legendSpans = screen
       .queryAllByText("Sneasler")
       .filter((el) => el.tagName.toLowerCase() === "span");
-    expect(legendArea.length).toBe(0);
-  });
-});
-
-// =============================================================================
-// Highlight / dim logic (series rendering)
-// =============================================================================
-
-describe("UsageLineChart — highlight/dim logic", () => {
-  it("renders without error when highlight filters out all species", () => {
-    renderChart({ highlight: "zzz_no_match_zzz" });
-    // Component should still render the header even with no visible series
-    expect(screen.getByText("Usage Over Time")).toBeInTheDocument();
+    expect(legendSpans.length).toBe(0);
   });
 
-  it("renders normally when highlight matches a species name", () => {
-    renderChart({ highlight: "Sneasler" });
-    expect(screen.getByText("Usage Over Time")).toBeInTheDocument();
+  it("shows '+N more' when more than 10 species are selected", () => {
+    const manySpecies = Array.from({ length: 12 }, (_, i) => `Species${i}`);
+    renderChart({ selectedSpecies: manySpecies });
+    expect(screen.getByText("+2 more")).toBeInTheDocument();
   });
 });
 
@@ -279,30 +239,30 @@ describe("UsageLineChart — event pins", () => {
 });
 
 // =============================================================================
-// buildUsageSeries + filterByThreshold integration
+// buildUsageSeries integration
 // =============================================================================
 
 describe("UsageLineChart — series data integration", () => {
-  it("correctly counts visible series for three species with varying usage", () => {
+  it("shows all species when none are selected (no filtering)", () => {
     renderChart({
       points: [
         makePoint("2025-01-01", { Sneasler: 30, Koraidon: 20, Raichu: 1 }),
         makePoint("2025-01-08", { Sneasler: 28, Koraidon: 22, Raichu: 0.5 }),
       ],
-      threshold: 5,
+      selectedSpecies: [],
     });
-    // Only Sneasler and Koraidon peak above 5%
-    expect(screen.getByText("2 Pokémon")).toBeInTheDocument();
+    // All 3 species shown when selectedSpecies is empty
+    expect(screen.getByText("3 Pokémon")).toBeInTheDocument();
   });
 
-  it("shows all 3 series when threshold is below all peaks", () => {
+  it("filters to only selected species when selectedSpecies is provided", () => {
     renderChart({
       points: [
         makePoint("2025-01-01", { Sneasler: 30, Koraidon: 20, Raichu: 10 }),
       ],
-      threshold: 5,
+      selectedSpecies: ["Sneasler", "Koraidon"],
     });
-    expect(screen.getByText("3 Pokémon")).toBeInTheDocument();
+    expect(screen.getByText("2 Pokémon")).toBeInTheDocument();
   });
 });
 

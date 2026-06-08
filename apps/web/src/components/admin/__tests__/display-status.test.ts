@@ -1,5 +1,5 @@
 import { deriveDisplayStatus } from "../display-status";
-import type { UnifiedRow } from "../external-data-shared";
+import type { RK9EventRow, UnifiedRow } from "../external-data-shared";
 
 const MAPPED = "gen9championsvgc2026regma";
 
@@ -43,7 +43,10 @@ function limRow(
   };
 }
 
-function rk9Row(normalizedStatus: string): UnifiedRow {
+function rk9Row(
+  normalizedStatus: string,
+  rk9Overrides: Partial<RK9EventRow> = {}
+): UnifiedRow {
   return {
     id: "r",
     source: "rk9",
@@ -73,6 +76,7 @@ function rk9Row(normalizedStatus: string): UnifiedRow {
       import_status: "pending",
       import_error: null,
       teams_imported_count: 0,
+      ...rk9Overrides,
     },
   };
 }
@@ -113,9 +117,44 @@ describe("deriveDisplayStatus", () => {
     ["rk9 upcoming → pending", rk9Row("upcoming"), "pending"],
     ["rk9 pending → pending", rk9Row("pending"), "pending"],
     ["rk9 in-progress → in-progress", rk9Row("in-progress"), "in-progress"],
-    ["rk9 complete → imported", rk9Row("complete"), "imported"],
+    // A genuinely complete event (teams actually imported) stays as "imported"
+    [
+      "rk9 complete with teams → imported",
+      rk9Row("complete", { teams_imported_count: 5, player_count: 5 }),
+      "imported",
+    ],
     ["rk9 failed → failed", rk9Row("failed"), "failed"],
   ])("%s", (_l, row, expected) => {
     expect(deriveDisplayStatus(row)).toBe(expected);
+  });
+
+  describe("defense-in-depth: complete+0teams guard", () => {
+    it("marks 'complete' with 0 teams as in-progress when player_count > 0", () => {
+      // This is the Site 1 bug scenario: scrapeRk9TeamsBatch wrote "complete"
+      // but no teams were imported because standings weren't linked yet.
+      const row = rk9Row("complete", {
+        teams_imported_count: 0,
+        player_count: 5,
+      });
+      expect(deriveDisplayStatus(row)).toBe("in-progress");
+    });
+
+    it("keeps 'complete' with 0 teams as imported when player_count === 0", () => {
+      // A genuinely empty event (no players) is correctly complete even with 0 teams.
+      const row = rk9Row("complete", {
+        teams_imported_count: 0,
+        player_count: 0,
+      });
+      expect(deriveDisplayStatus(row)).toBe("imported");
+    });
+
+    it("keeps 'complete' with 0 teams as imported when player_count is null", () => {
+      // player_count null is treated as 0 (unknown/empty) — same as genuinely empty.
+      const row = rk9Row("complete", {
+        teams_imported_count: 0,
+        player_count: null,
+      });
+      expect(deriveDisplayStatus(row)).toBe("imported");
+    });
   });
 });

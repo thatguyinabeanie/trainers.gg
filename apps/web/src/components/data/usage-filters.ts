@@ -1,4 +1,5 @@
 import { getFormatById } from "@trainers/pokemon";
+import { type PipelineSpeciesData } from "@trainers/supabase";
 
 // =============================================================================
 // Defaults
@@ -21,6 +22,74 @@ export const VALID_SOURCES = [
 ] as const;
 
 export const VALID_PERIOD_TYPES = ["day", "week", "month"] as const;
+
+// =============================================================================
+// Shared filter types (moved here from usage-controls.tsx)
+// =============================================================================
+
+export type PeriodType = (typeof VALID_PERIOD_TYPES)[number];
+export type UsageSource = (typeof VALID_SOURCES)[number];
+
+/** Shape carried in URL state and passed to DataSidebar. */
+export interface UsageFilters {
+  format: string;
+  source: UsageSource;
+  periodType: PeriodType;
+}
+
+// =============================================================================
+// Preset helpers
+// =============================================================================
+
+export type DataPreset = "top10" | "top20" | "top50" | "all";
+
+const PRESET_LIMITS: Record<DataPreset, number> = {
+  top10: 10,
+  top20: 20,
+  top50: 50,
+  all: Infinity,
+};
+
+/**
+ * Returns the species names from `data` that correspond to the given preset.
+ * Data is assumed to be sorted by usage descending (rank ascending).
+ */
+export function applyPreset(
+  data: PipelineSpeciesData[],
+  preset: DataPreset
+): string[] {
+  return data.slice(0, PRESET_LIMITS[preset]).map((s) => s.species);
+}
+
+/**
+ * Returns the active preset name if `selected` exactly matches one of the
+ * preset sets derived from `data`, otherwise returns null.
+ * Order-insensitive: checks set membership, not array order.
+ *
+ * Presets are evaluated in this priority order: top10 → top20 → all → top50.
+ * "all" is placed before "top50" so that selecting an entire dataset that is
+ * smaller than 50 items is labelled "all" rather than "top50". "top10" and
+ * "top20" come first because when the dataset is smaller than their limits,
+ * the tightest numbered preset takes priority over "all".
+ */
+export function getActivePreset(
+  data: PipelineSpeciesData[],
+  selected: string[]
+): DataPreset | null {
+  if (selected.length === 0) return null;
+  const selectedSet = new Set(selected);
+
+  for (const preset of ["top10", "top20", "all", "top50"] as DataPreset[]) {
+    const expected = applyPreset(data, preset);
+    if (
+      expected.length === selectedSet.size &&
+      expected.every((s) => selectedSet.has(s))
+    ) {
+      return preset;
+    }
+  }
+  return null;
+}
 
 // =============================================================================
 // Validators
@@ -154,4 +223,38 @@ export function coerceRangeStart(
  */
 export function coerceRangeEnd(raw: string | undefined | null): string | null {
   return coerceRangeStart(raw);
+}
+
+// =============================================================================
+// Pipeline column configuration
+// =============================================================================
+
+export type PipelineColumn = "ability" | "item" | "nature" | "move";
+
+export const ALL_PIPELINE_COLUMNS: PipelineColumn[] = [
+  "ability",
+  "item",
+  "nature",
+  "move",
+];
+
+export const DEFAULT_PIPELINE_COLUMNS: PipelineColumn[] = [
+  "ability",
+  "item",
+  "nature",
+  "move",
+];
+
+export function coerceColumns(raw: string | undefined): PipelineColumn[] {
+  if (!raw) return DEFAULT_PIPELINE_COLUMNS;
+  const valid = new Set<string>(ALL_PIPELINE_COLUMNS);
+  const parsed = raw.split(",").filter((c) => valid.has(c)) as PipelineColumn[];
+  // Deduplicate while preserving order
+  const seen = new Set<string>();
+  const deduped = parsed.filter((c) => {
+    if (seen.has(c)) return false;
+    seen.add(c);
+    return true;
+  });
+  return deduped.length > 0 ? deduped : DEFAULT_PIPELINE_COLUMNS;
 }

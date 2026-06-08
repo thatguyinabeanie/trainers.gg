@@ -61,6 +61,7 @@ export interface PipelineSpeciesData {
   usagePct: number;
   rank: number;
   abilities: UsageDetailEntry[];
+  items: UsageDetailEntry[];
   natures: UsageDetailEntry[];
   moves: UsageDetailEntry[];
 }
@@ -406,7 +407,7 @@ export async function getPipelineData(
       .order("rank", { ascending: true }),
     supabase
       .from("pokemon_detail_stats")
-      .select("species, abilities, natures, moves")
+      .select("species, abilities, items, natures, moves")
       .eq("meta_id", metaRow.id),
   ]);
 
@@ -434,6 +435,7 @@ export async function getPipelineData(
       usagePct: row.usage_pct,
       rank: row.rank,
       abilities: (detail?.abilities as UsageDetailEntry[] | null) ?? [],
+      items: (detail?.items as UsageDetailEntry[] | null) ?? [],
       natures: (detail?.natures as UsageDetailEntry[] | null) ?? [],
       moves: (detail?.moves as UsageDetailEntry[] | null) ?? [],
     };
