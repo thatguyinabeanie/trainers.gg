@@ -1162,6 +1162,7 @@ describe("RK9 status tabs", () => {
           event_id: "e-complete",
           name: "Complete A",
           import_status: "complete",
+          teams_imported_count: 100,
         }),
         makeEvent({
           event_id: "e-failed",
