@@ -202,15 +202,25 @@ export function ExternalData() {
     isFetching: rk9Fetching,
   } = useSupabaseQuery(
     async (sb) => {
-      const { data, error } = await sb
-        .schema("rk9")
-        .from("events")
-        .select(
-          "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count"
-        )
-        .order("date_start", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as RK9EventRow[];
+      // Paginate in 1000-row pages — hosted Supabase caps responses at
+      // max-rows=1000, so a single select silently truncates large tables.
+      const PAGE = 1000;
+      const all: RK9EventRow[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await sb
+          .schema("rk9")
+          .from("events")
+          .select(
+            "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count"
+          )
+          .order("date_start", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as RK9EventRow[];
+        all.push(...rows);
+        if (rows.length < PAGE) break;
+      }
+      return all;
     },
     [refreshKey]
   );
@@ -226,15 +236,26 @@ export function ExternalData() {
     isFetching: limitlessFetching,
   } = useSupabaseQuery(
     async (sb) => {
-      const { data, error } = await sb
-        .schema("limitless")
-        .from("tournaments")
-        .select(
-          "tournament_id, name, format_id, date, player_count, platform, is_online, decklists, data_imported_at, import_status, import_requested_at, import_error, import_attempts"
-        )
-        .order("date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as LimitlessTournamentRow[];
+      // Paginate in 1000-row pages — hosted Supabase caps responses at
+      // max-rows=1000, so a single select silently truncates (only ~1000 of
+      // several thousand synced tournaments would load otherwise).
+      const PAGE = 1000;
+      const all: LimitlessTournamentRow[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await sb
+          .schema("limitless")
+          .from("tournaments")
+          .select(
+            "tournament_id, name, format_id, date, player_count, platform, is_online, decklists, data_imported_at, import_status, import_requested_at, import_error, import_attempts"
+          )
+          .order("date", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as LimitlessTournamentRow[];
+        all.push(...rows);
+        if (rows.length < PAGE) break;
+      }
+      return all;
     },
     [refreshKey]
   );
