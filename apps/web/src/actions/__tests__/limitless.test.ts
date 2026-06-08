@@ -214,12 +214,21 @@ describe("importLimitlessTournament", () => {
       error: null,
     });
 
+    // The claim UPDATE chains through .eq().not().select().maybeSingle(),
+    // so the mock must support all four methods on the same fluent chain.
     updateSpy.mockImplementation(() => {
-      const result = {
-        eq: jest.fn().mockReturnThis(),
-        select: jest.fn().mockResolvedValue({ data: null, error: null }),
+      const chain: Record<string, jest.Mock> = {
+        eq: jest.fn(),
+        not: jest.fn(),
+        select: jest.fn().mockImplementation(() => ({
+          maybeSingle: jest
+            .fn()
+            .mockResolvedValue({ data: { tournament_id: "t1" }, error: null }),
+        })),
       };
-      return result;
+      chain.eq.mockReturnValue(chain);
+      chain.not.mockReturnValue(chain);
+      return chain;
     });
 
     mockCreateClient.mockReturnValue({
@@ -317,5 +326,42 @@ describe("importLimitlessTournament", () => {
       (s) => s === "failed" || s === "queued"
     );
     expect(terminalWrite).toBeDefined();
+  });
+
+  it("(d) returns { success:false } without touching the DB when format_id is in SKIP_FORMATS", async () => {
+    maybeSingleSpy.mockResolvedValueOnce({
+      data: { tournament_id: "t1", format_id: "CUSTOM", import_attempts: 0 },
+      error: null,
+    });
+
+    const result = await importLimitlessTournament("t1");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("CUSTOM");
+    expect(mockImportTournament).not.toHaveBeenCalled();
+    // Must not write "importing" — no UPDATE should have been called
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it("(e) returns { success:false } when the atomic claim finds the row already being imported", async () => {
+    // Simulate the claim UPDATE returning null (row had import_status="importing")
+    updateSpy.mockImplementation(() => {
+      const chain: Record<string, jest.Mock> = {
+        eq: jest.fn(),
+        not: jest.fn(),
+        select: jest.fn().mockImplementation(() => ({
+          maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+        })),
+      };
+      chain.eq.mockReturnValue(chain);
+      chain.not.mockReturnValue(chain);
+      return chain;
+    });
+
+    const result = await importLimitlessTournament("t1");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("already in progress");
+    expect(mockImportTournament).not.toHaveBeenCalled();
   });
 });

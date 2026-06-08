@@ -234,12 +234,19 @@ export async function importLimitlessTournament(
         success: false,
         error: "Tournament has no format ID configured",
       };
+
+    if (SKIP_FORMATS.has(row.format_id))
+      return {
+        success: false,
+        error: `Format "${row.format_id}" is in the skip list`,
+      };
+
     const formatId = row.format_id;
     capturedAttempts = row.import_attempts ?? 0;
 
-    // Mark the row as in-progress so the UI reflects state and the stale-recovery
-    // sweep can reclaim stuck rows via import_started_at < staleThreshold.
-    await supabase
+    // Atomic claim: the UPDATE only fires when the row is NOT already "importing",
+    // preventing two admins from double-importing the same tournament simultaneously.
+    const { data: claimed, error: claimErr } = await supabase
       .schema("limitless")
       .from("tournaments")
       .update({
@@ -248,7 +255,15 @@ export async function importLimitlessTournament(
         import_requested_at: new Date().toISOString(),
         import_error: null,
       })
-      .eq("tournament_id", tournamentId);
+      .eq("tournament_id", tournamentId)
+      .not("import_status", "eq", "importing")
+      .select("tournament_id")
+      .maybeSingle();
+
+    if (claimErr)
+      throw new Error(`Failed to claim tournament: ${claimErr.message}`);
+    if (!claimed)
+      return { success: false, error: "Import already in progress" };
 
     const data = await fetchTournamentData(tournamentId, apiKey);
     await importTournament(supabase, data, formatId);
