@@ -47,12 +47,13 @@ interface LayoutLink {
 // Constants
 // =============================================================================
 
-const VIEWBOX_WIDTH = 1000;
+const VIEWBOX_WIDTH = 1100;
 const VIEWBOX_HEIGHT = 420;
 const NODE_WIDTH = 18;
 const NODE_PADDING = 12;
 const SPRITE_BAND = 32; // SVG units reserved on the left for species sprites
 const SPRITE_GAP = 4; // gap between sprite right-edge and species bar
+const LABEL_MARGIN = 160; // SVG units reserved on the right for node text labels
 
 const COLUMN_LABELS: Record<string, string> = {
   species: "Species",
@@ -140,7 +141,7 @@ export function UsagePipelineChart({
     })
     .extent([
       [SPRITE_BAND + SPRITE_GAP, 30], // was [0, 30] — reserve left band for sprites
-      [VIEWBOX_WIDTH, VIEWBOX_HEIGHT - 10],
+      [VIEWBOX_WIDTH - LABEL_MARGIN, VIEWBOX_HEIGHT - 10],
     ]);
 
   const { nodes: layoutNodes, links: layoutLinks } = sankeyLayout(layoutInput);
@@ -307,16 +308,14 @@ export function UsagePipelineChart({
                       : undefined
                   }
                 />
-              ) : node.y1 - node.y0 > 14 ? (
+              ) : node.y1 - node.y0 > 6 ? (
                 <text
                   x={node.x1 + 6}
                   y={(node.y0 + node.y1) / 2}
                   dominantBaseline="middle"
                   style={{ fontSize: 10, fill: "var(--foreground)" }}
                 >
-                  {node.label.length > 12
-                    ? node.label.slice(0, 11) + "…"
-                    : node.label}
+                  {node.label}
                 </text>
               ) : null}
             </g>
