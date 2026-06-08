@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { UsageExplorer } from "../usage-explorer";
-import { type UsageFilters } from "../usage-controls";
+import { type UsageFilters } from "../usage-filters";
 
 // =============================================================================
 // next/navigation — stable mockReplace so tests can assert URL payloads

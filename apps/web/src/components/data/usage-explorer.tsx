@@ -18,14 +18,9 @@ import {
 
 import { buildUsageSeries } from "./usage-series";
 import {
-  UsageControls,
   type UsageFilters,
   type PeriodType,
   type UsageSource,
-} from "./usage-controls";
-import { UsagePipelineChart } from "./usage-pipeline-chart";
-import { UsageLineChart } from "./usage-line-chart";
-import {
   coerceFormat,
   coercePeriodType,
   coerceSource,
@@ -34,6 +29,8 @@ import {
   coerceRangeStart,
   coerceRangeEnd,
 } from "./usage-filters";
+import { UsagePipelineChart } from "./usage-pipeline-chart";
+import { UsageLineChart } from "./usage-line-chart";
 
 // =============================================================================
 // Types
@@ -73,7 +70,7 @@ export function UsageExplorer({
 
   // Ephemeral search box state — dims non-matching lines in the line chart.
   // Not URL-persisted (transient UI affordance, not a shareable filter).
-  const [highlight, setHighlight] = useState("");
+  const [highlight, _setHighlight] = useState("");
 
   // ── URL-derived state ─────────────────────────────────────────────────────
   const format = coerceFormat(
@@ -85,9 +82,7 @@ export function UsageExplorer({
   const periodType: PeriodType = coercePeriodType(
     searchParams.get("periodType") ?? initialFilters.periodType
   );
-  const threshold = coerceThreshold(
-    searchParams.get("threshold") ?? String(initialFilters.threshold)
-  );
+  const threshold = coerceThreshold(searchParams.get("threshold"));
   const selectedSpecies = coerceSelectedSpecies(searchParams.get("species"));
   const rangeStart = coerceRangeStart(searchParams.get("rangeStart"));
   const rangeEnd = coerceRangeEnd(searchParams.get("rangeEnd"));
@@ -109,7 +104,6 @@ export function UsageExplorer({
     format,
     source,
     periodType,
-    threshold,
   };
 
   // ── URL updater ───────────────────────────────────────────────────────────
@@ -123,7 +117,7 @@ export function UsageExplorer({
     params.set("format", nextFilters.format);
     params.set("source", nextFilters.source);
     params.set("periodType", nextFilters.periodType);
-    params.set("threshold", String(nextFilters.threshold));
+    params.set("threshold", String(threshold));
 
     const species = nextSpecies ?? selectedSpecies;
     if (species.length > 0) {
@@ -144,7 +138,7 @@ export function UsageExplorer({
     });
   };
 
-  const handleFiltersChange = (next: UsageFilters) =>
+  const _handleFiltersChange = (next: UsageFilters) =>
     updateUrl(next, next.format !== format ? [] : undefined);
   const handleSpeciesClick = (species: string) => {
     const next = selectedSpecies.includes(species)
@@ -228,20 +222,10 @@ export function UsageExplorer({
     staleTime: 60 * 60 * 1000, // events change rarely
   });
 
-  const allSeries = buildUsageSeries(points);
+  const _allSeries = buildUsageSeries(points);
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Shared controls bar */}
-      <UsageControls
-        filters={currentFilters}
-        highlight={highlight}
-        totalCount={allSeries.length}
-        visibleCount={allSeries.filter((s) => s.peak >= threshold).length}
-        onFiltersChange={handleFiltersChange}
-        onHighlightChange={setHighlight}
-      />
-
       {/* Panel 1: Meta Pipeline (Sankey) — hero */}
       <div className="bg-card rounded-2xl p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between">

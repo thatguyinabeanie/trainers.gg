@@ -23,6 +23,20 @@ export const VALID_SOURCES = [
 export const VALID_PERIOD_TYPES = ["day", "week", "month"] as const;
 
 // =============================================================================
+// Shared filter types (moved here from usage-controls.tsx)
+// =============================================================================
+
+export type PeriodType = (typeof VALID_PERIOD_TYPES)[number];
+export type UsageSource = (typeof VALID_SOURCES)[number];
+
+/** Shape carried in URL state and passed to DataSidebar. */
+export interface UsageFilters {
+  format: string;
+  source: UsageSource;
+  periodType: PeriodType;
+}
+
+// =============================================================================
 // Validators
 // =============================================================================
 

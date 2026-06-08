@@ -9,14 +9,13 @@ import {
 } from "@/actions/usage";
 import { PageContainer } from "@/components/layout/page-container";
 import { UsageExplorer } from "@/components/data/usage-explorer";
-import { type UsageFilters } from "@/components/data/usage-controls";
+import { type UsageFilters } from "@/components/data/usage-filters";
 import {
   coerceFormat,
   coercePeriodType,
   coerceRangeEnd,
   coerceRangeStart,
   coerceSource,
-  coerceThreshold,
 } from "@/components/data/usage-filters";
 
 // =============================================================================
@@ -50,7 +49,6 @@ export default async function DataPage({ searchParams }: DataPageProps) {
   const format = coerceFormat(raw("format"));
   const source = coerceSource(raw("source"));
   const periodType = coercePeriodType(raw("periodType"));
-  const threshold = coerceThreshold(raw("threshold"));
   const rangeStart = coerceRangeStart(raw("rangeStart"));
   const rangeEnd = coerceRangeEnd(raw("rangeEnd"));
 
@@ -58,7 +56,6 @@ export default async function DataPage({ searchParams }: DataPageProps) {
     format,
     source,
     periodType,
-    threshold,
   };
 
   // Fetch initial data on the server — results are ISR-cached for 1 hour.
