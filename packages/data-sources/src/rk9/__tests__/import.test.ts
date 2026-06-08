@@ -6,6 +6,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RK9Pokemon, RK9RosterEntry } from "../types";
 import { importEvent, syncEvents, collectUniqueSpecies } from "../import";
 
+// validatePokemonLegality is NOT mocked — we use the real implementation so
+// tests exercise actual legality logic. Legal/illegal inputs are chosen based
+// on the Champions M-A format (gen9championsvgc2026regma):
+//   Legal:   Garchomp / Rough Skin / Choice Scarf / [Earthquake, …]
+//   Illegal species: Landorus-Therian (not in Champions roster)
+//   Illegal item:    Life Orb (not in Champions item pool)
+
 // ---------------------------------------------------------------------------
 // Chainable Supabase mock helpers
 // ---------------------------------------------------------------------------
@@ -15,7 +22,7 @@ interface ChainResult {
   error: { message: string } | null;
 }
 
-/** Creates a chainable object that resolves to `result` when awaited or `.single()`-ed. */
+/** Creates a chainable object that resolves to `result` when awaited or `.single()`/`.maybeSingle()`-ed. */
 function chain(result: ChainResult): Record<string, unknown> {
   const node: Record<string, unknown> = {
     then(
@@ -25,6 +32,7 @@ function chain(result: ChainResult): Record<string, unknown> {
       return Promise.resolve(result).then(resolve, reject);
     },
     single: () => Promise.resolve(result),
+    maybeSingle: () => Promise.resolve(result),
   };
   for (const m of [
     "delete",
@@ -68,9 +76,19 @@ interface MockConfig {
   playersUpdate?: ChainResult;
   teamPokemonInsert?: ChainResult;
   eventsUpdate?: ChainResult;
+  /** Result for the format_id fetch: .select("format_id").eq(...).maybeSingle() */
+  eventsSelect?: ChainResult;
 }
 
+/**
+ * Captured team_pokemon rows from the most recent buildSupabaseMock() instance.
+ * Reset on each call to buildSupabaseMock so tests can inspect what was inserted.
+ */
+let capturedPokemonRows: unknown[] = [];
+
 function buildSupabaseMock(config: MockConfig = {}): SupabaseClient {
+  capturedPokemonRows = [];
+
   const {
     standingsDelete = { error: null },
     standingsInsert = { data: [{ id: 1 }], error: null },
@@ -79,10 +97,37 @@ function buildSupabaseMock(config: MockConfig = {}): SupabaseClient {
     playersUpdate = { error: null },
     teamPokemonInsert = { error: null },
     eventsUpdate = { error: null },
+    eventsSelect = { data: { format_id: null }, error: null },
   } = config;
 
   const resolve = <T extends ChainResult>(v: T | (() => T)): T =>
     typeof v === "function" ? (v as () => T)() : v;
+
+  // team_pokemon insert proxy that also captures the inserted rows for assertions
+  const teamPokemonProxy = makeTableProxy({
+    insert: (rows: unknown) => {
+      if (Array.isArray(rows)) capturedPokemonRows.push(...rows);
+      return chain(teamPokemonInsert);
+    },
+  });
+
+  // events table: select resolves the format_id fetch; update resolves the status update
+  const eventsProxy = new Proxy(
+    {},
+    {
+      get(_, prop: string) {
+        if (prop === "select") {
+          // The format_id query chains: .select("format_id").eq(...).maybeSingle()
+          // We return a chain node where maybeSingle() resolves to eventsSelect.
+          return () => chain(eventsSelect);
+        }
+        if (prop === "update") {
+          return () => chain(eventsUpdate);
+        }
+        return () => chain({ error: null });
+      },
+    }
+  );
 
   const tables: Record<string, unknown> = {
     standings: makeTableProxy({
@@ -94,16 +139,14 @@ function buildSupabaseMock(config: MockConfig = {}): SupabaseClient {
       insert: () => chain(resolve(playersInsert)),
       update: () => chain(playersUpdate),
     }),
-    team_pokemon: makeTableProxy({
-      insert: () => chain(teamPokemonInsert),
-    }),
-    events: makeTableProxy({
-      update: () => chain(eventsUpdate),
-    }),
+    team_pokemon: teamPokemonProxy,
+    events: eventsProxy,
   };
 
   return {
-    schema: () => ({ from: (table: string) => tables[table] ?? makeTableProxy({}) }),
+    schema: () => ({
+      from: (table: string) => tables[table] ?? makeTableProxy({}),
+    }),
   } as unknown as SupabaseClient;
 }
 
@@ -120,7 +163,9 @@ const makePokemon = (speciesRaw: string): RK9Pokemon => ({
   moves: ["Thunderbolt", "Volt Switch", "Protect", "Fake Out"],
 });
 
-const makeEntry = (overrides: Partial<RK9RosterEntry> = {}): RK9RosterEntry => ({
+const makeEntry = (
+  overrides: Partial<RK9RosterEntry> = {}
+): RK9RosterEntry => ({
   playerIdMasked: "p1...3",
   firstName: "Ash",
   lastName: "Ketchum",
@@ -353,7 +398,10 @@ describe("importEvent", () => {
       teamPokemonInsert: { error: null },
     });
 
-    const entry = makeEntry({ trainerName: "PikachuTrainer", rosterEntryId: "r-team" });
+    const entry = makeEntry({
+      trainerName: "PikachuTrainer",
+      rosterEntryId: "r-team",
+    });
     const teams: Record<string, RK9Pokemon[]> = {
       "r-team": [makePokemon("Pikachu"), makePokemon("Charizard")],
     };
@@ -437,6 +485,215 @@ describe("importEvent", () => {
 
     expect(result.playersUpserted).toBe(1);
     expect(result.standingsInserted).toBe(1);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Legality flagging
+  // ---------------------------------------------------------------------------
+
+  it("flags all-legal team rows as is_legal=true with legality_reason=null", async () => {
+    const supabase = buildSupabaseMock({
+      eventsSelect: {
+        data: { format_id: "gen9championsvgc2026regma" },
+        error: null,
+      },
+      playersSelect: {
+        data: [{ id: 9, trainer_names: ["LegalTrainer"] }],
+        error: null,
+      },
+      standingsInsert: { data: [{ id: 900 }], error: null },
+    });
+
+    const entry = makeEntry({
+      trainerName: "LegalTrainer",
+      rosterEntryId: "r-legal",
+    });
+    // Garchomp + Choice Scarf + Rough Skin + Earthquake are all legal in Champions M-A
+    const teams: Record<string, RK9Pokemon[]> = {
+      "r-legal": [
+        {
+          speciesRaw: "Garchomp",
+          ability: "Rough Skin",
+          heldItem: "Choice Scarf",
+          teraType: null,
+          statAlignment: null,
+          moves: ["Earthquake", "Dragon Claw", "Protect", "Rock Slide"],
+        },
+      ],
+    };
+
+    const result = await importEvent(
+      supabase,
+      EVENT_ID,
+      [entry],
+      teams,
+      EMPTY_MAP
+    );
+
+    expect(result.pokemonInserted).toBe(1);
+    expect(capturedPokemonRows).toHaveLength(1);
+    expect(capturedPokemonRows[0]).toMatchObject({
+      is_legal: true,
+      legality_reason: null,
+    });
+  });
+
+  it("flags an illegal entry as is_legal=false but still inserts the row", async () => {
+    const supabase = buildSupabaseMock({
+      eventsSelect: {
+        data: { format_id: "gen9championsvgc2026regma" },
+        error: null,
+      },
+      playersSelect: {
+        data: [{ id: 9, trainer_names: ["IllegalTrainer"] }],
+        error: null,
+      },
+      standingsInsert: { data: [{ id: 901 }], error: null },
+    });
+
+    const entry = makeEntry({
+      trainerName: "IllegalTrainer",
+      rosterEntryId: "r-illegal",
+    });
+    // Landorus-Therian is not in the Champions M-A roster → illegal species
+    const teams: Record<string, RK9Pokemon[]> = {
+      "r-illegal": [
+        {
+          speciesRaw: "Landorus-Therian",
+          ability: "Intimidate",
+          heldItem: "Choice Scarf",
+          teraType: null,
+          statAlignment: null,
+          moves: ["Earthquake"],
+        },
+        // Legal Pokemon alongside the illegal one — still inserted
+        {
+          speciesRaw: "Garchomp",
+          ability: "Rough Skin",
+          heldItem: "Choice Scarf",
+          teraType: null,
+          statAlignment: null,
+          moves: ["Earthquake"],
+        },
+      ],
+    };
+
+    const result = await importEvent(
+      supabase,
+      EVENT_ID,
+      [entry],
+      teams,
+      EMPTY_MAP
+    );
+
+    // Both rows are inserted — illegal entries are flagged, never dropped
+    expect(result.pokemonInserted).toBe(2);
+    expect(capturedPokemonRows).toHaveLength(2);
+
+    const illegalRow = capturedPokemonRows.find(
+      (r) => (r as { species: string }).species === "landorus-therian"
+    );
+    expect(illegalRow).toMatchObject({
+      is_legal: false,
+      legality_reason: "Illegal species: Landorus-Therian",
+    });
+
+    const legalRow = capturedPokemonRows.find(
+      (r) => (r as { species: string }).species === "garchomp"
+    );
+    expect(legalRow).toMatchObject({
+      is_legal: true,
+      legality_reason: null,
+    });
+  });
+
+  it("treats all rows as legal when format_id is null (fail open)", async () => {
+    const supabase = buildSupabaseMock({
+      eventsSelect: { data: { format_id: null }, error: null },
+      playersSelect: {
+        data: [{ id: 9, trainer_names: ["NullFormatTrainer"] }],
+        error: null,
+      },
+      standingsInsert: { data: [{ id: 902 }], error: null },
+    });
+
+    const entry = makeEntry({
+      trainerName: "NullFormatTrainer",
+      rosterEntryId: "r-null-fmt",
+    });
+    // Landorus-Therian would be illegal in Champions, but with no format_id it's legal
+    const teams: Record<string, RK9Pokemon[]> = {
+      "r-null-fmt": [
+        {
+          speciesRaw: "Landorus-Therian",
+          ability: "Intimidate",
+          heldItem: "Life Orb",
+          teraType: null,
+          statAlignment: null,
+          moves: ["Earthquake"],
+        },
+      ],
+    };
+
+    const result = await importEvent(
+      supabase,
+      EVENT_ID,
+      [entry],
+      teams,
+      EMPTY_MAP
+    );
+
+    expect(result.pokemonInserted).toBe(1);
+    expect(capturedPokemonRows[0]).toMatchObject({
+      is_legal: true,
+      legality_reason: null,
+    });
+  });
+
+  it("treats all rows as legal and does not block import when format_id fetch errors", async () => {
+    const supabase = buildSupabaseMock({
+      eventsSelect: {
+        data: null,
+        error: { message: "relation does not exist" },
+      },
+      playersSelect: {
+        data: [{ id: 9, trainer_names: ["ErrorFormatTrainer"] }],
+        error: null,
+      },
+      standingsInsert: { data: [{ id: 903 }], error: null },
+    });
+
+    const entry = makeEntry({
+      trainerName: "ErrorFormatTrainer",
+      rosterEntryId: "r-err-fmt",
+    });
+    const teams: Record<string, RK9Pokemon[]> = {
+      "r-err-fmt": [
+        {
+          speciesRaw: "Landorus-Therian",
+          ability: "Intimidate",
+          heldItem: "Life Orb",
+          teraType: null,
+          statAlignment: null,
+          moves: ["Earthquake"],
+        },
+      ],
+    };
+
+    // Import must complete (not throw) even when format_id fetch fails
+    const result = await importEvent(
+      supabase,
+      EVENT_ID,
+      [entry],
+      teams,
+      EMPTY_MAP
+    );
+
+    expect(result.pokemonInserted).toBe(1);
+    expect(capturedPokemonRows[0]).toMatchObject({
+      is_legal: true,
+      legality_reason: null,
+    });
   });
 });
 
@@ -549,8 +806,8 @@ describe("importEvent error paths", () => {
       },
     ];
 
-    await expect(
-      importEvent(supabase, "EVT001", roster, {})
-    ).rejects.toThrow("standings insert failed");
+    await expect(importEvent(supabase, "EVT001", roster, {})).rejects.toThrow(
+      "standings insert failed"
+    );
   });
 });

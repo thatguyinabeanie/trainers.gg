@@ -16,11 +16,9 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type {
-  RK9Event,
-  RK9Pokemon,
-  RK9RosterEntry,
-} from "./types";
+import { validatePokemonLegality } from "@trainers/pokemon";
+
+import type { RK9Event, RK9Pokemon, RK9RosterEntry } from "./types";
 
 import { normalizeSpecies } from "./normalize";
 
@@ -132,6 +130,26 @@ export async function importEvent(
 
   if (delErr) throw new Error(`Delete standings: ${delErr.message}`);
 
+  // Fetch the event's format so we can flag each Pokemon's legality at import
+  // time. If this fails or is null, we treat every row as legal (fail open) —
+  // we never block the import on a missing/unreadable format.
+  let formatId: string | null = null;
+  {
+    const { data: eventRow, error: eventErr } = await supabase
+      .schema("rk9")
+      .from("events")
+      .select("format_id")
+      .eq("event_id", eventId)
+      .maybeSingle();
+    if (eventErr) {
+      console.warn(
+        `importEvent: could not load format_id for event ${eventId}: ${eventErr.message}`
+      );
+    } else {
+      formatId = eventRow?.format_id ?? null;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Phase 1: Pre-scan for conflict groups
   //
@@ -218,7 +236,8 @@ export async function importEvent(
             .select("id")
             .single();
 
-          if (createErr) throw new Error(`Player create (collision): ${createErr.message}`);
+          if (createErr)
+            throw new Error(`Player create (collision): ${createErr.message}`);
           playerId = (created as { id: number }).id;
           importFlag = "name_collision";
         } else {
@@ -239,7 +258,8 @@ export async function importEvent(
               .select("id")
               .single();
 
-            if (createErr) throw new Error(`Player create (new): ${createErr.message}`);
+            if (createErr)
+              throw new Error(`Player create (new): ${createErr.message}`);
             playerId = (created as { id: number }).id;
             importFlag = "new_player";
           } else if (candidateList.length === 1) {
@@ -260,7 +280,10 @@ export async function importEvent(
                   .update({ trainer_names: [...existingNames, trainerName] })
                   .eq("id", playerId);
 
-                if (updateErr) throw new Error(`Player trainer_names update: ${updateErr.message}`);
+                if (updateErr)
+                  throw new Error(
+                    `Player trainer_names update: ${updateErr.message}`
+                  );
               }
             }
           } else {
@@ -278,7 +301,10 @@ export async function importEvent(
               .select("id")
               .single();
 
-            if (createErr) throw new Error(`Player create (multi-candidate): ${createErr.message}`);
+            if (createErr)
+              throw new Error(
+                `Player create (multi-candidate): ${createErr.message}`
+              );
             playerId = (created as { id: number }).id;
             importFlag = "name_collision";
           }
@@ -297,7 +323,9 @@ export async function importEvent(
     entryMatches.push({ idx, playerId, importFlag });
   }
 
-  result.playersUpserted = entryMatches.filter((m) => m.playerId !== null).length;
+  result.playersUpserted = entryMatches.filter(
+    (m) => m.playerId !== null
+  ).length;
 
   // ---------------------------------------------------------------------------
   // Phase 4: Build standings batch and upsert
@@ -376,6 +404,8 @@ export async function importEvent(
     tera_type: string | null;
     stat_alignment: string | null;
     moves: string[] | null;
+    is_legal: boolean;
+    legality_reason: string | null;
   }> = [];
 
   for (const [idx, entry] of roster.entries()) {
@@ -389,16 +419,41 @@ export async function importEvent(
         for (let pos = 0; pos < pokemon.length; pos++) {
           const mon = pokemon[pos];
           if (!mon) continue;
+
+          const species = resolveSpeciesSlug(mon.speciesRaw, speciesMap);
+          const ability = mon.ability || null;
+          const heldItem = mon.heldItem || null;
+          const moves = mon.moves.length > 0 ? mon.moves : null;
+
+          // Validate using speciesRaw (display name, e.g. "Garchomp") — the
+          // legality sets use PascalCase display names, not normalized slugs.
+          // Bracket-notation forms (e.g. "Landorus [Therian Forme]") won't
+          // match the validator's set and will be flagged as illegal; that is
+          // a known limitation that is strictly better than the alternative
+          // (slug lookup which flags every species illegal).
+          // Fail open when we have no format (formatId === null): everything legal.
+          const legality = formatId
+            ? validatePokemonLegality(
+                mon.speciesRaw,
+                ability,
+                heldItem,
+                moves,
+                formatId
+              )
+            : { isLegal: true, reason: null };
+
           allPokemonRows.push({
             standing_id: standingId,
             position: pos + 1,
-            species: resolveSpeciesSlug(mon.speciesRaw, speciesMap),
+            species,
             species_raw: mon.speciesRaw,
-            ability: mon.ability || null,
-            held_item: mon.heldItem || null,
+            ability,
+            held_item: heldItem,
             tera_type: mon.teraType || null,
             stat_alignment: mon.statAlignment ?? null,
-            moves: mon.moves.length > 0 ? mon.moves : null,
+            moves,
+            is_legal: legality.isLegal,
+            legality_reason: legality.reason,
           });
         }
       }
