@@ -447,6 +447,12 @@ describe("computeEventUsage — rk9 is_legal filter", () => {
       ReturnType<typeof jest.fn>
     >;
 
+    // Fail fast with a clear message if the call order ever shifts (e.g. an
+    // extra .schema() call is added before readRawTeamRows) instead of throwing
+    // an opaque "cannot read 'eq' of undefined" further down.
+    expect(teamPokemonChain).toBeDefined();
+    expect(teamPokemonChain["eq"]).toBeDefined();
+
     // Assert that .eq("is_legal", true) was called somewhere on that chain.
     const eqCalls: Array<[unknown, unknown]> = teamPokemonChain["eq"].mock
       .calls as Array<[unknown, unknown]>;
