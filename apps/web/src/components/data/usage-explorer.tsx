@@ -99,8 +99,14 @@ export function UsageExplorer({
 
   // ── URL updater ───────────────────────────────────────────────────────────
   const updateUrl = (
+    // Species param has three states, signalled by nextSpecies:
+    //   undefined  → leave the param untouched (unrelated change: range, columns…)
+    //   "reset"    → delete the param → default preset (Top 20) for the new context
+    //   string[]   → set explicitly; an empty array writes "species=" (present-empty)
+    //                so the explicit "no selection" state is preserved, not snapped
+    //                back to the default preset.
     nextFilters: UsageFilters,
-    nextSpecies?: string[],
+    nextSpecies?: string[] | "reset",
     nextRangeStart?: string | null,
     nextRangeEnd?: string | null,
     nextColumns?: PipelineColumn[],
@@ -112,14 +118,16 @@ export function UsageExplorer({
     params.set("periodType", nextFilters.periodType);
     params.delete("threshold"); // clean up any legacy threshold param
 
-    const species = nextSpecies ?? selectedSpecies;
-    if (species.length > 0) {
-      params.set("species", species.join(","));
-    } else {
-      // Keep the key present (empty value) so effectiveSelected stays empty
-      // instead of falling back to the default preset.
-      params.set("species", "");
+    if (nextSpecies === "reset") {
+      params.delete("species");
+    } else if (nextSpecies !== undefined) {
+      if (nextSpecies.length > 0) {
+        params.set("species", nextSpecies.join(","));
+      } else {
+        params.set("species", "");
+      }
     }
+    // nextSpecies === undefined → leave the species param exactly as-is.
 
     const rs = nextRangeStart !== undefined ? nextRangeStart : rangeStart;
     const re = nextRangeEnd !== undefined ? nextRangeEnd : rangeEnd;
@@ -144,7 +152,9 @@ export function UsageExplorer({
   };
 
   const handleFiltersChange = (next: UsageFilters) =>
-    updateUrl(next, next.format !== format ? [] : undefined);
+    // Changing format resets species to that format's default preset (Top 20),
+    // so we delete the param rather than writing an explicit-empty selection.
+    updateUrl(next, next.format !== format ? "reset" : undefined);
 
   const handleSelectionChange = (next: string[]) =>
     updateUrl(currentFilters, next);

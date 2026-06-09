@@ -257,15 +257,16 @@ describe("UsageExplorer — range URL state", () => {
 // =============================================================================
 
 describe("UsageExplorer — format change", () => {
-  it("clears selected species when the format changes", async () => {
+  it("resets species to the new format's default preset when the format changes", async () => {
     mockSearchParams = new URLSearchParams("species=Sneasler,Koraidon");
     renderExplorer();
     await userEvent.click(screen.getByText("change-format"));
     const p = lastReplaceParams();
     expect(p.get("format")).toBe("gen9vgc2024regh");
-    // present-but-empty: format change passes [] which writes species="" so the
-    // next render lands on the explicit empty state rather than reverting to Top 20.
-    expect(p.get("species")).toBe("");
+    // Format change DELETES the species param (param absent) so the new format
+    // defaults to Top 20 rather than carrying over the old format's selection or
+    // landing on an explicit-empty state.
+    expect(p.has("species")).toBe(false);
   });
 
   it("preserves species when a non-format filter changes (same format)", async () => {
