@@ -77,6 +77,7 @@ export function UsageExplorer({
   const periodType = coercePeriodType(
     searchParams.get("periodType") ?? initialFilters.periodType
   );
+  const hasSpeciesParam = searchParams.has("species");
   const selectedSpecies = coerceSelectedSpecies(searchParams.get("species"));
   const rangeStart = coerceRangeStart(searchParams.get("rangeStart"));
   const rangeEnd = coerceRangeEnd(searchParams.get("rangeEnd"));
@@ -115,7 +116,9 @@ export function UsageExplorer({
     if (species.length > 0) {
       params.set("species", species.join(","));
     } else {
-      params.delete("species");
+      // Keep the key present (empty value) so effectiveSelected stays empty
+      // instead of falling back to the default preset.
+      params.set("species", "");
     }
 
     const rs = nextRangeStart !== undefined ? nextRangeStart : rangeStart;
@@ -225,11 +228,12 @@ export function UsageExplorer({
 
   const allSpecies = pipelineResult?.data ?? [];
 
-  // When no species are URL-selected, default to top 20 from pipeline data.
-  const effectiveSelected =
-    selectedSpecies.length > 0
-      ? selectedSpecies
-      : applyPreset(allSpecies, "top20");
+  // No species param at all → default to Top 20. An explicitly-present species
+  // param (even empty, from "Clear") is honored as-is, so the empty state is
+  // reachable.
+  const effectiveSelected = hasSpeciesParam
+    ? selectedSpecies
+    : applyPreset(allSpecies, "top20");
 
   const handleSpeciesClick = (species: string) => {
     const next = effectiveSelected.includes(species)

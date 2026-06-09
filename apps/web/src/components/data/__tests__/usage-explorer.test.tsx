@@ -3,6 +3,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { type PipelineDataResult } from "@trainers/supabase";
+import { pipelineSpeciesFactory } from "@trainers/test-utils";
+
 import { UsageExplorer } from "../usage-explorer";
 import { type UsageFilters } from "../usage-filters";
 
@@ -72,7 +75,9 @@ jest.mock("../usage-pipeline-chart", () => ({
 jest.mock("../data-sidebar", () => ({
   DataSidebar: (props: {
     onFiltersChange: (f: UsageFilters) => void;
+    onSelectionChange: (s: string[]) => void;
     filters: UsageFilters;
+    selectedSpecies: string[];
   }) => (
     <div data-testid="data-sidebar">
       <button
@@ -82,6 +87,11 @@ jest.mock("../data-sidebar", () => ({
       >
         change-format
       </button>
+      <button onClick={() => props.onSelectionChange([])}>sidebar-clear</button>
+      <span data-testid="selected-count">{props.selectedSpecies.length}</span>
+      <span data-testid="selected-species">
+        {props.selectedSpecies.join(",")}
+      </span>
     </div>
   ),
 }));
@@ -108,13 +118,21 @@ const DEFAULT_FILTERS: UsageFilters = {
   periodType: "week",
 };
 
-function renderExplorer() {
+function makePipelineResult(count: number): PipelineDataResult {
+  return {
+    data: pipelineSpeciesFactory.buildList(count),
+    periodStart: "2025-01-01",
+    periodEnd: "2025-01-31",
+  };
+}
+
+function renderExplorer(pipelineResult?: PipelineDataResult | null) {
   const Wrapper = makeWrapper();
   return render(
     <Wrapper>
       <UsageExplorer
         initialPoints={[]}
-        initialPipelineResult={null}
+        initialPipelineResult={pipelineResult ?? null}
         initialEvents={[]}
         initialFilters={DEFAULT_FILTERS}
       />
@@ -173,9 +191,10 @@ describe("UsageExplorer — species URL state", () => {
   it("removes a species from the URL when it is already selected", async () => {
     mockSearchParams = new URLSearchParams("species=Sneasler");
     renderExplorer();
-    // Clicking "Sneasler" again should toggle it off
+    // Clicking "Sneasler" again should toggle it off — key stays present (empty)
     await userEvent.click(screen.getByText("lc-pick"));
-    expect(lastReplaceParams().get("species")).toBeNull();
+    // present-but-empty: key is set to "" not deleted
+    expect(lastReplaceParams().get("species")).toBe("");
   });
 
   it("clears species when the DataSidebar triggers an empty selection", async () => {
@@ -184,7 +203,38 @@ describe("UsageExplorer — species URL state", () => {
     // Clicking "Sneasler" again (when it's the only selection) should clear the param
     await userEvent.click(screen.getByText("lc-pick"));
     const p = lastReplaceParams();
-    expect(p.get("species")).toBeNull();
+    // present-but-empty so the next render honors the explicit empty state
+    expect(p.get("species")).toBe("");
+  });
+});
+
+// =============================================================================
+// 3-state species model
+// =============================================================================
+
+describe("UsageExplorer — 3-state species model", () => {
+  it("defaults to Top 20 when the species param is ABSENT", () => {
+    // No species param → effectiveSelected falls back to applyPreset(allSpecies, "top20")
+    mockSearchParams = new URLSearchParams(); // no "species" key
+    renderExplorer(makePipelineResult(20));
+    expect(screen.getByTestId("selected-count").textContent).toBe("20");
+  });
+
+  it("shows empty selection when species param is PRESENT but empty", () => {
+    // species= present-but-empty → effectiveSelected = [] (empty state reachable)
+    mockSearchParams = new URLSearchParams("species=");
+    renderExplorer(makePipelineResult(20));
+    expect(screen.getByTestId("selected-count").textContent).toBe("0");
+    expect(screen.getByTestId("selected-species").textContent).toBe("");
+  });
+
+  it("shows only the named species when species param is PRESENT with values", () => {
+    mockSearchParams = new URLSearchParams("species=Garchomp,Sneasler");
+    renderExplorer(makePipelineResult(20));
+    expect(screen.getByTestId("selected-count").textContent).toBe("2");
+    expect(screen.getByTestId("selected-species").textContent).toBe(
+      "Garchomp,Sneasler"
+    );
   });
 });
 
@@ -213,7 +263,9 @@ describe("UsageExplorer — format change", () => {
     await userEvent.click(screen.getByText("change-format"));
     const p = lastReplaceParams();
     expect(p.get("format")).toBe("gen9vgc2024regh");
-    expect(p.get("species")).toBeNull();
+    // present-but-empty: format change passes [] which writes species="" so the
+    // next render lands on the explicit empty state rather than reverting to Top 20.
+    expect(p.get("species")).toBe("");
   });
 
   it("preserves species when a non-format filter changes (same format)", async () => {
