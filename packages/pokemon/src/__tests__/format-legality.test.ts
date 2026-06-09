@@ -12,6 +12,7 @@ import {
   isLegalMove,
   isLegalSpecies,
   isLegalTeraType,
+  validatePokemonLegality,
   type LegalityResult,
   LEGALITY_UNAVAILABLE,
   speciesHasForms,
@@ -175,7 +176,9 @@ describe("format-legality — moves", () => {
   });
 
   it("returns a learnset-filtered set for Champions species", () => {
-    const legal = asSet(getLegalMoves("Incineroar", "gen9championsvgc2026regma"));
+    const legal = asSet(
+      getLegalMoves("Incineroar", "gen9championsvgc2026regma")
+    );
     expect(legal.has("Fake Out")).toBe(true);
     expect(legal.has("Hyperspace Hole")).toBe(false);
   });
@@ -284,7 +287,11 @@ describe("format-legality — abilities", () => {
 
     it("Charizard-Mega-Y rejects an ability not in Charizard's pool", () => {
       expect(
-        isLegalAbility("Intimidate", "Charizard-Mega-Y", "gen9championsvgc2026regma")
+        isLegalAbility(
+          "Intimidate",
+          "Charizard-Mega-Y",
+          "gen9championsvgc2026regma"
+        )
       ).toBe(false);
     });
   });
@@ -385,5 +392,136 @@ describe("form switching", () => {
     ])("%s → %s", (input, expected) => {
       expect(getMegaStoneForSpecies(input)).toBe(expected);
     });
+  });
+});
+
+describe("validatePokemonLegality", () => {
+  // Champions M-A legal inputs used across multiple cases:
+  //   species:  "Garchomp"        — in CHAMPIONS_MA_LEGAL_SPECIES
+  //   item:     "Choice Scarf"    — in CHAMPIONS_MA_LEGAL_ITEMS
+  //   ability:  "Rough Skin"      — one of Garchomp's own abilities (Sand Veil / Rough Skin)
+  //   move:     "Earthquake"      — Garchomp learns it via level-up / TM
+  //
+  // Illegal inputs:
+  //   species:  "Landorus-Therian" — not in Champions roster
+  //   item:     "Life Orb"         — not in CHAMPIONS_MA_LEGAL_ITEMS
+  //   ability:  "Intimidate"       — not in Garchomp's ability pool
+  //   move:     "Hyperspace Hole"  — Hoopa's signature; Garchomp's learnset never includes it
+
+  const CHAMPIONS = "gen9championsvgc2026regma";
+
+  it("returns { isLegal: true, reason: null } when all fields are legal", () => {
+    expect(
+      validatePokemonLegality(
+        "Garchomp",
+        "Rough Skin",
+        "Choice Scarf",
+        ["Earthquake", "Dragon Claw", "Protect", "Rock Slide"],
+        CHAMPIONS
+      )
+    ).toEqual({ isLegal: true, reason: null });
+  });
+
+  it("returns illegal species reason when species is not in the format roster", () => {
+    const result = validatePokemonLegality(
+      "Landorus-Therian",
+      "Rough Skin",
+      "Choice Scarf",
+      ["Earthquake"],
+      CHAMPIONS
+    );
+    expect(result.isLegal).toBe(false);
+    expect(result.reason).toBe("Illegal species: Landorus-Therian");
+  });
+
+  it("returns illegal item reason when item is not in the format item pool (legal species)", () => {
+    const result = validatePokemonLegality(
+      "Garchomp",
+      "Rough Skin",
+      "Life Orb",
+      ["Earthquake"],
+      CHAMPIONS
+    );
+    expect(result.isLegal).toBe(false);
+    expect(result.reason).toBe("Illegal item: Life Orb");
+  });
+
+  it("returns illegal ability reason when ability is not in the species' pool (legal species)", () => {
+    const result = validatePokemonLegality(
+      "Garchomp",
+      "Intimidate",
+      "Choice Scarf",
+      ["Earthquake"],
+      CHAMPIONS
+    );
+    expect(result.isLegal).toBe(false);
+    expect(result.reason).toBe("Illegal ability: Intimidate");
+  });
+
+  it("returns illegal move reason when species cannot learn the move (legal species/item/ability)", () => {
+    const result = validatePokemonLegality(
+      "Garchomp",
+      "Rough Skin",
+      "Choice Scarf",
+      ["Earthquake", "Hyperspace Hole"],
+      CHAMPIONS
+    );
+    expect(result.isLegal).toBe(false);
+    expect(result.reason).toBe("Illegal move: Hyperspace Hole");
+  });
+
+  it("first-failure-wins: illegal species AND illegal item → reason is the species message", () => {
+    const result = validatePokemonLegality(
+      "Landorus-Therian",
+      "Rough Skin",
+      "Life Orb",
+      ["Earthquake"],
+      CHAMPIONS
+    );
+    expect(result.isLegal).toBe(false);
+    expect(result.reason).toBe("Illegal species: Landorus-Therian");
+  });
+
+  it("skips null fields and returns legal when species is valid", () => {
+    expect(
+      validatePokemonLegality("Garchomp", null, null, null, CHAMPIONS)
+    ).toEqual({ isLegal: true, reason: null });
+  });
+
+  it("returns { isLegal: true } for a totally unknown format (permissive fail-open)", () => {
+    expect(
+      validatePokemonLegality(
+        "Landorus-Therian",
+        "Intimidate",
+        "Life Orb",
+        ["Hyperspace Hole"],
+        "totally-unknown-format"
+      )
+    ).toEqual({ isLegal: true, reason: null });
+  });
+
+  it("form Pokemon passed as a lowercase slug is legal (slug canonicalization regression)", () => {
+    // "rotom-wash" is the normalized slug that RK9 import produces.
+    // SimDex.species.get("rotom-wash") resolves to "Rotom-Wash", which IS in
+    // the Champions M-A species set — this was the bug: every form Pokemon
+    // (Rotom-Wash, Ogerpon-Wellspring, Urshifu-Rapid-Strike, etc.) was wrongly
+    // flagged illegal because the slug didn't match the Set.has() lookup.
+    expect(
+      validatePokemonLegality("rotom-wash", null, null, null, CHAMPIONS)
+    ).toEqual({ isLegal: true, reason: null });
+  });
+
+  it("illegal form species reason shows the canonical name, not the raw slug", () => {
+    // "landorus-therian" slug → canonical "Landorus-Therian" (not in Champions M-A)
+    // The reason string must use the canonical name so it's human-readable.
+    const result = validatePokemonLegality(
+      "landorus-therian",
+      null,
+      null,
+      null,
+      CHAMPIONS
+    );
+    expect(result.isLegal).toBe(false);
+    expect(result.reason).toBe("Illegal species: Landorus-Therian");
   });
 });

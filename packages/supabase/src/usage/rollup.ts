@@ -123,7 +123,7 @@ export interface FactRow {
   teamCount: number;
   /**
    * Total teams in this (source, eventKey, division) group — the per-event denominator.
-   * Populated from event_usage.sample_size.
+   * Populated from event_usage.total_teams.
    */
   sampleSize: number;
   /** Histogram breakdowns for the species at this event. */
@@ -266,20 +266,28 @@ export function rollupBucket(facts: FactRow[]): BucketRollup {
   for (const [species, speciesFacts] of bySpecies) {
     const teamCount = speciesFacts.reduce((sum, f) => sum + f.teamCount, 0);
     const usagePct =
-      totalTeams > 0 ? Math.round((100 * teamCount * 100) / totalTeams) / 100 : 0;
+      totalTeams > 0
+        ? Math.round((100 * teamCount * 100) / totalTeams) / 100
+        : 0;
 
     // Merge histograms across all facts for this species
-    const mergedMoves = mergeHistogram(speciesFacts.map((f) => f.details.moves));
+    const mergedMoves = mergeHistogram(
+      speciesFacts.map((f) => f.details.moves)
+    );
     const mergedTera = mergeHistogram(speciesFacts.map((f) => f.details.tera));
     const mergedItem = mergeHistogram(speciesFacts.map((f) => f.details.item));
-    const mergedAbility = mergeHistogram(speciesFacts.map((f) => f.details.ability));
-    const mergedNature = mergeHistogram(speciesFacts.map((f) => f.details.nature));
-    const mergedAbilityItem = mergeHistogram(speciesFacts.map((f) => f.details.abilityItem));
+    const mergedAbility = mergeHistogram(
+      speciesFacts.map((f) => f.details.ability)
+    );
+    const mergedNature = mergeHistogram(
+      speciesFacts.map((f) => f.details.nature)
+    );
+    const mergedAbilityItem = mergeHistogram(
+      speciesFacts.map((f) => f.details.abilityItem)
+    );
 
     // Convert to DetailEntry with pct (denominator = teams running the species)
-    function toDetailEntries(
-      hist: { v: string; n: number }[]
-    ): DetailEntry[] {
+    function toDetailEntries(hist: { v: string; n: number }[]): DetailEntry[] {
       return hist.map(({ v, n }) => ({
         value: v,
         count: n,
@@ -311,7 +319,12 @@ export function rollupBucket(facts: FactRow[]): BucketRollup {
   for (let i = 0; i < speciesRows.length; i++) {
     const row = speciesRows[i];
     const prev = speciesRows[i - 1];
-    if (i > 0 && prev !== undefined && row !== undefined && row.usagePct === prev.usagePct) {
+    if (
+      i > 0 &&
+      prev !== undefined &&
+      row !== undefined &&
+      row.usagePct === prev.usagePct
+    ) {
       // Same pct → same rank (dense rank: no gaps)
       row.rank = prev.rank;
     } else if (row !== undefined) {

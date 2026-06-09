@@ -1251,10 +1251,10 @@ export type Database = {
           event_key: string
           format: string
           id: number
-          sample_size: number
           source: string
           species: string
           team_count: number
+          total_teams: number
         }
         Insert: {
           computed_at?: string
@@ -1264,10 +1264,10 @@ export type Database = {
           event_key: string
           format: string
           id?: never
-          sample_size: number
           source: string
           species: string
           team_count: number
+          total_teams: number
         }
         Update: {
           computed_at?: string
@@ -1277,10 +1277,10 @@ export type Database = {
           event_key?: string
           format?: string
           id?: never
-          sample_size?: number
           source?: string
           species?: string
           team_count?: number
+          total_teams?: number
         }
         Relationships: []
       }
@@ -4475,6 +4475,8 @@ export type Database = {
           ability: string | null
           held_item: string | null
           id: number
+          is_legal: boolean
+          legality_reason: string | null
           moves: string[] | null
           position: number
           species: string
@@ -4487,6 +4489,8 @@ export type Database = {
           ability?: string | null
           held_item?: string | null
           id?: never
+          is_legal?: boolean
+          legality_reason?: string | null
           moves?: string[] | null
           position: number
           species: string
@@ -4499,6 +4503,8 @@ export type Database = {
           ability?: string | null
           held_item?: string | null
           id?: never
+          is_legal?: boolean
+          legality_reason?: string | null
           moves?: string[] | null
           position?: number
           species?: string

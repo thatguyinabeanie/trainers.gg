@@ -164,24 +164,39 @@ export async function fetchTournamentList(
 }
 
 /**
+ * Limitless tournament IDs are short alphanumeric tokens. Restrict to that
+ * shape before interpolating into a request path. Without this guard a value
+ * containing `/`, `..`, `@`, `?` or `#` could escape the intended path segment
+ * and redirect the request to a different endpoint or host (SSRF / path
+ * traversal). The allowlist is the sanitizer; encodeURIComponent below is
+ * defense-in-depth.
+ */
+const TOURNAMENT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+/**
  * Fetch all data for a single tournament (details + standings + pairings).
  */
 export async function fetchTournamentData(
   tournamentId: string,
   apiKey?: string
 ): Promise<TournamentData> {
+  if (!TOURNAMENT_ID_PATTERN.test(tournamentId)) {
+    throw new Error(`Invalid Limitless tournament id: ${tournamentId}`);
+  }
+  const safeId = encodeURIComponent(tournamentId);
+
   // 3 concurrent requests — rate limit retry handles any throttling
   const [details, standings, pairings] = await Promise.all([
     limitlessFetch<LimitlessTournamentDetails>(
-      `/tournaments/${tournamentId}/details`,
+      `/tournaments/${safeId}/details`,
       apiKey
     ),
     limitlessFetch<LimitlessStanding[]>(
-      `/tournaments/${tournamentId}/standings`,
+      `/tournaments/${safeId}/standings`,
       apiKey
     ),
     limitlessFetch<LimitlessPairing[]>(
-      `/tournaments/${tournamentId}/pairings`,
+      `/tournaments/${safeId}/pairings`,
       apiKey
     ),
   ]);

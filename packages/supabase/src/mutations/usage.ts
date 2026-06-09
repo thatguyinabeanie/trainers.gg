@@ -70,7 +70,11 @@ export async function computeEventUsage(
   // ---------------------------------------------------------------------------
   // Step 1: Resolve format + event_date
   // ---------------------------------------------------------------------------
-  const { format, eventDate } = await resolveEventMeta(supabase, source, eventId);
+  const { format, eventDate } = await resolveEventMeta(
+    supabase,
+    source,
+    eventId
+  );
 
   // ---------------------------------------------------------------------------
   // Step 2: Read team rows and map to TeamMonInput[]
@@ -111,7 +115,7 @@ export async function computeEventUsage(
       event_date: eventDate,
       species: r.species,
       team_count: r.teamCount,
-      sample_size: r.sampleSize,
+      total_teams: r.sampleSize,
       details: r.details as unknown as Json,
     }));
 
@@ -389,7 +393,9 @@ async function resolveEventMeta(
       // tournaments.start_date is a timestamptz — cast to date string.
       const { data, error } = await supabase
         .from("tournament_team_sheets")
-        .select("format, tournaments!tournament_team_sheets_tournament_id_fkey(start_date)")
+        .select(
+          "format, tournaments!tournament_team_sheets_tournament_id_fkey(start_date)"
+        )
         .eq("tournament_id", Number(eventId))
         .limit(1)
         .maybeSingle();
@@ -473,7 +479,11 @@ async function readRawTeamRows(
         .select(
           "standing_id, species, ability, held_item, tera_type, moves, stat_alignment, standings!inner(id, division, event_id)"
         )
-        .eq("standings.event_id", eventId);
+        .eq("standings.event_id", eventId)
+        // Exclude illegal team-sheet entries (flagged at import time) from
+        // usage stats. The underlying rows are kept in the table — we only
+        // filter them out of the computed meta.
+        .eq("is_legal", true);
 
       if (error) {
         throw new Error(
@@ -599,12 +609,15 @@ async function upsertUsageDirty(
       ? existing.dirty_since
       : newDate;
 
-  const { error: upsertError } = await supabase
-    .from("usage_dirty")
-    .upsert(
-      { format, source, dirty_since: dirtySince, updated_at: new Date().toISOString() },
-      { onConflict: "format,source" }
-    );
+  const { error: upsertError } = await supabase.from("usage_dirty").upsert(
+    {
+      format,
+      source,
+      dirty_since: dirtySince,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "format,source" }
+  );
 
   if (upsertError) {
     throw new Error(
@@ -716,7 +729,7 @@ export async function computeUsageRollups(
         let query = supabase
           .from("event_usage")
           .select(
-            "source, event_key, division, species, team_count, sample_size, details, event_date"
+            "source, event_key, division, species, team_count, total_teams, details, event_date"
           )
           .eq("format", format)
           .gte("event_date", dirtyBucketStart);
@@ -757,7 +770,7 @@ export async function computeUsageRollups(
                 division: r.division,
                 species: r.species,
                 teamCount: r.team_count,
-                sampleSize: r.sample_size,
+                sampleSize: r.total_teams,
                 details: {
                   moves: details?.moves ?? [],
                   tera: details?.tera ?? [],
@@ -787,10 +800,7 @@ export async function computeUsageRollups(
           const bEnd = bucketEnd(bStart, periodType);
 
           // Compute prior-bucket dates for deltas
-          const prior7dStart = bucketStart(
-            subtractDays(bStart, 7),
-            periodType
-          );
+          const prior7dStart = bucketStart(subtractDays(bStart, 7), periodType);
           const prior30dStart = bucketStart(
             subtractDays(bStart, 30),
             periodType

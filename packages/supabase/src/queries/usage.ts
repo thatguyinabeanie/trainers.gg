@@ -1,4 +1,5 @@
 import type { TypedClient } from "../client";
+import { rollupBucket, type FactRow } from "../usage/rollup";
 
 // =============================================================================
 // Types
@@ -61,6 +62,7 @@ export interface PipelineSpeciesData {
   usagePct: number;
   rank: number;
   abilities: UsageDetailEntry[];
+  items: UsageDetailEntry[];
   natures: UsageDetailEntry[];
   moves: UsageDetailEntry[];
 }
@@ -83,6 +85,27 @@ export interface GetPipelineDataParams {
   periodStart?: string;
   /** If provided, restricts to periods whose end is <= this date. */
   periodEnd?: string;
+}
+
+/** Parameters for `getDirectPipelineData`. */
+export interface GetDirectPipelineDataParams {
+  /** Format ID, e.g. "SS_2025" or "VGC_2024". */
+  format: string;
+  /**
+   * Data source filter. Pass "all" or omit to include all sources.
+   * Concrete values: "rk9" | "limitless" | "first_party".
+   */
+  source?: string;
+  /** If provided, restrict to events on or after this ISO date. */
+  periodStart?: string;
+  /** If provided, restrict to events on or before this ISO date. */
+  periodEnd?: string;
+  /**
+   * Minimum `total_teams` per event-division row.
+   * Events with fewer registered teams are excluded.
+   * Defaults to 0 (no filter).
+   */
+  minPlayers?: number;
 }
 
 /** One distinct event for annotation pins on the usage timeline. */
@@ -406,7 +429,7 @@ export async function getPipelineData(
       .order("rank", { ascending: true }),
     supabase
       .from("pokemon_detail_stats")
-      .select("species, abilities, natures, moves")
+      .select("species, abilities, items, natures, moves")
       .eq("meta_id", metaRow.id),
   ]);
 
@@ -434,6 +457,7 @@ export async function getPipelineData(
       usagePct: row.usage_pct,
       rank: row.rank,
       abilities: (detail?.abilities as UsageDetailEntry[] | null) ?? [],
+      items: (detail?.items as UsageDetailEntry[] | null) ?? [],
       natures: (detail?.natures as UsageDetailEntry[] | null) ?? [],
       moves: (detail?.moves as UsageDetailEntry[] | null) ?? [],
     };
@@ -443,6 +467,104 @@ export async function getPipelineData(
     data,
     periodStart: metaRow.period_start,
     periodEnd: metaRow.period_end,
+  };
+}
+
+/**
+ * Fetch pipeline (Sankey) data by reading event_usage directly.
+ *
+ * Unlike getPipelineData (which reads pre-aggregated rollup tables),
+ * this function reads raw event_usage rows and calls rollupBucket() to
+ * compute usage percentages on the fly. This enables per-event filters
+ * like minPlayers that are impossible once data has been pre-aggregated.
+ *
+ * Returns null when no rows match the given filters.
+ */
+export async function getDirectPipelineData(
+  supabase: TypedClient,
+  params: GetDirectPipelineDataParams
+): Promise<PipelineDataResult | null> {
+  const { format, source, periodStart, periodEnd, minPlayers = 0 } = params;
+
+  let query = supabase
+    .from("event_usage")
+    .select(
+      "source, event_key, division, species, team_count, total_teams, details, event_date"
+    )
+    .eq("format", format);
+
+  if (source && source !== "all") {
+    query = query.eq("source", source);
+  }
+  if (periodStart) {
+    query = query.gte("event_date", periodStart);
+  }
+  if (periodEnd) {
+    query = query.lte("event_date", periodEnd);
+  }
+  if (minPlayers > 0) {
+    query = query.gte("total_teams", minPlayers);
+  }
+
+  const { data: rows, error } = await query;
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch direct pipeline data for ${format}: ${error.message}`
+    );
+  }
+
+  if (!rows || rows.length === 0) return null;
+
+  type DetailsShape = {
+    moves?: { v: string; n: number }[];
+    tera?: { v: string; n: number }[];
+    item?: { v: string; n: number }[];
+    ability?: { v: string; n: number }[];
+    nature?: { v: string; n: number }[];
+    abilityItem?: { v: string; n: number }[];
+  } | null;
+
+  const facts: FactRow[] = rows.map((r) => {
+    const details = r.details as DetailsShape;
+    return {
+      source: r.source,
+      eventKey: r.event_key,
+      division: r.division,
+      species: r.species,
+      teamCount: r.team_count,
+      sampleSize: r.total_teams,
+      details: {
+        moves: details?.moves ?? [],
+        tera: details?.tera ?? [],
+        item: details?.item ?? [],
+        ability: details?.ability ?? [],
+        nature: details?.nature ?? [],
+        abilityItem: details?.abilityItem ?? [],
+      },
+    };
+  });
+
+  const eventDates = rows.map((r) => r.event_date).sort();
+  const computedStart = eventDates[0]!;
+  const computedEnd = eventDates[eventDates.length - 1]!;
+
+  const rollup = rollupBucket(facts);
+
+  const data: PipelineSpeciesData[] = rollup.species.map((s) => ({
+    species: s.species,
+    usagePct: s.usagePct,
+    rank: s.rank,
+    abilities: s.ability,
+    items: s.item,
+    natures: s.nature,
+    moves: s.moves,
+  }));
+
+  return {
+    data,
+    periodStart: periodStart ?? computedStart,
+    periodEnd: periodEnd ?? computedEnd,
   };
 }
 

@@ -44,7 +44,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("@/actions/limitless", () => ({
-  queueTournamentForImport: jest.fn(),
+  importLimitlessTournament: jest.fn(),
   batchQueueTournaments: jest.fn(),
   triggerLimitlessSync: jest.fn(),
   triggerImportQueue: jest.fn(),
@@ -992,9 +992,16 @@ describe("ExternalData events table rendering", () => {
     expect(screen.getByText(/50\/100 teams/i)).toBeInTheDocument();
   });
 
-  it("triggers roster scrape when the Roster action button is clicked", async () => {
-    const { scrapeRk9Roster } = jest.requireMock("@/actions/rk9");
+  it("triggers roster scrape then team scrape when Import is clicked on a pending RK9 row", async () => {
+    const { scrapeRk9Roster, scrapeRk9TeamsBatch } =
+      jest.requireMock("@/actions/rk9");
     scrapeRk9Roster.mockResolvedValue({ success: true });
+    scrapeRk9TeamsBatch.mockResolvedValue({
+      success: true,
+      done: true,
+      scraped: 0,
+      total: 0,
+    });
 
     render(<ExternalData />);
     await waitFor(() =>
@@ -1010,11 +1017,15 @@ describe("ExternalData events table rendering", () => {
       );
     });
 
+    // One-pass: roster first, then teams — both must be called in a single click
     await waitFor(() => expect(scrapeRk9Roster).toHaveBeenCalled());
+    await waitFor(() => expect(scrapeRk9TeamsBatch).toHaveBeenCalled());
   });
 
-  it("triggers team scrape when the Teams action button is clicked", async () => {
-    const { scrapeRk9TeamsBatch } = jest.requireMock("@/actions/rk9");
+  it("triggers roster scrape then team scrape when Import is clicked on a roster-ready RK9 row", async () => {
+    const { scrapeRk9Roster, scrapeRk9TeamsBatch } =
+      jest.requireMock("@/actions/rk9");
+    scrapeRk9Roster.mockResolvedValue({ success: true });
     scrapeRk9TeamsBatch.mockResolvedValue({
       success: true,
       done: true,
@@ -1036,7 +1047,36 @@ describe("ExternalData events table rendering", () => {
       );
     });
 
+    // One-pass: roster first, then teams — both must be called in a single click
+    await waitFor(() => expect(scrapeRk9Roster).toHaveBeenCalled());
     await waitFor(() => expect(scrapeRk9TeamsBatch).toHaveBeenCalled());
+  });
+
+  it("does not scrape teams if roster scrape fails", async () => {
+    const { scrapeRk9Roster, scrapeRk9TeamsBatch } =
+      jest.requireMock("@/actions/rk9");
+    scrapeRk9Roster.mockResolvedValue({
+      success: false,
+      error: "Network error",
+    });
+
+    render(<ExternalData />);
+    await waitFor(() =>
+      expect(screen.getByText("Pending Event")).toBeInTheDocument()
+    );
+
+    const pendingRow = screen
+      .getByText("Pending Event")
+      .closest("div.grid") as HTMLElement;
+    await act(async () => {
+      fireEvent.click(
+        within(pendingRow).getByRole("button", { name: /^Import$/i })
+      );
+    });
+
+    await waitFor(() => expect(scrapeRk9Roster).toHaveBeenCalled());
+    // Teams must NOT be scraped if roster failed
+    expect(scrapeRk9TeamsBatch).not.toHaveBeenCalled();
   });
 
   it("resets event data after confirmation when the reset button is clicked", async () => {
@@ -1122,6 +1162,7 @@ describe("RK9 status tabs", () => {
           event_id: "e-complete",
           name: "Complete A",
           import_status: "complete",
+          teams_imported_count: 100,
         }),
         makeEvent({
           event_id: "e-failed",
@@ -1363,11 +1404,14 @@ describe("ExternalData limitless table rendering", () => {
     expect(screen.getAllByText(/Imported/i).length).toBeGreaterThan(0);
   });
 
-  it("Import on a Limitless row queues the tournament", async () => {
-    const { queueTournamentForImport } = jest.requireMock(
+  it("Import on a Limitless row runs a full one-pass import (not enqueue)", async () => {
+    const { importLimitlessTournament } = jest.requireMock(
       "@/actions/limitless"
     );
-    queueTournamentForImport.mockResolvedValue({ success: true });
+    importLimitlessTournament.mockResolvedValue({
+      success: true,
+      data: { imported: true },
+    });
 
     render(<ExternalData />);
     await act(async () => {
@@ -1379,7 +1423,8 @@ describe("ExternalData limitless table rendering", () => {
       expect(screen.getByText("Failed Cup")).toBeInTheDocument()
     );
 
-    // The unified "Import" action on a Limitless row dispatches to the queue.
+    // The unified "Import" action on a Limitless row runs a full import
+    // (importLimitlessTournament), NOT the enqueue action.
     const failedRow = screen
       .getByText("Failed Cup")
       .closest("div.grid") as HTMLElement;
@@ -1389,7 +1434,7 @@ describe("ExternalData limitless table rendering", () => {
       );
     });
     await waitFor(() =>
-      expect(queueTournamentForImport).toHaveBeenCalledWith("t-failed")
+      expect(importLimitlessTournament).toHaveBeenCalledWith("t-failed")
     );
   });
 });

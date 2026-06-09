@@ -38,6 +38,16 @@ export function deriveDisplayStatus(row: UnifiedRow): DisplayStatus {
   }
   switch (row.status) {
     case "complete":
+      // Defense-in-depth: if the DB row was incorrectly written as "complete"
+      // with 0 teams but the event has players (the scrapeRk9TeamsBatch Site 1
+      // bug), show it as in-progress so admins can see it needs a retry.
+      if (
+        row.rk9 &&
+        (row.rk9.teams_imported_count ?? 0) === 0 &&
+        (row.rk9.player_count ?? 0) > 0
+      ) {
+        return "in-progress";
+      }
       return "imported";
     case "in-progress":
       return "in-progress";

@@ -195,6 +195,28 @@ describe("fetchTournamentData", () => {
     expect(result.pairings).toHaveLength(1);
   });
 
+  it.each([
+    "../../admin",
+    "t1/../../evil",
+    "t1?redirect=evil.com",
+    "t1#frag",
+    "@evil.com",
+    "t 1",
+    "",
+  ])(
+    "rejects a tournament id that could escape the path segment: %p",
+    async (badId) => {
+      const mockFetch = jest.fn();
+      jest.spyOn(globalThis, "fetch").mockImplementation(mockFetch);
+
+      await expect(fetchTournamentData(badId)).rejects.toThrow(
+        /Invalid Limitless tournament id/
+      );
+      // Must reject BEFORE any network request is made.
+      expect(mockFetch).not.toHaveBeenCalled();
+    }
+  );
+
   afterEach(() => {
     jest.restoreAllMocks();
   });

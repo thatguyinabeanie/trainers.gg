@@ -289,11 +289,7 @@ export {
 } from "./teams";
 
 // Coach queries
-export {
-  getCoachBadges,
-  getCoachProfileByHandle,
-  listCoaches,
-} from "./coach";
+export { getCoachBadges, getCoachProfileByHandle, listCoaches } from "./coach";
 
 export type { CoachBadgeInfo, CoachProfile } from "./coach";
 
@@ -374,6 +370,7 @@ export {
   getSpeciesUsage,
   getFormatUsageTimeseries,
   getPipelineData,
+  getDirectPipelineData,
   getFormatEvents,
 } from "./usage";
 
@@ -386,5 +383,6 @@ export type {
   PipelineSpeciesData,
   PipelineDataResult,
   GetPipelineDataParams,
+  GetDirectPipelineDataParams,
   FormatEvent,
 } from "./usage";

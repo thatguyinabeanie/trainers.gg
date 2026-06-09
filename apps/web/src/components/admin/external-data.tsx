@@ -22,7 +22,7 @@ import {
   resetRk9EventData,
 } from "@/actions/rk9";
 import {
-  queueTournamentForImport,
+  importLimitlessTournament,
   batchQueueTournaments,
   triggerLimitlessSync,
   triggerImportQueue,
@@ -202,15 +202,26 @@ export function ExternalData() {
     isFetching: rk9Fetching,
   } = useSupabaseQuery(
     async (sb) => {
-      const { data, error } = await sb
-        .schema("rk9")
-        .from("events")
-        .select(
-          "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count"
-        )
-        .order("date_start", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as RK9EventRow[];
+      // Paginate in 1000-row pages — hosted Supabase caps responses at
+      // max-rows=1000, so a single select silently truncates large tables.
+      const PAGE = 1000;
+      const all: RK9EventRow[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await sb
+          .schema("rk9")
+          .from("events")
+          .select(
+            "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count"
+          )
+          .order("date_start", { ascending: false })
+          .order("event_id", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as RK9EventRow[];
+        all.push(...rows);
+        if (rows.length < PAGE) break;
+      }
+      return all;
     },
     [refreshKey]
   );
@@ -226,15 +237,27 @@ export function ExternalData() {
     isFetching: limitlessFetching,
   } = useSupabaseQuery(
     async (sb) => {
-      const { data, error } = await sb
-        .schema("limitless")
-        .from("tournaments")
-        .select(
-          "tournament_id, name, format_id, date, player_count, platform, is_online, decklists, data_imported_at, import_status, import_requested_at, import_error, import_attempts"
-        )
-        .order("date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as LimitlessTournamentRow[];
+      // Paginate in 1000-row pages — hosted Supabase caps responses at
+      // max-rows=1000, so a single select silently truncates (only ~1000 of
+      // several thousand synced tournaments would load otherwise).
+      const PAGE = 1000;
+      const all: LimitlessTournamentRow[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await sb
+          .schema("limitless")
+          .from("tournaments")
+          .select(
+            "tournament_id, name, format_id, date, player_count, platform, is_online, decklists, data_imported_at, import_status, import_requested_at, import_error, import_attempts"
+          )
+          .order("date", { ascending: false })
+          .order("tournament_id", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as LimitlessTournamentRow[];
+        all.push(...rows);
+        if (rows.length < PAGE) break;
+      }
+      return all;
     },
     [refreshKey]
   );
@@ -575,10 +598,15 @@ export function ExternalData() {
     }
   }
 
-  async function handleScrapeRoster(eventId: string) {
+  async function handleScrapeRoster(eventId: string): Promise<boolean> {
     setActiveJobs((prev) => new Map(prev).set(eventId, { type: "roster" }));
     try {
-      await scrapeRk9Roster(eventId);
+      const result = await scrapeRk9Roster(eventId);
+      if (!result.success) {
+        toast.error(getErrorMessage(result.error, "Failed to scrape roster"));
+        return false;
+      }
+      return true;
     } finally {
       setActiveJobs((prev) => {
         const next = new Map(prev);
@@ -748,14 +776,19 @@ export function ExternalData() {
     }
   }
 
-  async function handleQueueOne(tournamentId: string) {
+  /**
+   * One-pass per-row import for a single Limitless tournament.
+   * Calls importLimitlessTournament directly (full fetch+insert, not enqueue).
+   * Uses queuingIds for spinner feedback while in flight.
+   */
+  async function handleImportLimitlessOne(tournamentId: string) {
     setQueuingIds((prev) => new Set(prev).add(tournamentId));
     try {
-      const result = await queueTournamentForImport(tournamentId);
+      const result = await importLimitlessTournament(tournamentId);
       if (!result.success) throw new Error(result.error);
       setRefreshKey((k) => k + 1);
     } catch (e) {
-      toast.error(getErrorMessage(e, "Failed to queue tournament"));
+      toast.error(getErrorMessage(e, "Failed to import tournament"));
     } finally {
       setQueuingIds((prev) => {
         const next = new Set(prev);
@@ -766,17 +799,37 @@ export function ExternalData() {
   }
 
   /**
-   * Unified per-row import dispatcher. Dispatches to the source-appropriate
-   * import handler based on the row's source and current import_status:
-   * - Limitless: queues the tournament via handleQueueOne
-   * - RK9 pending/failed: scrapes the roster first
-   * - RK9 roster/teams/complete (no team lists): scrapes teams
+   * One-pass per-row import for a single RK9 event.
+   * Scrapes the roster first, then immediately scrapes teams — both in one
+   * click. This replaces the old two-step flow where separate buttons advanced
+   * the import one stage at a time.
+   */
+  async function handleImportRk9(eventId: string) {
+    const rosterOk = await handleScrapeRoster(eventId);
+    if (!rosterOk) return;
+    await handleScrapeTeams(eventId);
+  }
+
+  /**
+   * Per-row import dispatcher for the one-pass Import button.
+   * - Limitless: full fetch+insert via handleImportLimitlessOne
+   * - RK9: roster then teams in sequence via handleImportRk9
    */
   async function handleImport(row: UnifiedRow) {
     if (row.source === "limitless") {
-      await handleQueueOne(row.limitless!.tournament_id);
+      await handleImportLimitlessOne(row.limitless!.tournament_id);
       return;
     }
+    await handleImportRk9(row.rk9!.event_id);
+  }
+
+  /**
+   * Legacy per-row RK9 step handler used by BULK operations only.
+   * Bulk operations stay on the old per-step strategy (roster only for
+   * pending/failed, teams for roster/teams/complete) so the worker pipeline
+   * can advance them incrementally without blocking the full batch.
+   */
+  async function handleEnqueueRk9(row: UnifiedRow) {
     const s = row.rk9!.import_status;
     if (s === "pending" || s === "failed") {
       await handleScrapeRoster(row.rk9!.event_id);
@@ -824,7 +877,7 @@ export function ExternalData() {
       for (let i = 0; i < rk9Rows.length; i++) {
         const row = rk9Rows[i]!;
         setBulkProgress({ total: rk9Rows.length, done: i, current: row.name });
-        await handleImport(row);
+        await handleEnqueueRk9(row);
       }
       setBulkProcessing(false);
       setBulkProgress(null);
@@ -874,7 +927,7 @@ export function ExternalData() {
           done: i,
           current: row.name,
         });
-        await handleImport(row);
+        await handleEnqueueRk9(row);
       }
       setBulkProcessing(false);
       setBulkProgress(null);
@@ -960,7 +1013,7 @@ export function ExternalData() {
           done: i,
           current: row.name,
         });
-        await handleImport(row);
+        await handleEnqueueRk9(row);
       }
       setBulkProcessing(false);
       setBulkProgress(null);

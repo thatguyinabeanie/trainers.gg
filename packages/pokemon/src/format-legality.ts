@@ -31,7 +31,9 @@ import { logError } from "@trainers/utils";
  * recognise it and so it can never collide with a hypothetical legal-set
  * value of "legality-unavailable".
  */
-export const LEGALITY_UNAVAILABLE: unique symbol = Symbol("legality-unavailable");
+export const LEGALITY_UNAVAILABLE: unique symbol = Symbol(
+  "legality-unavailable"
+);
 
 /**
  * Return type for the family of `getLegal*` lookups. See the file header
@@ -438,9 +440,7 @@ function probeSet(species: Species): PokemonSet {
  * other nonstandard values ("Future", "LGPE", "Gigantamax", "Past",
  * "CAP", "Custom") are excluded.
  */
-function computeLegalSpeciesFromSim(
-  formatId: string
-): LegalityResult {
+function computeLegalSpeciesFromSim(formatId: string): LegalityResult {
   const cached = simSetCache.get(formatId);
   if (cached) return cached;
 
@@ -740,9 +740,7 @@ const simItemCache = new Map<string, ReadonlySet<string>>();
  * nonstandard values ("Future", "LGPE", "Past", "CAP", "Custom") are excluded
  * — same convention as the species path.
  */
-function computeLegalItemsFromSim(
-  formatId: string
-): LegalityResult {
+function computeLegalItemsFromSim(formatId: string): LegalityResult {
   const cached = simItemCache.get(formatId);
   if (cached) return cached;
 
@@ -902,16 +900,17 @@ const CHAMPIONS_MEGA_LEARNSET_BASE: Readonly<Record<string, string>> = {
  * level move bans leaking through. Champions-specific bans are applied
  * on top via `CHAMPIONS_MA_MOVE_BANLIST`.
  */
-function computeLegalMovesForChampions(
-  species: string
-): LegalityResult {
+function computeLegalMovesForChampions(species: string): LegalityResult {
   const cached = championsMoveCache.get(species);
   if (cached) return cached;
 
   // For mega species, look up learnset from the base form.
   // Special cases (e.g. Floette-Mega → Floette-Eternal) override the default.
-  const lookupSpecies = CHAMPIONS_MEGA_LEARNSET_BASE[species]
-    ?? (MEGA_SPECIES_TO_STONE.has(species) ? getCanonicalBaseSpecies(species) : species);
+  const lookupSpecies =
+    CHAMPIONS_MEGA_LEARNSET_BASE[species] ??
+    (MEGA_SPECIES_TO_STONE.has(species)
+      ? getCanonicalBaseSpecies(species)
+      : species);
 
   const gen = SimDex.forGen(9);
   const speciesObj = gen.species.get(lookupSpecies);
@@ -1047,9 +1046,7 @@ const championsAbilityCache = new Map<string, ReadonlySet<string>>();
  * Returns the species' own abilities filtered through the Champions ability
  * banlist (currently empty — all abilities legal).
  */
-function computeLegalAbilitiesForChampions(
-  species: string
-): LegalityResult {
+function computeLegalAbilitiesForChampions(species: string): LegalityResult {
   const cached = championsAbilityCache.get(species);
   if (cached) return cached;
 
@@ -1127,9 +1124,7 @@ function formatUsesTerastalClause(formatId: string): boolean {
  * Returns the set of species legal in the given format, or `undefined`
  * if legality cannot be determined (treat as permissive).
  */
-export function getLegalSpecies(
-  formatId: string
-): LegalityResult {
+export function getLegalSpecies(formatId: string): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return CHAMPIONS_MA_LEGAL_SPECIES;
   }
@@ -1155,9 +1150,7 @@ export function isLegalSpecies(species: string, formatId: string): boolean {
  * if legality cannot be determined (treat as permissive — caller allows
  * any item).
  */
-export function getLegalItems(
-  formatId: string
-): LegalityResult {
+export function getLegalItems(formatId: string): LegalityResult {
   if (formatId === CHAMPIONS_MA_FORMAT_ID) return CHAMPIONS_MA_LEGAL_ITEMS;
   return computeLegalItemsFromSim(formatId);
 }
@@ -1259,9 +1252,7 @@ export function isLegalAbility(
  * - Other registered sim formats → all 18 standard types.
  * - Unknown formats → `undefined` (permissive).
  */
-export function getLegalTeraTypes(
-  formatId: string
-): LegalityResult {
+export function getLegalTeraTypes(formatId: string): LegalityResult {
   // Champions M-A has no Tera — only Mega Evolutions.
   if (formatId === CHAMPIONS_MA_FORMAT_ID) {
     return EMPTY_TERA_SET;
@@ -1553,4 +1544,76 @@ export function getFormsForSpecies(species: string): readonly string[] {
  */
 export function speciesHasForms(species: string): boolean {
   return getFormsForSpecies(species).length > 1;
+}
+
+// =============================================================================
+// Import-time legality validation
+// =============================================================================
+
+/**
+ * Result of a single-Pokemon format-legality check used by data-import
+ * pipelines (RK9, Limitless). Flags whether the entry is legal in the given
+ * format and, when not, the first reason it failed.
+ */
+export interface PokemonLegalityResult {
+  isLegal: boolean;
+  reason: string | null;
+}
+
+/**
+ * Validate one Pokemon's species/item/ability/moves against a format, in
+ * first-failure-wins order. Used at data-import time to flag illegal entries
+ * WITHOUT dropping them.
+ *
+ * Fail-open by design: this composes the boolean `isLegal*` helpers, which
+ * already collapse "unknown format" and "validator threw" into `true`. That
+ * means an unrecognized or unavailable format yields `{ isLegal: true }`.
+ * This intentionally diverges from this file's header note that gate-path
+ * callers fail closed — the import requirement is "never drop data," so an
+ * un-validatable entry is imported as legal rather than blocking the import.
+ *
+ * Empty / null item, ability, and moves are skipped (the helpers already
+ * treat empty string as legal).
+ *
+ * Validation order: species, then held item, then ability, then each move.
+ */
+export function validatePokemonLegality(
+  species: string,
+  ability: string | null,
+  heldItem: string | null,
+  moves: string[] | null,
+  formatId: string
+): PokemonLegalityResult {
+  // Canonicalize to the PascalCase display name the legality sets use
+  // (e.g. "ogerpon-wellspring" -> "Ogerpon-Wellspring"). The isLegal* helpers
+  // do an exact Set.has() against canonical names, but data-import callers pass
+  // a normalized slug. Fall back to the raw input when @pkmn can't resolve it
+  // so a genuinely-unknown species still flags illegal rather than silently
+  // passing.
+  const resolved = SimDex.species.get(species);
+  const canonical = resolved.exists ? resolved.name : species;
+
+  // 1. Species
+  if (!isLegalSpecies(canonical, formatId)) {
+    return { isLegal: false, reason: `Illegal species: ${canonical}` };
+  }
+
+  // 2. Held item (skip when empty/null — isLegalItem also treats "" as legal)
+  if (heldItem && !isLegalItem(heldItem, formatId)) {
+    return { isLegal: false, reason: `Illegal item: ${heldItem}` };
+  }
+
+  // 3. Ability (skip when empty/null)
+  if (ability && !isLegalAbility(ability, canonical, formatId)) {
+    return { isLegal: false, reason: `Illegal ability: ${ability}` };
+  }
+
+  // 4. Moves (skip empty strings)
+  for (const move of moves ?? []) {
+    if (move && !isLegalMove(move, canonical, formatId)) {
+      return { isLegal: false, reason: `Illegal move: ${move}` };
+    }
+  }
+
+  return { isLegal: true, reason: null };
 }

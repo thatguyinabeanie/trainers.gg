@@ -7,3 +7,4 @@ export { playerRecordFactory, bracketPlayerFactory } from "./tournament-domain";
 export { tournamentFactory } from "./tournament";
 export { tournamentMatchFactory, matchGameFactory } from "./match";
 export { speciesSearchEntryFactory } from "./species-search-entry";
+export { pipelineSpeciesFactory } from "./pipeline-species";

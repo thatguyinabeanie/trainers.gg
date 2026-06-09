@@ -81,7 +81,9 @@ jest.mock("@/lib/rk9/index", () => ({
 }));
 
 jest.mock("@/actions/site-config", () => ({
-  getSiteConfig: jest.fn().mockResolvedValue({ success: false, error: "not set" }),
+  getSiteConfig: jest
+    .fn()
+    .mockResolvedValue({ success: false, error: "not set" }),
 }));
 
 const mockComputeEventUsage = jest.fn().mockResolvedValue(undefined);
@@ -371,6 +373,44 @@ describe("scrapeRk9TeamsBatch", () => {
     expect(result.scraped).toBe(0);
   });
 
+  it("writes 'teams' status when no standings exist but event has players", async () => {
+    standingsChain = makeChain(() => ({ data: [], error: null }));
+    let eventsCallCount = 0;
+    eventsUpdateChain = makeChain(() => {
+      eventsCallCount++;
+      if (eventsCallCount === 1)
+        return { data: { player_count: 5 }, error: null };
+      return { data: null, error: null };
+    });
+
+    const { scrapeRk9TeamsBatch } = await import("../rk9");
+    const result = await scrapeRk9TeamsBatch("EVT001");
+
+    expect(result.success).toBe(true);
+    expect(result.done).toBe(true);
+    expect(eventsUpdateChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ import_status: "teams" })
+    );
+    expect(eventsUpdateChain.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ import_status: "complete" })
+    );
+  });
+
+  it("returns done:false and skips status write when player_count lookup errors", async () => {
+    standingsChain = makeChain(() => ({ data: [], error: null }));
+    eventsUpdateChain = makeChain(() => ({
+      data: null,
+      error: { message: "connection timeout" },
+    }));
+
+    const { scrapeRk9TeamsBatch } = await import("../rk9");
+    const result = await scrapeRk9TeamsBatch("EVT001");
+
+    expect(result.success).toBe(true);
+    expect(result.done).toBe(false);
+    expect(eventsUpdateChain.update).not.toHaveBeenCalled();
+  });
+
   it("returns done:true when all standings already have team_scrape_attempted_at set", async () => {
     const attemptedAt = new Date().toISOString();
     standingsChain = makeChain(() => ({
@@ -484,9 +524,8 @@ describe("discoverRk9Events", () => {
   });
 
   it("returns success:true and events when live and archive fetches succeed", async () => {
-    const { parseEventsPage, parseArchivedEventsPage } = jest.requireMock(
-      "@/lib/rk9/scraper"
-    );
+    const { parseEventsPage, parseArchivedEventsPage } =
+      jest.requireMock("@/lib/rk9/scraper");
     const { syncEvents } = jest.requireMock("@/lib/rk9/index");
 
     parseEventsPage.mockReturnValueOnce([
@@ -555,9 +594,8 @@ describe("discoverRk9Events", () => {
   });
 
   it("returns success:false when no events found from any source", async () => {
-    const { parseEventsPage, parseArchivedEventsPage } = jest.requireMock(
-      "@/lib/rk9/scraper"
-    );
+    const { parseEventsPage, parseArchivedEventsPage } =
+      jest.requireMock("@/lib/rk9/scraper");
 
     parseEventsPage.mockReturnValue([]);
     parseArchivedEventsPage.mockReturnValue([]);
@@ -622,9 +660,8 @@ describe("scrapeRk9Roster", () => {
   });
 
   it("returns success:true with playerCount when roster import succeeds", async () => {
-    const { parseRosterPage, formatDetectionNeedsHtml } = jest.requireMock(
-      "@/lib/rk9/scraper"
-    );
+    const { parseRosterPage, formatDetectionNeedsHtml } =
+      jest.requireMock("@/lib/rk9/scraper");
     const { importEvent } = jest.requireMock("@/lib/rk9/index");
 
     // Skip the HTML-based format detection path (simpler mock path)
@@ -748,11 +785,7 @@ describe("scrapeRk9TeamForStanding — species map and normalizeSpeciesInline", 
       ]);
 
       const mod = await import("../rk9");
-      const result = await mod.scrapeRk9TeamForStanding(
-        "EVT001",
-        1,
-        "entry1"
-      );
+      const result = await mod.scrapeRk9TeamForStanding("EVT001", 1, "entry1");
 
       expect(result.success).toBe(true);
       expect(teamPokemonChain.upsert).toHaveBeenCalledWith(

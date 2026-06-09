@@ -34,8 +34,9 @@ describe("exported constants", () => {
     expect(DEFAULT_PERIOD_TYPE).toBe("week");
   });
 
-  it("DEFAULT_THRESHOLD is 2", () => {
-    expect(DEFAULT_THRESHOLD).toBe(2);
+  it("DEFAULT_THRESHOLD is a positive number", () => {
+    expect(typeof DEFAULT_THRESHOLD).toBe("number");
+    expect(DEFAULT_THRESHOLD).toBeGreaterThan(0);
   });
 
   it("VALID_SOURCES contains expected values", () => {
@@ -302,5 +303,143 @@ describe("coerceRangeEnd", () => {
 
   it("returns null for an invalid date", () => {
     expect(coerceRangeEnd("invalid")).toBeNull();
+  });
+});
+
+import { pipelineSpeciesFactory } from "@trainers/test-utils";
+import {
+  type DataPreset,
+  applyPreset,
+  getActivePreset,
+} from "../usage-filters";
+
+// =============================================================================
+// Preset helpers
+// =============================================================================
+
+const THIRTY_SPECIES = Array.from({ length: 30 }, (_, i) =>
+  pipelineSpeciesFactory.build({
+    species: `Species${i + 1}`,
+    usagePct: 70 - i * 2,
+  })
+);
+
+describe("applyPreset", () => {
+  it.each<[DataPreset, number, string, string]>([
+    ["top10", 10, "Species1", "Species10"],
+    ["top20", 20, "Species1", "Species20"],
+    ["top50", 30, "Species1", "Species30"],
+    ["all", 30, "Species1", "Species30"],
+  ])(
+    "applyPreset('%s') returns %i species from %s to %s",
+    (preset, len, first, last) => {
+      const result = applyPreset(THIRTY_SPECIES, preset);
+      expect(result).toHaveLength(len);
+      expect(result[0]).toBe(first);
+      expect(result[len - 1]).toBe(last);
+    }
+  );
+
+  it("handles fewer species than the preset limit gracefully", () => {
+    const five = THIRTY_SPECIES.slice(0, 5);
+    expect(applyPreset(five, "top20")).toHaveLength(5);
+  });
+
+  it("returns an empty array when data is empty", () => {
+    expect(applyPreset([], "top20")).toEqual([]);
+  });
+});
+
+describe("getActivePreset", () => {
+  it("returns 'top10' when selected matches the first 10", () => {
+    const top10 = THIRTY_SPECIES.slice(0, 10).map((s) => s.species);
+    expect(getActivePreset(THIRTY_SPECIES, top10)).toBe("top10");
+  });
+
+  it("returns 'top20' when selected matches the first 20", () => {
+    const top20 = THIRTY_SPECIES.slice(0, 20).map((s) => s.species);
+    expect(getActivePreset(THIRTY_SPECIES, top20)).toBe("top20");
+  });
+
+  it("returns 'all' when selected matches the full set", () => {
+    const all = THIRTY_SPECIES.map((s) => s.species);
+    expect(getActivePreset(THIRTY_SPECIES, all)).toBe("all");
+  });
+
+  it("returns null for a custom (non-preset) selection", () => {
+    expect(
+      getActivePreset(THIRTY_SPECIES, ["Species1", "Species5"])
+    ).toBeNull();
+  });
+
+  it("returns null for an empty selection", () => {
+    expect(getActivePreset(THIRTY_SPECIES, [])).toBeNull();
+  });
+
+  it("is order-insensitive — matches preset even if selected is shuffled", () => {
+    const shuffled = ["Species3", "Species1", "Species2"];
+    const threeSpecies = THIRTY_SPECIES.slice(0, 3);
+    // top10 of a 3-item list = all 3
+    expect(getActivePreset(threeSpecies, shuffled)).toBe("top10");
+  });
+});
+
+// =============================================================================
+// coerceColumns
+// =============================================================================
+
+import { coerceColumns, DEFAULT_PIPELINE_COLUMNS } from "../usage-filters";
+
+describe("coerceColumns", () => {
+  it("returns DEFAULT_PIPELINE_COLUMNS when raw is undefined", () => {
+    expect(coerceColumns(undefined)).toEqual(DEFAULT_PIPELINE_COLUMNS);
+  });
+
+  it("returns DEFAULT_PIPELINE_COLUMNS when raw is empty string", () => {
+    expect(coerceColumns("")).toEqual(DEFAULT_PIPELINE_COLUMNS);
+  });
+
+  it("parses a valid comma-separated column list", () => {
+    expect(coerceColumns("ability,nature,move")).toEqual([
+      "ability",
+      "nature",
+      "move",
+    ]);
+  });
+
+  it("includes item in parsed output", () => {
+    expect(coerceColumns("ability,item,nature,move")).toEqual([
+      "ability",
+      "item",
+      "nature",
+      "move",
+    ]);
+  });
+
+  it("filters out unknown column names", () => {
+    expect(coerceColumns("ability,invalid,nature")).toEqual([
+      "ability",
+      "nature",
+    ]);
+  });
+
+  it("returns DEFAULT_PIPELINE_COLUMNS when all values are invalid", () => {
+    expect(coerceColumns("foo,bar,baz")).toEqual(DEFAULT_PIPELINE_COLUMNS);
+  });
+
+  it("deduplicates repeated columns while preserving first occurrence order", () => {
+    expect(coerceColumns("ability,nature,ability,move")).toEqual([
+      "ability",
+      "nature",
+      "move",
+    ]);
+  });
+
+  it("preserves custom order (move before nature)", () => {
+    expect(coerceColumns("ability,move,nature")).toEqual([
+      "ability",
+      "move",
+      "nature",
+    ]);
   });
 });

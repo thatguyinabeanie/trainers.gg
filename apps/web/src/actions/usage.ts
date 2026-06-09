@@ -11,6 +11,7 @@ import {
   getSpeciesUsageDetail,
   getFormatUsageTimeseries,
   getPipelineData,
+  getDirectPipelineData,
   getFormatEvents,
   type FormatUsageRow,
   type FormatUsageTimeseriesPoint,
@@ -529,6 +530,67 @@ export async function fetchPipelineData(
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch pipeline data"),
+    };
+  }
+}
+
+/** Parameters for fetchDirectPipelineData. */
+export interface FetchDirectPipelineDataParams {
+  format: string;
+  source?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  /** Minimum total_teams per event-division row. Defaults to 0 (no filter). */
+  minPlayers?: number;
+}
+
+/**
+ * Public server action to fetch Sankey pipeline data by querying
+ * event_usage directly (not pre-aggregated rollup tables).
+ *
+ * Uses getDirectPipelineData() so the minPlayers filter can be applied
+ * at query time — impossible with the pre-aggregated path.
+ *
+ * Uses unstable_cache keyed by all params for 1h ISR caching.
+ */
+export async function fetchDirectPipelineData(
+  params: FetchDirectPipelineDataParams
+): Promise<ActionResult<PipelineDataResult | null>> {
+  try {
+    const {
+      format,
+      source = "all",
+      periodStart,
+      periodEnd,
+      minPlayers = 0,
+    } = params;
+
+    const cacheKey = `direct-pipeline:${format}:${source}:${periodStart ?? ""}:${periodEnd ?? ""}:${minPlayers}`;
+
+    const getCached = unstable_cache(
+      async () => {
+        const supabase = createStaticClient();
+        return getDirectPipelineData(supabase, {
+          format,
+          source: toDBSource(source),
+          periodStart,
+          periodEnd,
+          minPlayers,
+        });
+      },
+      [cacheKey],
+      {
+        revalidate: 3600,
+        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
+      }
+    );
+
+    const data = await getCached();
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch direct pipeline data"),
     };
   }
 }

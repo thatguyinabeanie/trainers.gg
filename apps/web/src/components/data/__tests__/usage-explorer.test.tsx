@@ -3,8 +3,11 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { type PipelineDataResult } from "@trainers/supabase";
+import { pipelineSpeciesFactory } from "@trainers/test-utils";
+
 import { UsageExplorer } from "../usage-explorer";
-import { type UsageFilters } from "../usage-controls";
+import { type UsageFilters } from "../usage-filters";
 
 // =============================================================================
 // next/navigation — stable mockReplace so tests can assert URL payloads
@@ -55,15 +58,12 @@ jest.mock("../usage-line-chart", () => ({
   UsageLineChart: (props: {
     onSpeciesClick: (s: string) => void;
     onRangeChange: (a: string | null, b: string | null) => void;
-    onSelectAll: () => void;
-    onClearSelection: () => void;
   }) => (
     <div data-testid="usage-line-chart">
       <button onClick={() => props.onSpeciesClick("Sneasler")}>lc-pick</button>
       <button onClick={() => props.onRangeChange("2025-01-01", "2025-01-31")}>
         lc-range
       </button>
-      <button onClick={() => props.onClearSelection()}>lc-clear</button>
     </div>
   ),
 }));
@@ -72,13 +72,14 @@ jest.mock("../usage-pipeline-chart", () => ({
   UsagePipelineChart: () => <div data-testid="usage-pipeline-chart" />,
 }));
 
-jest.mock("../usage-controls", () => ({
-  __esModule: true,
-  UsageControls: (props: {
+jest.mock("../data-sidebar", () => ({
+  DataSidebar: (props: {
     onFiltersChange: (f: UsageFilters) => void;
+    onSelectionChange: (s: string[]) => void;
     filters: UsageFilters;
+    selectedSpecies: string[];
   }) => (
-    <div data-testid="usage-controls">
+    <div data-testid="data-sidebar">
       <button
         onClick={() =>
           props.onFiltersChange({ ...props.filters, format: "gen9vgc2024regh" })
@@ -86,6 +87,11 @@ jest.mock("../usage-controls", () => ({
       >
         change-format
       </button>
+      <button onClick={() => props.onSelectionChange([])}>sidebar-clear</button>
+      <span data-testid="selected-count">{props.selectedSpecies.length}</span>
+      <span data-testid="selected-species">
+        {props.selectedSpecies.join(",")}
+      </span>
     </div>
   ),
 }));
@@ -110,16 +116,23 @@ const DEFAULT_FILTERS: UsageFilters = {
   format: "gen9vgc2025regg",
   source: "all",
   periodType: "week",
-  threshold: 2,
 };
 
-function renderExplorer() {
+function makePipelineResult(count: number): PipelineDataResult {
+  return {
+    data: pipelineSpeciesFactory.buildList(count),
+    periodStart: "2025-01-01",
+    periodEnd: "2025-01-31",
+  };
+}
+
+function renderExplorer(pipelineResult?: PipelineDataResult | null) {
   const Wrapper = makeWrapper();
   return render(
     <Wrapper>
       <UsageExplorer
         initialPoints={[]}
-        initialPipelineResult={null}
+        initialPipelineResult={pipelineResult ?? null}
         initialEvents={[]}
         initialFilters={DEFAULT_FILTERS}
       />
@@ -149,7 +162,7 @@ beforeEach(() => {
 describe("UsageExplorer — rendering", () => {
   it("renders without crashing", () => {
     renderExplorer();
-    expect(screen.getByText("Meta Pipeline")).toBeInTheDocument();
+    expect(screen.getByText("Data")).toBeInTheDocument();
   });
 
   it("renders both chart panels", () => {
@@ -158,9 +171,9 @@ describe("UsageExplorer — rendering", () => {
     expect(screen.getByTestId("usage-line-chart")).toBeInTheDocument();
   });
 
-  it("renders the controls stub", () => {
+  it("renders the sidebar stub", () => {
     renderExplorer();
-    expect(screen.getByTestId("usage-controls")).toBeInTheDocument();
+    expect(screen.getByTestId("data-sidebar")).toBeInTheDocument();
   });
 });
 
@@ -178,19 +191,50 @@ describe("UsageExplorer — species URL state", () => {
   it("removes a species from the URL when it is already selected", async () => {
     mockSearchParams = new URLSearchParams("species=Sneasler");
     renderExplorer();
-    // Clicking "Sneasler" again should toggle it off
+    // Clicking "Sneasler" again should toggle it off — key stays present (empty)
     await userEvent.click(screen.getByText("lc-pick"));
-    expect(lastReplaceParams().get("species")).toBeNull();
+    // present-but-empty: key is set to "" not deleted
+    expect(lastReplaceParams().get("species")).toBe("");
   });
 
-  it("clears all species (and range) when Clear is clicked", async () => {
+  it("clears species when the DataSidebar triggers an empty selection", async () => {
     mockSearchParams = new URLSearchParams("species=Sneasler");
     renderExplorer();
-    await userEvent.click(screen.getByText("lc-clear"));
+    // Clicking "Sneasler" again (when it's the only selection) should clear the param
+    await userEvent.click(screen.getByText("lc-pick"));
     const p = lastReplaceParams();
-    expect(p.get("species")).toBeNull();
-    expect(p.get("rangeStart")).toBeNull();
-    expect(p.get("rangeEnd")).toBeNull();
+    // present-but-empty so the next render honors the explicit empty state
+    expect(p.get("species")).toBe("");
+  });
+});
+
+// =============================================================================
+// 3-state species model
+// =============================================================================
+
+describe("UsageExplorer — 3-state species model", () => {
+  it("defaults to Top 20 when the species param is ABSENT", () => {
+    // No species param → effectiveSelected falls back to applyPreset(allSpecies, "top20")
+    mockSearchParams = new URLSearchParams(); // no "species" key
+    renderExplorer(makePipelineResult(20));
+    expect(screen.getByTestId("selected-count").textContent).toBe("20");
+  });
+
+  it("shows empty selection when species param is PRESENT but empty", () => {
+    // species= present-but-empty → effectiveSelected = [] (empty state reachable)
+    mockSearchParams = new URLSearchParams("species=");
+    renderExplorer(makePipelineResult(20));
+    expect(screen.getByTestId("selected-count").textContent).toBe("0");
+    expect(screen.getByTestId("selected-species").textContent).toBe("");
+  });
+
+  it("shows only the named species when species param is PRESENT with values", () => {
+    mockSearchParams = new URLSearchParams("species=Garchomp,Sneasler");
+    renderExplorer(makePipelineResult(20));
+    expect(screen.getByTestId("selected-count").textContent).toBe("2");
+    expect(screen.getByTestId("selected-species").textContent).toBe(
+      "Garchomp,Sneasler"
+    );
   });
 });
 
@@ -213,13 +257,16 @@ describe("UsageExplorer — range URL state", () => {
 // =============================================================================
 
 describe("UsageExplorer — format change", () => {
-  it("clears selected species when the format changes", async () => {
+  it("resets species to the new format's default preset when the format changes", async () => {
     mockSearchParams = new URLSearchParams("species=Sneasler,Koraidon");
     renderExplorer();
     await userEvent.click(screen.getByText("change-format"));
     const p = lastReplaceParams();
     expect(p.get("format")).toBe("gen9vgc2024regh");
-    expect(p.get("species")).toBeNull();
+    // Format change DELETES the species param (param absent) so the new format
+    // defaults to Top 20 rather than carrying over the old format's selection or
+    // landing on an explicit-empty state.
+    expect(p.has("species")).toBe(false);
   });
 
   it("preserves species when a non-format filter changes (same format)", async () => {

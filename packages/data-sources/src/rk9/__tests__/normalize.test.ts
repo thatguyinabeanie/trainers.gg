@@ -13,8 +13,12 @@ describe("normalizeSpecies", () => {
   });
 
   it("handles bracket notation for forms", () => {
-    expect(normalizeSpecies("Ogerpon [Hearthflame Mask]")).toBe("ogerpon-hearthflame");
-    expect(normalizeSpecies("Urshifu [Rapid Strike Style]")).toBe("urshifu-rapid-strike");
+    expect(normalizeSpecies("Ogerpon [Hearthflame Mask]")).toBe(
+      "ogerpon-hearthflame"
+    );
+    expect(normalizeSpecies("Urshifu [Rapid Strike Style]")).toBe(
+      "urshifu-rapid-strike"
+    );
   });
 
   it("skips default forms", () => {
@@ -23,7 +27,9 @@ describe("normalizeSpecies", () => {
   });
 
   it("handles therian forms", () => {
-    expect(normalizeSpecies("Landorus [Therian Forme]")).toBe("landorus-therian");
+    expect(normalizeSpecies("Landorus [Therian Forme]")).toBe(
+      "landorus-therian"
+    );
   });
 
   it("handles regional variants", () => {
@@ -36,6 +42,7 @@ describe("normalizeSpecies", () => {
     ["Ogerpon [Cornerstone Mask]", "ogerpon-cornerstone"],
     ["Ogerpon [Teal Mask]", "ogerpon"],
     ["Basculegion [Female]", "basculegion-f"],
+    ["Floette [Eternal Flower]", "floette-eternal"],
   ])('normalizeSpecies("%s") → "%s"', (input, expected) => {
     expect(normalizeSpecies(input)).toBe(expected);
   });
@@ -57,11 +64,32 @@ describe("collectUniqueSpecies", () => {
   it("collects unique species from teams", () => {
     const teams: Record<string, RK9Pokemon[]> = {
       entry1: [
-        { speciesRaw: "Pikachu", ability: "Static", heldItem: "", teraType: null, statAlignment: null, moves: [] },
-        { speciesRaw: "Charizard", ability: "Blaze", heldItem: "", teraType: null, statAlignment: null, moves: [] },
+        {
+          speciesRaw: "Pikachu",
+          ability: "Static",
+          heldItem: "",
+          teraType: null,
+          statAlignment: null,
+          moves: [],
+        },
+        {
+          speciesRaw: "Charizard",
+          ability: "Blaze",
+          heldItem: "",
+          teraType: null,
+          statAlignment: null,
+          moves: [],
+        },
       ],
       entry2: [
-        { speciesRaw: "Pikachu", ability: "Lightning Rod", heldItem: "", teraType: null, statAlignment: null, moves: [] },
+        {
+          speciesRaw: "Pikachu",
+          ability: "Lightning Rod",
+          heldItem: "",
+          teraType: null,
+          statAlignment: null,
+          moves: [],
+        },
       ],
     };
 
