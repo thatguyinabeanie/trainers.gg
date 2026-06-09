@@ -272,6 +272,8 @@ export const DEFAULT_MIN_PLAYERS = 64;
  */
 export function coerceMinPlayers(raw: string | null | undefined): number {
   if (!raw) return DEFAULT_MIN_PLAYERS;
-  const n = parseInt(raw, 10);
-  return Number.isFinite(n) && n >= 0 ? n : DEFAULT_MIN_PLAYERS;
+  // Number (not parseInt) so "12.5"/"1e2" aren't silently truncated to a wrong
+  // value; reject non-integers. Mirrors the sidebar input handler.
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 0 ? n : DEFAULT_MIN_PLAYERS;
 }

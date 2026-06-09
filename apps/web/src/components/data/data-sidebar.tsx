@@ -322,8 +322,11 @@ export function DataSidebar({
             step={8}
             value={minPlayers}
             onChange={(e) => {
-              const n = parseInt(e.target.value, 10);
-              if (Number.isFinite(n) && n >= 0) onMinPlayersChange(n);
+              if (e.target.value === "") return;
+              // Number (not parseInt) so "12.5"/"1e2" aren't silently truncated;
+              // reject non-integers. Mirrors coerceMinPlayers() for URL parity.
+              const n = Number(e.target.value);
+              if (Number.isInteger(n) && n >= 0) onMinPlayersChange(n);
             }}
             className="border-input bg-background text-foreground focus:ring-ring h-7 w-full rounded-md border px-2 text-xs focus:ring-1 focus:outline-none"
           />

@@ -131,8 +131,13 @@ export async function importEvent(
   if (delErr) throw new Error(`Delete standings: ${delErr.message}`);
 
   // Fetch the event's format so we can flag each Pokemon's legality at import
-  // time. If this fails or is null, we treat every row as legal (fail open) —
-  // we never block the import on a missing/unreadable format.
+  // time. A genuinely-null format_id (no format configured) fails open — every
+  // row is treated as legal. But a *lookup error* must throw, not fall through:
+  // silently treating a transient DB failure as "no format" would mark every
+  // imported Pokemon is_legal=true and permanently contaminate published usage
+  // stats (which only count is_legal rows) until someone reimports. Throwing is
+  // consistent with every other DB call in importEvent — a failed import simply
+  // retries; nothing is dropped.
   let formatId: string | null = null;
   {
     const { data: eventRow, error: eventErr } = await supabase
@@ -142,12 +147,11 @@ export async function importEvent(
       .eq("event_id", eventId)
       .maybeSingle();
     if (eventErr) {
-      console.warn(
-        `importEvent: could not load format_id for event ${eventId}: ${eventErr.message}`
+      throw new Error(
+        `importEvent: format_id lookup failed for event ${eventId}: ${eventErr.message}`
       );
-    } else {
-      formatId = eventRow?.format_id ?? null;
     }
+    formatId = eventRow?.format_id ?? null;
   }
 
   // ---------------------------------------------------------------------------

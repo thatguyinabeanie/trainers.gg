@@ -650,7 +650,10 @@ describe("importEvent", () => {
     });
   });
 
-  it("treats all rows as legal and does not block import when format_id fetch errors", async () => {
+  it("throws when the format_id lookup errors (never silently marks rows legal)", async () => {
+    // A transient lookup failure must NOT fall through to formatId=null (which
+    // would mark every row is_legal=true and contaminate usage stats). It throws
+    // so the import can be retried with correct legality flags.
     const supabase = buildSupabaseMock({
       eventsSelect: {
         data: null,
@@ -680,20 +683,9 @@ describe("importEvent", () => {
       ],
     };
 
-    // Import must complete (not throw) even when format_id fetch fails
-    const result = await importEvent(
-      supabase,
-      EVENT_ID,
-      [entry],
-      teams,
-      EMPTY_MAP
-    );
-
-    expect(result.pokemonInserted).toBe(1);
-    expect(capturedPokemonRows[0]).toMatchObject({
-      is_legal: true,
-      legality_reason: null,
-    });
+    await expect(
+      importEvent(supabase, EVENT_ID, [entry], teams, EMPTY_MAP)
+    ).rejects.toThrow(/format_id lookup failed/);
   });
 });
 
