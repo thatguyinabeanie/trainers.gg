@@ -239,16 +239,16 @@ export const ALL_PIPELINE_COLUMNS: PipelineColumn[] = [
 ];
 
 export const DEFAULT_PIPELINE_COLUMNS: PipelineColumn[] = [
-  "ability",
-  "item",
-  "nature",
-  "move",
+  ...ALL_PIPELINE_COLUMNS,
 ];
 
 export function coerceColumns(raw: string | undefined): PipelineColumn[] {
   if (!raw) return DEFAULT_PIPELINE_COLUMNS;
   const valid = new Set<string>(ALL_PIPELINE_COLUMNS);
-  const parsed = raw.split(",").filter((c) => valid.has(c)) as PipelineColumn[];
+  const parsed = raw
+    .split(",")
+    .map((c) => c.trim())
+    .filter((c) => valid.has(c)) as PipelineColumn[];
   // Deduplicate while preserving order
   const seen = new Set<string>();
   const deduped = parsed.filter((c) => {

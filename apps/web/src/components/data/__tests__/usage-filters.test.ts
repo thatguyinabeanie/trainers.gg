@@ -306,50 +306,39 @@ describe("coerceRangeEnd", () => {
   });
 });
 
-import { type PipelineSpeciesData } from "@trainers/supabase";
-import { applyPreset, getActivePreset } from "../usage-filters";
+import { pipelineSpeciesFactory } from "@trainers/test-utils";
+import {
+  type DataPreset,
+  applyPreset,
+  getActivePreset,
+} from "../usage-filters";
 
 // =============================================================================
 // Preset helpers
 // =============================================================================
 
-function makeSpecies(species: string, usagePct: number): PipelineSpeciesData {
-  return {
-    species,
-    usagePct,
-    rank: 0,
-    abilities: [],
-    items: [],
-    natures: [],
-    moves: [],
-  };
-}
-
 const THIRTY_SPECIES = Array.from({ length: 30 }, (_, i) =>
-  makeSpecies(`Species${i + 1}`, 70 - i * 2)
+  pipelineSpeciesFactory.build({
+    species: `Species${i + 1}`,
+    usagePct: 70 - i * 2,
+  })
 );
 
 describe("applyPreset", () => {
-  it("returns first 10 species names for 'top10'", () => {
-    const result = applyPreset(THIRTY_SPECIES, "top10");
-    expect(result).toHaveLength(10);
-    expect(result[0]).toBe("Species1");
-    expect(result[9]).toBe("Species10");
-  });
-
-  it("returns first 20 species names for 'top20'", () => {
-    const result = applyPreset(THIRTY_SPECIES, "top20");
-    expect(result).toHaveLength(20);
-    expect(result[19]).toBe("Species20");
-  });
-
-  it("returns first 50 (capped to array length) for 'top50'", () => {
-    expect(applyPreset(THIRTY_SPECIES, "top50")).toHaveLength(30);
-  });
-
-  it("returns all species for 'all'", () => {
-    expect(applyPreset(THIRTY_SPECIES, "all")).toHaveLength(30);
-  });
+  it.each<[DataPreset, number, string, string]>([
+    ["top10", 10, "Species1", "Species10"],
+    ["top20", 20, "Species1", "Species20"],
+    ["top50", 30, "Species1", "Species30"],
+    ["all", 30, "Species1", "Species30"],
+  ])(
+    "applyPreset('%s') returns %i species from %s to %s",
+    (preset, len, first, last) => {
+      const result = applyPreset(THIRTY_SPECIES, preset);
+      expect(result).toHaveLength(len);
+      expect(result[0]).toBe(first);
+      expect(result[len - 1]).toBe(last);
+    }
+  );
 
   it("handles fewer species than the preset limit gracefully", () => {
     const five = THIRTY_SPECIES.slice(0, 5);

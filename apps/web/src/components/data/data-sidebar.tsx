@@ -36,6 +36,13 @@ import { COLUMN_COLORS } from "./usage-pipeline";
 
 const STORAGE_KEY = "data-sidebar-collapsed";
 
+const PIPELINE_COLUMN_LABELS: Record<PipelineColumn, string> = {
+  ability: "Ability",
+  item: "Item",
+  nature: "Nature",
+  move: "Move",
+};
+
 const PRESETS: { label: string; value: DataPreset }[] = [
   { label: "Top 10", value: "top10" },
   { label: "Top 20", value: "top20" },
@@ -235,10 +242,8 @@ export function DataSidebar({
                 className="h-2 w-2 flex-shrink-0 rounded-full"
                 style={{ background: COLUMN_COLORS[col] }}
               />
-              <span className="min-w-0 flex-1 truncate text-xs capitalize">
-                {col === "item"
-                  ? "Item"
-                  : col.charAt(0).toUpperCase() + col.slice(1)}
+              <span className="min-w-0 flex-1 truncate text-xs">
+                {PIPELINE_COLUMN_LABELS[col]}
               </span>
               <button
                 onClick={() => {
@@ -271,6 +276,7 @@ export function DataSidebar({
                   onColumnsChange(columns.filter((c) => c !== col))
                 }
                 aria-label={`Hide ${col}`}
+                aria-pressed={true}
                 className="text-primary flex size-5 items-center justify-center rounded text-xs"
                 title="Hide"
               >
@@ -286,14 +292,13 @@ export function DataSidebar({
                   className="h-2 w-2 flex-shrink-0 rounded-full"
                   style={{ background: COLUMN_COLORS[col] }}
                 />
-                <span className="min-w-0 flex-1 truncate text-xs capitalize">
-                  {col === "item"
-                    ? "Item"
-                    : col.charAt(0).toUpperCase() + col.slice(1)}
+                <span className="min-w-0 flex-1 truncate text-xs">
+                  {PIPELINE_COLUMN_LABELS[col]}
                 </span>
                 <button
                   onClick={() => onColumnsChange([...columns, col])}
                   aria-label={`Show ${col}`}
+                  aria-pressed={false}
                   className="text-muted-foreground flex size-5 items-center justify-center rounded text-xs"
                   title="Show"
                 >
@@ -369,6 +374,7 @@ export function DataSidebar({
                 <button
                   key={s.species}
                   onClick={() => handleToggle(s.species)}
+                  aria-pressed={checked}
                   className={cn(
                     "flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-xs transition-colors",
                     checked
