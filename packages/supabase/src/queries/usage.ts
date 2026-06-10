@@ -69,6 +69,7 @@ export interface PipelineSpeciesData {
   items: UsageDetailEntry[];
   natures: UsageDetailEntry[];
   moves: UsageDetailEntry[];
+  tera: UsageDetailEntry[];
 }
 
 /** Result shape returned by `getPipelineData`. */
@@ -78,6 +79,40 @@ export interface PipelineDataResult {
   periodStart: string;
   /** ISO date string for the period end of the resolved bucket. */
   periodEnd: string;
+}
+
+/** Parameters for `getSpeciesUsage`. */
+export interface GetSpeciesUsageParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** Data source filter. Defaults to "all". */
+  source?: string;
+  /** Period granularity. Defaults to "week". */
+  periodType?: "day" | "week" | "month";
+  /**
+   * Minimum total_players per event-division row.
+   * Events with fewer players are excluded. Defaults to 0 (no filter).
+   */
+  minPlayers?: number;
+}
+
+/** Parameters for `getFormatUsageTimeseries`. */
+export interface GetFormatUsageTimeseriesParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** Data source filter. Defaults to "all". */
+  source?: string;
+  /** Period granularity. Defaults to "week". */
+  periodType?: "day" | "week" | "month";
+  /** If provided, restrict to periods >= this date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this date. */
+  periodEnd?: string;
+  /**
+   * Minimum total_players per event-division row.
+   * Events with fewer players are excluded. Defaults to 0 (no filter).
+   */
+  minPlayers?: number;
 }
 
 /** Parameters for `getPipelineData`. */
@@ -194,12 +229,7 @@ export async function getSpeciesUsageDetail(
  */
 export async function getSpeciesUsage(
   supabase: TypedClient,
-  params: {
-    format: string;
-    source?: string;
-    periodType?: "day" | "week" | "month";
-    minPlayers?: number;
-  }
+  params: GetSpeciesUsageParams
 ): Promise<FormatUsageRow[]> {
   const {
     format,
@@ -251,14 +281,7 @@ export async function getSpeciesUsage(
  */
 export async function getFormatUsageTimeseries(
   supabase: TypedClient,
-  params: {
-    format: string;
-    source?: string;
-    periodType?: "day" | "week" | "month";
-    periodStart?: string;
-    periodEnd?: string;
-    minPlayers?: number;
-  }
+  params: GetFormatUsageTimeseriesParams
 ): Promise<FormatUsageTimeseriesPoint[]> {
   const {
     format,
@@ -369,6 +392,7 @@ export async function getPipelineData(
     items: (row.items as unknown as UsageDetailEntry[]) ?? [],
     natures: (row.natures as unknown as UsageDetailEntry[]) ?? [],
     moves: (row.moves as unknown as UsageDetailEntry[]) ?? [],
+    tera: (row.tera_types as unknown as UsageDetailEntry[]) ?? [],
   }));
 
   return {

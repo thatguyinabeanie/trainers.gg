@@ -382,5 +382,7 @@ export type {
   PipelineSpeciesData,
   PipelineDataResult,
   GetPipelineDataParams,
+  GetSpeciesUsageParams,
+  GetFormatUsageTimeseriesParams,
   FormatEvent,
 } from "./usage";
