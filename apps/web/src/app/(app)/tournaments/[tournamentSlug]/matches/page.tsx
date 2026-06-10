@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createStaticClient } from "@/lib/supabase/server";
@@ -20,50 +20,49 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy } from "lucide-react";
 
-// On-demand revalidation only
-export const revalidate = false;
-
 interface PageProps {
   params: Promise<{
     tournamentSlug: string;
   }>;
 }
 
-// Cached tournament fetch (same as tournament detail page)
-const getCachedTournament = (slug: string) =>
-  unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      return getTournamentBySlug(supabase, slug);
-    },
-    [`tournament-detail-${slug}`],
-    { tags: [CacheTags.tournament(slug), CacheTags.TOURNAMENTS_LIST] }
-  )();
+/**
+ * Cached tournament fetch (same tag as tournament detail page — shares cache entry).
+ */
+async function getCachedTournament(slug: string) {
+  "use cache";
+  cacheTag(CacheTags.tournament(slug), CacheTags.TOURNAMENTS_LIST);
+  cacheLife("max");
 
-// Cached phases + rounds + matches fetch
-const getCachedMatchesByPhase = (tournamentId: number, slug: string) =>
-  unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      const phases = await getTournamentPhases(supabase, tournamentId);
+  const supabase = createStaticClient();
+  return getTournamentBySlug(supabase, slug);
+}
 
-      // Fetch rounds with matches for each phase
-      const phasesWithMatches = await Promise.all(
-        phases.map(async (phase) => {
-          const rounds = await getPhaseRoundsWithMatches(
-            supabase,
-            phase.id,
-            tournamentId
-          );
-          return { ...phase, rounds };
-        })
+/**
+ * Cached phases + rounds + matches fetch — keyed by tournament ID and slug.
+ */
+async function getCachedMatchesByPhase(tournamentId: number, slug: string) {
+  "use cache";
+  cacheTag(CacheTags.tournament(slug));
+  cacheLife("max");
+
+  const supabase = createStaticClient();
+  const phases = await getTournamentPhases(supabase, tournamentId);
+
+  // Fetch rounds with matches for each phase
+  const phasesWithMatches = await Promise.all(
+    phases.map(async (phase) => {
+      const rounds = await getPhaseRoundsWithMatches(
+        supabase,
+        phase.id,
+        tournamentId
       );
+      return { ...phase, rounds };
+    })
+  );
 
-      return phasesWithMatches;
-    },
-    [`tournament-matches-${slug}`],
-    { tags: [CacheTags.tournament(slug)] }
-  )();
+  return phasesWithMatches;
+}
 
 function getStatusBadgeVariant(
   status: string | null

@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 import { Suspense } from "react";
 import { Users } from "lucide-react";
 
@@ -15,34 +15,31 @@ import { FeaturedStrip } from "@/components/communities/featured-strip";
 import { CommunityList } from "@/components/communities/community-list";
 import { CommunitySearch } from "./community-search";
 
-// On-demand revalidation via cache tags (no time-based revalidation)
-export const revalidate = false;
+/**
+ * Cached data fetcher for all public communities.
+ * Revalidated when CacheTags.COMMUNITIES_LIST is invalidated.
+ */
+async function getCachedCommunities() {
+  "use cache";
+  cacheTag(CacheTags.COMMUNITIES_LIST);
+  cacheLife("max");
+
+  const supabase = createStaticClient();
+  return listPublicCommunities(supabase);
+}
 
 /**
- * Cached data fetcher for all public communities
- * Revalidated when CacheTags.COMMUNITIES_LIST is invalidated
+ * Cached data fetcher for featured communities (ordered by featured_order).
+ * Revalidated when CacheTags.COMMUNITIES_LIST is invalidated.
  */
-const getCachedCommunities = unstable_cache(
-  async () => {
-    const supabase = createStaticClient();
-    return listPublicCommunities(supabase);
-  },
-  ["communities-list"],
-  { tags: [CacheTags.COMMUNITIES_LIST] }
-);
+async function getCachedFeaturedCommunities() {
+  "use cache";
+  cacheTag(CacheTags.COMMUNITIES_LIST);
+  cacheLife("max");
 
-/**
- * Cached data fetcher for featured communities (ordered by featured_order)
- * Revalidated when CacheTags.COMMUNITIES_LIST is invalidated
- */
-const getCachedFeaturedCommunities = unstable_cache(
-  async () => {
-    const supabase = createStaticClient();
-    return listFeaturedCommunities(supabase);
-  },
-  ["featured-communities"],
-  { tags: [CacheTags.COMMUNITIES_LIST] }
-);
+  const supabase = createStaticClient();
+  return listFeaturedCommunities(supabase);
+}
 
 // ============================================================================
 // Main Page (Server Component)

@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import {
   createStaticClient,
@@ -37,9 +37,6 @@ import {
 } from "@trainers/tournaments";
 import { cn } from "@/lib/utils";
 
-// On-demand revalidation only (no time-based)
-export const revalidate = false;
-
 interface PageProps {
   params: Promise<{
     tournamentSlug: string;
@@ -64,43 +61,43 @@ const phaseTypeLabels: Record<string, string> = {
 // ============================================================================
 
 /**
- * Cached tournament fetcher
- * Uses slug-specific cache tag for granular invalidation
+ * Cached tournament fetcher — keyed by slug.
+ * Uses slug-specific cache tag for granular invalidation.
  */
-const getCachedTournament = (slug: string) =>
-  unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      return getTournamentBySlug(supabase, slug);
-    },
-    [`tournament-detail-${slug}`],
-    { tags: [CacheTags.tournament(slug), CacheTags.TOURNAMENTS_LIST] }
-  )();
+async function getCachedTournament(slug: string) {
+  "use cache";
+  cacheTag(CacheTags.tournament(slug), CacheTags.TOURNAMENTS_LIST);
+  cacheLife("max");
 
-/**
- * Fetch the current user's submitted team (auth-dependent, NOT cached).
- * Returns null if the user is not logged in or has no team submitted.
- */
-async function getMyTeam(tournamentId: number) {
-  try {
-    const supabase = await createClientReadOnly();
-    return getTeamForRegistration(supabase, tournamentId);
-  } catch {
-    return null;
-  }
+  const supabase = createStaticClient();
+  return getTournamentBySlug(supabase, slug);
 }
 
 /**
- * ISR-cached public team list for open teamsheet tournaments.
+ * Fetch the current user's submitted team (auth-dependent, NOT cached).
+ * Returns null when the user is unauthenticated or has no team submitted.
+ * createClientReadOnly() is called outside any cache scope — safe for cookies.
  */
-const getCachedTournamentTeams = (tournamentId: number, slug: string) =>
-  unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      const { data } = await supabase
-        .from("tournament_registrations")
-        .select(
-          `
+async function getMyTeam(tournamentId: number) {
+  const supabase = await createClientReadOnly().catch(() => null);
+  if (!supabase) return null;
+  return getTeamForRegistration(supabase, tournamentId);
+}
+
+/**
+ * Cached public team list for open teamsheet tournaments.
+ * Keyed by tournament ID and slug for granular invalidation.
+ */
+async function getCachedTournamentTeams(tournamentId: number, slug: string) {
+  "use cache";
+  cacheTag(CacheTags.tournamentTeams(slug), CacheTags.tournament(slug));
+  cacheLife("max");
+
+  const supabase = createStaticClient();
+  const { data } = await supabase
+    .from("tournament_registrations")
+    .select(
+      `
           alt_id,
           alts:alts!tournament_registrations_alt_id_fkey(username, display_name),
           team:teams(
@@ -111,17 +108,12 @@ const getCachedTournamentTeams = (tournamentId: number, slug: string) =>
             )
           )
         `
-        )
-        .eq("tournament_id", tournamentId)
-        .not("team_id", "is", null)
-        .order("registered_at");
-      return data ?? [];
-    },
-    [`tournament-teams-${slug}`],
-    {
-      tags: [CacheTags.tournamentTeams(slug), CacheTags.tournament(slug)],
-    }
-  )();
+    )
+    .eq("tournament_id", tournamentId)
+    .not("team_id", "is", null)
+    .order("registered_at");
+  return data ?? [];
+}
 
 // ============================================================================
 // Helper Functions
@@ -229,9 +221,7 @@ function TournamentHeader({
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-bold sm:text-4xl">{tournament.name}</h1>
-          {tournament.status && (
-            <StatusBadge status={tournament.status} />
-          )}
+          {tournament.status && <StatusBadge status={tournament.status} />}
         </div>
 
         {canManage && organization && (
@@ -344,7 +334,7 @@ function ScheduleCard({
       <div className="space-y-5">
         {/* Start time */}
         <div>
-          <p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wider">
+          <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wider uppercase">
             Start
           </p>
           <p className="font-medium">
@@ -404,7 +394,7 @@ function FormatCard({
       </h3>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+          <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
             Game Format
           </p>
           <p className="font-medium">
@@ -414,7 +404,7 @@ function FormatCard({
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+          <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
             Tournament Format
           </p>
           <p className="font-medium">
@@ -426,7 +416,7 @@ function FormatCard({
         </div>
         {tournament.round_time_minutes && (
           <div>
-            <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+            <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
               Round Time
             </p>
             <p className="flex items-center gap-1 font-medium">
@@ -437,7 +427,7 @@ function FormatCard({
         )}
         {tournament.swiss_rounds && (
           <div>
-            <p className="text-muted-foreground mb-0.5 text-xs font-medium uppercase tracking-wider">
+            <p className="text-muted-foreground mb-0.5 text-xs font-medium tracking-wider uppercase">
               Swiss Rounds
             </p>
             <p className="font-medium">{tournament.swiss_rounds} rounds</p>
