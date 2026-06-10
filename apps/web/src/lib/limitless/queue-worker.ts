@@ -35,13 +35,15 @@ export interface DrainResult {
  * - The deadline is reached (`Date.now() >= deadline`)
  *
  * @param supabase - Service-role Supabase client (caller's responsibility)
- * @param apiKey - Limitless API key
+ * @param apiKey - Limitless API key. Optional: the Limitless API serves
+ *   unauthenticated requests at a lower rate limit, so a missing key degrades
+ *   throughput rather than disabling imports.
  * @param batchSize - Max tournaments to process per pass
  * @param deadline - Unix epoch ms — stop after this time
  */
 export async function drainLimitlessQueue(
   supabase: SupabaseClient,
-  apiKey: string,
+  apiKey: string | undefined,
   batchSize: number,
   deadline: number
 ): Promise<DrainResult> {

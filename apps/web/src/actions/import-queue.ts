@@ -57,8 +57,8 @@ function clamp(value: number, min: number, max: number): number {
  * compiles team slots (`compileSourceTeamSlots`) and busts the usage stats
  * cache, exactly as the cron route does.
  *
- * Limitless stats: `-1` in `remaining` means the Limitless API key is not
- * configured — the Limitless worker was skipped.
+ * The Limitless API key is optional — unauthenticated requests work at a
+ * lower rate limit, so a missing key degrades throughput only.
  */
 export async function processImportQueuesNow(): Promise<
   ActionResult<{
@@ -131,11 +131,10 @@ export async function processImportQueuesNow(): Promise<
     };
 
     const limitlessPromise: Promise<LimitlessStats> = (async () => {
+      // Optional: Limitless serves unauthenticated requests at a lower rate
+      // limit, so a missing key degrades throughput rather than skipping the
+      // pass (the package-level fetch only sets the header when present).
       const apiKey = process.env.LIMITLESS_API_KEY;
-      if (!apiKey) {
-        // -1 in remaining signals "skipped: no API key" to the caller
-        return { processed: 0, errors: 0, remaining: -1 };
-      }
       try {
         const result = await processImportQueue(
           supabase,

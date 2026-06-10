@@ -406,6 +406,12 @@ export async function scrapeRk9TeamForStanding(
 ): Promise<ActionResult<void>> {
   try {
     assertValidEventId(eventId);
+    // rosterEntryId is interpolated into the rk9.gg URL path — restrict it to
+    // slug characters so values like "../../../roster/other" can't traverse to
+    // a different rk9.gg endpoint (buildRk9Url allows "/" and "." in paths).
+    if (!/^[\w-]+$/.test(rosterEntryId)) {
+      return { success: false, error: "Invalid roster entry ID" };
+    }
     const userId = await getUserId();
     if (!userId) return { success: false, error: "Not authenticated" };
     const isAdmin = await isSiteAdmin();
@@ -547,6 +553,12 @@ export async function batchQueueRk9Events(
     if (eventIds.length === 0) {
       return { success: true, data: { queued: 0 } };
     }
+    // Keep the invariant that every event id entering the system is a valid
+    // slug — a malformed id would otherwise match zero rows and silently mask
+    // a caller bug.
+    for (const id of eventIds) {
+      assertValidEventId(id);
+    }
 
     const supabase = createServiceRoleClient();
     const CHUNK_SIZE = 100; // PostgREST .in() filter is encoded in the URL — keep under 100
@@ -621,6 +633,11 @@ export async function unqueueRk9Events(
 
     if (eventIds.length === 0) {
       return { success: true, data: { unqueued: 0 } };
+    }
+    // Same slug invariant as batchQueueRk9Events — reject malformed ids
+    // loudly instead of matching zero rows.
+    for (const id of eventIds) {
+      assertValidEventId(id);
     }
 
     let totalUnqueued = 0;

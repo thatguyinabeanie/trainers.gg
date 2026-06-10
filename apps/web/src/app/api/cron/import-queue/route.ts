@@ -179,10 +179,11 @@ export async function GET(request: Request): Promise<Response> {
         skipped: `ran ${elapsed}s ago, interval ${limitlessIntervalSeconds}s`,
       };
     }
+    // Optional: Limitless serves unauthenticated requests at a lower rate
+    // limit, so a missing key degrades throughput rather than halting the
+    // drain (the package-level fetch only sets the auth header when a key
+    // is present).
     const apiKey = process.env.LIMITLESS_API_KEY;
-    if (!apiKey) {
-      return { skipped: "LIMITLESS_API_KEY unset" };
-    }
 
     const batchSize = clamp(
       typeof config["limitless_batch_size"] === "number"
@@ -195,10 +196,10 @@ export async function GET(request: Request): Promise<Response> {
     try {
       return await drainLimitlessQueue(supabase, apiKey, batchSize, deadline);
     } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "unknown error in drainLimitlessQueue";
+      // Generic label only — PostgrestError messages can carry schema/table
+      // detail; the full error goes to server logs.
       console.error("[import-queue] limitless worker error:", e);
-      return { error: message };
+      return { error: "limitless worker failed — see server logs" };
     }
   })();
 
@@ -236,10 +237,9 @@ export async function GET(request: Request): Promise<Response> {
         concurrency,
       });
     } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "unknown error in processRk9Queue";
+      // Generic label only — full error goes to server logs.
       console.error("[import-queue] rk9 worker error:", e);
-      return { error: message };
+      return { error: "rk9 worker failed — see server logs" };
     }
   })();
 
@@ -301,10 +301,9 @@ export async function GET(request: Request): Promise<Response> {
       revalidated: didCompile,
     };
   } catch (e) {
-    const message =
-      e instanceof Error ? e.message : "unknown error during compile";
+    // Generic label only — full error goes to server logs.
     console.error("[import-queue] compile step error:", e);
-    compile = { error: message };
+    compile = { error: "compile step failed — see server logs" };
   }
 
   return Response.json({ limitless, rk9, compile, budgetMs: BUDGET_MS });
