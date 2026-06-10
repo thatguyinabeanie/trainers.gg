@@ -31,19 +31,9 @@ git diff --cached --stat
 - Never stage `.env`, `.env.local`, credentials, or secrets files.
 - If unsure which files to include, ask the user.
 
-### 3. Run pre-commit checks
+### 3. No blocking checks
 
-Before committing, verify the staged changes pass quality checks:
-
-```bash
-pnpm format:check
-pnpm lint
-pnpm typecheck
-```
-
-- If any check fails, report the failure and offer to fix it.
-- Fix issues if requested, re-stage, and re-run the failing check.
-- Do not commit until all checks pass.
+Commits are never blocked on lint, typecheck, tests, or formatting. CI is authoritative for all checks. After push, the orchestrator dispatches `background-checker` (haiku, scoped lint/typecheck on changed packages) and `ci-monitor` (haiku, CI status) — both in the background. Failures land as follow-up commits.
 
 ### 4. Write the commit message
 

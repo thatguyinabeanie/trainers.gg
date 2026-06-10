@@ -66,19 +66,20 @@ Path-scoped rules in `.claude/rules/` load automatically when working with match
 
 Custom agents in `.claude/agents/`. Invoke for isolated, focused work.
 
-| Agent                    | Model  | Purpose                                                     |
-| ------------------------ | ------ | ----------------------------------------------------------- |
-| `planner`                | opus   | Brainstorming, design, architecture, planning               |
-| `feature-implementer`    | sonnet | Implement features with domain skill patterns               |
-| `qa-engineer`            | sonnet | Write tests — aim 80%+ coverage                             |
-| `code-reviewer`          | sonnet | Review changes for style, architecture, correctness         |
-| `pre-push-checker`       | haiku  | Run lint/typecheck/test/format, report pass/fail            |
-| `migration-reviewer`     | sonnet | Review SQL migrations for correctness, RLS, safety          |
-| `security-reviewer`      | sonnet | Security review: RLS, auth, route protection                |
-| `edge-function-reviewer` | sonnet | Review edge functions for CORS, auth, validation            |
-| `ci-monitor`             | haiku  | Watch CI after a push (background), report per-check status |
-| `ui-verifier`            | sonnet | Playwright visual + design-system check before "done"       |
-| `parity-checker`         | haiku  | Check Linear for mobile-parity tickets on web changes       |
+| Agent                    | Model  | Purpose                                                                           |
+| ------------------------ | ------ | --------------------------------------------------------------------------------- |
+| `planner`                | opus   | Brainstorming, design, architecture, planning                                     |
+| `feature-implementer`    | sonnet | Implement features with domain skill patterns                                     |
+| `qa-engineer`            | sonnet | Write tests — aim 80%+ coverage                                                   |
+| `code-reviewer`          | sonnet | Review changes for style, architecture, correctness                               |
+| `pre-push-checker`       | haiku  | Run lint/typecheck/test/format, report pass/fail                                  |
+| `migration-reviewer`     | sonnet | Review SQL migrations for correctness, RLS, safety                                |
+| `security-reviewer`      | sonnet | Security review: RLS, auth, route protection                                      |
+| `edge-function-reviewer` | sonnet | Review edge functions for CORS, auth, validation                                  |
+| `ci-monitor`             | haiku  | Watch CI after a push (background), report per-check status                       |
+| `background-checker`     | haiku  | Scoped lint/typecheck on changed packages after a push (background, never blocks) |
+| `ui-verifier`            | sonnet | Playwright visual + design-system check before "done"                             |
+| `parity-checker`         | haiku  | Check Linear for mobile-parity tickets on web changes                             |
 
 ## Auto-Delegation
 
@@ -95,6 +96,7 @@ The orchestrator's job is routing and review — not inline execution. For each 
 | Diff touches `packages/supabase/supabase/functions/`                | `edge-function-reviewer` | foreground, before push      |
 | Diff changed `apps/web/src/**/*.tsx` presentation/layout            | `ui-verifier`            | foreground, before push      |
 | A `git push` just landed on a branch with an open PR                | `ci-monitor`             | **background — never block** |
+| A git push just landed (any branch)                                 | `background-checker`     | **background — never block** |
 | Creating a PR / the parity hook fired on `apps/web/` changes        | `parity-checker`         | background                   |
 | Local quality checks explicitly requested                           | `pre-push-checker`       | foreground                   |
 
@@ -228,6 +230,11 @@ The file contains ANSI color codes; grep still works fine.
 
 **You do NOT need to run lint, typecheck, tests, or E2E locally before committing or pushing.** CI runs all of them — offload these checks to CI rather than blocking the commit/push on a local run. Running them locally is optional (fine for fast iteration on a focused change), never required.
 
+- Implementing agents never run lint/typecheck/tests inline — not before commit, not before push.
+- The orchestrator commits and pushes freely and frequently. Subagents never commit or push — they report changed files plus a suggested commit message.
+- In the same turn as every push, dispatch BOTH in the background: `background-checker` (haiku — scoped `pnpm typecheck --filter` / `pnpm lint --filter` on changed packages) and `ci-monitor` (haiku — watches CI).
+- Fix reported failures in follow-up commits; never leave red CI unaddressed.
+
 **After every push, check CI.** Once the push lands, monitor the CI run and enumerate each check by name with its status:
 
 1. `pnpm lint` — ESLint across all packages
@@ -273,6 +280,16 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 **Words like "clean up", "reorganize", "fix up", or "sort out" are ambiguous — never default to delete.** When the request could mean move/merge/archive/rename, confirm the user's intended semantics before running any bulk-delete (rm -rf, mass DELETE in a loop, dropping tables, wiping directories). Default to the least destructive interpretation and present destructive options via `AskUserQuestion` with a non-destructive first option.
 
+### Subagent Model Selection
+
+| Model                 | Use for                                                                                                                                                                 |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **haiku**             | Mechanical work: scoped lint/typecheck/test runs (`background-checker`), CI status fetch (`ci-monitor`), log/grep reading, Playwright measure-and-report, parity checks |
+| **sonnet**            | Implementation, fixes, test writing, code review                                                                                                                        |
+| **opus / main agent** | Orchestration, design, and final review only — never inline execution, never ingesting raw logs or snapshots                                                            |
+
+Pass `model` explicitly on every Agent dispatch. Anything that produces large output (test runs, CI logs, Playwright snapshots, grep dumps) runs inside a subagent that returns a concise report — the orchestrator's context stays lean.
+
 ### Completion Claims
 
 **Never declare a PR "ready to merge" before every review thread is resolved and CI is green.** For PR-feedback work, use the `reviewing-pr-feedback` skill — it enforces fetch-all-comments → group → fix → reply → resolve → re-review before completion.
@@ -298,6 +315,14 @@ Community-first, not an esports site. See `product-vision` and `competitive-land
 ## Development Workflow
 
 When executing implementation plans, always use **subagent-driven development** (`superpowers:subagent-driven-development`). Do not use inline execution unless explicitly asked.
+
+### Parallel Execution
+
+- Implementation plans end with a **Dependency & parallelism map**: tasks grouped into waves; tasks in the same wave touch disjoint file sets and have no data dependency.
+- When executing a plan, dispatch ALL tasks in the current wave in a single message (multiple Agent calls — they run concurrently), one subagent per task, each with an explicit disjoint file allowlist.
+- Sequence only true dependencies. The orchestrator commits between waves — subagents never commit or push; they return changed files plus a suggested commit message, and one committer avoids git races between parallel agents.
+- If a plan lacks a parallelism map, derive one before dispatching — never default to sequential out of convenience.
+- See `superpowers:dispatching-parallel-agents` for mechanics.
 
 ## Project Management
 
