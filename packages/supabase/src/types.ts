@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   limitless: {
     Tables: {
       match_results: {
@@ -3887,6 +3862,40 @@ export type Database = {
           status: string
         }[]
       }
+      get_usage_by_source: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_start?: string
+        }
+        Returns: {
+          players: number
+          source: string
+          species: string
+          usage_pct: number
+        }[]
+      }
+      get_usage_conversion: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_source?: string
+          p_start?: string
+          p_top_percentile?: number
+        }
+        Returns: {
+          conversion_pct: number
+          players: number
+          ranked_players: number
+          species: string
+          top_field: number
+          top_players: number
+          top_share_pct: number
+          usage_pct: number
+        }[]
+      }
       get_usage_pipeline: {
         Args: {
           p_end?: string
@@ -4625,9 +4634,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   limitless: {
     Enums: {},
   },

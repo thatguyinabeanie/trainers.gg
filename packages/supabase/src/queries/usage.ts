@@ -131,6 +131,46 @@ export interface GetPipelineDataParams {
   minPlayers?: number;
 }
 
+/** One per-source usage row from get_usage_by_source. */
+export interface SourceUsageRow {
+  species: string;
+  source: string; // 'rk9' | 'limitless' | 'trainers.gg'
+  players: number;
+  usagePct: number;
+}
+
+/** Parameters for getUsageBySource. */
+export interface GetUsageBySourceParams {
+  format: string;
+  periodStart?: string;
+  periodEnd?: string;
+  minPlayers?: number;
+}
+
+/** One per-species conversion row from get_usage_conversion. */
+export interface ConversionRow {
+  species: string;
+  players: number;
+  usagePct: number;
+  topPlayers: number;
+  topField: number;
+  topSharePct: number;
+  /** NULL when the species has no placement-bearing events. */
+  conversionPct: number | null;
+  rankedPlayers: number;
+}
+
+/** Parameters for getUsageConversion. */
+export interface GetUsageConversionParams {
+  format: string;
+  source?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  minPlayers?: number;
+  /** Top percentile in [0,1], e.g. 0.10 for "Top 10%". Maps to p_top_percentile. */
+  topPct?: number;
+}
+
 /** One distinct event for annotation pins on the usage timeline. */
 export interface FormatEvent {
   /** Unique event key, e.g. "rk9:00123" or "limitless:abc". */
@@ -429,5 +469,102 @@ export async function getFormatEvents(
     eventKey: row.event_key,
     eventDate: row.event_date,
     source: row.source,
+  }));
+}
+
+/**
+ * Fetch per-source usage breakdown for each species in a given format.
+ *
+ * Delegates to the `get_usage_by_source` RPC, which returns one row per
+ * (species, source) so callers can compare RK9, Limitless, and trainers.gg
+ * usage side-by-side without a separate aggregation step.
+ *
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
+ * @param params.format - Format ID (e.g. "gen9vgc2025regg").
+ * @param params.periodStart - If provided, restrict to periods >= this date.
+ * @param params.periodEnd - If provided, restrict to periods <= this date.
+ * @param params.minPlayers - Minimum players per event-division. Defaults to 0.
+ */
+export async function getUsageBySource(
+  supabase: TypedClient,
+  params: GetUsageBySourceParams
+): Promise<SourceUsageRow[]> {
+  const { format, periodStart, periodEnd, minPlayers = 0 } = params;
+
+  const { data, error } = await supabase.rpc("get_usage_by_source", {
+    p_format: format,
+    p_start: periodStart,
+    p_end: periodEnd,
+    p_min_players: minPlayers,
+  });
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch usage by source for ${format}: ${error.message}`
+    );
+  }
+
+  return (data ?? []).map((row) => ({
+    species: row.species,
+    source: row.source,
+    players: Number(row.players),
+    usagePct: Number(row.usage_pct),
+  }));
+}
+
+/**
+ * Fetch per-species conversion rates (usage → top placement) for a format.
+ *
+ * Delegates to the `get_usage_conversion` RPC, which returns one row per
+ * species with both usage statistics and top-placement conversion metrics.
+ * `conversionPct` is null when the species has no placement-bearing events —
+ * callers must handle this case and never coalesce it to 0.
+ *
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
+ * @param params.format - Format ID (e.g. "gen9vgc2025regg").
+ * @param params.source - Data source filter. Defaults to "all".
+ * @param params.periodStart - If provided, restrict to periods >= this date.
+ * @param params.periodEnd - If provided, restrict to periods <= this date.
+ * @param params.minPlayers - Minimum players per event-division. Defaults to 0.
+ * @param params.topPct - Top percentile threshold in [0,1], e.g. 0.10 for "Top 10%". Defaults to 0.10.
+ */
+export async function getUsageConversion(
+  supabase: TypedClient,
+  params: GetUsageConversionParams
+): Promise<ConversionRow[]> {
+  const {
+    format,
+    source = "all",
+    periodStart,
+    periodEnd,
+    minPlayers = 0,
+    topPct = 0.1,
+  } = params;
+
+  const { data, error } = await supabase.rpc("get_usage_conversion", {
+    p_format: format,
+    p_source: source,
+    p_start: periodStart,
+    p_end: periodEnd,
+    p_min_players: minPlayers,
+    p_top_percentile: topPct,
+  });
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch usage conversion for ${format}: ${error.message}`
+    );
+  }
+
+  return (data ?? []).map((row) => ({
+    species: row.species,
+    players: Number(row.players),
+    usagePct: Number(row.usage_pct),
+    topPlayers: Number(row.top_players),
+    topField: Number(row.top_field),
+    topSharePct: Number(row.top_share_pct),
+    conversionPct:
+      row.conversion_pct === null ? null : Number(row.conversion_pct),
+    rankedPlayers: Number(row.ranked_players),
   }));
 }
