@@ -781,8 +781,13 @@ export async function getSpeciesTeammates(
     typeof rawMatrix.cells === "object"
       ? rawMatrix
       : (() => {
-          throw new Error(
-            `matrix jsonb shape mismatch for species="${params.species}" format="${params.format}"`
+          // CodeQL js/tainted-format-string: keep a constant message string;
+          // attach the externally-controlled values (species, format) as
+          // structured cause properties rather than interpolating them into
+          // the message, so they cannot flow into a format-string position.
+          throw Object.assign(
+            new Error("matrix jsonb shape mismatch"),
+            { species: params.species, format: params.format }
           );
         })();
 

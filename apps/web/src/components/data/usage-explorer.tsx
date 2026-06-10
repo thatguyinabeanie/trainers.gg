@@ -288,7 +288,10 @@ export function UsageExplorer({
     rangeEnd === initPipelineKey.rangeEnd &&
     minPlayers === initPipelineKey.minPlayers;
 
-  const { data: pipelineResult = null } = useQuery<PipelineDataResult | null>({
+  const {
+    data: pipelineResult = null,
+    isPlaceholderData: isPipelinePlaceholder,
+  } = useQuery<PipelineDataResult | null>({
     queryKey: [
       "pipeline-data",
       format,
@@ -402,7 +405,14 @@ export function UsageExplorer({
 
   // ── Species selection ─────────────────────────────────────────────────────
 
-  const allSpecies = pipelineResult?.data ?? [];
+  // Only use pipeline data for preset derivation when it is FRESH (not a
+  // placeholder from a prior filter set). When isPipelinePlaceholder is true,
+  // the query key has changed (format/range/minPlayers changed) but the refetch
+  // has not resolved yet — the previous payload belongs to a different filter
+  // context, so using it to derive Top 20 would produce species from the wrong
+  // format/range. Falling back to [] causes applyPreset to return [] until the
+  // fresh result arrives, avoiding stale-preset flicker on the Trends tab.
+  const allSpecies = !isPipelinePlaceholder ? (pipelineResult?.data ?? []) : [];
 
   // No species param at all → default to Top 20. An explicitly-present species
   // param (even empty, from "Clear") is honored as-is, so the empty state is

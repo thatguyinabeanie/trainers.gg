@@ -317,6 +317,15 @@ describe("UsageExplorer — 3-state species model", () => {
       "Garchomp,Sneasler"
     );
   });
+
+  it("yields empty selection (not a stale preset) when pipeline data is null", () => {
+    // Guard against stale-preset: allSpecies must be derived only from FRESH
+    // pipeline data. When pipelineResult is null (no data yet, or placeholder
+    // gated to []), applyPreset([]) returns [] — not a previous format's Top 20.
+    mockSearchParams = new URLSearchParams();
+    renderExplorer(null); // no pipeline data
+    expect(screen.getByTestId("selected-count").textContent).toBe("0");
+  });
 });
 
 // =============================================================================
