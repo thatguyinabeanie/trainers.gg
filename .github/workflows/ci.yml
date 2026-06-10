@@ -77,9 +77,9 @@ jobs:
           CI: true
           GITHUB_ACTIONS: true
 
-  # ── Quality checks (lint + typecheck) ──────────────────────
-  quality:
-    name: Lint & Typecheck
+  # ── Quality checks (lint + typecheck, run in parallel) ─────
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [install]
@@ -92,7 +92,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
-          turbo-prefix: quality
+          turbo-prefix: lint
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
@@ -108,6 +108,31 @@ jobs:
             eslint-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             eslint-${{ runner.os }}-
 
+      # Register ESLint problem matcher so errors become inline PR annotations.
+      - name: Register ESLint problem matcher
+        run: echo "::add-matcher::.github/matchers/eslint-stylish.json"
+
+      - name: Lint
+        run: pnpm turbo run lint --log-prefix=none
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [install]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - uses: ./.github/actions/setup
+        with:
+          node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
+          turbo-prefix: typecheck
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
+
       - name: TypeScript cache
         uses: actions/cache@v5
         with:
@@ -120,15 +145,9 @@ jobs:
             tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             tsc-${{ runner.os }}-
 
-      # Register problem matchers so ESLint and tsc errors become
-      # inline annotations on the PR Files tab.
-      - name: Register problem matchers
-        run: |
-          echo "::add-matcher::.github/matchers/eslint-stylish.json"
-          echo "::add-matcher::.github/matchers/tsc.json"
-
-      - name: Lint
-        run: pnpm turbo run lint --log-prefix=none
+      # Register tsc problem matcher so errors become inline PR annotations.
+      - name: Register tsc problem matcher
+        run: echo "::add-matcher::.github/matchers/tsc.json"
 
       - name: Typecheck
         run: pnpm turbo run typecheck --log-prefix=none
