@@ -10,6 +10,7 @@ import {
 } from "recharts";
 
 import { type FormatUsageTimeseriesPoint } from "@trainers/supabase";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -122,9 +123,7 @@ function EndLabel({
   if (index < totalPeriods - 1) return null;
   if (value === null || value === undefined) return null;
 
-  // Sprite URL — use simple deterministic path matching getPokemonSprite.
-  // For the SVG <image> element we inline the sprite URL directly.
-  const spriteUrl = `https://img.pokemondb.net/sprites/scarlet-violet/icon/${species.toLowerCase()}.png`;
+  const sprite = getPokemonSprite(species);
 
   return (
     <g>
@@ -133,8 +132,9 @@ function EndLabel({
         y={cy - SPRITE_SIZE / 2}
         width={SPRITE_SIZE}
         height={SPRITE_SIZE}
-        href={spriteUrl}
+        href={sprite.url}
         aria-label={`${species} rank ${value}`}
+        style={sprite.pixelated ? { imageRendering: "pixelated" } : undefined}
       />
       <text
         x={cx + SPRITE_SIZE + 8}
