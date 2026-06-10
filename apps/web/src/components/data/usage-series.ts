@@ -348,6 +348,11 @@ export function computeRingLayout(
 ): RingPosition[] {
   if (count === 0) return [];
 
+  // Round to 4 decimals so SSR (Node) and client (browser) emit byte-identical
+  // percentage strings. Math.cos/sin can differ by 1 ULP across JS engines,
+  // which otherwise triggers a React hydration mismatch on the bubble positions.
+  const round = (n: number) => Math.round(n * 1e4) / 1e4;
+
   const forceRings = opts.rings;
   const useDoubleRing =
     forceRings === 2 || (forceRings === undefined && count > 12);
@@ -362,9 +367,9 @@ export function computeRingLayout(
       const cx = 50;
       const cy = 50;
       return {
-        x: cx + radius * Math.cos(angleRad),
-        y: cy + radius * Math.sin(angleRad),
-        angle: angleDeg + 90,
+        x: round(cx + radius * Math.cos(angleRad)),
+        y: round(cy + radius * Math.sin(angleRad)),
+        angle: round(angleDeg + 90),
       };
     });
   }
@@ -382,9 +387,9 @@ export function computeRingLayout(
     const angleDeg = i * (360 / innerCount) - 90;
     const angleRad = (angleDeg * Math.PI) / 180;
     positions.push({
-      x: 50 + innerRadius * Math.cos(angleRad),
-      y: 50 + innerRadius * Math.sin(angleRad),
-      angle: angleDeg + 90,
+      x: round(50 + innerRadius * Math.cos(angleRad)),
+      y: round(50 + innerRadius * Math.sin(angleRad)),
+      angle: round(angleDeg + 90),
     });
   }
 
@@ -392,9 +397,9 @@ export function computeRingLayout(
     const angleDeg = i * (360 / outerCount) - 90;
     const angleRad = (angleDeg * Math.PI) / 180;
     positions.push({
-      x: 50 + outerRadius * Math.cos(angleRad),
-      y: 50 + outerRadius * Math.sin(angleRad),
-      angle: angleDeg + 90,
+      x: round(50 + outerRadius * Math.cos(angleRad)),
+      y: round(50 + outerRadius * Math.sin(angleRad)),
+      angle: round(angleDeg + 90),
     });
   }
 
