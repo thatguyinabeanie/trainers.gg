@@ -103,7 +103,12 @@ export function RecentRuns({ runs, loading, className }: RecentRunsProps) {
       </CollapsibleTrigger>
 
       <CollapsibleContent className="border-t">
-        {loading ? (
+        {loading && runs.length === 0 ? (
+          // Only show the skeleton on the initial load (no data yet).
+          // When refreshing with existing data, keep rendering the list so the
+          // header count badge and body stay in sync (the count could show "(3)"
+          // while a poll-refresh flips loading=true, causing a blank/skeleton
+          // body otherwise).
           <RecentRunsSkeleton />
         ) : runs.length === 0 ? (
           <p className="text-muted-foreground px-3 py-4 text-center text-sm">

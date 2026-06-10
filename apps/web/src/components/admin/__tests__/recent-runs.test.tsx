@@ -260,6 +260,25 @@ describe("RecentRuns", () => {
         screen.queryByText(/No import runs recorded yet/i)
       ).not.toBeInTheDocument();
     });
+
+    it("keeps the row list visible and does not show the skeleton during a background refresh (loading=true with existing runs)", () => {
+      // Regression guard: loading && runs.length === 0 is the correct condition.
+      // The old `loading`-only condition would flash a skeleton over real rows
+      // whenever a background poll re-set loading=true while data was already present.
+      const runs = [
+        makeRun({ id: 1, source: "limitless", status: "ok" }),
+        makeRun({ id: 2, source: "rk9", status: "skipped" }),
+      ];
+
+      render(<RecentRuns runs={runs} loading />);
+
+      // Row data must still be visible
+      expect(screen.getByText("Limitless")).toBeInTheDocument();
+      expect(screen.getByText("RK9")).toBeInTheDocument();
+
+      // Skeleton must NOT appear (it is aria-hidden; a match means it rendered)
+      expect(document.querySelector("[aria-hidden]")).not.toBeInTheDocument();
+    });
   });
 
   // ---------------------------------------------------------------------------
