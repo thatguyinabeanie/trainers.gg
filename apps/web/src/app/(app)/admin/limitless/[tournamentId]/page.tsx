@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 import Link from "next/link";
 import { ArrowLeft, Trophy, Swords, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -10,123 +10,109 @@ import { CacheTags } from "@/lib/cache";
 import { StandingsTable } from "@/components/limitless/limitless-standings";
 import { MatchesTable } from "@/components/limitless/limitless-matches";
 
-// Historical data — never changes after import. Cache aggressively.
-export const revalidate = false;
-
 // ---------------------------------------------------------------------------
 // Cached data fetchers
+// Historical data — never changes after import. Cache aggressively with "max".
 // ---------------------------------------------------------------------------
 
-function getCachedTournament(tournamentId: string) {
-  return unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      const { data, error } = await supabase
-        .schema("limitless")
-        .from("tournaments")
-        .select("*")
-        .eq("tournament_id", tournamentId)
-        .single();
-      if (error || !data) return null;
-      return data;
-    },
-    [`limitless-tournament-${tournamentId}`],
-    { tags: [CacheTags.limitlessTournament(tournamentId)] }
-  )();
+async function getCachedTournament(tournamentId: string) {
+  "use cache";
+  cacheTag(CacheTags.limitlessTournament(tournamentId));
+  cacheLife("max");
+  const supabase = createStaticClient();
+  const { data, error } = await supabase
+    .schema("limitless")
+    .from("tournaments")
+    .select("*")
+    .eq("tournament_id", tournamentId)
+    .single();
+  if (error || !data) return null;
+  return data;
 }
 
-function getCachedPhases(tournamentId: string) {
-  return unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      const { data } = await supabase
-        .schema("limitless")
-        .from("phases")
-        .select("*")
-        .eq("tournament_id", tournamentId)
-        .order("phase_number");
-      return data ?? [];
-    },
-    [`limitless-phases-${tournamentId}`],
-    { tags: [CacheTags.limitlessTournament(tournamentId)] }
-  )();
+async function getCachedPhases(tournamentId: string) {
+  "use cache";
+  cacheTag(CacheTags.limitlessTournament(tournamentId));
+  cacheLife("max");
+  const supabase = createStaticClient();
+  const { data } = await supabase
+    .schema("limitless")
+    .from("phases")
+    .select("*")
+    .eq("tournament_id", tournamentId)
+    .order("phase_number");
+  return data ?? [];
 }
 
-function getCachedStandings(tournamentId: string) {
-  return unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      const { data } = await supabase
-        .schema("limitless")
-        .from("standings")
-        .select(
-          `
-          id,
-          placement,
-          record_wins,
-          record_losses,
-          record_ties,
-          drop_round,
-          player:players!standings_player_id_fkey (
-            id,
-            username,
-            display_name,
-            country
-          ),
-          team_pokemon (
-            position,
-            species,
-            ability,
-            held_item,
-            tera_type,
-            moves
-          )
-        `
-        )
-        .eq("tournament_id", tournamentId)
-        .order("placement");
-      return data ?? [];
-    },
-    [`limitless-standings-${tournamentId}`],
-    { tags: [CacheTags.limitlessTournament(tournamentId)] }
-  )();
+async function getCachedStandings(tournamentId: string) {
+  "use cache";
+  cacheTag(CacheTags.limitlessTournament(tournamentId));
+  cacheLife("max");
+  const supabase = createStaticClient();
+  const { data } = await supabase
+    .schema("limitless")
+    .from("standings")
+    .select(
+      `
+      id,
+      placement,
+      record_wins,
+      record_losses,
+      record_ties,
+      drop_round,
+      player:players!standings_player_id_fkey (
+        id,
+        username,
+        display_name,
+        country
+      ),
+      team_pokemon (
+        position,
+        species,
+        ability,
+        held_item,
+        tera_type,
+        moves
+      )
+    `
+    )
+    .eq("tournament_id", tournamentId)
+    .order("placement");
+  return data ?? [];
 }
 
-function getCachedMatches(tournamentId: string) {
-  return unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      const { data } = await supabase
-        .schema("limitless")
-        .from("match_results")
-        .select(
-          `
-          id,
-          phase,
-          round,
-          table_number,
-          match_label,
-          player1:players!match_results_player1_id_fkey (
-            id,
-            username,
-            display_name
-          ),
-          player2:players!match_results_player2_id_fkey (
-            id,
-            username,
-            display_name
-          ),
-          winner_id
-        `
-        )
-        .eq("tournament_id", tournamentId)
-        .order("phase")
-        .order("round");
-      return data ?? [];
-    },
-    [`limitless-matches-${tournamentId}`],
-    { tags: [CacheTags.limitlessTournament(tournamentId)] }
-  )();
+async function getCachedMatches(tournamentId: string) {
+  "use cache";
+  cacheTag(CacheTags.limitlessTournament(tournamentId));
+  cacheLife("max");
+  const supabase = createStaticClient();
+  const { data } = await supabase
+    .schema("limitless")
+    .from("match_results")
+    .select(
+      `
+      id,
+      phase,
+      round,
+      table_number,
+      match_label,
+      player1:players!match_results_player1_id_fkey (
+        id,
+        username,
+        display_name
+      ),
+      player2:players!match_results_player2_id_fkey (
+        id,
+        username,
+        display_name
+      ),
+      winner_id
+    `
+    )
+    .eq("tournament_id", tournamentId)
+    .order("phase")
+    .order("round");
+  return data ?? [];
 }
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -33,33 +33,32 @@ import { DashboardActivity } from "./components/dashboard-activity";
 import { CommunityHighlights } from "./components/community-highlights";
 import { computeStats } from "./compute-stats";
 
-// On-demand revalidation only — no time-based revalidation
-export const revalidate = false;
-
 // =============================================================================
 // Cached Fetchers (public data — anonymous client, no cookies)
 // =============================================================================
 
-function getCachedBulkStats(altIds: number[]) {
-  return unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      return getAltsBulkStats(supabase, altIds);
-    },
-    [`dashboard-bulk-stats-${[...altIds].sort((a, b) => a - b).join(",")}`],
-    { tags: [CacheTags.DASHBOARD_STATS] }
-  )();
+/**
+ * sortedAltIds must be pre-sorted (ascending) by the caller so the cache key
+ * is stable regardless of the order alts are returned from the DB.
+ */
+async function getCachedBulkStats(sortedAltIds: number[]) {
+  "use cache";
+  cacheTag(CacheTags.DASHBOARD_STATS);
+  cacheLife("max");
+  const supabase = createStaticClient();
+  return getAltsBulkStats(supabase, sortedAltIds);
 }
 
-function getCachedBulkRatings(altIds: number[]) {
-  return unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      return getPlayerRatingsBulk(supabase, altIds, "overall");
-    },
-    [`dashboard-bulk-ratings-${[...altIds].sort((a, b) => a - b).join(",")}`],
-    { tags: [CacheTags.DASHBOARD_RATINGS] }
-  )();
+/**
+ * sortedAltIds must be pre-sorted (ascending) by the caller so the cache key
+ * is stable regardless of the order alts are returned from the DB.
+ */
+async function getCachedBulkRatings(sortedAltIds: number[]) {
+  "use cache";
+  cacheTag(CacheTags.DASHBOARD_RATINGS);
+  cacheLife("max");
+  const supabase = createStaticClient();
+  return getPlayerRatingsBulk(supabase, sortedAltIds, "overall");
 }
 
 // =============================================================================
@@ -106,8 +105,9 @@ export default async function DashboardHomePage() {
   // Fetch main_alt_id from users table
   const mainAltId = await getUserMainAltId(supabase, user.id);
 
-  // Extract alt IDs for bulk queries
+  // Extract alt IDs for bulk queries — sort ascending for stable cache keys
   const altIds = alts.map((a) => a.id);
+  const sortedAltIds = [...altIds].sort((a, b) => a - b);
 
   // Parallel fetch: cached bulk stats/ratings + uncached active match + dashboard data
   let bulkStats: Record<number, AltStats> | undefined;
@@ -119,11 +119,9 @@ export default async function DashboardHomePage() {
   if (altIds.length > 0) {
     const [statsResult, ratingsResult, matchResult, dashboardResult] =
       await Promise.allSettled([
-        getCachedBulkStats(altIds),
-        getCachedBulkRatings(altIds),
-        mainAltId
-          ? getActiveMatch(supabase, mainAltId)
-          : Promise.resolve(null),
+        getCachedBulkStats(sortedAltIds),
+        getCachedBulkRatings(sortedAltIds),
+        mainAltId ? getActiveMatch(supabase, mainAltId) : Promise.resolve(null),
         mainAltId
           ? getMyDashboardData(supabase, mainAltId)
           : Promise.resolve(null),
@@ -205,8 +203,10 @@ export default async function DashboardHomePage() {
 
   // Prepare community highlights data
   const communityIds = myCommunities.map((c) => c.id);
-  const liveTournamentCommunityIds =
-    await getLiveTournamentCommunityIds(supabase, communityIds);
+  const liveTournamentCommunityIds = await getLiveTournamentCommunityIds(
+    supabase,
+    communityIds
+  );
 
   const communityHighlights = myCommunities.map((c) => ({
     id: c.id,

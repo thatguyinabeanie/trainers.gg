@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import {
-  createStaticClient,
-  getUserId,
-} from "@/lib/supabase/server";
+import { createStaticClient, getUserId } from "@/lib/supabase/server";
 import {
   getPlayerProfileByHandle,
   getFollowerCount,
@@ -30,9 +27,6 @@ import { CoachBadge } from "@/components/ui/coach-badge";
 import { DiscordIcon } from "@/components/icons/discord-icon";
 import { PlayerProfileTabs } from "./player-profile-tabs";
 
-// On-demand revalidation only (no time-based)
-export const revalidate = false;
-
 interface PlayerPageProps {
   params: Promise<{
     handle: string;
@@ -46,64 +40,58 @@ interface PlayerPageProps {
 /**
  * Cached player profile fetcher.
  * Uses handle-specific cache tag for granular invalidation.
+ * handle is the explicit parameter — it becomes part of the cache key.
  */
-const getCachedPlayerProfile = (handle: string) =>
-  unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      return getPlayerProfileByHandle(supabase, handle);
-    },
-    [`player-profile-${handle}`],
-    { tags: [CacheTags.player(handle)] }
-  )();
+async function getCachedPlayerProfile(handle: string) {
+  "use cache";
+  cacheTag(CacheTags.player(handle));
+  cacheLife("max");
+  const supabase = createStaticClient();
+  return getPlayerProfileByHandle(supabase, handle);
+}
 
 /**
  * Cached follow counts fetcher.
  * Uses handle-specific cache tag for granular invalidation.
+ * userId and handle are explicit parameters — both become part of the cache key.
  */
-const getCachedFollowCounts = (userId: string, handle: string) =>
-  unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      const [followers, following] = await Promise.all([
-        getFollowerCount(supabase, userId),
-        getFollowingCount(supabase, userId),
-      ]);
-      return { followers, following };
-    },
-    [`player-follow-counts-${userId}`],
-    { tags: [CacheTags.player(handle)] }
-  )();
+async function getCachedFollowCounts(userId: string, handle: string) {
+  "use cache";
+  cacheTag(CacheTags.player(handle));
+  cacheLife("max");
+  const supabase = createStaticClient();
+  const [followers, following] = await Promise.all([
+    getFollowerCount(supabase, userId),
+    getFollowingCount(supabase, userId),
+  ]);
+  return { followers, following };
+}
 
 /**
  * Cached Discord handle fetcher for public profiles.
  * Reads show_discord_publicly from users table and — only when true — fetches
  * the Discord identity via auth.identities (service role via static client).
  * Uses the same cache tag as the profile so toggling the setting invalidates both.
+ * userId and handle are explicit parameters — both become part of the cache key.
+ * The handle ensures a handle-change creates a fresh entry matching the new tag.
  */
-const getCachedDiscordHandle = (userId: string, handle: string) =>
-  unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      // Check whether this user has opted in to showing their Discord publicly
-      const { data: userRow } = await supabase
-        .from("users")
-        .select("show_discord_publicly")
-        .eq("id", userId)
-        .maybeSingle();
+async function getCachedDiscordHandle(userId: string, handle: string) {
+  "use cache";
+  cacheTag(CacheTags.player(handle));
+  cacheLife("max");
+  const supabase = createStaticClient();
+  // Check whether this user has opted in to showing their Discord publicly
+  const { data: userRow } = await supabase
+    .from("users")
+    .select("show_discord_publicly")
+    .eq("id", userId)
+    .maybeSingle();
 
-      if (!userRow?.show_discord_publicly) return null;
+  if (!userRow?.show_discord_publicly) return null;
 
-      // Only call auth.identities when the user has opted in — saves a round trip
-      return getPublicDiscordHandle(supabase, userId);
-    },
-    // Handle is part of the key so a handle-change creates a fresh entry
-    // whose tag (CacheTags.player(newHandle)) matches future invalidations.
-    // Without it, the cached value would live under the userId forever while
-    // the stored tag stayed pinned to the original handle.
-    ["player-discord-handle", userId, handle],
-    { tags: [CacheTags.player(handle)] }
-  )();
+  // Only call auth.identities when the user has opted in — saves a round trip
+  return getPublicDiscordHandle(supabase, userId);
+}
 
 // ============================================================================
 // Metadata

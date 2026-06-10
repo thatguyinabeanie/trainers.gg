@@ -15,18 +15,6 @@ import {
 } from "@/components/data/usage-filters";
 
 // =============================================================================
-// Cache
-// =============================================================================
-
-/**
- * Use on-demand tag invalidation only (via CacheTags.USAGE_STATS). The
- * unstable_cache inside fetchFormatUsageTimeseries manages its own 1h TTL.
- * Setting revalidate=3600 here would redundantly race against that TTL and
- * prevent the tag-based bust from taking effect immediately.
- */
-export const revalidate = false;
-
-// =============================================================================
 // Page
 // =============================================================================
 
