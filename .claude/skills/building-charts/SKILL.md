@@ -1,20 +1,25 @@
 ---
 name: building-charts
-description: Use when building data visualizations — recharts charts, d3-sankey flows, or usage-over-time lines on /data and dashboards
+description: Use when building data visualizations — recharts charts, or usage-over-time lines on /data and dashboards
 ---
 
 # Building Charts
 
-Data visualizations in the web app: recharts (line, pie, sparkline) and d3-sankey flows.
+Data visualizations in the web app: recharts (line, pie, sparkline), hand-rolled SVG, and CSS grid layouts.
+
+> **Note:** The d3-sankey `UsagePipelineChart` was removed in Phase 3. The treemap (Phase 2) is now the primary "meta now" snapshot. Only `recharts` and `d3-sankey` (installed) remain, but no new Sankey surfaces should be added.
 
 ## Reference Components
 
-| Component            | Path                                                       | Library                                       |
-| -------------------- | ---------------------------------------------------------- | --------------------------------------------- |
-| `UsageLineChart`     | `apps/web/src/components/data/usage-line-chart.tsx`        | recharts `LineChart` + `Brush`                |
-| `UsagePipelineChart` | `apps/web/src/components/data/usage-pipeline-chart.tsx`    | d3-sankey (raw SVG)                           |
-| `UsageSparkline`     | `apps/web/src/components/team-builder/usage-sparkline.tsx` | recharts `LineChart` (no axes)                |
-| Admin pie            | `apps/web/src/app/(app)/admin/page.tsx`                    | recharts `PieChart` + shadcn `ChartContainer` |
+| Component                      | Path                                                              | Library                                       |
+| ------------------------------ | ----------------------------------------------------------------- | --------------------------------------------- |
+| `UsageLineChart`               | `apps/web/src/components/data/usage-line-chart.tsx`               | recharts `LineChart` + `Brush`                |
+| `UsageSparkline`               | `apps/web/src/components/team-builder/usage-sparkline.tsx`        | recharts `LineChart` (no axes)                |
+| Admin pie                      | `apps/web/src/app/(app)/admin/page.tsx`                           | recharts `PieChart` + shadcn `ChartContainer` |
+| `SpeciesFingerprint`           | `apps/web/src/components/data/species-fingerprint.tsx`            | recharts `PieChart` (donut grid)              |
+| `SpeciesTeammateConstellation` | `apps/web/src/components/data/species-teammate-constellation.tsx` | hand-rolled SVG + absolute-positioned bubbles |
+| `SpeciesTeammateHeatmap`       | `apps/web/src/components/data/species-teammate-heatmap.tsx`       | CSS grid                                      |
+| `SpeciesTimeline`              | `apps/web/src/components/data/species-timeline.tsx`               | recharts `LineChart` (via `UsageLineChart`)   |
 
 ## Colors: OKLCH Only — Never Hardcoded Hex
 
@@ -31,17 +36,21 @@ function assignColor(species: string): string {
 
 Color is keyed to the species name — toggling filters never shifts existing colors.
 
-### Sankey column colors — fixed hue ramp
+### Donut / categorical slice colors — `DONUT_SLICE_COLORS` fixed ramp
 
 ```ts
-// apps/web/src/components/data/usage-pipeline.ts
-export const COLUMN_COLORS = {
-  ability: "oklch(0.66 0.12 180)",
-  item: "oklch(0.66 0.12 195)",
-  nature: "oklch(0.66 0.12 210)",
-  move: "oklch(0.66 0.12 225)",
-};
+// apps/web/src/components/data/data-shared.ts
+export const DONUT_SLICE_COLORS: string[] = [
+  "oklch(0.66 0.12 180)",
+  "oklch(0.66 0.12 195)",
+  "oklch(0.66 0.12 210)",
+  "oklch(0.66 0.12 225)",
+  "oklch(0.66 0.12 240)",
+  "oklch(0.50 0.04 260)", // "Other" gray
+];
 ```
+
+Use for dimension-value slices (items, abilities, tera types, natures) — **not** `assignColor`, which is for species.
 
 ### Status / categorical colors — `CHART_COLORS` map
 
@@ -156,38 +165,17 @@ The `/data` page applies this before rendering. The sidebar lets users override 
 
 ## RPC-precompute vs Client-side Transform
 
-| Situation                 | Approach                                                                      |
-| ------------------------- | ----------------------------------------------------------------------------- |
-| Large/aggregated data     | SQL RPC — return pre-bucketed shape (e.g. `get_format_usage_timeseries`)      |
-| Cosmetic filter / sort    | Client JS is fine (`filterByThreshold`, `insideOutOrder`, `buildUsageSeries`) |
-| Sankey graph construction | Client `buildPipelineGraph()` — data already bucketed by RPC                  |
+| Situation              | Approach                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| Large/aggregated data  | SQL RPC — return pre-bucketed shape (e.g. `get_format_usage_timeseries`)      |
+| Cosmetic filter / sort | Client JS is fine (`filterByThreshold`, `insideOutOrder`, `buildUsageSeries`) |
+| Shape adapter          | Pure helper in `usage-series.ts` (e.g. `detailBucketsToTimeseriesPoints`)     |
 
 See `working-with-usage-data` for the full RPC catalog and `FormatUsageTimeseriesPoint` shape.
 
-## d3-sankey Specifics
+## d3-sankey
 
-Renders as raw `<svg>` — no recharts. Key API points:
-
-```ts
-import { sankey, sankeyLinkHorizontal, type SankeyGraph } from "d3-sankey";
-
-const layout = sankey<D3Node, D3Link>()
-  .nodeId((d) => d.id) // required — resolves string refs in links
-  .nodeWidth(18)
-  .nodePadding(12)
-  .nodeAlign((node) => columnIndex) // species=0, then active columns in order
-  .extent([
-    [leftBand, topPad],
-    [width - labelMargin, height - botPad],
-  ]);
-
-const { nodes, links } = layout(input);
-const linkPath = sankeyLinkHorizontal<D3Node, D3Link>(); // SVG path generator
-```
-
-After layout: nodes gain `x0, x1, y0, y1`; links gain `source/target` (node objects), `width`, `y0`, `y1`. Hover uses `opacity` on `<g>` and `strokeOpacity` on `<path>` with `transition: opacity 0.15s`. Species nodes render a Pokemon sprite via `getPokemonSprite(label).url` as `<image>` (see `parsing-pokemon`).
-
-Full implementation: `apps/web/src/components/data/usage-pipeline-chart.tsx`.
+> **Removed in Phase 3.** `usage-pipeline-chart.tsx` and `usage-pipeline.ts` were deleted. Do not add new Sankey surfaces. The `d3-sankey` package remains installed but is unused; the treemap is now the primary "meta now" snapshot.
 
 ## Phase 2 Chart Patterns
 
@@ -209,8 +197,38 @@ Streamgraph is a line-chart **mode**, not a separate chart type. Set `stackOffse
 
 `recharts` `<LineChart>` with `<YAxis reversed />` so rank 1 sits at the top. Set `connectNulls={false}` so a species that drops out of the top-N creates a gap rather than a misleading connecting line. Rank arrays are built by `buildRankSeries()` from the timeseries data. End labels render a Pokemon sprite + rank number inline using a custom dot or label component. See `usage-bump-chart.tsx`.
 
+## Phase 3 Chart Patterns
+
+New reusable patterns introduced in the Phase 3 per-Pokemon drill-down. Reference implementations in `apps/web/src/components/data/species-*.tsx`.
+
+### Recharts donut grid with "Other" collapse
+
+`recharts` `PieChart` + `Pie` with `innerRadius` (donut shape), inside a `ResponsiveContainer`. For each dimension (items, abilities, tera, nature/stat-alignment), take the top ~5 entries and collapse the remaining into a single **"Other"** slice (summed pct). Slice fills from `DONUT_SLICE_COLORS` in `data-shared.ts` (gray entry = "Other"). Center label shows the modal value + its %. Grid: `grid-cols-2 sm:grid-cols-4`. See `species-fingerprint.tsx`.
+
+### `detailBucketsToTimeseriesPoints` adapter — single-series `UsageLineChart` reuse
+
+```ts
+// apps/web/src/components/data/usage-series.ts
+detailBucketsToTimeseriesPoints(detail: SpeciesUsagePeriod[], species: string): FormatUsageTimeseriesPoint[]
+```
+
+Converts the per-species trailing-bucket detail into the `FormatUsageTimeseriesPoint[]` shape `UsageLineChart` expects. Produces one point per bucket: `{ periodStart, periodEnd, usage: { [species]: bucket.usagePct } }`. Pass `selectedSpecies={[species]}` to `UsageLineChart` for a single series. See `species-timeline.tsx`.
+
+### Deterministic radial-ring constellation — `computeRingLayout`
+
+```ts
+// apps/web/src/components/data/usage-series.ts
+computeRingLayout(count: number, opts?: { rings?: number }): { x: number; y: number; angle: number }[]
+```
+
+Pure trig, no force-layout dependency. Returns `x`/`y` as percentages (0–100) relative to a square container, starting at 12 o'clock, evenly spaced. For >12 with `rings: 2`, splits across inner/outer radius. The component sets `left: x%`, `top: y%` (inline `style` — percentage positions are fine; not pixel literals). SVG `<line>` layer from center to each bubble with `stroke="var(--border)"`, opacity scaling with `pairPct`. Default top 12 (one ring); toggle to 20 expands to two rings without a refetch. See `species-teammate-constellation.tsx`.
+
+### Co-occurrence heatmap — CSS grid with sorted-key cell lookup
+
+CSS `(N+1) × (N+1)` grid: header row + header column of teammate sprites (`matrix.order`), then cells. Cell key lookup: always order the two slugs lexicographically (`[a, b].sort()[0] + "||" + sort()[1]`) to match the `"a||b" with a < b` convention the RPC emits. Cell background = teal at opacity scaled to co-occurrence pct (inline `backgroundColor: oklch(... / {alpha})`). Mobile cap: slice `matrix.order` to 5 (5×5 grid at phone widths via `useIsMobile()`). See `species-teammate-heatmap.tsx`.
+
 ## Mobile Behavior
 
-`ResponsiveContainer width="100%"` adapts naturally. The Sankey `clamp(400px, 65vh, 720px)` compresses on small screens — no separate mobile layout. `UsageSparkline` is `h-6 w-12` — embeds in table cells.
+`ResponsiveContainer width="100%"` adapts naturally. `UsageSparkline` is `h-6 w-12` — embeds in table cells.
 
 See `auditing-mobile-responsiveness` if charts cause horizontal overflow.

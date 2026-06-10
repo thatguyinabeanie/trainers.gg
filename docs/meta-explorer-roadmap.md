@@ -39,17 +39,17 @@ shareable for content creators.
 | Streamgraph                     | Meta share over time, composition feel                                                              | `get_usage_timeseries`                |
 | Treemap                         | Proportional meta-share snapshot, sprite-friendly                                                   | `get_usage_pipeline`                  |
 
-## Phase 3 — Per-Pokemon drill-down (`/data/pokemon/[species]`)
+## Phase 3 — Per-Pokemon drill-down (`/data/pokemon/[species]`) ✅ Shipped 2026-06-10 — /data/pokemon/[species]: fingerprint, true move combos, teammates, timeline; 2 new RPCs; Sankey removed
 
-| Chart                         | What it shows                                                                                        | Data                                                     |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| ⭐ Build fingerprint card     | Item/ability/tera/nature donuts + top-moves bars at a glance                                         | `get_species_usage_detail`                               |
-| Moveset combo view            | TRUE 4-move joint distributions — the honest replacement for the Sankey (which multiplied marginals) | needs a joint-combos RPC over `moves` (GIN index exists) |
-| Teammate constellation        | Sprite bubbles sized by pair rate around the focal species                                           | self-join on `player_key`                                |
-| Teammate core heatmap         | Top-N × top-N co-occurrence matrix                                                                   | self-join on `player_key`                                |
-| Single-species usage timeline | Existing line chart scoped to one species with event pins                                            | `get_species_usage_detail` + `get_format_events`         |
+| Chart                         | What it shows                                                                                        | Data                                                  |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| ⭐ Build fingerprint card     | Item/ability/tera/nature donuts + top-moves bars at a glance                                         | `get_species_usage_detail`                            |
+| Moveset combo view            | TRUE 4-move joint distributions — the honest replacement for the Sankey (which multiplied marginals) | `get_species_move_combos` (new Phase 3 RPC)           |
+| Teammate constellation        | Sprite bubbles sized by pair rate around the focal species                                           | `get_species_teammates` (new Phase 3 RPC)             |
+| Teammate core heatmap         | Top-N × top-N co-occurrence matrix                                                                   | `get_species_teammates` (same call, shared focal-CTE) |
+| Single-species usage timeline | Existing line chart scoped to one species with event pins                                            | `get_species_usage_detail` + `get_format_events`      |
 
-**Sankey fate: DECIDED — removed in Phase 3.** The treemap (Phase 2) becomes the primary "meta now" snapshot on the Overview tab. `get_usage_pipeline` RPC is retained; only `usage-pipeline-chart.tsx`, `usage-pipeline.ts`, and the `columns` sidebar control are deleted.
+**Sankey fate: removed in Phase 3.** The treemap (Phase 2) is the primary "meta now" snapshot on the Overview tab. `get_usage_pipeline` RPC is retained (treemap still uses it); `usage-pipeline-chart.tsx`, `usage-pipeline.ts`, and the `columns` sidebar control were deleted.
 
 ## Phase 4 — Metadata views
 
