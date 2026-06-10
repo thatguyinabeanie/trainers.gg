@@ -69,8 +69,8 @@ jobs:
       # (prerender), so the build needs a reachable Supabase — a placeholder
       # URL makes every cached fetch reject and aborts page exports.
       - name: Start local Supabase
+        working-directory: packages/supabase
         run: |
-          cd packages/supabase
           pnpm supabase start
           pnpm supabase status -o env | tr -d '"' > /tmp/supabase-status.env
           {
