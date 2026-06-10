@@ -10,6 +10,8 @@ import {
   type SpeciesUsageDetailParams,
   type PipelineDataResult,
   type FormatEvent,
+  type SourceUsageRow,
+  type ConversionRow,
 } from "@trainers/supabase";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
@@ -20,6 +22,8 @@ import {
   getCachedFormatUsageTimeseries,
   getCachedPipelineData,
   getCachedFormatEvents,
+  getCachedUsageBySource,
+  getCachedUsageConversion,
 } from "@/lib/data/usage-cache";
 
 // ---------------------------------------------------------------------------
@@ -344,6 +348,107 @@ export async function fetchFormatEvents(
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch format events"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: per-source usage breakdown
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchUsageBySource. */
+export interface FetchUsageBySourceParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** If provided, restrict to periods >= this ISO date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this ISO date. */
+  periodEnd?: string;
+  /** Minimum players per event-division. Defaults to 0 (no filter). */
+  minPlayers?: number;
+}
+
+/**
+ * Public (non-admin) server action to fetch per-source species usage
+ * breakdown for a format. Delegates to getCachedUsageBySource.
+ *
+ * Defaults are resolved before calling the cache fn so the runtime can
+ * key the cache correctly on fully-populated params.
+ */
+export async function fetchUsageBySource(
+  params: FetchUsageBySourceParams
+): Promise<ActionResult<SourceUsageRow[]>> {
+  try {
+    const { format, periodStart, periodEnd, minPlayers = 0 } = params;
+
+    const data = await getCachedUsageBySource({
+      format,
+      periodStart,
+      periodEnd,
+      minPlayers,
+    });
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch usage by source"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: usage conversion (top-percentile penetration)
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchUsageConversion. */
+export interface FetchUsageConversionParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** Rollup source. Defaults to "all". */
+  source?: string;
+  /** If provided, restrict to periods >= this ISO date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this ISO date. */
+  periodEnd?: string;
+  /** Minimum players per event-division. Defaults to 0 (no filter). */
+  minPlayers?: number;
+  /** Top percentile cutoff (0–1). Defaults to 0.10 (top 10%). */
+  topPct?: number;
+}
+
+/**
+ * Public (non-admin) server action to fetch species usage-to-top-percentile
+ * conversion rates for a format. Delegates to getCachedUsageConversion.
+ *
+ * Defaults are resolved before calling the cache fn so the runtime can
+ * key the cache correctly on fully-populated params.
+ */
+export async function fetchUsageConversion(
+  params: FetchUsageConversionParams
+): Promise<ActionResult<ConversionRow[]>> {
+  try {
+    const {
+      format,
+      source = "all",
+      periodStart,
+      periodEnd,
+      minPlayers = 0,
+      topPct = 0.1,
+    } = params;
+
+    const data = await getCachedUsageConversion({
+      format,
+      source,
+      periodStart,
+      periodEnd,
+      minPlayers,
+      topPct,
+    });
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch usage conversion"),
     };
   }
 }

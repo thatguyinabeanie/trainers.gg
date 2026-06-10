@@ -41,6 +41,8 @@ jest.mock("@/lib/data/usage-cache", () => ({
   getCachedFormatUsageTimeseries: jest.fn(),
   getCachedPipelineData: jest.fn(),
   getCachedFormatEvents: jest.fn(),
+  getCachedUsageBySource: jest.fn(),
+  getCachedUsageConversion: jest.fn(),
 }));
 
 // ---------------------------------------------------------------------------
@@ -57,6 +59,8 @@ import {
   getCachedFormatUsageTimeseries,
   getCachedPipelineData,
   getCachedFormatEvents,
+  getCachedUsageBySource,
+  getCachedUsageConversion,
 } from "@/lib/data/usage-cache";
 import {
   calculateSourceUsage,
@@ -66,6 +70,8 @@ import {
   fetchFormatUsageTimeseries,
   fetchPipelineData,
   fetchFormatEvents,
+  fetchUsageBySource,
+  fetchUsageConversion,
 } from "../usage";
 
 // ---------------------------------------------------------------------------
@@ -84,6 +90,8 @@ const mockGetCachedFormatUsageTimeseries =
   getCachedFormatUsageTimeseries as jest.Mock;
 const mockGetCachedPipelineData = getCachedPipelineData as jest.Mock;
 const mockGetCachedFormatEvents = getCachedFormatEvents as jest.Mock;
+const mockGetCachedUsageBySource = getCachedUsageBySource as jest.Mock;
+const mockGetCachedUsageConversion = getCachedUsageConversion as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // Shared setup
@@ -685,5 +693,151 @@ describe("calculateAllSourceUsage", () => {
       expect(result.error).toBe("Requires site admin");
     }
     expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// fetchUsageBySource
+// =============================================================================
+
+describe("fetchUsageBySource", () => {
+  it("happy path: returns source usage rows", async () => {
+    const rows = [
+      { species: "koraidon", source: "rk9", usagePct: 55.1, rank: 1 },
+      { species: "koraidon", source: "limitless", usagePct: 50.2, rank: 1 },
+    ];
+    mockGetCachedUsageBySource.mockResolvedValueOnce(rows);
+
+    const result = await fetchUsageBySource({ format: "gen9vgc2025regg" });
+
+    expect(result.success).toBe(true);
+    if (!result.success) throw new Error("expected success");
+    expect(result.data).toEqual(rows);
+    expect(mockGetCachedUsageBySource).toHaveBeenCalledWith({
+      format: "gen9vgc2025regg",
+      periodStart: undefined,
+      periodEnd: undefined,
+      minPlayers: 0,
+    });
+  });
+
+  it("defaults minPlayers to 0 when not provided", async () => {
+    mockGetCachedUsageBySource.mockResolvedValueOnce([]);
+
+    await fetchUsageBySource({ format: "gen9vgc2025regg" });
+
+    expect(mockGetCachedUsageBySource).toHaveBeenCalledWith(
+      expect.objectContaining({ minPlayers: 0 })
+    );
+  });
+
+  it("passes periodStart, periodEnd, and minPlayers through", async () => {
+    mockGetCachedUsageBySource.mockResolvedValueOnce([]);
+
+    await fetchUsageBySource({
+      format: "gen9vgc2025regg",
+      periodStart: "2025-01-01",
+      periodEnd: "2025-03-31",
+      minPlayers: 64,
+    });
+
+    expect(mockGetCachedUsageBySource).toHaveBeenCalledWith(
+      expect.objectContaining({
+        periodStart: "2025-01-01",
+        periodEnd: "2025-03-31",
+        minPlayers: 64,
+      })
+    );
+  });
+
+  it("returns { success: false } when query throws", async () => {
+    mockGetCachedUsageBySource.mockRejectedValueOnce(
+      new Error("source query failed")
+    );
+
+    const result = await fetchUsageBySource({ format: "gen9vgc2025regg" });
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /source query failed/
+    );
+  });
+});
+
+// =============================================================================
+// fetchUsageConversion
+// =============================================================================
+
+describe("fetchUsageConversion", () => {
+  it("happy path: returns conversion rows", async () => {
+    const rows = [
+      {
+        species: "koraidon",
+        usagePct: 55.1,
+        topCutPct: 62.3,
+        conversionRate: 1.13,
+      },
+    ];
+    mockGetCachedUsageConversion.mockResolvedValueOnce(rows);
+
+    const result = await fetchUsageConversion({ format: "gen9vgc2025regg" });
+
+    expect(result.success).toBe(true);
+    if (!result.success) throw new Error("expected success");
+    expect(result.data).toEqual(rows);
+    expect(mockGetCachedUsageConversion).toHaveBeenCalledWith({
+      format: "gen9vgc2025regg",
+      source: "all",
+      periodStart: undefined,
+      periodEnd: undefined,
+      minPlayers: 0,
+      topPct: 0.1,
+    });
+  });
+
+  it("defaults source to 'all', minPlayers to 0, and topPct to 0.10", async () => {
+    mockGetCachedUsageConversion.mockResolvedValueOnce([]);
+
+    await fetchUsageConversion({ format: "gen9vgc2025regg" });
+
+    expect(mockGetCachedUsageConversion).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "all", minPlayers: 0, topPct: 0.1 })
+    );
+  });
+
+  it("passes custom source, periodStart, periodEnd, minPlayers, and topPct through", async () => {
+    mockGetCachedUsageConversion.mockResolvedValueOnce([]);
+
+    await fetchUsageConversion({
+      format: "gen9vgc2025regg",
+      source: "rk9",
+      periodStart: "2025-01-01",
+      periodEnd: "2025-03-31",
+      minPlayers: 100,
+      topPct: 0.25,
+    });
+
+    expect(mockGetCachedUsageConversion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "rk9",
+        periodStart: "2025-01-01",
+        periodEnd: "2025-03-31",
+        minPlayers: 100,
+        topPct: 0.25,
+      })
+    );
+  });
+
+  it("returns { success: false } when query throws", async () => {
+    mockGetCachedUsageConversion.mockRejectedValueOnce(
+      new Error("conversion query failed")
+    );
+
+    const result = await fetchUsageConversion({ format: "gen9vgc2025regg" });
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /conversion query failed/
+    );
   });
 });

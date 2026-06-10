@@ -21,12 +21,16 @@ import {
   getFormatUsageTimeseries,
   getPipelineData,
   getFormatEvents,
+  getUsageBySource,
+  getUsageConversion,
   type FormatUsageRow,
   type FormatUsageTimeseriesPoint,
   type SpeciesUsagePeriod,
   type SpeciesUsageDetailParams,
   type PipelineDataResult,
   type FormatEvent,
+  type SourceUsageRow,
+  type ConversionRow,
 } from "@trainers/supabase";
 import { createStaticClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
@@ -161,4 +165,64 @@ export async function getCachedFormatEvents(
 
   const supabase = createStaticClient();
   return getFormatEvents(supabase, format);
+}
+
+// =============================================================================
+// Per-source usage breakdown
+// =============================================================================
+
+/** Fully-resolved parameters for getCachedUsageBySource. */
+export interface UsageBySourceParams {
+  format: string;
+  periodStart: string | undefined;
+  periodEnd: string | undefined;
+  minPlayers: number;
+}
+
+/**
+ * Cached fetch of per-source species usage breakdown for a format.
+ *
+ * Returns SourceUsageRow[] showing usage split by data source (rk9,
+ * limitless, trainers.gg) for the Meta Explorer's source comparison view.
+ */
+export async function getCachedUsageBySource(
+  params: UsageBySourceParams
+): Promise<SourceUsageRow[]> {
+  "use cache";
+  cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
+  cacheLife("hours");
+
+  const supabase = createStaticClient();
+  return getUsageBySource(supabase, params);
+}
+
+// =============================================================================
+// Usage conversion (top-percentile penetration)
+// =============================================================================
+
+/** Fully-resolved parameters for getCachedUsageConversion. */
+export interface UsageConversionParams {
+  format: string;
+  source: string;
+  periodStart: string | undefined;
+  periodEnd: string | undefined;
+  minPlayers: number;
+  topPct: number; // keys the cache; maps to p_top_percentile
+}
+
+/**
+ * Cached fetch of species usage-to-top-percentile conversion rates for a format.
+ *
+ * Returns ConversionRow[] comparing overall usage % vs. usage within the
+ * top-percentile finishers to surface over/underperforming species.
+ */
+export async function getCachedUsageConversion(
+  params: UsageConversionParams
+): Promise<ConversionRow[]> {
+  "use cache";
+  cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
+  cacheLife("hours");
+
+  const supabase = createStaticClient();
+  return getUsageConversion(supabase, params);
 }
