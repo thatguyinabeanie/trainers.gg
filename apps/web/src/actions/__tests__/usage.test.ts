@@ -43,6 +43,8 @@ jest.mock("@/lib/data/usage-cache", () => ({
   getCachedFormatEvents: jest.fn(),
   getCachedUsageBySource: jest.fn(),
   getCachedUsageConversion: jest.fn(),
+  getCachedSpeciesMoveCombos: jest.fn(),
+  getCachedSpeciesTeammates: jest.fn(),
 }));
 
 // ---------------------------------------------------------------------------
@@ -61,6 +63,8 @@ import {
   getCachedFormatEvents,
   getCachedUsageBySource,
   getCachedUsageConversion,
+  getCachedSpeciesMoveCombos,
+  getCachedSpeciesTeammates,
 } from "@/lib/data/usage-cache";
 import {
   calculateSourceUsage,
@@ -72,6 +76,8 @@ import {
   fetchFormatEvents,
   fetchUsageBySource,
   fetchUsageConversion,
+  fetchSpeciesMoveCombos,
+  fetchSpeciesTeammates,
 } from "../usage";
 
 // ---------------------------------------------------------------------------
@@ -92,6 +98,8 @@ const mockGetCachedPipelineData = getCachedPipelineData as jest.Mock;
 const mockGetCachedFormatEvents = getCachedFormatEvents as jest.Mock;
 const mockGetCachedUsageBySource = getCachedUsageBySource as jest.Mock;
 const mockGetCachedUsageConversion = getCachedUsageConversion as jest.Mock;
+const mockGetCachedSpeciesMoveCombos = getCachedSpeciesMoveCombos as jest.Mock;
+const mockGetCachedSpeciesTeammates = getCachedSpeciesTeammates as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // Shared setup
@@ -838,6 +846,236 @@ describe("fetchUsageConversion", () => {
     expect(result.success).toBe(false);
     expect((result as { success: false; error: string }).error).toMatch(
       /conversion query failed/
+    );
+  });
+});
+
+// =============================================================================
+// fetchSpeciesMoveCombos
+// =============================================================================
+
+describe("fetchSpeciesMoveCombos", () => {
+  it("happy path: returns move combo rows", async () => {
+    const rows = [
+      {
+        moves: ["fake-out", "glacial-lance", "protect", "tera-blast"],
+        players: 88,
+        comboPct: 42.31,
+        rank: 1,
+      },
+      {
+        moves: ["fake-out", "ice-shard", "protect", "tera-blast"],
+        players: 45,
+        comboPct: 21.63,
+        rank: 2,
+      },
+    ];
+    mockGetCachedSpeciesMoveCombos.mockResolvedValueOnce(rows);
+
+    const result = await fetchSpeciesMoveCombos({
+      format: "gen9championsvgc2026regma",
+      species: "chien-pao",
+    });
+
+    expect(result.success).toBe(true);
+    if (!result.success) throw new Error("expected success");
+    expect(result.data).toEqual(rows);
+    expect(mockGetCachedSpeciesMoveCombos).toHaveBeenCalledWith({
+      format: "gen9championsvgc2026regma",
+      species: "chien-pao",
+      source: "all",
+      periodStart: undefined,
+      periodEnd: undefined,
+      minPlayers: 0,
+      limit: 25,
+    });
+  });
+
+  it("defaults source to 'all', minPlayers to 0, and limit to 25", async () => {
+    mockGetCachedSpeciesMoveCombos.mockResolvedValueOnce([]);
+
+    await fetchSpeciesMoveCombos({
+      format: "gen9championsvgc2026regma",
+      species: "chien-pao",
+    });
+
+    expect(mockGetCachedSpeciesMoveCombos).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "all",
+        minPlayers: 0,
+        limit: 25,
+      })
+    );
+  });
+
+  it("passes custom source, periodStart, periodEnd, minPlayers, and limit through", async () => {
+    mockGetCachedSpeciesMoveCombos.mockResolvedValueOnce([]);
+
+    await fetchSpeciesMoveCombos({
+      format: "gen9championsvgc2026regma",
+      species: "chien-pao",
+      source: "rk9",
+      periodStart: "2026-01-01",
+      periodEnd: "2026-03-31",
+      minPlayers: 64,
+      limit: 10,
+    });
+
+    expect(mockGetCachedSpeciesMoveCombos).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "rk9",
+        periodStart: "2026-01-01",
+        periodEnd: "2026-03-31",
+        minPlayers: 64,
+        limit: 10,
+      })
+    );
+  });
+
+  it("forwards format and species to getCachedSpeciesMoveCombos", async () => {
+    mockGetCachedSpeciesMoveCombos.mockResolvedValueOnce([]);
+
+    await fetchSpeciesMoveCombos({
+      format: "gen9championsvgc2026regma",
+      species: "koraidon",
+    });
+
+    expect(mockGetCachedSpeciesMoveCombos).toHaveBeenCalledWith(
+      expect.objectContaining({
+        format: "gen9championsvgc2026regma",
+        species: "koraidon",
+      })
+    );
+  });
+
+  it("returns { success: false } when getCachedSpeciesMoveCombos throws", async () => {
+    mockGetCachedSpeciesMoveCombos.mockRejectedValueOnce(
+      new Error("combo query failed")
+    );
+
+    const result = await fetchSpeciesMoveCombos({
+      format: "gen9championsvgc2026regma",
+      species: "chien-pao",
+    });
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /combo query failed/
+    );
+  });
+});
+
+// =============================================================================
+// fetchSpeciesTeammates
+// =============================================================================
+
+describe("fetchSpeciesTeammates", () => {
+  const stubResult = {
+    focalPlayers: 208,
+    teammates: [
+      { teammate: "miraidon", pairCount: 180, pairPct: 86.54, rank: 1 },
+      { teammate: "flutter-mane", pairCount: 140, pairPct: 67.31, rank: 2 },
+    ],
+    matrix: {
+      order: ["miraidon", "flutter-mane"],
+      cells: {
+        "flutter-mane||miraidon": { count: 120, pct: 57.69 },
+      },
+    },
+  };
+
+  it("happy path: returns teammates result", async () => {
+    mockGetCachedSpeciesTeammates.mockResolvedValueOnce(stubResult);
+
+    const result = await fetchSpeciesTeammates({
+      format: "gen9championsvgc2026regma",
+      species: "chien-pao",
+    });
+
+    expect(result.success).toBe(true);
+    if (!result.success) throw new Error("expected success");
+    expect(result.data).toEqual(stubResult);
+    expect(mockGetCachedSpeciesTeammates).toHaveBeenCalledWith({
+      format: "gen9championsvgc2026regma",
+      species: "chien-pao",
+      source: "all",
+      periodStart: undefined,
+      periodEnd: undefined,
+      minPlayers: 0,
+      topN: 12,
+    });
+  });
+
+  it("defaults source to 'all', minPlayers to 0, and topN to 12", async () => {
+    mockGetCachedSpeciesTeammates.mockResolvedValueOnce(stubResult);
+
+    await fetchSpeciesTeammates({
+      format: "gen9championsvgc2026regma",
+      species: "chien-pao",
+    });
+
+    expect(mockGetCachedSpeciesTeammates).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "all",
+        minPlayers: 0,
+        topN: 12,
+      })
+    );
+  });
+
+  it("passes custom source, periodStart, periodEnd, minPlayers, and topN through", async () => {
+    mockGetCachedSpeciesTeammates.mockResolvedValueOnce(stubResult);
+
+    await fetchSpeciesTeammates({
+      format: "gen9championsvgc2026regma",
+      species: "chien-pao",
+      source: "limitless",
+      periodStart: "2026-01-01",
+      periodEnd: "2026-03-31",
+      minPlayers: 100,
+      topN: 20,
+    });
+
+    expect(mockGetCachedSpeciesTeammates).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "limitless",
+        periodStart: "2026-01-01",
+        periodEnd: "2026-03-31",
+        minPlayers: 100,
+        topN: 20,
+      })
+    );
+  });
+
+  it("forwards format and species to getCachedSpeciesTeammates", async () => {
+    mockGetCachedSpeciesTeammates.mockResolvedValueOnce(stubResult);
+
+    await fetchSpeciesTeammates({
+      format: "gen9championsvgc2026regma",
+      species: "koraidon",
+    });
+
+    expect(mockGetCachedSpeciesTeammates).toHaveBeenCalledWith(
+      expect.objectContaining({
+        format: "gen9championsvgc2026regma",
+        species: "koraidon",
+      })
+    );
+  });
+
+  it("returns { success: false } when getCachedSpeciesTeammates throws", async () => {
+    mockGetCachedSpeciesTeammates.mockRejectedValueOnce(
+      new Error("teammates query failed")
+    );
+
+    const result = await fetchSpeciesTeammates({
+      format: "gen9championsvgc2026regma",
+      species: "chien-pao",
+    });
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toMatch(
+      /teammates query failed/
     );
   });
 });

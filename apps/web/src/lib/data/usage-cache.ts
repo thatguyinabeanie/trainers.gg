@@ -23,6 +23,8 @@ import {
   getFormatEvents,
   getUsageBySource,
   getUsageConversion,
+  getSpeciesMoveCombos,
+  getSpeciesTeammates,
   type FormatUsageRow,
   type FormatUsageTimeseriesPoint,
   type SpeciesUsagePeriod,
@@ -31,6 +33,8 @@ import {
   type FormatEvent,
   type SourceUsageRow,
   type ConversionRow,
+  type MoveComboRow,
+  type SpeciesTeammatesResult,
 } from "@trainers/supabase";
 import { createStaticClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
@@ -225,4 +229,75 @@ export async function getCachedUsageConversion(
 
   const supabase = createStaticClient();
   return getUsageConversion(supabase, params);
+}
+
+// =============================================================================
+// Species move combos (Phase 3 — Feature 2)
+// =============================================================================
+
+/** Fully-resolved parameters for getCachedSpeciesMoveCombos. */
+export interface SpeciesMoveCombosParams {
+  format: string;
+  species: string;
+  source: string;
+  periodStart: string | undefined;
+  periodEnd: string | undefined;
+  minPlayers: number;
+  limit: number;
+}
+
+/**
+ * Cached fetch of true 4-move combo distribution for one species.
+ *
+ * All params are fully resolved by the caller so the runtime keys the cache
+ * correctly. Species is part of the params object, so combos for different
+ * species occupy separate cache entries automatically.
+ *
+ * Invalidation: invalidateUsageStatsCaches(formats) covers these entries
+ * via the existing USAGE_STATS + usageStats(format) tags — no new tag needed.
+ */
+export async function getCachedSpeciesMoveCombos(
+  params: SpeciesMoveCombosParams
+): Promise<MoveComboRow[]> {
+  "use cache";
+  cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
+  cacheLife("hours");
+
+  const supabase = createStaticClient();
+  return getSpeciesMoveCombos(supabase, params);
+}
+
+// =============================================================================
+// Species teammates (Phase 3 — Features 3 + 4)
+// =============================================================================
+
+/** Fully-resolved parameters for getCachedSpeciesTeammates. */
+export interface SpeciesTeammatesParams {
+  format: string;
+  species: string;
+  source: string;
+  periodStart: string | undefined;
+  periodEnd: string | undefined;
+  minPlayers: number;
+  topN: number;
+}
+
+/**
+ * Cached fetch of teammate pair rates + co-occurrence matrix for one species.
+ *
+ * Returns a SpeciesTeammatesResult with focalPlayers, a teammate list, and a
+ * top-N co-occurrence matrix — all in one RPC call. Powers both the teammate
+ * constellation (Feature 3) and the core heatmap (Feature 4).
+ *
+ * Invalidation: covered by the existing USAGE_STATS + usageStats(format) tags.
+ */
+export async function getCachedSpeciesTeammates(
+  params: SpeciesTeammatesParams
+): Promise<SpeciesTeammatesResult> {
+  "use cache";
+  cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
+  cacheLife("hours");
+
+  const supabase = createStaticClient();
+  return getSpeciesTeammates(supabase, params);
 }

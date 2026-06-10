@@ -12,6 +12,8 @@ import {
   type FormatEvent,
   type SourceUsageRow,
   type ConversionRow,
+  type MoveComboRow,
+  type SpeciesTeammatesResult,
 } from "@trainers/supabase";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
@@ -24,6 +26,8 @@ import {
   getCachedFormatEvents,
   getCachedUsageBySource,
   getCachedUsageConversion,
+  getCachedSpeciesMoveCombos,
+  getCachedSpeciesTeammates,
 } from "@/lib/data/usage-cache";
 
 // ---------------------------------------------------------------------------
@@ -449,6 +453,128 @@ export async function fetchUsageConversion(
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch usage conversion"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: species move combos (Phase 3 — Feature 2)
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchSpeciesMoveCombos. */
+export interface FetchSpeciesMoveCombosParams {
+  /** Format ID (e.g. "gen9championsvgc2026regma"). */
+  format: string;
+  /** Species slug (e.g. "koraidon"). */
+  species: string;
+  /** Rollup source. Defaults to "all". */
+  source?: string;
+  /** If provided, restrict to periods >= this ISO date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this ISO date. */
+  periodEnd?: string;
+  /** Minimum players per event-division. Defaults to 0 (no filter). */
+  minPlayers?: number;
+  /** Max combos returned server-side. Defaults to 25. */
+  limit?: number;
+}
+
+/**
+ * Public (non-admin) server action to fetch true 4-move combo distribution
+ * for one species. Delegates to getCachedSpeciesMoveCombos.
+ *
+ * Defaults are resolved before calling the cache fn so the runtime can
+ * key the cache correctly on fully-populated params.
+ */
+export async function fetchSpeciesMoveCombos(
+  params: FetchSpeciesMoveCombosParams
+): Promise<ActionResult<MoveComboRow[]>> {
+  try {
+    const {
+      format,
+      species,
+      source = "all",
+      periodStart,
+      periodEnd,
+      minPlayers = 0,
+      limit = 25,
+    } = params;
+
+    const data = await getCachedSpeciesMoveCombos({
+      format,
+      species,
+      source,
+      periodStart,
+      periodEnd,
+      minPlayers,
+      limit,
+    });
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch species move combos"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: species teammates (Phase 3 — Features 3 + 4)
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchSpeciesTeammates. */
+export interface FetchSpeciesTeammatesParams {
+  /** Format ID (e.g. "gen9championsvgc2026regma"). */
+  format: string;
+  /** Species slug (e.g. "koraidon"). */
+  species: string;
+  /** Rollup source. Defaults to "all". */
+  source?: string;
+  /** If provided, restrict to periods >= this ISO date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this ISO date. */
+  periodEnd?: string;
+  /** Minimum players per event-division. Defaults to 0 (no filter). */
+  minPlayers?: number;
+  /** Teammates returned; matrix uses min(topN, 8). Defaults to 12. */
+  topN?: number;
+}
+
+/**
+ * Public (non-admin) server action to fetch teammate pair rates + co-occurrence
+ * matrix for one species. Delegates to getCachedSpeciesTeammates.
+ *
+ * Defaults are resolved before calling the cache fn so the runtime can
+ * key the cache correctly on fully-populated params.
+ */
+export async function fetchSpeciesTeammates(
+  params: FetchSpeciesTeammatesParams
+): Promise<ActionResult<SpeciesTeammatesResult>> {
+  try {
+    const {
+      format,
+      species,
+      source = "all",
+      periodStart,
+      periodEnd,
+      minPlayers = 0,
+      topN = 12,
+    } = params;
+
+    const data = await getCachedSpeciesTeammates({
+      format,
+      species,
+      source,
+      periodStart,
+      periodEnd,
+      minPlayers,
+      topN,
+    });
+    return { success: true, data };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch species teammates"),
     };
   }
 }
