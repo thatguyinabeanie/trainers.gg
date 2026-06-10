@@ -1229,7 +1229,10 @@ describe("getSpeciesTeammates", () => {
     });
   });
 
-  it("falls back to empty matrix when the jsonb is null", async () => {
+  // The RPC builds the matrix with jsonb_build_object + COALESCE, so a null or
+  // malformed matrix is a contract violation — the query throws so the action
+  // layer logs it via logError instead of silently rendering an empty heatmap.
+  it("throws on shape mismatch when the matrix jsonb is null", async () => {
     const rowsWithNullMatrix = teammateRows.map((r) => ({
       ...r,
       matrix: null,
@@ -1238,16 +1241,17 @@ describe("getSpeciesTeammates", () => {
       data: rowsWithNullMatrix,
       error: null,
     });
-    const result = await getSpeciesTeammates(client, {
-      format: "gen9vgc2025regg",
-      species: "miraidon",
-    });
-    expect(result.matrix).toEqual({ order: [], cells: {} });
-    // teammates are still populated even when matrix is null
-    expect(result.teammates).toHaveLength(2);
+    await expect(
+      getSpeciesTeammates(client, {
+        format: "gen9vgc2025regg",
+        species: "miraidon",
+      })
+    ).rejects.toThrow(
+      'matrix jsonb shape mismatch for species="miraidon" format="gen9vgc2025regg"'
+    );
   });
 
-  it("falls back to empty matrix when the jsonb is malformed (missing order array)", async () => {
+  it("throws on shape mismatch when the matrix jsonb is malformed (missing order array)", async () => {
     const rowsWithBadMatrix = teammateRows.map((r) => ({
       ...r,
       matrix: { cells: {} }, // missing order
@@ -1256,11 +1260,14 @@ describe("getSpeciesTeammates", () => {
       data: rowsWithBadMatrix,
       error: null,
     });
-    const result = await getSpeciesTeammates(client, {
-      format: "gen9vgc2025regg",
-      species: "miraidon",
-    });
-    expect(result.matrix).toEqual({ order: [], cells: {} });
+    await expect(
+      getSpeciesTeammates(client, {
+        format: "gen9vgc2025regg",
+        species: "miraidon",
+      })
+    ).rejects.toThrow(
+      'matrix jsonb shape mismatch for species="miraidon" format="gen9vgc2025regg"'
+    );
   });
 
   it("coerces bigint-like string focal_players, pair_count, and pair_pct via Number()", async () => {
