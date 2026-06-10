@@ -11,6 +11,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `building-web-app`               | Web routes, components, Server Actions, data fetching, proxy.ts              |
 | `building-mobile-app`            | Mobile screens, Tamagui UI, Expo Router, SecureStore                         |
 | `querying-supabase`              | DB queries/mutations, client selection, Edge Functions                       |
+| `using-realtime`                 | Supabase Realtime — presence, broadcast, postgres_changes subscriptions      |
 | `validating-input`               | Zod schemas, Server Action return types, profanity filter                    |
 | `creating-components`            | UI components, design tokens, design principles                              |
 | `checking-mobile-parity`         | After developing web features, check for mobile parity tickets               |
@@ -18,10 +19,13 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `parsing-pokemon`                | Team parsing, legality validation, type effectiveness                        |
 | `using-utils`                    | `getLabel()`, `getErrorMessage()`, permissions, formatting                   |
 | `working-with-usage-data`        | team_slots, usage RPCs, per-source tournament data, /data page               |
+| `building-charts`                | recharts charts, d3-sankey flows, usage-over-time lines (/data, dashboards)  |
 | `tracking-analytics`             | PostHog event constants, adding new events                                   |
 | `integrating-bluesky`            | Bluesky/AT Protocol, DID resolution, public agent                            |
 | `writing-tests`                  | Fishery factories, Supabase/AT Protocol mocks, Jest config                   |
+| `writing-e2e-tests`              | Playwright E2E — fixtures, auth setup, tournament-runner in apps/web/e2e/    |
 | `managing-infrastructure`        | PDS on Fly.io, ngrok tunnel for local dev                                    |
+| `troubleshooting-local-env`      | Local dev breakage — Supabase, stale types, env symlinks, calc submodule     |
 | `creating-edge-functions`        | Creating/updating Supabase edge functions                                    |
 | `managing-edge-imports`          | Deno import maps, `deno.json` management                                     |
 | `auditing-code`                  | Codebase audits for type safety, architecture, maintainability               |
@@ -32,8 +36,9 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `competitive-landscape`          | Competitive landscape, positioning, alternatives by category                 |
 | `reviewing-pr`                   | PR review orchestrator: dispatches domain-specific checks                    |
 | `reviewing-database`             | RLS, migrations, indexes, N+1, unbounded fetches, query perf                 |
-| `reviewing-caching`              | Next.js unstable_cache, TanStack Query, cache invalidation                   |
+| `reviewing-caching`              | Next.js `'use cache'` (Cache Components), TanStack Query, cache invalidation |
 | `reviewing-pr-feedback`          | Fetch/group/resolve PR comments with user, no deferrals, re-review loop      |
+| `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure    |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
 
@@ -61,16 +66,43 @@ Path-scoped rules in `.claude/rules/` load automatically when working with match
 
 Custom agents in `.claude/agents/`. Invoke for isolated, focused work.
 
-| Agent                    | Model  | Purpose                                             |
-| ------------------------ | ------ | --------------------------------------------------- |
-| `planner`                | opus   | Brainstorming, design, architecture, planning       |
-| `feature-implementer`    | sonnet | Implement features with domain skill patterns       |
-| `qa-engineer`            | sonnet | Write tests — aim 80%+ coverage                     |
-| `code-reviewer`          | sonnet | Review changes for style, architecture, correctness |
-| `pre-push-checker`       | haiku  | Run lint/typecheck/test/format, report pass/fail    |
-| `migration-reviewer`     | sonnet | Review SQL migrations for correctness, RLS, safety  |
-| `security-reviewer`      | sonnet | Security review: RLS, auth, route protection        |
-| `edge-function-reviewer` | sonnet | Review edge functions for CORS, auth, validation    |
+| Agent                    | Model  | Purpose                                                     |
+| ------------------------ | ------ | ----------------------------------------------------------- |
+| `planner`                | opus   | Brainstorming, design, architecture, planning               |
+| `feature-implementer`    | sonnet | Implement features with domain skill patterns               |
+| `qa-engineer`            | sonnet | Write tests — aim 80%+ coverage                             |
+| `code-reviewer`          | sonnet | Review changes for style, architecture, correctness         |
+| `pre-push-checker`       | haiku  | Run lint/typecheck/test/format, report pass/fail            |
+| `migration-reviewer`     | sonnet | Review SQL migrations for correctness, RLS, safety          |
+| `security-reviewer`      | sonnet | Security review: RLS, auth, route protection                |
+| `edge-function-reviewer` | sonnet | Review edge functions for CORS, auth, validation            |
+| `ci-monitor`             | haiku  | Watch CI after a push (background), report per-check status |
+| `ui-verifier`            | sonnet | Playwright visual + design-system check before "done"       |
+| `parity-checker`         | haiku  | Check Linear for mobile-parity tickets on web changes       |
+
+## Auto-Delegation
+
+The orchestrator's job is routing and review — not inline execution. For each task type below, dispatch the listed agent **without being asked**. Inline execution is the exception and needs an explicit user request.
+
+| When the task is…                                                   | Dispatch                 | Mode                         |
+| ------------------------------------------------------------------- | ------------------------ | ---------------------------- |
+| Feature design, architecture, UI/UX exploration, "how should we…"   | `planner`                | foreground                   |
+| Implementing a planned feature or fix (any non-trivial code change) | `feature-implementer`    | foreground                   |
+| Writing or extending tests (unit, integration, e2e)                 | `qa-engineer`            | foreground                   |
+| A diff exists and is about to be committed                          | `code-reviewer`          | foreground, before commit    |
+| A new file landed in `packages/supabase/supabase/migrations/`       | `migration-reviewer`     | foreground, before push      |
+| Diff touches auth, RLS policies, `proxy.ts`, or session handling    | `security-reviewer`      | foreground, before push      |
+| Diff touches `packages/supabase/supabase/functions/`                | `edge-function-reviewer` | foreground, before push      |
+| Diff changed `apps/web/src/**/*.tsx` presentation/layout            | `ui-verifier`            | foreground, before push      |
+| A `git push` just landed on a branch with an open PR                | `ci-monitor`             | **background — never block** |
+| Creating a PR / the parity hook fired on `apps/web/` changes        | `parity-checker`         | background                   |
+| Local quality checks explicitly requested                           | `pre-push-checker`       | foreground                   |
+
+Rules:
+
+- Multiple triggers can fire on one diff (a migration + web UI dispatches `migration-reviewer` AND `ui-verifier`) — run reviewers in parallel.
+- `ci-monitor` is dispatched after **every** push, in the background, in the same turn as the push. Do not poll CI inline.
+- Reviewer findings are fixed in the current session (no deferrals), then the relevant reviewer re-runs.
 
 ## Monorepo Structure
 
