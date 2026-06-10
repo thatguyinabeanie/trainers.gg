@@ -189,6 +189,26 @@ After layout: nodes gain `x0, x1, y0, y1`; links gain `source/target` (node obje
 
 Full implementation: `apps/web/src/components/data/usage-pipeline-chart.tsx`.
 
+## Phase 2 Chart Patterns
+
+New reusable patterns introduced in the Phase 2 Meta Explorer. Reference implementations in `apps/web/src/components/data/usage-*.tsx`.
+
+### Treemap sprite tiles + sub-threshold collapse
+
+`recharts` `<Treemap>` with a custom `content` element (cast `as unknown as ReactElement` to satisfy the recharts typings) that renders a Pokemon sprite via `getPokemonSprite(species).url` centered inside each tile. Species below the 1% threshold are collapsed into a single "Others (N)" tile so the treemap stays readable at any filter level. See `usage-treemap.tsx`.
+
+### Hand-rolled dumbbell (1-D multi-point comparison)
+
+`usage-dumbbell.tsx` is a plain React component — no recharts. Each row is a horizontal track: a line drawn between the lowest and highest value, with a circle per data point. Percentage labels sit on the left (species name) and right (value). Use this for 1-D comparisons like source vs. source or overall vs. Top 10%. No recharts dependency means full layout control and no axis scaling complexity.
+
+### Streamgraph (recharts AreaChart, `stackOffset="silhouette"`)
+
+Streamgraph is a line-chart **mode**, not a separate chart type. Set `stackOffset="silhouette"` on `<AreaChart>` so the stack oscillates around a centered baseline instead of growing from zero. Series ordering matters for readability — apply the existing `insideOutOrder()` helper (largest series in the center) before passing data to recharts. See `usage-stream-chart.tsx`.
+
+### Bump chart (rank trajectories)
+
+`recharts` `<LineChart>` with `<YAxis reversed />` so rank 1 sits at the top. Set `connectNulls={false}` so a species that drops out of the top-N creates a gap rather than a misleading connecting line. Rank arrays are built by `buildRankSeries()` from the timeseries data. End labels render a Pokemon sprite + rank number inline using a custom dot or label component. See `usage-bump-chart.tsx`.
+
 ## Mobile Behavior
 
 `ResponsiveContainer width="100%"` adapts naturally. The Sankey `clamp(400px, 65vh, 720px)` compresses on small screens — no separate mobile layout. `UsageSparkline` is `h-6 w-12` — embeds in table cells.

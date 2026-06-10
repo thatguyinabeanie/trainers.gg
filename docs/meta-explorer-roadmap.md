@@ -28,7 +28,7 @@ shareable for content creators.
 
 ---
 
-## Phase 2 — Overview page charts
+## Phase 2 — Overview page charts ✅ Shipped 2026-06-10 — tabbed Overview/Trends/Sources, 6 charts, 2 new RPCs
 
 | Chart                           | What it shows                                                                                       | Data                                  |
 | ------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------- |
