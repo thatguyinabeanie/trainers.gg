@@ -283,7 +283,10 @@ export interface TeamsBatchOpts {
 
 export interface TeamsBatchResult {
   done: boolean;
+  /** Cumulative standings scraped for the event (includes prior runs). */
   scraped: number;
+  /** Standings newly scraped by THIS call — drives progress/no-progress checks. */
+  batchScraped: number;
   total: number;
   failed: number;
 }
@@ -346,7 +349,7 @@ export async function runTeamsBatch(
       console.error(
         `[rk9-worker] player_count lookup failed for ${eventId}: ${evtErr.message}`
       );
-      return { done: false, scraped: 0, total: 0, failed: 0 };
+      return { done: false, scraped: 0, batchScraped: 0, total: 0, failed: 0 };
     }
 
     const statusWhenNoStandings =
@@ -372,7 +375,7 @@ export async function runTeamsBatch(
       );
     }
 
-    return { done: true, scraped: 0, total: 0, failed: 0 };
+    return { done: true, scraped: 0, batchScraped: 0, total: 0, failed: 0 };
   }
 
   // -------------------------------------------------------------------------
@@ -422,7 +425,7 @@ export async function runTeamsBatch(
       );
     }
 
-    return { done: true, scraped: total, total, failed: 0 };
+    return { done: true, scraped: total, batchScraped: 0, total, failed: 0 };
   }
 
   // Mark status as "teams" if not already
@@ -633,7 +636,13 @@ export async function runTeamsBatch(
     );
   }
 
-  return { done, scraped: totalScraped, total, failed: batchFailed };
+  return {
+    done,
+    scraped: totalScraped,
+    batchScraped,
+    total,
+    failed: batchFailed,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -834,7 +843,6 @@ export async function processRk9Queue(
       // ------------------------------------------------------------------
       // 4. Teams stage loop
       // ------------------------------------------------------------------
-      let lastScraped = -1;
       let noProgress = 0;
 
       while (Date.now() < deadline) {
@@ -844,9 +852,10 @@ export async function processRk9Queue(
           deadline,
         });
 
-        stats.teamsScraped +=
-          r.scraped - (lastScraped === -1 ? 0 : lastScraped);
-        lastScraped = r.scraped;
+        // batchScraped is the per-call count; `scraped` is cumulative for the
+        // event (includes prior runs), so it can never hit 0 on a resumed
+        // event and must not drive the progress checks.
+        stats.teamsScraped += r.batchScraped;
 
         // Heartbeat — extend the lease so it doesn't go stale mid-scrape
         await supabase
@@ -858,7 +867,7 @@ export async function processRk9Queue(
         if (r.done) break;
 
         // Track no-progress passes (all-failure or completely stuck)
-        if (r.scraped === 0) {
+        if (r.batchScraped === 0) {
           noProgress++;
           if (noProgress >= 3) break;
         } else {
