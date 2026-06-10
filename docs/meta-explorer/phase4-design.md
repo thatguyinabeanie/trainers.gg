@@ -182,10 +182,6 @@ species sprite → Phase 3 drill-down (gated behind the same absent-in-Phase-4
 min-players; honors `source` (rk9/limitless/all) but renders empty for
 trainers.gg.
 
-**Mobile (393px).** Rows are full-width and stack natively; the expanded top-10
-is a vertical sprite-row list. No separate component. Flags + bars stay legible;
-sprite ≥ tap target where it's clickable.
-
 **Empty / sparse states.**
 
 - Source = trainers.gg → `EmptyState` (minimal variant): _"No country data for
@@ -275,16 +271,16 @@ Add a `2-band | 4-band` toggle to the existing Top-10% dumbbell: 2-band is the
 Phase 2 default (overall vs Top-10%); 4-band renders 4 dots per track (field /
 25% / 10% / 1%) on the same dumbbell primitive. No new chart, no new card.
 
-**Recommendation: 3a (standalone heatmap) — but this is the open question.** The
-multi-band gradient is a genuinely different read from the 2-dot dumbbell (a
-heatmap of 25 species × 4 bands shows the _whole field's_ concentration pattern,
-which a dumbbell can't), so it earns its own card. **However**, if the user
-prefers the leaner page, 3b is a legitimate honest fold-in — the 4-dot dumbbell
-mode reuses the Phase 2 primitive and adds almost no surface. The deciding factor
-is whether the user wants the "field-wide concentration" view (→ heatmap) or just
-"these specific mons climb/fade" (→ dumbbell mode). Listed as an open question.
+**Decision 3: standalone species × band heatmap with its own
+`get_usage_by_placement_band` RPC.** The multi-band gradient is a genuinely
+different read from the 2-dot dumbbell: a heatmap of 25 species × 4 bands shows
+the _whole field's_ concentration pattern. It earns its own card.
 
-**Band definitions (open question).** Proposed percentile bands, computed per
+**Band definitions — Decision 4: default 1% / 10% / 25%, user-adjustable.** The
+RPC already takes `p_band_edges`; a UI control (preset chips like the Phase 2
+threshold control — e.g. chips labeled "1/10/25" | "1/8/16") lets the user
+adjust edges. Default is 1/10/25 and can be omitted from the URL when at default.
+Proposed exclusive bands (at the default edges), computed per
 `(source, event_key, division)` with `percent_rank()` over `placement ASC` so
 they're event-size-relative (consistent with Phase 2's conversion threshold):
 
