@@ -10,6 +10,7 @@ import {
   type FormatEvent,
   type FormatUsageRow,
 } from "@trainers/supabase";
+import { logError } from "@trainers/utils";
 
 import {
   fetchSpeciesUsageDetail,
@@ -150,6 +151,35 @@ export default async function DrilldownPage({
   ]);
 
   // 5. Unwrap results — empty arrays/objects for failures so the page renders.
+  if (!detailResult.success)
+    logError(
+      "DrilldownPage.fetchSpeciesUsageDetail",
+      new Error(detailResult.error),
+      { format, species: slug }
+    );
+  if (!combosResult.success)
+    logError(
+      "DrilldownPage.fetchSpeciesMoveCombos",
+      new Error(combosResult.error),
+      { format, species: slug }
+    );
+  if (!teammatesResult.success)
+    logError(
+      "DrilldownPage.fetchSpeciesTeammates",
+      new Error(teammatesResult.error),
+      { format, species: slug }
+    );
+  if (!eventsResult.success)
+    logError("DrilldownPage.fetchFormatEvents", new Error(eventsResult.error), {
+      format,
+    });
+  if (!speciesListResult.success)
+    logError(
+      "DrilldownPage.fetchFormatUsage",
+      new Error(speciesListResult.error),
+      { format }
+    );
+
   const initialDetail: SpeciesUsagePeriod[] = detailResult.success
     ? detailResult.data
     : [];

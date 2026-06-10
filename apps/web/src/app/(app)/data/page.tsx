@@ -5,6 +5,7 @@ import {
   fetchUsageBySource,
   fetchUsageConversion,
 } from "@/actions/usage";
+import { logError } from "@trainers/utils";
 import { UsageExplorer } from "@/components/data/usage-explorer";
 import {
   type UsageFilters,
@@ -82,6 +83,31 @@ export default async function DataPage({ searchParams }: DataPageProps) {
       topPct: 0.1,
     }),
   ]);
+
+  if (!timeseriesResult.success)
+    logError(
+      "DataPage.fetchFormatUsageTimeseries",
+      new Error(timeseriesResult.error),
+      { format }
+    );
+  if (!pipelineResult.success)
+    logError("DataPage.fetchPipelineData", new Error(pipelineResult.error), {
+      format,
+    });
+  if (!eventsResult.success)
+    logError("DataPage.fetchFormatEvents", new Error(eventsResult.error), {
+      format,
+    });
+  if (!sourceResult.success)
+    logError("DataPage.fetchUsageBySource", new Error(sourceResult.error), {
+      format,
+    });
+  if (!conversionResult.success)
+    logError(
+      "DataPage.fetchUsageConversion",
+      new Error(conversionResult.error),
+      { format }
+    );
 
   const initialPoints = timeseriesResult.success ? timeseriesResult.data : [];
   const initialPipelineResult = pipelineResult.success
