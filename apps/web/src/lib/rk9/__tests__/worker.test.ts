@@ -96,7 +96,12 @@ jest.mock("@/lib/rk9/scraper", () => ({
 // Imports — after mocks
 // =============================================================================
 
-import { processRk9Queue, buildRk9Url, runTeamsBatch } from "../worker";
+import {
+  processRk9Queue,
+  buildRk9Url,
+  runTeamsBatch,
+  runRosterStage,
+} from "../worker";
 
 // =============================================================================
 // Supabase chain variables — rebuilt per test in beforeEach
@@ -1097,4 +1102,132 @@ describe("runTeamsBatch — invalid roster_entry_id", () => {
       expect(teamFetches).toHaveLength(0);
     }
   );
+});
+
+// =============================================================================
+// runRosterStage — new review-fix error branches
+// =============================================================================
+
+describe("runRosterStage error branches", () => {
+  /**
+   * Direct invocation of runRosterStage (no processRk9Queue wrapper) so we can
+   * test the return value and internal DB sequence in isolation.
+   *
+   * Query sequence when date_start SELECT fails:
+   *   [0] UPDATE { import_status: "roster" }   → success
+   *   [1] SELECT date_start                     → { error }
+   *   [2] SELECT import_attempts (catch block)  → success
+   *   [3] UPDATE { import_status: "failed" }    → success
+   */
+  it("returns success:false with the date_start error message when the date_start SELECT fails", async () => {
+    eventsResponses = [
+      { data: null, error: null }, // [0] roster status UPDATE
+      {
+        data: null,
+        error: { message: "db error reading date_start" },
+      }, // [1] date_start SELECT → error
+      { data: { import_attempts: 0 }, error: null }, // [2] catch: attempts SELECT
+      { data: null, error: null }, // [3] catch: failed status UPDATE
+    ];
+
+    const supabase = buildSupabaseMock();
+
+    const result = await runRosterStage(supabase as never, "evt-err1");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Failed to read date_start");
+    expect(result.error).toContain("db error reading date_start");
+  });
+
+  it("writes failed status with the date_start error message to the DB", async () => {
+    eventsResponses = [
+      { data: null, error: null }, // [0] roster status UPDATE
+      {
+        data: null,
+        error: { message: "date read failed" },
+      }, // [1] date_start SELECT → error
+      { data: { import_attempts: 2 }, error: null }, // [2] catch: attempts SELECT
+      { data: null, error: null }, // [3] catch: failed status UPDATE
+    ];
+
+    const supabase = buildSupabaseMock();
+
+    await runRosterStage(supabase as never, "evt-err1");
+
+    // The catch block must write a failed-status UPDATE containing the error msg
+    expect(eventsChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        import_status: "failed",
+        import_error: expect.stringContaining("Failed to read date_start"),
+      })
+    );
+  });
+
+  /**
+   * Query sequence when format_id UPDATE fails (formatId is non-null):
+   *   [0] UPDATE { import_status: "roster" }   → success
+   *   [1] SELECT date_start                     → success (data: { date_start })
+   *   [2] UPDATE { format_id: formatId }        → { error }
+   *   [3] SELECT import_attempts (catch block)  → success
+   *   [4] UPDATE { import_status: "failed" }    → success
+   *
+   * For formatId to be non-null we need detectEventFormat to return a real string.
+   * formatDetectionNeedsHtml returns false (already the default) so we stay on
+   * the non-HTML branch and can control detectEventFormat directly.
+   */
+  it("returns success:false with the format_id error message when the format_id UPDATE fails", async () => {
+    // Override detectEventFormat for this test so it returns a real formatId
+    const scraperMock = jest.requireMock("@/lib/rk9/scraper") as {
+      detectEventFormat: jest.Mock;
+    };
+    scraperMock.detectEventFormat.mockReturnValueOnce("gen9vgc2024");
+
+    eventsResponses = [
+      { data: null, error: null }, // [0] roster status UPDATE
+      { data: { date_start: "2024-01-01" }, error: null }, // [1] date_start SELECT
+      {
+        data: null,
+        error: { message: "format update rejected" },
+      }, // [2] format_id UPDATE → error
+      { data: { import_attempts: 0 }, error: null }, // [3] catch: attempts SELECT
+      { data: null, error: null }, // [4] catch: failed status UPDATE
+    ];
+
+    const supabase = buildSupabaseMock();
+
+    const result = await runRosterStage(supabase as never, "evt-fmt1");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Failed to update format_id");
+    expect(result.error).toContain("format update rejected");
+  });
+
+  it("writes failed status with the format_id error message to the DB", async () => {
+    const scraperMock = jest.requireMock("@/lib/rk9/scraper") as {
+      detectEventFormat: jest.Mock;
+    };
+    scraperMock.detectEventFormat.mockReturnValueOnce("gen9vgc2024");
+
+    eventsResponses = [
+      { data: null, error: null }, // [0] roster status UPDATE
+      { data: { date_start: "2024-01-01" }, error: null }, // [1] date_start SELECT
+      {
+        data: null,
+        error: { message: "format update rejected" },
+      }, // [2] format_id UPDATE → error
+      { data: { import_attempts: 1 }, error: null }, // [3] catch: attempts SELECT
+      { data: null, error: null }, // [4] catch: failed status UPDATE
+    ];
+
+    const supabase = buildSupabaseMock();
+
+    await runRosterStage(supabase as never, "evt-fmt1");
+
+    expect(eventsChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        import_status: "failed",
+        import_error: expect.stringContaining("Failed to update format_id"),
+      })
+    );
+  });
 });
