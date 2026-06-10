@@ -1,5 +1,6 @@
 import { TopNav } from "@/components/topnav";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
+import { CopyrightYear } from "@/components/layout/copyright-year";
 import Image from "next/image";
 import type { ReactNode } from "react";
 
@@ -20,7 +21,11 @@ export default function MarketingLayout({
             Freak.
           </p>
           <p className="flex items-center gap-1 whitespace-nowrap">
-            <a href="https://x.com/thatguyinabeani" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://x.com/thatguyinabeani"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Image
                 src="/icons/beanie_logo.png"
                 alt="Beanie LLC"
@@ -29,7 +34,7 @@ export default function MarketingLayout({
                 className="inline-block"
               />
             </a>
-            &copy; {new Date().getFullYear()} Beanie LLC
+            &copy; <CopyrightYear /> Beanie LLC
           </p>
         </div>
       </footer>
