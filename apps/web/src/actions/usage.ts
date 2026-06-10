@@ -1,6 +1,6 @@
 "use server";
 
-import { getErrorMessage } from "@trainers/utils";
+import { getErrorMessage, logError } from "@trainers/utils";
 import { z, type ActionResult } from "@trainers/validators";
 import {
   compileSourceTeamSlots,
@@ -393,6 +393,7 @@ export async function fetchUsageBySource(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchUsageBySource", e, { format: params.format });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch usage by source"),
@@ -450,6 +451,10 @@ export async function fetchUsageConversion(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchUsageConversion", e, {
+      format: params.format,
+      source: params.source,
+    });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch usage conversion"),
@@ -511,6 +516,10 @@ export async function fetchSpeciesMoveCombos(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchSpeciesMoveCombos", e, {
+      format: params.format,
+      species: params.species,
+    });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch species move combos"),
@@ -572,6 +581,10 @@ export async function fetchSpeciesTeammates(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchSpeciesTeammates", e, {
+      format: params.format,
+      species: params.species,
+    });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch species teammates"),
