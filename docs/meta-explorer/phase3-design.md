@@ -92,8 +92,9 @@ interface DrilldownPageProps {
 1. `decodeURIComponent(params.species)` then `.trim().toLowerCase()` →
    canonical slug. (Slugs in `team_slots` are lowercase hyphenated; lowercasing
    makes the URL case-insensitive without a lookup table.)
-2. Validate the slug is a known species via `isValidSpecies(slug)` (or a
-   slug-aware variant — see Open Question 1) **before** any DB call. An unknown
+2. Validate the slug is a known species via `Dex.species.get(slug)` from `@pkmn/dex`
+   (Decision 1 — same helper used in `validation-hooks.ts` and `stats-calculator.ts`;
+   an invalid slug returns undefined → `notFound()`) **before** any DB call. An unknown
    slug → `notFound()` (renders the route's `not-found.tsx`), never a 500. This
    follows the nextjs-conventions route-boundary rule (validate external input,
    404 not 500).
@@ -117,15 +118,15 @@ returns:
 - `title`: `"{DisplayName} usage — {FormatLabel} | trainers.gg"`
 - `description`: `"Item, ability, tera, moveset, and teammate data for
 {DisplayName} in {FormatLabel} across tournament team sheets."`
-- `openGraph` + `twitter` card. **OG image:** Phase 3 ships a **static** OG card
-  (the existing site default or a simple sprite-on-teal card via the existing
-  `next/og` pattern if one exists in the repo — see Open Question 4). A
-  per-species dynamic OG route is noted as a **follow-up the user can request**,
-  not auto-scoped, because it needs its own image-generation design.
+- `openGraph` + `twitter` card. **OG image:** Phase 3 ships the **static default
+  site OG card** (Decision 4). A per-species dynamic OG route (sprite + name +
+  headline usage on a teal card via `next/og`) is **explicitly deferred** — not
+  part of Phase 3 scope — and requires its own separate design.
 
-Display name: derive from the slug via the pokemon package's existing
-slug→display helper if one exists; otherwise title-case the slug segments
-(`urshifu-rapid-strike` → "Urshifu-Rapid-Strike"). See Open Question 1.
+Display name: use `Dex.species.get(slug).name` from `@pkmn/dex` (Decision 1).
+This returns proper names like "Urshifu-Rapid-Strike", "Calyrex-Ice-Rider",
+"Ho-Oh" — the same helper already used in `apps/web/src/components/team-builder/validation-hooks.ts`
+and `packages/pokemon/src/stats-calculator.ts`. An invalid slug → `notFound()`.
 
 ### Navigation FROM the overview (Phase 2 stubs → live)
 
