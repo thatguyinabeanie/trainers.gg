@@ -1,5 +1,6 @@
 import { TopNav } from "@/components/topnav";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
+import { CopyrightYear } from "@/components/layout/copyright-year";
 import { UsernameRequiredModal } from "@/components/auth/username-required-modal";
 import type { ReactNode } from "react";
 
@@ -19,7 +20,7 @@ export default function AppLayout({
             Built for competitors, by competitors.
           </p>
           <p className="text-xs whitespace-nowrap">
-            &copy; {new Date().getFullYear()} Beanie LLC
+            &copy; <CopyrightYear /> Beanie LLC
           </p>
         </div>
       </footer>

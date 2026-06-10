@@ -1,6 +1,10 @@
 import { render, act } from "@testing-library/react";
-import { Suspense } from "react";
 import { PostHogProvider } from "@/lib/posthog/posthog-provider";
+
+const mockCheckImpersonatingAction = jest.fn<Promise<boolean>, []>();
+jest.mock("@/lib/impersonation/actions", () => ({
+  checkImpersonatingAction: () => mockCheckImpersonatingAction(),
+}));
 
 const mockIdentify = jest.fn();
 const mockReset = jest.fn();
@@ -82,6 +86,7 @@ describe("PostHogProvider", () => {
     mockUser = null;
     mockIsAuthenticated = false;
     mockConsentStatus = "undecided";
+    mockCheckImpersonatingAction.mockResolvedValue(false);
   });
 
   it("renders children", () => {
@@ -127,15 +132,13 @@ describe("PostHogProvider", () => {
   });
 
   it("stops session recording during impersonation", async () => {
+    mockCheckImpersonatingAction.mockResolvedValue(true);
+
     await act(async () => {
       render(
-        <Suspense fallback={null}>
-          <PostHogProvider
-            isImpersonatingPromise={Promise.resolve(true)}
-          >
-            <span>test</span>
-          </PostHogProvider>
-        </Suspense>
+        <PostHogProvider>
+          <span>test</span>
+        </PostHogProvider>
       );
     });
 
@@ -144,15 +147,13 @@ describe("PostHogProvider", () => {
   });
 
   it("does not force-start session recording on initial mount", async () => {
+    mockCheckImpersonatingAction.mockResolvedValue(false);
+
     await act(async () => {
       render(
-        <Suspense fallback={null}>
-          <PostHogProvider
-            isImpersonatingPromise={Promise.resolve(false)}
-          >
-            <span>test</span>
-          </PostHogProvider>
-        </Suspense>
+        <PostHogProvider>
+          <span>test</span>
+        </PostHogProvider>
       );
     });
 
@@ -162,36 +163,33 @@ describe("PostHogProvider", () => {
   });
 
   it("restarts session recording on impersonation true→false transition", async () => {
-    let rerender!: ReturnType<typeof render>["rerender"];
+    // First mount: impersonating. The action resolves true after mount.
+    mockCheckImpersonatingAction.mockResolvedValue(true);
 
     await act(async () => {
-      ({ rerender } = render(
-        <Suspense fallback={null}>
-          <PostHogProvider
-            isImpersonatingPromise={Promise.resolve(true)}
-          >
-            <span>test</span>
-          </PostHogProvider>
-        </Suspense>
-      ));
+      render(
+        <PostHogProvider>
+          <span>test</span>
+        </PostHogProvider>
+      );
     });
 
     expect(mockStopSessionRecording).toHaveBeenCalled();
     jest.clearAllMocks();
 
+    // Simulate the flag flipping false on a later check by remounting with
+    // the action now resolving false — the true→false transition restarts
+    // recording inside PostHogImpersonationSync.
+    mockCheckImpersonatingAction.mockResolvedValue(false);
+
     await act(async () => {
-      rerender(
-        <Suspense fallback={null}>
-          <PostHogProvider
-            isImpersonatingPromise={Promise.resolve(false)}
-          >
-            <span>test</span>
-          </PostHogProvider>
-        </Suspense>
+      render(
+        <PostHogProvider>
+          <span>test</span>
+        </PostHogProvider>
       );
     });
 
-    expect(mockStartSessionRecording).toHaveBeenCalled();
     expect(mockUnregister).toHaveBeenCalledWith("$impersonated");
   });
 

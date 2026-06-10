@@ -7,7 +7,6 @@ import type { ReactNode } from "react";
 import "@/styles/globals.css";
 import { cn } from "@/lib/utils";
 import { Analytics } from "@vercel/analytics/next";
-import { isImpersonating as checkImpersonating } from "@/lib/impersonation/server";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -48,9 +47,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  // Pass the unawaited promise — cookies() must not block the shell render.
-  // PostHogProvider resolves it with React.use() under a Suspense boundary.
-  const isImpersonatingPromise = checkImpersonating();
+  // No request data is read here — the impersonation flag is fetched
+  // client-side by PostHogProvider so the PPR shell stays static.
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body
@@ -59,7 +57,7 @@ export default async function RootLayout({
           "bg-background text-foreground flex min-h-screen flex-col antialiased"
         )}
       >
-        <Providers isImpersonatingPromise={isImpersonatingPromise}>
+        <Providers>
           {/* Global dot-grid background pattern */}
           <div
             className="pointer-events-none fixed inset-0 -z-10 dark:hidden"

@@ -14,7 +14,23 @@ import {
   setImpersonationCookie,
   clearImpersonationCookie,
   getImpersonationTarget,
+  isImpersonating,
 } from "./server";
+
+/**
+ * Check whether the current session is in impersonation mode.
+ * Called from the PostHogProvider client component on mount so that the
+ * root layout does not need to read cookies() (which would block PPR shell
+ * prerendering under cacheComponents: true).
+ */
+export async function checkImpersonatingAction(): Promise<boolean> {
+  try {
+    return await isImpersonating();
+  } catch {
+    // Fail open — impersonation defaults to false if the check errors.
+    return false;
+  }
+}
 
 /**
  * Start impersonating a user. Requires active sudo mode.
