@@ -488,6 +488,32 @@ describe("buildTeamSlotRows — empty/whitespace species skipped", () => {
     // total_players = 2 (p1 and p2 both participated, blank row doesn't disqualify p1)
     expect(result.every((r) => r.total_players === 2)).toBe(true);
   });
+
+  it("counts blank-species players toward total_players in a named division", () => {
+    const raw = [
+      rawSlot({
+        playerKey: "p1",
+        species: "",
+        division: "masters",
+        position: 1,
+      }),
+      rawSlot({
+        playerKey: "p1",
+        species: "incineroar",
+        division: "masters",
+        position: 2,
+      }),
+      rawSlot({
+        playerKey: "p2",
+        species: "flutter-mane",
+        division: "masters",
+        position: 1,
+      }),
+    ];
+    const result = buildTeamSlotRows(rk9Meta, raw);
+    expect(result).toHaveLength(2);
+    expect(result.every((r) => r.total_players === 2)).toBe(true);
+  });
 });
 
 // =============================================================================

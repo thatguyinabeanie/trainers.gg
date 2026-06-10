@@ -156,11 +156,6 @@ function divisionKey(division: string | null): string {
   return division ?? NULL_DIV_KEY;
 }
 
-/** Restore null from the sentinel map key. */
-function keyToDiv(key: string): string | null {
-  return key === NULL_DIV_KEY ? null : key;
-}
-
 /**
  * Filter move slots: remove null, empty string, and whitespace-only entries.
  * Order of remaining entries is preserved.
@@ -182,8 +177,12 @@ function computeTotalPlayersByDiv(rows: RawSlotRow[]): Map<string, number> {
 
   for (const row of rows) {
     const dk = divisionKey(row.division);
-    if (!playersByDiv.has(dk)) playersByDiv.set(dk, new Set());
-    playersByDiv.get(dk)!.add(row.playerKey);
+    let players = playersByDiv.get(dk);
+    if (players === undefined) {
+      players = new Set();
+      playersByDiv.set(dk, players);
+    }
+    players.add(row.playerKey);
   }
 
   const counts = new Map<string, number>();
@@ -245,7 +244,7 @@ export function buildTeamSlotRows(
       total_players: totalPlayers,
       // Player-level fields
       player_key: row.playerKey,
-      division: keyToDiv(dk),
+      division: row.division,
       placement: row.placement,
       wins: row.wins,
       losses: row.losses,
