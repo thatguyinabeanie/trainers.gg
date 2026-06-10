@@ -2,6 +2,10 @@
 name: edge-function-reviewer
 description: Review Supabase edge functions for CORS, auth, input validation, and error handling conventions
 model: sonnet
+skills:
+  - creating-edge-functions
+maxTurns: 20
+memory: project
 ---
 
 # Edge Function Reviewer

@@ -41,20 +41,21 @@ Slash-command skills (invoked directly, not listed above): `commit`, `create-mig
 
 Path-scoped rules in `.claude/rules/` load automatically when working with matching files.
 
-| Rule                       | Applies To                                                                    |
-| -------------------------- | ----------------------------------------------------------------------------- |
-| `code-style.md`            | All TypeScript/TSX files (`**/*.{ts,tsx}`)                                    |
-| `react-patterns.md`        | All TSX files (`**/*.tsx`)                                                    |
-| `mobile-responsiveness.md` | Web app TSX files (`apps/web/src/**/*.tsx`)                                   |
-| `architecture.md`          | All shared packages (`packages/**/*`)                                         |
-| `nextjs-conventions.md`    | Web app files (`apps/web/**/*`)                                               |
-| `mobile-conventions.md`    | Mobile app files (`apps/mobile/**/*`)                                         |
-| `supabase-patterns.md`     | Supabase client code (`packages/supabase/**/*`, `supabase/**/*`)              |
-| `testing-philosophy.md`    | All test files (`**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`, `**/e2e/**`) |
-| `shadcn-ui-primitives.md`  | shadcn/ui component files (`apps/web/src/components/ui/**`)                   |
-| `web-ui-catalog.md`        | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                       |
-| `web-hooks-and-helpers.md` | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                       |
-| `supabase-migrations.md`   | All migration files (`packages/supabase/supabase/migrations/**`)              |
+| Rule                       | Applies To                                                                                                                                                                                                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `code-style.md`            | All TypeScript/TSX files (`**/*.{ts,tsx}`)                                                                                                                                                                                                                                                             |
+| `react-patterns.md`        | All TSX files (`**/*.tsx`)                                                                                                                                                                                                                                                                             |
+| `mobile-responsiveness.md` | Web app TSX files (`apps/web/src/**/*.tsx`)                                                                                                                                                                                                                                                            |
+| `architecture.md`          | All shared packages (`packages/**/*`)                                                                                                                                                                                                                                                                  |
+| `nextjs-conventions.md`    | Web app files (`apps/web/**/*`)                                                                                                                                                                                                                                                                        |
+| `mobile-conventions.md`    | Mobile app files (`apps/mobile/**/*`)                                                                                                                                                                                                                                                                  |
+| `supabase-patterns.md`     | Supabase client code (`packages/supabase/**/*`, `supabase/**/*`)                                                                                                                                                                                                                                       |
+| `testing-philosophy.md`    | All test files (`**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`, `**/e2e/**`)                                                                                                                                                                                                                          |
+| `shadcn-ui-primitives.md`  | shadcn/ui component files (`apps/web/src/components/ui/**`)                                                                                                                                                                                                                                            |
+| `web-ui-catalog.md`        | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                                                                                                                                                                                                                                                |
+| `web-hooks-and-helpers.md` | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                                                                                                                                                                                                                                                |
+| `supabase-migrations.md`   | All migration files (`packages/supabase/supabase/migrations/**`)                                                                                                                                                                                                                                       |
+| `usage-data-sources.md`    | data-sources package, supabase usage queries/mutations, /data components (`packages/data-sources/**`, `packages/supabase/src/usage/**`, `packages/supabase/src/queries/usage.ts`, `packages/supabase/src/mutations/team-slots.ts`, `apps/web/src/components/data/**`, `apps/web/src/actions/usage.ts`) |
 
 ## Workspace Agents
 
@@ -118,11 +119,11 @@ infra/
 
 ```bash
 # Development
-pnpm dev                              # Start all apps (auto-configures local Supabase)
+pnpm dev                              # Start web + Supabase (auto-configures local Supabase)
+pnpm dev:all                          # Start all apps (web + mobile + Supabase)
 pnpm dev:web                          # Web only
 pnpm dev:mobile                       # Mobile only
 pnpm dev:backend                      # Supabase only
-pnpm dev:web+backend                  # Web + Supabase
 SKIP_LOCAL_SUPABASE=1 pnpm dev        # Use remote Supabase instead of local
 
 # Database (always from repo root)

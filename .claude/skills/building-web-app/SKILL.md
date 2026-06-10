@@ -57,8 +57,8 @@ See `creating-components` skill when building new UI components.
 
 Keep these in mind — don't wait for review:
 
-- **Cache public data**: Server Components fetching community/tournament data should use `unstable_cache` + `createStaticClient()` + `CacheTags`. Only skip caching for user-specific data.
-- **Invalidate caches**: Server actions that mutate data must call `updateTag(CacheTags.xxx)`
+- **Cache public data**: Server Components fetching community/tournament data should use `'use cache'` + `cacheTag()` + `cacheLife()` + `createStaticClient()`. Only skip caching for user-specific data. See `reviewing-caching` skill for the canonical pattern.
+- **Invalidate caches**: Server actions that mutate data must call the appropriate helper from `@/lib/cache-invalidation` — never bare `updateTag()` directly.
 - **Add error boundaries**: New route segments should have an `error.tsx` sibling
 - **Parallel fetches**: Use `Promise.all` for independent data requests in Server Components
 
@@ -87,6 +87,7 @@ components/discord/
 ```
 
 NEVER:
+
 - Have `channel-mapping-cards.tsx` import from `channel-mapping-table.tsx` (cycle if the table uses cards)
 - Have one sibling re-export from the other to "break" the cycle (still cyclic at module-graph time)
 

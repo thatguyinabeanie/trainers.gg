@@ -4,6 +4,8 @@ description: Security-focused code review for RLS, auth, edge functions, and rou
 model: sonnet
 skills:
   - reviewing-database
+maxTurns: 20
+memory: project
 ---
 
 # Security Reviewer

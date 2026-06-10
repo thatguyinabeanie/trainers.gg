@@ -36,11 +36,11 @@ Next.js permits route-co-located components in `_components/` (the underscore pr
 
 **Default to `apps/web/src/components/<feature>/` for any feature with more than one or two files.** That is the established pattern in this repo:
 
-| Path pattern (✅ use)                        | Path pattern (❌ avoid for non-trivial features)                                      |
-| -------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `apps/web/src/components/team-builder/*`     | `apps/web/src/app/(dashboard)/dashboard/community/[communitySlug]/team-builder/_components/*` |
-| `apps/web/src/components/discord/*`          | `apps/web/src/app/(dashboard)/dashboard/community/[communitySlug]/settings/integrations/discord/_components/*` |
-| `apps/web/src/components/communities/*`      | `apps/web/src/app/(public)/communities/_components/*`                                  |
+| Path pattern (✅ use)                    | Path pattern (❌ avoid for non-trivial features)                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/components/team-builder/*` | `apps/web/src/app/(dashboard)/dashboard/community/[communitySlug]/team-builder/_components/*`                  |
+| `apps/web/src/components/discord/*`      | `apps/web/src/app/(dashboard)/dashboard/community/[communitySlug]/settings/integrations/discord/_components/*` |
+| `apps/web/src/components/communities/*`  | `apps/web/src/app/(public)/communities/_components/*`                                                          |
 
 **Heuristic** — if the route prefix path is >60 characters, the components MUST live in `components/<feature>/`. Use route-colocated `_components/` only when:
 
@@ -73,20 +73,26 @@ If you're modifying an existing feature whose siblings already form a cycle, fix
 
 ### Server Components
 
-Use `unstable_cache` with cache tags for on-demand revalidation:
+Use `'use cache'` (Cache Components) with `cacheTag()` and `cacheLife()` for on-demand revalidation. The project runs with `cacheComponents: true` in `next.config.ts`.
+
+**Segment-level config (`export const revalidate`, `export const dynamic`, `export const fetchCache`) are build errors under `cacheComponents` — do not add them.**
 
 ```tsx
-export const revalidate = false; // On-demand only
+import { cacheTag, cacheLife } from "next/cache";
+import { createStaticClient } from "@/lib/supabase/server";
+import { CacheTags } from "@/lib/cache";
 
-const getCachedTournaments = unstable_cache(
-  async () => {
-    const supabase = createStaticClient();
-    return listTournamentsGrouped(supabase, { completedLimit: 20 });
-  },
-  ["tournaments-grouped"],
-  { tags: [CacheTags.TOURNAMENTS_LIST] }
-);
+async function getCachedTournaments() {
+  "use cache";
+  cacheTag(CacheTags.TOURNAMENTS_LIST);
+  cacheLife("max"); // tag-invalidated entity — no time-based expiry needed
+
+  const supabase = createStaticClient();
+  return listTournamentsGrouped(supabase, { completedLimit: 20 });
+}
 ```
+
+Function arguments + closures are the cache key — no manual key arrays needed. Every distinguishing value (entity IDs, filter params) must be a function parameter.
 
 ### Supabase Client Selection
 
@@ -115,7 +121,8 @@ Use TanStack Query v5 for client-side server state. For streaming, pass promises
 ## Cache Invalidation
 
 - `CacheTags` object in `@/lib/cache` provides both static keys (`TOURNAMENTS_LIST`) and dynamic key functions (`tournament(id)`)
-- Call `updateTag(CacheTags.xxx)` in server actions after mutations
+- **Never call `updateTag()` directly in server actions** — always use the entity-scoped helpers in `@/lib/cache-invalidation` (see `reviewing-caching` skill for the full helper table)
+- Server Actions use `updateTag(tag)` (via helper); route handlers and webhooks use `revalidateTag(tag, 'max')` (via helper) — single-arg `revalidateTag` is deprecated
 - Pair with `revalidatePath()` when the entire route needs refreshing
 
 ## Server Actions
@@ -149,7 +156,7 @@ export async function createTournament(
     await rejectBots();
     const supabase = await createClient();
     const result = await createTournamentMutation(supabase, data);
-    updateTag(CacheTags.TOURNAMENTS_LIST);
+    invalidateTournamentListCaches(result.id); // use helper, never bare updateTag()
     return { success: true, data: result };
   } catch (error) {
     return {
@@ -160,7 +167,7 @@ export async function createTournament(
 }
 ```
 
-Key steps: `rejectBots()` → `createClient()` → mutation → `updateTag()` → return result.
+Key steps: `rejectBots()` → `createClient()` → mutation → invalidation helper → return result.
 
 ### `withAction` Wrapper
 
