@@ -1,9 +1,10 @@
 // --- Mock next/cache ---
 jest.mock("next/cache", () => ({
   updateTag: jest.fn(),
+  revalidateTag: jest.fn(),
 }));
 
-import { updateTag } from "next/cache";
+import { updateTag, revalidateTag } from "next/cache";
 
 import { type createClient } from "@/lib/supabase/server";
 import { CacheTags } from "../cache";
@@ -19,9 +20,15 @@ import {
   invalidateCommunityRequestCaches,
   invalidateDashboardCaches,
   invalidateTeamDetailCache,
+  invalidateUsageStatsCaches,
+  revalidateUsageStatsCaches,
+  invalidateAnnouncementCaches,
 } from "../cache-invalidation";
 
 const mockUpdateTag = updateTag as jest.MockedFunction<typeof updateTag>;
+const mockRevalidateTag = revalidateTag as jest.MockedFunction<
+  typeof revalidateTag
+>;
 
 describe("cache-invalidation helpers", () => {
   beforeEach(() => {
@@ -215,6 +222,99 @@ describe("cache-invalidation helpers", () => {
     it("calls updateTag exactly twice", () => {
       invalidateDashboardCaches();
       expect(mockUpdateTag).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // ── Usage Stats ──────────────────────────────────────────────────────────
+
+  describe("invalidateUsageStatsCaches", () => {
+    it("invalidates the global USAGE_STATS tag when called with no formats", () => {
+      invalidateUsageStatsCaches();
+      expect(mockUpdateTag).toHaveBeenCalledWith(CacheTags.USAGE_STATS);
+      expect(mockUpdateTag).toHaveBeenCalledTimes(1);
+    });
+
+    it("invalidates the global tag plus one per-format tag", () => {
+      invalidateUsageStatsCaches(["gen9vgc2025regg"]);
+      expect(mockUpdateTag).toHaveBeenCalledWith(CacheTags.USAGE_STATS);
+      expect(mockUpdateTag).toHaveBeenCalledWith(
+        CacheTags.usageStats("gen9vgc2025regg")
+      );
+      expect(mockUpdateTag).toHaveBeenCalledTimes(2);
+    });
+
+    it("invalidates one tag per format when multiple formats are provided", () => {
+      invalidateUsageStatsCaches(["gen9vgc2025regg", "gen9vgc2025regs"]);
+      expect(mockUpdateTag).toHaveBeenCalledWith(CacheTags.USAGE_STATS);
+      expect(mockUpdateTag).toHaveBeenCalledWith(
+        CacheTags.usageStats("gen9vgc2025regg")
+      );
+      expect(mockUpdateTag).toHaveBeenCalledWith(
+        CacheTags.usageStats("gen9vgc2025regs")
+      );
+      // 1 global + 2 per-format = 3 total
+      expect(mockUpdateTag).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe("revalidateUsageStatsCaches", () => {
+    it("revalidates the global USAGE_STATS tag with 'max' when called with no formats", () => {
+      revalidateUsageStatsCaches();
+      expect(mockRevalidateTag).toHaveBeenCalledWith(
+        CacheTags.USAGE_STATS,
+        "max"
+      );
+      expect(mockRevalidateTag).toHaveBeenCalledTimes(1);
+    });
+
+    it("revalidates the global tag plus one per-format tag with 'max'", () => {
+      revalidateUsageStatsCaches(["gen9vgc2025regg"]);
+      expect(mockRevalidateTag).toHaveBeenCalledWith(
+        CacheTags.USAGE_STATS,
+        "max"
+      );
+      expect(mockRevalidateTag).toHaveBeenCalledWith(
+        CacheTags.usageStats("gen9vgc2025regg"),
+        "max"
+      );
+      expect(mockRevalidateTag).toHaveBeenCalledTimes(2);
+    });
+
+    it("revalidates one tag per format when multiple formats are provided", () => {
+      revalidateUsageStatsCaches(["gen9vgc2025regg", "gen9vgc2025regs"]);
+      expect(mockRevalidateTag).toHaveBeenCalledWith(
+        CacheTags.USAGE_STATS,
+        "max"
+      );
+      expect(mockRevalidateTag).toHaveBeenCalledWith(
+        CacheTags.usageStats("gen9vgc2025regg"),
+        "max"
+      );
+      expect(mockRevalidateTag).toHaveBeenCalledWith(
+        CacheTags.usageStats("gen9vgc2025regs"),
+        "max"
+      );
+      // 1 global + 2 per-format = 3 total
+      expect(mockRevalidateTag).toHaveBeenCalledTimes(3);
+    });
+
+    it("never calls updateTag (uses revalidateTag only)", () => {
+      revalidateUsageStatsCaches(["gen9vgc2025regg"]);
+      expect(mockUpdateTag).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Announcements ───────────────────────────────────────────────────────
+
+  describe("invalidateAnnouncementCaches", () => {
+    it("invalidates the ANNOUNCEMENTS tag", () => {
+      invalidateAnnouncementCaches();
+      expect(mockUpdateTag).toHaveBeenCalledWith(CacheTags.ANNOUNCEMENTS);
+    });
+
+    it("calls updateTag exactly once", () => {
+      invalidateAnnouncementCaches();
+      expect(mockUpdateTag).toHaveBeenCalledTimes(1);
     });
   });
 });

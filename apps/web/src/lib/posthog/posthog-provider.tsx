@@ -1,19 +1,23 @@
 "use client";
 
 import { PostHogProvider as PHProvider, usePostHog } from "posthog-js/react";
-import { Suspense, useEffect, useRef, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { setErrorSink } from "@trainers/utils";
 
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { getConsentStatus } from "@/components/cookie-consent";
+import { checkImpersonatingAction } from "@/lib/impersonation/actions";
 import { captureException, initPostHog, posthog } from "@/lib/posthog/client";
 import { PostHogPageview } from "@/lib/posthog/posthog-pageview";
 
-function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
+/**
+ * Syncs the authenticated user's identity with PostHog.
+ * Always rendered — does not depend on impersonation state.
+ */
+function PostHogUserSync() {
   const { user, isAuthenticated } = useAuthContext();
   const ph = usePostHog();
-  const wasImpersonating = useRef(false);
 
   useEffect(() => {
     if (!ph) return;
@@ -35,6 +39,21 @@ function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
       console.error("PostHog auth sync failed:", e);
     }
   }, [ph, user, isAuthenticated]);
+
+  return null;
+}
+
+/**
+ * Syncs impersonation state with PostHog session recording.
+ * Only rendered when isImpersonating resolves to a value.
+ */
+function PostHogImpersonationSync({
+  isImpersonating,
+}: {
+  isImpersonating: boolean;
+}) {
+  const ph = usePostHog();
+  const wasImpersonating = useRef(false);
 
   // During impersonation: stop session recording and tag events as impersonated
   useEffect(() => {
@@ -62,15 +81,43 @@ function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
   return null;
 }
 
-interface PostHogProviderProps {
-  children: ReactNode;
-  isImpersonating?: boolean;
+/**
+ * Fetches the impersonation flag client-side after mount and forwards it to
+ * PostHogImpersonationSync.
+ *
+ * WHY client-side: reading the impersonation cookie in the root layout makes
+ * the whole PPR shell dynamic under cacheComponents (every route would need a
+ * Suspense boundary just for an analytics flag). A post-hydration server
+ * action call keeps the shell static; the brief default-false window only
+ * affects PostHog recording config, never authorization.
+ */
+function ImpersonationSync() {
+  const [isImpersonating, setIsImpersonating] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+    checkImpersonatingAction()
+      .then((value) => {
+        if (!ignore) setIsImpersonating(value);
+      })
+      .catch((err: unknown) => {
+        // Keep the default-false state — an analytics config check must never
+        // surface as an unhandled rejection in the browser.
+        console.error("[posthog] impersonation check failed:", err);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  return <PostHogImpersonationSync isImpersonating={isImpersonating} />;
 }
 
-export function PostHogProvider({
-  children,
-  isImpersonating = false,
-}: PostHogProviderProps) {
+interface PostHogProviderProps {
+  children: ReactNode;
+}
+
+export function PostHogProvider({ children }: PostHogProviderProps) {
   useEffect(() => {
     initPostHog();
 
@@ -125,7 +172,8 @@ export function PostHogProvider({
 
   return (
     <PHProvider client={posthog}>
-      <PostHogAuthSync isImpersonating={isImpersonating} />
+      <PostHogUserSync />
+      <ImpersonationSync />
       <Suspense fallback={null}>
         <PostHogPageview />
       </Suspense>

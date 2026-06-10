@@ -1,6 +1,6 @@
 import {
   fetchFormatUsageTimeseries,
-  fetchDirectPipelineData,
+  fetchPipelineData,
   fetchFormatEvents,
 } from "@/actions/usage";
 import { UsageExplorer } from "@/components/data/usage-explorer";
@@ -13,18 +13,6 @@ import {
   coerceSource,
   coerceMinPlayers,
 } from "@/components/data/usage-filters";
-
-// =============================================================================
-// Cache
-// =============================================================================
-
-/**
- * Use on-demand tag invalidation only (via CacheTags.USAGE_STATS). The
- * unstable_cache inside fetchFormatUsageTimeseries manages its own 1h TTL.
- * Setting revalidate=3600 here would redundantly race against that TTL and
- * prevent the tag-based bust from taking effect immediately.
- */
-export const revalidate = false;
 
 // =============================================================================
 // Page
@@ -50,8 +38,15 @@ export default async function DataPage({ searchParams }: DataPageProps) {
   const initialFilters: UsageFilters = { format, source, periodType };
 
   const [timeseriesResult, pipelineResult, eventsResult] = await Promise.all([
-    fetchFormatUsageTimeseries({ format, source, periodType }),
-    fetchDirectPipelineData({
+    fetchFormatUsageTimeseries({
+      format,
+      source,
+      periodType,
+      periodStart: rangeStart ?? undefined,
+      periodEnd: rangeEnd ?? undefined,
+      minPlayers,
+    }),
+    fetchPipelineData({
       format,
       source,
       periodStart: rangeStart ?? undefined,

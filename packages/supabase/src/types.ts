@@ -1242,48 +1242,6 @@ export type Database = {
         }
         Relationships: []
       }
-      event_usage: {
-        Row: {
-          computed_at: string
-          details: Json
-          division: string | null
-          event_date: string
-          event_key: string
-          format: string
-          id: number
-          source: string
-          species: string
-          team_count: number
-          total_teams: number
-        }
-        Insert: {
-          computed_at?: string
-          details?: Json
-          division?: string | null
-          event_date: string
-          event_key: string
-          format: string
-          id?: never
-          source: string
-          species: string
-          team_count: number
-          total_teams: number
-        }
-        Update: {
-          computed_at?: string
-          details?: Json
-          division?: string | null
-          event_date?: string
-          event_key?: string
-          format?: string
-          id?: never
-          source?: string
-          species?: string
-          team_count?: number
-          total_teams?: number
-        }
-        Relationships: []
-      }
       feature_flags: {
         Row: {
           created_at: string
@@ -1399,42 +1357,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      format_meta_stats: {
-        Row: {
-          computed_at: string
-          format: string
-          id: number
-          period_end: string
-          period_start: string
-          period_type: string
-          source: string
-          total_teams: number
-          total_tournaments: number
-        }
-        Insert: {
-          computed_at?: string
-          format: string
-          id?: never
-          period_end: string
-          period_start: string
-          period_type?: string
-          source?: string
-          total_teams: number
-          total_tournaments: number
-        }
-        Update: {
-          computed_at?: string
-          format?: string
-          id?: never
-          period_end?: string
-          period_start?: string
-          period_type?: string
-          source?: string
-          total_teams?: number
-          total_tournaments?: number
-        }
-        Relationships: []
       }
       group_roles: {
         Row: {
@@ -2006,106 +1928,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pokemon_detail_stats: {
-        Row: {
-          abilities: Json
-          ability_items: Json
-          id: number
-          items: Json
-          meta_id: number
-          moves: Json
-          natures: Json
-          species: string
-          spreads: Json
-          teammates: Json
-          tera_types: Json
-        }
-        Insert: {
-          abilities?: Json
-          ability_items?: Json
-          id?: never
-          items?: Json
-          meta_id: number
-          moves?: Json
-          natures?: Json
-          species: string
-          spreads?: Json
-          teammates?: Json
-          tera_types?: Json
-        }
-        Update: {
-          abilities?: Json
-          ability_items?: Json
-          id?: never
-          items?: Json
-          meta_id?: number
-          moves?: Json
-          natures?: Json
-          species?: string
-          spreads?: Json
-          teammates?: Json
-          tera_types?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pokemon_detail_stats_meta_id_fkey"
-            columns: ["meta_id"]
-            isOneToOne: false
-            referencedRelation: "format_meta_stats"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pokemon_usage_stats: {
-        Row: {
-          conversion_rate: number | null
-          id: number
-          meta_id: number
-          rank: number
-          sample_size: number
-          species: string
-          usage_change_30d: number | null
-          usage_change_7d: number | null
-          usage_pct: number
-          usage_pct_top_cut: number | null
-          usage_pct_top8: number | null
-        }
-        Insert: {
-          conversion_rate?: number | null
-          id?: never
-          meta_id: number
-          rank: number
-          sample_size: number
-          species: string
-          usage_change_30d?: number | null
-          usage_change_7d?: number | null
-          usage_pct: number
-          usage_pct_top_cut?: number | null
-          usage_pct_top8?: number | null
-        }
-        Update: {
-          conversion_rate?: number | null
-          id?: never
-          meta_id?: number
-          rank?: number
-          sample_size?: number
-          species?: string
-          usage_change_30d?: number | null
-          usage_change_7d?: number | null
-          usage_pct?: number
-          usage_pct_top_cut?: number | null
-          usage_pct_top8?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pokemon_usage_stats_meta_id_fkey"
-            columns: ["meta_id"]
-            isOneToOne: false
-            referencedRelation: "format_meta_stats"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       rate_limits: {
         Row: {
           created_at: string | null
@@ -2344,6 +2166,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_slots: {
+        Row: {
+          ability: string | null
+          compiled_at: string
+          country: string | null
+          division: string | null
+          event_date: string
+          event_key: string
+          event_tier: string | null
+          format: string
+          held_item: string | null
+          id: number
+          is_online: boolean
+          losses: number | null
+          moves: string[]
+          nature: string | null
+          placement: number | null
+          player_key: string
+          position: number
+          source: string
+          species: string
+          tera_type: string | null
+          ties: number | null
+          total_players: number
+          wins: number | null
+        }
+        Insert: {
+          ability?: string | null
+          compiled_at?: string
+          country?: string | null
+          division?: string | null
+          event_date: string
+          event_key: string
+          event_tier?: string | null
+          format: string
+          held_item?: string | null
+          id?: never
+          is_online: boolean
+          losses?: number | null
+          moves?: string[]
+          nature?: string | null
+          placement?: number | null
+          player_key: string
+          position: number
+          source: string
+          species: string
+          tera_type?: string | null
+          ties?: number | null
+          total_players: number
+          wins?: number | null
+        }
+        Update: {
+          ability?: string | null
+          compiled_at?: string
+          country?: string | null
+          division?: string | null
+          event_date?: string
+          event_key?: string
+          event_tier?: string | null
+          format?: string
+          held_item?: string | null
+          id?: never
+          is_online?: boolean
+          losses?: number | null
+          moves?: string[]
+          nature?: string | null
+          placement?: number | null
+          player_key?: string
+          position?: number
+          source?: string
+          species?: string
+          tera_type?: string | null
+          ties?: number | null
+          total_players?: number
+          wins?: number | null
+        }
+        Relationships: []
       }
       teams: {
         Row: {
@@ -3567,27 +3467,6 @@ export type Database = {
           },
         ]
       }
-      usage_dirty: {
-        Row: {
-          dirty_since: string
-          format: string
-          source: string
-          updated_at: string
-        }
-        Insert: {
-          dirty_since: string
-          format: string
-          source: string
-          updated_at?: string
-        }
-        Update: {
-          dirty_since?: string
-          format?: string
-          source?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       user_group_roles: {
         Row: {
           created_at: string | null
@@ -3953,6 +3832,45 @@ export type Database = {
         Args: { p_group_role_id: number }
         Returns: string
       }
+      get_species_usage: {
+        Args: {
+          p_format: string
+          p_min_players?: number
+          p_period_type?: string
+          p_source?: string
+        }
+        Returns: {
+          rank: number
+          species: string
+          usage_change_7d: number
+          usage_pct: number
+        }[]
+      }
+      get_species_usage_detail: {
+        Args: {
+          p_format: string
+          p_limit?: number
+          p_min_players?: number
+          p_period_type?: string
+          p_source?: string
+          p_species: string
+        }
+        Returns: {
+          abilities: Json
+          ability_items: Json
+          items: Json
+          moves: Json
+          natures: Json
+          period_end: string
+          period_start: string
+          rank: number
+          sample_size: number
+          tera_types: Json
+          usage_change_30d: number
+          usage_change_7d: number
+          usage_pct: number
+        }[]
+      }
       get_top_returning_players: {
         Args: { p_community_id: number; p_limit?: number }
         Returns: {
@@ -3967,6 +3885,47 @@ export type Database = {
         Returns: {
           count: number
           status: string
+        }[]
+      }
+      get_usage_pipeline: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_source?: string
+          p_start?: string
+        }
+        Returns: {
+          abilities: Json
+          ability_items: Json
+          items: Json
+          moves: Json
+          natures: Json
+          period_end: string
+          period_start: string
+          players: number
+          rank: number
+          species: string
+          tera_types: Json
+          usage_pct: number
+        }[]
+      }
+      get_usage_timeseries: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_period_type?: string
+          p_source?: string
+          p_start?: string
+        }
+        Returns: {
+          period_end: string
+          period_start: string
+          players: number
+          species: string
+          total_players: number
+          usage_pct: number
         }[]
       }
       get_user_growth_stats: {

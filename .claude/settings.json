@@ -2,7 +2,6 @@
   "permissions": {
     "allow": [
       "Bash(PGPASSWORD=postgres psql:*)",
-      "Bash(bash ~/.claude/plugins/cache/claude-plugins-official/superpowers/*/skills/brainstorming/scripts/start-server.sh --project-dir /Users/beanie/source/trainers-gg-dashboard 2>&1)",
       "mcp__plugin_playwright_playwright__browser_navigate",
       "mcp__plugin_playwright_playwright__browser_click",
       "mcp__plugin_playwright_playwright__browser_fill_form",
@@ -59,14 +58,12 @@
       "Bash(pnpm --filter @trainers/pokemon test)",
       "Bash(pnpm:*)",
       "Bash(npm test:*)",
-      "Bash(git -C /Users/beanie/source/the-builder-polish show HEAD:packages/pokemon/src/__tests__/team-validator.test.ts)",
       "Bash(git:*)",
       "Bash(npm run:*)",
       "WebFetch(domain:supabase.com)",
       "Bash(command -v yq)",
       "Bash(yq eval *)",
       "Bash(command -v actionlint)",
-      "Bash(actionlint /Users/beanie/source/the-builder-polish/.github/actions/supabase-branch/action.yml)",
       "Bash(bash -n /tmp/supabase-branch-run.sh)",
       "WebFetch(domain:www.videogameschronicle.com)",
       "WebFetch(domain:www.pokemon.com)",
@@ -98,11 +95,15 @@
           },
           {
             "type": "command",
-            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) if grep -qi \"CREATE TABLE\" \"$f\" 2>/dev/null && ! grep -qi \"ENABLE ROW LEVEL SECURITY\" \"$f\" 2>/dev/null; then echo \"WARNING: New table detected without ENABLE ROW LEVEL SECURITY. All tables must have RLS enabled.\"; fi;; esac; done; exit 0"
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do [ -f \"$f\" ] || continue; case \"$f\" in */supabase/migrations/*.sql) if grep -qi \"CREATE TABLE\" \"$f\" && ! grep -qi \"ENABLE ROW LEVEL SECURITY\" \"$f\"; then echo \"WARNING: New table detected without ENABLE ROW LEVEL SECURITY. All tables must have RLS enabled.\"; fi;; esac; done; exit 0"
           },
           {
             "type": "command",
             "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) echo \"Remember: run 'pnpm generate-types' after applying this migration to update TypeScript types.\";; esac; done; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do [ -f \"$f\" ] || continue; case \"$f\" in */apps/web/e2e/*) echo \"Editing e2e tests — consider the 'writing-e2e-tests' skill.\";; */supabase/functions/*) echo \"Editing an edge function — consider the 'creating-edge-functions' skill.\";; *.ts|*.tsx) if grep -qF '.channel(' \"$f\"; then echo \"This file uses Supabase Realtime (.channel) — consider the 'using-realtime' skill.\"; fi; if grep -qE 'recharts|d3-sankey' \"$f\"; then echo \"This file uses chart libraries — consider the 'building-charts' skill.\"; fi;; esac; done; exit 0"
           }
         ]
       },
@@ -112,6 +113,14 @@
           {
             "type": "command",
             "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git commit'*) WEB_CHANGES=$(git diff HEAD~1 --name-only -- apps/web/ 2>/dev/null); if [ -n \"$WEB_CHANGES\" ]; then echo 'This commit touched apps/web/. If this is a new feature or significant change, consider running /checking-mobile-parity to check for mobile parity tickets.'; fi;; esac; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git push'*) echo 'Push landed. Dispatch the ci-monitor agent (haiku) in the BACKGROUND now to watch CI checks — do not poll CI inline.';; esac; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git commit'*) if git diff HEAD~1 --name-only -- apps/web/src/ 2>/dev/null | grep -qF .tsx; then echo 'This commit changed web .tsx files. Before pushing, consider dispatching the ui-verifier agent to visually verify layout (desktop + 393x852 mobile).'; fi;; esac; exit 0"
           }
         ]
       }
@@ -126,11 +135,20 @@
           },
           {
             "type": "command",
-            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) git -C /Users/beanie/source/trainers.gg ls-files --error-unmatch \"$f\" 2>/dev/null && echo \"BLOCK: Cannot edit committed migration $f — create a new migration instead\" && exit 2;; esac; done"
+            "command": "REPO_ROOT=\"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}\"; for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) git -C \"$REPO_ROOT\" ls-files --error-unmatch \"$f\" 2>/dev/null && echo \"BLOCK: Cannot edit committed migration $f — create a new migration instead\" && exit 2;; esac; done"
           },
           {
             "type": "command",
             "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */apps/web/middleware.ts) echo \"BLOCK: Next.js 16 uses proxy.ts for request interception. Creating middleware.ts will break all routes (404 on every page).\" && exit 2;; esac; done"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'pnpm supabase'*) case \"$CMD\" in *'packages/supabase'*|*'--filter @trainers/supabase'*) ;; *) echo \"Reminder: run 'pnpm supabase' from packages/supabase — it writes a .temp/ cache to the cwd. Use 'cd packages/supabase' or '--filter @trainers/supabase'.\";; esac;; esac; exit 0"
           }
         ]
       }
@@ -142,6 +160,10 @@
           {
             "type": "command",
             "command": "REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ''); if [ -n \"$REPO_ROOT\" ]; then cd \"$REPO_ROOT\" || exit 0; BRANCH=$(git branch --show-current 2>/dev/null); if [ -n \"$BRANCH\" ] && [ \"$BRANCH\" != 'main' ] && [ \"$BRANCH\" != 'master' ]; then if git rev-parse --verify main >/dev/null 2>&1; then BASE_BRANCH=main; elif git rev-parse --verify master >/dev/null 2>&1; then BASE_BRANCH=master; else BASE_BRANCH=; fi; if [ -n \"$BASE_BRANCH\" ]; then WEB_CHANGES=$(git diff --name-only \"$BASE_BRANCH\"...HEAD -- apps/web/ 2>/dev/null); if [ -n \"$WEB_CHANGES\" ]; then echo 'This branch has apps/web/ changes. If you have added new features, run /checking-mobile-parity to check for mobile parity tickets.'; fi; fi; fi; fi; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null); [ -z \"$REPO_ROOT\" ] && exit 0; cd \"$REPO_ROOT\" || exit 0; BRANCH=$(git branch --show-current 2>/dev/null); { [ -z \"$BRANCH\" ] || [ \"$BRANCH\" = 'main' ] || [ \"$BRANCH\" = 'master' ]; } && exit 0; command -v gh >/dev/null 2>&1 || exit 0; TO=$(command -v timeout || command -v gtimeout); [ -z \"$TO\" ] && exit 0; PRINFO=$(\"$TO\" 6 gh pr view --json number,reviewDecision,state --jq 'select(.state==\"OPEN\") | \"Open PR #\\(.number) on this branch — review: \\(.reviewDecision // \"pending\"). Dispatch ci-monitor to check CI.\"' 2>/dev/null); [ -n \"$PRINFO\" ] && echo \"$PRINFO\"; exit 0"
           }
         ]
       }

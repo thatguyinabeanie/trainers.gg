@@ -6,7 +6,7 @@ import {
 import { createAdminSupabaseClient } from "../../client";
 import { recalculateStandings } from "./standings";
 import { createTournamentTeamSheets } from "./team-sheets";
-import { computeEventUsage } from "../usage";
+import { compileEventTeamSlots } from "../team-slots";
 
 /**
  * Enhanced tournament start: lock teams, activate first phase, create Round 1.
@@ -66,18 +66,22 @@ export async function startTournamentEnhanced(
   const serviceClient = createAdminSupabaseClient();
   await createTournamentTeamSheets(serviceClient, tournamentId);
 
-  // 1c. Best-effort: compute per-event usage facts from the locked team sheets.
+  // 1c. Best-effort: compile team_slots facts from the locked team sheets.
   // Failures must never propagate — tournament start already committed and
-  // a usage-compute error should not roll back the start sequence.
+  // a compile error should not roll back the start sequence.
   try {
-    await computeEventUsage(serviceClient, "first_party", String(tournamentId));
-  } catch (usageErr) {
+    await compileEventTeamSlots(
+      serviceClient,
+      "trainers.gg",
+      String(tournamentId)
+    );
+  } catch (compileErr) {
     // Keep the dynamic tournamentId out of the first console arg — a tainted
     // format string trips CodeQL js/tainted-format-string.
     console.error(
-      "[usage] computeEventUsage failed for first_party tournament",
+      "[team-slots] compileEventTeamSlots failed for trainers.gg tournament",
       tournamentId,
-      usageErr
+      compileErr
     );
   }
 
@@ -432,6 +436,28 @@ export async function completeTournament(
     .eq("id", tournamentId);
 
   if (error) throw error;
+
+  // Best-effort: recompile team_slots now that standings are final so
+  // placement/W-L enrichment is available for usage aggregation.
+  // Failures must never propagate — the tournament is already marked completed.
+  // placement/W-L enrichment lands with the standings join in a future task.
+  // NOTE: serviceClient is created outside the try block so that a failure in
+  // createAdminSupabaseClient() surfaces as a real error rather than being
+  // silently swallowed as a compile failure. This matches startTournamentEnhanced.
+  const recompileClient = createAdminSupabaseClient();
+  try {
+    await compileEventTeamSlots(
+      recompileClient,
+      "trainers.gg",
+      String(tournamentId)
+    );
+  } catch (compileErr) {
+    console.error(
+      "[team-slots] compileEventTeamSlots recompile failed on tournament completion",
+      tournamentId,
+      compileErr
+    );
+  }
 
   return { success: true };
 }

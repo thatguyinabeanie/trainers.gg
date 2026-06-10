@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@trainers/ui", "@trainers/validators"],
   reactCompiler: true,
+  cacheComponents: true,
   allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok.io"],
   images: {
     remotePatterns: [
@@ -58,6 +59,15 @@ const nextConfig: NextConfig = {
       source: "/dashboard/overview",
       destination: "/dashboard",
       permanent: true,
+    },
+    // /dashboard/alts index redirects to the dashboard home. Config-level
+    // because a bare redirect() page has no static shell under
+    // cacheComponents/PPR and fails the prerender. [username] subroutes
+    // are real pages and unaffected.
+    {
+      source: "/dashboard/alts",
+      destination: "/dashboard",
+      permanent: false,
     },
     {
       source: "/dashboard/notifications",

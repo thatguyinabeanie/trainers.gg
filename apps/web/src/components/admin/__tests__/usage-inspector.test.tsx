@@ -71,4 +71,10 @@ describe("UsageInspector", () => {
     );
     expect(triggers.length).toBeGreaterThanOrEqual(3);
   });
+
+  it("does not render 'first_party' as a source label — uses 'trainers.gg' instead", () => {
+    render(<UsageInspector />);
+    // The old label "First-party" should not appear anywhere
+    expect(screen.queryByText("First-party")).not.toBeInTheDocument();
+  });
 });

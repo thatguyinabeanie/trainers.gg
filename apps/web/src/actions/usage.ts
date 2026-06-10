@@ -1,18 +1,9 @@
 "use server";
 
-import { unstable_cache, updateTag } from "next/cache";
-
 import { getErrorMessage } from "@trainers/utils";
 import { z, type ActionResult } from "@trainers/validators";
 import {
-  computeSourceUsage,
-  computeUsageRollups,
-  getSpeciesUsage,
-  getSpeciesUsageDetail,
-  getFormatUsageTimeseries,
-  getPipelineData,
-  getDirectPipelineData,
-  getFormatEvents,
+  compileSourceTeamSlots,
   type FormatUsageRow,
   type FormatUsageTimeseriesPoint,
   type SpeciesUsagePeriod,
@@ -20,146 +11,16 @@ import {
   type PipelineDataResult,
   type FormatEvent,
 } from "@trainers/supabase";
-import {
-  createStaticClient,
-  createServiceRoleClient,
-  getUserId,
-} from "@/lib/supabase/server";
+import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
-import { CacheTags } from "@/lib/cache";
-import { toDBSource } from "@/components/data/usage-filters";
-
-// ---------------------------------------------------------------------------
-// Usage rollup worker
-// ---------------------------------------------------------------------------
-
-/** Keys read from site_config to govern rollup scheduling. */
-const CONFIG_KEYS = [
-  "usage_rollup_enabled",
-  "usage_rollup_interval_seconds",
-  "usage_rollup_last_run_at",
-] as const;
-
-type RollupResult = {
-  ran: boolean;
-  formatsProcessed: number;
-  bucketsWritten: number;
-};
-
-/**
- * Trigger the usage-stats rollup worker.
- *
- * The worker reads three site_config rows via the service-role client
- * (bypasses RLS — the getSiteConfig server action is admin-gated and intended
- * for UI reads, not internal worker use). Smart-skip logic:
- *
- *  - If `force` is true → skip all checks and compute immediately.
- *  - If `usage_rollup_enabled` is false → skip (returns ran: false).
- *  - If `usage_rollup_last_run_at` is set and `now − last_run_at < interval_seconds` → skip.
- *
- * On success the worker upserts `usage_rollup_last_run_at` to the current
- * timestamp so the next scheduled invocation respects the cooldown window.
- */
-export async function triggerUsageRollup(opts?: {
-  force?: boolean;
-}): Promise<ActionResult<RollupResult>> {
-  try {
-    const userId = await getUserId();
-    if (!userId) return { success: false, error: "Not authenticated" };
-
-    const isAdmin = await isSiteAdmin();
-    if (!isAdmin) return { success: false, error: "Requires site admin" };
-
-    const force = opts?.force ?? false;
-    const supabase = createServiceRoleClient();
-
-    if (!force) {
-      // Read the three rollup-governance keys in one round-trip.
-      const { data: configRows, error: configErr } = await supabase
-        .from("site_config")
-        .select("key, value")
-        .in("key", CONFIG_KEYS);
-
-      if (configErr) throw configErr;
-
-      const cfg = new Map<string, unknown>(
-        (configRows ?? []).map((r) => [r.key, r.value])
-      );
-
-      const enabled = cfg.get("usage_rollup_enabled") as
-        | boolean
-        | null
-        | undefined;
-      if (enabled === false) {
-        // Rollup is administratively disabled.
-        return {
-          success: true,
-          data: { ran: false, formatsProcessed: 0, bucketsWritten: 0 },
-        };
-      }
-
-      const intervalSeconds = cfg.get("usage_rollup_interval_seconds") as
-        | number
-        | null
-        | undefined;
-      const lastRunAt = cfg.get("usage_rollup_last_run_at") as
-        | string
-        | null
-        | undefined;
-
-      if (
-        lastRunAt &&
-        typeof intervalSeconds === "number" &&
-        intervalSeconds > 0
-      ) {
-        const elapsed = (Date.now() - new Date(lastRunAt).getTime()) / 1000;
-        if (elapsed < intervalSeconds) {
-          // Still within the cooldown window.
-          return {
-            success: true,
-            data: { ran: false, formatsProcessed: 0, bucketsWritten: 0 },
-          };
-        }
-      }
-    }
-
-    // Run the rollup.
-    const result = await computeUsageRollups(supabase);
-
-    // Stamp the run timestamp so the next call respects the cooldown.
-    const { error: upsertErr } = await supabase.from("site_config").upsert(
-      {
-        key: "usage_rollup_last_run_at",
-        value: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        updated_by: userId,
-      },
-      { onConflict: "key" }
-    );
-    if (upsertErr) {
-      // Log but don't fail — the rollup itself succeeded; only the timestamp
-      // write failed. A missed timestamp means we might recompute sooner than
-      // desired, which is harmless.
-      console.error(
-        `[usage] failed to upsert usage_rollup_last_run_at: ${upsertErr.message}`
-      );
-    }
-
-    return {
-      success: true,
-      data: {
-        ran: true,
-        formatsProcessed: result.formatsProcessed,
-        bucketsWritten: result.bucketsWritten,
-      },
-    };
-  } catch (e) {
-    return {
-      success: false,
-      error: getErrorMessage(e, "Usage rollup failed"),
-    };
-  }
-}
+import { invalidateUsageStatsCaches } from "@/lib/cache-invalidation";
+import {
+  getCachedSpeciesUsageDetail,
+  getCachedFormatUsage,
+  getCachedFormatUsageTimeseries,
+  getCachedPipelineData,
+  getCachedFormatEvents,
+} from "@/lib/data/usage-cache";
 
 // ---------------------------------------------------------------------------
 // Source-scoped usage computation
@@ -170,18 +31,13 @@ export async function triggerUsageRollup(opts?: {
 const usageSourceSchema = z.enum(["rk9", "limitless"]);
 
 /**
- * Computes usage facts for a specific data source's new/unprocessed events,
- * then rolls up only the formats that were touched by those events.
+ * Compiles team_slots facts for a specific data source's new/unprocessed
+ * events, then invalidates caches for formats that were touched.
  *
  * Admin-gated (requires site admin). Uses the service-role client to bypass
- * RLS for writing usage facts and rollup buckets.
+ * RLS for writing team_slots rows.
  *
- * Unlike `triggerUsageRollup` (which processes all formats unconditionally),
- * this action scopes work to a single source and skips formats with no new
- * events — making it efficient for incremental ingestion pipelines that
- * process one source at a time.
- *
- * After a successful rollup the per-format and global usage caches are
+ * After a successful compile the per-format and global usage caches are
  * invalidated so the team builder reflects the new data immediately.
  *
  * @param source - The data source to process ("rk9" or "limitless").
@@ -192,7 +48,6 @@ export async function calculateSourceUsage(
   ActionResult<{
     eventsComputed: number;
     formatsProcessed: number;
-    bucketsWritten: number;
   }>
 > {
   try {
@@ -210,36 +65,32 @@ export async function calculateSourceUsage(
 
     const supabase = createServiceRoleClient();
 
-    // Compute facts for new events belonging to this source only.
-    const { eventsComputed, formats } = await computeSourceUsage(
+    // Compile team_slots facts for new events belonging to this source only.
+    const { eventsCompiled, formats } = await compileSourceTeamSlots(
       supabase,
       validatedSource
     );
 
-    // Nothing new — skip rollup entirely and return early.
+    // Nothing new — return early.
     if (formats.length === 0) {
       return {
         success: true,
-        data: { eventsComputed, formatsProcessed: 0, bucketsWritten: 0 },
+        data: {
+          eventsComputed: eventsCompiled,
+          formatsProcessed: 0,
+        },
       };
     }
 
-    // Roll up only the formats that had new events.
-    const rollup = await computeUsageRollups(supabase, { formats });
-
     // Bust caches for every touched format plus the global usage tag so the
-    // builder's species usage columns reflect the freshly written buckets.
-    updateTag(CacheTags.USAGE_STATS);
-    for (const format of formats) {
-      updateTag(CacheTags.usageStats(format));
-    }
+    // builder's species usage columns reflect the freshly compiled facts.
+    invalidateUsageStatsCaches(formats);
 
     return {
       success: true,
       data: {
-        eventsComputed,
-        formatsProcessed: rollup.formatsProcessed,
-        bucketsWritten: rollup.bucketsWritten,
+        eventsComputed: eventsCompiled,
+        formatsProcessed: formats.length,
       },
     };
   } catch (e) {
@@ -255,35 +106,32 @@ export async function calculateSourceUsage(
 // ---------------------------------------------------------------------------
 
 /**
- * Calculate usage across ALL sources (cross-source). Usage stats aggregate
- * every source, so this is a single global operation — not scoped to one source.
+ * Calculate usage across ALL sources (cross-source). Calls
+ * `calculateSourceUsage` sequentially for each known source and sums the
+ * totals. Returns a merged result even when some sources had no new events
+ * (those contribute zeros). Fails fast on any source error.
  *
- * Admin-gated. Calls `calculateSourceUsage` sequentially for each known source
- * and sums the totals. Returns a merged result even when some sources had no
- * new events (those contribute zeros). Fails fast on any source error.
+ * Admin-gated.
  */
 export async function calculateAllSourceUsage(): Promise<
   ActionResult<{
     eventsComputed: number;
     formatsProcessed: number;
-    bucketsWritten: number;
   }>
 > {
   try {
     const sources = ["rk9", "limitless"] as const;
     let eventsComputed = 0,
-      formatsProcessed = 0,
-      bucketsWritten = 0;
+      formatsProcessed = 0;
     for (const s of sources) {
       const r = await calculateSourceUsage(s);
       if (!r.success) throw new Error(r.error);
       eventsComputed += r.data.eventsComputed;
       formatsProcessed += r.data.formatsProcessed;
-      bucketsWritten += r.data.bucketsWritten;
     }
     return {
       success: true,
-      data: { eventsComputed, formatsProcessed, bucketsWritten },
+      data: { eventsComputed, formatsProcessed },
     };
   } catch (e) {
     return {
@@ -299,13 +147,8 @@ export async function calculateAllSourceUsage(): Promise<
 
 /**
  * Public (non-admin) server action to fetch trailing usage periods for a
- * species.  Data is public — all tournament usage stats are visible to
- * everyone — so this uses `createStaticClient()` wrapped in `unstable_cache`
- * for ISR caching.
- *
- * Cache revalidation: 3600s (1 hour).  Usage rollups run at most every few
- * hours, so 1-hour staleness is acceptable. The USAGE_STATS and per-format
- * tags can be used for on-demand invalidation after a rollup completes.
+ * species. Delegates to getCachedSpeciesUsageDetail in lib/data/usage-cache
+ * for 'use cache' caching with USAGE_STATS + per-format tags.
  */
 export async function fetchSpeciesUsageDetail(
   params: SpeciesUsageDetailParams
@@ -317,31 +160,17 @@ export async function fetchSpeciesUsageDetail(
       source = "all",
       periodType = "week",
       limit = 12,
+      minPlayers = 0,
     } = params;
 
-    const cacheKey = `usage-detail:${format}:${source}:${species}:${periodType}:${limit}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        // createStaticClient() — anonymous, no cookies — required inside
-        // unstable_cache so the cached value is shared across all users.
-        const supabase = createStaticClient();
-        return getSpeciesUsageDetail(supabase, {
-          format,
-          species,
-          source: toDBSource(source),
-          periodType,
-          limit,
-        });
-      },
-      [cacheKey],
-      {
-        revalidate: 3600, // 1 hour
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
+    const data = await getCachedSpeciesUsageDetail({
+      format,
+      species,
+      source,
+      periodType,
+      limit,
+      minPlayers,
+    });
     return { success: true, data };
   } catch (e) {
     return {
@@ -363,44 +192,31 @@ export interface FetchFormatUsageParams {
   source?: string;
   /** Period granularity. Defaults to "week". */
   periodType?: "day" | "week" | "month";
+  /** Minimum players per event-division. Defaults to 0 (no filter). */
+  minPlayers?: number;
 }
 
 /**
  * Public (non-admin) server action to fetch the latest-period species ranking
- * for a format.
- *
- * Returns every `FormatUsageRow` for the most-recent rollup bucket so the
- * species picker can show a `USG %` column for every species at once.
- *
- * Data is public — all tournament usage stats are visible to everyone — so
- * this uses `createStaticClient()` wrapped in `unstable_cache` for ISR
- * caching. Cache revalidation: 3600s (1 hour), matching `fetchSpeciesUsageDetail`.
+ * for a format. Delegates to getCachedFormatUsage in lib/data/usage-cache.
  */
 export async function fetchFormatUsage(
   params: FetchFormatUsageParams
 ): Promise<ActionResult<FormatUsageRow[]>> {
   try {
-    const { format, source = "all", periodType = "week" } = params;
+    const {
+      format,
+      source = "all",
+      periodType = "week",
+      minPlayers = 0,
+    } = params;
 
-    const cacheKey = `usage-format:${format}:${source}:${periodType}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        const supabase = createStaticClient();
-        return getSpeciesUsage(supabase, {
-          format,
-          source: toDBSource(source),
-          periodType,
-        });
-      },
-      [cacheKey],
-      {
-        revalidate: 3600, // 1 hour — matches fetchSpeciesUsageDetail
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
+    const data = await getCachedFormatUsage({
+      format,
+      source,
+      periodType,
+      minPlayers,
+    });
     return { success: true, data };
   } catch (e) {
     return {
@@ -422,47 +238,39 @@ export interface FetchFormatUsageTimeseriesParams {
   source?: string;
   /** Period granularity. Defaults to "week". */
   periodType?: "day" | "week" | "month";
+  /** If provided, restrict to periods >= this ISO date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this ISO date. */
+  periodEnd?: string;
+  /** Minimum players per event-division. Defaults to 0 (no filter). */
+  minPlayers?: number;
 }
 
 /**
  * Public (non-admin) server action to fetch all-species × all-periods usage
- * data for a format.
- *
- * Returns a `FormatUsageTimeseriesPoint[]` ordered oldest→newest.  Each point
- * carries a `usage` map (`species → usage_pct`) covering every tracked species
- * in that period.  This is the data shape needed to render a streamgraph on the
- * public /data page — existing queries return either the latest period only
- * (`fetchFormatUsage`) or a single species over time (`fetchSpeciesUsageDetail`).
- *
- * Data is public — all tournament usage stats are visible to everyone — so this
- * uses `createStaticClient()` wrapped in `unstable_cache` for ISR caching.
- * Cache revalidation: 3600s (1 hour), matching the other usage actions.
+ * data for a format. Delegates to getCachedFormatUsageTimeseries.
  */
 export async function fetchFormatUsageTimeseries(
   params: FetchFormatUsageTimeseriesParams
 ): Promise<ActionResult<FormatUsageTimeseriesPoint[]>> {
   try {
-    const { format, source = "all", periodType = "week" } = params;
+    const {
+      format,
+      source = "all",
+      periodType = "week",
+      periodStart,
+      periodEnd,
+      minPlayers = 0,
+    } = params;
 
-    const cacheKey = `usage-timeseries:${format}:${source}:${periodType}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        const supabase = createStaticClient();
-        return getFormatUsageTimeseries(supabase, {
-          format,
-          source: toDBSource(source),
-          periodType,
-        });
-      },
-      [cacheKey],
-      {
-        revalidate: 3600, // 1 hour — matches fetchFormatUsage / fetchSpeciesUsageDetail
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
+    const data = await getCachedFormatUsageTimeseries({
+      format,
+      source,
+      periodType,
+      periodStart,
+      periodEnd,
+      minPlayers,
+    });
     return { success: true, data };
   } catch (e) {
     return {
@@ -480,81 +288,18 @@ export async function fetchFormatUsageTimeseries(
 export interface FetchPipelineDataParams {
   format: string;
   source?: string;
-  periodType?: "day" | "week" | "month";
   periodStart?: string;
   periodEnd?: string;
-}
-
-/**
- * Public server action to fetch species + histogram data for the Meta Pipeline
- * Sankey. Returns the latest matching period's data for all species above the
- * caller's threshold (threshold is applied client-side, not here).
- *
- * Uses `createStaticClient()` + `unstable_cache` for 1h ISR caching.
- */
-export async function fetchPipelineData(
-  params: FetchPipelineDataParams
-): Promise<ActionResult<PipelineDataResult | null>> {
-  try {
-    const {
-      format,
-      source = "all",
-      periodType = "week",
-      periodStart,
-      periodEnd,
-    } = params;
-
-    const cacheKey = `pipeline-data:${format}:${source}:${periodType}:${periodStart ?? ""}:${periodEnd ?? ""}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        const supabase = createStaticClient();
-        return getPipelineData(supabase, {
-          format,
-          source: toDBSource(source),
-          periodType,
-          periodStart,
-          periodEnd,
-        });
-      },
-      [cacheKey],
-      {
-        revalidate: 3600,
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
-    return { success: true, data };
-  } catch (e) {
-    return {
-      success: false,
-      error: getErrorMessage(e, "Failed to fetch pipeline data"),
-    };
-  }
-}
-
-/** Parameters for fetchDirectPipelineData. */
-export interface FetchDirectPipelineDataParams {
-  format: string;
-  source?: string;
-  periodStart?: string;
-  periodEnd?: string;
-  /** Minimum total_teams per event-division row. Defaults to 0 (no filter). */
+  /** Minimum total_players per event-division row. Defaults to 0 (no filter). */
   minPlayers?: number;
 }
 
 /**
- * Public server action to fetch Sankey pipeline data by querying
- * event_usage directly (not pre-aggregated rollup tables).
- *
- * Uses getDirectPipelineData() so the minPlayers filter can be applied
- * at query time — impossible with the pre-aggregated path.
- *
- * Uses unstable_cache keyed by all params for 1h ISR caching.
+ * Public server action to fetch species + histogram data for the Meta Pipeline
+ * Sankey. Delegates to getCachedPipelineData.
  */
-export async function fetchDirectPipelineData(
-  params: FetchDirectPipelineDataParams
+export async function fetchPipelineData(
+  params: FetchPipelineDataParams
 ): Promise<ActionResult<PipelineDataResult | null>> {
   try {
     const {
@@ -565,32 +310,18 @@ export async function fetchDirectPipelineData(
       minPlayers = 0,
     } = params;
 
-    const cacheKey = `direct-pipeline:${format}:${source}:${periodStart ?? ""}:${periodEnd ?? ""}:${minPlayers}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        const supabase = createStaticClient();
-        return getDirectPipelineData(supabase, {
-          format,
-          source: toDBSource(source),
-          periodStart,
-          periodEnd,
-          minPlayers,
-        });
-      },
-      [cacheKey],
-      {
-        revalidate: 3600,
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
+    const data = await getCachedPipelineData({
+      format,
+      source,
+      periodStart,
+      periodEnd,
+      minPlayers,
+    });
     return { success: true, data };
   } catch (e) {
     return {
       success: false,
-      error: getErrorMessage(e, "Failed to fetch direct pipeline data"),
+      error: getErrorMessage(e, "Failed to fetch pipeline data"),
     };
   }
 }
@@ -601,29 +332,13 @@ export async function fetchDirectPipelineData(
 
 /**
  * Public server action to fetch distinct event dates for a format.
- *
- * Returns `FormatEvent[]` for rendering annotation pins on the usage
- * timeline's X-axis. Uses `createStaticClient()` + `unstable_cache` for 1h ISR.
+ * Delegates to getCachedFormatEvents.
  */
 export async function fetchFormatEvents(
   format: string
 ): Promise<ActionResult<FormatEvent[]>> {
   try {
-    const cacheKey = `format-events:${format}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        const supabase = createStaticClient();
-        return getFormatEvents(supabase, format);
-      },
-      [cacheKey],
-      {
-        revalidate: 3600,
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
+    const data = await getCachedFormatEvents(format);
     return { success: true, data };
   } catch (e) {
     return {

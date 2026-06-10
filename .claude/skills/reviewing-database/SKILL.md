@@ -68,14 +68,14 @@ USING ((SELECT auth.role()) = 'service_role')
 
 ## Supabase Client Selection
 
-| Client                                                      | When                                          |
-| ----------------------------------------------------------- | --------------------------------------------- |
-| `createStaticClient()`                                      | Public data, `unstable_cache`, no auth needed |
-| `createClient()`                                            | Authenticated mutations, read-write cookies   |
-| `createClientReadOnly()`                                    | Authenticated reads, read-only cookies        |
-| `createServiceRoleClient()` / `createAdminSupabaseClient()` | Bypass RLS (service operations only)          |
+| Client                                                      | When                                              |
+| ----------------------------------------------------------- | ------------------------------------------------- |
+| `createStaticClient()`                                      | Public data, `'use cache'` scopes, no auth needed |
+| `createClient()`                                            | Authenticated mutations, read-write cookies       |
+| `createClientReadOnly()`                                    | Authenticated reads, read-only cookies            |
+| `createServiceRoleClient()` / `createAdminSupabaseClient()` | Bypass RLS (service operations only)              |
 
-Never use `createClient()` (authenticated) inside `unstable_cache`. Use `createStaticClient()`.
+Never use `createClient()` (authenticated) inside a `'use cache'` scope. Use `createStaticClient()`.
 
 ## Anti-Patterns
 

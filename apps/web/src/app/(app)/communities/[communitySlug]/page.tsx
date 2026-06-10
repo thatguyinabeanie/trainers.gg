@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import {
   createStaticClient,
@@ -65,24 +65,24 @@ function SocialLinkIcon({ link }: { link: CommunitySocialLink }) {
   );
 }
 
-// On-demand revalidation only (no time-based)
-export const revalidate = false;
-
 interface OrganizationPageProps {
   params: Promise<{
     communitySlug: string;
   }>;
 }
 
-const getCachedOrganization = (slug: string) =>
-  unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      return getCommunityBySlug(supabase, slug);
-    },
-    [`organization-detail-${slug}`],
-    { tags: [CacheTags.community(slug), CacheTags.COMMUNITIES_LIST] }
-  )();
+/**
+ * Cached community fetcher — keyed by slug.
+ * Revalidated when community(slug) or COMMUNITIES_LIST is invalidated.
+ */
+async function getCachedOrganization(slug: string) {
+  "use cache";
+  cacheTag(CacheTags.community(slug), CacheTags.COMMUNITIES_LIST);
+  cacheLife("max");
+
+  const supabase = createStaticClient();
+  return getCommunityBySlug(supabase, slug);
+}
 
 // ============================================================================
 // Server Components

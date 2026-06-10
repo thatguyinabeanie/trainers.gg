@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 import Image from "next/image";
 
 import { cn } from "@/lib/utils";
+import { CopyrightYear } from "@/components/layout/copyright-year";
 
 import { getVerdict, type CalcOutput } from "../use-calc-state";
 
@@ -186,7 +187,11 @@ export function Dockbar({
 
       {/* Footer copyright — right side, absolutely positioned */}
       <p className="text-muted-foreground absolute top-1/2 right-3 hidden -translate-y-1/2 items-center gap-1 text-xs whitespace-nowrap lg:flex">
-        <a href="https://x.com/thatguyinabeani" target="_blank" rel="noopener noreferrer">
+        <a
+          href="https://x.com/thatguyinabeani"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Image
             src="/icons/beanie_logo.png"
             alt="Beanie LLC"
@@ -195,7 +200,7 @@ export function Dockbar({
             className="inline-block"
           />
         </a>
-        &copy; {new Date().getFullYear()} Beanie LLC
+        &copy; <CopyrightYear /> Beanie LLC
       </p>
     </div>
   );

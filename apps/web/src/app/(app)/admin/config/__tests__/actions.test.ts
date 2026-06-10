@@ -25,6 +25,12 @@ jest.mock("@trainers/supabase", () => ({
   deleteAnnouncement: jest.fn(),
 }));
 
+// Mock cache invalidation helper
+const mockInvalidateAnnouncementCaches = jest.fn();
+jest.mock("@/lib/cache-invalidation", () => ({
+  invalidateAnnouncementCaches: () => mockInvalidateAnnouncementCaches(),
+}));
+
 // Import after mocks are declared
 import {
   createFlagAction,
@@ -250,7 +256,7 @@ describe("createAnnouncementAction", () => {
     mockCreateAnnouncement.mockResolvedValue(undefined);
   });
 
-  it("creates an announcement successfully", async () => {
+  it("creates an announcement successfully and invalidates cache", async () => {
     const announcementData = {
       title: "Maintenance Window",
       message: "Servers will be down for maintenance",
@@ -266,9 +272,10 @@ describe("createAnnouncementAction", () => {
       announcementData,
       ADMIN_USER_ID
     );
+    expect(mockInvalidateAnnouncementCaches).toHaveBeenCalledTimes(1);
   });
 
-  it("creates an announcement with all optional fields", async () => {
+  it("creates an announcement with all optional fields and invalidates cache", async () => {
     const announcementData = {
       title: "Scheduled Downtime",
       message: "Service will be unavailable",
@@ -286,9 +293,10 @@ describe("createAnnouncementAction", () => {
       announcementData,
       ADMIN_USER_ID
     );
+    expect(mockInvalidateAnnouncementCaches).toHaveBeenCalledTimes(1);
   });
 
-  it("returns an error when auth check fails", async () => {
+  it("returns an error when auth check fails and does not invalidate cache", async () => {
     mockRequireAdminWithSudo.mockResolvedValue({
       success: false,
       error: "Not authenticated",
@@ -302,9 +310,10 @@ describe("createAnnouncementAction", () => {
 
     expect(result).toEqual({ success: false, error: "Not authenticated" });
     expect(mockCreateAnnouncement).not.toHaveBeenCalled();
+    expect(mockInvalidateAnnouncementCaches).not.toHaveBeenCalled();
   });
 
-  it("returns a generic error when the query throws an Error", async () => {
+  it("returns a generic error when the query throws an Error and does not invalidate cache", async () => {
     mockCreateAnnouncement.mockRejectedValue(
       new Error("Validation failed: title too long")
     );
@@ -319,6 +328,7 @@ describe("createAnnouncementAction", () => {
       success: false,
       error: expect.stringContaining("Error creating announcement"),
     });
+    expect(mockInvalidateAnnouncementCaches).not.toHaveBeenCalled();
   });
 
   it("returns a generic error for non-Error throwables", async () => {
@@ -344,7 +354,7 @@ describe("updateAnnouncementAction", () => {
     mockUpdateAnnouncement.mockResolvedValue(undefined);
   });
 
-  it("updates an announcement successfully", async () => {
+  it("updates an announcement successfully and invalidates cache", async () => {
     const updateData = { title: "Updated Title", is_active: false };
 
     const result = await updateAnnouncementAction(1, updateData);
@@ -356,9 +366,10 @@ describe("updateAnnouncementAction", () => {
       updateData,
       ADMIN_USER_ID
     );
+    expect(mockInvalidateAnnouncementCaches).toHaveBeenCalledTimes(1);
   });
 
-  it("updates an announcement with null end_at to clear the field", async () => {
+  it("updates an announcement with null end_at to clear the field and invalidates cache", async () => {
     const updateData = { end_at: null as string | null };
 
     const result = await updateAnnouncementAction(1, updateData);
@@ -370,9 +381,10 @@ describe("updateAnnouncementAction", () => {
       updateData,
       ADMIN_USER_ID
     );
+    expect(mockInvalidateAnnouncementCaches).toHaveBeenCalledTimes(1);
   });
 
-  it("returns an error when auth check fails", async () => {
+  it("returns an error when auth check fails and does not invalidate cache", async () => {
     mockRequireAdminWithSudo.mockResolvedValue({
       success: false,
       error: "Sudo session expired",
@@ -385,6 +397,7 @@ describe("updateAnnouncementAction", () => {
       error: "Sudo session expired",
     });
     expect(mockUpdateAnnouncement).not.toHaveBeenCalled();
+    expect(mockInvalidateAnnouncementCaches).not.toHaveBeenCalled();
   });
 
   it("returns a generic error when the query throws an Error", async () => {
@@ -419,7 +432,7 @@ describe("deleteAnnouncementAction", () => {
     mockDeleteAnnouncement.mockResolvedValue(undefined);
   });
 
-  it("deletes an announcement successfully", async () => {
+  it("deletes an announcement successfully and invalidates cache", async () => {
     const result = await deleteAnnouncementAction(1);
 
     expect(result).toEqual({ success: true });
@@ -428,9 +441,10 @@ describe("deleteAnnouncementAction", () => {
       1,
       ADMIN_USER_ID
     );
+    expect(mockInvalidateAnnouncementCaches).toHaveBeenCalledTimes(1);
   });
 
-  it("returns an error when auth check fails", async () => {
+  it("returns an error when auth check fails and does not invalidate cache", async () => {
     mockRequireAdminWithSudo.mockResolvedValue({
       success: false,
       error: "Admin access required",
@@ -443,6 +457,7 @@ describe("deleteAnnouncementAction", () => {
       error: "Admin access required",
     });
     expect(mockDeleteAnnouncement).not.toHaveBeenCalled();
+    expect(mockInvalidateAnnouncementCaches).not.toHaveBeenCalled();
   });
 
   it("returns a generic error when the query throws an Error", async () => {

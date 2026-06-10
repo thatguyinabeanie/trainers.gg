@@ -20,6 +20,15 @@ export * from "./queries";
 // Mutation exports
 export * from "./mutations";
 
+// Usage compile exports — pure slot-row mapping shared by the mutations
+// layer, tests, and test-utils factories.
+export {
+  buildTeamSlotRows,
+  type EventMeta,
+  type RawSlotRow,
+  type TeamSlotRow,
+} from "./usage/compile";
+
 // Type exports
 export type {
   Database,
@@ -55,30 +64,6 @@ export {
   deleteFile,
   extractPathFromUrl,
 } from "./storage";
-
-// Usage aggregation helpers (pure, framework-free)
-export {
-  aggregateEventUsage,
-  type TeamMonInput,
-  type HistogramEntry,
-  type UsageHistogram,
-  type UsageDetails,
-  type EventUsageRow,
-} from "./usage/aggregate";
-
-// Usage rollup helpers (pure, framework-free) and types
-export {
-  bucketStart,
-  bucketEnd,
-  rollupBucket,
-  mergeHistogram,
-  computeDelta,
-  type PeriodType,
-  type FactRow,
-  type DetailEntry,
-  type SpeciesRollup,
-  type BucketRollup,
-} from "./usage/rollup";
 
 // AT Protocol extended types
 export type {

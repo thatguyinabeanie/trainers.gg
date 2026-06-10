@@ -28,8 +28,6 @@ export interface ExternalDataToolbarProps {
   isFetching: boolean;
   onRefresh: () => void;
   // Usage actions (both tabs)
-  onRecomputeUsage: () => void;
-  recomputingUsage: boolean;
   onCalculateUsage: () => void;
   calculatingUsage: boolean;
   lastCalculatedAt?: string | null;
@@ -88,12 +86,6 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
                 Import all ({props.importAllCount ?? 0})
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={props.onRecomputeUsage}
-                disabled={props.recomputingUsage}
-              >
-                Recompute Usage
-              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={props.onCalculateUsage}
                 disabled={props.calculatingUsage}
@@ -172,38 +164,23 @@ export function ExternalDataToolbar(props: ExternalDataToolbarProps) {
           <span className="bg-border h-5 w-px" />
           <span className={LABEL}>Usage</span>
           <div className="flex items-center gap-1.5">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                disabled={props.recomputingUsage || props.calculatingUsage}
-                className="hover:bg-accent hover:text-accent-foreground inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
-              >
-                {props.recomputingUsage || props.calculatingUsage ? (
-                  <>
-                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                    Recalculating usage…
-                  </>
-                ) : (
-                  <>
-                    <BarChart2 className="mr-1.5 size-3.5" /> Usage{" "}
-                    <ChevronDown className="size-3" />
-                  </>
-                )}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={props.onRecomputeUsage}
-                  disabled={props.recomputingUsage}
-                >
-                  Recompute Usage
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={props.onCalculateUsage}
-                  disabled={props.calculatingUsage}
-                >
-                  Calculate Usage
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={props.onCalculateUsage}
+              disabled={props.calculatingUsage}
+            >
+              {props.calculatingUsage ? (
+                <>
+                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                  Calculating…
+                </>
+              ) : (
+                <>
+                  <BarChart2 className="mr-1.5 size-3.5" /> Calculate Usage
+                </>
+              )}
+            </Button>
             {props.lastCalculatedAt && (
               <span className="text-muted-foreground text-xs">
                 {formatTimeAgo(props.lastCalculatedAt)}

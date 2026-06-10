@@ -205,6 +205,8 @@ description: Runs CI checks, reads review comments, fixes lint errors, and updat
 - If a pattern matches, the associated skill is loaded (advisory, non-blocking)
 - Configured in `.claude/settings.json`
 
+> **Never hardcode machine-specific absolute paths in the shared `.claude/settings.json`.** It is committed and shared by the whole team, so a path like `/Users/<someone>/source/...` only works on one machine — and when a hook's `git -C <path>` silently fails (e.g. swallowed by `2>/dev/null`), the hook stops firing with no error. Derive the repo root at runtime (`$CLAUDE_PROJECT_DIR`, or `git rev-parse --show-toplevel`). Machine-specific allows/paths belong in `settings.local.json` (gitignored), never the shared file.
+
 ### File Pattern to Skill Mapping
 
 Hooks map file globs to skills. When Claude edits a file matching the glob, the skill is suggested:

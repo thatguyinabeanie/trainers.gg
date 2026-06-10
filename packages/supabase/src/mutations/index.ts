@@ -141,10 +141,9 @@ export {
   recordDeliveryFailure,
 } from "./discord";
 
-// Usage stats mutations
+// Team slots mutations (fact-table pipeline — replaces the retired rollup layer)
 export {
-  computeEventUsage,
-  computeUsageRollups,
-  computeSourceUsage,
-  type UsageSource,
-} from "./usage";
+  compileEventTeamSlots,
+  compileSourceTeamSlots,
+  type TeamSlotSource,
+} from "./team-slots";

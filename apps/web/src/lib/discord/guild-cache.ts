@@ -10,9 +10,14 @@
  * generated from the trainers.gg id so mutations on the discord_servers
  * row (delete, reinstall) can invalidate via the same surface that created
  * the cache.
+ *
+ * Migration note: converted from unstable_cache to 'use cache' (Cache
+ * Components). guildId + serverId are function params — they become the cache
+ * key automatically. cacheLife custom profile matches the old 300s TTL;
+ * expire is 3600s to keep it a real cache (expire < 5min silently uncaches).
  */
 
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 
 import {
   type APIGuildChannel,
@@ -37,8 +42,6 @@ export type GuildRole = APIRole;
 // Constants
 // =============================================================================
 
-const CACHE_TTL_SECONDS = 300;
-
 /** Discord ChannelType 0 = GUILD_TEXT (plain text channel). */
 const TEXT_CHANNEL_TYPE = 0;
 
@@ -56,18 +59,18 @@ const TEXT_CHANNEL_TYPE = 0;
  * @param guildId  - Discord guild snowflake ID
  * @param serverId - trainers.gg `discord_servers.id` — used for cache tagging
  */
-export function getCachedGuildChannels(
+export async function getCachedGuildChannels(
   guildId: string,
   serverId: number
 ): Promise<GuildChannel[]> {
-  return unstable_cache(
-    async () => {
-      const channels = await getGuildChannels(guildId);
-      return channels.filter((ch) => ch.type === TEXT_CHANNEL_TYPE);
-    },
-    ["discord-guild-channels", guildId],
-    { revalidate: CACHE_TTL_SECONDS, tags: [CacheTags.discordGuild(serverId)] }
-  )();
+  "use cache";
+  cacheTag(CacheTags.discordGuild(serverId));
+  // 300s stale + revalidate matches the old TTL; expire=3600 prevents
+  // the <5min "dynamic hole" where Next.js would skip caching entirely.
+  cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
+
+  const channels = await getGuildChannels(guildId);
+  return channels.filter((ch) => ch.type === TEXT_CHANNEL_TYPE);
 }
 
 /**
@@ -80,16 +83,14 @@ export function getCachedGuildChannels(
  * @param guildId  - Discord guild snowflake ID
  * @param serverId - trainers.gg `discord_servers.id` — used for cache tagging
  */
-export function getCachedGuildRoles(
+export async function getCachedGuildRoles(
   guildId: string,
   serverId: number
 ): Promise<GuildRole[]> {
-  return unstable_cache(
-    async () => {
-      const roles = await getGuildRoles(guildId);
-      return roles.filter((r) => !r.managed);
-    },
-    ["discord-guild-roles", guildId],
-    { revalidate: CACHE_TTL_SECONDS, tags: [CacheTags.discordGuild(serverId)] }
-  )();
+  "use cache";
+  cacheTag(CacheTags.discordGuild(serverId));
+  cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
+
+  const roles = await getGuildRoles(guildId);
+  return roles.filter((r) => !r.managed);
 }

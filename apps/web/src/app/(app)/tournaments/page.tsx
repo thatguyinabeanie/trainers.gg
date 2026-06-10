@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 import {
   createStaticClient,
   createClientReadOnly,
@@ -24,21 +24,18 @@ import {
   TournamentListEmpty,
 } from "@/components/tournaments/tournament-list";
 
-// On-demand revalidation via cache tags (no time-based revalidation)
-export const revalidate = false;
-
 /**
- * Cached data fetcher for tournaments list
- * Revalidated when CacheTags.TOURNAMENTS_LIST is invalidated
+ * Cached data fetcher for tournaments list.
+ * Revalidated when CacheTags.TOURNAMENTS_LIST is invalidated.
  */
-const getCachedTournaments = unstable_cache(
-  async () => {
-    const supabase = createStaticClient();
-    return listTournamentsGrouped(supabase, { completedLimit: 20 });
-  },
-  ["tournaments-grouped"],
-  { tags: [CacheTags.TOURNAMENTS_LIST] }
-);
+async function getCachedTournaments() {
+  "use cache";
+  cacheTag(CacheTags.TOURNAMENTS_LIST);
+  cacheLife("max");
+
+  const supabase = createStaticClient();
+  return listTournamentsGrouped(supabase, { completedLimit: 20 });
+}
 
 // ============================================================================
 // Filter Helper
@@ -73,18 +70,15 @@ export default async function TournamentsPage({
 }) {
   const { q: searchQuery } = await searchParams;
 
-  // Fetch tournaments (cached) and user registrations (not cached, user-specific)
+  // Fetch tournaments (cached) and user registrations (not cached, user-specific).
+  // createClientReadOnly() is called outside the cache scope — safe for auth/cookies.
+  // The catch handles the unauthenticated case (no session → return empty set).
+  const supabase = await createClientReadOnly().catch(() => null);
   const [allData, registeredTournamentIds] = await Promise.all([
     getCachedTournaments(),
-    (async () => {
-      try {
-        const supabase = await createClientReadOnly();
-        return getCurrentUserRegisteredTournamentIds(supabase);
-      } catch {
-        // User not logged in or error - return empty set
-        return new Set<number>();
-      }
-    })(),
+    supabase
+      ? getCurrentUserRegisteredTournamentIds(supabase)
+      : Promise.resolve(new Set<number>()),
   ]);
 
   // Filter on the server

@@ -1,6 +1,10 @@
-import { createStaticClient } from "@/lib/supabase/server";
+import { cacheLife, cacheTag } from "next/cache";
+
 import { getActiveAnnouncements } from "@trainers/supabase";
 import { getErrorMessage } from "@trainers/utils";
+
+import { CacheTags } from "@/lib/cache";
+import { createStaticClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, XCircle, CheckCircle2 } from "lucide-react";
 
@@ -27,27 +31,38 @@ const typeConfig = {
   },
 } as const;
 
-/**
- * Server component that fetches and displays active announcements.
- * Placed in the root layout, above the main content.
- *
- * Uses createStaticClient() to avoid forcing all pages to be dynamic.
- * Data is revalidated every 60 seconds via ISR for a balance of
- * performance and freshness.
- */
-export async function AnnouncementBanner() {
-  let announcements: Awaited<ReturnType<typeof getActiveAnnouncements>> = [];
+async function getCachedAnnouncements() {
+  "use cache";
+  cacheTag(CacheTags.ANNOUNCEMENTS);
+  cacheLife("minutes");
 
+  const supabase = createStaticClient();
   try {
-    const supabase = createStaticClient();
-    announcements = await getActiveAnnouncements(supabase);
+    return await getActiveAnnouncements(supabase);
   } catch (err) {
+    // The catch must live INSIDE the cache scope: an error thrown during the
+    // build-time cache fill aborts prerendering before any caller-side catch
+    // runs (seen in CI bundle-analysis builds with no reachable Supabase).
+    // The empty result is cached on the "minutes" profile, so it self-heals.
     console.error(
       "[announcement-banner] Failed to fetch announcements:",
       getErrorMessage(err, "Unknown error")
     );
-    return null;
+    return [];
   }
+}
+
+/**
+ * Server component that fetches and displays active announcements.
+ * Placed in the root layout, above the main content.
+ *
+ * Uses 'use cache' with cacheTag(CacheTags.ANNOUNCEMENTS) + cacheLife("minutes")
+ * for on-demand invalidation via invalidateAnnouncementCaches().
+ */
+export async function AnnouncementBanner() {
+  // getCachedAnnouncements never throws — failures are handled inside the
+  // cache scope and degrade to an empty list.
+  const announcements = await getCachedAnnouncements();
 
   if (announcements.length === 0) {
     return null;

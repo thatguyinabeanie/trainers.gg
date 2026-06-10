@@ -65,12 +65,23 @@ jobs:
             ${{ runner.os }}-nextjs-${{ github.ref_name }}-
             ${{ runner.os }}-nextjs-
 
+      # Under cacheComponents, 'use cache' fetchers execute at build time
+      # (prerender), so the build needs a reachable Supabase — a placeholder
+      # URL makes every cached fetch reject and aborts page exports.
+      - name: Start local Supabase
+        working-directory: packages/supabase
+        run: |
+          pnpm supabase start
+          pnpm supabase status -o env | tr -d '"' > /tmp/supabase-status.env
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$(grep '^API_URL=' /tmp/supabase-status.env | cut -d= -f2-)"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(grep '^ANON_KEY=' /tmp/supabase-status.env | cut -d= -f2-)"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$(grep '^SERVICE_ROLE_KEY=' /tmp/supabase-status.env | cut -d= -f2-)"
+          } >> "$GITHUB_ENV"
+
       - name: Build Next.js app
         run: pnpm build
         env:
-          # Required env vars for build to succeed
-          NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
 
       - name: Analyze bundle

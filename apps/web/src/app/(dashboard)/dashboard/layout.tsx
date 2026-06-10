@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import {
@@ -15,16 +15,55 @@ import {
   getCommunityIdsWithFeatureAccess,
 } from "@trainers/supabase";
 import { isSudoModeActive, isSiteAdmin } from "@/lib/sudo/server";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuSkeleton,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DASHBOARD_ALT_COOKIE } from "@/components/dashboard/sidebar-helpers";
 import { SupabaseHashErrorHandler } from "@/components/auth/supabase-hash-error-handler";
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+/** Sidebar placeholder shown while the auth + community data resolves. */
+function DashboardSidebarSkeleton() {
+  return (
+    <Sidebar variant="inset">
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuSkeleton showIcon />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarMenu>
+          {Array.from({ length: 8 }, (_, i) => (
+            <SidebarMenuItem key={i}>
+              <SidebarMenuSkeleton showIcon />
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
+    </Sidebar>
+  );
+}
+
+/**
+ * Async sidebar loader rendered under Suspense.
+ *
+ * WHY: under cacheComponents, reading cookies()/auth in the layout body
+ * itself blocks every dashboard route from prerendering a static shell
+ * (page-level loading.tsx boundaries sit BELOW the layout, so they can't
+ * help). The layout returns static chrome; all request-data reads live
+ * here behind the skeleton fallback. Route protection is still enforced
+ * primarily by proxy.ts — the redirect below remains as defense-in-depth.
+ */
+async function DashboardSidebarLoader() {
   const user = await getUser();
 
   if (!user) {
@@ -186,19 +225,27 @@ export default async function DashboardLayout({
   }));
 
   return (
+    <DashboardSidebar
+      user={sidebarUser}
+      communities={sidebarCommunitiesWithFlags}
+      alts={sidebarAlts}
+      selectedAltUsername={selectedAltUsername}
+      isOnboarding={isOnboarding}
+      isSiteAdmin={isAdmin}
+      isSudoActive={sudoActive}
+      hasTeamBuilderAccess={teamBuilderAccess.access === true}
+      variant="inset"
+    />
+  );
+}
+
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  return (
     <SidebarProvider>
       <SupabaseHashErrorHandler />
-      <DashboardSidebar
-        user={sidebarUser}
-        communities={sidebarCommunitiesWithFlags}
-        alts={sidebarAlts}
-        selectedAltUsername={selectedAltUsername}
-        isOnboarding={isOnboarding}
-        isSiteAdmin={isAdmin}
-        isSudoActive={sudoActive}
-        hasTeamBuilderAccess={teamBuilderAccess.access === true}
-        variant="inset"
-      />
+      <Suspense fallback={<DashboardSidebarSkeleton />}>
+        <DashboardSidebarLoader />
+      </Suspense>
       <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );

@@ -1,5 +1,4 @@
 import type { TypedClient } from "../client";
-import { rollupBucket, type FactRow } from "../usage/rollup";
 
 // =============================================================================
 // Types
@@ -38,6 +37,11 @@ export interface SpeciesUsageDetailParams {
   periodType?: "day" | "week" | "month";
   /** Number of trailing periods to return. Defaults to 12. */
   limit?: number;
+  /**
+   * Minimum total_players per event-division row.
+   * Events with fewer players are excluded. Defaults to 0 (no filter).
+   */
+  minPlayers?: number;
 }
 
 /** One row in the latest-period species ranking for a format. */
@@ -65,6 +69,7 @@ export interface PipelineSpeciesData {
   items: UsageDetailEntry[];
   natures: UsageDetailEntry[];
   moves: UsageDetailEntry[];
+  tera: UsageDetailEntry[];
 }
 
 /** Result shape returned by `getPipelineData`. */
@@ -76,34 +81,52 @@ export interface PipelineDataResult {
   periodEnd: string;
 }
 
+/** Parameters for `getSpeciesUsage`. */
+export interface GetSpeciesUsageParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** Data source filter. Defaults to "all". */
+  source?: string;
+  /** Period granularity. Defaults to "week". */
+  periodType?: "day" | "week" | "month";
+  /**
+   * Minimum total_players per event-division row.
+   * Events with fewer players are excluded. Defaults to 0 (no filter).
+   */
+  minPlayers?: number;
+}
+
+/** Parameters for `getFormatUsageTimeseries`. */
+export interface GetFormatUsageTimeseriesParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** Data source filter. Defaults to "all". */
+  source?: string;
+  /** Period granularity. Defaults to "week". */
+  periodType?: "day" | "week" | "month";
+  /** If provided, restrict to periods >= this date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this date. */
+  periodEnd?: string;
+  /**
+   * Minimum total_players per event-division row.
+   * Events with fewer players are excluded. Defaults to 0 (no filter).
+   */
+  minPlayers?: number;
+}
+
 /** Parameters for `getPipelineData`. */
 export interface GetPipelineDataParams {
   format: string;
-  source: string;
-  periodType: "day" | "week" | "month";
-  /** If provided, resolves the latest period whose start is >= this date. */
+  /** Data source filter. Pass "all" or omit to include all sources. */
+  source?: string;
+  /** If provided, restricts to periods whose start is >= this date. */
   periodStart?: string;
   /** If provided, restricts to periods whose end is <= this date. */
   periodEnd?: string;
-}
-
-/** Parameters for `getDirectPipelineData`. */
-export interface GetDirectPipelineDataParams {
-  /** Format ID, e.g. "SS_2025" or "VGC_2024". */
-  format: string;
   /**
-   * Data source filter. Pass "all" or omit to include all sources.
-   * Concrete values: "rk9" | "limitless" | "first_party".
-   */
-  source?: string;
-  /** If provided, restrict to events on or after this ISO date. */
-  periodStart?: string;
-  /** If provided, restrict to events on or before this ISO date. */
-  periodEnd?: string;
-  /**
-   * Minimum `total_teams` per event-division row.
-   * Events with fewer registered teams are excluded.
-   * Defaults to 0 (no filter).
+   * Minimum total_players per event-division row.
+   * Events with fewer players are excluded. Defaults to 0 (no filter).
    */
   minPlayers?: number;
 }
@@ -114,7 +137,7 @@ export interface FormatEvent {
   eventKey: string;
   /** ISO date string (YYYY-MM-DD). */
   eventDate: string;
-  /** Data source: "rk9" | "limitless" | "first_party". */
+  /** Data source: "rk9" | "limitless" | "trainers.gg". */
   source: string;
 }
 
@@ -125,12 +148,20 @@ export interface FormatEvent {
 /**
  * Fetch trailing N periods for one species in a given format.
  *
- * Results are ordered oldest→newest so the series reads left→right for
- * sparklines. Each period includes moves, tera types, and items breakdowns
- * from pokemon_detail_stats. If no detail row exists for a period the
- * breakdown arrays default to [].
+ * Delegates to the `get_species_usage_detail` RPC, which aggregates usage
+ * from the team_slots fact table in SQL. Results are ordered oldest→newest
+ * so the series reads left→right for sparklines. Each period includes moves,
+ * tera types, items, abilities, natures, and ability+item combos.
  *
  * Used by: builder usage % column, species detail sparklines.
+ *
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
+ * @param params.format - Format ID (e.g. "gen9vgc2025regg").
+ * @param params.species - Species name (e.g. "Koraidon").
+ * @param params.source - Data source filter. Defaults to "all".
+ * @param params.periodType - Period granularity. Defaults to "week".
+ * @param params.limit - Trailing periods to return. Defaults to 12.
+ * @param params.minPlayers - Minimum players per event-division. Defaults to 0.
  */
 export async function getSpeciesUsageDetail(
   supabase: TypedClient,
@@ -142,38 +173,17 @@ export async function getSpeciesUsageDetail(
     source = "all",
     periodType = "week",
     limit = 12,
+    minPlayers = 0,
   } = params;
 
-  const { data, error } = await supabase
-    .from("format_meta_stats")
-    .select(
-      `
-      period_start,
-      period_end,
-      pokemon_usage_stats!inner(
-        usage_pct,
-        rank,
-        usage_change_7d,
-        usage_change_30d,
-        sample_size
-      ),
-      pokemon_detail_stats(
-        moves,
-        tera_types,
-        items,
-        abilities,
-        natures,
-        ability_items
-      )
-    `
-    )
-    .eq("format", format)
-    .eq("source", source)
-    .eq("period_type", periodType)
-    .eq("pokemon_usage_stats.species", species)
-    .eq("pokemon_detail_stats.species", species)
-    .order("period_start", { ascending: false })
-    .limit(limit);
+  const { data, error } = await supabase.rpc("get_species_usage_detail", {
+    p_format: format,
+    p_species: species,
+    p_source: source,
+    p_period_type: periodType,
+    p_limit: limit,
+    p_min_players: minPlayers,
+  });
 
   if (error) {
     throw new Error(
@@ -181,91 +191,67 @@ export async function getSpeciesUsageDetail(
     );
   }
 
-  // Reverse to oldest→newest so the sparkline series reads left→right.
-  const rows = (data ?? []).reverse();
+  // The RPC returns rows ordered newest→oldest; reverse to oldest→newest so
+  // sparkline series reads left→right.
+  const rows = (data ?? []).slice().reverse();
 
-  return rows.map((row) => {
-    // PostgREST returns embedded arrays for 1:many; for !inner the matched row
-    // is an array with exactly one element.
-    const usageRow = Array.isArray(row.pokemon_usage_stats)
-      ? row.pokemon_usage_stats[0]
-      : row.pokemon_usage_stats;
-
-    const detailRow = Array.isArray(row.pokemon_detail_stats)
-      ? row.pokemon_detail_stats[0]
-      : row.pokemon_detail_stats;
-
-    return {
-      periodStart: row.period_start,
-      periodEnd: row.period_end,
-      usagePct: usageRow?.usage_pct ?? 0,
-      rank: usageRow?.rank ?? 0,
-      sampleSize: usageRow?.sample_size ?? 0,
-      usageChange7d: usageRow?.usage_change_7d ?? null,
-      usageChange30d: usageRow?.usage_change_30d ?? null,
-      moves: (detailRow?.moves as UsageDetailEntry[] | null) ?? [],
-      tera: (detailRow?.tera_types as UsageDetailEntry[] | null) ?? [],
-      items: (detailRow?.items as UsageDetailEntry[] | null) ?? [],
-      abilities: (detailRow?.abilities as UsageDetailEntry[] | null) ?? [],
-      natures: (detailRow?.natures as UsageDetailEntry[] | null) ?? [],
-      abilityItems:
-        (detailRow?.ability_items as UsageDetailEntry[] | null) ?? [],
-    };
-  });
+  return rows.map((row) => ({
+    periodStart: row.period_start,
+    periodEnd: row.period_end,
+    usagePct: row.usage_pct,
+    rank: row.rank,
+    sampleSize: row.sample_size,
+    usageChange7d: row.usage_change_7d ?? null,
+    usageChange30d: row.usage_change_30d ?? null,
+    moves: (row.moves as unknown as UsageDetailEntry[]) ?? [],
+    tera: (row.tera_types as unknown as UsageDetailEntry[]) ?? [],
+    items: (row.items as unknown as UsageDetailEntry[]) ?? [],
+    abilities: (row.abilities as unknown as UsageDetailEntry[]) ?? [],
+    natures: (row.natures as unknown as UsageDetailEntry[]) ?? [],
+    abilityItems: (row.ability_items as unknown as UsageDetailEntry[]) ?? [],
+  }));
 }
 
 /**
  * Fetch the latest-period species ranking for a format.
  *
- * Finds the most-recent period_start for the given (format, source,
- * period_type) combination and returns all species usage rows ordered by
- * rank ascending. Returns [] if no meta row exists yet.
+ * Delegates to the `get_species_usage` RPC, which reads from the team_slots
+ * fact table and returns all species ordered by rank ascending for the most
+ * recent period. Returns [] if no data exists yet.
  *
  * Used by: species picker usage % column, format overview.
+ *
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
+ * @param params.format - Format ID (e.g. "gen9vgc2025regg").
+ * @param params.source - Data source filter. Defaults to "all".
+ * @param params.periodType - Period granularity. Defaults to "week".
+ * @param params.minPlayers - Minimum players per event-division. Defaults to 0.
  */
 export async function getSpeciesUsage(
   supabase: TypedClient,
-  params: {
-    format: string;
-    source?: string;
-    periodType?: "day" | "week" | "month";
-  }
+  params: GetSpeciesUsageParams
 ): Promise<FormatUsageRow[]> {
-  const { format, source = "all", periodType = "week" } = params;
+  const {
+    format,
+    source = "all",
+    periodType = "week",
+    minPlayers = 0,
+  } = params;
 
-  // Find the latest period bucket.
-  const { data: latestMeta, error: metaError } = await supabase
-    .from("format_meta_stats")
-    .select("id")
-    .eq("format", format)
-    .eq("source", source)
-    .eq("period_type", periodType)
-    .order("period_start", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("get_species_usage", {
+    p_format: format,
+    p_source: source,
+    p_period_type: periodType,
+    p_min_players: minPlayers,
+  });
 
-  if (metaError) {
+  if (error) {
     throw new Error(
-      `Failed to fetch latest meta bucket for ${format}: ${metaError.message}`
+      `Failed to fetch species usage for ${format}: ${error.message}`
     );
   }
 
-  // No data yet for this format/source/periodType combination.
-  if (!latestMeta) return [];
-
-  const { data: usageRows, error: usageError } = await supabase
-    .from("pokemon_usage_stats")
-    .select("species, usage_pct, rank, usage_change_7d")
-    .eq("meta_id", latestMeta.id)
-    .order("rank", { ascending: true });
-
-  if (usageError) {
-    throw new Error(
-      `Failed to fetch species usage for meta ${latestMeta.id}: ${usageError.message}`
-    );
-  }
-
-  return (usageRows ?? []).map((row) => ({
+  return (data ?? []).map((row) => ({
     species: row.species,
     usagePct: row.usage_pct,
     rank: row.rank,
@@ -276,295 +262,143 @@ export async function getSpeciesUsage(
 /**
  * Fetch trailing N periods for every species in a given format.
  *
- * Returns one `FormatUsageTimeseriesPoint` per period bucket, ordered
- * oldest→newest (left→right), each containing a `usage` map of
- * `species → usage_pct`.  This is the all-species × all-periods variant
- * used to render format-wide streamgraphs on the public /data page.
+ * Delegates to the `get_usage_timeseries` RPC, which aggregates usage from
+ * the team_slots fact table in SQL and returns one row per (species, period).
+ * This function groups rows into `FormatUsageTimeseriesPoint` objects ordered
+ * oldest→newest — the all-species × all-periods shape required to render
+ * format-wide streamgraphs on the public /data page.
  *
- * Unlike `getSpeciesUsageDetail` (single-species) or `getSpeciesUsage`
- * (latest period only), this query returns the full cross-product needed
- * to build a time-series visualisation for every tracked species at once.
+ * Unlike the previous rollup-table approach, aggregation now happens entirely
+ * in SQL, eliminating multi-query chunking and PostgREST URI-length issues.
  *
- * Two separate queries are used instead of a single embedded-row query to
- * avoid PostgREST's embedded-row cap. A single embedded query for
- * 16 periods × ~200 species silently truncates the later periods, producing
- * an incomplete timeseries without surfacing an error. Splitting into a
- * meta query + a chunked usage-stats query avoids this problem entirely.
- *
- * @param supabase - Typed Supabase client (use `createStaticClient()` for
- *   public ISR caching — this data is the same for all viewers).
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
  * @param params.format - Format ID (e.g. "gen9vgc2025regg").
- * @param params.source - Rollup source. Defaults to "all".
+ * @param params.source - Data source filter. Defaults to "all".
  * @param params.periodType - Period granularity. Defaults to "week".
- * @param params.limit - Trailing periods to return. Defaults to 16.
+ * @param params.periodStart - If provided, restrict to periods >= this date.
+ * @param params.periodEnd - If provided, restrict to periods <= this date.
+ * @param params.minPlayers - Minimum players per event-division. Defaults to 0.
  */
 export async function getFormatUsageTimeseries(
   supabase: TypedClient,
-  params: {
-    format: string;
-    source?: string;
-    periodType?: "day" | "week" | "month";
-    limit?: number;
-  }
+  params: GetFormatUsageTimeseriesParams
 ): Promise<FormatUsageTimeseriesPoint[]> {
-  const { format, source = "all", periodType = "week", limit = 16 } = params;
+  const {
+    format,
+    source = "all",
+    periodType = "week",
+    periodStart,
+    periodEnd,
+    minPlayers = 0,
+  } = params;
 
-  // ── Query 1: fetch the trailing N meta rows ────────────────────────────────
-  // Order desc so the DB returns newest-first; we reverse below to get the
-  // oldest→newest order required by the chart.
-  const { data: metaRows, error: metaError } = await supabase
-    .from("format_meta_stats")
-    .select("id, period_start, period_end")
-    .eq("format", format)
-    .eq("source", source)
-    .eq("period_type", periodType)
-    .order("period_start", { ascending: false })
-    .limit(limit);
+  const { data, error } = await supabase.rpc("get_usage_timeseries", {
+    p_format: format,
+    p_source: source,
+    p_period_type: periodType,
+    p_start: periodStart,
+    p_end: periodEnd,
+    p_min_players: minPlayers,
+  });
 
-  if (metaError) {
+  if (error) {
     throw new Error(
-      `Failed to fetch format meta stats for ${format}: ${metaError.message}`
+      `Failed to fetch usage timeseries for ${format}: ${error.message}`
     );
   }
 
-  // No periods exist yet for this format/source/periodType combination.
-  if (!metaRows || metaRows.length === 0) return [];
+  if (!data || data.length === 0) return [];
 
-  // Reverse to oldest→newest so the streamgraph series reads left→right.
-  const orderedMeta = [...metaRows].reverse();
-  const metaIds = orderedMeta.map((r) => r.id);
-
-  // ── Query 2: fetch all usage rows for these meta IDs (chunked) ─────────────
-  // Chunking prevents PostgREST "URI too long" errors when the id list is large.
-  // The chunk helper throws on any chunk error so partial results are impossible.
-  const usageRows = await _fetchUsageRowsInChunks(supabase, metaIds);
-
-  // Group usage rows by meta_id for fast lookup when building the timeseries.
-  const usageByMetaId = new Map<
-    number,
-    Array<{ species: string; usage_pct: number }>
+  // Group flat (species, period) rows into one point per period.
+  // The RPC returns rows ordered by period_start; we build the map in order
+  // and produce an oldest→newest array at the end.
+  const pointMap = new Map<
+    string,
+    { periodStart: string; periodEnd: string; usage: Record<string, number> }
   >();
-  for (const row of usageRows) {
-    let bucket = usageByMetaId.get(row.meta_id);
-    if (!bucket) {
-      bucket = [];
-      usageByMetaId.set(row.meta_id, bucket);
+
+  for (const row of data) {
+    let point = pointMap.get(row.period_start);
+    if (!point) {
+      point = {
+        periodStart: row.period_start,
+        periodEnd: row.period_end,
+        usage: {},
+      };
+      pointMap.set(row.period_start, point);
     }
-    bucket.push({ species: row.species, usage_pct: row.usage_pct });
+    point.usage[row.species] = row.usage_pct;
   }
 
-  // Build one `FormatUsageTimeseriesPoint` per meta row.
-  return orderedMeta.map((meta) => {
-    const entries = usageByMetaId.get(meta.id) ?? [];
-    const usage: Record<string, number> = {};
-    for (const entry of entries) {
-      usage[entry.species] = entry.usage_pct;
-    }
-    return {
-      periodStart: meta.period_start,
-      periodEnd: meta.period_end,
-      usage,
-    };
-  });
+  // Convert to array; Map preserves insertion order so ordering matches RPC output.
+  return Array.from(pointMap.values());
 }
 
 /**
  * Fetch all species + histogram data for a single period in a given format.
  *
- * Resolves the latest `format_meta_stats` row matching the given
- * (format, source, period_type) — optionally restricted to a date range.
- * Returns the full Species → Ability / Nature / Move histograms needed to
- * render the Meta Pipeline Sankey. Returns `null` if no matching period exists.
+ * Delegates to the `get_usage_pipeline` RPC, which reads the team_slots fact
+ * table and returns the full Species → Ability / Nature / Move histograms
+ * needed to render the Meta Pipeline Sankey. Aggregation (including
+ * minPlayers filtering) happens in SQL — no multi-query fan-out needed.
  *
- * Three queries are used:
- *   1. Resolve the latest matching meta bucket (maybeSingle).
- *   2. Fetch all pokemon_usage_stats for that bucket.
- *   3. Fetch all pokemon_detail_stats for that bucket.
+ * Returns `null` when zero rows match the given filters (no data yet).
  *
  * @param supabase - Use `createStaticClient()` for public ISR caching.
+ * @param params.format - Format ID (e.g. "gen9vgc2025regg").
+ * @param params.source - Data source filter. Defaults to "all".
+ * @param params.periodStart - If provided, restrict to periods >= this date.
+ * @param params.periodEnd - If provided, restrict to periods <= this date.
+ * @param params.minPlayers - Minimum players per event-division. Defaults to 0.
  */
 export async function getPipelineData(
   supabase: TypedClient,
   params: GetPipelineDataParams
 ): Promise<PipelineDataResult | null> {
-  const { format, source, periodType, periodStart, periodEnd } = params;
+  const {
+    format,
+    source = "all",
+    periodStart,
+    periodEnd,
+    minPlayers = 0,
+  } = params;
 
-  // ── Query 1: resolve latest matching meta bucket ──────────────────────────
-  let metaQuery = supabase
-    .from("format_meta_stats")
-    .select("id, period_start, period_end")
-    .eq("format", format)
-    .eq("source", source)
-    .eq("period_type", periodType)
-    .order("period_start", { ascending: false });
-
-  if (periodStart) {
-    metaQuery = metaQuery.gte("period_start", periodStart);
-  }
-  if (periodEnd) {
-    metaQuery = metaQuery.lte("period_end", periodEnd);
-  }
-
-  const { data: metaRow, error: metaError } = await metaQuery
-    .limit(1)
-    .maybeSingle();
-
-  if (metaError) {
-    throw new Error(
-      `Failed to fetch meta bucket for pipeline data (${format}): ${metaError.message}`
-    );
-  }
-
-  if (!metaRow) return null;
-
-  // ── Queries 2 + 3: fetch usage and detail rows in parallel ───────────────
-  const [
-    { data: usageRows, error: usageError },
-    { data: detailRows, error: detailError },
-  ] = await Promise.all([
-    supabase
-      .from("pokemon_usage_stats")
-      .select("species, usage_pct, rank")
-      .eq("meta_id", metaRow.id)
-      .order("rank", { ascending: true }),
-    supabase
-      .from("pokemon_detail_stats")
-      .select("species, abilities, items, natures, moves")
-      .eq("meta_id", metaRow.id),
-  ]);
-
-  if (usageError) {
-    throw new Error(
-      `Failed to fetch usage stats for meta ${metaRow.id}: ${usageError.message}`
-    );
-  }
-
-  if (detailError) {
-    throw new Error(
-      `Failed to fetch detail stats for meta ${metaRow.id}: ${detailError.message}`
-    );
-  }
-
-  // Index detail rows by species for O(1) lookup.
-  const detailBySpecies = new Map(
-    (detailRows ?? []).map((d) => [d.species, d])
-  );
-
-  const data: PipelineSpeciesData[] = (usageRows ?? []).map((row) => {
-    const detail = detailBySpecies.get(row.species);
-    return {
-      species: row.species,
-      usagePct: row.usage_pct,
-      rank: row.rank,
-      abilities: (detail?.abilities as UsageDetailEntry[] | null) ?? [],
-      items: (detail?.items as UsageDetailEntry[] | null) ?? [],
-      natures: (detail?.natures as UsageDetailEntry[] | null) ?? [],
-      moves: (detail?.moves as UsageDetailEntry[] | null) ?? [],
-    };
+  const { data, error } = await supabase.rpc("get_usage_pipeline", {
+    p_format: format,
+    p_source: source,
+    p_start: periodStart,
+    p_end: periodEnd,
+    p_min_players: minPlayers,
   });
-
-  return {
-    data,
-    periodStart: metaRow.period_start,
-    periodEnd: metaRow.period_end,
-  };
-}
-
-/**
- * Fetch pipeline (Sankey) data by reading event_usage directly.
- *
- * Unlike getPipelineData (which reads pre-aggregated rollup tables),
- * this function reads raw event_usage rows and calls rollupBucket() to
- * compute usage percentages on the fly. This enables per-event filters
- * like minPlayers that are impossible once data has been pre-aggregated.
- *
- * Returns null when no rows match the given filters.
- */
-export async function getDirectPipelineData(
-  supabase: TypedClient,
-  params: GetDirectPipelineDataParams
-): Promise<PipelineDataResult | null> {
-  const { format, source, periodStart, periodEnd, minPlayers = 0 } = params;
-
-  let query = supabase
-    .from("event_usage")
-    .select(
-      "source, event_key, division, species, team_count, total_teams, details, event_date"
-    )
-    .eq("format", format);
-
-  if (source && source !== "all") {
-    query = query.eq("source", source);
-  }
-  if (periodStart) {
-    query = query.gte("event_date", periodStart);
-  }
-  if (periodEnd) {
-    query = query.lte("event_date", periodEnd);
-  }
-  if (minPlayers > 0) {
-    query = query.gte("total_teams", minPlayers);
-  }
-
-  const { data: rows, error } = await query;
 
   if (error) {
     throw new Error(
-      `Failed to fetch direct pipeline data for ${format}: ${error.message}`
+      `Failed to fetch pipeline data for ${format}: ${error.message}`
     );
   }
 
-  if (!rows || rows.length === 0) return null;
+  if (!data || data.length === 0) return null;
 
-  type DetailsShape = {
-    moves?: { v: string; n: number }[];
-    tera?: { v: string; n: number }[];
-    item?: { v: string; n: number }[];
-    ability?: { v: string; n: number }[];
-    nature?: { v: string; n: number }[];
-    abilityItem?: { v: string; n: number }[];
-  } | null;
+  // Extract period bounds from the first row — all rows in one RPC call share
+  // the same resolved period (the RPC resolves a single period internally).
+  const periodStartOut = data[0]!.period_start;
+  const periodEndOut = data[0]!.period_end;
 
-  const facts: FactRow[] = rows.map((r) => {
-    const details = r.details as DetailsShape;
-    return {
-      source: r.source,
-      eventKey: r.event_key,
-      division: r.division,
-      species: r.species,
-      teamCount: r.team_count,
-      sampleSize: r.total_teams,
-      details: {
-        moves: details?.moves ?? [],
-        tera: details?.tera ?? [],
-        item: details?.item ?? [],
-        ability: details?.ability ?? [],
-        nature: details?.nature ?? [],
-        abilityItem: details?.abilityItem ?? [],
-      },
-    };
-  });
-
-  const eventDates = rows.map((r) => r.event_date).sort();
-  const computedStart = eventDates[0]!;
-  const computedEnd = eventDates[eventDates.length - 1]!;
-
-  const rollup = rollupBucket(facts);
-
-  const data: PipelineSpeciesData[] = rollup.species.map((s) => ({
-    species: s.species,
-    usagePct: s.usagePct,
-    rank: s.rank,
-    abilities: s.ability,
-    items: s.item,
-    natures: s.nature,
-    moves: s.moves,
+  const species: PipelineSpeciesData[] = data.map((row) => ({
+    species: row.species,
+    usagePct: row.usage_pct,
+    rank: row.rank,
+    abilities: (row.abilities as unknown as UsageDetailEntry[]) ?? [],
+    items: (row.items as unknown as UsageDetailEntry[]) ?? [],
+    natures: (row.natures as unknown as UsageDetailEntry[]) ?? [],
+    moves: (row.moves as unknown as UsageDetailEntry[]) ?? [],
+    tera: (row.tera_types as unknown as UsageDetailEntry[]) ?? [],
   }));
 
   return {
-    data,
-    periodStart: periodStart ?? computedStart,
-    periodEnd: periodEnd ?? computedEnd,
+    data: species,
+    periodStart: periodStartOut,
+    periodEnd: periodEndOut,
   };
 }
 
@@ -596,53 +430,4 @@ export async function getFormatEvents(
     eventDate: row.event_date,
     source: row.source,
   }));
-}
-
-// =============================================================================
-// Internal helpers
-// =============================================================================
-
-/** Max ids per PostgREST `.in()` filter to avoid "URI too long" errors. */
-const IN_QUERY_CHUNK_SIZE = 100;
-
-/** Split `items` into fixed-size chunks (the last chunk may be smaller). */
-function _chunk<T>(items: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size));
-  }
-  return chunks;
-}
-
-/**
- * Fetch `pokemon_usage_stats` rows for the given meta IDs, chunked to stay
- * within PostgREST's URI length limit. Throws on the first chunk error so
- * partial results are impossible.
- *
- * Exported only for unit-testing — callers outside this module should use
- * `getFormatUsageTimeseries` directly.
- */
-export async function _fetchUsageRowsInChunks(
-  supabase: TypedClient,
-  metaIds: number[]
-): Promise<Array<{ meta_id: number; species: string; usage_pct: number }>> {
-  const rows: Array<{ meta_id: number; species: string; usage_pct: number }> =
-    [];
-
-  for (const idChunk of _chunk(metaIds, IN_QUERY_CHUNK_SIZE)) {
-    const { data, error } = await supabase
-      .from("pokemon_usage_stats")
-      .select("meta_id, species, usage_pct")
-      .in("meta_id", idChunk);
-
-    if (error) {
-      throw new Error(
-        `Failed to fetch pokemon usage stats for meta IDs [${idChunk.join(", ")}]: ${error.message}`
-      );
-    }
-
-    if (data) rows.push(...data);
-  }
-
-  return rows;
 }

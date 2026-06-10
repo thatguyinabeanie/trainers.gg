@@ -7,7 +7,6 @@ import type { ReactNode } from "react";
 import "@/styles/globals.css";
 import { cn } from "@/lib/utils";
 import { Analytics } from "@vercel/analytics/next";
-import { isImpersonating as checkImpersonating } from "@/lib/impersonation/server";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -43,24 +42,13 @@ export const viewport: Viewport = {
   themeColor: "#1db6a5",
 };
 
-/**
- * Revalidate the layout data (announcements) every 60 seconds.
- * This enables ISR for the announcement banner while keeping pages static.
- */
-export const revalidate = 60;
-
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
-  let impersonating = false;
-  try {
-    impersonating = await checkImpersonating();
-  } catch {
-    // Expected during static generation — cookies() unavailable.
-    // Fail open: impersonation defaults to false.
-  }
+  // No request data is read here — the impersonation flag is fetched
+  // client-side by PostHogProvider so the PPR shell stays static.
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body
@@ -69,7 +57,7 @@ export default async function RootLayout({
           "bg-background text-foreground flex min-h-screen flex-col antialiased"
         )}
       >
-        <Providers isImpersonating={impersonating}>
+        <Providers>
           {/* Global dot-grid background pattern */}
           <div
             className="pointer-events-none fixed inset-0 -z-10 dark:hidden"

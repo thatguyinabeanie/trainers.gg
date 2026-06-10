@@ -37,19 +37,15 @@ function getQueryClient() {
 
 interface ProvidersProps {
   children: ReactNode;
-  isImpersonating?: boolean;
 }
 
-export function Providers({
-  children,
-  isImpersonating = false,
-}: ProvidersProps) {
+export function Providers({ children }: ProvidersProps) {
   const queryClient = getQueryClient();
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <PostHogProvider isImpersonating={isImpersonating}>
+        <PostHogProvider>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

@@ -1,25 +1,31 @@
 // apps/web/src/components/landing/hero-stats.tsx
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getPlatformOverview } from "@trainers/supabase/queries";
 import { CacheTags } from "@/lib/cache";
 
 // ---------------------------------------------------------------------------
-// Data fetching — ISR, revalidate every hour
+// Data fetching — cached, revalidate every hour
+//
+// Migration note: converted from unstable_cache to 'use cache' (Cache
+// Components). createServiceRoleClient() uses env-only service-role creds —
+// no user cookies involved — so it is safe inside a cache scope. The
+// try/catch→null is preserved inside the function to swallow transient
+// Discord/Supabase errors without breaking the landing page.
 // ---------------------------------------------------------------------------
 
-const getCachedPlatformOverview = unstable_cache(
-  async () => {
-    try {
-      const supabase = createServiceRoleClient();
-      return await getPlatformOverview(supabase);
-    } catch {
-      return null;
-    }
-  },
-  ["platform-overview"],
-  { revalidate: 3600, tags: [CacheTags.PLATFORM_OVERVIEW] }
-);
+async function getCachedPlatformOverview() {
+  "use cache";
+  cacheTag(CacheTags.PLATFORM_OVERVIEW);
+  cacheLife("hours"); // preserves old 3600s revalidate; expire=1d (hours profile)
+
+  try {
+    const supabase = createServiceRoleClient();
+    return await getPlatformOverview(supabase);
+  } catch {
+    return null;
+  }
+}
 
 function formatStat(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;

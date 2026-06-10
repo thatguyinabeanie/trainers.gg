@@ -4,6 +4,8 @@ description: Review SQL migration files for correctness, safety, RLS, and projec
 model: sonnet
 skills:
   - reviewing-database
+maxTurns: 20
+memory: project
 ---
 
 # Migration Reviewer

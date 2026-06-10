@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { unstable_cache } from "next/cache";
+import { cacheTag, cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createStaticClient } from "@/lib/supabase/server";
@@ -10,9 +10,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronLeft } from "lucide-react";
 import { formatDisplayUsername } from "@trainers/utils";
 import { AltTournamentHistory } from "../../../../alts/[handle]/alt-tournament-history";
-
-// On-demand revalidation only (no time-based)
-export const revalidate = false;
 
 interface AltPageProps {
   params: Promise<{
@@ -25,15 +22,13 @@ interface AltPageProps {
 // Data fetching
 // ============================================================================
 
-const getCachedAlt = (altHandle: string) =>
-  unstable_cache(
-    async () => {
-      const supabase = createStaticClient();
-      return getAltByHandle(supabase, altHandle);
-    },
-    [`alt-profile-${altHandle}`],
-    { tags: [CacheTags.player(altHandle)] }
-  )();
+async function getCachedAlt(altHandle: string) {
+  "use cache";
+  cacheTag(CacheTags.player(altHandle));
+  cacheLife("max");
+  const supabase = createStaticClient();
+  return getAltByHandle(supabase, altHandle);
+}
 
 // ============================================================================
 // Metadata
