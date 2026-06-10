@@ -1,6 +1,7 @@
 import {
   type FormatUsageTimeseriesPoint,
   type SourceUsageRow,
+  type SpeciesUsagePeriod,
 } from "@trainers/supabase";
 
 import { type SourceComparisonRow } from "./data-shared";
@@ -279,6 +280,125 @@ export function median(values: number[]): number {
     return sorted[mid]!;
   }
   return (sorted[mid - 1]! + sorted[mid]!) / 2;
+}
+
+// =============================================================================
+// Single-species timeline adapter (Task 8 / Feature 5)
+// =============================================================================
+
+/**
+ * Convert a species' detail-period buckets into the single-series
+ * `FormatUsageTimeseriesPoint[]` shape that `UsageLineChart` consumes.
+ *
+ * Each element maps to one period bucket:
+ * `{ periodStart, periodEnd, usage: { [species]: bucket.usagePct } }`
+ *
+ * Passing the result with `selectedSpecies={[species]}` renders exactly
+ * one line scoped to that species. Pure — no framework dependencies.
+ *
+ * @param detail - Trailing period buckets from `getSpeciesUsageDetail`,
+ *   ordered oldest → newest.
+ * @param species - The species slug (used as the key in the usage map).
+ */
+export function detailBucketsToTimeseriesPoints(
+  detail: SpeciesUsagePeriod[],
+  species: string
+): FormatUsageTimeseriesPoint[] {
+  return detail.map((bucket) => ({
+    periodStart: bucket.periodStart,
+    periodEnd: bucket.periodEnd,
+    usage: { [species]: bucket.usagePct },
+  }));
+}
+
+// =============================================================================
+// Radial ring layout (Task 7 / Feature 3)
+// =============================================================================
+
+/** A single bubble's position in the ring, expressed as percentages (0–100). */
+export interface RingPosition {
+  /** Horizontal center of the bubble, as a percentage of the container width. */
+  x: number;
+  /** Vertical center of the bubble, as a percentage of the container height. */
+  y: number;
+  /** Angle in degrees (0° = 12 o'clock, clockwise). */
+  angle: number;
+}
+
+/**
+ * Compute deterministic radial ring positions for N bubbles around a center.
+ *
+ * Angles are evenly spaced starting at 12 o'clock (−90° in unit-circle terms),
+ * rotating clockwise. The returned `x`/`y` values are percentages relative to
+ * a square container (0–100), so the component sets `left: x%`, `top: y%`.
+ *
+ * With `rings` > 1 (or when count > 12), bubbles are split across an inner
+ * and outer ring: inner ≤ 8, outer = remainder. This keeps bubbles readable
+ * while showing the full set.
+ *
+ * Pure trig — no external dependencies. Deterministic: same input → same output.
+ *
+ * @param count - Number of bubbles to place.
+ * @param opts.rings - Force two-ring layout when `count` > 12. Default: auto
+ *   (one ring for ≤12, two rings for >12).
+ */
+export function computeRingLayout(
+  count: number,
+  opts: { rings?: number } = {}
+): RingPosition[] {
+  if (count === 0) return [];
+
+  const forceRings = opts.rings;
+  const useDoubleRing =
+    forceRings === 2 || (forceRings === undefined && count > 12);
+
+  if (!useDoubleRing) {
+    // Single ring — evenly spaced, starting at 12 o'clock.
+    return Array.from({ length: count }, (_, i) => {
+      const angleDeg = i * (360 / count) - 90;
+      const angleRad = (angleDeg * Math.PI) / 180;
+      // Radius = 35% of the container so bubbles don't clip the edges.
+      const radius = 35;
+      const cx = 50;
+      const cy = 50;
+      return {
+        x: cx + radius * Math.cos(angleRad),
+        y: cy + radius * Math.sin(angleRad),
+        angle: angleDeg + 90,
+      };
+    });
+  }
+
+  // Double ring — inner holds up to 8, outer holds the rest.
+  const innerCount = Math.min(8, count);
+  const outerCount = count - innerCount;
+
+  const innerRadius = 25;
+  const outerRadius = 40;
+
+  const positions: RingPosition[] = [];
+
+  for (let i = 0; i < innerCount; i++) {
+    const angleDeg = i * (360 / innerCount) - 90;
+    const angleRad = (angleDeg * Math.PI) / 180;
+    positions.push({
+      x: 50 + innerRadius * Math.cos(angleRad),
+      y: 50 + innerRadius * Math.sin(angleRad),
+      angle: angleDeg + 90,
+    });
+  }
+
+  for (let i = 0; i < outerCount; i++) {
+    const angleDeg = i * (360 / outerCount) - 90;
+    const angleRad = (angleDeg * Math.PI) / 180;
+    positions.push({
+      x: 50 + outerRadius * Math.cos(angleRad),
+      y: 50 + outerRadius * Math.sin(angleRad),
+      angle: angleDeg + 90,
+    });
+  }
+
+  return positions;
 }
 
 export type Quadrant = "proven" | "overrated" | "sleeper" | "fringe";

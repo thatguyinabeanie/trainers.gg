@@ -60,3 +60,28 @@ export interface SourceComparisonRow {
 // Re-export SourceUsageRow so chart siblings can import from one place
 // without creating cross-sibling imports.
 export type { SourceUsageRow };
+
+// =============================================================================
+// Donut slice colors — fixed teal-family OKLCH categorical ramp
+// =============================================================================
+
+/**
+ * Fixed teal-family OKLCH categorical color ramp for donut chart slices.
+ *
+ * Used for dimension-value donuts (items, abilities, tera types, natures) —
+ * NOT for species coloring (use `assignColor()` for species). The last entry
+ * is a muted gray reserved for the "Other" (collapsed remainder) slice.
+ *
+ * Mirror of the `SOURCE_COLORS` style: distinguishable within the same
+ * teal/cyan family as the broader palette.
+ *
+ * 5 data slices + 1 "Other" gray = 6 entries.
+ */
+export const DONUT_SLICE_COLORS: string[] = [
+  "oklch(0.66 0.14 185)", // teal-cyan
+  "oklch(0.66 0.14 200)", // cyan-blue
+  "oklch(0.66 0.12 215)", // blue-teal
+  "oklch(0.60 0.13 170)", // deeper teal
+  "oklch(0.72 0.11 195)", // lighter teal
+  "oklch(0.60 0.04 200)", // muted gray-teal — "Other" slice
+];

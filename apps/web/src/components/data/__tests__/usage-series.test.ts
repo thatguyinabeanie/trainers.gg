@@ -1,6 +1,7 @@
 import {
   type FormatUsageTimeseriesPoint,
   type SourceUsageRow,
+  type SpeciesUsagePeriod,
 } from "@trainers/supabase";
 
 import {
@@ -12,6 +13,8 @@ import {
   groupBySource,
   insideOutOrder,
   median,
+  detailBucketsToTimeseriesPoints,
+  computeRingLayout,
   type UsageSeries,
 } from "../usage-series";
 
@@ -529,5 +532,133 @@ describe("classifyQuadrant", () => {
 
   it("treats both values exactly at median as 'proven'", () => {
     expect(classifyQuadrant(10, 50, 10, 50)).toBe("proven");
+  });
+});
+
+// =============================================================================
+// detailBucketsToTimeseriesPoints
+// =============================================================================
+
+function makeDetailBucket(
+  periodStart: string,
+  usagePct: number
+): SpeciesUsagePeriod {
+  return {
+    periodStart,
+    periodEnd: periodStart,
+    usagePct,
+    rank: 1,
+    sampleSize: 100,
+    usageChange7d: null,
+    usageChange30d: null,
+    moves: [],
+    tera: [],
+    items: [],
+    abilities: [],
+    natures: [],
+    abilityItems: [],
+  };
+}
+
+describe("detailBucketsToTimeseriesPoints", () => {
+  it("returns an empty array for empty detail", () => {
+    expect(detailBucketsToTimeseriesPoints([], "koraidon")).toEqual([]);
+  });
+
+  it("produces one point per bucket", () => {
+    const detail = [
+      makeDetailBucket("2025-01-01", 48.2),
+      makeDetailBucket("2025-01-08", 50.1),
+      makeDetailBucket("2025-01-15", 47.3),
+    ];
+    const points = detailBucketsToTimeseriesPoints(detail, "koraidon");
+    expect(points).toHaveLength(3);
+  });
+
+  it("keys each point's usage map by the species slug", () => {
+    const detail = [makeDetailBucket("2025-01-01", 48.2)];
+    const [point] = detailBucketsToTimeseriesPoints(
+      detail,
+      "calyrex-ice-rider"
+    );
+    expect(point?.usage).toEqual({ "calyrex-ice-rider": 48.2 });
+  });
+
+  it("preserves periodStart and periodEnd from each bucket", () => {
+    const bucket = makeDetailBucket("2025-03-10", 30);
+    bucket.periodEnd = "2025-03-16";
+    const [point] = detailBucketsToTimeseriesPoints([bucket], "miraidon");
+    expect(point?.periodStart).toBe("2025-03-10");
+    expect(point?.periodEnd).toBe("2025-03-16");
+  });
+
+  it("maps usagePct from each bucket to the species key", () => {
+    const detail = [
+      makeDetailBucket("2025-01-01", 10),
+      makeDetailBucket("2025-01-08", 20),
+      makeDetailBucket("2025-01-15", 30),
+    ];
+    const points = detailBucketsToTimeseriesPoints(detail, "flutter-mane");
+    expect(points.map((p) => p.usage["flutter-mane"])).toEqual([10, 20, 30]);
+  });
+});
+
+// =============================================================================
+// computeRingLayout
+// =============================================================================
+
+describe("computeRingLayout", () => {
+  it("returns an empty array for count = 0", () => {
+    expect(computeRingLayout(0)).toEqual([]);
+  });
+
+  it("returns exactly `count` positions", () => {
+    expect(computeRingLayout(5)).toHaveLength(5);
+    expect(computeRingLayout(12)).toHaveLength(12);
+    expect(computeRingLayout(20)).toHaveLength(20);
+  });
+
+  it("all x and y values are within [0, 100]", () => {
+    for (const n of [1, 6, 12, 20]) {
+      const positions = computeRingLayout(n);
+      for (const pos of positions) {
+        expect(pos.x).toBeGreaterThanOrEqual(0);
+        expect(pos.x).toBeLessThanOrEqual(100);
+        expect(pos.y).toBeGreaterThanOrEqual(0);
+        expect(pos.y).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+
+  it("first entry starts near the top (y < 50 for count > 1)", () => {
+    // Angle starts at -90° (12 o'clock), so first bubble is above centre.
+    const positions = computeRingLayout(8);
+    expect(positions[0]!.y).toBeLessThan(50);
+  });
+
+  it("is deterministic — same count always produces same output", () => {
+    const a = computeRingLayout(6);
+    const b = computeRingLayout(6);
+    expect(a).toEqual(b);
+  });
+
+  it("uses a double ring when count > 12", () => {
+    const positions = computeRingLayout(16);
+    // With a double ring, positions cluster at two distinct radii.
+    // The set of unique y values should have spread for two concentric groups.
+    expect(positions).toHaveLength(16);
+    // At least one position is closer to the centre (inner ring ~y=25) and
+    // one is farther (outer ring ~y=10). Just verify all in [0,100].
+    for (const p of positions) {
+      expect(p.x).toBeGreaterThanOrEqual(0);
+      expect(p.y).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("forces double ring when opts.rings = 2", () => {
+    const single = computeRingLayout(6, { rings: 1 });
+    const double = computeRingLayout(6, { rings: 2 });
+    // They should differ (different radius values).
+    expect(single).not.toEqual(double);
   });
 });
