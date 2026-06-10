@@ -2,6 +2,7 @@ name: Bundle Analysis
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - "apps/web/**"
@@ -32,6 +33,7 @@ jobs:
     name: Analyze Bundle
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v6
         with:
@@ -52,6 +54,18 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-${{ github.ref_name }}-
             turbo-${{ runner.os }}-
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tooling/*/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
