@@ -141,15 +141,7 @@ export {
   recordDeliveryFailure,
 } from "./discord";
 
-// Usage stats mutations (legacy rollup pipeline — kept until callers migrate)
-export {
-  computeEventUsage,
-  computeUsageRollups,
-  computeSourceUsage,
-  type UsageSource,
-} from "./usage";
-
-// Team slots mutations (new fact-table pipeline — replaces event_usage rollup)
+// Team slots mutations (fact-table pipeline — replaces the retired rollup layer)
 export {
   compileEventTeamSlots,
   compileSourceTeamSlots,

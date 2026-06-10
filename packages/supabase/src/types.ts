@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   limitless: {
     Tables: {
       match_results: {
@@ -1242,48 +1217,6 @@ export type Database = {
         }
         Relationships: []
       }
-      event_usage: {
-        Row: {
-          computed_at: string
-          details: Json
-          division: string | null
-          event_date: string
-          event_key: string
-          format: string
-          id: number
-          source: string
-          species: string
-          team_count: number
-          total_teams: number
-        }
-        Insert: {
-          computed_at?: string
-          details?: Json
-          division?: string | null
-          event_date: string
-          event_key: string
-          format: string
-          id?: never
-          source: string
-          species: string
-          team_count: number
-          total_teams: number
-        }
-        Update: {
-          computed_at?: string
-          details?: Json
-          division?: string | null
-          event_date?: string
-          event_key?: string
-          format?: string
-          id?: never
-          source?: string
-          species?: string
-          team_count?: number
-          total_teams?: number
-        }
-        Relationships: []
-      }
       feature_flags: {
         Row: {
           created_at: string
@@ -1399,42 +1332,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      format_meta_stats: {
-        Row: {
-          computed_at: string
-          format: string
-          id: number
-          period_end: string
-          period_start: string
-          period_type: string
-          source: string
-          total_teams: number
-          total_tournaments: number
-        }
-        Insert: {
-          computed_at?: string
-          format: string
-          id?: never
-          period_end: string
-          period_start: string
-          period_type?: string
-          source?: string
-          total_teams: number
-          total_tournaments: number
-        }
-        Update: {
-          computed_at?: string
-          format?: string
-          id?: never
-          period_end?: string
-          period_start?: string
-          period_type?: string
-          source?: string
-          total_teams?: number
-          total_tournaments?: number
-        }
-        Relationships: []
       }
       group_roles: {
         Row: {
@@ -2005,106 +1902,6 @@ export type Database = {
           tera_type?: string | null
         }
         Relationships: []
-      }
-      pokemon_detail_stats: {
-        Row: {
-          abilities: Json
-          ability_items: Json
-          id: number
-          items: Json
-          meta_id: number
-          moves: Json
-          natures: Json
-          species: string
-          spreads: Json
-          teammates: Json
-          tera_types: Json
-        }
-        Insert: {
-          abilities?: Json
-          ability_items?: Json
-          id?: never
-          items?: Json
-          meta_id: number
-          moves?: Json
-          natures?: Json
-          species: string
-          spreads?: Json
-          teammates?: Json
-          tera_types?: Json
-        }
-        Update: {
-          abilities?: Json
-          ability_items?: Json
-          id?: never
-          items?: Json
-          meta_id?: number
-          moves?: Json
-          natures?: Json
-          species?: string
-          spreads?: Json
-          teammates?: Json
-          tera_types?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pokemon_detail_stats_meta_id_fkey"
-            columns: ["meta_id"]
-            isOneToOne: false
-            referencedRelation: "format_meta_stats"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pokemon_usage_stats: {
-        Row: {
-          conversion_rate: number | null
-          id: number
-          meta_id: number
-          rank: number
-          sample_size: number
-          species: string
-          usage_change_30d: number | null
-          usage_change_7d: number | null
-          usage_pct: number
-          usage_pct_top_cut: number | null
-          usage_pct_top8: number | null
-        }
-        Insert: {
-          conversion_rate?: number | null
-          id?: never
-          meta_id: number
-          rank: number
-          sample_size: number
-          species: string
-          usage_change_30d?: number | null
-          usage_change_7d?: number | null
-          usage_pct: number
-          usage_pct_top_cut?: number | null
-          usage_pct_top8?: number | null
-        }
-        Update: {
-          conversion_rate?: number | null
-          id?: never
-          meta_id?: number
-          rank?: number
-          sample_size?: number
-          species?: string
-          usage_change_30d?: number | null
-          usage_change_7d?: number | null
-          usage_pct?: number
-          usage_pct_top_cut?: number | null
-          usage_pct_top8?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pokemon_usage_stats_meta_id_fkey"
-            columns: ["meta_id"]
-            isOneToOne: false
-            referencedRelation: "format_meta_stats"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       rate_limits: {
         Row: {
@@ -3645,27 +3442,6 @@ export type Database = {
           },
         ]
       }
-      usage_dirty: {
-        Row: {
-          dirty_since: string
-          format: string
-          source: string
-          updated_at: string
-        }
-        Insert: {
-          dirty_since: string
-          format: string
-          source: string
-          updated_at?: string
-        }
-        Update: {
-          dirty_since?: string
-          format?: string
-          source?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       user_group_roles: {
         Row: {
           created_at: string | null
@@ -4824,9 +4600,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   limitless: {
     Enums: {},
   },

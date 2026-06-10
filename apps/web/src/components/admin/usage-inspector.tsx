@@ -12,7 +12,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { formatTimeAgo } from "@trainers/utils";
 import { getActiveFormats, VGC_FORMATS } from "@trainers/pokemon";
 import {
   getSpeciesUsage,
@@ -114,34 +113,31 @@ export function UsageInspector() {
   const [expandedSpecies, setExpandedSpecies] = useState<string | null>(null);
 
   // ---------------------------------------------------------------------------
-  // Query 1 — latest bucket meta (direct table read for stat strip)
-  // ---------------------------------------------------------------------------
-  const { data: metaBucket, isLoading: metaLoading } = useSupabaseQuery(
-    async (sb) => {
-      const { data, error } = await sb
-        .from("format_meta_stats")
-        .select(
-          "id, period_start, period_end, total_teams, total_tournaments, computed_at"
-        )
-        .eq("format", format)
-        .eq("source", source)
-        .eq("period_type", periodType)
-        .order("period_start", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    [format, source, periodType]
-  );
-
-  // ---------------------------------------------------------------------------
-  // Query 2 — species ranking
+  // Query 1 — species ranking (also drives the stat strip via first-row detail)
   // ---------------------------------------------------------------------------
   const { data: usageRows, isLoading: usageLoading } = useSupabaseQuery(
     async (sb) => getSpeciesUsage(sb, { format, source, periodType }),
     [format, source, periodType]
   );
+
+  // ---------------------------------------------------------------------------
+  // Query 2 — period/sample meta from the top species (drives the stat strip)
+  // ---------------------------------------------------------------------------
+  const topSpecies = usageRows?.[0]?.species ?? null;
+  const { data: topDetail, isLoading: metaLoading } = useSupabaseQuery(
+    async (sb): Promise<SpeciesUsagePeriod[]> => {
+      if (!topSpecies) return [];
+      return getSpeciesUsageDetail(sb, {
+        format,
+        species: topSpecies,
+        source,
+        periodType,
+        limit: 1,
+      });
+    },
+    [format, source, periodType, topSpecies]
+  );
+  const metaBucket = topDetail?.[0] ?? null;
 
   // ---------------------------------------------------------------------------
   // Query 3 — species detail drill-down (only when a row is expanded)
@@ -251,29 +247,27 @@ export function UsageInspector() {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="bg-muted/30 rounded-lg border p-3">
-            <p className="text-muted-foreground text-xs">Teams</p>
+            <p className="text-muted-foreground text-xs">Sample Size</p>
             <p className="text-lg font-semibold tabular-nums">
-              {metaBucket.total_teams?.toLocaleString() ?? "—"}
+              {metaBucket.sampleSize?.toLocaleString() ?? "—"}
             </p>
           </div>
           <div className="bg-muted/30 rounded-lg border p-3">
-            <p className="text-muted-foreground text-xs">Tournaments</p>
+            <p className="text-muted-foreground text-xs">Species</p>
             <p className="text-lg font-semibold tabular-nums">
-              {metaBucket.total_tournaments?.toLocaleString() ?? "—"}
+              {usageRows?.length?.toLocaleString() ?? "—"}
             </p>
           </div>
           <div className="bg-muted/30 rounded-lg border p-3">
             <p className="text-muted-foreground text-xs">Period</p>
             <p className="text-sm font-medium tabular-nums">
-              {metaBucket.period_start} → {metaBucket.period_end}
+              {metaBucket.periodStart} → {metaBucket.periodEnd}
             </p>
           </div>
           <div className="bg-muted/30 rounded-lg border p-3">
-            <p className="text-muted-foreground text-xs">Computed</p>
+            <p className="text-muted-foreground text-xs">Top Species</p>
             <p className="text-sm font-medium">
-              {metaBucket.computed_at
-                ? formatTimeAgo(metaBucket.computed_at)
-                : "—"}
+              {usageRows?.[0]?.species ?? "—"}
             </p>
           </div>
         </div>
