@@ -150,4 +150,8 @@ export {
 } from "./usage";
 
 // Team slots mutations (new fact-table pipeline — replaces event_usage rollup)
-export { compileEventTeamSlots, compileSourceTeamSlots } from "./team-slots";
+export {
+  compileEventTeamSlots,
+  compileSourceTeamSlots,
+  type TeamSlotSource,
+} from "./team-slots";

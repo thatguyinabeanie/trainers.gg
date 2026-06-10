@@ -31,6 +31,10 @@ import {
   type TeamSlotSource,
 } from "../usage/compile";
 
+// Re-exported so consumers get the source union from the package barrel
+// without reaching into usage/compile internals.
+export { type TeamSlotSource } from "../usage/compile";
+
 // =============================================================================
 // Public API
 // =============================================================================
