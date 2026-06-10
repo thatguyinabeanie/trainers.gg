@@ -1241,14 +1241,18 @@ describe("getSpeciesTeammates", () => {
       data: rowsWithNullMatrix,
       error: null,
     });
-    await expect(
-      getSpeciesTeammates(client, {
-        format: "gen9vgc2025regg",
-        species: "miraidon",
-      })
-    ).rejects.toThrow(
-      'matrix jsonb shape mismatch for species="miraidon" format="gen9vgc2025regg"'
-    );
+    // The CodeQL js/tainted-format-string fix keeps the message constant and
+    // attaches species/format as structured properties instead of interpolating
+    // them into the message — assert both the message and the attached context.
+    const nullMatrixCall = getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    await expect(nullMatrixCall).rejects.toThrow("matrix jsonb shape mismatch");
+    await expect(nullMatrixCall).rejects.toMatchObject({
+      species: "miraidon",
+      format: "gen9vgc2025regg",
+    });
   });
 
   it("throws on shape mismatch when the matrix jsonb is malformed (missing order array)", async () => {
@@ -1260,14 +1264,15 @@ describe("getSpeciesTeammates", () => {
       data: rowsWithBadMatrix,
       error: null,
     });
-    await expect(
-      getSpeciesTeammates(client, {
-        format: "gen9vgc2025regg",
-        species: "miraidon",
-      })
-    ).rejects.toThrow(
-      'matrix jsonb shape mismatch for species="miraidon" format="gen9vgc2025regg"'
-    );
+    const badMatrixCall = getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    await expect(badMatrixCall).rejects.toThrow("matrix jsonb shape mismatch");
+    await expect(badMatrixCall).rejects.toMatchObject({
+      species: "miraidon",
+      format: "gen9vgc2025regg",
+    });
   });
 
   it("coerces bigint-like string focal_players, pair_count, and pair_pct via Number()", async () => {
