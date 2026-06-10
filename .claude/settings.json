@@ -2,7 +2,6 @@
   "permissions": {
     "allow": [
       "Bash(PGPASSWORD=postgres psql:*)",
-      "Bash(bash ~/.claude/plugins/cache/claude-plugins-official/superpowers/*/skills/brainstorming/scripts/start-server.sh --project-dir /Users/beanie/source/trainers-gg-dashboard 2>&1)",
       "mcp__plugin_playwright_playwright__browser_navigate",
       "mcp__plugin_playwright_playwright__browser_click",
       "mcp__plugin_playwright_playwright__browser_fill_form",
@@ -59,14 +58,12 @@
       "Bash(pnpm --filter @trainers/pokemon test)",
       "Bash(pnpm:*)",
       "Bash(npm test:*)",
-      "Bash(git -C /Users/beanie/source/the-builder-polish show HEAD:packages/pokemon/src/__tests__/team-validator.test.ts)",
       "Bash(git:*)",
       "Bash(npm run:*)",
       "WebFetch(domain:supabase.com)",
       "Bash(command -v yq)",
       "Bash(yq eval *)",
       "Bash(command -v actionlint)",
-      "Bash(actionlint /Users/beanie/source/the-builder-polish/.github/actions/supabase-branch/action.yml)",
       "Bash(bash -n /tmp/supabase-branch-run.sh)",
       "WebFetch(domain:www.videogameschronicle.com)",
       "WebFetch(domain:www.pokemon.com)",
@@ -126,7 +123,7 @@
           },
           {
             "type": "command",
-            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) git -C /Users/beanie/source/trainers.gg ls-files --error-unmatch \"$f\" 2>/dev/null && echo \"BLOCK: Cannot edit committed migration $f — create a new migration instead\" && exit 2;; esac; done"
+            "command": "REPO_ROOT=\"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}\"; for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) git -C \"$REPO_ROOT\" ls-files --error-unmatch \"$f\" 2>/dev/null && echo \"BLOCK: Cannot edit committed migration $f — create a new migration instead\" && exit 2;; esac; done"
           },
           {
             "type": "command",
