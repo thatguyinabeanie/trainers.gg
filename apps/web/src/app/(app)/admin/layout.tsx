@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { requireSiteAdmin } from "@/lib/auth/require-admin";
 import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
@@ -6,45 +6,43 @@ import { getImpersonationTarget } from "@/lib/impersonation/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { AdminNav } from "./admin-nav";
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  // Defense-in-depth: verify admin role server-side (proxy also checks)
+/**
+ * Async guard rendered under Suspense so the layout shell stays static under
+ * cacheComponents — reading cookies directly in the layout body would block
+ * every /admin route from prerendering. Primary route protection lives in
+ * proxy.ts; this is the server-side defense-in-depth check, and it still
+ * redirects non-admins when it resolves.
+ */
+async function AdminGuard() {
   await requireSiteAdmin();
 
   // Check if admin is currently impersonating someone
-  let impersonationInfo: {
-    targetUsername: string;
-    startedAt: string;
-  } | null = null;
-
   const target = await getImpersonationTarget();
-  if (target) {
-    const supabase = createServiceRoleClient();
-    const { data: targetUser } = await supabase
-      .from("users")
-      .select("username")
-      .eq("id", target.targetUserId)
-      .maybeSingle();
+  if (!target) return null;
 
-    if (targetUser) {
-      impersonationInfo = {
-        targetUsername: targetUser.username ?? "unknown",
-        startedAt: target.startedAt,
-      };
-    }
-  }
+  const supabase = createServiceRoleClient();
+  const { data: targetUser } = await supabase
+    .from("users")
+    .select("username")
+    .eq("id", target.targetUserId)
+    .maybeSingle();
+
+  if (!targetUser) return null;
 
   return (
+    <ImpersonationBanner
+      targetUsername={targetUser.username ?? "unknown"}
+      startedAt={target.startedAt}
+    />
+  );
+}
+
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  return (
     <>
-      {impersonationInfo && (
-        <ImpersonationBanner
-          targetUsername={impersonationInfo.targetUsername}
-          startedAt={impersonationInfo.startedAt}
-        />
-      )}
+      <Suspense fallback={null}>
+        <AdminGuard />
+      </Suspense>
       <PageContainer>
         <div className="w-full py-8">
           <div className="mb-8 flex items-start justify-between">
