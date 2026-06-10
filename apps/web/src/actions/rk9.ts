@@ -10,6 +10,8 @@ import {
   parseArchivedEventsPage,
   parseTeamListPage,
 } from "@/lib/rk9/scraper";
+import { RK9_QUEUEABLE } from "@trainers/data-sources";
+
 import { syncEvents } from "@/lib/rk9";
 import type { RK9Event } from "@/lib/rk9";
 import {
@@ -516,7 +518,7 @@ export async function queueRk9Event(
         import_attempts: 0,
       })
       .eq("event_id", eventId)
-      .in("import_status", ["pending", "failed"])
+      .in("import_status", [...RK9_QUEUEABLE])
       .select("event_id");
 
     if (error) throw error;
@@ -577,7 +579,7 @@ export async function batchQueueRk9Events(
           import_attempts: 0,
         })
         .in("event_id", chunk)
-        .in("import_status", ["pending", "failed"])
+        .in("import_status", [...RK9_QUEUEABLE])
         .select("event_id");
 
       if (error) throw error;
@@ -679,6 +681,9 @@ export async function unqueueRk9Events(
  * (b) Events at `import_status = 'roster'` with `import_requested_at` set and
  *     a now-cleared or stale lease — they were partially imported and abandoned.
  *     These are moved back to `'queued'` so the worker re-enters the roster stage.
+ *
+ * Does not reset import_attempts — the retry budget is preserved; use requeue
+ * (failed → queued via requeueFailedRk9Events) to grant a fresh budget.
  *
  * Returns the total number of rows affected across both updates.
  */

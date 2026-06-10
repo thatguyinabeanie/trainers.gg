@@ -661,14 +661,16 @@ describe("processRk9Queue", () => {
       // processRk9Queue heartbeat 2: [11]
       // runTeamsBatch call 3: [12] teams status update, [13] batch update
       // processRk9Queue heartbeat 3: [14]
-      // (no-progress guard fires → break inner loop)
-      // finally: [15] lease release
-      // Next iteration: [16] primary pick → empty, [17] fallback → empty
-      // Count query: [18] count
+      // (no-progress guard fires → new: read import_attempts, write no-progress status)
+      // [15] no-progress: SELECT import_attempts
+      // [16] no-progress: UPDATE { import_status, import_error, import_attempts }
+      // finally: [17] lease release
+      // Next iteration: [18] primary pick → empty, [19] fallback → empty
+      // Count query: [20] count
       eventsResponses = [
         { data: { event_id: "evt-1", import_status: "queued" }, error: null }, // [0]
         { data: { event_id: "evt-1" }, error: null }, // [1] claim
-        { data: { import_attempts: 0 }, error: null }, // [2] attempts
+        { data: { import_attempts: 0 }, error: null }, // [2] attempts (queued stage)
         { data: null, error: null }, // [3] roster update
         { data: { date_start: "2024-01-01" }, error: null }, // [4] date_start
         { data: { import_status: "teams" }, error: null }, // [5] re-read
@@ -681,10 +683,12 @@ describe("processRk9Queue", () => {
         { data: null, error: null }, // [12] teams status update (call 3)
         { data: null, error: null }, // [13] batch update (call 3)
         { data: null, error: null }, // [14] heartbeat (call 3)
-        { data: null, error: null }, // [15] lease release
-        { data: null, error: null }, // [16] next primary pick
-        { data: null, error: null }, // [17] fallback pick
-        { data: null, error: null, count: 0 }, // [18] count
+        { data: { import_attempts: 1 }, error: null }, // [15] no-progress: read attempts (below cap → 'teams')
+        { data: null, error: null }, // [16] no-progress: write status update
+        { data: null, error: null }, // [17] lease release
+        { data: null, error: null }, // [18] next primary pick
+        { data: null, error: null }, // [19] fallback pick
+        { data: null, error: null, count: 0 }, // [20] count
       ];
 
       jest.useFakeTimers();
@@ -714,6 +718,183 @@ describe("processRk9Queue", () => {
         );
         // Event counts as touched (we entered the event processing body)
         expect(result.eventsTouched).toBe(1);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // No-progress escalation: attempts below cap → stays 'teams'
+    // -------------------------------------------------------------------------
+    it("increments import_attempts and keeps status='teams' when no-progress fires but attempts < cap", async () => {
+      // 30 pending standings with all team fetches throwing (batchScraped=0 each call)
+      const pendingStandings = Array.from({ length: 30 }, (_, i) => ({
+        id: i + 1,
+        roster_entry_id: `entry-${i}`,
+        team_scrape_attempted_at: null as string | null,
+      }));
+
+      standingsResponses = [
+        { data: pendingStandings, error: null },
+        { data: [], error: null },
+        { data: pendingStandings, error: null },
+        { data: [], error: null },
+        { data: pendingStandings, error: null },
+        { data: [], error: null },
+      ];
+
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if ((url as string).includes("/teamlist/")) {
+          return Promise.reject(new Error("connection refused"));
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: () => Promise.resolve("<html></html>"),
+        });
+      });
+
+      // Sequence mirrors the "breaks out" test above, but [15] returns
+      // import_attempts: 1 (below the 3-attempt cap).
+      eventsResponses = [
+        { data: { event_id: "evt-np", import_status: "queued" }, error: null }, // [0] pick
+        { data: { event_id: "evt-np" }, error: null }, // [1] claim
+        { data: { import_attempts: 0 }, error: null }, // [2] queued-stage attempts
+        { data: null, error: null }, // [3] roster update
+        { data: { date_start: "2024-01-01" }, error: null }, // [4] date_start
+        { data: { import_status: "teams" }, error: null }, // [5] re-read
+        { data: null, error: null }, // [6] teams update (batch 1)
+        { data: null, error: null }, // [7] batch status update (batch 1)
+        { data: null, error: null }, // [8] heartbeat (batch 1)
+        { data: null, error: null }, // [9] teams update (batch 2)
+        { data: null, error: null }, // [10] batch status update (batch 2)
+        { data: null, error: null }, // [11] heartbeat (batch 2)
+        { data: null, error: null }, // [12] teams update (batch 3)
+        { data: null, error: null }, // [13] batch status update (batch 3)
+        { data: null, error: null }, // [14] heartbeat (batch 3)
+        { data: { import_attempts: 1 }, error: null }, // [15] no-progress: read attempts (1 < 3)
+        { data: null, error: null }, // [16] no-progress: write status
+        { data: null, error: null }, // [17] lease release
+        { data: null, error: null }, // [18] next primary pick
+        { data: null, error: null }, // [19] fallback pick
+        { data: null, error: null, count: 0 }, // [20] count
+      ];
+
+      jest.useFakeTimers();
+      try {
+        const supabase = buildSupabaseMock();
+        const promise = processRk9Queue(supabase as never, {
+          deadline: FUTURE(),
+          teamsPerTick: 5,
+          concurrency: 1,
+        });
+        await jest.runAllTimersAsync();
+        await promise;
+
+        // Should have written import_attempts=2 and import_status='teams' (not 'failed')
+        const updateCalls = (eventsChain.update as jest.Mock).mock
+          .calls as Array<[Record<string, unknown>]>;
+        const noProgressUpdate = updateCalls.find(
+          ([payload]) =>
+            payload.import_error ===
+            "No team-scrape progress after 3 consecutive batches"
+        );
+        expect(noProgressUpdate).toBeDefined();
+        expect(noProgressUpdate?.[0]).toMatchObject({
+          import_status: "teams",
+          import_attempts: 2,
+        });
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // No-progress escalation: attempts at cap → escalates to 'failed'
+    // -------------------------------------------------------------------------
+    it("sets import_status='failed' when no-progress fires and attempts reaches the cap (3)", async () => {
+      const pendingStandings = Array.from({ length: 30 }, (_, i) => ({
+        id: i + 1,
+        roster_entry_id: `entry-${i}`,
+        team_scrape_attempted_at: null as string | null,
+      }));
+
+      standingsResponses = [
+        { data: pendingStandings, error: null },
+        { data: [], error: null },
+        { data: pendingStandings, error: null },
+        { data: [], error: null },
+        { data: pendingStandings, error: null },
+        { data: [], error: null },
+      ];
+
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if ((url as string).includes("/teamlist/")) {
+          return Promise.reject(new Error("connection refused"));
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          text: () => Promise.resolve("<html></html>"),
+        });
+      });
+
+      // [15] returns import_attempts: 2 → newAttempts=3 → status='failed'
+      eventsResponses = [
+        {
+          data: { event_id: "evt-fail", import_status: "queued" },
+          error: null,
+        }, // [0]
+        { data: { event_id: "evt-fail" }, error: null }, // [1] claim
+        { data: { import_attempts: 0 }, error: null }, // [2] queued-stage attempts
+        { data: null, error: null }, // [3] roster update
+        { data: { date_start: "2024-01-01" }, error: null }, // [4] date_start
+        { data: { import_status: "teams" }, error: null }, // [5] re-read
+        { data: null, error: null }, // [6] teams update (batch 1)
+        { data: null, error: null }, // [7] batch status update (batch 1)
+        { data: null, error: null }, // [8] heartbeat (batch 1)
+        { data: null, error: null }, // [9] teams update (batch 2)
+        { data: null, error: null }, // [10] batch status update (batch 2)
+        { data: null, error: null }, // [11] heartbeat (batch 2)
+        { data: null, error: null }, // [12] teams update (batch 3)
+        { data: null, error: null }, // [13] batch status update (batch 3)
+        { data: null, error: null }, // [14] heartbeat (batch 3)
+        { data: { import_attempts: 2 }, error: null }, // [15] no-progress: read attempts (2 < 3 before +1 → 3 = cap)
+        { data: null, error: null }, // [16] no-progress: write failed status
+        { data: null, error: null }, // [17] lease release
+        { data: null, error: null }, // [18] next primary pick
+        { data: null, error: null }, // [19] fallback pick
+        { data: null, error: null, count: 0 }, // [20] count
+      ];
+
+      jest.useFakeTimers();
+      try {
+        const supabase = buildSupabaseMock();
+        const promise = processRk9Queue(supabase as never, {
+          deadline: FUTURE(),
+          teamsPerTick: 5,
+          concurrency: 1,
+        });
+        await jest.runAllTimersAsync();
+        await promise;
+
+        // Should have written import_status='failed' with the no-progress error
+        const updateCalls = (eventsChain.update as jest.Mock).mock
+          .calls as Array<[Record<string, unknown>]>;
+        const failedUpdate = updateCalls.find(
+          ([payload]) =>
+            payload.import_status === "failed" &&
+            payload.import_error ===
+              "No team-scrape progress after 3 consecutive batches"
+        );
+        expect(failedUpdate).toBeDefined();
+        expect(failedUpdate?.[0]).toMatchObject({
+          import_status: "failed",
+          import_attempts: 3,
+          import_error: "No team-scrape progress after 3 consecutive batches",
+        });
       } finally {
         jest.useRealTimers();
       }

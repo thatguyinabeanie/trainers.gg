@@ -235,9 +235,8 @@ export async function unqueueLimitlessTournaments(
  * terminal status. This action resets any such row whose `import_started_at`
  * is older than 10 minutes back to `'queued'` so the worker will retry it.
  *
- * NOTE: Unlike the worker's automatic stale-recovery path (which increments
- * `import_attempts`), this is an explicit admin action — it intentionally
- * leaves `import_attempts` unchanged so the row gets a full retry budget.
+ * Does not reset import_attempts — the retry budget is preserved; use requeue
+ * (failed → queued via requeueFailedLimitlessTournaments) to grant a fresh budget.
  */
 export async function resetStuckLimitlessImports(): Promise<
   ActionResult<{ reset: number }>

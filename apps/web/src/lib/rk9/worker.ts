@@ -923,7 +923,51 @@ export async function processRk9Queue(
         // Track no-progress passes (all-failure or completely stuck)
         if (r.batchScraped === 0) {
           noProgress++;
-          if (noProgress >= 3) break;
+          if (noProgress >= 3) {
+            // No team-scrape progress after 3 consecutive batches. This is a
+            // terminal condition for the current attempt — mirror the queued-stage
+            // max-attempts ceiling (3) used above: if attempts has reached the cap,
+            // mark the event 'failed' (retryable via failed→queued requeue);
+            // otherwise leave the row at 'teams' so the next tick can retry.
+            const { data: stuckRow, error: stuckReadErr } = await supabase
+              .schema("rk9")
+              .from("events")
+              .select("import_attempts")
+              .eq("event_id", eventId)
+              .maybeSingle();
+
+            if (stuckReadErr) {
+              console.error(
+                `[rk9-queue] Failed to read import_attempts for stuck event ${eventId}: ${stuckReadErr.message}`
+              );
+            }
+
+            const prevAttempts = stuckRow?.import_attempts ?? 0;
+            const newAttempts = prevAttempts + 1;
+
+            const noProgressError =
+              "No team-scrape progress after 3 consecutive batches";
+
+            const noProgressStatus = newAttempts >= 3 ? "failed" : "teams";
+
+            const { error: noProgressUpdateErr } = await supabase
+              .schema("rk9")
+              .from("events")
+              .update({
+                import_status: noProgressStatus,
+                import_error: noProgressError,
+                import_attempts: newAttempts,
+              })
+              .eq("event_id", eventId);
+
+            if (noProgressUpdateErr) {
+              console.error(
+                `[rk9-queue] Failed to write no-progress status for ${eventId}: ${noProgressUpdateErr.message}`
+              );
+            }
+
+            break;
+          }
         } else {
           noProgress = 0;
         }
