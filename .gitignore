@@ -115,3 +115,10 @@ docs/superpowers
 .claude/scheduled_tasks.lock
 .superpowers/
 .reference-repos
+
+# Nested CLAUDE.md orientation cards are committed artifacts (a global
+# ~/.config/git/.gitignore "CLAUDE.md" rule would otherwise drop them).
+# Re-include the repo's tracked cards so teammates with that global rule keep them.
+!/apps/web/CLAUDE.md
+!/apps/mobile/CLAUDE.md
+!/packages/supabase/CLAUDE.md
