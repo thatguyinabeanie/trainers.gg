@@ -17,6 +17,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `implementing-tournaments`       | Swiss pairings, standings, brackets, adapters                                |
 | `parsing-pokemon`                | Team parsing, legality validation, type effectiveness                        |
 | `using-utils`                    | `getLabel()`, `getErrorMessage()`, permissions, formatting                   |
+| `working-with-usage-data`        | team_slots, usage RPCs, per-source tournament data, /data page               |
 | `tracking-analytics`             | PostHog event constants, adding new events                                   |
 | `integrating-bluesky`            | Bluesky/AT Protocol, DID resolution, public agent                            |
 | `writing-tests`                  | Fishery factories, Supabase/AT Protocol mocks, Jest config                   |
