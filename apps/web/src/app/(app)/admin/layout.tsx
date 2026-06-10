@@ -53,7 +53,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               </p>
             </div>
           </div>
-          <AdminNav />
+          {/* usePathname() inside AdminNav is a request-time read — it needs
+              its own Suspense boundary to keep the admin shell prerenderable. */}
+          <Suspense fallback={<div className="mb-8 h-10 border-b" />}>
+            <AdminNav />
+          </Suspense>
           {children}
         </div>
       </PageContainer>
