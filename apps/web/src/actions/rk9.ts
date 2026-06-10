@@ -473,6 +473,287 @@ export async function scrapeRk9TeamForStanding(
 }
 
 // ---------------------------------------------------------------------------
+// Action: Queue management
+// ---------------------------------------------------------------------------
+
+/**
+ * Queue a single RK9 event for background import.
+ *
+ * Applies a conditional update: only events currently at `import_status IN
+ * ('pending', 'failed')` are moved to `'queued'`. Events already at
+ * `'roster'`, `'teams'`, or `'completed'` are left untouched — the worker
+ * handles in-flight states, and there is no benefit to re-queuing them.
+ *
+ * @returns `{ queued: 1 }` when the event was queued, `{ queued: 0 }` if it
+ *   was already in-flight/completed or not found.
+ */
+export async function queueRk9Event(
+  eventId: string
+): Promise<ActionResult<{ queued: number }>> {
+  try {
+    assertValidEventId(eventId);
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const supabase = createServiceRoleClient();
+
+    const { data: updated, error } = await supabase
+      .schema("rk9")
+      .from("events")
+      .update({
+        import_status: "queued",
+        import_requested_at: new Date().toISOString(),
+        import_error: null,
+        import_attempts: 0,
+      })
+      .eq("event_id", eventId)
+      .in("import_status", ["pending", "failed"])
+      .select("event_id");
+
+    if (error) throw error;
+    return { success: true, data: { queued: updated?.length ?? 0 } };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to queue event"),
+    };
+  }
+}
+
+/**
+ * Batch-queue multiple RK9 events for background import.
+ *
+ * Same conditional semantics as `queueRk9Event`: only events at
+ * `'pending'` or `'failed'` are moved to `'queued'`. Events already
+ * in-flight (`'roster'`, `'teams'`) or `'completed'` are untouched.
+ *
+ * Chunks IDs into batches of ≤100 to stay under the PostgREST URI limit.
+ * Throws on any chunk error so the caller sees a hard failure rather than
+ * a silent partial-update.
+ */
+export async function batchQueueRk9Events(
+  eventIds: string[]
+): Promise<ActionResult<{ queued: number }>> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    if (eventIds.length === 0) {
+      return { success: true, data: { queued: 0 } };
+    }
+
+    const supabase = createServiceRoleClient();
+    const CHUNK_SIZE = 100; // PostgREST .in() filter is encoded in the URL — keep under 100
+    let totalQueued = 0;
+
+    for (let i = 0; i < eventIds.length; i += CHUNK_SIZE) {
+      const chunk = eventIds.slice(i, i + CHUNK_SIZE);
+
+      const { data: updated, error } = await supabase
+        .schema("rk9")
+        .from("events")
+        .update({
+          import_status: "queued",
+          import_requested_at: new Date().toISOString(),
+          import_error: null,
+          import_attempts: 0,
+        })
+        .in("event_id", chunk)
+        .in("import_status", ["pending", "failed"])
+        .select("event_id");
+
+      if (error) throw error;
+      totalQueued += updated?.length ?? 0;
+    }
+
+    return { success: true, data: { queued: totalQueued } };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to batch queue events"),
+    };
+  }
+}
+
+/**
+ * Un-queue RK9 events by resetting their import state back to `'pending'`.
+ *
+ * - When `eventIds` is provided: only un-queue the given IDs (chunked into
+ *   batches of ≤100 to stay under the PostgREST URI limit). Only rows
+ *   currently at `import_status = 'queued'` are affected.
+ * - When `eventIds` is omitted: un-queue ALL rows with `import_status = 'queued'`
+ *   in a single update.
+ */
+export async function unqueueRk9Events(
+  eventIds?: string[]
+): Promise<ActionResult<{ unqueued: number }>> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const supabase = createServiceRoleClient();
+    const CHUNK_SIZE = 100; // PostgREST .in() filter is encoded in the URL — keep under 100
+
+    if (!eventIds) {
+      // No ids given — un-queue everything currently queued in one shot.
+      const { data: updated, error } = await supabase
+        .schema("rk9")
+        .from("events")
+        .update({
+          import_status: "pending",
+          import_requested_at: null,
+        })
+        .eq("import_status", "queued")
+        .select("event_id");
+
+      if (error) throw error;
+      return { success: true, data: { unqueued: updated?.length ?? 0 } };
+    }
+
+    if (eventIds.length === 0) {
+      return { success: true, data: { unqueued: 0 } };
+    }
+
+    let totalUnqueued = 0;
+
+    for (let i = 0; i < eventIds.length; i += CHUNK_SIZE) {
+      const chunk = eventIds.slice(i, i + CHUNK_SIZE);
+
+      const { data: updated, error } = await supabase
+        .schema("rk9")
+        .from("events")
+        .update({
+          import_status: "pending",
+          import_requested_at: null,
+        })
+        .in("event_id", chunk)
+        .eq("import_status", "queued")
+        .select("event_id");
+
+      if (error) throw error;
+      totalUnqueued += updated?.length ?? 0;
+    }
+
+    return { success: true, data: { unqueued: totalUnqueued } };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to un-queue events"),
+    };
+  }
+}
+
+/**
+ * Recover RK9 events stuck mid-import due to worker crashes or timeouts.
+ *
+ * "Stuck" means one of two conditions:
+ * (a) `worker_claimed_at` is older than 10 minutes — the lease has expired.
+ *     These rows have their lease cleared (`worker_claimed_at = null`) so the
+ *     next worker poll can re-claim them.
+ * (b) Events at `import_status = 'roster'` with `import_requested_at` set and
+ *     a now-cleared or stale lease — they were partially imported and abandoned.
+ *     These are moved back to `'queued'` so the worker re-enters the roster stage.
+ *
+ * Returns the total number of rows affected across both updates.
+ */
+export async function resetStuckRk9Events(): Promise<
+  ActionResult<{ reset: number }>
+> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const supabase = createServiceRoleClient();
+
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+
+    // (a) Clear stale leases — worker_claimed_at older than 10 minutes
+    const { data: clearedLeases, error: leaseErr } = await supabase
+      .schema("rk9")
+      .from("events")
+      .update({ worker_claimed_at: null })
+      .lt("worker_claimed_at", tenMinutesAgo)
+      .select("event_id");
+
+    if (leaseErr) throw leaseErr;
+
+    // (b) Move stuck 'roster' events (import_requested_at set, no active lease)
+    // back to 'queued' so the worker re-picks them up
+    const { data: requeued, error: requeueErr } = await supabase
+      .schema("rk9")
+      .from("events")
+      .update({ import_status: "queued" })
+      .eq("import_status", "roster")
+      .not("import_requested_at", "is", null)
+      .is("worker_claimed_at", null)
+      .select("event_id");
+
+    if (requeueErr) throw requeueErr;
+
+    const total = (clearedLeases?.length ?? 0) + (requeued?.length ?? 0);
+    return { success: true, data: { reset: total } };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to reset stuck events"),
+    };
+  }
+}
+
+/**
+ * Re-queue all permanently-failed RK9 events for a fresh import attempt.
+ *
+ * Use this after a scraping bug is fixed or RK9 was temporarily unreachable.
+ * Clears the failure state and resets the attempt counter so the worker gives
+ * each event a full retry budget from scratch.
+ */
+export async function requeueFailedRk9Events(): Promise<
+  ActionResult<{ requeued: number }>
+> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const supabase = createServiceRoleClient();
+
+    const { data: updated, error } = await supabase
+      .schema("rk9")
+      .from("events")
+      .update({
+        import_status: "queued",
+        import_attempts: 0,
+        import_error: null,
+        import_requested_at: new Date().toISOString(),
+      })
+      .eq("import_status", "failed")
+      .select("event_id");
+
+    if (error) throw error;
+    return { success: true, data: { requeued: updated?.length ?? 0 } };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to re-queue failed events"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Action: Reset all roster and team data for an event
 // ---------------------------------------------------------------------------
 
