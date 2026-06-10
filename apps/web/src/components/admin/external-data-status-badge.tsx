@@ -1,6 +1,13 @@
 "use client";
 
-import { CheckCircle2, Clock, Loader2, Users, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  Hourglass,
+  Loader2,
+  Users,
+  XCircle,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 
@@ -42,6 +49,21 @@ export function StatusBadge({ row, activeJobs }: StatusBadgeProps) {
     }
   }
 
+  // Rows waiting in the import queue but not yet actively importing — muted
+  // amber tone with a hourglass icon to distinguish from the spinner used for
+  // actively-running imports.
+  if (row.displayStatus === "queued") {
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400"
+      >
+        <Hourglass className="mr-1 h-3 w-3" />
+        Queued
+      </Badge>
+    );
+  }
+
   // Limitless rows whose format can't be imported (e.g. CUSTOM) — surfaced as a
   // distinct "Skipped" status rather than the default "Pending". Keyed off the
   // derived displayStatus so it matches the Skipped tab/chip.
@@ -75,17 +97,6 @@ export function StatusBadge({ row, activeJobs }: StatusBadgeProps) {
         </Badge>
       );
     case "in-progress":
-      if (row.limitless?.import_status === "queued") {
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400"
-          >
-            <Clock className="mr-1 h-3 w-3" />
-            Queued
-          </Badge>
-        );
-      }
       if (row.limitless?.import_status === "importing") {
         return (
           <Badge

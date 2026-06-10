@@ -78,6 +78,8 @@ function normalizeRk9Status(status: string, upcoming: boolean): string {
   switch (status) {
     case "complete":
       return "complete";
+    case "queued":
+      return "queued";
     case "roster":
     case "teams":
       return "in-progress";
@@ -1024,6 +1026,11 @@ export function ExternalData() {
       value: "pending",
       label: "Pending",
       count: sourceStatusCounts["pending"] ?? 0,
+    },
+    {
+      value: "queued",
+      label: "Queued",
+      count: sourceStatusCounts["queued"] ?? 0,
     },
     {
       value: "in-progress",

@@ -3,11 +3,14 @@ import { deriveLimitlessDisplayStatus } from "./limitless-display-status";
 
 /**
  * Mutually-exclusive display buckets for a unified (RK9 or Limitless) row.
- * Coarser than the Limitless-only `DisplayStatus` — `queued` and `importing`
- * are collapsed into `in-progress` so both sources share one visual language.
+ * `queued` = waiting in the import queue but not yet running.
+ * `in-progress` = actively importing/scraping right now.
+ * Keeping them distinct prevents 5k queued-but-not-started events from showing
+ * as "In progress" when no worker is actually running.
  */
 export type DisplayStatus =
   | "pending"
+  | "queued"
   | "in-progress"
   | "imported"
   | "failed"
@@ -15,13 +18,13 @@ export type DisplayStatus =
 
 /**
  * Map any import row (RK9 or Limitless) to one shared display status:
- * `pending · in-progress · imported · failed · skipped`.
+ * `pending · queued · in-progress · imported · failed · skipped`.
  *
- * - Limitless delegates to `deriveLimitlessDisplayStatus` (queued+importing →
- *   in-progress; unmappable format → skipped).
+ * - Limitless delegates to `deriveLimitlessDisplayStatus` (queued → queued,
+ *   importing → in-progress; unmappable format → skipped).
  * - RK9 maps from its normalized `row.status`: complete → imported,
- *   in-progress (roster/teams) → in-progress, failed → failed; both `pending`
- *   and future `upcoming` events → pending. RK9 has no `skipped`.
+ *   queued → queued, in-progress (roster/teams) → in-progress, failed → failed;
+ *   both `pending` and future `upcoming` events → pending. RK9 has no `skipped`.
  */
 export function deriveDisplayStatus(row: UnifiedRow): DisplayStatus {
   if (row.source === "limitless" && row.limitless) {
@@ -30,8 +33,9 @@ export function deriveDisplayStatus(row: UnifiedRow): DisplayStatus {
       format_id: row.limitless.format_id,
       data_imported_at: row.limitless.data_imported_at,
     });
-    // Collapse Limitless-granular statuses into the unified vocabulary
-    if (limitlessStatus === "queued" || limitlessStatus === "importing") {
+    // "importing" is the only granular Limitless status that needs collapsing
+    // to a unified vocabulary — "queued" now passes through directly.
+    if (limitlessStatus === "importing") {
       return "in-progress";
     }
     return limitlessStatus;
@@ -49,6 +53,8 @@ export function deriveDisplayStatus(row: UnifiedRow): DisplayStatus {
         return "in-progress";
       }
       return "imported";
+    case "queued":
+      return "queued";
     case "in-progress":
       return "in-progress";
     case "failed":
