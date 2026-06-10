@@ -1,5 +1,9 @@
 name: Wait for Vercel Preview
-description: Polls Vercel API for a preview deployment. Handles ERROR state by triggering a redeployment.
+description: >
+  Polls Vercel API for a preview deployment.
+  - When given deployment-id: polls GET /v13/deployments/{id} by readyState.
+  - Otherwise: polls v6 SHA list; falls back to triggering a new deploy if no
+    deployment appears after N attempts.
 
 inputs:
   vercel-token:
@@ -23,11 +27,23 @@ inputs:
   github-token:
     description: GitHub token for repo API access
     required: true
+  deployment-id:
+    description: >
+      Optional. When provided, polls GET /v13/deployments/{id} (readyState)
+      instead of the v6 SHA list. Use this to track a specific redeployment
+      triggered by the caller.
+    required: false
+    default: ""
 
 outputs:
   url:
-    description: The preview deployment URL
+    description: The preview deployment URL (https://...)
     value: ${{ steps.poll.outputs.url }}
+  deployment-id:
+    description: >
+      The deployment ID that was polled to READY. When a no-deployment fallback
+      triggers a fresh deploy, this is the ID of that new deployment.
+    value: ${{ steps.poll.outputs.deployment-id }}
 
 runs:
   using: composite
@@ -43,92 +59,261 @@ runs:
         PR_SHA: ${{ inputs.pr-sha }}
         GIT_BRANCH: ${{ inputs.git-branch }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_DEPLOYMENT_ID: ${{ inputs.deployment-id }}
       run: |
+        # ── Helper: trigger a new Vercel deployment via v13 POST ──────────────
+        # Prints the new deployment ID on stdout, or exits non-zero on failure.
+        trigger_redeploy() {
+          local REPO_ID
+          REPO_ID=$(curl -sS --max-time 10 \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}" \
+            | jq -r '.id // empty')
+
+          if [ -z "$REPO_ID" ] || [ "$REPO_ID" = "null" ]; then
+            echo "::error::Could not retrieve GitHub repo ID — cannot trigger redeployment"
+            return 1
+          fi
+
+          local PAYLOAD
+          PAYLOAD=$(jq -n \
+            --arg name "$VERCEL_PROJECT_ID" \
+            --arg project "$VERCEL_PROJECT_ID" \
+            --arg branch "$GIT_BRANCH" \
+            --arg sha "$PR_SHA" \
+            --argjson repoId "$REPO_ID" \
+            '{
+              name: $name,
+              project: $project,
+              target: "preview",
+              gitSource: {
+                type: "github",
+                repoId: $repoId,
+                ref: $branch,
+                sha: $sha
+              }
+            }')
+
+          local HTTP_FILE
+          HTTP_FILE=$(mktemp)
+          local HTTP_CODE
+          HTTP_CODE=$(curl -sS --max-time 30 \
+            -o "$HTTP_FILE" \
+            -w "%{http_code}" \
+            -X POST \
+            "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+
+          local BODY
+          BODY=$(cat "$HTTP_FILE")
+          rm -f "$HTTP_FILE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::error::Vercel v13 POST /deployments returned HTTP $HTTP_CODE: $BODY"
+            return 1
+          fi
+
+          local NEW_ID
+          NEW_ID=$(echo "$BODY" | jq -r '.id // empty')
+          if [ -z "$NEW_ID" ] || [ "$NEW_ID" = "null" ]; then
+            echo "::error::Vercel POST response missing deployment id: $BODY"
+            return 1
+          fi
+
+          echo "$NEW_ID"
+          return 0
+        }
+
+        # ── Helper: poll a specific deployment by ID (v13, readyState) ────────
+        # Usage: poll_by_id <deployment_id> <max_attempts> <sleep_secs>
+        # Prints the deployment URL on stdout when READY, exit 1 on timeout/error.
+        poll_by_id() {
+          local DEP_ID="$1"
+          local MAX="$2"
+          local SLEEP_SECS="$3"
+
+          for i in $(seq 1 "$MAX"); do
+            local HTTP_FILE
+            HTTP_FILE=$(mktemp)
+            local HTTP_CODE
+            HTTP_CODE=$(curl -sS --max-time 15 \
+              -o "$HTTP_FILE" \
+              -w "%{http_code}" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v13/deployments/${DEP_ID}?teamId=$VERCEL_TEAM_ID")
+
+            local BODY
+            BODY=$(cat "$HTTP_FILE")
+            rm -f "$HTTP_FILE"
+
+            if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+              echo "::error::GET /v13/deployments/$DEP_ID returned HTTP $HTTP_CODE: $BODY" >&2
+              # Non-fatal on transient errors — keep polling
+              sleep "$SLEEP_SECS"
+              continue
+            fi
+
+            local STATE
+            STATE=$(echo "$BODY" | jq -r '.readyState // empty')
+            local DEPLOY_URL
+            DEPLOY_URL=$(echo "$BODY" | jq -r '.url // empty')
+
+            if [ "$STATE" = "READY" ] && [ -n "$DEPLOY_URL" ]; then
+              echo "https://$DEPLOY_URL"
+              return 0
+            elif [ "$STATE" = "ERROR" ] || [ "$STATE" = "CANCELED" ]; then
+              echo "::error::Deployment $DEP_ID reached terminal state $STATE" >&2
+              return 1
+            else
+              echo "Deployment $DEP_ID readyState=$STATE (attempt $i/$MAX)" >&2
+            fi
+
+            sleep "$SLEEP_SECS"
+          done
+
+          echo "::error::Timeout polling deployment $DEP_ID" >&2
+          return 1
+        }
+
+        # ── Branch A: poll a specific deployment ID ────────────────────────────
+        if [ -n "$INPUT_DEPLOYMENT_ID" ]; then
+          echo "Polling specific deployment $INPUT_DEPLOYMENT_ID (readyState)..."
+          # Max 50 attempts × 15s = 12.5 min
+          RESULT_URL=$(poll_by_id "$INPUT_DEPLOYMENT_ID" 50 15)
+          if [ $? -ne 0 ]; then
+            exit 1
+          fi
+          # Verify the URL responds
+          HTTP_FILE=$(mktemp)
+          STATUS=$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" \
+            -H "x-vercel-protection-bypass: $BYPASS_SECRET" \
+            "$RESULT_URL" 2>"$HTTP_FILE") || STATUS="000"
+          if [ "$STATUS" = "000" ] && [ -s "$HTTP_FILE" ]; then
+            echo "  curl error: $(cat "$HTTP_FILE")"
+          fi
+          rm -f "$HTTP_FILE"
+          if [[ "$STATUS" =~ ^[0-9]+$ ]] && [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "url=$RESULT_URL" >> "$GITHUB_OUTPUT"
+            echo "deployment-id=$INPUT_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+            echo "Deployment $INPUT_DEPLOYMENT_ID ready at $RESULT_URL (HTTP $STATUS)"
+            exit 0
+          fi
+          echo "::error::Deployment $INPUT_DEPLOYMENT_ID READY but URL $RESULT_URL returned HTTP $STATUS"
+          exit 1
+        fi
+
+        # ── Branch B: poll v6 SHA list ─────────────────────────────────────────
         echo "Waiting for Vercel preview deployment for $PR_SHA..."
-        REDEPLOYED=false
+
+        # Track whether we have seen ANY deployment in the list yet.
+        # After NO_DEPLOY_THRESHOLD attempts with no deployment, trigger one.
+        NO_DEPLOY_THRESHOLD=8  # 8 × 15s = 2 min
+        NO_DEPLOY_COUNT=0
+        REDEPLOY_ID=""
 
         for i in $(seq 1 50); do
-          CURL_ERR=$(mktemp)
-          RESPONSE=$(curl -sS --max-time 10 -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=5&projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_TEAM_ID" \
-            2>"$CURL_ERR") || RESPONSE=""
+          HTTP_FILE=$(mktemp)
+          HTTP_CODE=$(curl -sS --max-time 15 \
+            -o "$HTTP_FILE" \
+            -w "%{http_code}" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=10&projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_TEAM_ID")
 
-          if [ -z "$RESPONSE" ]; then
-            echo "API request failed (attempt $i/50): $(cat "$CURL_ERR" 2>&1 || echo 'no error file')"
-            rm -f "$CURL_ERR"
+          RESPONSE=$(cat "$HTTP_FILE")
+          rm -f "$HTTP_FILE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "v6 deployments API returned HTTP $HTTP_CODE (attempt $i/50): $RESPONSE"
             sleep 15
             continue
           fi
 
-          rm -f "$CURL_ERR"
           if ! echo "$RESPONSE" | jq -e . > /dev/null 2>&1; then
-            echo "API returned non-JSON response (attempt $i/50)"
+            echo "v6 deployments API returned non-JSON (attempt $i/50)"
             sleep 15
             continue
           fi
+
+          DEPLOY_COUNT=$(echo "$RESPONSE" | jq '.deployments | length')
           STATE=$(echo "$RESPONSE" | jq -r '.deployments[0].state // empty')
           DEPLOY_URL=$(echo "$RESPONSE" | jq -r '.deployments[0].url // empty')
+          DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.deployments[0].uid // empty')
+
+          if [ "$DEPLOY_COUNT" = "0" ] || [ -z "$STATE" ]; then
+            NO_DEPLOY_COUNT=$((NO_DEPLOY_COUNT + 1))
+            echo "No deployment found yet (attempt $i/50, no-deploy-count=$NO_DEPLOY_COUNT)"
+
+            if [ "$NO_DEPLOY_COUNT" -ge "$NO_DEPLOY_THRESHOLD" ] && [ -z "$REDEPLOY_ID" ]; then
+              echo "::warning::No deployment appeared after $NO_DEPLOY_COUNT polls — triggering fresh deployment..."
+              NEW_ID=$(trigger_redeploy)
+              if [ $? -ne 0 ]; then
+                echo "::error::Failed to trigger fallback deployment"
+                exit 1
+              fi
+              REDEPLOY_ID="$NEW_ID"
+              echo "Fallback deployment triggered: $REDEPLOY_ID — switching to by-ID poll..."
+              # Poll the specific deployment by ID (max 40 attempts × 15s = 10 min)
+              RESULT_URL=$(poll_by_id "$REDEPLOY_ID" 40 15)
+              if [ $? -ne 0 ]; then
+                exit 1
+              fi
+              HTTP_FILE=$(mktemp)
+              STATUS=$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" \
+                -H "x-vercel-protection-bypass: $BYPASS_SECRET" \
+                "$RESULT_URL" 2>"$HTTP_FILE") || STATUS="000"
+              if [ "$STATUS" = "000" ] && [ -s "$HTTP_FILE" ]; then
+                echo "  curl error: $(cat "$HTTP_FILE")"
+              fi
+              rm -f "$HTTP_FILE"
+              if [[ "$STATUS" =~ ^[0-9]+$ ]] && [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                echo "url=$RESULT_URL" >> "$GITHUB_OUTPUT"
+                echo "deployment-id=$REDEPLOY_ID" >> "$GITHUB_OUTPUT"
+                echo "Fallback deployment $REDEPLOY_ID ready at $RESULT_URL (HTTP $STATUS)"
+                exit 0
+              fi
+              echo "::error::Fallback deployment $REDEPLOY_ID READY but URL returned HTTP $STATUS"
+              exit 1
+            fi
+
+            sleep 15
+            continue
+          fi
+
+          # At least one deployment exists — reset no-deploy counter
+          NO_DEPLOY_COUNT=0
 
           if [ "$STATE" = "READY" ] && [ -n "$DEPLOY_URL" ]; then
             FULL_URL="https://$DEPLOY_URL"
-            CURL_ERR2=$(mktemp)
-            STATUS=$(curl -sS --max-time 10 -o /dev/null -w "%{http_code}" \
-              -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$FULL_URL" \
-              2>"$CURL_ERR2") || STATUS="000"
-            if [ "$STATUS" = "000" ] && [ -s "$CURL_ERR2" ]; then
-              echo "  curl error: $(cat "$CURL_ERR2")"
+            HTTP_FILE=$(mktemp)
+            STATUS=$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" \
+              -H "x-vercel-protection-bypass: $BYPASS_SECRET" \
+              "$FULL_URL" 2>"$HTTP_FILE") || STATUS="000"
+            if [ "$STATUS" = "000" ] && [ -s "$HTTP_FILE" ]; then
+              echo "  curl error: $(cat "$HTTP_FILE")"
             fi
-            rm -f "$CURL_ERR2"
+            rm -f "$HTTP_FILE"
 
             if [[ "$STATUS" =~ ^[0-9]+$ ]] && [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
               echo "url=$FULL_URL" >> "$GITHUB_OUTPUT"
+              echo "deployment-id=${DEPLOY_ID:-unknown}" >> "$GITHUB_OUTPUT"
               echo "Preview ready at $FULL_URL (HTTP $STATUS)"
               exit 0
             fi
             echo "Deployment at $FULL_URL returned HTTP $STATUS (attempt $i/50)"
 
-          elif [ "$STATE" = "ERROR" ] && [ "$REDEPLOYED" = "false" ]; then
-            echo "::warning::First deployment failed (state: ERROR). Triggering redeployment with updated env vars..."
-            REDEPLOYED=true
+          elif [ "$STATE" = "ERROR" ]; then
+            # The auto-deploy errored — caller (ci.yml) handles the redeploy loop.
+            # Output whatever URL we have and exit with a distinct code so the caller
+            # can key off the (empty or bad) url output.
+            echo "::warning::Auto-deploy reached ERROR state (attempt $i/50)"
+            echo "url=" >> "$GITHUB_OUTPUT"
+            echo "deployment-id=${DEPLOY_ID:-unknown}" >> "$GITHUB_OUTPUT"
+            exit 0
 
-            REPO_ID=$(curl -sf -H "Authorization: Bearer $GITHUB_TOKEN" \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}" | jq -r '.id')
-
-            if [ -z "$REPO_ID" ] || [ "$REPO_ID" = "null" ]; then
-              echo "::warning::Could not retrieve GitHub repo ID — skipping redeployment"
-              REDEPLOYED=false
-              sleep 15
-              continue
-            fi
-
-            curl -sf -X POST \
-              "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
-              -H "Authorization: Bearer $VERCEL_TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "$(jq -n \
-                --arg name "$VERCEL_PROJECT_ID" \
-                --arg project "$VERCEL_PROJECT_ID" \
-                --arg branch "$GIT_BRANCH" \
-                --arg sha "$PR_SHA" \
-                --argjson repoId "$REPO_ID" \
-                '{
-                  name: $name,
-                  project: $project,
-                  target: "preview",
-                  gitSource: {
-                    type: "github",
-                    repoId: $repoId,
-                    ref: $branch,
-                    sha: $sha
-                  }
-                }')" || echo "::warning::Redeployment request failed"
-
-            echo "Redeployment triggered — continuing to poll..."
-
-          elif [ -n "$STATE" ]; then
-            echo "Deployment state: $STATE (attempt $i/50)"
           else
-            echo "No deployment found yet (attempt $i/50)"
+            echo "Deployment state: $STATE (attempt $i/50)"
           fi
 
           sleep 15
