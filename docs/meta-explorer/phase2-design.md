@@ -612,7 +612,7 @@ matches the current architecture.
 Every open question is now answered. These decisions are authoritative; where a
 per-chart spec above used softer "recommended" language, the rules below override
 it. The implementation plan
-(`docs/superpowers/plans/2026-06-09-meta-explorer-phase2-plan.md`) builds to these
+(`docs/meta-explorer/phase2-plan.md`) builds to these
 decisions.
 
 1. **Page layout — Option A (tabbed).** Three tabs: **Overview · Trends ·
@@ -685,6 +685,6 @@ the RPC param is `p_top_percentile`, the RPC columns use the neutral `top_*` /
 `top_share` stem, and the mobile-list fallback components have been removed from
 the file map. **If any residual softer/"recommended" wording remains in a
 per-chart spec, Decisions 1–6 override it.** The implementation plan
-(`docs/superpowers/plans/2026-06-09-meta-explorer-phase2-plan.md`) is the single
+(`docs/meta-explorer/phase2-plan.md`) is the single
 source of truth for the final RPC signature, column names, UI labels, and the
 component set.

@@ -1,7 +1,7 @@
 # Meta Explorer Phase 2 — Implementation Plan
 
 Date: 2026-06-09
-Spec: `docs/superpowers/specs/2026-06-09-meta-explorer-phase2-design.md`
+Spec: `docs/meta-explorer/phase2-design.md`
 Branch: `feat/meta-explorer-phase2` (off `main`)
 
 ## How to use this plan
