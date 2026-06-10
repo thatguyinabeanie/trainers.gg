@@ -28,7 +28,7 @@ postinstall = "mise run install-lefthook ::: install-submodules ::: install-pnpm
 
 [tasks.install-lefthook]
 description = "Install lefthook git hooks into the local repo"
-run = "lefthook install"
+run = "lefthook install --force"
 
 [tasks.install-submodules]
 description = "Initialize git submodules (idempotent — safe to re-run)"
