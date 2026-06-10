@@ -9,12 +9,15 @@
  * loops until Jest's timeout — a 60-second hang.
  */
 
+import type * as DataSources from "@trainers/data-sources";
+
 // =============================================================================
 // Mock declarations — before imports (Jest hoisting)
 // =============================================================================
 
 const mockProcessImportQueue = jest.fn();
-jest.mock("@/lib/limitless", () => ({
+jest.mock("@trainers/data-sources", () => ({
+  ...jest.requireActual<typeof DataSources>("@trainers/data-sources"),
   processImportQueue: (...args: unknown[]) => mockProcessImportQueue(...args),
 }));
 
