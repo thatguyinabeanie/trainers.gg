@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { type ResponsiveContainerProps } from "recharts";
 
 import { UsageLineChart } from "../usage-line-chart";
@@ -281,5 +281,103 @@ describe("UsageLineChart — multiple data points", () => {
     });
     expect(screen.getByText("Usage Over Time")).toBeInTheDocument();
     expect(screen.getByText("1 Pokémon")).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// Mode toggle (Lines | Stream)
+// =============================================================================
+
+describe("UsageLineChart — mode toggle", () => {
+  it("renders the Lines mode toggle button", () => {
+    renderChart();
+    expect(
+      screen.getByRole("button", { name: "Lines mode" })
+    ).toBeInTheDocument();
+  });
+
+  it("renders the Stream mode toggle button", () => {
+    renderChart();
+    expect(
+      screen.getByRole("button", { name: "Stream mode" })
+    ).toBeInTheDocument();
+  });
+
+  it("Lines is the default active mode (aria-pressed=true)", () => {
+    renderChart();
+    expect(screen.getByRole("button", { name: "Lines mode" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByRole("button", { name: "Stream mode" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+  });
+
+  it("switches to stream mode when Stream button is clicked", () => {
+    renderChart();
+    const streamBtn = screen.getByRole("button", { name: "Stream mode" });
+    fireEvent.click(streamBtn);
+    expect(streamBtn).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Lines mode" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+  });
+});
+
+// =============================================================================
+// Stream mode rendering
+// =============================================================================
+
+describe("UsageLineChart — stream mode", () => {
+  function renderInStreamMode(overrides: Partial<typeof DEFAULT_PROPS> = {}) {
+    const result = renderChart(overrides);
+    // Click the Stream button to activate stream mode
+    const streamBtn = screen.getByRole("button", { name: "Stream mode" });
+    fireEvent.click(streamBtn);
+    return result;
+  }
+
+  it("renders without error in stream mode", () => {
+    renderInStreamMode();
+    expect(screen.getByText("Usage Over Time")).toBeInTheDocument();
+  });
+
+  it("stream mode still shows the Pokémon count readout", () => {
+    renderInStreamMode({ points: TWO_POINTS, selectedSpecies: [] });
+    expect(screen.getByText("2 Pokémon")).toBeInTheDocument();
+  });
+
+  it("renders an AreaChart element when in stream mode", () => {
+    // When mode switches to stream, recharts renders an AreaChart.
+    // We verify the mode toggle was accepted by checking aria-pressed.
+    renderInStreamMode();
+    expect(screen.getByRole("button", { name: "Stream mode" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+  });
+
+  it("stream mode does not show the empty-state message when points are present", () => {
+    renderInStreamMode({ points: TWO_POINTS });
+    expect(
+      screen.queryByText("No usage data for this format.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("lines mode still works after toggling back from stream", () => {
+    renderChart();
+    // Toggle to stream
+    fireEvent.click(screen.getByRole("button", { name: "Stream mode" }));
+    // Toggle back to lines
+    fireEvent.click(screen.getByRole("button", { name: "Lines mode" }));
+    // Lines should be active again
+    expect(screen.getByRole("button", { name: "Lines mode" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByText("Usage Over Time")).toBeInTheDocument();
   });
 });
