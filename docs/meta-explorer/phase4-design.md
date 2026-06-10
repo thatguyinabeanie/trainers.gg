@@ -315,9 +315,9 @@ either case (grid/dumbbell are hand-rolled, matching the Sankey/dumbbell pattern
 
 **Interactions.** Hover a cell → tooltip (species + band + usage % within band +
 n players in band). Click sprite → Phase 3 (gated). Subscribes to format /
-source / date-range / min-players. The band-edge control (if exposed) is local
-`useState` or a URL param — see open questions; default to fixed 1/10/25 unless
-the user wants it adjustable.
+source / date-range / min-players. The band-edge control (Decision 4) uses
+URL-persisted preset chips (default 1/10/25, omitted from URL when at default)
+— consistent with the Phase 2 `topPct` threshold control pattern.
 
 **Mobile (393px).** Heatmap: 4 band columns are narrow but fit at 393px (4 ×
 ~70px + sprite label); cap to top ~20 species so rows stay ≥ tap height. If 4
