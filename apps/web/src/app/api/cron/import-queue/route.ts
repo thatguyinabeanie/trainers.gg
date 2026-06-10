@@ -13,7 +13,13 @@
  * to finish cleanly before the hard cutoff fires.
  */
 
-import { compileSourceTeamSlots } from "@trainers/supabase";
+import {
+  compileSourceTeamSlots,
+  deriveImportRunStatus,
+  recordImportRuns,
+  type ImportRunRecord,
+  type Json,
+} from "@trainers/supabase";
 
 import { requireCronAuth } from "@/lib/cron-auth";
 import { revalidateUsageStatsCaches } from "@/lib/cache-invalidation";
@@ -307,5 +313,157 @@ export async function GET(request: Request): Promise<Response> {
     compile = { error: "compile step failed — see server logs" };
   }
 
+  // ---------------------------------------------------------------------------
+  // Observability: record one import_runs row per source (trigger 'cron').
+  //
+  // Status mapping per source:
+  //   - skipped descriptor      → 'skipped' (+ skip_reason)
+  //   - error descriptor (threw) → 'error'
+  //   - errors > 0 but work done → 'partial'
+  //   - otherwise               → 'ok'
+  // The full per-source result object is stored verbatim in `detail` for
+  // debugging. recordImportRuns swallows its own insert error — a failed audit
+  // write must NEVER fail the cron tick that already did real import work.
+  // ---------------------------------------------------------------------------
+
+  const importRunRecords: ImportRunRecord[] = [
+    buildLimitlessRunRecord(limitless),
+    buildRk9RunRecord(rk9),
+    buildCompileRunRecord(compile),
+  ];
+
+  await recordImportRuns(supabase, "cron", importRunRecords);
+
   return Response.json({ limitless, rk9, compile, budgetMs: BUDGET_MS });
+}
+
+// =============================================================================
+// import_runs record builders
+//
+// Each source has a different result shape, so each gets a tiny mapper that
+// normalizes it into an ImportRunRecord. Kept here (not in the shared package)
+// because they are coupled to the route's local result unions.
+// =============================================================================
+
+/** Build the Limitless import_runs record from its settled result. */
+function buildLimitlessRunRecord(
+  limitless:
+    | { processed: number; errors: number; remaining: number; passes: number }
+    | { skipped: string }
+    | { error: string }
+): ImportRunRecord {
+  if ("skipped" in limitless) {
+    return {
+      source: "limitless",
+      status: "skipped",
+      skipReason: limitless.skipped,
+      processed: 0,
+      errors: 0,
+      remaining: null,
+      detail: limitless as unknown as Json,
+    };
+  }
+  if ("error" in limitless) {
+    return {
+      source: "limitless",
+      status: "error",
+      processed: 0,
+      errors: 1,
+      remaining: null,
+      detail: limitless as unknown as Json,
+    };
+  }
+  return {
+    source: "limitless",
+    status: deriveImportRunStatus({
+      errors: limitless.errors,
+      processed: limitless.processed,
+    }),
+    processed: limitless.processed,
+    errors: limitless.errors,
+    remaining: limitless.remaining,
+    detail: limitless as unknown as Json,
+  };
+}
+
+/** Build the RK9 import_runs record from its settled result. */
+function buildRk9RunRecord(
+  rk9:
+    | {
+        eventsTouched: number;
+        teamsScraped: number;
+        errors: number;
+        remainingQueued: number;
+      }
+    | { skipped: string }
+    | { error: string }
+): ImportRunRecord {
+  if ("skipped" in rk9) {
+    return {
+      source: "rk9",
+      status: "skipped",
+      skipReason: rk9.skipped,
+      processed: 0,
+      errors: 0,
+      remaining: null,
+      detail: rk9 as unknown as Json,
+    };
+  }
+  if ("error" in rk9) {
+    return {
+      source: "rk9",
+      status: "error",
+      processed: 0,
+      errors: 1,
+      remaining: null,
+      detail: rk9 as unknown as Json,
+    };
+  }
+  // processed = teamsScraped (the unit of work for RK9 ticks).
+  return {
+    source: "rk9",
+    status: deriveImportRunStatus({
+      errors: rk9.errors,
+      processed: rk9.teamsScraped,
+    }),
+    processed: rk9.teamsScraped,
+    errors: rk9.errors,
+    remaining: rk9.remainingQueued,
+    detail: rk9 as unknown as Json,
+  };
+}
+
+/** Build the compile-step import_runs record from its settled result. */
+function buildCompileRunRecord(
+  compile:
+    | {
+        limitless?: { eventsCompiled: number; formats: string[] };
+        rk9?: { eventsCompiled: number; formats: string[] };
+        revalidated: boolean;
+      }
+    | { error: string }
+): ImportRunRecord {
+  if ("error" in compile) {
+    return {
+      source: "compile",
+      status: "error",
+      processed: 0,
+      errors: 1,
+      remaining: null,
+      detail: compile as unknown as Json,
+    };
+  }
+  const eventsCompiled =
+    (compile.limitless?.eventsCompiled ?? 0) +
+    (compile.rk9?.eventsCompiled ?? 0);
+  return {
+    source: "compile",
+    // Nothing to compile this tick reads as 'skipped' rather than a no-op 'ok'.
+    status: eventsCompiled > 0 ? "ok" : "skipped",
+    skipReason: eventsCompiled > 0 ? null : "no events to compile",
+    processed: eventsCompiled,
+    errors: 0,
+    remaining: null,
+    detail: compile as unknown as Json,
+  };
 }

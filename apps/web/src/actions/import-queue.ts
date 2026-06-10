@@ -15,7 +15,15 @@
  *   is 60 s; 50 s gives headroom for auth checks and the compile step).
  */
 
-import { compileSourceTeamSlots } from "@trainers/supabase";
+import {
+  compileSourceTeamSlots,
+  deriveImportRunStatus,
+  listRecentImportRuns,
+  recordImportRuns,
+  type ImportRunRecord,
+  type ImportRunRow,
+  type Json,
+} from "@trainers/supabase";
 import { getErrorMessage } from "@trainers/utils";
 import { type ActionResult } from "@trainers/validators";
 
@@ -110,16 +118,21 @@ export async function processImportQueuesNow(): Promise<
     // On failure: zeros + 1 error so the caller sees something went wrong.
     // ---------------------------------------------------------------------------
 
+    // `threw` distinguishes a worker exception (status 'error') from a clean
+    // run that merely reported errors > 0 (status 'partial') in the
+    // import_runs log written below.
     type LimitlessStats = {
       processed: number;
       errors: number;
       remaining: number;
+      threw: boolean;
     };
     type Rk9Stats = {
       eventsTouched: number;
       teamsScraped: number;
       errors: number;
       remainingQueued: number;
+      threw: boolean;
     };
 
     const limitlessPromise: Promise<LimitlessStats> = (async () => {
@@ -140,10 +153,11 @@ export async function processImportQueuesNow(): Promise<
           processed: result.processed,
           errors: result.errors,
           remaining: result.remaining,
+          threw: false,
         };
       } catch (e) {
         console.error("[processImportQueuesNow] limitless error:", e);
-        return { processed: 0, errors: 1, remaining: 0 };
+        return { processed: 0, errors: 1, remaining: 0, threw: true };
       }
     })();
 
@@ -159,6 +173,7 @@ export async function processImportQueuesNow(): Promise<
           teamsScraped: result.teamsScraped,
           errors: result.errors,
           remainingQueued: result.remainingQueued,
+          threw: false,
         };
       } catch (e) {
         console.error("[processImportQueuesNow] rk9 error:", e);
@@ -167,6 +182,7 @@ export async function processImportQueuesNow(): Promise<
           teamsScraped: 0,
           errors: 1,
           remainingQueued: 0,
+          threw: true,
         };
       }
     })();
@@ -186,6 +202,10 @@ export async function processImportQueuesNow(): Promise<
     // Using invalidateUsageStatsCaches (updateTag) because this is a Server Action.
     // ---------------------------------------------------------------------------
 
+    // Track the compile outcome so it can be recorded in import_runs below.
+    let compileEvents = 0;
+    let compileThrew = false;
+
     try {
       const [limitlessCompile, rk9Compile] = await Promise.all([
         limitless.processed > 0
@@ -193,6 +213,10 @@ export async function processImportQueuesNow(): Promise<
           : null,
         rk9.eventsTouched > 0 ? compileSourceTeamSlots(supabase, "rk9") : null,
       ]);
+
+      compileEvents =
+        (limitlessCompile?.eventsCompiled ?? 0) +
+        (rk9Compile?.eventsCompiled ?? 0);
 
       if (limitlessCompile !== null || rk9Compile !== null) {
         const allFormats = [
@@ -206,7 +230,67 @@ export async function processImportQueuesNow(): Promise<
       // Compile errors are non-fatal — imports succeeded. The next cron pass
       // will recompile any skipped events. Log and continue.
       console.error("[processImportQueuesNow] compile step error:", compileErr);
+      compileThrew = true;
     }
+
+    // ---------------------------------------------------------------------------
+    // Observability: record one import_runs row per source (trigger 'manual').
+    //
+    // recordImportRuns swallows its own insert error — a failed audit write must
+    // never fail the admin action that already did real import work.
+    // ---------------------------------------------------------------------------
+
+    const importRunRecords: ImportRunRecord[] = [
+      {
+        source: "limitless",
+        status: limitless.threw
+          ? "error"
+          : deriveImportRunStatus({
+              errors: limitless.errors,
+              processed: limitless.processed,
+            }),
+        processed: limitless.processed,
+        errors: limitless.errors,
+        remaining: limitless.remaining,
+        detail: {
+          processed: limitless.processed,
+          errors: limitless.errors,
+          remaining: limitless.remaining,
+        } as unknown as Json,
+      },
+      {
+        source: "rk9",
+        status: rk9.threw
+          ? "error"
+          : deriveImportRunStatus({
+              errors: rk9.errors,
+              processed: rk9.teamsScraped,
+            }),
+        processed: rk9.teamsScraped,
+        errors: rk9.errors,
+        remaining: rk9.remainingQueued,
+        detail: {
+          eventsTouched: rk9.eventsTouched,
+          teamsScraped: rk9.teamsScraped,
+          errors: rk9.errors,
+          remainingQueued: rk9.remainingQueued,
+        } as unknown as Json,
+      },
+      {
+        source: "compile",
+        status: compileThrew ? "error" : compileEvents > 0 ? "ok" : "skipped",
+        skipReason:
+          !compileThrew && compileEvents === 0 ? "no events to compile" : null,
+        processed: compileEvents,
+        errors: compileThrew ? 1 : 0,
+        remaining: null,
+        detail: {
+          eventsCompiled: compileEvents,
+        } as unknown as Json,
+      },
+    ];
+
+    await recordImportRuns(supabase, "manual", importRunRecords);
 
     if (bothFailed) {
       return {
@@ -215,11 +299,62 @@ export async function processImportQueuesNow(): Promise<
       };
     }
 
-    return { success: true, data: { limitless, rk9 } };
+    // Strip the internal `threw` flag before returning to the client.
+    return {
+      success: true,
+      data: {
+        limitless: {
+          processed: limitless.processed,
+          errors: limitless.errors,
+          remaining: limitless.remaining,
+        },
+        rk9: {
+          eventsTouched: rk9.eventsTouched,
+          teamsScraped: rk9.teamsScraped,
+          errors: rk9.errors,
+          remainingQueued: rk9.remainingQueued,
+        },
+      },
+    };
   } catch (e) {
     return {
       success: false,
       error: getErrorMessage(e, "Failed to process import queues"),
+    };
+  }
+}
+
+// =============================================================================
+// Recent runs (read)
+// =============================================================================
+
+/**
+ * Fetch the most recent import_runs rows for the admin "Recent runs" feed.
+ *
+ * Site-admin gated, mirroring processImportQueuesNow. RLS on import_runs also
+ * restricts SELECT to site admins, but the gate here gives a clean error
+ * message before the query and lets the action use the service-role client.
+ *
+ * @param limit number of rows to return (default 20)
+ */
+export async function getRecentImportRuns(
+  limit = 20
+): Promise<ActionResult<ImportRunRow[]>> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const supabase = createServiceRoleClient();
+    const runs = await listRecentImportRuns(supabase, limit);
+
+    return { success: true, data: runs };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to load recent import runs"),
     };
   }
 }

@@ -147,3 +147,13 @@ export {
   compileSourceTeamSlots,
   type TeamSlotSource,
 } from "./team-slots";
+
+// Import-runs observability log write path (shared by cron route + admin action)
+export {
+  recordImportRuns,
+  deriveImportRunStatus,
+  type ImportRunRecord,
+  type ImportRunSource,
+  type ImportRunTrigger,
+  type ImportRunStatus,
+} from "./import-runs";

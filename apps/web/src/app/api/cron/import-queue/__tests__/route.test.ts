@@ -51,9 +51,26 @@ jest.mock("@/lib/limitless/queue-worker", () => ({
   drainLimitlessQueue: (...args: unknown[]) => mockDrainLimitlessQueue(...args),
 }));
 
+const mockRecordImportRuns = jest.fn();
+
 jest.mock("@trainers/supabase", () => ({
   compileSourceTeamSlots: (...args: unknown[]) =>
     mockCompileSourceTeamSlots(...args),
+  recordImportRuns: (...args: unknown[]) => mockRecordImportRuns(...args),
+  deriveImportRunStatus: jest.fn(
+    (outcome: {
+      skipped?: boolean;
+      threw?: boolean;
+      errors: number;
+      processed: number;
+    }) => {
+      if (outcome.skipped) return "skipped";
+      if (outcome.threw) return "error";
+      if (outcome.errors > 0)
+        return outcome.processed > 0 ? "partial" : "error";
+      return "ok";
+    }
+  ),
 }));
 
 jest.mock("@/lib/cache-invalidation", () => ({
@@ -147,6 +164,9 @@ beforeEach(() => {
 
   // Default: compile returns null (no events compiled)
   mockCompileSourceTeamSlots.mockResolvedValue(null);
+
+  // Default: recordImportRuns is a no-op — observability must not fail ticks
+  mockRecordImportRuns.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -689,5 +709,130 @@ describe("last_run_at absent", () => {
     await callGet();
 
     expect(mockDrainLimitlessQueue).toHaveBeenCalledTimes(1);
+  });
+});
+
+// =============================================================================
+// 9. import_runs observability write (trigger 'cron')
+// =============================================================================
+
+describe("import_runs observability write", () => {
+  it("calls recordImportRuns with trigger 'cron' after every request", async () => {
+    await callGet();
+
+    expect(mockRecordImportRuns).toHaveBeenCalledTimes(1);
+    const [, trigger] = mockRecordImportRuns.mock.calls[0] as [
+      unknown,
+      string,
+      unknown[],
+    ];
+    expect(trigger).toBe("cron");
+  });
+
+  it("writes one record per source (limitless, rk9, compile)", async () => {
+    await callGet();
+
+    const [, , records] = mockRecordImportRuns.mock.calls[0] as [
+      unknown,
+      string,
+      Array<{ source: string }>,
+    ];
+    const sources = records.map((r) => r.source);
+    expect(sources).toContain("limitless");
+    expect(sources).toContain("rk9");
+    expect(sources).toContain("compile");
+    expect(records).toHaveLength(3);
+  });
+
+  it("marks source as 'skipped' with skip_reason when toggle is off", async () => {
+    // Both toggles off → both skipped
+    await callGet();
+
+    const [, , records] = mockRecordImportRuns.mock.calls[0] as [
+      unknown,
+      string,
+      Array<{ source: string; status: string; skipReason?: string | null }>,
+    ];
+    const limitlessRecord = records.find((r) => r.source === "limitless")!;
+    expect(limitlessRecord.status).toBe("skipped");
+    expect(limitlessRecord.skipReason).toMatch(/auto-import disabled/);
+  });
+
+  it("marks source as 'ok' when drain returns processed > 0 with no errors", async () => {
+    const oldRunAt = new Date(Date.now() - 400_000).toISOString();
+    process.env.LIMITLESS_API_KEY = "test-key";
+    mockReadSiteConfigValues.mockResolvedValue({
+      ...BASE_CONFIG,
+      limitless_backend_auto_import: true,
+      limitless_cron_interval_seconds: 300,
+      limitless_last_run_at: oldRunAt,
+    });
+    mockDrainLimitlessQueue.mockResolvedValue({
+      processed: 5,
+      errors: 0,
+      remaining: 0,
+      passes: 1,
+    });
+
+    await callGet();
+
+    const [, , records] = mockRecordImportRuns.mock.calls[0] as [
+      unknown,
+      string,
+      Array<{ source: string; status: string }>,
+    ];
+    const limitlessRecord = records.find((r) => r.source === "limitless")!;
+    expect(limitlessRecord.status).toBe("ok");
+  });
+
+  it("marks source as 'error' when the worker throws", async () => {
+    const oldRunAt = new Date(Date.now() - 400_000).toISOString();
+    process.env.LIMITLESS_API_KEY = "test-key";
+    mockReadSiteConfigValues.mockResolvedValue({
+      ...BASE_CONFIG,
+      limitless_backend_auto_import: true,
+      limitless_cron_interval_seconds: 300,
+      limitless_last_run_at: oldRunAt,
+    });
+    mockDrainLimitlessQueue.mockRejectedValue(new Error("Limitless API down"));
+
+    await callGet();
+
+    const [, , records] = mockRecordImportRuns.mock.calls[0] as [
+      unknown,
+      string,
+      Array<{ source: string; status: string }>,
+    ];
+    const limitlessRecord = records.find((r) => r.source === "limitless")!;
+    expect(limitlessRecord.status).toBe("error");
+  });
+
+  it("marks compile record as 'skipped' when no data was imported (nothing to compile)", async () => {
+    // Both toggles off → both sources skipped → compile gets nothing → skipped
+    await callGet();
+
+    const [, , records] = mockRecordImportRuns.mock.calls[0] as [
+      unknown,
+      string,
+      Array<{ source: string; status: string; skipReason?: string | null }>,
+    ];
+    const compileRecord = records.find((r) => r.source === "compile")!;
+    expect(compileRecord.status).toBe("skipped");
+    expect(compileRecord.skipReason).toMatch(/no events/i);
+  });
+
+  it("the observability write does not change the 200 response body shape", async () => {
+    // The route always returns JSON with { limitless, rk9, compile, budgetMs }.
+    // Confirm the observability write is a side-effect that doesn't alter the
+    // response shape — recordImportRuns is a fire-and-await step at the very end.
+    const { status, body } = await callGet();
+
+    expect(status).toBe(200);
+    expect(body).toHaveProperty("limitless");
+    expect(body).toHaveProperty("rk9");
+    expect(body).toHaveProperty("compile");
+    expect(body).toHaveProperty("budgetMs");
+    // recordImportRuns must have been called (it's the observability write)
+    expect(mockRecordImportRuns).toHaveBeenCalledTimes(1);
   });
 });
