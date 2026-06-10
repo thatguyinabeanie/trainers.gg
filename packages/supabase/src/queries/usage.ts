@@ -780,7 +780,13 @@ export async function getSpeciesTeammates(
     rawMatrix.cells !== null &&
     typeof rawMatrix.cells === "object"
       ? rawMatrix
-      : { order: [], cells: {} };
+      : (() => {
+          console.error(
+            `getSpeciesTeammates.matrixShapeMismatch: matrix jsonb shape mismatch for species="${params.species}" format="${params.format}"`,
+            rawMatrix
+          );
+          return { order: [], cells: {} };
+        })();
 
   const teammates: TeammateRow[] = data.map((row) => ({
     teammate: row.teammate,

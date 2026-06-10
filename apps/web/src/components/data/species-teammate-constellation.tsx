@@ -7,6 +7,8 @@ import { Dex } from "@pkmn/dex";
 import { type TeammateRow } from "@trainers/supabase";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
+import { cn } from "@/lib/utils";
+
 import { computeRingLayout } from "./usage-series";
 import { DataChartCard } from "./data-chart-card";
 import { DataSpriteTooltip } from "./data-sprite-tooltip";
@@ -203,7 +205,10 @@ export function SpeciesTeammateConstellation({
               <Link
                 href={onTeammateHref(teammate.teammate)}
                 aria-label={`${displayName}: ${teammate.pairCount} teams (${teammate.pairPct}%)`}
-                className={`bg-card border-border hover:border-primary flex items-center justify-center rounded-full border shadow-sm transition-colors ${sizeClass}`}
+                className={cn(
+                  "bg-card border-border hover:border-primary flex items-center justify-center rounded-full border shadow-sm transition-colors",
+                  sizeClass
+                )}
               >
                 <img
                   src={sprite.url}
@@ -222,12 +227,4 @@ export function SpeciesTeammateConstellation({
       </div>
     </DataChartCard>
   );
-}
-
-// =============================================================================
-// Local cn helper (avoid importing @/lib/utils in a data component)
-// =============================================================================
-
-function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(" ");
 }
