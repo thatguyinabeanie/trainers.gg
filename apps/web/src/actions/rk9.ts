@@ -487,7 +487,7 @@ export async function scrapeRk9TeamForStanding(
  *
  * Applies a conditional update: only events currently at `import_status IN
  * ('pending', 'failed')` are moved to `'queued'`. Events already at
- * `'roster'`, `'teams'`, or `'completed'` are left untouched — the worker
+ * `'roster'`, `'teams'`, or `'complete'` are left untouched — the worker
  * handles in-flight states, and there is no benefit to re-queuing them.
  *
  * @returns `{ queued: 1 }` when the event was queued, `{ queued: 0 }` if it
@@ -534,7 +534,7 @@ export async function queueRk9Event(
  *
  * Same conditional semantics as `queueRk9Event`: only events at
  * `'pending'` or `'failed'` are moved to `'queued'`. Events already
- * in-flight (`'roster'`, `'teams'`) or `'completed'` are untouched.
+ * in-flight (`'roster'`, `'teams'`) or `'complete'` are untouched.
  *
  * Chunks IDs into batches of ≤100 to stay under the PostgREST URI limit.
  * Throws on any chunk error so the caller sees a hard failure rather than

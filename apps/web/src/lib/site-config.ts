@@ -38,6 +38,10 @@ export async function readSiteConfigValues(
   supabase: TypedClient,
   keys: string[]
 ): Promise<Record<string, unknown>> {
+  // Fail open on an empty key list — `.in("key", [])` builds an invalid
+  // PostgREST `in.()` filter that errors at runtime.
+  if (keys.length === 0) return {};
+
   const { data, error } = await supabase
     .from("site_config")
     .select("key, value")

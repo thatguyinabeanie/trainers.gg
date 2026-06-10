@@ -1007,7 +1007,7 @@ describe("ExternalData events table rendering", () => {
 
   it("queues a pending RK9 row for server-side import when Import is clicked", async () => {
     const { queueRk9Event } = jest.requireMock("@/actions/rk9");
-    queueRk9Event.mockResolvedValue({ success: true, data: undefined });
+    queueRk9Event.mockResolvedValue({ success: true, data: { queued: 1 } });
 
     render(<ExternalData />);
     await waitFor(() =>
@@ -1031,7 +1031,7 @@ describe("ExternalData events table rendering", () => {
 
   it("queues a roster-ready RK9 row for server-side import when Import is clicked", async () => {
     const { queueRk9Event } = jest.requireMock("@/actions/rk9");
-    queueRk9Event.mockResolvedValue({ success: true, data: undefined });
+    queueRk9Event.mockResolvedValue({ success: true, data: { queued: 1 } });
 
     render(<ExternalData />);
     await waitFor(() =>
