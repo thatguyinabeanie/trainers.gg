@@ -184,6 +184,178 @@ export async function triggerImportQueue(
   }
 }
 
+// =============================================================================
+// Queue Management
+// =============================================================================
+
+/**
+ * Un-queue Limitless tournaments by resetting their import state back to the
+ * pre-queue "pending" display state (import_status = NULL).
+ *
+ * - When `tournamentIds` is provided: only un-queue the given IDs (chunked
+ *   into batches of ≤100 to stay under the PostgREST URI limit). Only rows
+ *   currently at `import_status = 'queued'` are affected.
+ * - When `tournamentIds` is omitted: un-queue ALL rows with
+ *   `import_status = 'queued'` in a single update.
+ *
+ * NOTE: `import_status = NULL` is the "not yet queued" / pending display
+ * state — it is distinct from every named status and means "available to queue".
+ */
+export async function unqueueLimitlessTournaments(
+  tournamentIds?: string[]
+): Promise<ActionResult<{ unqueued: number }>> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const supabase = createServiceRoleClient();
+    const CHUNK_SIZE = 100; // PostgREST .in() filter is encoded in the URL — keep under 100
+
+    if (!tournamentIds) {
+      // No ids given — un-queue everything currently queued in one shot.
+      const { data: updated, error } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_status: null,
+          import_requested_at: null,
+          import_error: null,
+          import_attempts: 0,
+        })
+        .eq("import_status", "queued")
+        .select("tournament_id");
+
+      if (error) throw error;
+      return { success: true, data: { unqueued: updated?.length ?? 0 } };
+    }
+
+    if (tournamentIds.length === 0) {
+      return { success: true, data: { unqueued: 0 } };
+    }
+
+    let totalUnqueued = 0;
+
+    for (let i = 0; i < tournamentIds.length; i += CHUNK_SIZE) {
+      const chunk = tournamentIds.slice(i, i + CHUNK_SIZE);
+
+      const { data: updated, error } = await supabase
+        .schema("limitless")
+        .from("tournaments")
+        .update({
+          import_status: null,
+          import_requested_at: null,
+          import_error: null,
+          import_attempts: 0,
+        })
+        .in("tournament_id", chunk)
+        .eq("import_status", "queued")
+        .select("tournament_id");
+
+      if (error) throw error;
+      totalUnqueued += updated?.length ?? 0;
+    }
+
+    return { success: true, data: { unqueued: totalUnqueued } };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to un-queue tournaments"),
+    };
+  }
+}
+
+/**
+ * Recover tournaments stuck in the `importing` state.
+ *
+ * A row gets stuck when the worker (or a manual import) claimed it by setting
+ * `import_status = 'importing'` but then crashed or timed out before writing a
+ * terminal status. This action resets any such row whose `import_started_at`
+ * is older than 10 minutes back to `'queued'` so the worker will retry it.
+ *
+ * NOTE: Unlike the worker's automatic stale-recovery path (which increments
+ * `import_attempts`), this is an explicit admin action — it intentionally
+ * leaves `import_attempts` unchanged so the row gets a full retry budget.
+ */
+export async function resetStuckLimitlessImports(): Promise<
+  ActionResult<{ reset: number }>
+> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const supabase = createServiceRoleClient();
+
+    // Compute the cutoff as an ISO string — PostgREST accepts ISO 8601 in lt/gt filters.
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+
+    const { data: updated, error } = await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .update({ import_status: "queued" })
+      .eq("import_status", "importing")
+      .lt("import_started_at", tenMinutesAgo)
+      .select("tournament_id");
+
+    if (error) throw error;
+    return { success: true, data: { reset: updated?.length ?? 0 } };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to reset stuck imports"),
+    };
+  }
+}
+
+/**
+ * Re-queue all permanently-failed tournaments for a fresh import attempt.
+ *
+ * Use this after an API outage or a systematic import bug is fixed — it clears
+ * the failure state on every `import_status = 'failed'` row so the worker will
+ * pick them up again on the next pass.
+ *
+ * `import_attempts` is reset to 0 so each row gets a full retry budget from
+ * scratch rather than immediately failing again on the first attempt.
+ */
+export async function requeueFailedLimitlessTournaments(): Promise<
+  ActionResult<{ requeued: number }>
+> {
+  try {
+    const userId = await getUserId();
+    if (!userId) return { success: false, error: "Not authenticated" };
+
+    const isAdmin = await isSiteAdmin();
+    if (!isAdmin) return { success: false, error: "Requires site admin" };
+
+    const supabase = createServiceRoleClient();
+
+    const { data: updated, error } = await supabase
+      .schema("limitless")
+      .from("tournaments")
+      .update({
+        import_status: "queued",
+        import_attempts: 0,
+        import_error: null,
+        import_requested_at: new Date().toISOString(),
+      })
+      .eq("import_status", "failed")
+      .select("tournament_id");
+
+    if (error) throw error;
+    return { success: true, data: { requeued: updated?.length ?? 0 } };
+  } catch (e) {
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to re-queue failed tournaments"),
+    };
+  }
+}
+
 // Mirror of processOne's retry threshold — kept in sync manually.
 // Source of truth: packages/data-sources/src/limitless/import.ts MAX_ATTEMPTS.
 const MAX_IMPORT_ATTEMPTS = 3;
