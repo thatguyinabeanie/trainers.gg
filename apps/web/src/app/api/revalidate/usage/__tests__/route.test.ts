@@ -143,6 +143,15 @@ describe("Body validation", () => {
     expect(body.error).toBe("Invalid request body");
   });
 
+  it("returns 400 when a format entry is whitespace-only", async () => {
+    const { status, body } = await getJsonResponse(
+      makeRequest({ token: VALID_SECRET, body: { formats: ["   "] } })
+    );
+
+    expect(status).toBe(400);
+    expect(body.error).toBe("Invalid request body");
+  });
+
   it("returns 400 when a format entry exceeds 100 characters", async () => {
     const longFormat = "a".repeat(101);
 

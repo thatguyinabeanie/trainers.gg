@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect } from "@jest/globals";
+import { rawSlotFactory } from "@trainers/test-utils/factories";
 
 import {
   buildTeamSlotRows,
@@ -57,27 +58,13 @@ const trainersMeta: EventMeta = {
 };
 
 /**
- * Build a minimal RawSlotRow with sensible defaults.
- * Override any field for fixture-specific shapes.
+ * Build a RawSlotRow via the shared Fishery factory.
+ * playerKey + species stay required so fixtures remain self-describing.
  */
 function rawSlot(
   overrides: Partial<RawSlotRow> & { playerKey: string; species: string }
 ): RawSlotRow {
-  return {
-    division: null,
-    placement: null,
-    wins: null,
-    losses: null,
-    ties: null,
-    country: null,
-    position: 1,
-    heldItem: null,
-    ability: null,
-    teraType: null,
-    moves: [],
-    nature: null,
-    ...overrides,
-  };
+  return rawSlotFactory.build(overrides);
 }
 
 // =============================================================================
@@ -342,87 +329,57 @@ describe("buildTeamSlotRows — total_players per division group", () => {
 // =============================================================================
 
 describe("buildTeamSlotRows — moves filtering", () => {
-  it("filters out null entries, preserving order of non-null moves", () => {
+  it.each([
+    [
+      "null entries dropped, order preserved",
+      ["fake-out", null, "parting-shot", null],
+      ["fake-out", "parting-shot"],
+    ],
+    [
+      "empty-string entries dropped",
+      ["fake-out", "", "parting-shot", ""],
+      ["fake-out", "parting-shot"],
+    ],
+    [
+      "whitespace-only entries dropped",
+      ["fake-out", "   ", "parting-shot"],
+      ["fake-out", "parting-shot"],
+    ],
+    [
+      "order preserved after leading/interleaved nulls",
+      [null, "moonblast", null, "shadow-ball"],
+      ["moonblast", "shadow-ball"],
+    ],
+    ["all entries null/empty → empty array", [null, null, "", "  "], []],
+    [
+      "all 4 valid moves kept",
+      ["flare-blitz", "close-combat", "collision-course", "protect"],
+      ["flare-blitz", "close-combat", "collision-course", "protect"],
+    ],
+  ] as const)("%s", (_label, moves, expected) => {
     const raw = [
       rawSlot({
         playerKey: "p1",
         species: "incineroar",
-        moves: ["fake-out", null, "parting-shot", null],
+        moves: [...moves],
       }),
     ];
 
     const result = buildTeamSlotRows(rk9Meta, raw);
-    expect(result[0]?.moves).toEqual(["fake-out", "parting-shot"]);
+    expect(result[0]?.moves).toEqual(expected);
   });
+});
 
-  it("filters out empty-string entries", () => {
-    const raw = [
-      rawSlot({
-        playerKey: "p1",
-        species: "incineroar",
-        moves: ["fake-out", "", "parting-shot", ""],
-      }),
-    ];
+// =============================================================================
+// species trimming
+// =============================================================================
 
-    const result = buildTeamSlotRows(rk9Meta, raw);
-    expect(result[0]?.moves).toEqual(["fake-out", "parting-shot"]);
-  });
-
-  it("filters out whitespace-only entries", () => {
-    const raw = [
-      rawSlot({
-        playerKey: "p1",
-        species: "incineroar",
-        moves: ["fake-out", "   ", "parting-shot"],
-      }),
-    ];
+describe("buildTeamSlotRows — species trimming", () => {
+  it("stores the trimmed species, not the raw input", () => {
+    const raw = [rawSlot({ playerKey: "p1", species: "  incineroar  " })];
 
     const result = buildTeamSlotRows(rk9Meta, raw);
-    expect(result[0]?.moves).toEqual(["fake-out", "parting-shot"]);
-  });
-
-  it("preserves order of remaining moves after filtering", () => {
-    const raw = [
-      rawSlot({
-        playerKey: "p1",
-        species: "flutter-mane",
-        moves: [null, "moonblast", null, "shadow-ball"],
-      }),
-    ];
-
-    const result = buildTeamSlotRows(rk9Meta, raw);
-    expect(result[0]?.moves).toEqual(["moonblast", "shadow-ball"]);
-  });
-
-  it("returns an empty moves array when all entries are null or empty", () => {
-    const raw = [
-      rawSlot({
-        playerKey: "p1",
-        species: "incineroar",
-        moves: [null, null, "", "  "],
-      }),
-    ];
-
-    const result = buildTeamSlotRows(rk9Meta, raw);
-    expect(result[0]?.moves).toEqual([]);
-  });
-
-  it("returns all 4 moves when none are null or empty", () => {
-    const raw = [
-      rawSlot({
-        playerKey: "p1",
-        species: "koraidon",
-        moves: ["flare-blitz", "close-combat", "collision-course", "protect"],
-      }),
-    ];
-
-    const result = buildTeamSlotRows(rk9Meta, raw);
-    expect(result[0]?.moves).toEqual([
-      "flare-blitz",
-      "close-combat",
-      "collision-course",
-      "protect",
-    ]);
+    expect(result[0]?.species).toBe("incineroar");
   });
 });
 

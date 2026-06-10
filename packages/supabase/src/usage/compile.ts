@@ -252,7 +252,9 @@ export function buildTeamSlotRows(
       country: row.country,
       // Slot-level fields
       position: row.position,
-      species: row.species,
+      // Trimmed defensively — an untrimmed value would persist and break
+      // equality/index lookups against normalized slugs.
+      species: row.species.trim(),
       held_item: row.heldItem,
       ability: row.ability,
       tera_type: row.teraType,

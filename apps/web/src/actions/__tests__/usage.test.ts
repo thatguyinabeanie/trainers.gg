@@ -142,7 +142,6 @@ describe("calculateSourceUsage", () => {
     if (!result.success) throw new Error("expected success");
     expect(result.data.eventsComputed).toBe(0);
     expect(result.data.formatsProcessed).toBe(0);
-    expect(result.data.bucketsWritten).toBe(0);
 
     // No new formats → cache busting must be skipped entirely
     expect(mockUpdateTag).not.toHaveBeenCalled();
@@ -162,7 +161,6 @@ describe("calculateSourceUsage", () => {
     expect(result.data).toEqual({
       eventsComputed: 3,
       formatsProcessed: 1,
-      bucketsWritten: 0,
     });
 
     // compileSourceTeamSlots must be called with the validated source
@@ -614,7 +612,6 @@ describe("calculateAllSourceUsage", () => {
       expect(result.data).toEqual({
         eventsComputed: 7,
         formatsProcessed: 3,
-        bucketsWritten: 0,
       });
     }
   });
@@ -631,7 +628,6 @@ describe("calculateAllSourceUsage", () => {
       expect(result.data).toEqual({
         eventsComputed: 0,
         formatsProcessed: 0,
-        bucketsWritten: 0,
       });
     }
     // No new events → no cache tags busted

@@ -113,22 +113,23 @@ CREATE POLICY "team_slots_read"
   ON public.team_slots FOR SELECT
   USING (true);
 
--- Write-deny: defense-in-depth — the service-role client (importer) bypasses RLS,
--- so these policies only block authenticated user requests.  Matches the pattern
--- used by event_usage in migration 20260604225054_usage_stats_schema.sql.
+-- Write-deny: defense-in-depth — the service-role client (importer) bypasses RLS.
+-- Both anon and authenticated are listed explicitly (anon is denied by default,
+-- but the explicit form matches the convention from
+-- 20260606000000_add_anon_rls_to_pipeline_tables.sql).
 DROP POLICY IF EXISTS "no_user_writes_team_slots" ON public.team_slots;
 CREATE POLICY "no_user_writes_team_slots"
-  ON public.team_slots FOR INSERT TO authenticated
+  ON public.team_slots FOR INSERT TO anon, authenticated
   WITH CHECK (false);
 
 DROP POLICY IF EXISTS "no_user_updates_team_slots" ON public.team_slots;
 CREATE POLICY "no_user_updates_team_slots"
-  ON public.team_slots FOR UPDATE TO authenticated
+  ON public.team_slots FOR UPDATE TO anon, authenticated
   USING (false) WITH CHECK (false);
 
 DROP POLICY IF EXISTS "no_user_deletes_team_slots" ON public.team_slots;
 CREATE POLICY "no_user_deletes_team_slots"
-  ON public.team_slots FOR DELETE TO authenticated
+  ON public.team_slots FOR DELETE TO anon, authenticated
   USING (false);
 
 
@@ -702,17 +703,24 @@ AS $$
     INNER JOIN target_buckets tb ON tb.bucket = asc_inner.bucket
     WHERE asc_inner.species = p_species
   ),
-  -- Rank of target species within each bucket across all species
+  -- Rank of target species within each bucket across all species.
+  -- The window must run over ALL species per bucket BEFORE filtering to
+  -- p_species — a WHERE on the same level executes before the window
+  -- function, leaving a single-row partition and a constant rank of 1.
   bucket_ranks AS (
-    SELECT
-      asc_inner.bucket,
-      dense_rank() OVER (
-        PARTITION BY asc_inner.bucket
-        ORDER BY asc_inner.player_count DESC, asc_inner.species ASC
-      )::int AS species_rank
-    FROM all_species_counts asc_inner
-    INNER JOIN target_buckets tb ON tb.bucket = asc_inner.bucket
-    WHERE asc_inner.species = p_species
+    SELECT ranked.bucket, ranked.species_rank
+    FROM (
+      SELECT
+        asc_inner.bucket,
+        asc_inner.species,
+        dense_rank() OVER (
+          PARTITION BY asc_inner.bucket
+          ORDER BY asc_inner.player_count DESC, asc_inner.species ASC
+        )::int AS species_rank
+      FROM all_species_counts asc_inner
+      INNER JOIN target_buckets tb ON tb.bucket = asc_inner.bucket
+    ) ranked
+    WHERE ranked.species = p_species
   ),
   -- Detail histograms for target species in target buckets (non-move dimensions)
   detail_slots AS (

@@ -48,7 +48,6 @@ export async function calculateSourceUsage(
   ActionResult<{
     eventsComputed: number;
     formatsProcessed: number;
-    bucketsWritten: number;
   }>
 > {
   try {
@@ -79,7 +78,6 @@ export async function calculateSourceUsage(
         data: {
           eventsComputed: eventsCompiled,
           formatsProcessed: 0,
-          bucketsWritten: 0,
         },
       };
     }
@@ -93,7 +91,6 @@ export async function calculateSourceUsage(
       data: {
         eventsComputed: eventsCompiled,
         formatsProcessed: formats.length,
-        bucketsWritten: 0,
       },
     };
   } catch (e) {
@@ -120,24 +117,21 @@ export async function calculateAllSourceUsage(): Promise<
   ActionResult<{
     eventsComputed: number;
     formatsProcessed: number;
-    bucketsWritten: number;
   }>
 > {
   try {
     const sources = ["rk9", "limitless"] as const;
     let eventsComputed = 0,
-      formatsProcessed = 0,
-      bucketsWritten = 0;
+      formatsProcessed = 0;
     for (const s of sources) {
       const r = await calculateSourceUsage(s);
       if (!r.success) throw new Error(r.error);
       eventsComputed += r.data.eventsComputed;
       formatsProcessed += r.data.formatsProcessed;
-      bucketsWritten += r.data.bucketsWritten;
     }
     return {
       success: true,
-      data: { eventsComputed, formatsProcessed, bucketsWritten },
+      data: { eventsComputed, formatsProcessed },
     };
   } catch (e) {
     return {

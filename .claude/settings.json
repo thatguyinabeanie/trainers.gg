@@ -95,7 +95,7 @@
           },
           {
             "type": "command",
-            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) if grep -qi \"CREATE TABLE\" \"$f\" 2>/dev/null && ! grep -qi \"ENABLE ROW LEVEL SECURITY\" \"$f\" 2>/dev/null; then echo \"WARNING: New table detected without ENABLE ROW LEVEL SECURITY. All tables must have RLS enabled.\"; fi;; esac; done; exit 0"
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do [ -f \"$f\" ] || continue; case \"$f\" in */supabase/migrations/*.sql) if grep -qi \"CREATE TABLE\" \"$f\" && ! grep -qi \"ENABLE ROW LEVEL SECURITY\" \"$f\"; then echo \"WARNING: New table detected without ENABLE ROW LEVEL SECURITY. All tables must have RLS enabled.\"; fi;; esac; done; exit 0"
           },
           {
             "type": "command",
@@ -103,7 +103,7 @@
           },
           {
             "type": "command",
-            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */apps/web/e2e/*) echo \"Editing e2e tests — consider the 'writing-e2e-tests' skill.\";; */supabase/functions/*) echo \"Editing an edge function — consider the 'creating-edge-functions' skill.\";; *.ts|*.tsx) if grep -qF '.channel(' \"$f\" 2>/dev/null; then echo \"This file uses Supabase Realtime (.channel) — consider the 'using-realtime' skill.\"; fi; if grep -qE 'recharts|d3-sankey' \"$f\" 2>/dev/null; then echo \"This file uses chart libraries — consider the 'building-charts' skill.\"; fi;; esac; done; exit 0"
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do [ -f \"$f\" ] || continue; case \"$f\" in */apps/web/e2e/*) echo \"Editing e2e tests — consider the 'writing-e2e-tests' skill.\";; */supabase/functions/*) echo \"Editing an edge function — consider the 'creating-edge-functions' skill.\";; *.ts|*.tsx) if grep -qF '.channel(' \"$f\"; then echo \"This file uses Supabase Realtime (.channel) — consider the 'using-realtime' skill.\"; fi; if grep -qE 'recharts|d3-sankey' \"$f\"; then echo \"This file uses chart libraries — consider the 'building-charts' skill.\"; fi;; esac; done; exit 0"
           }
         ]
       },

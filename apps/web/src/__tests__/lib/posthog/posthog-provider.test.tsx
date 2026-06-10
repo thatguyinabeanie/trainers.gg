@@ -162,7 +162,10 @@ describe("PostHogProvider", () => {
     expect(mockStartSessionRecording).not.toHaveBeenCalled();
   });
 
-  it("restarts session recording on impersonation true→false transition", async () => {
+  it("registers impersonation on one mount and stays unregistered on a fresh non-impersonating mount", async () => {
+    // NOTE: the true→false restart transition inside a single mount cannot be
+    // driven externally anymore (the flag is fetched once per mount), so this
+    // covers the two mount states rather than the in-place transition.
     // First mount: impersonating. The action resolves true after mount.
     mockCheckImpersonatingAction.mockResolvedValue(true);
 

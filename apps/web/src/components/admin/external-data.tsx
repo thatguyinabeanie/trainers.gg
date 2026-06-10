@@ -735,12 +735,12 @@ export function ExternalData() {
     try {
       const result = await calculateAllSourceUsage();
       if (!result.success) throw new Error(result.error);
-      const { eventsComputed, formatsProcessed, bucketsWritten } = result.data;
+      const { eventsComputed, formatsProcessed } = result.data;
       if (eventsComputed === 0) {
         toast.success("No new events");
       } else {
         toast.success(
-          `Computed ${eventsComputed} event(s) · ${formatsProcessed} format(s) · ${bucketsWritten} bucket(s)`
+          `Compiled ${eventsComputed} event(s) across ${formatsProcessed} format(s)`
         );
       }
       setLastCalculatedAt(new Date().toISOString());

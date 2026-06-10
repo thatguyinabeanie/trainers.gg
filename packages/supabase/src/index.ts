@@ -20,6 +20,15 @@ export * from "./queries";
 // Mutation exports
 export * from "./mutations";
 
+// Usage compile exports — pure slot-row mapping shared by the mutations
+// layer, tests, and test-utils factories.
+export {
+  buildTeamSlotRows,
+  type EventMeta,
+  type RawSlotRow,
+  type TeamSlotRow,
+} from "./usage/compile";
+
 // Type exports
 export type {
   Database,

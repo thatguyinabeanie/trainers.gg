@@ -96,9 +96,15 @@ function ImpersonationSync() {
 
   useEffect(() => {
     let ignore = false;
-    checkImpersonatingAction().then((value) => {
-      if (!ignore) setIsImpersonating(value);
-    });
+    checkImpersonatingAction()
+      .then((value) => {
+        if (!ignore) setIsImpersonating(value);
+      })
+      .catch((err: unknown) => {
+        // Keep the default-false state — an analytics config check must never
+        // surface as an unhandled rejection in the browser.
+        console.error("[posthog] impersonation check failed:", err);
+      });
     return () => {
       ignore = true;
     };

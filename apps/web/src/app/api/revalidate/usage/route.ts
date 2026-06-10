@@ -28,7 +28,9 @@ import { revalidateUsageStatsCaches } from "@/lib/cache-invalidation";
 // =============================================================================
 
 const bodySchema = z.object({
-  formats: z.array(z.string().min(1).max(100)).max(50).optional(),
+  // trim() rejects whitespace-only entries before min(1) — a blank tag would
+  // trigger a pointless revalidation and confuse the logs.
+  formats: z.array(z.string().trim().min(1).max(100)).max(50).optional(),
 });
 
 // =============================================================================
