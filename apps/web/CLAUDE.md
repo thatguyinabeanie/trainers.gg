@@ -23,5 +23,5 @@ Next.js 16 app with React 19.2, App Router, and Server Components.
 - `building-web-app` — routes, Server Actions, data fetching, caching, TanStack Query
 - `creating-components` — UI components, design tokens, design principles
 - `querying-supabase` — Supabase client selection, query/mutation conventions
-- `reviewing-caching` — `unstable_cache`, TanStack Query, cache invalidation
+- `reviewing-caching` — `'use cache'` (Cache Components), TanStack Query, cache invalidation
 - `tracking-analytics` — PostHog event constants
