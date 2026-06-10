@@ -252,6 +252,54 @@ export function coerceColumns(raw: string | undefined): PipelineColumn[] {
 }
 
 // =============================================================================
+// Tab navigation
+// =============================================================================
+
+export const VALID_TABS = ["overview", "trends", "sources"] as const;
+export type DataTab = (typeof VALID_TABS)[number];
+export const DEFAULT_TAB: DataTab = "overview";
+
+/**
+ * Coerces a raw string to a valid `DataTab`.
+ *
+ * Returns `DEFAULT_TAB` when `raw` is not one of the allowed tab names.
+ */
+export function coerceTab(raw: string | null | undefined): DataTab {
+  return (VALID_TABS as readonly string[]).includes(raw as DataTab)
+    ? (raw as DataTab)
+    : DEFAULT_TAB;
+}
+
+// =============================================================================
+// Top-percentile threshold
+// =============================================================================
+
+export const VALID_TOP_PCTS = [0.05, 0.1, 0.25] as const;
+export type TopPct = (typeof VALID_TOP_PCTS)[number];
+export const DEFAULT_TOP_PCT: TopPct = 0.1;
+
+/**
+ * Coerces a raw string to a valid `TopPct` threshold value.
+ *
+ * Returns `DEFAULT_TOP_PCT` when `raw` is not one of the allowed values.
+ */
+export function coerceTopPct(raw: string | null | undefined): TopPct {
+  const n = Number(raw);
+  return (VALID_TOP_PCTS as readonly number[]).includes(n)
+    ? (n as TopPct)
+    : DEFAULT_TOP_PCT;
+}
+
+/**
+ * UI label for a top-percentile threshold.
+ *
+ * e.g. 0.1 → "Top 10%". Never uses the phrase "top cut".
+ */
+export function topPctLabel(topPct: number): string {
+  return `Top ${Math.round(topPct * 100)}%`;
+}
+
+// =============================================================================
 // Min-players filter
 // =============================================================================
 
