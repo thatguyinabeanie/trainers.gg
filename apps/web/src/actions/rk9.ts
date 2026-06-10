@@ -8,64 +8,30 @@ import { getSiteConfig } from "@/actions/site-config";
 import {
   parseEventsPage,
   parseArchivedEventsPage,
-  parseRosterPage,
   parseTeamListPage,
-  detectEventFormat,
-  formatDetectionNeedsHtml,
 } from "@/lib/rk9/scraper";
-import { syncEvents, importEvent, seedSpeciesMap } from "@/lib/rk9";
+import { syncEvents } from "@/lib/rk9";
 import type { RK9Event } from "@/lib/rk9";
+import {
+  fetchRk9Html,
+  assertValidEventId,
+  normalizeSpeciesInline,
+  runRosterStage,
+  runTeamsBatch,
+  FETCH_TIMEOUT_MS,
+  TEAMS_BATCH_SIZE,
+} from "@/lib/rk9/worker";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const RK9_BASE_URL = "https://rk9.gg";
 const WAYBACK_BASE_URL = "https://web.archive.org";
 const WAYBACK_CDX_URL = "https://web.archive.org/cdx/search/cdx";
-const FETCH_TIMEOUT_MS = 30_000;
-const DELAY_ROSTER_MS = 1000;
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers (Wayback-specific — only used by discoverRk9Events)
 // ---------------------------------------------------------------------------
-
-function buildRk9Url(path: string): string {
-  // Path must start with / and contain only safe URL characters
-  if (!/^\/[\w\-/.]+$/.test(path)) {
-    throw new Error(`Invalid RK9 path: ${path}`);
-  }
-  const url = new URL(path, RK9_BASE_URL);
-  // Verify the constructed URL still points to rk9.gg (prevents open-redirect SSRF)
-  if (url.origin !== RK9_BASE_URL) {
-    throw new Error(`URL origin mismatch: ${url.origin}`);
-  }
-  return url.href;
-}
-
-async function fetchRk9Html(path: string): Promise<string> {
-  const url = buildRk9Url(path);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "trainers.gg-rk9-scraper/1.0 (data import)",
-        Accept: "text/html",
-      },
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return await response.text();
-  } finally {
-    clearTimeout(timeout);
-  }
-}
 
 /**
  * Fetch an archived page from the Wayback Machine.
@@ -80,11 +46,9 @@ async function fetchWaybackHtml(
   timestamp: string,
   path: string
 ): Promise<string> {
-  // Validate timestamp is numeric
   if (!/^\d{8,14}$/.test(timestamp)) {
     throw new Error(`Invalid Wayback timestamp: ${timestamp}`);
   }
-  // Validate path starts with /
   if (!path.startsWith("/")) {
     throw new Error(`Path must start with /: ${path}`);
   }
@@ -111,13 +75,6 @@ async function fetchWaybackHtml(
     return await response.text();
   } finally {
     clearTimeout(timeout);
-  }
-}
-
-/** RK9 event IDs are alphanumeric with hyphens */
-function assertValidEventId(eventId: string): void {
-  if (!/^[\w-]+$/.test(eventId)) {
-    throw new Error(`Invalid event ID: ${eventId}`);
   }
 }
 
@@ -151,7 +108,6 @@ async function fetchWaybackSnapshots(): Promise<string[]> {
     }
 
     const rows = (await response.json()) as string[][];
-    // First row is headers ["timestamp", "statuscode"], rest are data
     return rows
       .slice(1)
       .filter(([, status]) => status === "200")
@@ -165,25 +121,19 @@ async function fetchWaybackSnapshots(): Promise<string[]> {
  * Pick one representative snapshot per competitive season from a list of
  * timestamps. Maximizes coverage by selecting the latest snapshot in each
  * season window (Sep–Aug).
- *
- * A competitive season runs Sep of year N to Aug of year N+1.
- * We label it by the ending year (e.g., "2023" = Sep 2022 – Aug 2023).
  */
 function pickSnapshotsPerSeason(timestamps: string[]): string[] {
-  // Group by season
   const bySeason = new Map<string, string[]>();
 
   for (const ts of timestamps) {
     const year = parseInt(ts.slice(0, 4), 10);
     const month = parseInt(ts.slice(4, 6), 10);
-    // Season label: if month >= 9, it's the NEXT year's season
     const season = month >= 9 ? String(year + 1) : String(year);
     const existing = bySeason.get(season) ?? [];
     existing.push(ts);
     bySeason.set(season, existing);
   }
 
-  // Pick the latest timestamp from each season (most complete data)
   const picks: string[] = [];
   for (const [, seasonTimestamps] of bySeason) {
     seasonTimestamps.sort();
@@ -191,10 +141,6 @@ function pickSnapshotsPerSeason(timestamps: string[]): string[] {
   }
 
   return picks.sort();
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ---------------------------------------------------------------------------
@@ -211,7 +157,7 @@ function sleep(ms: number): Promise<void> {
  * one per season for maximum coverage with minimal requests.
  */
 export async function discoverRk9Events(): Promise<
-  ActionResult & {
+  ActionResult<void> & {
     events?: RK9Event[];
     sources?: { live: number; archive: number };
   }
@@ -234,7 +180,6 @@ export async function discoverRk9Events(): Promise<
       allEvents.push(...liveEvents);
       liveCount = liveEvents.length;
     } catch (e) {
-      // Live fetch failing shouldn't block archive recovery
       console.warn(
         "[discoverRk9Events] Live RK9 fetch failed:",
         getErrorMessage(e, "unknown")
@@ -242,14 +187,11 @@ export async function discoverRk9Events(): Promise<
     }
 
     // Source 2: Wayback Machine (all historical seasons)
-    // Always try historical snapshots — first attempt dynamic CDX discovery,
-    // then fall back to hardcoded known-good timestamps per season so that
-    // older events are found even when the Wayback CDX API is unavailable.
     const FALLBACK_SNAPSHOTS: string[] = [
-      "20220801120000", // 2021-22 season
-      "20230801120000", // 2022-23 season
-      "20240801120000", // 2023-24 season
-      "20250601120000", // 2024-25 season
+      "20220801120000",
+      "20230801120000",
+      "20240801120000",
+      "20250601120000",
     ];
 
     let snapshotPicks: string[] = [];
@@ -264,7 +206,6 @@ export async function discoverRk9Events(): Promise<
       snapshotPicks = FALLBACK_SNAPSHOTS;
     }
 
-    // If CDX returned snapshots but missed some seasons, supplement with fallbacks
     if (snapshotPicks.length > 0) {
       const coveredSeasons = new Set(
         snapshotPicks.map((ts) => {
@@ -304,10 +245,7 @@ export async function discoverRk9Events(): Promise<
       };
     }
 
-    // Deduplicate by eventId (later entries win — live data takes priority
-    // over archive since allEvents has live first, then archive appended)
-    // Actually reverse: archive is appended after live, so live should win.
-    // Use a Map that preserves first-seen (live data).
+    // Deduplicate by eventId — live data wins (first-seen)
     const deduped = new Map<string, RK9Event>();
     for (const event of allEvents) {
       if (!deduped.has(event.eventId)) {
@@ -316,7 +254,6 @@ export async function discoverRk9Events(): Promise<
     }
     const uniqueEvents = Array.from(deduped.values());
 
-    // Upsert to database
     const supabase = createServiceRoleClient();
     await syncEvents(supabase, uniqueEvents);
 
@@ -335,12 +272,12 @@ export async function discoverRk9Events(): Promise<
 }
 
 // ---------------------------------------------------------------------------
-// Action: Scrape roster for a single event
+// Action: Scrape roster for a single event (thin wrapper over runRosterStage)
 // ---------------------------------------------------------------------------
 
 export async function scrapeRk9Roster(
   eventId: string
-): Promise<ActionResult & { playerCount?: number }> {
+): Promise<ActionResult<void> & { playerCount?: number }> {
   try {
     assertValidEventId(eventId);
     const userId = await getUserId();
@@ -350,71 +287,14 @@ export async function scrapeRk9Roster(
     if (!isAdmin) return { success: false, error: "Requires site admin" };
 
     const supabase = createServiceRoleClient();
+    const result = await runRosterStage(supabase, eventId);
 
-    // Update status to "roster"
-    await supabase
-      .schema("rk9")
-      .from("events")
-      .update({ import_status: "roster", import_error: null })
-      .eq("event_id", eventId);
-
-    // Detect format — use calendar directly when possible, only fetch
-    // tournament page HTML for Champions-era events that need disambiguation
-    const { data: eventRow } = await supabase
-      .schema("rk9")
-      .from("events")
-      .select("date_start")
-      .eq("event_id", eventId)
-      .single();
-    const dateStart = eventRow?.date_start ?? "";
-    let formatId: string | null = null;
-
-    if (formatDetectionNeedsHtml(dateStart)) {
-      // Champions era — need HTML to distinguish SV vs Champions
-      await sleep(DELAY_ROSTER_MS);
-      const tournamentHtml = await fetchRk9Html(`/tournament/${eventId}`);
-      formatId = detectEventFormat(tournamentHtml, dateStart);
-    } else {
-      // Pre-Champions — calendar is authoritative, no HTTP needed
-      formatId = detectEventFormat("", dateStart);
-    }
-    if (formatId) {
-      await supabase
-        .schema("rk9")
-        .from("events")
-        .update({ format_id: formatId })
-        .eq("event_id", eventId);
+    if (!result.success) {
+      return { success: false, error: result.error ?? "Roster scrape failed" };
     }
 
-    // Fetch roster page
-    await sleep(DELAY_ROSTER_MS);
-    const html = await fetchRk9Html(`/roster/${eventId}`);
-    const roster = parseRosterPage(html);
-
-    // Import roster (without teams)
-    const result = await importEvent(supabase, eventId, roster, {});
-
-    return {
-      success: true,
-      data: undefined,
-      playerCount: result.standingsInserted,
-    };
+    return { success: true, data: undefined, playerCount: result.playerCount };
   } catch (e) {
-    // Mark event as failed
-    const supabase = createServiceRoleClient();
-    const { error: rosterStatusErr } = await supabase
-      .schema("rk9")
-      .from("events")
-      .update({
-        import_status: "failed",
-        import_error: getErrorMessage(e, "Roster scrape failed"),
-      })
-      .eq("event_id", eventId);
-    if (rosterStatusErr)
-      console.error(
-        `[rk9-roster] Failed to update event status to failed: ${rosterStatusErr.message}`
-      );
-
     return {
       success: false,
       error: getErrorMessage(e, "Failed to scrape roster"),
@@ -423,23 +303,22 @@ export async function scrapeRk9Roster(
 }
 
 // ---------------------------------------------------------------------------
-// Action: Scrape teams for a single event (chunked — call repeatedly)
+// Action: Scrape teams for a single event (thin wrapper over runTeamsBatch)
 // ---------------------------------------------------------------------------
-
-const TEAMS_BATCH_SIZE = 25;
 
 /**
  * Scrape a batch of team lists for an event.
  *
  * Call this repeatedly until `done === true`. Each call scrapes up to
- * TEAMS_BATCH_SIZE teams, skipping standings that already have team_pokemon.
+ * batchSize teams (read from site config, defaulting to TEAMS_BATCH_SIZE),
+ * skipping standings that already have team_pokemon.
  * Returns progress so the client can show a progress bar.
  */
 export async function scrapeRk9TeamsBatch(
   eventId: string,
   options?: { force?: boolean }
 ): Promise<
-  ActionResult & {
+  ActionResult<void> & {
     done?: boolean;
     scraped?: number;
     total?: number;
@@ -475,354 +354,19 @@ export async function scrapeRk9TeamsBatch(
     );
 
     const supabase = createServiceRoleClient();
-
-    // Fetch all standings for this event, paginated to stay within PostgREST
-    // max_rows (events like Indianapolis have 1092+ standings).
-    const PAGE_SIZE = 1000;
-    const allStandings: Array<{
-      id: number;
-      roster_entry_id: string | null;
-      team_scrape_attempted_at: string | null;
-    }> = [];
-    for (let offset = 0; ; offset += PAGE_SIZE) {
-      const { data: page, error: pageErr } = await supabase
-        .schema("rk9")
-        .from("standings")
-        .select("id, roster_entry_id, team_scrape_attempted_at")
-        .eq("event_id", eventId)
-        .not("roster_entry_id", "is", null)
-        .range(offset, offset + PAGE_SIZE - 1);
-      if (pageErr) throw pageErr;
-      if (!page?.length) break;
-      allStandings.push(...page);
-      if (page.length < PAGE_SIZE) break;
-    }
-    if (!allStandings || allStandings.length === 0) {
-      // No standings linked yet. Use player_count as a heuristic to decide
-      // whether this is a genuinely empty event or standings just aren't linked:
-      // - player_count === 0: empty event — mark complete (no team lists possible)
-      // - player_count > 0: roster exists but standings aren't linked yet — leave
-      //   as "teams" so the batch can be retried once standings are linked.
-      const { data: evt, error: evtErr } = await supabase
-        .schema("rk9")
-        .from("events")
-        .select("player_count")
-        .eq("event_id", eventId)
-        .maybeSingle();
-
-      // Fail safe: if the lookup errors, leave as "teams" (retryable) rather
-      // than falling through to "complete" which would hide the missing data.
-      if (evtErr) {
-        console.error(
-          `[rk9-teams] player_count lookup failed for ${eventId}: ${evtErr.message}`
-        );
-        return {
-          success: true,
-          data: undefined,
-          done: false,
-          scraped: 0,
-          total: 0,
-          failed: 0,
-        };
-      }
-
-      const statusWhenNoStandings =
-        (evt?.player_count ?? 0) > 0 ? "teams" : "complete";
-
-      const { error: updateErr } = await supabase
-        .schema("rk9")
-        .from("events")
-        .update({
-          import_status: statusWhenNoStandings,
-          import_error: null,
-          has_team_lists: false,
-          ...(statusWhenNoStandings === "complete"
-            ? { imported_at: new Date().toISOString() }
-            : {}),
-          teams_imported_count: 0,
-        })
-        .eq("event_id", eventId);
-
-      if (updateErr)
-        console.error(
-          `[rk9-teams] Failed to write no-standings status for ${eventId}: ${updateErr.message}`
-        );
-
-      return {
-        success: true,
-        data: undefined,
-        done: true,
-        scraped: 0,
-        total: 0,
-        failed: 0,
-      };
-    }
-
-    // Skip standings that already have a scrape attempt recorded.
-    // force=true re-scrapes all regardless of timestamp.
-    const remaining = force
-      ? allStandings
-      : allStandings.filter((s) => s.team_scrape_attempted_at == null);
-
-    const toProcess = remaining;
-
-    const total = allStandings.length;
-    const alreadyScraped = total - toProcess.length;
-
-    // If nothing remaining, all standings have been attempted
-    if (toProcess.length === 0) {
-      // Chunk the .in() to avoid URI too long for large events (>100 standings)
-      const importedSet = new Set<number>();
-      const allIds = allStandings.map((s) => s.id);
-      for (let i = 0; i < allIds.length; i += 100) {
-        const { data: chunk, error: chunkErr } = await supabase
-          .schema("rk9")
-          .from("team_pokemon")
-          .select("standing_id")
-          .in("standing_id", allIds.slice(i, i + 100))
-          .limit(700); // max 100 standings × 6 pokemon + buffer
-        if (chunkErr)
-          throw new Error(
-            `team_pokemon count query failed: ${chunkErr.message}`
-          );
-        for (const row of chunk ?? []) importedSet.add(row.standing_id);
-      }
-      const importedCount = importedSet.size;
-      const allImported = importedCount === total;
-
-      const { error: noStandingsStatusErr } = await supabase
-        .schema("rk9")
-        .from("events")
-        .update({
-          import_status: allImported ? "complete" : "teams",
-          import_error: null,
-          has_team_lists: importedCount > 0,
-          ...(allImported ? { imported_at: new Date().toISOString() } : {}),
-          teams_imported_count: importedCount,
-        })
-        .eq("event_id", eventId);
-      if (noStandingsStatusErr)
-        console.error(
-          `[rk9-teams] Failed to update event status: ${noStandingsStatusErr.message}`
-        );
-
-      return {
-        success: true,
-        data: undefined,
-        done: true,
-        scraped: total,
-        total,
-        failed: 0,
-      };
-    }
-
-    // Update status to "teams" if not already
-    const { error: teamsStatusErr } = await supabase
-      .schema("rk9")
-      .from("events")
-      .update({ import_status: "teams", import_error: null })
-      .eq("event_id", eventId);
-    if (teamsStatusErr)
-      console.error(
-        `[rk9-teams] Failed to update event status: ${teamsStatusErr.message}`
-      );
-
-    // Load species map
-    const { data: speciesMapRows, error: speciesMapErr } = await supabase
-      .schema("rk9")
-      .from("species_map")
-      .select("raw_name, species_slug");
-    if (speciesMapErr)
-      console.warn(
-        `[rk9-teams] species_map load failed: ${speciesMapErr.message}`
-      );
-    const speciesMap = new Map<string, string>();
-    for (const row of speciesMapRows ?? []) {
-      speciesMap.set(row.raw_name, row.species_slug);
-    }
-
-    // Process this batch
-    const batch = toProcess.slice(0, batchSize);
-    let batchScraped = 0;
-    let batchFailed = 0;
-    const newSpecies = new Map<string, string>();
-    const allTeamRows: {
-      standing_id: number;
-      position: number;
-      species: string;
-      species_raw: string;
-      ability: string | null;
-      held_item: string | null;
-      tera_type: string | null;
-      stat_alignment: string | null;
-      moves: string[] | null;
-    }[] = [];
-
-    // Process in concurrent chunks — RK9 has no rate limiting so no delay needed
-    for (let i = 0; i < batch.length; i += concurrency) {
-      const chunk = batch.slice(i, i + concurrency);
-      const chunkResults = await Promise.all(
-        chunk.map(async (standing) => {
-          const entryId = standing.roster_entry_id;
-          if (!entryId)
-            return {
-              rows: [] as typeof allTeamRows,
-              newSpeciesEntries: new Map<string, string>(),
-              scraped: 0,
-              failed: 0,
-            };
-
-          try {
-            const html = await fetchRk9Html(
-              `/teamlist/public/${eventId}/${entryId}`
-            );
-            const pokemon = parseTeamListPage(html);
-            const rows: typeof allTeamRows = [];
-            const newSpeciesEntries = new Map<string, string>();
-
-            if (pokemon.length === 0) {
-              // Player didn't submit a team list — no rows to insert.
-              // team_scrape_attempted_at will be stamped for this chunk below.
-              return { rows, newSpeciesEntries, scraped: 1, failed: 0 };
-            }
-
-            for (const [idx, mon] of pokemon.entries()) {
-              if (
-                !newSpecies.has(mon.speciesRaw) &&
-                !speciesMap.has(mon.speciesRaw)
-              ) {
-                newSpeciesEntries.set(
-                  mon.speciesRaw,
-                  normalizeSpeciesInline(mon.speciesRaw)
-                );
-              }
-              rows.push({
-                standing_id: standing.id,
-                position: idx + 1,
-                species:
-                  speciesMap.get(mon.speciesRaw) ??
-                  newSpecies.get(mon.speciesRaw) ??
-                  newSpeciesEntries.get(mon.speciesRaw) ??
-                  normalizeSpeciesInline(mon.speciesRaw),
-                species_raw: mon.speciesRaw,
-                ability: mon.ability || null,
-                held_item: mon.heldItem || null,
-                tera_type: mon.teraType || null,
-                stat_alignment: mon.statAlignment ?? null,
-                moves: mon.moves.length > 0 ? mon.moves : null,
-              });
-            }
-
-            return { rows, newSpeciesEntries, scraped: 1, failed: 0 };
-          } catch (err) {
-            console.warn(
-              `[rk9-teams] Fetch failed for standing ${standing.id} (entry ${entryId}): ${err instanceof Error ? err.message : String(err)}`
-            );
-            return {
-              rows: [] as typeof allTeamRows,
-              newSpeciesEntries: new Map<string, string>(),
-              scraped: 0,
-              failed: 1,
-            };
-          }
-        })
-      );
-
-      // Merge chunk results into accumulators (safe: JS is single-threaded)
-      for (const result of chunkResults) {
-        allTeamRows.push(...result.rows);
-        for (const [raw, slug] of result.newSpeciesEntries) {
-          newSpecies.set(raw, slug);
-        }
-        batchScraped += result.scraped;
-        batchFailed += result.failed;
-      }
-    }
-
-    // Bulk-insert all collected team pokemon rows
-    if (allTeamRows.length > 0) {
-      const BULK_CHUNK = 200;
-      for (let i = 0; i < allTeamRows.length; i += BULK_CHUNK) {
-        const chunk = allTeamRows.slice(i, i + BULK_CHUNK);
-        const { error } = await supabase
-          .schema("rk9")
-          .from("team_pokemon")
-          .upsert(chunk, { onConflict: "standing_id,position" });
-        if (error) {
-          console.error(
-            `Team pokemon bulk insert chunk failed: ${error.message}`
-          );
-        }
-      }
-    }
-
-    // Stamp team_scrape_attempted_at for all standings in this batch
-    // (including empty-team and failed ones — prevents them from being
-    // re-scraped on subsequent calls unless force=true)
-    const batchIds = batch.map((s) => s.id);
-    await supabase
-      .schema("rk9")
-      .from("standings")
-      .update({ team_scrape_attempted_at: new Date().toISOString() })
-      .in("id", batchIds);
-
-    // Seed new species
-    if (newSpecies.size > 0) {
-      await seedSpeciesMap(supabase, newSpecies);
-    }
-
-    const totalScraped = alreadyScraped + batchScraped;
-    const allAttempted = totalScraped + batchFailed >= total;
-
-    // Count standings that actually have real team_pokemon rows (accurate import count).
-    // Chunk the .in() to avoid URI too long for large events (>100 standings)
-    const importedSet = new Set<number>();
-    const allIds = allStandings.map((s) => s.id);
-    for (let i = 0; i < allIds.length; i += 100) {
-      const { data: chunk, error: chunkErr } = await supabase
-        .schema("rk9")
-        .from("team_pokemon")
-        .select("standing_id")
-        .in("standing_id", allIds.slice(i, i + 100))
-        .limit(700);
-      if (chunkErr) {
-        console.error(
-          `[rk9-teams] team_pokemon count query failed: ${chunkErr.message}`
-        );
-        break;
-      }
-      for (const row of chunk ?? []) importedSet.add(row.standing_id);
-    }
-    const importedCount = importedSet.size;
-
-    // Only mark "complete" when every standing has real team data.
-    // If some players didn't submit or failed to scrape, stay at "teams".
-    const allImported = importedCount === total;
-    const done = allAttempted;
-
-    const { error: batchStatusErr } = await supabase
-      .schema("rk9")
-      .from("events")
-      .update({
-        import_status: allImported ? "complete" : "teams",
-        import_error: null,
-        has_team_lists: importedCount > 0,
-        ...(allImported ? { imported_at: new Date().toISOString() } : {}),
-        teams_imported_count: importedCount,
-      })
-      .eq("event_id", eventId);
-    if (batchStatusErr)
-      console.error(
-        `[rk9-teams] Failed to update event status: ${batchStatusErr.message}`
-      );
+    const result = await runTeamsBatch(supabase, eventId, {
+      batchSize,
+      concurrency,
+      force,
+    });
 
     return {
       success: true,
       data: undefined,
-      done,
-      scraped: totalScraped,
-      total,
-      failed: batchFailed,
+      done: result.done,
+      scraped: result.scraped,
+      total: result.total,
+      failed: result.failed,
     };
   } catch (e) {
     const supabase = createServiceRoleClient();
@@ -834,10 +378,11 @@ export async function scrapeRk9TeamsBatch(
         import_error: getErrorMessage(e, "Team scrape failed"),
       })
       .eq("event_id", eventId);
-    if (statusErr)
+    if (statusErr) {
       console.error(
         `[rk9-teams] Failed to update event status to failed: ${statusErr.message}`
       );
+    }
 
     return {
       success: false,
@@ -873,10 +418,11 @@ export async function scrapeRk9TeamForStanding(
       .schema("rk9")
       .from("species_map")
       .select("raw_name, species_slug");
-    if (speciesMapErr)
+    if (speciesMapErr) {
       console.warn(
         `[rk9-teams] species_map load failed: ${speciesMapErr.message}`
       );
+    }
     const speciesMap = new Map<string, string>();
     for (const row of speciesMapRows ?? []) {
       speciesMap.set(row.raw_name, row.species_slug);
@@ -906,11 +452,11 @@ export async function scrapeRk9TeamForStanding(
         .schema("rk9")
         .from("team_pokemon")
         .upsert(rows, { onConflict: "standing_id,position" });
-      if (upsertErr)
+      if (upsertErr) {
         throw new Error(`team_pokemon upsert failed: ${upsertErr.message}`);
+      }
     }
 
-    // Stamp attempt timestamp
     await supabase
       .schema("rk9")
       .from("standings")
@@ -946,7 +492,6 @@ export async function resetRk9EventData(
 
     const supabase = createServiceRoleClient();
 
-    // Delete all standings (team_pokemon cascades via FK)
     const { error: standingsErr } = await supabase
       .schema("rk9")
       .from("standings")
@@ -954,9 +499,6 @@ export async function resetRk9EventData(
       .eq("event_id", eventId);
     if (standingsErr) throw standingsErr;
 
-    // Reset event to pending
-    // Note: imported_at is not nullable in the Update type; omit it to leave
-    // whatever value it had (it won't be visible once status is "pending").
     const { error: resetErr } = await supabase
       .schema("rk9")
       .from("events")
@@ -967,8 +509,9 @@ export async function resetRk9EventData(
         import_error: null,
       })
       .eq("event_id", eventId);
-    if (resetErr)
+    if (resetErr) {
       throw new Error(`Failed to reset event status: ${resetErr.message}`);
+    }
 
     return { success: true, data: undefined };
   } catch (e) {
@@ -977,76 +520,4 @@ export async function resetRk9EventData(
       error: getErrorMessage(e, "Failed to reset event"),
     };
   }
-}
-
-// ---------------------------------------------------------------------------
-// Inline species normalization (duplicated from import.ts to avoid
-// importing the full module in the server action bundle)
-// ---------------------------------------------------------------------------
-
-function normalizeSpeciesInline(raw: string): string {
-  const bracketMatch = raw.match(/^(.+?)\s*\[(.+?)\]$/);
-  let species = bracketMatch ? bracketMatch[1]!.trim() : raw.trim();
-  const form = bracketMatch ? bracketMatch[2]!.trim() : null;
-
-  species = species.toLowerCase().replace(/[^a-z0-9-]/g, "");
-
-  if (form) {
-    const formLower = form.toLowerCase();
-    const skipForms = [
-      "incarnate forme",
-      "male",
-      "standard",
-      "normal",
-      "aria forme",
-      "shield forme",
-      "average size",
-      "50% forme",
-      "land forme",
-      "solo form",
-    ];
-    if (skipForms.some((s) => formLower.includes(s))) return species;
-
-    const formMap: Record<string, string> = {
-      "hearthflame mask": "hearthflame",
-      "wellspring mask": "wellspring",
-      "cornerstone mask": "cornerstone",
-      "teal mask": "",
-      "rapid strike style": "rapid-strike",
-      "single strike style": "",
-      "therian forme": "therian",
-      "blade forme": "blade",
-      "sky forme": "sky",
-      "origin forme": "origin",
-      "altered forme": "",
-      "heat rotom": "heat",
-      "wash rotom": "wash",
-      "frost rotom": "frost",
-      "fan rotom": "fan",
-      "mow rotom": "mow",
-      "terastal form": "terastal",
-      "stellar form": "stellar",
-      "alolan form": "alola",
-      "galarian form": "galar",
-      "hisuian form": "hisui",
-      "paldean form": "paldea",
-      bloodmoon: "bloodmoon",
-      female: "f",
-    };
-
-    const formSuffix = formMap[formLower];
-    if (formSuffix !== undefined) {
-      return formSuffix ? `${species}-${formSuffix}` : species;
-    }
-
-    const sluggedForm = formLower
-      .replace(/\s*(forme?|style|mask|form)\s*/gi, "")
-      .replace(/[^a-z0-9]/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
-
-    if (sluggedForm) return `${species}-${sluggedForm}`;
-  }
-
-  return species;
 }
