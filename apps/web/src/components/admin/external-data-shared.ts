@@ -2,6 +2,8 @@
 // expanded-row-data.tsx. Kept in a dedicated file to avoid sibling import
 // cycles.
 
+import { RK9_QUEUEABLE } from "@trainers/data-sources";
+
 import { type DisplayStatus } from "./display-status";
 
 // ---------------------------------------------------------------------------
@@ -147,4 +149,31 @@ export function teamsEligibleIds(rows: UnifiedRow[]): string[] {
         ["roster", "teams", "complete"].includes(r.rk9.import_status)
     )
     .map((r) => r.rk9!.event_id);
+}
+
+/**
+ * Single source of truth for whether a row can be submitted to the import queue.
+ *
+ * Must match the server actions' conditional transition (queueRk9Event /
+ * batchQueueRk9Events / batchQueueTournaments only move pending/failed →
+ * queued). UI button counts and server effects must never disagree.
+ *
+ * - RK9: the underlying import_status must be in RK9_QUEUEABLE (pending/failed).
+ *   in-progress (roster/teams) rows are intentionally excluded — the worker
+ *   auto-resumes them; queueing them is a no-op on the server.
+ * - Limitless: displayStatus must be pending or failed (NULL import_status
+ *   → "pending" per deriveLimitlessDisplayStatus; "skipped" rows are excluded).
+ * - Upcoming events are never queueable (no roster exists yet).
+ */
+export function isQueueable(row: UnifiedRow): boolean {
+  if (row.status === "upcoming") return false;
+  if (row.source === "rk9") {
+    return (
+      row.rk9 != null &&
+      (RK9_QUEUEABLE as readonly string[]).includes(row.rk9.import_status)
+    );
+  }
+  // Limitless — delegate to the coarse displayStatus which already encodes
+  // the pending/failed semantics from deriveLimitlessDisplayStatus.
+  return row.displayStatus === "pending" || row.displayStatus === "failed";
 }

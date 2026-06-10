@@ -30,8 +30,12 @@ import {
   unqueueLimitlessTournaments,
   resetStuckLimitlessImports,
 } from "@/actions/limitless";
-import { processImportQueuesNow } from "@/actions/import-queue";
+import {
+  processImportQueuesNow,
+  getRecentImportRuns,
+} from "@/actions/import-queue";
 import { calculateAllSourceUsage } from "@/actions/usage";
+import { type ImportRunRow } from "@trainers/supabase";
 import { getErrorMessage } from "@trainers/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsClient } from "@/hooks/use-is-client";
@@ -43,7 +47,9 @@ import {
   type UnifiedRow,
   type ImportFilterState,
   INITIAL_IMPORT_FILTERS,
+  isQueueable,
 } from "./external-data-shared";
+import { RecentRuns } from "./recent-runs";
 import { deriveDisplayStatus } from "./display-status";
 import { StatusTabs, type StatusTab } from "./external-data-status-tabs";
 import { type StatusChip } from "./external-data-status-chips";
@@ -187,6 +193,10 @@ export function ExternalData() {
   // Last time usage was calculated/recomputed successfully (ISO string)
   const [lastCalculatedAt, setLastCalculatedAt] = useState<string | null>(null);
 
+  // Recent import runs — fetched from getRecentImportRuns (admin-gated action)
+  const [recentRuns, setRecentRuns] = useState<ImportRunRow[]>([]);
+  const [recentRunsLoading, setRecentRunsLoading] = useState(true);
+
   // -------------------------------------------------------------------------
   // RK9 data
   // -------------------------------------------------------------------------
@@ -302,6 +312,24 @@ export function ExternalData() {
     }, 5000);
     return () => clearInterval(interval);
   }, [hasActiveQueue]);
+
+  // Fetch recent import runs whenever refreshKey changes so the panel stays
+  // in sync with manual "Process now" actions. Admin-gated — on !result.success
+  // (not-admin, error) leave runs empty; no toast spam.
+  useEffect(() => {
+    let cancelled = false;
+    setRecentRunsLoading(true);
+    getRecentImportRuns().then((result) => {
+      if (cancelled) return;
+      setRecentRunsLoading(false);
+      if (result.success) {
+        setRecentRuns(result.data);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
 
   // -------------------------------------------------------------------------
   // Build per-source rows + filter + sort
@@ -446,23 +474,12 @@ export function ExternalData() {
   const resetEligibleSelected = selectedRk9Rows.filter(
     (r) => r.rk9!.import_status !== "pending"
   );
-  const limitlessQueueEligibleSelected = limitlessRows.filter(
-    (r) =>
-      selectedIds.has(r.id) &&
-      (!r.limitless!.import_status || r.limitless!.import_status === "failed")
-  );
-
-  // Unified import-eligible selected count: RK9 pending/failed/roster/teams +
-  // Limitless pending/failed. Excludes upcoming RK9 rows.
-  const importEligibleSelectedCount =
-    selectedRk9Rows.filter(
-      (r) =>
-        r.status !== "upcoming" &&
-        (r.rk9!.import_status === "pending" ||
-          r.rk9!.import_status === "failed" ||
-          r.rk9!.import_status === "roster" ||
-          r.rk9!.import_status === "teams")
-    ).length + limitlessQueueEligibleSelected.length;
+  // Unified import-eligible selected count — uses isQueueable so the count
+  // shown in the SelectionBar matches exactly what handleBulkImportSelected
+  // will act on.
+  const importEligibleSelectedCount = [...rk9Rows, ...limitlessRows].filter(
+    (r) => selectedIds.has(r.id) && isQueueable(r)
+  ).length;
 
   // Derive unique filter options from ALL rows (both sources)
   const allCountries = [
@@ -485,19 +502,10 @@ export function ExternalData() {
         e.import_status === "complete"
     ).length ?? 0;
 
-  // Importable predicate: rows that can be advanced in the import pipeline.
-  // Excludes upcoming (status==="upcoming") since they have no roster yet.
-  function isImportableRow(r: UnifiedRow): boolean {
-    return (
-      r.status !== "upcoming" &&
-      (r.displayStatus === "pending" ||
-        r.displayStatus === "failed" ||
-        (r.source === "rk9" && r.displayStatus === "in-progress"))
-    );
-  }
-
-  const importMatchingCount = filteredRows.filter(isImportableRow).length;
-  const importAllCount = allRows.filter(isImportableRow).length;
+  // isQueueable from external-data-shared is the single source of truth for
+  // which rows can be submitted to the import queue (matches server actions).
+  const importMatchingCount = filteredRows.filter(isQueueable).length;
+  const importAllCount = allRows.filter(isQueueable).length;
 
   // Rows imported within the last 10 minutes — shown in QueueStrip activity.
   // Limitless: data_imported_at within 10 min. RK9: import_requested_at within
@@ -885,17 +893,11 @@ export function ExternalData() {
 
   /**
    * Import all eligible rows across both sources (ignores active filters).
-   * Queued rows are excluded (already in queue). RK9 uses batchQueueRk9Events.
+   * Uses isQueueable as the single eligibility predicate — matches the server
+   * actions' pending/failed → queued transition contract.
    */
   async function handleImportAll() {
-    const importableRows = allRows.filter(
-      (r) =>
-        r.status !== "upcoming" &&
-        r.displayStatus !== "queued" &&
-        (r.displayStatus === "pending" ||
-          r.displayStatus === "failed" ||
-          (r.source === "rk9" && r.displayStatus === "in-progress"))
-    );
+    const importableRows = allRows.filter(isQueueable);
     if (importableRows.length === 0) return;
 
     const limitlessIds = importableRows
@@ -935,17 +937,10 @@ export function ExternalData() {
   /**
    * Import eligible rows matching the active filters.
    * Same batching strategy as handleImportAll but scoped to filteredRows.
-   * Queued rows are excluded.
+   * Uses isQueueable as the single eligibility predicate.
    */
   async function handleImportMatching() {
-    const importableRows = filteredRows.filter(
-      (r) =>
-        r.status !== "upcoming" &&
-        r.displayStatus !== "queued" &&
-        (r.displayStatus === "pending" ||
-          r.displayStatus === "failed" ||
-          (r.source === "rk9" && r.displayStatus === "in-progress"))
-    );
+    const importableRows = filteredRows.filter(isQueueable);
     if (importableRows.length === 0) return;
 
     const limitlessIds = importableRows
@@ -1010,30 +1005,15 @@ export function ExternalData() {
   }
 
   /**
-   * Queue selected rows that are eligible (pending/failed/rk9-in-progress).
-   * Queued rows are excluded — they are already queued.
+   * Queue selected rows that are eligible (pending/failed).
+   * Uses isQueueable as the single eligibility predicate — matches the server
+   * actions' pending/failed → queued transition contract.
    * Batches both sources into two parallel calls.
    */
   async function handleBulkImportSelected() {
-    const importableSelected = [
-      ...rk9Rows.filter(
-        (r) =>
-          selectedIds.has(r.id) &&
-          r.status !== "upcoming" &&
-          r.displayStatus !== "queued" &&
-          (r.rk9!.import_status === "pending" ||
-            r.rk9!.import_status === "failed" ||
-            r.rk9!.import_status === "roster" ||
-            r.rk9!.import_status === "teams")
-      ),
-      ...limitlessRows.filter(
-        (r) =>
-          selectedIds.has(r.id) &&
-          r.displayStatus !== "queued" &&
-          (!r.limitless!.import_status ||
-            r.limitless!.import_status === "failed")
-      ),
-    ];
+    const importableSelected = [...rk9Rows, ...limitlessRows].filter(
+      (r) => selectedIds.has(r.id) && isQueueable(r)
+    );
 
     const limitlessIds = importableSelected
       .filter((r) => r.source === "limitless")
@@ -1168,6 +1148,9 @@ export function ExternalData() {
         onUnqueueAll={handleUnqueueAll}
         onResetStuck={handleResetStuck}
       />
+
+      {/* Recent import runs — admin-gated; empty on non-admin or fetch error */}
+      <RecentRuns runs={recentRuns} loading={recentRunsLoading} />
 
       <div className="space-y-4">
         {/* RK9 sub-nav — only shown when source is "rk9" */}
