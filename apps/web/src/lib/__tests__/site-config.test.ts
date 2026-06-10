@@ -156,7 +156,7 @@ describe("readSiteConfigValues", () => {
       });
 
       await expect(
-        readSiteConfigValues(supabase as never, [])
+        readSiteConfigValues(supabase as never, ["any_key"])
       ).rejects.toThrow();
     });
   });
