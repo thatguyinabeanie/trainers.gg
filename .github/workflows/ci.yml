@@ -45,7 +45,7 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - uses: pnpm/action-setup@v6.0.6 # pinned: early v6 had lockfile/PATH bugs
+      - uses: pnpm/action-setup@v6.0.8 # pinned: early v6 had lockfile/PATH bugs
 
       - uses: actions/setup-node@v6
         with:
@@ -361,7 +361,7 @@ jobs:
           path: coverage
 
       - name: Upload combined coverage to Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: coverage
