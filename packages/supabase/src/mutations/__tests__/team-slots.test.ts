@@ -11,7 +11,7 @@
 
 import { describe, it, expect, jest } from "@jest/globals";
 import { compileEventTeamSlots, compileSourceTeamSlots } from "../team-slots";
-import type { TypedClient } from "../../client";
+import { type TypedClient } from "../../client";
 
 // =============================================================================
 // Sequential mock client (mirrors usage.test.ts pattern)

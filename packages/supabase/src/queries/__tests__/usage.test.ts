@@ -636,6 +636,7 @@ describe("getPipelineData — with data", () => {
     expect(row.items).toEqual([{ value: "Loaded Dice", count: 70, pct: 70 }]);
     expect(row.natures).toEqual([{ value: "Jolly", count: 78, pct: 78 }]);
     expect(row.moves).toEqual([{ value: "Fake Out", count: 94, pct: 94 }]);
+    expect(row.tera).toEqual([{ value: "Poison", count: 60, pct: 60 }]);
   });
 
   it("fills empty histogram arrays when RPC returns empty arrays", async () => {
@@ -649,6 +650,7 @@ describe("getPipelineData — with data", () => {
     expect(row.items).toEqual([]);
     expect(row.natures).toEqual([]);
     expect(row.moves).toEqual([]);
+    expect(row.tera).toEqual([]);
   });
 });
 

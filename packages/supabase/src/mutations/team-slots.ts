@@ -248,8 +248,10 @@ export async function compileSourceTeamSlots(
 
   // ─── Step 2: Find which candidates are already compiled ──────────────────
   // Paginate team_slots by source to collect all existing event_keys.
-  // A single source can have far more than 1000 team_slots rows (6 slots ×
-  // many players × many events), so we page through DISTINCT event_keys.
+  // NOTE: PostgREST does not support SELECT DISTINCT, so we read all rows and
+  // deduplicate in JS. At scale (6 slots × hundreds of players × many events)
+  // this can be expensive. If this becomes a bottleneck, replace with an RPC
+  // that returns DISTINCT event_keys server-side.
   const PAGE_SIZE = 1000;
   const existingKeys = new Set<string>();
   let from = 0;

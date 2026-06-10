@@ -441,10 +441,13 @@ export async function completeTournament(
   // placement/W-L enrichment is available for usage aggregation.
   // Failures must never propagate — the tournament is already marked completed.
   // placement/W-L enrichment lands with the standings join in a future task.
+  // NOTE: serviceClient is created outside the try block so that a failure in
+  // createAdminSupabaseClient() surfaces as a real error rather than being
+  // silently swallowed as a compile failure. This matches startTournamentEnhanced.
+  const recompileClient = createAdminSupabaseClient();
   try {
-    const serviceClient = createAdminSupabaseClient();
     await compileEventTeamSlots(
-      serviceClient,
+      recompileClient,
       "trainers.gg",
       String(tournamentId)
     );
