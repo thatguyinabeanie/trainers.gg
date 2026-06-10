@@ -1,6 +1,6 @@
 "use server";
 
-import { unstable_cache, updateTag } from "next/cache";
+import { unstable_cache } from "next/cache";
 
 import { getErrorMessage } from "@trainers/utils";
 import { z, type ActionResult } from "@trainers/validators";
@@ -25,6 +25,7 @@ import {
 } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import { CacheTags } from "@/lib/cache";
+import { invalidateUsageStatsCaches } from "@/lib/cache-invalidation";
 
 // ---------------------------------------------------------------------------
 // Source-scoped usage computation
@@ -90,10 +91,7 @@ export async function calculateSourceUsage(
 
     // Bust caches for every touched format plus the global usage tag so the
     // builder's species usage columns reflect the freshly compiled facts.
-    updateTag(CacheTags.USAGE_STATS);
-    for (const format of formats) {
-      updateTag(CacheTags.usageStats(format));
-    }
+    invalidateUsageStatsCaches(formats);
 
     return {
       success: true,

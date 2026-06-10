@@ -2,26 +2,41 @@
  * Cache Tags and Utilities
  *
  * Provides cache tag constants and helper functions for Next.js on-demand revalidation.
- * Use with `unstable_cache` for data fetching and `updateTag` in server actions.
+ * Use with `'use cache'` (Cache Components API) for data fetching; call `updateTag` or
+ * `revalidateTag` via the helpers in `@/lib/cache-invalidation` — never call them directly.
  *
  * @example
  * ```ts
- * // In a server component or data fetching function
- * import { unstable_cache } from "next/cache";
+ * // In a cached data-fetching function (Cache Components API)
+ * import { cacheTag, cacheLife } from "next/cache";
  * import { CacheTags } from "@/lib/cache";
+ * import { createStaticClient } from "@/lib/supabase/server";
+ * import { getTournamentBySlug } from "@trainers/supabase";
  *
- * const getCachedData = unstable_cache(
- *   async () => fetchData(),
- *   ["cache-key"],
- *   { tags: [CacheTags.TOURNAMENTS_LIST] }
- * );
- *
- * // In a server action
- * import { updateTag } from "next/cache";
- * import { CacheTags } from "@/lib/cache";
- *
- * updateTag(CacheTags.TOURNAMENTS_LIST);
+ * async function getCachedTournament(slug: string) {
+ *   "use cache";
+ *   cacheTag(CacheTags.tournament(slug), CacheTags.TOURNAMENTS_LIST);
+ *   cacheLife("max");
+ *   const supabase = createStaticClient();
+ *   return getTournamentBySlug(supabase, slug);
+ * }
  * ```
+ *
+ * ## Tag-naming scheme
+ *
+ * - **Collection tags** — kebab-case nouns: `"usage-stats"`, `"tournaments-list"`.
+ *   Apply to any cached fetcher that returns a list of that entity type.
+ *   Invalidating them busts every cached page that shows that list.
+ *
+ * - **Entity tags** — `noun:id` form: `"usage-stats:gen9vgc2025regg"`, `"tournament:42"`.
+ *   Apply alongside the collection tag for fine-grained invalidation.
+ *   Invalidating an entity tag busts only pages scoped to that specific entity.
+ *
+ * - **Cached fetchers** apply both a broad collection tag AND a narrow entity tag
+ *   (e.g., `cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(format))`).
+ *
+ * - **Invalidation helpers** in `@/lib/cache-invalidation` choose the right granularity:
+ *   bust the collection tag when a list changes, the entity tag when only one record changes.
  */
 
 /**
@@ -76,6 +91,9 @@ export const CacheTags = {
 
   /** Tag for dashboard bulk ratings */
   DASHBOARD_RATINGS: "dashboard-ratings",
+
+  /** Tag for site announcements (banner/alert content) */
+  ANNOUNCEMENTS: "announcements",
 
   /** Generate a tag for a specific team (for public team pages) */
   team: (id: number) => `team:${id}`,

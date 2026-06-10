@@ -1,13 +1,25 @@
 /**
  * Cache Invalidation Helpers
  *
- * Entity-scoped helpers that bundle all `updateTag()` calls for a given domain.
- * Using these instead of raw `updateTag()` calls in server actions ensures that
- * adding a new cache surface only requires updating one helper, not every action.
+ * Entity-scoped helpers that bundle all cache invalidation calls for a given domain.
+ * Using these instead of raw `updateTag()` / `revalidateTag()` calls in server actions
+ * ensures that adding a new cache surface only requires updating one helper, not every action.
+ *
+ * ## Context split
+ *
+ * - `updateTag(tag)` — **Server Actions only**. Provides read-your-own-writes semantics:
+ *   the current request sees the fresh data immediately after the mutation. Never call
+ *   it inside Route Handlers, API routes, or cron endpoints.
+ *
+ * - `revalidateTag(tag, "max")` — **Route Handlers / webhooks / crons**. Uses
+ *   stale-while-revalidate semantics; the next request after invalidation gets fresh data.
+ *   Always pass `"max"` as the second argument — the single-arg form is deprecated and
+ *   must never be used.
  *
  * Rules:
  * - Sync helpers for cases where all IDs/slugs are already known
  * - Async helpers when a DB lookup is needed to resolve an entity
+ * - Never call `updateTag` or `revalidateTag` directly in actions — use these helpers
  */
 
 import { revalidateTag, updateTag } from "next/cache";
@@ -176,4 +188,39 @@ export function revalidateTeamDetailCache(teamId: number): void {
 export function invalidateDashboardCaches(): void {
   updateTag(CacheTags.DASHBOARD_STATS);
   updateTag(CacheTags.DASHBOARD_RATINGS);
+}
+
+// =============================================================================
+// Usage Stats Cache Helpers
+// =============================================================================
+
+/**
+ * Server Action context — call after admin-triggered usage recompilation.
+ *
+ * Invalidates the global usage-stats tag plus one tag per touched format.
+ * Pass an empty array (or omit `formats`) to bust only the global tag.
+ */
+export function invalidateUsageStatsCaches(formats: string[] = []): void {
+  updateTag(CacheTags.USAGE_STATS);
+  for (const f of formats) updateTag(CacheTags.usageStats(f));
+}
+
+/**
+ * Route Handler / webhook context — stale-while-revalidate semantics.
+ *
+ * Uses `revalidateTag(tag, "max")` which is safe outside Server Actions.
+ * Pass an empty array (or omit `formats`) to revalidate only the global tag.
+ */
+export function revalidateUsageStatsCaches(formats: string[] = []): void {
+  revalidateTag(CacheTags.USAGE_STATS, "max");
+  for (const f of formats) revalidateTag(CacheTags.usageStats(f), "max");
+}
+
+// =============================================================================
+// Announcement Cache Helpers
+// =============================================================================
+
+/** Server Action context — call after announcement create/update/delete. */
+export function invalidateAnnouncementCaches(): void {
+  updateTag(CacheTags.ANNOUNCEMENTS);
 }
