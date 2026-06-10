@@ -352,7 +352,9 @@ test.describe("Coaching privacy", () => {
 
     const is404Status = response?.status() === 404;
     const is404Page = await page
-      .getByRole("heading", { name: /not found/i })
+      .getByRole("heading", {
+        name: /not found|this page could not be found|404/i,
+      })
       .isVisible({ timeout: 10000 })
       .catch(() => false);
 
@@ -368,7 +370,9 @@ test.describe("Coaching privacy", () => {
 
     const is404Status = response?.status() === 404;
     const is404Page = await page
-      .getByRole("heading", { name: /not found/i })
+      .getByRole("heading", {
+        name: /not found|this page could not be found|404/i,
+      })
       .isVisible({ timeout: 10000 })
       .catch(() => false);
 

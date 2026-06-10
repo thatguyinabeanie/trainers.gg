@@ -67,8 +67,8 @@ test.describe("Onboarding flow", () => {
       // --- Fill out the onboarding form ---
       const uniqueUsername = `e2e_trainer_${Date.now().toString(36)}`;
 
-      // Username field
-      await page.getByLabel("Username").fill(uniqueUsername);
+      // Username field — use ID locator to avoid matching "Email or Username" on sign-in form
+      await page.locator("#username").fill(uniqueUsername);
 
       // Wait for the debounced availability check to resolve
       await expect(page.getByText("Username is available")).toBeVisible({
