@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   limitless: {
     Tables: {
       match_results: {
@@ -4222,7 +4247,9 @@ export type Database = {
           event_id: string
           format_id: string | null
           has_team_lists: boolean
+          import_attempts: number
           import_error: string | null
+          import_requested_at: string | null
           import_status: Database["rk9"]["Enums"]["import_status"]
           imported_at: string
           location_city: string | null
@@ -4231,6 +4258,7 @@ export type Database = {
           player_count: number | null
           teams_imported_count: number
           tier: Database["rk9"]["Enums"]["event_tier"]
+          worker_claimed_at: string | null
         }
         Insert: {
           date_end?: string | null
@@ -4238,7 +4266,9 @@ export type Database = {
           event_id: string
           format_id?: string | null
           has_team_lists?: boolean
+          import_attempts?: number
           import_error?: string | null
+          import_requested_at?: string | null
           import_status?: Database["rk9"]["Enums"]["import_status"]
           imported_at?: string
           location_city?: string | null
@@ -4247,6 +4277,7 @@ export type Database = {
           player_count?: number | null
           teams_imported_count?: number
           tier: Database["rk9"]["Enums"]["event_tier"]
+          worker_claimed_at?: string | null
         }
         Update: {
           date_end?: string | null
@@ -4254,7 +4285,9 @@ export type Database = {
           event_id?: string
           format_id?: string | null
           has_team_lists?: boolean
+          import_attempts?: number
           import_error?: string | null
+          import_requested_at?: string | null
           import_status?: Database["rk9"]["Enums"]["import_status"]
           imported_at?: string
           location_city?: string | null
@@ -4263,6 +4296,7 @@ export type Database = {
           player_count?: number | null
           teams_imported_count?: number
           tier?: Database["rk9"]["Enums"]["event_tier"]
+          worker_claimed_at?: string | null
         }
         Relationships: []
       }
@@ -4544,6 +4578,7 @@ export type Database = {
         | "pairings"
         | "complete"
         | "failed"
+        | "queued"
       phase_type: "swiss" | "single_elimination"
     }
     CompositeTypes: {
@@ -4670,6 +4705,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   limitless: {
     Enums: {},
   },
@@ -4831,6 +4869,7 @@ export const Constants = {
         "pairings",
         "complete",
         "failed",
+        "queued",
       ],
       phase_type: ["swiss", "single_elimination"],
     },
