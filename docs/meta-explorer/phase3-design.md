@@ -800,11 +800,11 @@ apps/web/src/
                                           + fetchSpeciesTeammates
 ```
 
-> **Sankey removal (if Recommendation accepted):** `usage-pipeline-chart.tsx` and
+> **Sankey removal (Decision 6 — DECIDED):** `usage-pipeline-chart.tsx` and
 > `usage-pipeline.ts` are **deleted**; the `columns` param/coercer
 > (`coerceColumns`, `PipelineColumn`, `ALL_PIPELINE_COLUMNS`) and the sidebar
-> column control are removed. This is a separate, reviewable chunk — flag it for
-> the user before deleting (Open Question 6).
+> column control are removed. `get_usage_pipeline` RPC is retained. The treemap
+> becomes the primary "meta now" snapshot on the Overview tab.
 
 **Server vs client split.** `page.tsx` (Server Component) fetches all data via
 cached fetchers and passes arrays as `initialData` props to `SpeciesDrilldown`
