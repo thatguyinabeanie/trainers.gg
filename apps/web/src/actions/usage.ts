@@ -1,6 +1,6 @@
 "use server";
 
-import { getErrorMessage } from "@trainers/utils";
+import { getErrorMessage, logError } from "@trainers/utils";
 import { z, type ActionResult } from "@trainers/validators";
 import {
   compileSourceTeamSlots,
@@ -10,6 +10,10 @@ import {
   type SpeciesUsageDetailParams,
   type PipelineDataResult,
   type FormatEvent,
+  type SourceUsageRow,
+  type ConversionRow,
+  type MoveComboRow,
+  type SpeciesTeammatesResult,
 } from "@trainers/supabase";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
@@ -20,6 +24,10 @@ import {
   getCachedFormatUsageTimeseries,
   getCachedPipelineData,
   getCachedFormatEvents,
+  getCachedUsageBySource,
+  getCachedUsageConversion,
+  getCachedSpeciesMoveCombos,
+  getCachedSpeciesTeammates,
 } from "@/lib/data/usage-cache";
 
 // ---------------------------------------------------------------------------
@@ -94,6 +102,7 @@ export async function calculateSourceUsage(
       },
     };
   } catch (e) {
+    logError("calculateSourceUsage", e, { source });
     return {
       success: false,
       error: getErrorMessage(e, "Usage calculation failed"),
@@ -125,7 +134,7 @@ export async function calculateAllSourceUsage(): Promise<
       formatsProcessed = 0;
     for (const s of sources) {
       const r = await calculateSourceUsage(s);
-      if (!r.success) throw new Error(r.error);
+      if (!r.success) throw new Error(`[${s}] ${r.error}`);
       eventsComputed += r.data.eventsComputed;
       formatsProcessed += r.data.formatsProcessed;
     }
@@ -134,6 +143,7 @@ export async function calculateAllSourceUsage(): Promise<
       data: { eventsComputed, formatsProcessed },
     };
   } catch (e) {
+    logError("calculateAllSourceUsage", e);
     return {
       success: false,
       error: getErrorMessage(e, "Failed to calculate usage"),
@@ -173,6 +183,10 @@ export async function fetchSpeciesUsageDetail(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchSpeciesUsageDetail", e, {
+      format: params.format,
+      species: params.species,
+    });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch species usage detail"),
@@ -219,6 +233,7 @@ export async function fetchFormatUsage(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchFormatUsage", e, { format: params.format });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch format usage"),
@@ -273,6 +288,7 @@ export async function fetchFormatUsageTimeseries(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchFormatUsageTimeseries", e, { format: params.format });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch format usage timeseries"),
@@ -319,6 +335,7 @@ export async function fetchPipelineData(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchPipelineData", e, { format: params.format });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch pipeline data"),
@@ -341,9 +358,246 @@ export async function fetchFormatEvents(
     const data = await getCachedFormatEvents(format);
     return { success: true, data };
   } catch (e) {
+    logError("fetchFormatEvents", e, { format });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch format events"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: per-source usage breakdown
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchUsageBySource. */
+export interface FetchUsageBySourceParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** If provided, restrict to periods >= this ISO date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this ISO date. */
+  periodEnd?: string;
+  /** Minimum players per event-division. Defaults to 0 (no filter). */
+  minPlayers?: number;
+}
+
+/**
+ * Public (non-admin) server action to fetch per-source species usage
+ * breakdown for a format. Delegates to getCachedUsageBySource.
+ *
+ * Defaults are resolved before calling the cache fn so the runtime can
+ * key the cache correctly on fully-populated params.
+ */
+export async function fetchUsageBySource(
+  params: FetchUsageBySourceParams
+): Promise<ActionResult<SourceUsageRow[]>> {
+  try {
+    const { format, periodStart, periodEnd, minPlayers = 0 } = params;
+
+    const data = await getCachedUsageBySource({
+      format,
+      periodStart,
+      periodEnd,
+      minPlayers,
+    });
+    return { success: true, data };
+  } catch (e) {
+    logError("fetchUsageBySource", e, { format: params.format });
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch usage by source"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: usage conversion (top-percentile penetration)
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchUsageConversion. */
+export interface FetchUsageConversionParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** Rollup source. Defaults to "all". */
+  source?: string;
+  /** If provided, restrict to periods >= this ISO date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this ISO date. */
+  periodEnd?: string;
+  /** Minimum players per event-division. Defaults to 0 (no filter). */
+  minPlayers?: number;
+  /** Top percentile cutoff (0–1). Defaults to 0.10 (top 10%). */
+  topPct?: number;
+}
+
+/**
+ * Public (non-admin) server action to fetch species usage-to-top-percentile
+ * conversion rates for a format. Delegates to getCachedUsageConversion.
+ *
+ * Defaults are resolved before calling the cache fn so the runtime can
+ * key the cache correctly on fully-populated params.
+ */
+export async function fetchUsageConversion(
+  params: FetchUsageConversionParams
+): Promise<ActionResult<ConversionRow[]>> {
+  try {
+    const {
+      format,
+      source = "all",
+      periodStart,
+      periodEnd,
+      minPlayers = 0,
+      topPct = 0.1,
+    } = params;
+
+    const data = await getCachedUsageConversion({
+      format,
+      source,
+      periodStart,
+      periodEnd,
+      minPlayers,
+      topPct,
+    });
+    return { success: true, data };
+  } catch (e) {
+    logError("fetchUsageConversion", e, {
+      format: params.format,
+      source: params.source,
+    });
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch usage conversion"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: species move combos (Phase 3 — Feature 2)
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchSpeciesMoveCombos. */
+export interface FetchSpeciesMoveCombosParams {
+  /** Format ID (e.g. "gen9championsvgc2026regma"). */
+  format: string;
+  /** Species slug (e.g. "koraidon"). */
+  species: string;
+  /** Rollup source. Defaults to "all". */
+  source?: string;
+  /** If provided, restrict to periods >= this ISO date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this ISO date. */
+  periodEnd?: string;
+  /** Minimum players per event-division. Defaults to 0 (no filter). */
+  minPlayers?: number;
+  /** Max combos returned server-side. Defaults to 25. */
+  limit?: number;
+}
+
+/**
+ * Public (non-admin) server action to fetch true 4-move combo distribution
+ * for one species. Delegates to getCachedSpeciesMoveCombos.
+ *
+ * Defaults are resolved before calling the cache fn so the runtime can
+ * key the cache correctly on fully-populated params.
+ */
+export async function fetchSpeciesMoveCombos(
+  params: FetchSpeciesMoveCombosParams
+): Promise<ActionResult<MoveComboRow[]>> {
+  try {
+    const {
+      format,
+      species,
+      source = "all",
+      periodStart,
+      periodEnd,
+      minPlayers = 0,
+      limit = 25,
+    } = params;
+
+    const data = await getCachedSpeciesMoveCombos({
+      format,
+      species,
+      source,
+      periodStart,
+      periodEnd,
+      minPlayers,
+      limit,
+    });
+    return { success: true, data };
+  } catch (e) {
+    logError("fetchSpeciesMoveCombos", e, {
+      format: params.format,
+      species: params.species,
+    });
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch species move combos"),
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public read: species teammates (Phase 3 — Features 3 + 4)
+// ---------------------------------------------------------------------------
+
+/** Parameters for fetchSpeciesTeammates. */
+export interface FetchSpeciesTeammatesParams {
+  /** Format ID (e.g. "gen9championsvgc2026regma"). */
+  format: string;
+  /** Species slug (e.g. "koraidon"). */
+  species: string;
+  /** Rollup source. Defaults to "all". */
+  source?: string;
+  /** If provided, restrict to periods >= this ISO date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this ISO date. */
+  periodEnd?: string;
+  /** Minimum players per event-division. Defaults to 0 (no filter). */
+  minPlayers?: number;
+  /** Teammates returned; matrix uses min(topN, 8). Defaults to 12. */
+  topN?: number;
+}
+
+/**
+ * Public (non-admin) server action to fetch teammate pair rates + co-occurrence
+ * matrix for one species. Delegates to getCachedSpeciesTeammates.
+ *
+ * Defaults are resolved before calling the cache fn so the runtime can
+ * key the cache correctly on fully-populated params.
+ */
+export async function fetchSpeciesTeammates(
+  params: FetchSpeciesTeammatesParams
+): Promise<ActionResult<SpeciesTeammatesResult>> {
+  try {
+    const {
+      format,
+      species,
+      source = "all",
+      periodStart,
+      periodEnd,
+      minPlayers = 0,
+      topN = 12,
+    } = params;
+
+    const data = await getCachedSpeciesTeammates({
+      format,
+      species,
+      source,
+      periodStart,
+      periodEnd,
+      minPlayers,
+      topN,
+    });
+    return { success: true, data };
+  } catch (e) {
+    logError("fetchSpeciesTeammates", e, {
+      format: params.format,
+      species: params.species,
+    });
+    return {
+      success: false,
+      error: getErrorMessage(e, "Failed to fetch species teammates"),
     };
   }
 }

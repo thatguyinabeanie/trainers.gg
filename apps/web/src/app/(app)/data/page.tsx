@@ -2,7 +2,10 @@ import {
   fetchFormatUsageTimeseries,
   fetchPipelineData,
   fetchFormatEvents,
+  fetchUsageBySource,
+  fetchUsageConversion,
 } from "@/actions/usage";
+import { logError } from "@trainers/utils";
 import { UsageExplorer } from "@/components/data/usage-explorer";
 import {
   type UsageFilters,
@@ -37,7 +40,16 @@ export default async function DataPage({ searchParams }: DataPageProps) {
 
   const initialFilters: UsageFilters = { format, source, periodType };
 
-  const [timeseriesResult, pipelineResult, eventsResult] = await Promise.all([
+  // Fetch all initial datasets in parallel.
+  // Source rows and conversion rows are seeded for the default filter params
+  // only — the client re-fetches whenever filters change.
+  const [
+    timeseriesResult,
+    pipelineResult,
+    eventsResult,
+    sourceResult,
+    conversionResult,
+  ] = await Promise.all([
     fetchFormatUsageTimeseries({
       format,
       source,
@@ -54,13 +66,58 @@ export default async function DataPage({ searchParams }: DataPageProps) {
       minPlayers,
     }),
     fetchFormatEvents(format),
+    fetchUsageBySource({
+      format,
+      periodStart: rangeStart ?? undefined,
+      periodEnd: rangeEnd ?? undefined,
+      minPlayers,
+    }),
+    fetchUsageConversion({
+      format,
+      source,
+      periodStart: rangeStart ?? undefined,
+      periodEnd: rangeEnd ?? undefined,
+      minPlayers,
+      // Default topPct matches DEFAULT_TOP_PCT (0.1) so the client's
+      // initialData handoff fires on the first Overview/Sources render.
+      topPct: 0.1,
+    }),
   ]);
+
+  if (!timeseriesResult.success)
+    logError(
+      "DataPage.fetchFormatUsageTimeseries",
+      new Error(timeseriesResult.error),
+      { format }
+    );
+  if (!pipelineResult.success)
+    logError("DataPage.fetchPipelineData", new Error(pipelineResult.error), {
+      format,
+    });
+  if (!eventsResult.success)
+    logError("DataPage.fetchFormatEvents", new Error(eventsResult.error), {
+      format,
+    });
+  if (!sourceResult.success)
+    logError("DataPage.fetchUsageBySource", new Error(sourceResult.error), {
+      format,
+    });
+  if (!conversionResult.success)
+    logError(
+      "DataPage.fetchUsageConversion",
+      new Error(conversionResult.error),
+      { format }
+    );
 
   const initialPoints = timeseriesResult.success ? timeseriesResult.data : [];
   const initialPipelineResult = pipelineResult.success
     ? pipelineResult.data
     : null;
   const initialEvents = eventsResult.success ? eventsResult.data : [];
+  const initialSourceRows = sourceResult.success ? sourceResult.data : [];
+  const initialConversionRows = conversionResult.success
+    ? conversionResult.data
+    : [];
 
   return (
     <div className="flex flex-1">
@@ -69,6 +126,8 @@ export default async function DataPage({ searchParams }: DataPageProps) {
         initialPipelineResult={initialPipelineResult}
         initialEvents={initialEvents}
         initialFilters={initialFilters}
+        initialSourceRows={initialSourceRows}
+        initialConversionRows={initialConversionRows}
       />
     </div>
   );

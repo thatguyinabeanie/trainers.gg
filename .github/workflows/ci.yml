@@ -45,7 +45,7 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@v6.0.6 # pinned: early v6 had lockfile/PATH bugs
 
       - uses: actions/setup-node@v6
         with:
@@ -77,9 +77,9 @@ jobs:
           CI: true
           GITHUB_ACTIONS: true
 
-  # ── Quality checks (lint + typecheck) ──────────────────────
-  quality:
-    name: Lint & Typecheck
+  # ── Quality checks (lint + typecheck, run in parallel) ─────
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [install]
@@ -92,7 +92,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
-          turbo-prefix: quality
+          turbo-prefix: lint
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
@@ -108,34 +108,15 @@ jobs:
             eslint-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             eslint-${{ runner.os }}-
 
-      - name: TypeScript cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            apps/*/tsconfig.tsbuildinfo
-            packages/*/tsconfig.tsbuildinfo
-            packages/*/dist/tsconfig.tsbuildinfo
-          key: tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/tsconfig*.json') }}
-          restore-keys: |
-            tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            tsc-${{ runner.os }}-
-
-      # Register problem matchers so ESLint and tsc errors become
-      # inline annotations on the PR Files tab.
-      - name: Register problem matchers
-        run: |
-          echo "::add-matcher::.github/matchers/eslint-stylish.json"
-          echo "::add-matcher::.github/matchers/tsc.json"
+      # Register ESLint problem matcher so errors become inline PR annotations.
+      - name: Register ESLint problem matcher
+        run: echo "::add-matcher::.github/matchers/eslint-stylish.json"
 
       - name: Lint
         run: pnpm turbo run lint --log-prefix=none
 
-      - name: Typecheck
-        run: pnpm turbo run typecheck --log-prefix=none
-
-  # ── Unit tests (Jest) — 3 jobs: web, mobile, packages ─────
-  test-web:
-    name: Test @trainers/web
+  typecheck:
+    name: Typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [install]
@@ -148,7 +129,49 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
-          turbo-prefix: test-web
+          turbo-prefix: typecheck
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
+
+      - name: TypeScript cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            apps/*/tsconfig.tsbuildinfo
+            packages/*/tsconfig.tsbuildinfo
+            packages/*/dist/tsconfig.tsbuildinfo
+          key: tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/tsconfig*.json') }}
+          restore-keys: |
+            tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            tsc-${{ runner.os }}-
+
+      # Register tsc problem matcher so errors become inline PR annotations.
+      - name: Register tsc problem matcher
+        run: echo "::add-matcher::.github/matchers/tsc.json"
+
+      - name: Typecheck
+        run: pnpm turbo run typecheck --log-prefix=none
+
+  # ── Unit tests (Jest) — web (sharded x2), mobile, packages ─────
+  test-web:
+    name: Test @trainers/web (shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [install]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - uses: ./.github/actions/setup
+        with:
+          node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
+          turbo-prefix: test-web-${{ matrix.shard }}
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
@@ -156,13 +179,24 @@ jobs:
         uses: actions/cache@v5
         with:
           path: apps/web/.jest-cache
-          key: jest-web-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
+          # Shard-distinct key: both shards save independently without colliding.
+          key: jest-web-${{ matrix.shard }}-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
           restore-keys: |
-            jest-web-${{ runner.os }}-${{ github.ref }}-
-            jest-web-${{ runner.os }}-refs/heads/main-
+            jest-web-${{ matrix.shard }}-${{ runner.os }}-${{ github.ref }}-
+            jest-web-${{ matrix.shard }}-${{ runner.os }}-refs/heads/main-
 
-      - name: Run tests
-        run: pnpm turbo run test --filter=@trainers/web --ui stream
+      # Build only @trainers/web's dependencies (turbo remote cache makes this
+      # fast), then run jest directly with --shard. Bypassing `turbo run test`
+      # is required to pass --shard; CI=true still auto-enables coverage + junit
+      # via the shared jest config. Coverage goes to a shard-distinct dir so the
+      # two shards' lcov files never overwrite each other on artifact merge.
+      - name: Run tests (shard ${{ matrix.shard }})
+        run: |
+          pnpm turbo run build --filter=@trainers/web^...
+          pnpm --filter @trainers/web exec jest \
+            --shard=${{ matrix.shard }}/2 \
+            --ci \
+            --coverageDirectory=coverage/shard-${{ matrix.shard }}
         env:
           CI: true
           JEST_JUNIT_OUTPUT_DIR: test-results
@@ -176,15 +210,16 @@ jobs:
         if: always()
         with:
           files: "**/test-results/**/*.xml"
-          comment_title: "Test Results / web"
+          check_name: "Test Results / web (shard ${{ matrix.shard }})"
+          comment_title: "Test Results / web (shard ${{ matrix.shard }})"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: coverage-web
-          path: "**/coverage/lcov.info"
+          name: coverage-web-${{ matrix.shard }}
+          path: "**/coverage/shard-${{ matrix.shard }}/lcov.info"
           retention-days: 1
           if-no-files-found: ignore
 
@@ -230,6 +265,7 @@ jobs:
         if: always()
         with:
           files: "**/test-results/**/*.xml"
+          check_name: "Test Results / mobile"
           comment_title: "Test Results / mobile"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
@@ -291,6 +327,7 @@ jobs:
         if: always()
         with:
           files: "**/test-results/**/*.xml"
+          check_name: "Test Results / packages"
           comment_title: "Test Results / packages"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
@@ -385,16 +422,20 @@ jobs:
     # and dependency bumps don't need E2E/Lighthouse validation
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Increased from 15 to 30: worst case is initial wait (~13m) + redeploy +
+    # second by-id wait (~10m) + checkout/branch/env-inject overhead, which can
+    # approach ~28m. 30 keeps the step-7 diagnostic + explicit exit 1 reachable.
+    timeout-minutes: 30
     outputs:
-      url: ${{ steps.preview.outputs.url }}
-      branch-db-ready: ${{ steps.db-check.outputs.ready }}
+      url: ${{ steps.final-url.outputs.url }}
+      branch-db-ready: ${{ steps.db-check-second.outputs.ready || steps.db-check-first.outputs.ready }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
           submodules: recursive
 
+      # Step 1: Create or find the Supabase preview branch — unchanged.
       - uses: ./.github/actions/supabase-branch
         id: branch
         with:
@@ -402,6 +443,8 @@ jobs:
           project-ref: ${{ secrets.SUPABASE_PROJECT_REF }}
           git-branch: ${{ github.head_ref }}
 
+      # Step 2: Inject branch-scoped Preview env vars into Vercel BEFORE evaluating
+      # the auto-deploy. This guarantees the env vars exist when we later redeploy.
       - uses: ./.github/actions/inject-preview-env
         if: steps.branch.outputs.ref != ''
         with:
@@ -413,8 +456,10 @@ jobs:
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
 
+      # Step 3: Wait for the auto-deploy (triggered by git push) to reach a terminal
+      # state. Returns url (empty string on ERROR) and deployment-id.
       - uses: ./.github/actions/wait-for-preview
-        id: preview
+        id: preview-auto
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
@@ -424,12 +469,143 @@ jobs:
           git-branch: ${{ github.head_ref }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Step 4: First branch-DB check against the auto-deploy URL.
       - uses: ./.github/actions/check-branch-db
-        id: db-check
-        if: steps.preview.outputs.url != ''
+        id: db-check-first
+        if: steps.preview-auto.outputs.url != ''
         with:
-          preview-url: ${{ steps.preview.outputs.url }}
+          preview-url: ${{ steps.preview-auto.outputs.url }}
           bypass-secret: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
+      # Step 5: If the auto-deploy built before env injection (branch-db not ready)
+      # OR the auto-deploy errored, trigger ONE redeploy via v13 POST with gitSource.
+      # This new deploy will read the CURRENT branch-scoped env vars set in step 2.
+      - name: Trigger redeploy (env-injection race or auto-deploy error)
+        id: redeploy
+        if: >-
+          steps.preview-auto.outputs.url == '' ||
+          steps.db-check-first.outputs.ready != 'true'
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          GIT_BRANCH: ${{ github.head_ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Triggering fresh deployment with updated branch env vars..."
+
+          REPO_ID=$(curl -sS --max-time 10 \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}" \
+            | jq -r '.id // empty')
+
+          if [ -z "$REPO_ID" ] || [ "$REPO_ID" = "null" ]; then
+            echo "::error::Could not retrieve GitHub repo ID — cannot trigger redeployment"
+            exit 1
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg name "$VERCEL_PROJECT_ID" \
+            --arg project "$VERCEL_PROJECT_ID" \
+            --arg branch "$GIT_BRANCH" \
+            --arg sha "$PR_SHA" \
+            --argjson repoId "$REPO_ID" \
+            '{
+              name: $name,
+              project: $project,
+              target: "preview",
+              gitSource: {
+                type: "github",
+                repoId: $repoId,
+                ref: $branch,
+                sha: $sha
+              }
+            }')
+
+          HTTP_FILE=$(mktemp)
+          HTTP_CODE=$(curl -sS --max-time 30 \
+            -o "$HTTP_FILE" \
+            -w "%{http_code}" \
+            -X POST \
+            "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+
+          BODY=$(cat "$HTTP_FILE")
+          rm -f "$HTTP_FILE"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::error::v13 POST /deployments returned HTTP $HTTP_CODE: $BODY"
+            exit 1
+          fi
+
+          NEW_ID=$(echo "$BODY" | jq -r '.id // empty')
+          if [ -z "$NEW_ID" ] || [ "$NEW_ID" = "null" ]; then
+            echo "::error::POST response missing deployment id: $BODY"
+            exit 1
+          fi
+
+          echo "deployment-id=$NEW_ID" >> "$GITHUB_OUTPUT"
+          echo "Redeployment triggered: $NEW_ID"
+
+      # Step 5 (continued): Poll the specific redeployment by ID until READY.
+      # Uses wait-for-preview with deployment-id input so it polls
+      # GET /v13/deployments/{id} (readyState field, not state).
+      - uses: ./.github/actions/wait-for-preview
+        id: preview-redeploy
+        if: steps.redeploy.outputs.deployment-id != ''
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          bypass-secret: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          pr-sha: ${{ github.event.pull_request.head.sha }}
+          git-branch: ${{ github.head_ref }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deployment-id: ${{ steps.redeploy.outputs.deployment-id }}
+
+      # Step 6: Second branch-DB check against the redeployment URL.
+      - uses: ./.github/actions/check-branch-db
+        id: db-check-second
+        if: steps.preview-redeploy.outputs.url != ''
+        with:
+          preview-url: ${{ steps.preview-redeploy.outputs.url }}
+          bypass-secret: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
+      # Step 7: Fail the job if the second check is still not ready (or redeploy
+      # errored). Because e2e-tests and lighthouse need this job, they will skip,
+      # and the overall run goes RED — no more silent-green runs with zero E2E coverage.
+      - name: Fail if branch DB still not ready after redeploy
+        if: >-
+          steps.redeploy.outcome == 'success' &&
+          steps.db-check-second.outputs.ready != 'true'
+        shell: bash
+        run: |
+          echo "::error::Branch DB not ready after redeployment. E2E tests cannot run against production DB."
+          echo "  auto-deploy url   : ${{ steps.preview-auto.outputs.url }}"
+          echo "  auto first check  : ready=${{ steps.db-check-first.outputs.ready }}"
+          echo "  redeploy id       : ${{ steps.redeploy.outputs.deployment-id }}"
+          echo "  redeploy url      : ${{ steps.preview-redeploy.outputs.url }}"
+          echo "  second check      : ready=${{ steps.db-check-second.outputs.ready }}"
+          exit 1
+
+      # Emit the final URL (redeploy URL if a redeploy ran, otherwise auto-deploy URL).
+      - name: Set final preview URL
+        id: final-url
+        shell: bash
+        run: |
+          REDEPLOY_URL="${{ steps.preview-redeploy.outputs.url }}"
+          AUTO_URL="${{ steps.preview-auto.outputs.url }}"
+          if [ -n "$REDEPLOY_URL" ]; then
+            echo "url=$REDEPLOY_URL" >> "$GITHUB_OUTPUT"
+          elif [ -n "$AUTO_URL" ]; then
+            echo "url=$AUTO_URL" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=" >> "$GITHUB_OUTPUT"
+          fi
 
   # ── E2E tests (Playwright) ─────────────────────────────────
   e2e-tests:

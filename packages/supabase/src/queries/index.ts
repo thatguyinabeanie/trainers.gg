@@ -371,6 +371,10 @@ export {
   getFormatUsageTimeseries,
   getPipelineData,
   getFormatEvents,
+  getUsageBySource,
+  getUsageConversion,
+  getSpeciesMoveCombos,
+  getSpeciesTeammates,
 } from "./usage";
 
 export type {
@@ -385,4 +389,14 @@ export type {
   GetSpeciesUsageParams,
   GetFormatUsageTimeseriesParams,
   FormatEvent,
+  SourceUsageRow,
+  GetUsageBySourceParams,
+  ConversionRow,
+  GetUsageConversionParams,
+  MoveComboRow,
+  GetSpeciesMoveCombosParams,
+  TeammateRow,
+  TeammateMatrix,
+  SpeciesTeammatesResult,
+  GetSpeciesTeammatesParams,
 } from "./usage";

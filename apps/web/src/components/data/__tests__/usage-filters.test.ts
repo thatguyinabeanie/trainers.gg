@@ -4,8 +4,12 @@ import {
   DEFAULT_PERIOD_TYPE,
   DEFAULT_SOURCE,
   DEFAULT_THRESHOLD,
+  DEFAULT_TAB,
+  DEFAULT_TOP_PCT,
   VALID_PERIOD_TYPES,
   VALID_SOURCES,
+  VALID_TABS,
+  VALID_TOP_PCTS,
   coerceFormat,
   coerceMinPlayers,
   coercePeriodType,
@@ -14,6 +18,9 @@ import {
   coerceSelectedSpecies,
   coerceSource,
   coerceThreshold,
+  coerceTab,
+  coerceTopPct,
+  topPctLabel,
   isValidFormat,
 } from "../usage-filters";
 
@@ -413,61 +420,88 @@ describe("getActivePreset", () => {
 });
 
 // =============================================================================
-// coerceColumns
+// coerceTab
 // =============================================================================
 
-import { coerceColumns, DEFAULT_PIPELINE_COLUMNS } from "../usage-filters";
-
-describe("coerceColumns", () => {
-  it("returns DEFAULT_PIPELINE_COLUMNS when raw is undefined", () => {
-    expect(coerceColumns(undefined)).toEqual(DEFAULT_PIPELINE_COLUMNS);
+describe("coerceTab", () => {
+  it.each(VALID_TABS)("passes through valid tab '%s'", (tab) => {
+    expect(coerceTab(tab)).toBe(tab);
   });
 
-  it("returns DEFAULT_PIPELINE_COLUMNS when raw is empty string", () => {
-    expect(coerceColumns("")).toEqual(DEFAULT_PIPELINE_COLUMNS);
+  it("returns DEFAULT_TAB ('overview') for undefined", () => {
+    expect(coerceTab(undefined)).toBe(DEFAULT_TAB);
   });
 
-  it("parses a valid comma-separated column list", () => {
-    expect(coerceColumns("ability,nature,move")).toEqual([
-      "ability",
-      "nature",
-      "move",
-    ]);
+  it("returns DEFAULT_TAB for null", () => {
+    expect(coerceTab(null)).toBe(DEFAULT_TAB);
   });
 
-  it("includes item in parsed output", () => {
-    expect(coerceColumns("ability,item,nature,move")).toEqual([
-      "ability",
-      "item",
-      "nature",
-      "move",
-    ]);
+  it("returns DEFAULT_TAB for empty string", () => {
+    expect(coerceTab("")).toBe(DEFAULT_TAB);
   });
 
-  it("filters out unknown column names", () => {
-    expect(coerceColumns("ability,invalid,nature")).toEqual([
-      "ability",
-      "nature",
-    ]);
+  it.each(["OVERVIEW", "Trends", "unknown", "sources;drop", "tab"])(
+    "returns DEFAULT_TAB for invalid value '%s'",
+    (raw) => {
+      expect(coerceTab(raw)).toBe(DEFAULT_TAB);
+    }
+  );
+});
+
+// =============================================================================
+// coerceTopPct
+// =============================================================================
+
+describe("coerceTopPct", () => {
+  it.each(VALID_TOP_PCTS)("passes through valid topPct %s", (pct) => {
+    expect(coerceTopPct(String(pct))).toBe(pct);
   });
 
-  it("returns DEFAULT_PIPELINE_COLUMNS when all values are invalid", () => {
-    expect(coerceColumns("foo,bar,baz")).toEqual(DEFAULT_PIPELINE_COLUMNS);
+  it("returns DEFAULT_TOP_PCT (0.1) for undefined", () => {
+    expect(coerceTopPct(undefined)).toBe(DEFAULT_TOP_PCT);
   });
 
-  it("deduplicates repeated columns while preserving first occurrence order", () => {
-    expect(coerceColumns("ability,nature,ability,move")).toEqual([
-      "ability",
-      "nature",
-      "move",
-    ]);
+  it("returns DEFAULT_TOP_PCT for null", () => {
+    expect(coerceTopPct(null)).toBe(DEFAULT_TOP_PCT);
   });
 
-  it("preserves custom order (move before nature)", () => {
-    expect(coerceColumns("ability,move,nature")).toEqual([
-      "ability",
-      "move",
-      "nature",
-    ]);
+  it("returns DEFAULT_TOP_PCT for empty string", () => {
+    expect(coerceTopPct("")).toBe(DEFAULT_TOP_PCT);
+  });
+
+  it("returns DEFAULT_TOP_PCT for NaN string", () => {
+    expect(coerceTopPct("NaN")).toBe(DEFAULT_TOP_PCT);
+    expect(coerceTopPct("abc")).toBe(DEFAULT_TOP_PCT);
+  });
+
+  it("returns DEFAULT_TOP_PCT for an out-of-set number", () => {
+    expect(coerceTopPct("0.2")).toBe(DEFAULT_TOP_PCT);
+    expect(coerceTopPct("0")).toBe(DEFAULT_TOP_PCT);
+    expect(coerceTopPct("1")).toBe(DEFAULT_TOP_PCT);
+    expect(coerceTopPct("-0.1")).toBe(DEFAULT_TOP_PCT);
+  });
+});
+
+// =============================================================================
+// topPctLabel
+// =============================================================================
+
+describe("topPctLabel", () => {
+  it("formats 0.1 as 'Top 10%'", () => {
+    expect(topPctLabel(0.1)).toBe("Top 10%");
+  });
+
+  it("formats 0.05 as 'Top 5%'", () => {
+    expect(topPctLabel(0.05)).toBe("Top 5%");
+  });
+
+  it("formats 0.25 as 'Top 25%'", () => {
+    expect(topPctLabel(0.25)).toBe("Top 25%");
+  });
+
+  it("never includes the phrase 'top cut' (case-insensitive)", () => {
+    for (const pct of VALID_TOP_PCTS) {
+      expect(topPctLabel(pct).toLowerCase()).not.toContain("top cut");
+    }
   });
 });

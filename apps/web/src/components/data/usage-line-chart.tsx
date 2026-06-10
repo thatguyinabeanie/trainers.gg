@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   LineChart,
   Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -17,11 +19,21 @@ import {
   type FormatEvent,
 } from "@trainers/supabase";
 
-import { buildUsageSeries } from "./usage-series";
+import {
+  buildUsageSeries,
+  filterByThreshold,
+  insideOutOrder,
+} from "./usage-series";
 
 // =============================================================================
 // Types
 // =============================================================================
+
+/** View mode toggle — "lines" is the default; "stream" is a silhouette AreaChart. */
+type ChartMode = "lines" | "stream";
+
+/** Maximum number of series shown in stream mode (Decision 3). */
+const STREAM_MAX_SERIES = 20;
 
 interface UsageLineChartProps {
   /** All-species timeseries data, oldest → newest. */
@@ -34,6 +46,38 @@ interface UsageLineChartProps {
   onSpeciesClick: (species: string) => void;
   /** Called when brush selection changes. Arguments are ISO date strings. */
   onRangeChange: (start: string | null, end: string | null) => void;
+}
+
+// =============================================================================
+// Lines | Stream mode toggle
+// =============================================================================
+
+interface ModeToggleProps {
+  mode: ChartMode;
+  onModeChange: (mode: ChartMode) => void;
+}
+
+function ModeToggle({ mode, onModeChange }: ModeToggleProps) {
+  return (
+    <div className="flex items-center gap-0.5 rounded-md border p-0.5">
+      {(["lines", "stream"] as ChartMode[]).map((m) => (
+        <button
+          key={m}
+          type="button"
+          className={
+            mode === m
+              ? "bg-primary text-primary-foreground rounded px-2 py-0.5 text-xs font-medium capitalize transition-colors"
+              : "text-muted-foreground hover:text-foreground rounded px-2 py-0.5 text-xs capitalize transition-colors"
+          }
+          onClick={() => onModeChange(m)}
+          aria-pressed={mode === m}
+          aria-label={`${m === "lines" ? "Lines" : "Stream"} mode`}
+        >
+          {m === "lines" ? "Lines" : "Stream"}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 // =============================================================================
@@ -88,6 +132,9 @@ export function UsageLineChart({
   onSpeciesClick,
   onRangeChange,
 }: UsageLineChartProps) {
+  // Local mode state — Lines is default. Not URL-persisted (spec Decision 4).
+  const [mode, setMode] = useState<ChartMode>("lines");
+
   // Map period points to Recharts data shape: { periodStart, [species]: pct, ... }
   const chartData = points.map((p) => ({
     periodStart: p.periodStart,
@@ -99,6 +146,15 @@ export function UsageLineChart({
     selectedSpecies.length > 0
       ? allSeries.filter((s) => selectedSpecies.includes(s.species))
       : allSeries;
+
+  // Stream mode uses insideOutOrder over the threshold-filtered series,
+  // capped at STREAM_MAX_SERIES (20). The 1%-threshold filter keeps the
+  // stream readable; insideOutOrder places the highest-peak series in the
+  // centre for the visual wave effect.
+  const streamSeries = insideOutOrder(filterByThreshold(allSeries, 1)).slice(
+    0,
+    STREAM_MAX_SERIES
+  );
 
   const rangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -168,84 +224,38 @@ export function UsageLineChart({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Panel header */}
+      {/* Panel header with mode toggle */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold">Usage Over Time</span>
-        <span className="text-muted-foreground text-xs">
-          {visibleSeries.length} Pokémon
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold">Usage Over Time</span>
+          <span className="text-muted-foreground text-xs">
+            {visibleSeries.length} Pokémon
+          </span>
+        </div>
+        <ModeToggle mode={mode} onModeChange={setMode} />
       </div>
 
       {/* Chart */}
       <div className="bg-card rounded-xl border p-2">
-        <ResponsiveContainer width="100%" height={180}>
-          <LineChart
-            data={chartData}
-            margin={{ top: 4, right: 16, bottom: 20, left: 0 }}
-          >
-            <XAxis
-              dataKey="periodStart"
-              tick={(props) => (
-                <XAxisTickWithPin
-                  {...props}
-                  events={eventsForTick(props.payload?.value ?? "")}
-                />
-              )}
-              interval="preserveStartEnd"
-              tickLine={false}
-              axisLine={{ stroke: "var(--border)" }}
-            />
-            <YAxis
-              tickFormatter={(v: number) => `${v}%`}
-              tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-              tickLine={false}
-              axisLine={false}
-              width={36}
-            />
-            <Tooltip
-              content={({ active, payload, label }) => {
-                if (!active || !payload?.length) return null;
-                return (
-                  <div className="bg-popover border-border rounded-md border px-2 py-1 text-xs shadow-sm">
-                    <p className="text-muted-foreground mb-1">
-                      {formatAxisLabel(label)}
-                    </p>
-                    {payload.slice(0, 8).map((entry) => (
-                      <p
-                        key={entry.dataKey as string}
-                        style={{ color: entry.color as string }}
-                      >
-                        {entry.dataKey}: {Number(entry.value).toFixed(1)}%
-                      </p>
-                    ))}
-                  </div>
-                );
-              }}
-            />
-            {visibleSeries.map((s) => (
-              <Line
-                key={s.species}
-                type="monotone"
-                dataKey={s.species}
-                stroke={s.color}
-                strokeWidth={2.5}
-                strokeOpacity={1}
-                dot={false}
-                activeDot={{ r: 3 }}
-                onClick={handleLineClick}
-                style={{ cursor: "pointer" }}
-              />
-            ))}
-            <Brush
-              dataKey="periodStart"
-              height={20}
-              stroke="var(--primary)"
-              fill="var(--muted)"
-              travellerWidth={6}
-              onChange={handleBrushChange}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {mode === "lines" ? (
+          <LinesChart
+            chartData={chartData}
+            visibleSeries={visibleSeries}
+            points={points}
+            eventsForTick={eventsForTick}
+            handleBrushChange={handleBrushChange}
+            handleLineClick={handleLineClick}
+          />
+        ) : (
+          <StreamChart
+            chartData={chartData}
+            streamSeries={streamSeries}
+            points={points}
+            eventsForTick={eventsForTick}
+            handleBrushChange={handleBrushChange}
+            onSpeciesClick={onSpeciesClick}
+          />
+        )}
       </div>
 
       {/* Inline legend */}
@@ -271,6 +281,217 @@ export function UsageLineChart({
         </div>
       )}
     </div>
+  );
+}
+
+// =============================================================================
+// LinesChart — existing line mode (unchanged behavior, extracted to sub-component)
+// =============================================================================
+
+interface LinesChartProps {
+  chartData: Record<string, unknown>[];
+  visibleSeries: ReturnType<typeof buildUsageSeries>;
+  points: FormatUsageTimeseriesPoint[];
+  eventsForTick: (periodStart: string) => FormatEvent[];
+  handleBrushChange: (range: {
+    startIndex?: number;
+    endIndex?: number;
+  }) => void;
+  handleLineClick: (data: unknown) => void;
+}
+
+function LinesChart({
+  chartData,
+  visibleSeries,
+  eventsForTick,
+  handleBrushChange,
+  handleLineClick,
+}: LinesChartProps) {
+  return (
+    <ResponsiveContainer width="100%" height={180}>
+      <LineChart
+        data={chartData}
+        margin={{ top: 4, right: 16, bottom: 20, left: 0 }}
+      >
+        <XAxis
+          dataKey="periodStart"
+          tick={(props) => (
+            <XAxisTickWithPin
+              {...props}
+              events={eventsForTick(props.payload?.value ?? "")}
+            />
+          )}
+          interval="preserveStartEnd"
+          tickLine={false}
+          axisLine={{ stroke: "var(--border)" }}
+        />
+        <YAxis
+          tickFormatter={(v: number) => `${v}%`}
+          tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+          tickLine={false}
+          axisLine={false}
+          width={36}
+        />
+        <Tooltip
+          content={({ active, payload, label }) => {
+            if (!active || !payload?.length) return null;
+            return (
+              <div className="bg-popover border-border rounded-md border px-2 py-1 text-xs shadow-sm">
+                <p className="text-muted-foreground mb-1">
+                  {formatAxisLabel(label)}
+                </p>
+                {payload.slice(0, 8).map((entry) => (
+                  <p
+                    key={entry.dataKey as string}
+                    style={{ color: entry.color as string }}
+                  >
+                    {entry.dataKey}: {Number(entry.value).toFixed(1)}%
+                  </p>
+                ))}
+              </div>
+            );
+          }}
+        />
+        {visibleSeries.map((s) => (
+          <Line
+            key={s.species}
+            type="monotone"
+            dataKey={s.species}
+            stroke={s.color}
+            strokeWidth={2.5}
+            strokeOpacity={1}
+            dot={false}
+            activeDot={{ r: 3 }}
+            onClick={handleLineClick}
+            style={{ cursor: "pointer" }}
+          />
+        ))}
+        <Brush
+          dataKey="periodStart"
+          height={20}
+          stroke="var(--primary)"
+          fill="var(--muted)"
+          travellerWidth={6}
+          onChange={handleBrushChange}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+// =============================================================================
+// StreamChart — silhouette AreaChart mode
+// =============================================================================
+
+interface StreamChartProps {
+  chartData: Record<string, unknown>[];
+  streamSeries: ReturnType<typeof buildUsageSeries>;
+  points: FormatUsageTimeseriesPoint[];
+  eventsForTick: (periodStart: string) => FormatEvent[];
+  handleBrushChange: (range: {
+    startIndex?: number;
+    endIndex?: number;
+  }) => void;
+  onSpeciesClick: (species: string) => void;
+}
+
+/**
+ * Stream mode — recharts AreaChart with stackOffset="silhouette".
+ *
+ * Series are ordered via insideOutOrder() (highest-peak species in the
+ * visual centre) and capped at STREAM_MAX_SERIES (20).
+ *
+ * The brush and selected-species legend are shared with lines mode
+ * (same parent state, same onRangeChange callback).
+ *
+ * Tooltip shows top species by share for the hovered bucket — streams
+ * read poorly without exact numbers.
+ */
+function StreamChart({
+  chartData,
+  streamSeries,
+  eventsForTick,
+  handleBrushChange,
+  onSpeciesClick,
+}: StreamChartProps) {
+  return (
+    <ResponsiveContainer width="100%" height={180}>
+      <AreaChart
+        data={chartData}
+        stackOffset="silhouette"
+        margin={{ top: 4, right: 16, bottom: 20, left: 0 }}
+      >
+        <XAxis
+          dataKey="periodStart"
+          tick={(props) => (
+            <XAxisTickWithPin
+              {...props}
+              events={eventsForTick(props.payload?.value ?? "")}
+            />
+          )}
+          interval="preserveStartEnd"
+          tickLine={false}
+          axisLine={{ stroke: "var(--border)" }}
+        />
+        <YAxis
+          tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+          tickLine={false}
+          axisLine={false}
+          width={36}
+          // Silhouette offsets can go negative — hide the axis ticks
+          tickFormatter={() => ""}
+        />
+        <Tooltip
+          content={({ active, payload, label }) => {
+            if (!active || !payload?.length) return null;
+            // Sort by raw value descending so the top species appear first.
+            const sorted = [...payload]
+              .filter((e) => e.value !== null && e.value !== undefined)
+              .sort((a, b) => Number(b.value) - Number(a.value))
+              .slice(0, 8);
+
+            return (
+              <div className="bg-popover border-border rounded-md border px-2 py-1 text-xs shadow-sm">
+                <p className="text-muted-foreground mb-1">
+                  {formatAxisLabel(label)}
+                </p>
+                {sorted.map((entry) => (
+                  <p
+                    key={entry.dataKey as string}
+                    style={{ color: entry.color as string }}
+                  >
+                    {entry.dataKey}: {Number(entry.value).toFixed(1)}%
+                  </p>
+                ))}
+              </div>
+            );
+          }}
+        />
+        {streamSeries.map((s) => (
+          <Area
+            key={s.species}
+            type="monotone"
+            dataKey={s.species}
+            stackId="1"
+            stroke={s.color}
+            fill={s.color}
+            fillOpacity={0.7}
+            strokeWidth={1}
+            dot={false}
+            onClick={() => onSpeciesClick(s.species)}
+            style={{ cursor: "pointer" }}
+          />
+        ))}
+        <Brush
+          dataKey="periodStart"
+          height={20}
+          stroke="var(--primary)"
+          fill="var(--muted)"
+          travellerWidth={6}
+          onChange={handleBrushChange}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
 

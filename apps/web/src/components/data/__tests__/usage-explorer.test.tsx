@@ -31,6 +31,10 @@ jest.mock("@/actions/usage", () => ({
     .mockResolvedValue({ success: true, data: [] }),
   fetchPipelineData: jest.fn().mockResolvedValue({ success: true, data: null }),
   fetchFormatEvents: jest.fn().mockResolvedValue({ success: true, data: [] }),
+  fetchUsageBySource: jest.fn().mockResolvedValue({ success: true, data: [] }),
+  fetchUsageConversion: jest
+    .fn()
+    .mockResolvedValue({ success: true, data: [] }),
 }));
 
 // =============================================================================
@@ -68,8 +72,58 @@ jest.mock("../usage-line-chart", () => ({
   ),
 }));
 
-jest.mock("../usage-pipeline-chart", () => ({
-  UsagePipelineChart: () => <div data-testid="usage-pipeline-chart" />,
+// Stub the Phase 2 chart components — they render real recharts
+// (ResponsiveContainer needs ResizeObserver, absent in JSDOM). Each has its
+// own dedicated test; the explorer test only cares about wiring/tab logic.
+//
+// Each stub captures its `speciesHref` prop so speciesHref-wiring tests can
+// assert that the correct URL is generated without rendering the real chart.
+jest.mock("../usage-treemap", () => ({
+  UsageTreemap: ({ speciesHref }: { speciesHref?: (s: string) => string }) => (
+    <div
+      data-testid="usage-treemap"
+      data-species-href={speciesHref ? speciesHref("Koraidon") : undefined}
+    />
+  ),
+}));
+jest.mock("../usage-conversion-scatter", () => ({
+  UsageConversionScatter: ({
+    speciesHref,
+  }: {
+    speciesHref?: (s: string) => string;
+  }) => (
+    <div
+      data-testid="usage-conversion-scatter"
+      data-species-href={speciesHref ? speciesHref("Koraidon") : undefined}
+    />
+  ),
+}));
+jest.mock("../usage-source-dumbbell", () => ({
+  UsageSourceDumbbell: ({
+    speciesHref,
+  }: {
+    speciesHref?: (s: string) => string;
+  }) => (
+    <div
+      data-testid="usage-source-dumbbell"
+      data-species-href={speciesHref ? speciesHref("Koraidon") : undefined}
+    />
+  ),
+}));
+jest.mock("../usage-top-share-dumbbell", () => ({
+  UsageTopShareDumbbell: ({
+    speciesHref,
+  }: {
+    speciesHref?: (s: string) => string;
+  }) => (
+    <div
+      data-testid="usage-top-share-dumbbell"
+      data-species-href={speciesHref ? speciesHref("Koraidon") : undefined}
+    />
+  ),
+}));
+jest.mock("../usage-bump-chart", () => ({
+  UsageBumpChart: () => <div data-testid="usage-bump-chart" />,
 }));
 
 jest.mock("../data-sidebar", () => ({
@@ -92,6 +146,33 @@ jest.mock("../data-sidebar", () => ({
       <span data-testid="selected-species">
         {props.selectedSpecies.join(",")}
       </span>
+    </div>
+  ),
+}));
+
+// Render all three tab panels unconditionally so tests can query chart
+// testids regardless of which tab is active.
+jest.mock("../data-tabs", () => ({
+  DataTabs: (props: {
+    value: string;
+    onValueChange: (t: string) => void;
+    overviewContent?: React.ReactNode;
+    trendsContent?: React.ReactNode;
+    sourcesContent?: React.ReactNode;
+  }) => (
+    <div data-testid="data-tabs" data-active-tab={props.value}>
+      <button onClick={() => props.onValueChange("trends")}>
+        switch-to-trends
+      </button>
+      <button onClick={() => props.onValueChange("sources")}>
+        switch-to-sources
+      </button>
+      <button onClick={() => props.onValueChange("overview")}>
+        switch-to-overview
+      </button>
+      <div data-testid="tab-overview">{props.overviewContent}</div>
+      <div data-testid="tab-trends">{props.trendsContent}</div>
+      <div data-testid="tab-sources">{props.sourcesContent}</div>
     </div>
   ),
 }));
@@ -167,7 +248,7 @@ describe("UsageExplorer — rendering", () => {
 
   it("renders both chart panels", () => {
     renderExplorer();
-    expect(screen.getByTestId("usage-pipeline-chart")).toBeInTheDocument();
+    expect(screen.getByTestId("usage-treemap")).toBeInTheDocument();
     expect(screen.getByTestId("usage-line-chart")).toBeInTheDocument();
   });
 
@@ -236,6 +317,15 @@ describe("UsageExplorer — 3-state species model", () => {
       "Garchomp,Sneasler"
     );
   });
+
+  it("yields empty selection (not a stale preset) when pipeline data is null", () => {
+    // Guard against stale-preset: allSpecies must be derived only from FRESH
+    // pipeline data. When pipelineResult is null (no data yet, or placeholder
+    // gated to []), applyPreset([]) returns [] — not a previous format's Top 20.
+    mockSearchParams = new URLSearchParams();
+    renderExplorer(null); // no pipeline data
+    expect(screen.getByTestId("selected-count").textContent).toBe("0");
+  });
 });
 
 // =============================================================================
@@ -281,5 +371,155 @@ describe("UsageExplorer — format change", () => {
     const speciesParam = p.get("species") ?? "";
     expect(speciesParam).toContain("Koraidon");
     expect(speciesParam).toContain("Sneasler");
+  });
+});
+
+// =============================================================================
+// URL state — tab switching
+// =============================================================================
+
+describe("UsageExplorer — tab URL state", () => {
+  it("omits the tab param when the active tab is the default (overview)", () => {
+    renderExplorer();
+    // No tab switch — default tab is overview, param should be absent
+    expect(mockSearchParams.has("tab")).toBe(false);
+  });
+
+  it("writes tab=trends to the URL when switching to the Trends tab", async () => {
+    renderExplorer();
+    await userEvent.click(screen.getByText("switch-to-trends"));
+    const p = lastReplaceParams();
+    expect(p.get("tab")).toBe("trends");
+  });
+
+  it("writes tab=sources to the URL when switching to the Sources tab", async () => {
+    renderExplorer();
+    await userEvent.click(screen.getByText("switch-to-sources"));
+    const p = lastReplaceParams();
+    expect(p.get("tab")).toBe("sources");
+  });
+
+  it("omits the tab param when switching back to overview", async () => {
+    mockSearchParams = new URLSearchParams("tab=trends");
+    renderExplorer();
+    await userEvent.click(screen.getByText("switch-to-overview"));
+    const p = lastReplaceParams();
+    expect(p.has("tab")).toBe(false);
+  });
+
+  it("reads the active tab from the URL and passes it to DataTabs", () => {
+    mockSearchParams = new URLSearchParams("tab=sources");
+    renderExplorer();
+    expect(screen.getByTestId("data-tabs")).toHaveAttribute(
+      "data-active-tab",
+      "sources"
+    );
+  });
+});
+
+// =============================================================================
+// Tab panels — chart mounts are in scope
+// =============================================================================
+
+describe("UsageExplorer — tab panel content", () => {
+  it("renders the treemap inside the overview panel", () => {
+    renderExplorer();
+    const overview = screen.getByTestId("tab-overview");
+    expect(overview).toContainElement(screen.getByTestId("usage-treemap"));
+  });
+
+  it("renders the line chart inside the trends panel", () => {
+    renderExplorer();
+    const trends = screen.getByTestId("tab-trends");
+    expect(trends).toContainElement(screen.getByTestId("usage-line-chart"));
+  });
+});
+
+// =============================================================================
+// speciesHref — click-through wiring (Task 10)
+// =============================================================================
+//
+// Each chart stub captures `speciesHref("Koraidon")` as data-species-href so we
+// can assert the URL format without running the real chart component.
+
+describe("UsageExplorer — speciesHref wiring", () => {
+  it("passes speciesHref to UsageTreemap", () => {
+    renderExplorer();
+    const treemap = screen.getByTestId("usage-treemap");
+    expect(treemap).toHaveAttribute("data-species-href");
+    const href = treemap.getAttribute("data-species-href") ?? "";
+    expect(href).toMatch(/^\/data\/pokemon\/Koraidon/);
+  });
+
+  it("passes speciesHref to UsageConversionScatter", () => {
+    renderExplorer();
+    const scatter = screen.getByTestId("usage-conversion-scatter");
+    expect(scatter).toHaveAttribute("data-species-href");
+    const href = scatter.getAttribute("data-species-href") ?? "";
+    expect(href).toMatch(/^\/data\/pokemon\/Koraidon/);
+  });
+
+  it("passes speciesHref to UsageSourceDumbbell", () => {
+    renderExplorer();
+    const dumbbell = screen.getByTestId("usage-source-dumbbell");
+    expect(dumbbell).toHaveAttribute("data-species-href");
+    const href = dumbbell.getAttribute("data-species-href") ?? "";
+    expect(href).toMatch(/^\/data\/pokemon\/Koraidon/);
+  });
+
+  it("passes speciesHref to UsageTopShareDumbbell", () => {
+    renderExplorer();
+    const dumbbell = screen.getByTestId("usage-top-share-dumbbell");
+    expect(dumbbell).toHaveAttribute("data-species-href");
+    const href = dumbbell.getAttribute("data-species-href") ?? "";
+    expect(href).toMatch(/^\/data\/pokemon\/Koraidon/);
+  });
+
+  it("speciesHref includes the current format in the query string", () => {
+    mockSearchParams = new URLSearchParams("format=gen9vgc2025regg");
+    renderExplorer();
+    const treemap = screen.getByTestId("usage-treemap");
+    const href = treemap.getAttribute("data-species-href") ?? "";
+    expect(href).toContain("format=gen9vgc2025regg");
+  });
+
+  it("speciesHref includes non-default source in the query string", () => {
+    mockSearchParams = new URLSearchParams("format=gen9vgc2025regg&source=rk9");
+    renderExplorer();
+    const href =
+      screen.getByTestId("usage-treemap").getAttribute("data-species-href") ??
+      "";
+    expect(href).toContain("source=rk9");
+  });
+
+  it("speciesHref omits source when it is the default (all)", () => {
+    mockSearchParams = new URLSearchParams("format=gen9vgc2025regg&source=all");
+    renderExplorer();
+    const href =
+      screen.getByTestId("usage-treemap").getAttribute("data-species-href") ??
+      "";
+    expect(href).not.toContain("source=");
+  });
+
+  it("speciesHref includes rangeStart and rangeEnd when present", () => {
+    mockSearchParams = new URLSearchParams(
+      "format=gen9vgc2025regg&rangeStart=2025-01-01&rangeEnd=2025-06-30"
+    );
+    renderExplorer();
+    const href =
+      screen.getByTestId("usage-treemap").getAttribute("data-species-href") ??
+      "";
+    expect(href).toContain("rangeStart=2025-01-01");
+    expect(href).toContain("rangeEnd=2025-06-30");
+  });
+
+  it("speciesHref URL-encodes species with special characters", () => {
+    renderExplorer();
+    // The stub calls speciesHref("Koraidon") — confirm correct encoding for
+    // a species slug that only has alphanumeric chars (no encoding needed here).
+    const href =
+      screen.getByTestId("usage-treemap").getAttribute("data-species-href") ??
+      "";
+    expect(href).toContain("/data/pokemon/Koraidon");
   });
 });

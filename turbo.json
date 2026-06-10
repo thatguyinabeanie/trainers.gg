@@ -44,7 +44,8 @@
     "DISCORD_PUBLIC_KEY",
     "DISCORD_BOT_TOKEN",
     "CRON_SECRET",
-    "LIMITLESS_API_KEY"
+    "LIMITLESS_API_KEY",
+    "USAGE_REVALIDATE_SECRET"
   ],
   "tasks": {
     "build": {

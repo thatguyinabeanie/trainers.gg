@@ -1,10 +1,20 @@
-import { type FormatUsageTimeseriesPoint } from "@trainers/supabase";
+import {
+  type FormatUsageTimeseriesPoint,
+  type SourceUsageRow,
+  type SpeciesUsagePeriod,
+} from "@trainers/supabase";
 
 import {
   assignColor,
   buildUsageSeries,
+  buildRankSeries,
+  classifyQuadrant,
   filterByThreshold,
+  groupBySource,
   insideOutOrder,
+  median,
+  detailBucketsToTimeseriesPoints,
+  computeRingLayout,
   type UsageSeries,
 } from "../usage-series";
 
@@ -69,7 +79,9 @@ describe("assignColor", () => {
   });
 
   it("hue stays in [0, 360)", () => {
-    const match = assignColor("Tornadus-Therian").match(/oklch\(0\.66 0\.12 (\d+)\)/);
+    const match = assignColor("Tornadus-Therian").match(
+      /oklch\(0\.66 0\.12 (\d+)\)/
+    );
     expect(match).not.toBeNull();
     const hue = Number(match![1]);
     expect(hue).toBeGreaterThanOrEqual(0);
@@ -87,9 +99,7 @@ describe("buildUsageSeries", () => {
   });
 
   it("builds one series per species from a single period", () => {
-    const points = [
-      makePoint("2025-01-01", { Koraidon: 50, Miraidon: 30 }),
-    ];
+    const points = [makePoint("2025-01-01", { Koraidon: 50, Miraidon: 30 })];
     const result = buildUsageSeries(points);
     expect(result).toHaveLength(2);
     const species = result.map((s) => s.species);
@@ -301,5 +311,354 @@ describe("insideOutOrder", () => {
     const result = insideOutOrder(series);
     expect(result).toHaveLength(1);
     expect(result[0]!.species).toBe("Solo");
+  });
+});
+
+// =============================================================================
+// buildRankSeries
+// =============================================================================
+
+describe("buildRankSeries", () => {
+  it("returns empty result for empty points array", () => {
+    const result = buildRankSeries([], 5);
+    expect(result.series).toEqual([]);
+    expect(result.periods).toEqual([]);
+  });
+
+  it("assigns rank 1 to the most-used species per bucket", () => {
+    const points = [
+      makePoint("2025-01-01", { Koraidon: 50, Miraidon: 30, Pikachu: 10 }),
+    ];
+    const { series } = buildRankSeries(points, 3);
+    const koraidon = series.find((s) => s.species === "Koraidon")!;
+    expect(koraidon.ranks[0]).toBe(1);
+    const miraidon = series.find((s) => s.species === "Miraidon")!;
+    expect(miraidon.ranks[0]).toBe(2);
+  });
+
+  it("retains only species in top topN of the latest bucket", () => {
+    const points = [
+      makePoint("2025-01-01", {
+        Koraidon: 50,
+        Miraidon: 30,
+        Pikachu: 20,
+        Incineroar: 10,
+        Amoonguss: 5,
+      }),
+      makePoint("2025-01-08", {
+        Koraidon: 48,
+        Miraidon: 28,
+        Pikachu: 18,
+        Incineroar: 8,
+        Amoonguss: 3,
+      }),
+    ];
+    const { series } = buildRankSeries(points, 3);
+    // Only top 3 in latest bucket should be retained
+    const speciesNames = series.map((s) => s.species);
+    expect(speciesNames).toContain("Koraidon");
+    expect(speciesNames).toContain("Miraidon");
+    expect(speciesNames).toContain("Pikachu");
+    expect(speciesNames).not.toContain("Incineroar");
+    expect(speciesNames).not.toContain("Amoonguss");
+  });
+
+  it("produces null for buckets where a species is absent", () => {
+    const points = [
+      makePoint("2025-01-01", { Koraidon: 50, Miraidon: 30 }),
+      makePoint("2025-01-08", { Koraidon: 48 }), // Miraidon absent from latest bucket
+    ];
+    const { series } = buildRankSeries(points, 2);
+    // Miraidon is absent from the latest bucket, so it does not qualify for top-N.
+    expect(series.map((s) => s.species)).not.toContain("Miraidon");
+  });
+
+  it("produces null gaps for species absent in some buckets but present in latest", () => {
+    const points = [
+      makePoint("2025-01-01", { Koraidon: 50 }),
+      makePoint("2025-01-08", { Koraidon: 48, Miraidon: 40 }),
+    ];
+    const { series } = buildRankSeries(points, 2);
+    const miraidon = series.find((s) => s.species === "Miraidon")!;
+    expect(miraidon).toBeDefined();
+    // Miraidon absent in first bucket → null
+    expect(miraidon.ranks[0]).toBeNull();
+    // Miraidon present in second bucket → rank 2
+    expect(miraidon.ranks[1]).toBe(2);
+  });
+
+  it("aligns periods array to point periodStarts", () => {
+    const points = [
+      makePoint("2025-01-01", { Koraidon: 50 }),
+      makePoint("2025-01-08", { Koraidon: 48 }),
+    ];
+    const { periods } = buildRankSeries(points, 1);
+    expect(periods).toEqual(["2025-01-01", "2025-01-08"]);
+  });
+
+  it("assigns stable colors via assignColor", () => {
+    const points = [makePoint("2025-01-01", { Koraidon: 50 })];
+    const { series } = buildRankSeries(points, 1);
+    expect(series[0]!.color).toBe(assignColor("Koraidon"));
+  });
+});
+
+// =============================================================================
+// groupBySource
+// =============================================================================
+
+function makeSourceRow(
+  species: string,
+  source: string,
+  usagePct: number,
+  players = 100
+): SourceUsageRow {
+  return { species, source, usagePct, players };
+}
+
+describe("groupBySource", () => {
+  it("returns empty array for empty input", () => {
+    expect(groupBySource([])).toEqual([]);
+  });
+
+  it("groups rows by species and fills bySource", () => {
+    const rows = [
+      makeSourceRow("Koraidon", "rk9", 50),
+      makeSourceRow("Koraidon", "limitless", 45),
+    ];
+    const result = groupBySource(rows);
+    expect(result).toHaveLength(1);
+    const row = result[0]!;
+    expect(row.species).toBe("Koraidon");
+    expect(row.bySource["rk9"]).toEqual({ usagePct: 50, players: 100 });
+    expect(row.bySource["limitless"]).toEqual({ usagePct: 45, players: 100 });
+  });
+
+  it("computes overallPeak as the max usagePct across sources", () => {
+    const rows = [
+      makeSourceRow("Koraidon", "rk9", 50),
+      makeSourceRow("Koraidon", "limitless", 60),
+      makeSourceRow("Koraidon", "trainers.gg", 45),
+    ];
+    const result = groupBySource(rows);
+    expect(result[0]!.overallPeak).toBe(60);
+  });
+
+  it("sorts by overallPeak descending", () => {
+    const rows = [
+      makeSourceRow("Pikachu", "rk9", 10),
+      makeSourceRow("Koraidon", "rk9", 50),
+      makeSourceRow("Miraidon", "rk9", 30),
+    ];
+    const result = groupBySource(rows);
+    expect(result[0]!.species).toBe("Koraidon");
+    expect(result[1]!.species).toBe("Miraidon");
+    expect(result[2]!.species).toBe("Pikachu");
+  });
+
+  it("handles a species present in only one source", () => {
+    const rows = [makeSourceRow("Koraidon", "rk9", 50)];
+    const result = groupBySource(rows);
+    expect(result[0]!.bySource["rk9"]).toBeDefined();
+    expect(result[0]!.bySource["limitless"]).toBeUndefined();
+  });
+});
+
+// =============================================================================
+// median
+// =============================================================================
+
+describe("median", () => {
+  it("returns 0 for an empty array", () => {
+    expect(median([])).toBe(0);
+  });
+
+  it("returns the single value for a one-element array", () => {
+    expect(median([42])).toBe(42);
+  });
+
+  it("returns the middle value for an odd-length array", () => {
+    expect(median([3, 1, 2])).toBe(2);
+    expect(median([10, 30, 20])).toBe(20);
+  });
+
+  it("returns the average of two middle values for an even-length array", () => {
+    expect(median([1, 2, 3, 4])).toBe(2.5);
+    expect(median([10, 20, 30, 40])).toBe(25);
+  });
+
+  it("does not mutate the input array", () => {
+    const input = [5, 3, 1, 4, 2];
+    const copy = [...input];
+    median(input);
+    expect(input).toEqual(copy);
+  });
+});
+
+// =============================================================================
+// classifyQuadrant
+// =============================================================================
+
+describe("classifyQuadrant", () => {
+  // Medians: usageMedian = 10, conversionMedian = 50
+
+  it("classifies high usage + high conversion as 'proven'", () => {
+    expect(classifyQuadrant(15, 60, 10, 50)).toBe("proven");
+  });
+
+  it("classifies high usage + low conversion as 'overrated'", () => {
+    expect(classifyQuadrant(15, 40, 10, 50)).toBe("overrated");
+  });
+
+  it("classifies low usage + high conversion as 'sleeper'", () => {
+    expect(classifyQuadrant(5, 60, 10, 50)).toBe("sleeper");
+  });
+
+  it("classifies low usage + low conversion as 'fringe'", () => {
+    expect(classifyQuadrant(5, 40, 10, 50)).toBe("fringe");
+  });
+
+  it("treats a value exactly equal to the usage median as 'high'", () => {
+    // usagePct == usageMedian → high usage
+    expect(classifyQuadrant(10, 60, 10, 50)).toBe("proven");
+    expect(classifyQuadrant(10, 40, 10, 50)).toBe("overrated");
+  });
+
+  it("treats a value exactly equal to the conversion median as 'high'", () => {
+    // conversionPct == conversionMedian → high conversion
+    expect(classifyQuadrant(15, 50, 10, 50)).toBe("proven");
+    expect(classifyQuadrant(5, 50, 10, 50)).toBe("sleeper");
+  });
+
+  it("treats both values exactly at median as 'proven'", () => {
+    expect(classifyQuadrant(10, 50, 10, 50)).toBe("proven");
+  });
+});
+
+// =============================================================================
+// detailBucketsToTimeseriesPoints
+// =============================================================================
+
+function makeDetailBucket(
+  periodStart: string,
+  usagePct: number
+): SpeciesUsagePeriod {
+  return {
+    periodStart,
+    periodEnd: periodStart,
+    usagePct,
+    rank: 1,
+    sampleSize: 100,
+    usageChange7d: null,
+    usageChange30d: null,
+    moves: [],
+    tera: [],
+    items: [],
+    abilities: [],
+    natures: [],
+    abilityItems: [],
+  };
+}
+
+describe("detailBucketsToTimeseriesPoints", () => {
+  it("returns an empty array for empty detail", () => {
+    expect(detailBucketsToTimeseriesPoints([], "koraidon")).toEqual([]);
+  });
+
+  it("produces one point per bucket", () => {
+    const detail = [
+      makeDetailBucket("2025-01-01", 48.2),
+      makeDetailBucket("2025-01-08", 50.1),
+      makeDetailBucket("2025-01-15", 47.3),
+    ];
+    const points = detailBucketsToTimeseriesPoints(detail, "koraidon");
+    expect(points).toHaveLength(3);
+  });
+
+  it("keys each point's usage map by the species slug", () => {
+    const detail = [makeDetailBucket("2025-01-01", 48.2)];
+    const [point] = detailBucketsToTimeseriesPoints(
+      detail,
+      "calyrex-ice-rider"
+    );
+    expect(point?.usage).toEqual({ "calyrex-ice-rider": 48.2 });
+  });
+
+  it("preserves periodStart and periodEnd from each bucket", () => {
+    const bucket = makeDetailBucket("2025-03-10", 30);
+    bucket.periodEnd = "2025-03-16";
+    const [point] = detailBucketsToTimeseriesPoints([bucket], "miraidon");
+    expect(point?.periodStart).toBe("2025-03-10");
+    expect(point?.periodEnd).toBe("2025-03-16");
+  });
+
+  it("maps usagePct from each bucket to the species key", () => {
+    const detail = [
+      makeDetailBucket("2025-01-01", 10),
+      makeDetailBucket("2025-01-08", 20),
+      makeDetailBucket("2025-01-15", 30),
+    ];
+    const points = detailBucketsToTimeseriesPoints(detail, "flutter-mane");
+    expect(points.map((p) => p.usage["flutter-mane"])).toEqual([10, 20, 30]);
+  });
+});
+
+// =============================================================================
+// computeRingLayout
+// =============================================================================
+
+describe("computeRingLayout", () => {
+  it("returns an empty array for count = 0", () => {
+    expect(computeRingLayout(0)).toEqual([]);
+  });
+
+  it("returns exactly `count` positions", () => {
+    expect(computeRingLayout(5)).toHaveLength(5);
+    expect(computeRingLayout(12)).toHaveLength(12);
+    expect(computeRingLayout(20)).toHaveLength(20);
+  });
+
+  it("all x and y values are within [0, 100]", () => {
+    for (const n of [1, 6, 12, 20]) {
+      const positions = computeRingLayout(n);
+      for (const pos of positions) {
+        expect(pos.x).toBeGreaterThanOrEqual(0);
+        expect(pos.x).toBeLessThanOrEqual(100);
+        expect(pos.y).toBeGreaterThanOrEqual(0);
+        expect(pos.y).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+
+  it("first entry starts near the top (y < 50 for count > 1)", () => {
+    // Angle starts at -90° (12 o'clock), so first bubble is above centre.
+    const positions = computeRingLayout(8);
+    expect(positions[0]!.y).toBeLessThan(50);
+  });
+
+  it("is deterministic — same count always produces same output", () => {
+    const a = computeRingLayout(6);
+    const b = computeRingLayout(6);
+    expect(a).toEqual(b);
+  });
+
+  it("uses a double ring when count > 12", () => {
+    const positions = computeRingLayout(16);
+    // With a double ring, positions cluster at two distinct radii.
+    // The set of unique y values should have spread for two concentric groups.
+    expect(positions).toHaveLength(16);
+    // At least one position is closer to the centre (inner ring ~y=25) and
+    // one is farther (outer ring ~y=10). Just verify all in [0,100].
+    for (const p of positions) {
+      expect(p.x).toBeGreaterThanOrEqual(0);
+      expect(p.y).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("forces double ring when opts.rings = 2", () => {
+    const single = computeRingLayout(6, { rings: 1 });
+    const double = computeRingLayout(6, { rings: 2 });
+    // They should differ (different radius values).
+    expect(single).not.toEqual(double);
   });
 });

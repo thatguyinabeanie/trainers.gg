@@ -37,7 +37,7 @@ Implement features in the trainers.gg monorepo. Domain skills are injected — f
 3. **Plan**: Outline the implementation steps before coding
 4. **Implement**: Follow the loaded skill conventions exactly
 5. **Test**: Write tests for new logic — aim for 80%+ coverage on new code (60% is the CI minimum, not the goal)
-6. **Verify**: Run `pnpm typecheck` and `pnpm lint` on affected packages
+6. **Do NOT run checks or commit**: Never run lint, typecheck, or tests, and never commit or push. Report back to the orchestrator: changed files, a short summary, and a **suggested commit message** (you know the WHY of your task best). The orchestrator commits between waves; `background-checker` (haiku) and CI handle verification — failures come back as follow-up fix tasks.
 
 ## While Writing Code
 

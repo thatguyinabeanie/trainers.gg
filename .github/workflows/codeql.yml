@@ -3,8 +3,23 @@ name: CodeQL
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".vscode/**"
+      - "LICENSE"
+      - ".gitignore"
+      - "infra/**"
+      - ".claude/**"
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".vscode/**"
+      - "LICENSE"
+      - ".gitignore"
+      - "infra/**"
+      - ".claude/**"
   schedule:
     # Run weekly on Sundays at 3 AM UTC
     - cron: "0 3 * * 0"

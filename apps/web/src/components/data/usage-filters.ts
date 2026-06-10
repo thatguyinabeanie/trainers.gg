@@ -218,37 +218,51 @@ export function coerceRangeEnd(raw: string | undefined | null): string | null {
 }
 
 // =============================================================================
-// Pipeline column configuration
+// Tab navigation
 // =============================================================================
 
-export type PipelineColumn = "ability" | "item" | "nature" | "move";
+export const VALID_TABS = ["overview", "trends", "sources"] as const;
+export type DataTab = (typeof VALID_TABS)[number];
+export const DEFAULT_TAB: DataTab = "overview";
 
-export const ALL_PIPELINE_COLUMNS: PipelineColumn[] = [
-  "ability",
-  "item",
-  "nature",
-  "move",
-];
+/**
+ * Coerces a raw string to a valid `DataTab`.
+ *
+ * Returns `DEFAULT_TAB` when `raw` is not one of the allowed tab names.
+ */
+export function coerceTab(raw: string | null | undefined): DataTab {
+  return (VALID_TABS as readonly string[]).includes(raw as DataTab)
+    ? (raw as DataTab)
+    : DEFAULT_TAB;
+}
 
-export const DEFAULT_PIPELINE_COLUMNS: PipelineColumn[] = [
-  ...ALL_PIPELINE_COLUMNS,
-];
+// =============================================================================
+// Top-percentile threshold
+// =============================================================================
 
-export function coerceColumns(raw: string | undefined): PipelineColumn[] {
-  if (!raw) return DEFAULT_PIPELINE_COLUMNS;
-  const valid = new Set<string>(ALL_PIPELINE_COLUMNS);
-  const parsed = raw
-    .split(",")
-    .map((c) => c.trim())
-    .filter((c) => valid.has(c)) as PipelineColumn[];
-  // Deduplicate while preserving order
-  const seen = new Set<string>();
-  const deduped = parsed.filter((c) => {
-    if (seen.has(c)) return false;
-    seen.add(c);
-    return true;
-  });
-  return deduped.length > 0 ? deduped : DEFAULT_PIPELINE_COLUMNS;
+export const VALID_TOP_PCTS = [0.05, 0.1, 0.25] as const;
+export type TopPct = (typeof VALID_TOP_PCTS)[number];
+export const DEFAULT_TOP_PCT: TopPct = 0.1;
+
+/**
+ * Coerces a raw string to a valid `TopPct` threshold value.
+ *
+ * Returns `DEFAULT_TOP_PCT` when `raw` is not one of the allowed values.
+ */
+export function coerceTopPct(raw: string | null | undefined): TopPct {
+  const n = Number(raw);
+  return (VALID_TOP_PCTS as readonly number[]).includes(n)
+    ? (n as TopPct)
+    : DEFAULT_TOP_PCT;
+}
+
+/**
+ * UI label for a top-percentile threshold.
+ *
+ * e.g. 0.1 → "Top 10%". Never uses the phrase "top cut".
+ */
+export function topPctLabel(topPct: number): string {
+  return `Top ${Math.round(topPct * 100)}%`;
 }
 
 // =============================================================================

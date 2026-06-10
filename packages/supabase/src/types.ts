@@ -3832,6 +3832,42 @@ export type Database = {
         Args: { p_group_role_id: number }
         Returns: string
       }
+      get_species_move_combos: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_limit?: number
+          p_min_players?: number
+          p_source?: string
+          p_species: string
+          p_start?: string
+        }
+        Returns: {
+          combo_pct: number
+          moves: string[]
+          players: number
+          rank: number
+        }[]
+      }
+      get_species_teammates: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_source?: string
+          p_species: string
+          p_start?: string
+          p_top_n?: number
+        }
+        Returns: {
+          focal_players: number
+          matrix: Json
+          pair_count: number
+          pair_pct: number
+          teammate: string
+          teammate_rank: number
+        }[]
+      }
       get_species_usage: {
         Args: {
           p_format: string
@@ -3885,6 +3921,40 @@ export type Database = {
         Returns: {
           count: number
           status: string
+        }[]
+      }
+      get_usage_by_source: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_start?: string
+        }
+        Returns: {
+          players: number
+          source: string
+          species: string
+          usage_pct: number
+        }[]
+      }
+      get_usage_conversion: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_source?: string
+          p_start?: string
+          p_top_percentile?: number
+        }
+        Returns: {
+          conversion_pct: number
+          players: number
+          ranked_players: number
+          species: string
+          top_field: number
+          top_players: number
+          top_share_pct: number
+          usage_pct: number
         }[]
       }
       get_usage_pipeline: {
@@ -4177,7 +4247,9 @@ export type Database = {
           event_id: string
           format_id: string | null
           has_team_lists: boolean
+          import_attempts: number
           import_error: string | null
+          import_requested_at: string | null
           import_status: Database["rk9"]["Enums"]["import_status"]
           imported_at: string
           location_city: string | null
@@ -4186,6 +4258,7 @@ export type Database = {
           player_count: number | null
           teams_imported_count: number
           tier: Database["rk9"]["Enums"]["event_tier"]
+          worker_claimed_at: string | null
         }
         Insert: {
           date_end?: string | null
@@ -4193,7 +4266,9 @@ export type Database = {
           event_id: string
           format_id?: string | null
           has_team_lists?: boolean
+          import_attempts?: number
           import_error?: string | null
+          import_requested_at?: string | null
           import_status?: Database["rk9"]["Enums"]["import_status"]
           imported_at?: string
           location_city?: string | null
@@ -4202,6 +4277,7 @@ export type Database = {
           player_count?: number | null
           teams_imported_count?: number
           tier: Database["rk9"]["Enums"]["event_tier"]
+          worker_claimed_at?: string | null
         }
         Update: {
           date_end?: string | null
@@ -4209,7 +4285,9 @@ export type Database = {
           event_id?: string
           format_id?: string | null
           has_team_lists?: boolean
+          import_attempts?: number
           import_error?: string | null
+          import_requested_at?: string | null
           import_status?: Database["rk9"]["Enums"]["import_status"]
           imported_at?: string
           location_city?: string | null
@@ -4218,6 +4296,7 @@ export type Database = {
           player_count?: number | null
           teams_imported_count?: number
           tier?: Database["rk9"]["Enums"]["event_tier"]
+          worker_claimed_at?: string | null
         }
         Relationships: []
       }
@@ -4499,6 +4578,7 @@ export type Database = {
         | "pairings"
         | "complete"
         | "failed"
+        | "queued"
       phase_type: "swiss" | "single_elimination"
     }
     CompositeTypes: {
@@ -4789,6 +4869,7 @@ export const Constants = {
         "pairings",
         "complete",
         "failed",
+        "queued",
       ],
       phase_type: ["swiss", "single_elimination"],
     },
