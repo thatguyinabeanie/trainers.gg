@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Treemap, ResponsiveContainer } from "recharts";
 
 import { type PipelineSpeciesData } from "@trainers/supabase";
@@ -158,6 +159,8 @@ interface TileProps {
   onHover?: (
     node: { species: string; usagePct: number; rank: number } | null
   ) => void;
+  /** Called when the user clicks a non-Others tile (Phase 3 navigation). */
+  onNavigate?: (species: string) => void;
 }
 
 function CustomTile(props: TileProps) {
@@ -173,6 +176,7 @@ function CustomTile(props: TileProps) {
     name = "",
     speciesHref,
     onHover,
+    onNavigate,
   } = props;
 
   if (!width || !height) return null;
@@ -203,11 +207,32 @@ function CustomTile(props: TileProps) {
   // Clamp font size between 8–12px proportional to tile width.
   const fontSize = Math.max(8, Math.min(12, Math.floor(width / 8)));
 
+  // A tile is navigable when: speciesHref is provided, not an Others tile, and
+  // species is a real slug (recharts also renders the root node with empty species).
+  const isNavigable = Boolean(speciesHref && !isOthers && species);
+
+  const handleClick = () => {
+    if (isNavigable && onNavigate) {
+      onNavigate(species);
+    }
+  };
+
   const inner = (
     <g
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={{ cursor: speciesHref && !isOthers ? "pointer" : "default" }}
+      onClick={isNavigable ? handleClick : undefined}
+      role={isNavigable ? "link" : undefined}
+      aria-label={isNavigable ? `View ${species} details` : undefined}
+      tabIndex={isNavigable ? 0 : undefined}
+      onKeyDown={
+        isNavigable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") handleClick();
+            }
+          : undefined
+      }
+      style={{ cursor: isNavigable ? "pointer" : "default" }}
     >
       <rect
         x={x}
@@ -254,15 +279,6 @@ function CustomTile(props: TileProps) {
     </g>
   );
 
-  // Phase 3 drill-down: wrap in a link when speciesHref is provided.
-  if (speciesHref && !isOthers) {
-    return (
-      <a href={speciesHref(species)} aria-label={`View ${species} details`}>
-        {inner}
-      </a>
-    );
-  }
-
   return inner;
 }
 
@@ -281,12 +297,17 @@ function CustomTile(props: TileProps) {
  * Wrap in DataChartCard at the call-site.
  */
 export function UsageTreemap({ data, speciesHref }: UsageTreemapProps) {
+  const router = useRouter();
   const [hoveredSpecies, setHoveredSpecies] = useState<{
     species: string;
     usagePct: number;
     rank: number;
   } | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+  const handleNavigate = speciesHref
+    ? (species: string) => router.push(speciesHref(species))
+    : undefined;
 
   if (!data || data.length === 0) {
     return (
@@ -330,6 +351,7 @@ export function UsageTreemap({ data, speciesHref }: UsageTreemapProps) {
               <CustomTile
                 speciesHref={speciesHref}
                 onHover={(node) => setHoveredSpecies(node)}
+                onNavigate={handleNavigate}
               />
             ) as unknown as React.ReactElement
           }

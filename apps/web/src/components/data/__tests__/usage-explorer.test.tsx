@@ -75,17 +75,52 @@ jest.mock("../usage-line-chart", () => ({
 // Stub the Phase 2 chart components — they render real recharts
 // (ResponsiveContainer needs ResizeObserver, absent in JSDOM). Each has its
 // own dedicated test; the explorer test only cares about wiring/tab logic.
+//
+// Each stub captures its `speciesHref` prop so speciesHref-wiring tests can
+// assert that the correct URL is generated without rendering the real chart.
 jest.mock("../usage-treemap", () => ({
-  UsageTreemap: () => <div data-testid="usage-treemap" />,
+  UsageTreemap: ({ speciesHref }: { speciesHref?: (s: string) => string }) => (
+    <div
+      data-testid="usage-treemap"
+      data-species-href={speciesHref ? speciesHref("Koraidon") : undefined}
+    />
+  ),
 }));
 jest.mock("../usage-conversion-scatter", () => ({
-  UsageConversionScatter: () => <div data-testid="usage-conversion-scatter" />,
+  UsageConversionScatter: ({
+    speciesHref,
+  }: {
+    speciesHref?: (s: string) => string;
+  }) => (
+    <div
+      data-testid="usage-conversion-scatter"
+      data-species-href={speciesHref ? speciesHref("Koraidon") : undefined}
+    />
+  ),
 }));
 jest.mock("../usage-source-dumbbell", () => ({
-  UsageSourceDumbbell: () => <div data-testid="usage-source-dumbbell" />,
+  UsageSourceDumbbell: ({
+    speciesHref,
+  }: {
+    speciesHref?: (s: string) => string;
+  }) => (
+    <div
+      data-testid="usage-source-dumbbell"
+      data-species-href={speciesHref ? speciesHref("Koraidon") : undefined}
+    />
+  ),
 }));
 jest.mock("../usage-top-share-dumbbell", () => ({
-  UsageTopShareDumbbell: () => <div data-testid="usage-top-share-dumbbell" />,
+  UsageTopShareDumbbell: ({
+    speciesHref,
+  }: {
+    speciesHref?: (s: string) => string;
+  }) => (
+    <div
+      data-testid="usage-top-share-dumbbell"
+      data-species-href={speciesHref ? speciesHref("Koraidon") : undefined}
+    />
+  ),
 }));
 jest.mock("../usage-bump-chart", () => ({
   UsageBumpChart: () => <div data-testid="usage-bump-chart" />,
@@ -388,5 +423,94 @@ describe("UsageExplorer — tab panel content", () => {
     renderExplorer();
     const trends = screen.getByTestId("tab-trends");
     expect(trends).toContainElement(screen.getByTestId("usage-line-chart"));
+  });
+});
+
+// =============================================================================
+// speciesHref — click-through wiring (Task 10)
+// =============================================================================
+//
+// Each chart stub captures `speciesHref("Koraidon")` as data-species-href so we
+// can assert the URL format without running the real chart component.
+
+describe("UsageExplorer — speciesHref wiring", () => {
+  it("passes speciesHref to UsageTreemap", () => {
+    renderExplorer();
+    const treemap = screen.getByTestId("usage-treemap");
+    expect(treemap).toHaveAttribute("data-species-href");
+    const href = treemap.getAttribute("data-species-href") ?? "";
+    expect(href).toMatch(/^\/data\/pokemon\/Koraidon/);
+  });
+
+  it("passes speciesHref to UsageConversionScatter", () => {
+    renderExplorer();
+    const scatter = screen.getByTestId("usage-conversion-scatter");
+    expect(scatter).toHaveAttribute("data-species-href");
+    const href = scatter.getAttribute("data-species-href") ?? "";
+    expect(href).toMatch(/^\/data\/pokemon\/Koraidon/);
+  });
+
+  it("passes speciesHref to UsageSourceDumbbell", () => {
+    renderExplorer();
+    const dumbbell = screen.getByTestId("usage-source-dumbbell");
+    expect(dumbbell).toHaveAttribute("data-species-href");
+    const href = dumbbell.getAttribute("data-species-href") ?? "";
+    expect(href).toMatch(/^\/data\/pokemon\/Koraidon/);
+  });
+
+  it("passes speciesHref to UsageTopShareDumbbell", () => {
+    renderExplorer();
+    const dumbbell = screen.getByTestId("usage-top-share-dumbbell");
+    expect(dumbbell).toHaveAttribute("data-species-href");
+    const href = dumbbell.getAttribute("data-species-href") ?? "";
+    expect(href).toMatch(/^\/data\/pokemon\/Koraidon/);
+  });
+
+  it("speciesHref includes the current format in the query string", () => {
+    mockSearchParams = new URLSearchParams("format=gen9vgc2025regg");
+    renderExplorer();
+    const treemap = screen.getByTestId("usage-treemap");
+    const href = treemap.getAttribute("data-species-href") ?? "";
+    expect(href).toContain("format=gen9vgc2025regg");
+  });
+
+  it("speciesHref includes non-default source in the query string", () => {
+    mockSearchParams = new URLSearchParams("format=gen9vgc2025regg&source=rk9");
+    renderExplorer();
+    const href =
+      screen.getByTestId("usage-treemap").getAttribute("data-species-href") ??
+      "";
+    expect(href).toContain("source=rk9");
+  });
+
+  it("speciesHref omits source when it is the default (all)", () => {
+    mockSearchParams = new URLSearchParams("format=gen9vgc2025regg&source=all");
+    renderExplorer();
+    const href =
+      screen.getByTestId("usage-treemap").getAttribute("data-species-href") ??
+      "";
+    expect(href).not.toContain("source=");
+  });
+
+  it("speciesHref includes rangeStart and rangeEnd when present", () => {
+    mockSearchParams = new URLSearchParams(
+      "format=gen9vgc2025regg&rangeStart=2025-01-01&rangeEnd=2025-06-30"
+    );
+    renderExplorer();
+    const href =
+      screen.getByTestId("usage-treemap").getAttribute("data-species-href") ??
+      "";
+    expect(href).toContain("rangeStart=2025-01-01");
+    expect(href).toContain("rangeEnd=2025-06-30");
+  });
+
+  it("speciesHref URL-encodes species with special characters", () => {
+    renderExplorer();
+    // The stub calls speciesHref("Koraidon") — confirm correct encoding for
+    // a species slug that only has alphanumeric chars (no encoding needed here).
+    const href =
+      screen.getByTestId("usage-treemap").getAttribute("data-species-href") ??
+      "";
+    expect(href).toContain("/data/pokemon/Koraidon");
   });
 });

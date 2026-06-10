@@ -44,6 +44,8 @@ import {
   coerceTab,
   coerceTopPct,
   DEFAULT_MIN_PLAYERS,
+  DEFAULT_SOURCE,
+  DEFAULT_PERIOD_TYPE,
   DEFAULT_TAB,
   DEFAULT_TOP_PCT,
   applyPreset,
@@ -416,13 +418,40 @@ export function UsageExplorer({
     updateUrl(currentFilters, next);
   };
 
+  // ── speciesHref helper ────────────────────────────────────────────────────
+  //
+  // Builds a URL to the per-species drill-down carrying the current filters.
+  // Omits params at their defaults to keep URLs clean — mirrors the omit rules
+  // in updateUrl above.
+
+  function speciesHref(species: string): string {
+    const params = new URLSearchParams();
+    params.set("format", format);
+    if (source !== DEFAULT_SOURCE) params.set("source", source);
+    if (rangeStart) params.set("rangeStart", rangeStart);
+    if (rangeEnd) params.set("rangeEnd", rangeEnd);
+    if (minPlayers !== DEFAULT_MIN_PLAYERS)
+      params.set("minPlayers", String(minPlayers));
+    if (periodType !== DEFAULT_PERIOD_TYPE)
+      params.set("periodType", periodType);
+    const qs = params.toString();
+    return `/data/pokemon/${encodeURIComponent(species)}${qs ? `?${qs}` : ""}`;
+  }
+
   // ── Tab content ───────────────────────────────────────────────────────────
 
   const overviewContent = (
     <div className="flex flex-col gap-3 pt-3">
-      <UsageTreemap data={pipelineResult?.data ?? []} />
+      <UsageTreemap
+        data={pipelineResult?.data ?? []}
+        speciesHref={speciesHref}
+      />
 
-      <UsageConversionScatter rows={conversionRows} topPct={topPct} />
+      <UsageConversionScatter
+        rows={conversionRows}
+        topPct={topPct}
+        speciesHref={speciesHref}
+      />
     </div>
   );
 
@@ -450,9 +479,16 @@ export function UsageExplorer({
 
   const sourcesContent = (
     <div className="flex flex-col gap-3 pt-3">
-      <UsageSourceDumbbell rows={groupBySource(sourceRows)} />
+      <UsageSourceDumbbell
+        rows={groupBySource(sourceRows)}
+        speciesHref={speciesHref}
+      />
 
-      <UsageTopShareDumbbell rows={conversionRows} topPct={topPct} />
+      <UsageTopShareDumbbell
+        rows={conversionRows}
+        topPct={topPct}
+        speciesHref={speciesHref}
+      />
     </div>
   );
 

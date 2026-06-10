@@ -8,6 +8,15 @@ import { median, classifyQuadrant, type Quadrant } from "../usage-series";
 import { topPctLabel } from "../usage-filters";
 
 // =============================================================================
+// next/navigation mock (for router.push used by speciesHref click)
+// =============================================================================
+
+const mockPush = jest.fn();
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
+// =============================================================================
 // JSDOM polyfills
 // =============================================================================
 
@@ -345,5 +354,44 @@ describe("UsageConversionScatter — smoke render", () => {
   it("renders empty-state caption when showing no-data message", () => {
     render(<UsageConversionScatter rows={[]} topPct={0.1} />);
     expect(screen.getByText("Requires placement data")).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// Phase 3 — speciesHref navigation (Task 10)
+// =============================================================================
+
+beforeEach(() => {
+  mockPush.mockClear();
+});
+
+describe("UsageConversionScatter — speciesHref navigation", () => {
+  it("renders without crashing when speciesHref is provided", () => {
+    expect(() =>
+      render(
+        <UsageConversionScatter
+          rows={[ROW_A, ROW_B]}
+          topPct={0.1}
+          speciesHref={(s) => `/data/pokemon/${s}?format=gen9vgc2025regg`}
+        />
+      )
+    ).not.toThrow();
+  });
+
+  it("renders an SVG chart when speciesHref is provided (does not break layout)", () => {
+    const { container } = render(
+      <UsageConversionScatter
+        rows={[ROW_A, ROW_B]}
+        topPct={0.1}
+        speciesHref={(s) => `/data/pokemon/${s}?format=gen9vgc2025regg`}
+      />
+    );
+    expect(container.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("does not call router.push when speciesHref is absent", () => {
+    render(<UsageConversionScatter rows={[ROW_A, ROW_B]} topPct={0.1} />);
+    // No click interaction here — just assert mockPush was never triggered on render.
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

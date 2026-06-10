@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   ScatterChart,
   Scatter,
@@ -193,8 +194,9 @@ function ScatterTooltipContent({
 export function UsageConversionScatter({
   rows,
   topPct,
-  speciesHref: _speciesHref,
+  speciesHref,
 }: UsageConversionScatterProps) {
+  const router = useRouter();
   // Drop rows that cannot be plotted (null y-coordinate).
   const plottable = rows.filter(
     (r): r is ConversionRow & { conversionPct: number } =>
@@ -320,6 +322,15 @@ export function UsageConversionScatter({
               />
               <Scatter
                 data={scatterData}
+                style={speciesHref ? { cursor: "pointer" } : undefined}
+                onClick={
+                  speciesHref
+                    ? (point: unknown) => {
+                        const p = point as { species?: string };
+                        if (p.species) router.push(speciesHref(p.species));
+                      }
+                    : undefined
+                }
                 shape={(dotProps: unknown) => {
                   const p = dotProps as DotProps & {
                     payload?: { species: string; quadrant: Quadrant };
@@ -388,6 +399,15 @@ export function UsageConversionScatter({
               />
               <Scatter
                 data={scatterData}
+                style={speciesHref ? { cursor: "pointer" } : undefined}
+                onClick={
+                  speciesHref
+                    ? (point: unknown) => {
+                        const p = point as { species?: string };
+                        if (p.species) router.push(speciesHref(p.species));
+                      }
+                    : undefined
+                }
                 shape={(dotProps: unknown) => {
                   const p = dotProps as DotProps & {
                     payload?: { species: string; quadrant: Quadrant };

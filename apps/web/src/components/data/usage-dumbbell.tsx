@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 
 import { cn } from "@/lib/utils";
@@ -120,12 +122,12 @@ export function DumbbellRow({
           )}
         />
         {speciesHref ? (
-          <a
+          <Link
             href={speciesHref(species)}
             className="hover:text-primary min-w-0 truncate"
           >
             {label}
-          </a>
+          </Link>
         ) : (
           <div className="min-w-0">{label}</div>
         )}

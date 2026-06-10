@@ -17,6 +17,13 @@ jest.mock("@trainers/pokemon/sprites", () => ({
   }),
 }));
 
+// next/link renders as a plain <a> in tests; mock the router so prefetching
+// doesn't log warnings in the test output.
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: jest.fn(), prefetch: jest.fn() }),
+  usePathname: () => "/",
+}));
+
 // =============================================================================
 // Test data helpers
 // =============================================================================
@@ -56,6 +63,21 @@ describe("DumbbellRow — rendering", () => {
     );
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute("href", "/data/species/Koraidon");
+  });
+
+  it("renders a next/link (rendered as <a>) to the drill-down URL", () => {
+    render(
+      <DumbbellRow
+        species="flutter-mane"
+        dots={[makeDot("rk9", 28)]}
+        speciesHref={(s) => `/data/pokemon/${s}?format=gen9vgc2025regg`}
+      />
+    );
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute(
+      "href",
+      "/data/pokemon/flutter-mane?format=gen9vgc2025regg"
+    );
   });
 
   it("does NOT render an anchor when speciesHref is absent", () => {

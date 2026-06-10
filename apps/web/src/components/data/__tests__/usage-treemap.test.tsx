@@ -1,9 +1,18 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { type ResponsiveContainerProps } from "recharts";
 
 import { UsageTreemap } from "../usage-treemap";
 import { type PipelineSpeciesData } from "@trainers/supabase";
+
+// =============================================================================
+// next/navigation mock (for router.push used in speciesHref navigation)
+// =============================================================================
+
+const mockPush = jest.fn();
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
 
 // =============================================================================
 // JSDOM polyfills
@@ -240,5 +249,76 @@ describe("UsageTreemap — threshold boundary", () => {
     // The Others tile should only have 1 species (the 0.9% one).
     const othersText = allText.find((t) => t.startsWith("Others"));
     expect(othersText).toMatch(/Others \(1 species\)/);
+  });
+});
+
+// =============================================================================
+// Phase 3 — speciesHref navigation (Task 10)
+// =============================================================================
+
+beforeEach(() => {
+  mockPush.mockClear();
+});
+
+describe("UsageTreemap — speciesHref navigation", () => {
+  it("renders a tile with role=link when speciesHref is provided", () => {
+    const data = [makeSpecies({ species: "Koraidon", usagePct: 30, rank: 1 })];
+    const { container } = render(
+      <UsageTreemap
+        data={data}
+        speciesHref={(s) => `/data/pokemon/${s}?format=gen9vgc2025regg`}
+      />
+    );
+    // The <g> element has role="link" when speciesHref is provided.
+    const linkTile = container.querySelector("[role='link']");
+    expect(linkTile).toBeInTheDocument();
+    expect(linkTile).toHaveAttribute("aria-label", "View Koraidon details");
+  });
+
+  it("calls router.push with the speciesHref URL when a tile is clicked", () => {
+    const data = [makeSpecies({ species: "Koraidon", usagePct: 30, rank: 1 })];
+    const { container } = render(
+      <UsageTreemap
+        data={data}
+        speciesHref={(s) => `/data/pokemon/${s}?format=gen9vgc2025regg`}
+      />
+    );
+    const linkTile = container.querySelector("[role='link']");
+    expect(linkTile).toBeInTheDocument();
+    fireEvent.click(linkTile!);
+    expect(mockPush).toHaveBeenCalledWith(
+      "/data/pokemon/Koraidon?format=gen9vgc2025regg"
+    );
+  });
+
+  it("does NOT render role=link on the Others tile even when speciesHref is provided", () => {
+    const data: PipelineSpeciesData[] = [
+      makeSpecies({ species: "TopMon", usagePct: 30, rank: 1 }),
+      makeSpecies({ species: "TinyMon", usagePct: 0.5, rank: 2 }), // below threshold
+    ];
+    const { container } = render(
+      <UsageTreemap data={data} speciesHref={(s) => `/data/pokemon/${s}`} />
+    );
+    // Only TopMon gets role=link; the Others tile does not.
+    const linkTiles = container.querySelectorAll("[role='link']");
+    expect(linkTiles).toHaveLength(1);
+    expect(linkTiles[0]).toHaveAttribute("aria-label", "View TopMon details");
+  });
+
+  it("does not render role=link when speciesHref is absent", () => {
+    const data = [makeSpecies({ species: "Koraidon", usagePct: 30, rank: 1 })];
+    const { container } = render(<UsageTreemap data={data} />);
+    expect(container.querySelector("[role='link']")).not.toBeInTheDocument();
+  });
+
+  it("navigates on Enter keydown when speciesHref is provided", () => {
+    const data = [makeSpecies({ species: "Koraidon", usagePct: 30, rank: 1 })];
+    const { container } = render(
+      <UsageTreemap data={data} speciesHref={(s) => `/data/pokemon/${s}`} />
+    );
+    const linkTile = container.querySelector("[role='link']");
+    expect(linkTile).toBeInTheDocument();
+    fireEvent.keyDown(linkTile!, { key: "Enter" });
+    expect(mockPush).toHaveBeenCalledWith("/data/pokemon/Koraidon");
   });
 });
