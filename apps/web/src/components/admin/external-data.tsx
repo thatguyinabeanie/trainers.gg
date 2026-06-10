@@ -777,7 +777,7 @@ export function ExternalData() {
   }
 
   /**
-   * Resets stuck importing/roster/teams rows back to "pending" for both sources.
+   * Resets stuck importing/roster/teams rows back to "queued" for both sources.
    */
   async function handleResetStuck() {
     const [lResult, rResult] = await Promise.all([

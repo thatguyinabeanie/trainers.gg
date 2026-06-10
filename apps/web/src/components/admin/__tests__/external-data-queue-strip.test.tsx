@@ -366,6 +366,22 @@ describe("QueueStrip unqueue all confirmation dialog", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not show 'Unqueue all' when only in-progress work exists (nothing queued)", () => {
+    // In-progress rows can't be unqueued — the strip still renders, but the
+    // Unqueue-all trigger must be hidden when queued counts are 0.
+    render(
+      <QueueStrip
+        {...makeProps({
+          limitless: { queued: 0, importing: 3, failed: 0 },
+          rk9: { queued: 0, inProgress: 2, failed: 0 },
+        })}
+      />
+    );
+    expect(
+      screen.queryByRole("button", { name: /Unqueue all/i })
+    ).not.toBeInTheDocument();
+  });
+
   it("calls onUnqueueAll when the confirmation 'Unqueue all' action is clicked", async () => {
     const user = userEvent.setup();
     const onUnqueueAll = jest.fn();

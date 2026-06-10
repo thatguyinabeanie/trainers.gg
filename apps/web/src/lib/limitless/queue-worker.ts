@@ -11,7 +11,7 @@
 
 import { type SupabaseClient } from "@supabase/supabase-js";
 
-import { processImportQueue } from "@/lib/limitless";
+import { processImportQueue } from "@trainers/data-sources";
 
 export interface DrainResult {
   /** Total tournaments successfully processed across all passes. */

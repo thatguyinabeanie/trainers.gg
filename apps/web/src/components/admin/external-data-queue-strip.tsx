@@ -50,6 +50,8 @@ export function QueueStrip({
 
   const totalQueued =
     limitless.queued + limitless.importing + rk9.queued + rk9.inProgress;
+  // Only rows at "queued" status can be unqueued — in-progress work can't be.
+  const totalActuallyQueued = limitless.queued + rk9.queued;
   const totalFailed = limitless.failed + rk9.failed;
 
   // Nothing to show when the queue is fully empty and nothing recently imported
@@ -135,7 +137,7 @@ export function QueueStrip({
             Process now
           </Button>
 
-          {totalQueued > 0 && (
+          {totalActuallyQueued > 0 && (
             <AlertDialog open={unqueueOpen} onOpenChange={setUnqueueOpen}>
               <AlertDialogTrigger
                 render={
