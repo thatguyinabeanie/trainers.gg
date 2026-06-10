@@ -17,18 +17,22 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { LIMITLESS_TO_FORMAT } from "@/lib/limitless";
 import {
   discoverRk9Events,
-  scrapeRk9Roster,
-  scrapeRk9TeamsBatch,
   resetRk9EventData,
+  queueRk9Event,
+  batchQueueRk9Events,
+  unqueueRk9Events,
+  resetStuckRk9Events,
 } from "@/actions/rk9";
 import {
   importLimitlessTournament,
   batchQueueTournaments,
   triggerLimitlessSync,
-  triggerImportQueue,
+  unqueueLimitlessTournaments,
+  resetStuckLimitlessImports,
 } from "@/actions/limitless";
+import { processImportQueuesNow } from "@/actions/import-queue";
 import { calculateAllSourceUsage } from "@/actions/usage";
-import { formatTimeAgo, getErrorMessage } from "@trainers/utils";
+import { getErrorMessage } from "@trainers/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsClient } from "@/hooks/use-is-client";
 
@@ -168,21 +172,14 @@ export function ExternalData() {
   // RK9 state
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discoverMessage, setDiscoverMessage] = useState<string | null>(null);
-  const [activeJobs, setActiveJobs] = useState<
-    Map<string, { type: string; scraped?: number; total?: number }>
-  >(new Map());
-
   // Limitless state
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [queuingIds, setQueuingIds] = useState<Set<string>>(new Set());
   const [batchQueuing, setBatchQueuing] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState<{
-    done: number;
-    total: number;
-  } | null>(null);
-  const [importMessage, setImportMessage] = useState<string | null>(null);
+
+  // "Process now" — fires processImportQueuesNow (server-side drain trigger)
+  const [processing, setProcessing] = useState(false);
 
   // Global cross-source usage calculation state
   const [calculatingUsage, setCalculatingUsage] = useState(false);
@@ -210,7 +207,7 @@ export function ExternalData() {
           .schema("rk9")
           .from("events")
           .select(
-            "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count"
+            "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count, import_attempts, import_requested_at"
           )
           .order("date_start", { ascending: false })
           .order("event_id", { ascending: false })
@@ -283,10 +280,20 @@ export function ExternalData() {
   const limitlessImportingCount = (limitlessTournaments ?? []).filter(
     (t) => t.import_status === "importing"
   ).length;
+
+  // RK9 queue counts for the strip and polling trigger
+  const rk9QueuedCount = (rk9Events ?? []).filter(
+    (e) => e.import_status === "queued"
+  ).length;
+  const rk9InProgressCount = (rk9Events ?? []).filter(
+    (e) => e.import_status === "roster" || e.import_status === "teams"
+  ).length;
+
   const hasActiveQueue =
     limitlessQueuedCount > 0 ||
     limitlessImportingCount > 0 ||
-    activeJobs.size > 0;
+    rk9QueuedCount > 0 ||
+    rk9InProgressCount > 0;
 
   useEffect(() => {
     if (!hasActiveQueue) return;
@@ -492,6 +499,30 @@ export function ExternalData() {
   const importMatchingCount = filteredRows.filter(isImportableRow).length;
   const importAllCount = allRows.filter(isImportableRow).length;
 
+  // Rows imported within the last 10 minutes — shown in QueueStrip activity.
+  // Limitless: data_imported_at within 10 min. RK9: import_requested_at within
+  // 10 min AND import_status === "complete" (best proxy; no dedicated timestamp).
+  const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
+  const recentImported =
+    (limitlessTournaments ?? []).filter((t) => {
+      if (!t.data_imported_at) return false;
+      return new Date(t.data_imported_at) >= tenMinAgo;
+    }).length +
+    (rk9Events ?? []).filter((e) => {
+      if (e.import_status !== "complete" || !e.import_requested_at)
+        return false;
+      return new Date(e.import_requested_at) >= tenMinAgo;
+    }).length;
+
+  // Count selected rows that are currently queued (eligible for unqueue).
+  const unqueueEligibleCount =
+    limitlessRows.filter(
+      (r) => selectedIds.has(r.id) && r.limitless!.import_status === "queued"
+    ).length +
+    rk9Rows.filter(
+      (r) => selectedIds.has(r.id) && r.rk9!.import_status === "queued"
+    ).length;
+
   // Status chip arrays
   const limitlessFailedCount = (limitlessTournaments ?? []).filter(
     (t) => t.import_status === "failed"
@@ -563,15 +594,6 @@ export function ExternalData() {
         ? limitlessChips
         : allChips;
 
-  const nextQueuedItem =
-    (limitlessTournaments ?? [])
-      .filter((t) => t.import_status === "queued" && t.import_requested_at)
-      .sort(
-        (a, b) =>
-          new Date(a.import_requested_at!).getTime() -
-          new Date(b.import_requested_at!).getTime()
-      )[0] ?? null;
-
   // -------------------------------------------------------------------------
   // RK9 actions
   // -------------------------------------------------------------------------
@@ -594,64 +616,6 @@ export function ExternalData() {
       }
     } finally {
       setIsDiscovering(false);
-    }
-  }
-
-  async function handleScrapeRoster(eventId: string): Promise<boolean> {
-    setActiveJobs((prev) => new Map(prev).set(eventId, { type: "roster" }));
-    try {
-      const result = await scrapeRk9Roster(eventId);
-      if (!result.success) {
-        toast.error(getErrorMessage(result.error, "Failed to scrape roster"));
-        return false;
-      }
-      return true;
-    } finally {
-      setActiveJobs((prev) => {
-        const next = new Map(prev);
-        next.delete(eventId);
-        return next;
-      });
-      setRefreshKey((k) => k + 1);
-    }
-  }
-
-  async function handleScrapeTeams(eventId: string, force?: boolean) {
-    setActiveJobs((prev) =>
-      new Map(prev).set(eventId, { type: "teams", scraped: 0, total: 0 })
-    );
-    try {
-      let done = false;
-      let lastScraped = -1;
-      let noProgressRounds = 0;
-      while (!done) {
-        const result = await scrapeRk9TeamsBatch(eventId, { force });
-        if (!result.success) break;
-        done = result.done ?? false;
-        const scraped = result.scraped ?? 0;
-        // Detect infinite loop: if scraped count hasn't changed after 3 batches, stop.
-        if (scraped === lastScraped) {
-          noProgressRounds++;
-          if (noProgressRounds >= 3) break;
-        } else {
-          noProgressRounds = 0;
-          lastScraped = scraped;
-        }
-        setActiveJobs((prev) =>
-          new Map(prev).set(eventId, {
-            type: "teams",
-            scraped,
-            total: result.total ?? 0,
-          })
-        );
-      }
-    } finally {
-      setActiveJobs((prev) => {
-        const next = new Map(prev);
-        next.delete(eventId);
-        return next;
-      });
-      setRefreshKey((k) => k + 1);
     }
   }
 
@@ -691,45 +655,138 @@ export function ExternalData() {
     }
   }
 
-  async function handleRunImport() {
-    setImporting(true);
-    setImportMessage(null);
-    // Snapshot total queued at start; we'll update as we learn more
-    const snapshotTotal = limitlessQueuedCount;
-    let done = 0;
-    let noProgressRounds = 0;
+  /**
+   * Fires the server-side import worker immediately (one cron-cycle's worth).
+   * Replaces the old browser-driven drain loop — no more polling/progress bars.
+   */
+  async function handleProcessNow() {
+    setProcessing(true);
     try {
-      while (true) {
-        const result = await triggerImportQueue(limitlessBatchSize);
-        if (!result.success) {
-          toast.error(result.error ?? "Import failed");
-          break;
-        }
-        const { processed, errors: _errors, remaining } = result.data;
-        done += processed;
-        setImportProgress({
-          done,
-          total: Math.max(snapshotTotal, done + remaining),
-        });
-        if (remaining === 0) break;
-        // No-progress guard: stop after 3 consecutive batches with 0 processed
-        if (processed === 0) {
-          noProgressRounds++;
-          if (noProgressRounds >= 3) break;
-        } else {
-          noProgressRounds = 0;
-        }
+      const result = await processImportQueuesNow();
+      if (!result.success) {
+        toast.error(result.error ?? "Process failed");
+        return;
       }
-      setImportMessage(`Imported ${done}`);
+      const { limitless, rk9 } = result.data;
+      const total =
+        limitless.processed + rk9.teamsScraped + limitless.errors + rk9.errors;
+      if (total === 0) {
+        toast.success("No pending items to process");
+      } else {
+        toast.success(
+          `Processed — Limitless: ${limitless.processed} imported, RK9: ${rk9.teamsScraped} teams scraped`
+        );
+      }
       setRefreshKey((k) => k + 1);
-    } catch (err) {
-      setImportMessage(
-        `Error: ${err instanceof Error ? err.message : "Import failed"}`
-      );
     } finally {
-      setImportProgress(null);
-      setImporting(false);
+      setProcessing(false);
     }
+  }
+
+  /**
+   * Returns ALL queued rows (both sources) to "pending" status.
+   * Backed by an AlertDialog confirm in QueueStrip — this is the confirmed path.
+   * Passes no ids to each action so the server clears all queued rows in one shot.
+   */
+  async function handleUnqueueAll() {
+    const [lResult, rResult] = await Promise.all([
+      unqueueLimitlessTournaments(),
+      unqueueRk9Events(),
+    ]);
+
+    if (!lResult.success) {
+      toast.error(lResult.error ?? "Limitless unqueue failed");
+      return;
+    }
+    if (!rResult.success) {
+      toast.error(rResult.error ?? "RK9 unqueue failed");
+      return;
+    }
+    const total = (lResult.data?.unqueued ?? 0) + (rResult.data?.unqueued ?? 0);
+    toast.success(
+      total > 0
+        ? `Returned ${total} queued item(s) to pending`
+        : "No queued items to unqueue"
+    );
+    setRefreshKey((k) => k + 1);
+  }
+
+  /**
+   * Returns SELECTED queued rows (both sources) to "pending" status.
+   * Only rows with import_status === "queued" are acted on.
+   */
+  async function handleUnqueueSelected() {
+    const limitlessIds = limitlessRows
+      .filter(
+        (r) => selectedIds.has(r.id) && r.limitless!.import_status === "queued"
+      )
+      .map((r) => r.limitless!.tournament_id);
+    const rk9Ids = rk9Rows
+      .filter((r) => selectedIds.has(r.id) && r.rk9!.import_status === "queued")
+      .map((r) => r.rk9!.event_id);
+
+    if (limitlessIds.length === 0 && rk9Ids.length === 0) {
+      toast.success("No queued items selected");
+      return;
+    }
+
+    const [lResult, rResult] = await Promise.all([
+      limitlessIds.length > 0
+        ? unqueueLimitlessTournaments(limitlessIds)
+        : Promise.resolve({
+            success: true as const,
+            data: { unqueued: 0 },
+          }),
+      rk9Ids.length > 0
+        ? unqueueRk9Events(rk9Ids)
+        : Promise.resolve({
+            success: true as const,
+            data: { unqueued: 0 },
+          }),
+    ]);
+
+    if (!lResult.success) {
+      toast.error(lResult.error ?? "Limitless unqueue failed");
+      return;
+    }
+    if (!rResult.success) {
+      toast.error(rResult.error ?? "RK9 unqueue failed");
+      return;
+    }
+    const total = (lResult.data?.unqueued ?? 0) + (rResult.data?.unqueued ?? 0);
+    toast.success(
+      total > 0
+        ? `Returned ${total} queued item(s) to pending`
+        : "Nothing to unqueue"
+    );
+    setSelectedIds(new Set());
+    setRefreshKey((k) => k + 1);
+  }
+
+  /**
+   * Resets stuck importing/roster/teams rows back to "pending" for both sources.
+   */
+  async function handleResetStuck() {
+    const [lResult, rResult] = await Promise.all([
+      resetStuckLimitlessImports(),
+      resetStuckRk9Events(),
+    ]);
+
+    if (!lResult.success) {
+      toast.error(lResult.error ?? "Limitless reset failed");
+      return;
+    }
+    if (!rResult.success) {
+      toast.error(rResult.error ?? "RK9 reset failed");
+      return;
+    }
+    const lCount = lResult.data?.reset ?? 0;
+    const rCount = rResult.data?.reset ?? 0;
+    const total = lCount + rCount;
+    toast.success(
+      total > 0 ? `Reset ${total} stuck item(s)` : "No stuck items found"
+    );
+    setRefreshKey((k) => k + 1);
   }
 
   async function handleCalculateUsage() {
@@ -777,54 +834,44 @@ export function ExternalData() {
   }
 
   /**
-   * One-pass per-row import for a single RK9 event.
-   * Scrapes the roster first, then immediately scrapes teams — both in one
-   * click. This replaces the old two-step flow where separate buttons advanced
-   * the import one stage at a time.
-   */
-  async function handleImportRk9(eventId: string) {
-    const rosterOk = await handleScrapeRoster(eventId);
-    if (!rosterOk) return;
-    await handleScrapeTeams(eventId);
-  }
-
-  /**
-   * Per-row import dispatcher for the one-pass Import button.
-   * - Limitless: full fetch+insert via handleImportLimitlessOne
-   * - RK9: roster then teams in sequence via handleImportRk9
+   * Per-row import dispatcher.
+   * - Limitless: full fetch+insert via importLimitlessTournament
+   * - RK9: queues event for server-side pickup via queueRk9Event
+   *
+   * Rows with displayStatus "queued" are not eligible (they're already queued).
    */
   async function handleImport(row: UnifiedRow) {
     if (row.source === "limitless") {
       await handleImportLimitlessOne(row.limitless!.tournament_id);
       return;
     }
-    await handleImportRk9(row.rk9!.event_id);
-  }
-
-  /**
-   * Legacy per-row RK9 step handler used by BULK operations only.
-   * Bulk operations stay on the old per-step strategy (roster only for
-   * pending/failed, teams for roster/teams/complete) so the worker pipeline
-   * can advance them incrementally without blocking the full batch.
-   */
-  async function handleEnqueueRk9(row: UnifiedRow) {
-    const s = row.rk9!.import_status;
-    if (s === "pending" || s === "failed") {
-      await handleScrapeRoster(row.rk9!.event_id);
-    } else {
-      await handleScrapeTeams(row.rk9!.event_id, s === "complete");
+    // RK9: queue for server-side processing
+    setQueuingIds((prev) => new Set(prev).add(row.id));
+    try {
+      const result = await queueRk9Event(row.rk9!.event_id);
+      if (!result.success) throw new Error(result.error);
+      toast.success("Queued — imports run in the background");
+      setRefreshKey((k) => k + 1);
+    } catch (e) {
+      toast.error(getErrorMessage(e, "Failed to queue event"));
+    } finally {
+      setQueuingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(row.id);
+        return next;
+      });
     }
   }
 
   /**
    * Import all eligible rows across both sources (ignores active filters).
-   * Batches Limitless IDs into a single batchQueueTournaments call to avoid
-   * N+1 requests; processes each RK9 row individually (multi-step import).
+   * Queued rows are excluded (already in queue). RK9 uses batchQueueRk9Events.
    */
   async function handleImportAll() {
     const importableRows = allRows.filter(
       (r) =>
         r.status !== "upcoming" &&
+        r.displayStatus !== "queued" &&
         (r.displayStatus === "pending" ||
           r.displayStatus === "failed" ||
           (r.source === "rk9" && r.displayStatus === "in-progress"))
@@ -835,30 +882,32 @@ export function ExternalData() {
       .filter((r) => r.source === "limitless")
       .map((r) => r.limitless!.tournament_id);
 
-    const rk9Rows = importableRows.filter((r) => r.source === "rk9");
+    const rk9ImportIds = importableRows
+      .filter((r) => r.source === "rk9")
+      .map((r) => r.rk9!.event_id);
 
     setBatchQueuing(true);
     try {
+      const promises: Promise<unknown>[] = [];
       if (limitlessIds.length > 0) {
-        const result = await batchQueueTournaments(limitlessIds);
-        if (!result.success) throw new Error(result.error);
+        promises.push(batchQueueTournaments(limitlessIds));
       }
+      if (rk9ImportIds.length > 0) {
+        promises.push(batchQueueRk9Events(rk9ImportIds));
+      }
+      const results = await Promise.all(promises);
+      for (const result of results) {
+        const r = result as { success: boolean; error?: string };
+        if (!r.success) throw new Error(r.error);
+      }
+      const total = limitlessIds.length + rk9ImportIds.length;
+      toast.success(
+        `Queued ${total} — imports run in the background. Use Process now to start immediately.`
+      );
     } catch (e) {
-      toast.error(getErrorMessage(e, "Failed to queue tournaments"));
+      toast.error(getErrorMessage(e, "Failed to queue events"));
+    } finally {
       setBatchQueuing(false);
-      return;
-    }
-    setBatchQueuing(false);
-
-    if (rk9Rows.length > 0) {
-      setBulkProcessing(true);
-      for (let i = 0; i < rk9Rows.length; i++) {
-        const row = rk9Rows[i]!;
-        setBulkProgress({ total: rk9Rows.length, done: i, current: row.name });
-        await handleEnqueueRk9(row);
-      }
-      setBulkProcessing(false);
-      setBulkProgress(null);
     }
     setRefreshKey((k) => k + 1);
   }
@@ -866,11 +915,13 @@ export function ExternalData() {
   /**
    * Import eligible rows matching the active filters.
    * Same batching strategy as handleImportAll but scoped to filteredRows.
+   * Queued rows are excluded.
    */
   async function handleImportMatching() {
     const importableRows = filteredRows.filter(
       (r) =>
         r.status !== "upcoming" &&
+        r.displayStatus !== "queued" &&
         (r.displayStatus === "pending" ||
           r.displayStatus === "failed" ||
           (r.source === "rk9" && r.displayStatus === "in-progress"))
@@ -881,34 +932,32 @@ export function ExternalData() {
       .filter((r) => r.source === "limitless")
       .map((r) => r.limitless!.tournament_id);
 
-    const rk9ImportRows = importableRows.filter((r) => r.source === "rk9");
+    const rk9ImportIds = importableRows
+      .filter((r) => r.source === "rk9")
+      .map((r) => r.rk9!.event_id);
 
     setBatchQueuing(true);
     try {
+      const promises: Promise<unknown>[] = [];
       if (limitlessIds.length > 0) {
-        const result = await batchQueueTournaments(limitlessIds);
-        if (!result.success) throw new Error(result.error);
+        promises.push(batchQueueTournaments(limitlessIds));
       }
+      if (rk9ImportIds.length > 0) {
+        promises.push(batchQueueRk9Events(rk9ImportIds));
+      }
+      const results = await Promise.all(promises);
+      for (const result of results) {
+        const r = result as { success: boolean; error?: string };
+        if (!r.success) throw new Error(r.error);
+      }
+      const total = limitlessIds.length + rk9ImportIds.length;
+      toast.success(
+        `Queued ${total} — imports run in the background. Use Process now to start immediately.`
+      );
     } catch (e) {
-      toast.error(getErrorMessage(e, "Failed to queue tournaments"));
+      toast.error(getErrorMessage(e, "Failed to queue events"));
+    } finally {
       setBatchQueuing(false);
-      return;
-    }
-    setBatchQueuing(false);
-
-    if (rk9ImportRows.length > 0) {
-      setBulkProcessing(true);
-      for (let i = 0; i < rk9ImportRows.length; i++) {
-        const row = rk9ImportRows[i]!;
-        setBulkProgress({
-          total: rk9ImportRows.length,
-          done: i,
-          current: row.name,
-        });
-        await handleEnqueueRk9(row);
-      }
-      setBulkProcessing(false);
-      setBulkProgress(null);
     }
     setRefreshKey((k) => k + 1);
   }
@@ -941,8 +990,9 @@ export function ExternalData() {
   }
 
   /**
-   * Import selected rows that are eligible (pending/failed/rk9-in-progress).
-   * Batches Limitless IDs into a single call; processes RK9 rows individually.
+   * Queue selected rows that are eligible (pending/failed/rk9-in-progress).
+   * Queued rows are excluded — they are already queued.
+   * Batches both sources into two parallel calls.
    */
   async function handleBulkImportSelected() {
     const importableSelected = [
@@ -950,6 +1000,7 @@ export function ExternalData() {
         (r) =>
           selectedIds.has(r.id) &&
           r.status !== "upcoming" &&
+          r.displayStatus !== "queued" &&
           (r.rk9!.import_status === "pending" ||
             r.rk9!.import_status === "failed" ||
             r.rk9!.import_status === "roster" ||
@@ -958,6 +1009,7 @@ export function ExternalData() {
       ...limitlessRows.filter(
         (r) =>
           selectedIds.has(r.id) &&
+          r.displayStatus !== "queued" &&
           (!r.limitless!.import_status ||
             r.limitless!.import_status === "failed")
       ),
@@ -967,34 +1019,32 @@ export function ExternalData() {
       .filter((r) => r.source === "limitless")
       .map((r) => r.limitless!.tournament_id);
 
-    const rk9ImportRows = importableSelected.filter((r) => r.source === "rk9");
+    const rk9ImportIds = importableSelected
+      .filter((r) => r.source === "rk9")
+      .map((r) => r.rk9!.event_id);
 
     setBatchQueuing(true);
     try {
+      const promises: Promise<unknown>[] = [];
       if (limitlessIds.length > 0) {
-        const result = await batchQueueTournaments(limitlessIds);
-        if (!result.success) throw new Error(result.error);
+        promises.push(batchQueueTournaments(limitlessIds));
       }
+      if (rk9ImportIds.length > 0) {
+        promises.push(batchQueueRk9Events(rk9ImportIds));
+      }
+      const results = await Promise.all(promises);
+      for (const result of results) {
+        const r = result as { success: boolean; error?: string };
+        if (!r.success) throw new Error(r.error);
+      }
+      const total = limitlessIds.length + rk9ImportIds.length;
+      toast.success(
+        `Queued ${total} — imports run in the background. Use Process now to start immediately.`
+      );
     } catch (e) {
-      toast.error(getErrorMessage(e, "Failed to queue tournaments"));
+      toast.error(getErrorMessage(e, "Failed to queue events"));
+    } finally {
       setBatchQueuing(false);
-      return;
-    }
-    setBatchQueuing(false);
-
-    if (rk9ImportRows.length > 0) {
-      setBulkProcessing(true);
-      for (let i = 0; i < rk9ImportRows.length; i++) {
-        const row = rk9ImportRows[i]!;
-        setBulkProgress({
-          total: rk9ImportRows.length,
-          done: i,
-          current: row.name,
-        });
-        await handleEnqueueRk9(row);
-      }
-      setBulkProcessing(false);
-      setBulkProgress(null);
     }
     setSelectedIds(new Set());
     setRefreshKey((k) => k + 1);
@@ -1078,22 +1128,25 @@ export function ExternalData() {
 
       {/* Global queue / activity strip */}
       <QueueStrip
-        tab={filters.source === "rk9" ? "rk9" : "limitless"}
-        queuedCount={limitlessQueuedCount}
-        nextLabel={nextQueuedItem?.name ?? null}
-        nextQueuedAgo={
-          nextQueuedItem?.import_requested_at
-            ? formatTimeAgo(nextQueuedItem.import_requested_at)
-            : null
-        }
-        importProgress={importProgress}
-        draining={importing}
-        onRunImport={handleRunImport}
-        rk9Jobs={[...activeJobs.entries()].map(([eventId, j]) => ({
-          name: rk9Events?.find((e) => e.event_id === eventId)?.name ?? eventId,
-          scraped: j.scraped,
-          total: j.total,
-        }))}
+        limitless={{
+          queued: limitlessQueuedCount,
+          importing: limitlessImportingCount,
+          failed: limitlessFailedCount,
+        }}
+        rk9={{
+          queued: rk9QueuedCount,
+          inProgress: rk9InProgressCount,
+          failed: rk9FailedCount,
+        }}
+        recentImported={recentImported}
+        autoImportOn={{
+          limitless: limitlessBackendAutoImport,
+          rk9: rk9BackendAutoImport,
+        }}
+        processing={processing}
+        onProcessNow={handleProcessNow}
+        onUnqueueAll={handleUnqueueAll}
+        onResetStuck={handleResetStuck}
       />
 
       <div className="space-y-4">
@@ -1222,19 +1275,6 @@ export function ExternalData() {
                 {syncMessage}
               </p>
             )}
-            {importMessage && (
-              <p
-                className={cn(
-                  "text-xs",
-                  importMessage.startsWith("Error")
-                    ? "text-red-500"
-                    : "text-muted-foreground"
-                )}
-              >
-                {importMessage}
-              </p>
-            )}
-
             {/* Unified status tabs */}
             <StatusTabs
               tabs={statusTabs}
@@ -1284,6 +1324,8 @@ export function ExternalData() {
         onClear={() => setSelectedIds(new Set())}
         importEligibleCount={importEligibleSelectedCount}
         onImportSelected={handleBulkImportSelected}
+        unqueueEligibleCount={unqueueEligibleCount}
+        onUnqueueSelected={handleUnqueueSelected}
         resetEligibleCount={resetEligibleSelected.length}
         onResetEvents={handleBulkResetEvents}
       />
@@ -1426,7 +1468,6 @@ export function ExternalData() {
                     renderActions={(row) => (
                       <RowActions
                         row={row}
-                        activeJobs={activeJobs}
                         queuingIds={queuingIds}
                         batchQueuing={batchQueuing}
                         isUpcomingRow={row.status === "upcoming"}
@@ -1641,7 +1682,7 @@ export function ExternalData() {
                               {row.playerCount ?? "—"}
                             </div>
                             <div className="flex flex-col items-start gap-0.5 p-2">
-                              <StatusBadge row={row} activeJobs={activeJobs} />
+                              <StatusBadge row={row} />
                               {row.source === "rk9" &&
                                 (row.rk9!.import_status === "teams" ||
                                   row.rk9!.import_status === "complete") &&
@@ -1655,7 +1696,6 @@ export function ExternalData() {
                             <div className="flex items-center justify-end gap-1 p-2">
                               <RowActions
                                 row={row}
-                                activeJobs={activeJobs}
                                 queuingIds={queuingIds}
                                 batchQueuing={batchQueuing}
                                 isUpcomingRow={isUpcomingRow}

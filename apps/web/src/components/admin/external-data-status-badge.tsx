@@ -15,40 +15,9 @@ import { type UnifiedRow } from "./external-data-shared";
 
 interface StatusBadgeProps {
   row: UnifiedRow;
-  activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
 }
 
-export function StatusBadge({ row, activeJobs }: StatusBadgeProps) {
-  // RK9 active job display
-  if (row.rk9) {
-    const activeJob = activeJobs.get(row.rk9.event_id);
-    if (activeJob) {
-      if (
-        activeJob.type === "teams" &&
-        activeJob.total &&
-        activeJob.total > 0
-      ) {
-        const pct = Math.round(
-          ((activeJob.scraped ?? 0) / activeJob.total) * 100
-        );
-        return (
-          <Badge variant="secondary" className="text-xs">
-            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            Teams {activeJob.scraped}/{activeJob.total} ({pct}%)
-          </Badge>
-        );
-      }
-      return (
-        <Badge variant="secondary" className="text-xs">
-          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          {activeJob.type === "roster"
-            ? "Scraping roster..."
-            : "Scraping teams..."}
-        </Badge>
-      );
-    }
-  }
-
+export function StatusBadge({ row }: StatusBadgeProps) {
   // Rows waiting in the import queue but not yet actively importing — muted
   // amber tone with a hourglass icon to distinguish from the spinner used for
   // actively-running imports.

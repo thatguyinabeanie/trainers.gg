@@ -60,6 +60,10 @@ export interface RK9EventRow {
   import_status: string;
   import_error: string | null;
   teams_imported_count: number | null;
+  /** How many import attempts have been made (for failure visibility). */
+  import_attempts: number | null;
+  /** When the event was last queued for import. */
+  import_requested_at: string | null;
 }
 
 export interface LimitlessTournamentRow {
