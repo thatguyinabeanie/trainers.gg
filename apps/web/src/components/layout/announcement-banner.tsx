@@ -37,7 +37,19 @@ async function getCachedAnnouncements() {
   cacheLife("minutes");
 
   const supabase = createStaticClient();
-  return getActiveAnnouncements(supabase);
+  try {
+    return await getActiveAnnouncements(supabase);
+  } catch (err) {
+    // The catch must live INSIDE the cache scope: an error thrown during the
+    // build-time cache fill aborts prerendering before any caller-side catch
+    // runs (seen in CI bundle-analysis builds with no reachable Supabase).
+    // The empty result is cached on the "minutes" profile, so it self-heals.
+    console.error(
+      "[announcement-banner] Failed to fetch announcements:",
+      getErrorMessage(err, "Unknown error")
+    );
+    return [];
+  }
 }
 
 /**
@@ -48,17 +60,9 @@ async function getCachedAnnouncements() {
  * for on-demand invalidation via invalidateAnnouncementCaches().
  */
 export async function AnnouncementBanner() {
-  let announcements: Awaited<ReturnType<typeof getActiveAnnouncements>> = [];
-
-  try {
-    announcements = await getCachedAnnouncements();
-  } catch (err) {
-    console.error(
-      "[announcement-banner] Failed to fetch announcements:",
-      getErrorMessage(err, "Unknown error")
-    );
-    return null;
-  }
+  // getCachedAnnouncements never throws — failures are handled inside the
+  // cache scope and degrade to an empty list.
+  const announcements = await getCachedAnnouncements();
 
   if (announcements.length === 0) {
     return null;
