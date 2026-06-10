@@ -1474,6 +1474,48 @@ export type Database = {
           },
         ]
       }
+      import_runs: {
+        Row: {
+          detail: Json | null
+          errors: number
+          finished_at: string | null
+          id: number
+          processed: number
+          remaining: number | null
+          skip_reason: string | null
+          source: string
+          started_at: string
+          status: string
+          trigger: string
+        }
+        Insert: {
+          detail?: Json | null
+          errors?: number
+          finished_at?: string | null
+          id?: never
+          processed?: number
+          remaining?: number | null
+          skip_reason?: string | null
+          source: string
+          started_at?: string
+          status?: string
+          trigger: string
+        }
+        Update: {
+          detail?: Json | null
+          errors?: number
+          finished_at?: string | null
+          id?: never
+          processed?: number
+          remaining?: number | null
+          skip_reason?: string | null
+          source?: string
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Relationships: []
+      }
       linked_atproto_accounts: {
         Row: {
           created_at: string
