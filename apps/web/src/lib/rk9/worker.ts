@@ -398,7 +398,7 @@ export async function runTeamsBatch(
         .from("team_pokemon")
         .select("standing_id")
         .in("standing_id", allIds.slice(i, i + 100))
-        .limit(700);
+        .limit(1000);
       if (chunkErr) {
         throw new Error(`team_pokemon count query failed: ${chunkErr.message}`);
       }
@@ -579,13 +579,21 @@ export async function runTeamsBatch(
     }
   }
 
-  // Stamp attempt timestamp for all standings in this batch
+  // Stamp attempt timestamp for all standings in this batch. This write MUST
+  // succeed: an unstamped standing gets re-picked next pass without bumping
+  // the no-progress counter, so a persistent write failure would burn the
+  // whole cron budget retrying the same batch.
   const batchIds = batch.map((s) => s.id);
-  await supabase
+  const { error: stampErr } = await supabase
     .schema("rk9")
     .from("standings")
     .update({ team_scrape_attempted_at: new Date().toISOString() })
     .in("id", batchIds);
+  if (stampErr) {
+    throw new Error(
+      `Failed to stamp standings as attempted: ${stampErr.message}`
+    );
+  }
 
   // Seed new species
   if (newSpecies.size > 0) {
@@ -603,7 +611,7 @@ export async function runTeamsBatch(
       .from("team_pokemon")
       .select("standing_id")
       .in("standing_id", allIds.slice(i, i + 100))
-      .limit(700);
+      .limit(1000);
     if (chunkErr) {
       console.error(
         `[rk9-worker] team_pokemon count query failed: ${chunkErr.message}`

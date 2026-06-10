@@ -19,6 +19,7 @@ import { requireCronAuth } from "@/lib/cron-auth";
 import { revalidateUsageStatsCaches } from "@/lib/cache-invalidation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { readSiteConfigValues } from "@/lib/site-config";
+import { clamp } from "@/lib/utils";
 import { processRk9Queue } from "@/lib/rk9/worker";
 import { drainLimitlessQueue } from "@/lib/limitless/queue-worker";
 
@@ -34,11 +35,6 @@ const BUDGET_MS = 240_000;
 // =============================================================================
 // Helpers
 // =============================================================================
-
-/** Clamp a value between min and max (inclusive). */
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 // =============================================================================
 // Route Handler

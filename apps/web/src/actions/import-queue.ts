@@ -20,10 +20,11 @@ import { getErrorMessage } from "@trainers/utils";
 import { type ActionResult } from "@trainers/validators";
 
 import { invalidateUsageStatsCaches } from "@/lib/cache-invalidation";
-import { processImportQueue } from "@/lib/limitless";
+import { drainLimitlessQueue } from "@/lib/limitless";
 import { processRk9Queue } from "@/lib/rk9/worker";
 import { readSiteConfigValues } from "@/lib/site-config";
 import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
+import { clamp } from "@/lib/utils";
 import { isSiteAdmin } from "@/lib/sudo/server";
 
 // =============================================================================
@@ -32,15 +33,6 @@ import { isSiteAdmin } from "@/lib/sudo/server";
 
 /** ~50 s budget — leaves headroom for auth + compile before Vercel kills the fn. */
 const ADMIN_DEADLINE_MS = 50_000;
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/** Clamp a value between min and max (inclusive). */
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 // =============================================================================
 // Action
@@ -136,14 +128,17 @@ export async function processImportQueuesNow(): Promise<
       // pass (the package-level fetch only sets the header when present).
       const apiKey = process.env.LIMITLESS_API_KEY;
       try {
-        const result = await processImportQueue(
+        // Drain under the shared deadline (not a single pass) so Process now
+        // behaves like one cron tick on both sides.
+        const result = await drainLimitlessQueue(
           supabase,
           apiKey,
-          limitlessBatchSize
+          limitlessBatchSize,
+          deadline
         );
         return {
-          processed: result.totalProcessed,
-          errors: result.totalErrors,
+          processed: result.processed,
+          errors: result.errors,
           remaining: result.remaining,
         };
       } catch (e) {

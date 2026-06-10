@@ -694,21 +694,26 @@ export function ExternalData() {
       unqueueRk9Events(),
     ]);
 
-    if (!lResult.success) {
-      toast.error(lResult.error ?? "Limitless unqueue failed");
+    // Refresh unconditionally — one source may have unqueued successfully
+    // even when the other errored, and the rows must reflect that.
+    setRefreshKey((k) => k + 1);
+
+    const errors = [
+      ...(lResult.success ? [] : [lResult.error ?? "Limitless unqueue failed"]),
+      ...(rResult.success ? [] : [rResult.error ?? "RK9 unqueue failed"]),
+    ];
+    if (errors.length > 0) {
+      toast.error(errors.join(" · "));
       return;
     }
-    if (!rResult.success) {
-      toast.error(rResult.error ?? "RK9 unqueue failed");
-      return;
-    }
-    const total = (lResult.data?.unqueued ?? 0) + (rResult.data?.unqueued ?? 0);
+    const total =
+      (lResult.success ? lResult.data.unqueued : 0) +
+      (rResult.success ? rResult.data.unqueued : 0);
     toast.success(
       total > 0
         ? `Returned ${total} queued item(s) to pending`
         : "No queued items to unqueue"
     );
-    setRefreshKey((k) => k + 1);
   }
 
   /**
