@@ -102,6 +102,7 @@ export async function calculateSourceUsage(
       },
     };
   } catch (e) {
+    logError("calculateSourceUsage", e, { source });
     return {
       success: false,
       error: getErrorMessage(e, "Usage calculation failed"),
@@ -133,7 +134,7 @@ export async function calculateAllSourceUsage(): Promise<
       formatsProcessed = 0;
     for (const s of sources) {
       const r = await calculateSourceUsage(s);
-      if (!r.success) throw new Error(r.error);
+      if (!r.success) throw new Error(`[${s}] ${r.error}`);
       eventsComputed += r.data.eventsComputed;
       formatsProcessed += r.data.formatsProcessed;
     }
@@ -142,6 +143,7 @@ export async function calculateAllSourceUsage(): Promise<
       data: { eventsComputed, formatsProcessed },
     };
   } catch (e) {
+    logError("calculateAllSourceUsage", e);
     return {
       success: false,
       error: getErrorMessage(e, "Failed to calculate usage"),
@@ -181,6 +183,10 @@ export async function fetchSpeciesUsageDetail(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchSpeciesUsageDetail", e, {
+      format: params.format,
+      species: params.species,
+    });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch species usage detail"),
@@ -227,6 +233,7 @@ export async function fetchFormatUsage(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchFormatUsage", e, { format: params.format });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch format usage"),
@@ -281,6 +288,7 @@ export async function fetchFormatUsageTimeseries(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchFormatUsageTimeseries", e, { format: params.format });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch format usage timeseries"),
@@ -327,6 +335,7 @@ export async function fetchPipelineData(
     });
     return { success: true, data };
   } catch (e) {
+    logError("fetchPipelineData", e, { format: params.format });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch pipeline data"),
@@ -349,6 +358,7 @@ export async function fetchFormatEvents(
     const data = await getCachedFormatEvents(format);
     return { success: true, data };
   } catch (e) {
+    logError("fetchFormatEvents", e, { format });
     return {
       success: false,
       error: getErrorMessage(e, "Failed to fetch format events"),
