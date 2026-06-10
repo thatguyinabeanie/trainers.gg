@@ -301,11 +301,11 @@ runs:
             fi
             echo "Deployment at $FULL_URL returned HTTP $STATUS (attempt $i/50)"
 
-          elif [ "$STATE" = "ERROR" ]; then
-            # The auto-deploy errored — caller (ci.yml) handles the redeploy loop.
-            # Output whatever URL we have and exit with a distinct code so the caller
-            # can key off the (empty or bad) url output.
-            echo "::warning::Auto-deploy reached ERROR state (attempt $i/50)"
+          elif [ "$STATE" = "ERROR" ] || [ "$STATE" = "CANCELED" ]; then
+            # The auto-deploy errored or was canceled — caller (ci.yml) handles the
+            # redeploy loop. Output whatever URL we have and exit with a distinct code
+            # so the caller can key off the (empty or bad) url output.
+            echo "::warning::Auto-deploy reached terminal state $STATE (attempt $i/50)"
             echo "url=" >> "$GITHUB_OUTPUT"
             echo "deployment-id=${DEPLOY_ID:-unknown}" >> "$GITHUB_OUTPUT"
             exit 0

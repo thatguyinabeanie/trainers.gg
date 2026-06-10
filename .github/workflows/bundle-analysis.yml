@@ -39,7 +39,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@v6.0.6 # pinned: early v6 had lockfile/PATH bugs
 
       - uses: actions/setup-node@v6
         with:
