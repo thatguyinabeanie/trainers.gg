@@ -911,15 +911,18 @@ describe("buildRk9Url", () => {
     }
   );
 
-  it("returns a valid URL for a safe teamlist path", () => {
-    const url = buildRk9Url("/teamlist/public/event1/entry1");
-    expect(url).toBe("https://rk9.gg/teamlist/public/event1/entry1");
-  });
-
-  it("returns a valid URL for a safe roster path", () => {
-    const url = buildRk9Url("/roster/evt-abc123");
-    expect(url).toBe("https://rk9.gg/roster/evt-abc123");
-  });
+  it.each([
+    [
+      "/teamlist/public/event1/entry1",
+      "https://rk9.gg/teamlist/public/event1/entry1",
+    ],
+    ["/roster/evt-abc123", "https://rk9.gg/roster/evt-abc123"],
+  ])(
+    "returns a valid URL for the safe path %s",
+    (path: string, expected: string) => {
+      expect(buildRk9Url(path)).toBe(expected);
+    }
+  );
 
   it("throws for a path with characters not matching the allowed pattern", () => {
     expect(() => buildRk9Url("/roster/bad path?query=1")).toThrow(

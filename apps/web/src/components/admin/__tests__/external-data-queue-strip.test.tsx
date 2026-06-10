@@ -151,17 +151,16 @@ beforeEach(() => jest.clearAllMocks());
 // =============================================================================
 
 describe("QueueStrip early return", () => {
-  it("renders nothing when totalQueued, totalFailed, and recentImported are all 0", () => {
-    const { container } = render(<QueueStrip {...makeProps()} />);
-    expect(container.firstChild).toBeNull();
-  });
-
-  it("renders nothing when all sources are zero even if autoImportOn is false", () => {
-    const { container } = render(
-      <QueueStrip
-        {...makeProps({ autoImportOn: { limitless: false, rk9: false } })}
-      />
-    );
+  it.each([
+    ["all counts are 0", {}],
+    [
+      "all counts are 0 even if autoImportOn is false",
+      {
+        autoImportOn: { limitless: false, rk9: false },
+      } satisfies Partial<QueueStripProps>,
+    ],
+  ])("renders nothing when %s", (_label, overrides) => {
+    const { container } = render(<QueueStrip {...makeProps(overrides)} />);
     expect(container.firstChild).toBeNull();
   });
 });
@@ -171,37 +170,24 @@ describe("QueueStrip early return", () => {
 // =============================================================================
 
 describe("QueueStrip renders when queue is non-empty", () => {
-  it("renders the strip when limitless.queued > 0", () => {
-    render(
-      <QueueStrip
-        {...makeProps({ limitless: { queued: 3, importing: 0, failed: 0 } })}
-      />
-    );
-    expect(screen.getByText(/Process now/i)).toBeInTheDocument();
-  });
-
-  it("renders the strip when rk9.queued > 0", () => {
-    render(
-      <QueueStrip
-        {...makeProps({ rk9: { queued: 5, inProgress: 0, failed: 0 } })}
-      />
-    );
-    expect(screen.getByText(/Process now/i)).toBeInTheDocument();
-  });
-
-  it("renders the strip when only recentImported > 0", () => {
-    render(<QueueStrip {...makeProps({ recentImported: 10 })} />);
-    expect(screen.getByText(/Process now/i)).toBeInTheDocument();
-  });
-
-  it("renders the strip when only totalFailed > 0", () => {
-    render(
-      <QueueStrip
-        {...makeProps({ limitless: { queued: 0, importing: 0, failed: 2 } })}
-      />
-    );
-    expect(screen.getByText(/Process now/i)).toBeInTheDocument();
-  });
+  it.each([
+    [
+      "limitless.queued > 0",
+      { limitless: { queued: 3, importing: 0, failed: 0 } },
+    ],
+    ["rk9.queued > 0", { rk9: { queued: 5, inProgress: 0, failed: 0 } }],
+    ["only recentImported > 0", { recentImported: 10 }],
+    [
+      "only totalFailed > 0",
+      { limitless: { queued: 0, importing: 0, failed: 2 } },
+    ],
+  ] satisfies Array<[string, Partial<QueueStripProps>]>)(
+    "renders the strip when %s",
+    (_label, overrides) => {
+      render(<QueueStrip {...makeProps(overrides)} />);
+      expect(screen.getByText(/Process now/i)).toBeInTheDocument();
+    }
+  );
 });
 
 // =============================================================================
