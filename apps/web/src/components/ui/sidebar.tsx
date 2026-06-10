@@ -735,10 +735,10 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean;
 }) {
-  // Random width between 50 to 90%.
-  const [width] = React.useState(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`;
-  });
+  // Deterministic width (upstream shadcn uses Math.random(), but random
+  // values during prerender are a build error under cacheComponents, and
+  // this skeleton renders inside layout-level Suspense fallbacks).
+  const width = "70%";
 
   return (
     <div
