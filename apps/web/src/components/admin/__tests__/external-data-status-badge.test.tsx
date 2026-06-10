@@ -327,6 +327,36 @@ describe("StatusBadge", () => {
         );
         expect(screen.getByTestId("badge")).toHaveTextContent("Failed (2x)");
       });
+
+      it("renders attempt count suffix when rk9 import_attempts is set", () => {
+        render(
+          <StatusBadge
+            row={rk9Row("failed", {
+              status: "failed",
+              displayStatus: "failed",
+              rk9: {
+                event_id: "evt-4",
+                name: "Fail Event",
+                tier: "VG",
+                format_id: null,
+                date_start: "2026-06-04",
+                date_end: null,
+                location_city: null,
+                location_country: null,
+                player_count: null,
+                has_team_lists: false,
+                import_status: "failed",
+                import_error: "Scrape failed",
+                teams_imported_count: null,
+                import_attempts: 3,
+                import_requested_at: null,
+                imported_at: null,
+              },
+            })}
+          />
+        );
+        expect(screen.getByTestId("badge")).toHaveTextContent("Failed (3x)");
+      });
     });
 
     it("renders 'Pending' badge for default (unknown) status", () => {

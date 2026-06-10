@@ -92,16 +92,19 @@ export function StatusBadge({ row }: StatusBadgeProps) {
           Teams partial
         </Badge>
       );
-    case "failed":
+    case "failed": {
+      // import_attempts lives on whichever source backs this row (Limitless or
+      // RK9) — show the retry-count suffix for both, not just Limitless.
+      const attempts =
+        row.limitless?.import_attempts ?? row.rk9?.import_attempts;
       return (
         <Badge variant="destructive" className="text-xs">
           <XCircle className="mr-1 h-3 w-3" />
           Failed
-          {row.limitless?.import_attempts
-            ? ` (${row.limitless.import_attempts}x)`
-            : ""}
+          {attempts ? ` (${attempts}x)` : ""}
         </Badge>
       );
+    }
     default:
       return (
         <Badge variant="outline" className="text-xs">

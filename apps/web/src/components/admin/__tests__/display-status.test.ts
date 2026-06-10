@@ -1,5 +1,5 @@
 import { deriveDisplayStatus } from "../display-status";
-import type { RK9EventRow, UnifiedRow } from "../external-data-shared";
+import { type RK9EventRow, type UnifiedRow } from "../external-data-shared";
 
 const MAPPED = "gen9championsvgc2026regma";
 
