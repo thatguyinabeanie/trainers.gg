@@ -46,6 +46,10 @@ export function buildRk9Url(path: string): string {
   if (!/^\/[\w\-/.]+$/.test(path)) {
     throw new Error(`Invalid RK9 path: ${path}`);
   }
+  // Reject path-traversal segments before URL normalization
+  if (path.split("/").some((seg) => seg === "." || seg === "..")) {
+    throw new Error(`Invalid RK9 path: ${path}`);
+  }
   const url = new URL(path, RK9_BASE_URL);
   if (url.origin !== RK9_BASE_URL) {
     throw new Error(`URL origin mismatch: ${url.origin}`);
@@ -193,11 +197,16 @@ export async function runRosterStage(
     assertValidEventId(eventId);
 
     // Mark as in-progress
-    await supabase
+    const { error: rosterStatusErr } = await supabase
       .schema("rk9")
       .from("events")
       .update({ import_status: "roster", import_error: null })
       .eq("event_id", eventId);
+    if (rosterStatusErr) {
+      throw new Error(
+        `Failed to set roster status for ${eventId}: ${rosterStatusErr.message}`
+      );
+    }
 
     // Detect format — only fetch HTML for Champions-era events
     const { data: eventRow } = await supabase
@@ -475,6 +484,7 @@ export async function runTeamsBatch(
     stat_alignment: string | null;
     moves: string[] | null;
   }[] = [];
+  const processedIds = new Set<number>();
 
   for (let i = 0; i < batch.length; i += concurrency) {
     // Deadline check — skip this wave if we're past the budget
@@ -492,6 +502,17 @@ export async function runTeamsBatch(
             newSpeciesEntries: new Map<string, string>(),
             scraped: 0,
             failed: 0,
+          };
+        }
+        if (!/^[\w-]+$/.test(entryId)) {
+          console.warn(
+            `[rk9-worker] Invalid roster_entry_id for standing ${standing.id}: ${entryId}`
+          );
+          return {
+            rows: [] as typeof allTeamRows,
+            newSpeciesEntries: new Map<string, string>(),
+            scraped: 0,
+            failed: 1,
           };
         }
 
@@ -550,13 +571,19 @@ export async function runTeamsBatch(
       })
     );
 
-    for (const result of chunkResults) {
+    for (let j = 0; j < chunkResults.length; j++) {
+      const result = chunkResults[j]!;
+      const standing = chunk[j]!;
       allTeamRows.push(...result.rows);
       for (const [raw, slug] of result.newSpeciesEntries) {
         newSpecies.set(raw, slug);
       }
       batchScraped += result.scraped;
       batchFailed += result.failed;
+      // Mark this standing as processed whether scrape succeeded or failed
+      if (result.scraped > 0 || result.failed > 0) {
+        processedIds.add(standing.id);
+      }
     }
   }
 
@@ -572,23 +599,32 @@ export async function runTeamsBatch(
         .from("team_pokemon")
         .upsert(chunk, { onConflict: "standing_id,position" });
       if (error) {
-        console.error(
+        throw new Error(
           `[rk9-worker] Team pokemon bulk insert failed: ${error.message}`
         );
       }
     }
   }
 
-  // Stamp attempt timestamp for all standings in this batch. This write MUST
-  // succeed: an unstamped standing gets re-picked next pass without bumping
-  // the no-progress counter, so a persistent write failure would burn the
-  // whole cron budget retrying the same batch.
-  const batchIds = batch.map((s) => s.id);
+  // Stamp attempt timestamp only for standings that were actually processed
+  // (not those skipped by deadline). This ensures unprocessed standings are
+  // retried on the next pass rather than being silently abandoned.
+  const processedIdsList = [...processedIds];
+  if (processedIdsList.length === 0) {
+    // All standings were skipped by deadline — nothing to stamp
+    return {
+      done: false,
+      scraped: alreadyScraped,
+      batchScraped: 0,
+      total,
+      failed: 0,
+    };
+  }
   const { error: stampErr } = await supabase
     .schema("rk9")
     .from("standings")
     .update({ team_scrape_attempted_at: new Date().toISOString() })
-    .in("id", batchIds);
+    .in("id", processedIdsList);
   if (stampErr) {
     throw new Error(
       `Failed to stamp standings as attempted: ${stampErr.message}`
