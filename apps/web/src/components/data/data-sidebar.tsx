@@ -86,10 +86,17 @@ export function DataSidebar({
   const formats = getActiveFormats();
   const activePreset = getActivePreset(allSpecies, selectedSpecies);
 
-  // Restore collapsed state from localStorage before first paint to prevent flash.
+  // Before first paint (no flash): collapse on phone viewports — the expanded
+  // w-52 rail + chart column overflows 393px — otherwise restore the user's
+  // saved preference from localStorage.
   useLayoutEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
-    if (localStorage.getItem(STORAGE_KEY) === "true") setCollapsed(true);
+    if (
+      window.innerWidth < 768 ||
+      localStorage.getItem(STORAGE_KEY) === "true"
+    ) {
+      setCollapsed(true);
+    }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 

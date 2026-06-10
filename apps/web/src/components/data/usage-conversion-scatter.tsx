@@ -241,8 +241,10 @@ export function UsageConversionScatter({
   return (
     <DataChartCard title={`Usage vs. ${conversionLabel} conversion`}>
       <div className="relative p-2">
-        {/* Quadrant corner labels — rendered inside a positioned overlay */}
-        <div className="pointer-events-none absolute inset-2 z-10">
+        {/* Quadrant corner labels — desktop only; on a 393px-wide chart the four
+            corners collapse together and collide, so hide them on mobile (the
+            median reference lines still mark the quadrants). */}
+        <div className="pointer-events-none absolute inset-2 z-10 hidden sm:block">
           {QUADRANT_LABELS.map((ql) => (
             <span
               key={ql.label}
