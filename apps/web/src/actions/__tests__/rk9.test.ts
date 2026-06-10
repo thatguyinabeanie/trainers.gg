@@ -86,10 +86,11 @@ jest.mock("@/actions/site-config", () => ({
     .mockResolvedValue({ success: false, error: "not set" }),
 }));
 
-const mockComputeEventUsage = jest.fn().mockResolvedValue(undefined);
-jest.mock("@trainers/supabase", () => ({
-  computeEventUsage: (...args: unknown[]) => mockComputeEventUsage(...args),
-}));
+// @trainers/supabase is mocked here because the rk9 action's dependencies
+// (via @/lib/rk9/index) may transitively import it. We provide a minimal
+// stub so the module resolves without errors — the rk9 action itself never
+// calls any @trainers/supabase function directly.
+jest.mock("@trainers/supabase", () => ({}));
 
 // fetch needs to be mocked because the action does real HTTP requests
 const mockFetch = jest.fn().mockResolvedValue({
@@ -456,13 +457,12 @@ describe("scrapeRk9TeamsBatch", () => {
     const result = await scrapeRk9TeamsBatch("EVT001");
 
     expect(result.success).toBe(true);
+    // Usage computation no longer happens inside scrapeRk9TeamsBatch — it is
+    // triggered explicitly via calculateSourceUsage (team_slots compile).
     expect(result.done).toBe(true);
-    // computeEventUsage was removed — usage computation is no longer triggered
-    // automatically inside scrapeRk9TeamsBatch.
-    expect(mockComputeEventUsage).not.toHaveBeenCalled();
   });
 
-  it("does NOT re-fire computeEventUsage on a redundant re-tick when all standings were already attempted", async () => {
+  it("completes without recompiling usage on a redundant re-tick when all standings were already attempted", async () => {
     // All standings already have team_scrape_attempted_at set → toProcess is
     // empty → the action enters the early-return completion block.
     // alreadyScraped === total so the transition guard prevents re-firing.
@@ -489,10 +489,10 @@ describe("scrapeRk9TeamsBatch", () => {
     const result = await scrapeRk9TeamsBatch("EVT001", { force: false });
 
     expect(result.success).toBe(true);
+    // Guard: alreadyScraped === total means no work happened this tick — the
+    // action completes without any usage recompute (usage compilation lives in
+    // calculateSourceUsage, not in the scrape path).
     expect(result.done).toBe(true);
-    // Guard: alreadyScraped === total means no work happened this tick →
-    // computeEventUsage must NOT be called (already settled event, avoid recompute).
-    expect(mockComputeEventUsage).not.toHaveBeenCalled();
   });
 });
 

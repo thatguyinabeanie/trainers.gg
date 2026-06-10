@@ -13,7 +13,7 @@ import {
 
 import {
   fetchFormatUsageTimeseries,
-  fetchDirectPipelineData,
+  fetchPipelineData,
   fetchFormatEvents,
 } from "@/actions/usage";
 
@@ -84,7 +84,14 @@ export function UsageExplorer({
   const columns = coerceColumns(searchParams.get("columns") ?? undefined);
   const minPlayers = coerceMinPlayers(searchParams.get("minPlayers"));
 
-  const [initTimeseriesKey] = useState({ format, source, periodType });
+  const [initTimeseriesKey] = useState({
+    format,
+    source,
+    periodType,
+    rangeStart,
+    rangeEnd,
+    minPlayers,
+  });
   const [initPipelineKey] = useState({
     format,
     source,
@@ -172,14 +179,28 @@ export function UsageExplorer({
   const isInitTimeseries =
     format === initTimeseriesKey.format &&
     source === initTimeseriesKey.source &&
-    periodType === initTimeseriesKey.periodType;
+    periodType === initTimeseriesKey.periodType &&
+    rangeStart === initTimeseriesKey.rangeStart &&
+    rangeEnd === initTimeseriesKey.rangeEnd &&
+    minPlayers === initTimeseriesKey.minPlayers;
   const { data: points = [] } = useQuery<FormatUsageTimeseriesPoint[]>({
-    queryKey: ["usage-timeseries", format, source, periodType],
+    queryKey: [
+      "usage-timeseries",
+      format,
+      source,
+      periodType,
+      rangeStart,
+      rangeEnd,
+      minPlayers,
+    ],
     queryFn: async () => {
       const result = await fetchFormatUsageTimeseries({
         format,
         source,
         periodType,
+        periodStart: rangeStart ?? undefined,
+        periodEnd: rangeEnd ?? undefined,
+        minPlayers,
       });
       if (!result.success) throw new Error(result.error);
       return result.data;
@@ -208,7 +229,7 @@ export function UsageExplorer({
       minPlayers,
     ],
     queryFn: async () => {
-      const result = await fetchDirectPipelineData({
+      const result = await fetchPipelineData({
         format,
         source,
         periodStart: rangeStart ?? undefined,

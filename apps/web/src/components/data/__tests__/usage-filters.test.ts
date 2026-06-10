@@ -1,11 +1,13 @@
 import {
   DEFAULT_FORMAT,
+  DEFAULT_MIN_PLAYERS,
   DEFAULT_PERIOD_TYPE,
   DEFAULT_SOURCE,
   DEFAULT_THRESHOLD,
   VALID_PERIOD_TYPES,
   VALID_SOURCES,
   coerceFormat,
+  coerceMinPlayers,
   coercePeriodType,
   coerceRangeEnd,
   coerceRangeStart,
@@ -13,7 +15,6 @@ import {
   coerceSource,
   coerceThreshold,
   isValidFormat,
-  toDBSource,
 } from "../usage-filters";
 
 // =============================================================================
@@ -211,19 +212,46 @@ describe("coerceThreshold", () => {
   });
 });
 
-describe("toDBSource", () => {
-  it("maps 'trainers.gg' to 'first_party' for the DB query", () => {
-    expect(toDBSource("trainers.gg")).toBe("first_party");
+// =============================================================================
+// DEFAULT_MIN_PLAYERS
+// =============================================================================
+
+describe("DEFAULT_MIN_PLAYERS", () => {
+  it("is 100", () => {
+    expect(DEFAULT_MIN_PLAYERS).toBe(100);
+  });
+});
+
+// =============================================================================
+// coerceMinPlayers
+// =============================================================================
+
+describe("coerceMinPlayers", () => {
+  it("returns DEFAULT_MIN_PLAYERS for null/undefined", () => {
+    expect(coerceMinPlayers(null)).toBe(DEFAULT_MIN_PLAYERS);
+    expect(coerceMinPlayers(undefined)).toBe(DEFAULT_MIN_PLAYERS);
   });
 
-  it("passes rk9, limitless, and all through unchanged", () => {
-    expect(toDBSource("rk9")).toBe("rk9");
-    expect(toDBSource("limitless")).toBe("limitless");
-    expect(toDBSource("all")).toBe("all");
+  it("returns DEFAULT_MIN_PLAYERS for empty string", () => {
+    expect(coerceMinPlayers("")).toBe(DEFAULT_MIN_PLAYERS);
   });
 
-  it("passes unknown values through unchanged", () => {
-    expect(toDBSource("unknown")).toBe("unknown");
+  it("returns the parsed integer for valid non-negative integers", () => {
+    expect(coerceMinPlayers("0")).toBe(0);
+    expect(coerceMinPlayers("64")).toBe(64);
+    expect(coerceMinPlayers("100")).toBe(100);
+    expect(coerceMinPlayers("512")).toBe(512);
+  });
+
+  it("returns DEFAULT_MIN_PLAYERS for non-integer strings", () => {
+    expect(coerceMinPlayers("12.5")).toBe(DEFAULT_MIN_PLAYERS);
+    expect(coerceMinPlayers("abc")).toBe(DEFAULT_MIN_PLAYERS);
+    expect(coerceMinPlayers("NaN")).toBe(DEFAULT_MIN_PLAYERS);
+  });
+
+  it("returns DEFAULT_MIN_PLAYERS for negative integers", () => {
+    expect(coerceMinPlayers("-1")).toBe(DEFAULT_MIN_PLAYERS);
+    expect(coerceMinPlayers("-100")).toBe(DEFAULT_MIN_PLAYERS);
   });
 });
 

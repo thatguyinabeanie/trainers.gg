@@ -122,14 +122,6 @@ export function coerceFormat(raw: string | undefined | null): string {
 }
 
 /**
- * Translates a UI source value to the DB-stored identifier.
- * The UI uses "trainers.gg" for first-party data; the DB stores "first_party".
- */
-export function toDBSource(source: string): string {
-  return source === "trainers.gg" ? "first_party" : source;
-}
-
-/**
  * Coerces a raw string to a valid `UsageSource`.
  *
  * Returns `DEFAULT_SOURCE` when `raw` is not one of the allowed values.
@@ -264,7 +256,7 @@ export function coerceColumns(raw: string | undefined): PipelineColumn[] {
 // =============================================================================
 
 /** Default minimum tournament size for the /data pipeline filter. */
-export const DEFAULT_MIN_PLAYERS = 64;
+export const DEFAULT_MIN_PLAYERS = 100;
 
 /**
  * Parse and validate the "minPlayers" URL param.

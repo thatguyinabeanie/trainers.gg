@@ -29,7 +29,7 @@ const SOURCE_LABELS: Record<string, string> = {
   all: "All",
   rk9: "RK9",
   limitless: "Limitless",
-  first_party: "First-party",
+  "trainers.gg": "Trainers.gg",
 };
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -38,7 +38,7 @@ const PERIOD_LABELS: Record<string, string> = {
   month: "Month",
 };
 
-type SourceKey = "all" | "rk9" | "limitless" | "first_party";
+type SourceKey = "all" | "rk9" | "limitless" | "trainers.gg";
 type PeriodType = "day" | "week" | "month";
 
 // =============================================================================
@@ -57,7 +57,7 @@ function DeltaBadge({ value }: DeltaBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 tabular-nums text-xs",
+        "inline-flex items-center gap-0.5 text-xs tabular-nums",
         value > 0 && "text-emerald-600 dark:text-emerald-400",
         value < 0 && "text-red-500 dark:text-red-400",
         value === 0 && "text-muted-foreground"
@@ -79,7 +79,7 @@ function DetailEntryList({ label, entries }: DetailEntryListProps) {
   if (entries.length === 0) return null;
   return (
     <div className="space-y-1">
-      <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+      <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
         {label}
       </p>
       <ul className="space-y-0.5">
@@ -89,7 +89,7 @@ function DetailEntryList({ label, entries }: DetailEntryListProps) {
             className="flex items-center justify-between gap-2 text-xs"
           >
             <span className="truncate">{e.value}</span>
-            <span className="text-muted-foreground tabular-nums shrink-0">
+            <span className="text-muted-foreground shrink-0 tabular-nums">
               {e.pct.toFixed(1)}%
             </span>
           </li>
@@ -116,10 +116,7 @@ export function UsageInspector() {
   // ---------------------------------------------------------------------------
   // Query 1 — latest bucket meta (direct table read for stat strip)
   // ---------------------------------------------------------------------------
-  const {
-    data: metaBucket,
-    isLoading: metaLoading,
-  } = useSupabaseQuery(
+  const { data: metaBucket, isLoading: metaLoading } = useSupabaseQuery(
     async (sb) => {
       const { data, error } = await sb
         .from("format_meta_stats")
@@ -141,10 +138,7 @@ export function UsageInspector() {
   // ---------------------------------------------------------------------------
   // Query 2 — species ranking
   // ---------------------------------------------------------------------------
-  const {
-    data: usageRows,
-    isLoading: usageLoading,
-  } = useSupabaseQuery(
+  const { data: usageRows, isLoading: usageLoading } = useSupabaseQuery(
     async (sb) => getSpeciesUsage(sb, { format, source, periodType }),
     [format, source, periodType]
   );
@@ -152,10 +146,7 @@ export function UsageInspector() {
   // ---------------------------------------------------------------------------
   // Query 3 — species detail drill-down (only when a row is expanded)
   // ---------------------------------------------------------------------------
-  const {
-    data: detailPeriods,
-    isLoading: detailLoading,
-  } = useSupabaseQuery(
+  const { data: detailPeriods, isLoading: detailLoading } = useSupabaseQuery(
     async (sb): Promise<SpeciesUsagePeriod[]> => {
       if (!expandedSpecies) return [];
       return getSpeciesUsageDetail(sb, {
@@ -291,7 +282,7 @@ export function UsageInspector() {
       {/* Species ranking table */}
       <div className="rounded-lg border">
         {/* Table header */}
-        <div className="bg-muted/30 grid grid-cols-[2.5rem_1fr_6rem_6rem] gap-2 rounded-t-lg border-b px-3 py-2 text-xs font-medium text-muted-foreground">
+        <div className="bg-muted/30 text-muted-foreground grid grid-cols-[2.5rem_1fr_6rem_6rem] gap-2 rounded-t-lg border-b px-3 py-2 text-xs font-medium">
           <span>#</span>
           <span>Species</span>
           <span className="text-right">USG %</span>
@@ -326,19 +317,19 @@ export function UsageInspector() {
                     onClick={() => toggleExpand(row.species)}
                     aria-expanded={isExpanded}
                   >
-                    <span className="text-muted-foreground tabular-nums text-sm">
+                    <span className="text-muted-foreground text-sm tabular-nums">
                       {row.rank}
                     </span>
                     <span className="flex items-center gap-1.5 text-sm font-medium">
                       <ChevronDown
                         className={cn(
-                          "h-3.5 w-3.5 text-muted-foreground transition-transform",
+                          "text-muted-foreground h-3.5 w-3.5 transition-transform",
                           isExpanded && "rotate-180"
                         )}
                       />
                       {row.species}
                     </span>
-                    <span className="text-right tabular-nums text-sm text-primary">
+                    <span className="text-primary text-right text-sm tabular-nums">
                       {row.usagePct.toFixed(2)}%
                     </span>
                     <span className="text-right">

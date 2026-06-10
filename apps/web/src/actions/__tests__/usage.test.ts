@@ -17,8 +17,7 @@ jest.mock("@/lib/sudo/server", () => ({
 }));
 
 jest.mock("@trainers/supabase", () => ({
-  computeSourceUsage: jest.fn(),
-  computeUsageRollups: jest.fn(),
+  compileSourceTeamSlots: jest.fn(),
   getSpeciesUsage: jest.fn(),
   getSpeciesUsageDetail: jest.fn(),
   getFormatUsageTimeseries: jest.fn(),
@@ -42,8 +41,7 @@ import {
 } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
 import {
-  computeSourceUsage,
-  computeUsageRollups,
+  compileSourceTeamSlots,
   getSpeciesUsageDetail,
   getSpeciesUsage,
   getFormatUsageTimeseries,
@@ -54,7 +52,6 @@ import { updateTag } from "next/cache";
 import {
   calculateSourceUsage,
   calculateAllSourceUsage,
-  triggerUsageRollup,
   fetchSpeciesUsageDetail,
   fetchFormatUsage,
   fetchFormatUsageTimeseries,
@@ -70,8 +67,7 @@ const mockGetUserId = getUserId as jest.Mock;
 const mockIsSiteAdmin = isSiteAdmin as jest.Mock;
 const mockCreateServiceRoleClient = createServiceRoleClient as jest.Mock;
 const mockCreateStaticClient = createStaticClient as jest.Mock;
-const mockComputeSourceUsage = computeSourceUsage as jest.Mock;
-const mockComputeUsageRollups = computeUsageRollups as jest.Mock;
+const mockCompileSourceTeamSlots = compileSourceTeamSlots as jest.Mock;
 const mockGetSpeciesUsageDetail = getSpeciesUsageDetail as jest.Mock;
 const mockGetSpeciesUsage = getSpeciesUsage as jest.Mock;
 const mockGetFormatUsageTimeseries = getFormatUsageTimeseries as jest.Mock;
@@ -86,50 +82,6 @@ const mockUpdateTag = updateTag as jest.Mock;
 /** Minimal service-role client stub — calculateSourceUsage only passes it
  *  through to the @trainers/supabase helpers, which are themselves mocked. */
 const stubServiceRoleClient = {};
-
-// ---------------------------------------------------------------------------
-// Rollup client builder — triggerUsageRollup calls .from() directly.
-// We need a full chain: .from().select().in() → resolves, .upsert() → resolves.
-// ---------------------------------------------------------------------------
-
-interface RollupClientChain {
-  from: jest.Mock;
-  select: jest.Mock;
-  in: jest.Mock;
-  upsert: jest.Mock;
-}
-
-/**
- * Build a minimal Supabase-client stub that supports the two query patterns
- * used by `triggerUsageRollup`:
- *
- *   supabase.from("site_config").select("key, value").in("key", CONFIG_KEYS)
- *   supabase.from("site_config").upsert({ ... }, { onConflict: "key" })
- *
- * `configRows` is the array returned by the `.in()` terminal call.
- * `upsertError` controls whether the upsert write returns an error.
- */
-function makeRollupClient(
-  configRows: Array<{ key: string; value: unknown }> = [],
-  { upsertError = null }: { upsertError?: { message: string } | null } = {}
-): { client: RollupClientChain; chain: RollupClientChain } {
-  const chain = {
-    select: jest.fn(),
-    in: jest.fn().mockResolvedValue({ data: configRows, error: null }),
-    upsert: jest.fn().mockResolvedValue({ error: upsertError }),
-  } as unknown as RollupClientChain;
-
-  // select() returns the chain so .in() can be called on it
-  (chain as unknown as Record<string, jest.Mock>).select = jest
-    .fn()
-    .mockReturnValue(chain);
-
-  const client = {
-    from: jest.fn().mockReturnValue(chain),
-  } as unknown as RollupClientChain;
-
-  return { client, chain };
-}
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -153,7 +105,7 @@ describe("calculateSourceUsage", () => {
       "Not authenticated"
     );
     // Guard: no usage work should happen without an authenticated user
-    expect(mockComputeSourceUsage).not.toHaveBeenCalled();
+    expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
   });
 
   it("returns error when user is not a site admin", async () => {
@@ -165,12 +117,12 @@ describe("calculateSourceUsage", () => {
     expect((result as { success: false; error: string }).error).toBe(
       "Requires site admin"
     );
-    expect(mockComputeSourceUsage).not.toHaveBeenCalled();
+    expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
   });
 
-  it("returns success with zero counts and skips rollup when no new events", async () => {
-    mockComputeSourceUsage.mockResolvedValueOnce({
-      eventsComputed: 0,
+  it("returns success with zero counts and skips cache busting when no new events", async () => {
+    mockCompileSourceTeamSlots.mockResolvedValueOnce({
+      eventsCompiled: 0,
       formats: [],
     });
 
@@ -182,21 +134,15 @@ describe("calculateSourceUsage", () => {
     expect(result.data.formatsProcessed).toBe(0);
     expect(result.data.bucketsWritten).toBe(0);
 
-    // No new formats → rollup must be skipped entirely
-    expect(mockComputeUsageRollups).not.toHaveBeenCalled();
-    // No formats to bust
+    // No new formats → cache busting must be skipped entirely
     expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
-  it("happy path: runs rollup, returns counts, and busts cache tags", async () => {
+  it("happy path: compiles team_slots, returns counts, and busts cache tags", async () => {
     const formats = ["gen9vgc2025regg"];
-    mockComputeSourceUsage.mockResolvedValueOnce({
-      eventsComputed: 3,
+    mockCompileSourceTeamSlots.mockResolvedValueOnce({
+      eventsCompiled: 3,
       formats,
-    });
-    mockComputeUsageRollups.mockResolvedValueOnce({
-      formatsProcessed: 2,
-      bucketsWritten: 5,
     });
 
     const result = await calculateSourceUsage("rk9");
@@ -205,16 +151,14 @@ describe("calculateSourceUsage", () => {
     if (!result.success) throw new Error("expected success");
     expect(result.data).toEqual({
       eventsComputed: 3,
-      formatsProcessed: 2,
-      bucketsWritten: 5,
+      formatsProcessed: 1,
+      bucketsWritten: 0,
     });
 
-    // Rollup must receive only the formats that had new events
-    expect(mockComputeUsageRollups).toHaveBeenCalledWith(
+    // compileSourceTeamSlots must be called with the validated source
+    expect(mockCompileSourceTeamSlots).toHaveBeenCalledWith(
       stubServiceRoleClient,
-      {
-        formats,
-      }
+      "rk9"
     );
 
     // Global usage tag must be busted
@@ -226,13 +170,9 @@ describe("calculateSourceUsage", () => {
 
   it("happy path: busts one cache tag per format when multiple formats are touched", async () => {
     const formats = ["gen9vgc2025regg", "gen9vgc2025regs"];
-    mockComputeSourceUsage.mockResolvedValueOnce({
-      eventsComputed: 5,
+    mockCompileSourceTeamSlots.mockResolvedValueOnce({
+      eventsCompiled: 5,
       formats,
-    });
-    mockComputeUsageRollups.mockResolvedValueOnce({
-      formatsProcessed: 2,
-      bucketsWritten: 10,
     });
 
     const result = await calculateSourceUsage("rk9");
@@ -246,28 +186,24 @@ describe("calculateSourceUsage", () => {
   });
 
   it.each([["rk9"], ["limitless"]] as const)(
-    "passes the correct source (%s) through to computeSourceUsage",
+    "passes the correct source (%s) through to compileSourceTeamSlots",
     async (source) => {
-      mockComputeSourceUsage.mockResolvedValueOnce({
-        eventsComputed: 1,
+      mockCompileSourceTeamSlots.mockResolvedValueOnce({
+        eventsCompiled: 1,
         formats: ["gen9vgc2025regg"],
-      });
-      mockComputeUsageRollups.mockResolvedValueOnce({
-        formatsProcessed: 1,
-        bucketsWritten: 2,
       });
 
       await calculateSourceUsage(source);
 
-      expect(mockComputeSourceUsage).toHaveBeenCalledWith(
+      expect(mockCompileSourceTeamSlots).toHaveBeenCalledWith(
         stubServiceRoleClient,
         source
       );
     }
   );
 
-  it("returns error when computeSourceUsage throws", async () => {
-    mockComputeSourceUsage.mockRejectedValueOnce(
+  it("returns error when compileSourceTeamSlots throws", async () => {
+    mockCompileSourceTeamSlots.mockRejectedValueOnce(
       new Error("DB connection refused")
     );
 
@@ -277,238 +213,8 @@ describe("calculateSourceUsage", () => {
     expect((result as { success: false; error: string }).error).toMatch(
       /DB connection refused/
     );
-    // Rollup and cache busting must not happen when source computation fails
-    expect(mockComputeUsageRollups).not.toHaveBeenCalled();
+    // Cache busting must not happen when compilation fails
     expect(mockUpdateTag).not.toHaveBeenCalled();
-  });
-
-  it("returns error when computeUsageRollups throws", async () => {
-    mockComputeSourceUsage.mockResolvedValueOnce({
-      eventsComputed: 2,
-      formats: ["gen9vgc2025regg"],
-    });
-    mockComputeUsageRollups.mockRejectedValueOnce(
-      new Error("rollup write failed")
-    );
-
-    const result = await calculateSourceUsage("rk9");
-
-    expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toMatch(
-      /rollup write failed/
-    );
-    // Cache tags must not be busted when the rollup itself fails
-    expect(mockUpdateTag).not.toHaveBeenCalled();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// triggerUsageRollup
-// ---------------------------------------------------------------------------
-
-describe("triggerUsageRollup", () => {
-  it("returns error when not authenticated", async () => {
-    mockGetUserId.mockResolvedValueOnce(null);
-
-    const result = await triggerUsageRollup();
-
-    expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toBe(
-      "Not authenticated"
-    );
-    expect(mockComputeUsageRollups).not.toHaveBeenCalled();
-  });
-
-  it("returns error when user is not a site admin", async () => {
-    mockIsSiteAdmin.mockResolvedValueOnce(false);
-
-    const result = await triggerUsageRollup();
-
-    expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toBe(
-      "Requires site admin"
-    );
-    expect(mockComputeUsageRollups).not.toHaveBeenCalled();
-  });
-
-  it("returns { ran: false } when usage_rollup_enabled is false in site_config", async () => {
-    const { client } = makeRollupClient([
-      { key: "usage_rollup_enabled", value: false },
-      { key: "usage_rollup_interval_seconds", value: 3600 },
-    ]);
-    mockCreateServiceRoleClient.mockReturnValue(client);
-
-    const result = await triggerUsageRollup();
-
-    expect(result.success).toBe(true);
-    if (!result.success) throw new Error("expected success");
-    expect(result.data.ran).toBe(false);
-    expect(result.data.formatsProcessed).toBe(0);
-    expect(result.data.bucketsWritten).toBe(0);
-    // Rollup must not run when administratively disabled
-    expect(mockComputeUsageRollups).not.toHaveBeenCalled();
-  });
-
-  it("returns { ran: false } when last run was too recent (within cooldown)", async () => {
-    // Set last_run_at to now and interval to 1 hour → elapsed < interval
-    const { client } = makeRollupClient([
-      { key: "usage_rollup_enabled", value: true },
-      { key: "usage_rollup_interval_seconds", value: 3600 },
-      {
-        key: "usage_rollup_last_run_at",
-        value: new Date().toISOString(),
-      },
-    ]);
-    mockCreateServiceRoleClient.mockReturnValue(client);
-
-    const result = await triggerUsageRollup();
-
-    expect(result.success).toBe(true);
-    if (!result.success) throw new Error("expected success");
-    expect(result.data.ran).toBe(false);
-    expect(mockComputeUsageRollups).not.toHaveBeenCalled();
-  });
-
-  it("happy path: runs rollup and returns { ran: true } when cooldown has elapsed", async () => {
-    // last_run_at is far in the past → elapsed > interval
-    const oldTimestamp = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
-    const { client } = makeRollupClient([
-      { key: "usage_rollup_enabled", value: true },
-      { key: "usage_rollup_interval_seconds", value: 3600 },
-      { key: "usage_rollup_last_run_at", value: oldTimestamp },
-    ]);
-    mockCreateServiceRoleClient.mockReturnValue(client);
-    mockComputeUsageRollups.mockResolvedValueOnce({
-      formatsProcessed: 4,
-      bucketsWritten: 20,
-    });
-
-    const result = await triggerUsageRollup();
-
-    expect(result.success).toBe(true);
-    if (!result.success) throw new Error("expected success");
-    expect(result.data.ran).toBe(true);
-    expect(result.data.formatsProcessed).toBe(4);
-    expect(result.data.bucketsWritten).toBe(20);
-    expect(mockComputeUsageRollups).toHaveBeenCalledTimes(1);
-  });
-
-  it("happy path: runs rollup when no last_run_at is set (first run)", async () => {
-    const { client } = makeRollupClient([
-      { key: "usage_rollup_enabled", value: true },
-      { key: "usage_rollup_interval_seconds", value: 3600 },
-      // no usage_rollup_last_run_at row
-    ]);
-    mockCreateServiceRoleClient.mockReturnValue(client);
-    mockComputeUsageRollups.mockResolvedValueOnce({
-      formatsProcessed: 2,
-      bucketsWritten: 8,
-    });
-
-    const result = await triggerUsageRollup();
-
-    expect(result.success).toBe(true);
-    if (!result.success) throw new Error("expected success");
-    expect(result.data.ran).toBe(true);
-    expect(mockComputeUsageRollups).toHaveBeenCalledTimes(1);
-  });
-
-  it("force mode: skips config/interval checks and runs rollup immediately", async () => {
-    // Even though enabled=false, force:true must bypass the check
-    const { client, chain } = makeRollupClient([
-      { key: "usage_rollup_enabled", value: false },
-    ]);
-    mockCreateServiceRoleClient.mockReturnValue(client);
-    mockComputeUsageRollups.mockResolvedValueOnce({
-      formatsProcessed: 1,
-      bucketsWritten: 3,
-    });
-
-    const result = await triggerUsageRollup({ force: true });
-
-    expect(result.success).toBe(true);
-    if (!result.success) throw new Error("expected success");
-    expect(result.data.ran).toBe(true);
-    expect(mockComputeUsageRollups).toHaveBeenCalledTimes(1);
-
-    // In force mode the only .from() call is the upsert — NOT the .select().in() config read.
-    // The chain's .select() must not have been called (only .upsert() is called).
-    expect(chain.select).not.toHaveBeenCalled();
-    expect(chain.upsert).toHaveBeenCalledTimes(1);
-  });
-
-  it("force mode: upserts the run timestamp after rollup", async () => {
-    const { client, chain } = makeRollupClient();
-    mockCreateServiceRoleClient.mockReturnValue(client);
-    mockComputeUsageRollups.mockResolvedValueOnce({
-      formatsProcessed: 1,
-      bucketsWritten: 2,
-    });
-
-    await triggerUsageRollup({ force: true });
-
-    // upsert must have been called exactly once to stamp the run time
-    expect(client.from).toHaveBeenCalledWith("site_config");
-    expect(chain.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ key: "usage_rollup_last_run_at" }),
-      expect.objectContaining({ onConflict: "key" })
-    );
-  });
-
-  it("non-force mode: upserts run timestamp after successful rollup", async () => {
-    const oldTimestamp = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
-    const { client } = makeRollupClient([
-      { key: "usage_rollup_enabled", value: true },
-      { key: "usage_rollup_interval_seconds", value: 3600 },
-      { key: "usage_rollup_last_run_at", value: oldTimestamp },
-    ]);
-    mockCreateServiceRoleClient.mockReturnValue(client);
-    mockComputeUsageRollups.mockResolvedValueOnce({
-      formatsProcessed: 2,
-      bucketsWritten: 5,
-    });
-
-    const result = await triggerUsageRollup();
-
-    expect(result.success).toBe(true);
-    if (!result.success) throw new Error("expected success");
-    expect(result.data.ran).toBe(true);
-  });
-
-  it("returns error when the site_config read itself fails", async () => {
-    const { client, chain } = makeRollupClient();
-    // Override the .in() terminal to return an error
-    (chain as unknown as { in: jest.Mock }).in.mockResolvedValueOnce({
-      data: null,
-      error: { message: "config read failed" },
-    });
-    mockCreateServiceRoleClient.mockReturnValue(client);
-
-    const result = await triggerUsageRollup();
-
-    expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toMatch(
-      /config read failed/
-    );
-    expect(mockComputeUsageRollups).not.toHaveBeenCalled();
-  });
-
-  it("still returns ran:true when the upsert timestamp write fails (soft error)", async () => {
-    const { client } = makeRollupClient([], {
-      upsertError: { message: "write failed" },
-    });
-    mockCreateServiceRoleClient.mockReturnValue(client);
-    mockComputeUsageRollups.mockResolvedValueOnce({
-      formatsProcessed: 1,
-      bucketsWritten: 2,
-    });
-
-    const result = await triggerUsageRollup({ force: true });
-
-    // The rollup itself succeeded — the upsert failure is logged but not fatal
-    expect(result.success).toBe(true);
-    if (!result.success) throw new Error("expected success");
-    expect(result.data.ran).toBe(true);
   });
 });
 
@@ -574,6 +280,21 @@ describe("fetchSpeciesUsageDetail", () => {
         periodType: "month",
         limit: 6,
       })
+    );
+  });
+
+  it("includes minPlayers in cache key and passes it through", async () => {
+    mockGetSpeciesUsageDetail.mockResolvedValueOnce([]);
+
+    await fetchSpeciesUsageDetail({
+      format: "gen9vgc2025regg",
+      species: "koraidon",
+      minPlayers: 100,
+    });
+
+    expect(mockGetSpeciesUsageDetail).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ minPlayers: 100 })
     );
   });
 
@@ -666,6 +387,17 @@ describe("fetchFormatUsage", () => {
       expect.objectContaining({ source: "all", periodType: "week" })
     );
   });
+
+  it("passes minPlayers through to getSpeciesUsage", async () => {
+    mockGetSpeciesUsage.mockResolvedValueOnce([]);
+
+    await fetchFormatUsage({ format: "gen9vgc2025regg", minPlayers: 100 });
+
+    expect(mockGetSpeciesUsage).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ minPlayers: 100 })
+    );
+  });
 });
 
 describe("fetchFormatUsageTimeseries", () => {
@@ -715,6 +447,26 @@ describe("fetchFormatUsageTimeseries", () => {
     );
   });
 
+  it("passes periodStart, periodEnd, and minPlayers through", async () => {
+    mockGetFormatUsageTimeseries.mockResolvedValueOnce([]);
+
+    await fetchFormatUsageTimeseries({
+      format: "gen9vgc2025regg",
+      periodStart: "2025-01-01",
+      periodEnd: "2025-03-31",
+      minPlayers: 64,
+    });
+
+    expect(mockGetFormatUsageTimeseries).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        periodStart: "2025-01-01",
+        periodEnd: "2025-03-31",
+        minPlayers: 64,
+      })
+    );
+  });
+
   it("returns { success: false } when query throws", async () => {
     mockGetFormatUsageTimeseries.mockRejectedValueOnce(
       new Error("timeseries query failed")
@@ -736,6 +488,10 @@ describe("fetchFormatUsageTimeseries", () => {
 // =============================================================================
 
 describe("fetchPipelineData", () => {
+  beforeEach(() => {
+    mockCreateStaticClient.mockReturnValue({});
+  });
+
   it("returns success with pipeline data", async () => {
     const mockData = {
       data: [
@@ -751,13 +507,11 @@ describe("fetchPipelineData", () => {
       periodStart: "2025-01-24",
       periodEnd: "2025-01-31",
     };
-    mockCreateStaticClient.mockReturnValue({});
     mockGetPipelineData.mockResolvedValue(mockData);
 
     const result = await fetchPipelineData({
       format: "gen9vgc2025regg",
       source: "all",
-      periodType: "week",
     });
 
     expect(result.success).toBe(true);
@@ -769,19 +523,38 @@ describe("fetchPipelineData", () => {
       expect.objectContaining({
         format: "gen9vgc2025regg",
         source: "all",
-        periodType: "week",
+      })
+    );
+  });
+
+  it("passes periodStart, periodEnd, and minPlayers through to getPipelineData", async () => {
+    mockGetPipelineData.mockResolvedValue(null);
+
+    await fetchPipelineData({
+      format: "gen9vgc2025regg",
+      source: "rk9",
+      periodStart: "2025-01-01",
+      periodEnd: "2025-03-31",
+      minPlayers: 100,
+    });
+
+    expect(mockGetPipelineData).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        source: "rk9",
+        periodStart: "2025-01-01",
+        periodEnd: "2025-03-31",
+        minPlayers: 100,
       })
     );
   });
 
   it("returns success with null when no data exists", async () => {
-    mockCreateStaticClient.mockReturnValue({});
     mockGetPipelineData.mockResolvedValue(null);
 
     const result = await fetchPipelineData({
       format: "gen9vgc2025regg",
       source: "all",
-      periodType: "week",
     });
 
     expect(result.success).toBe(true);
@@ -791,13 +564,11 @@ describe("fetchPipelineData", () => {
   });
 
   it("returns failure when query throws", async () => {
-    mockCreateStaticClient.mockReturnValue({});
     mockGetPipelineData.mockRejectedValue(new Error("DB failure"));
 
     const result = await fetchPipelineData({
       format: "gen9vgc2025regg",
       source: "all",
-      periodType: "week",
     });
 
     expect(result.success).toBe(false);
@@ -809,11 +580,14 @@ describe("fetchPipelineData", () => {
 // =============================================================================
 
 describe("fetchFormatEvents", () => {
+  beforeEach(() => {
+    mockCreateStaticClient.mockReturnValue({});
+  });
+
   it("returns success with event list", async () => {
     const mockEvents = [
       { eventKey: "rk9:001", eventDate: "2025-01-12", source: "rk9" },
     ];
-    mockCreateStaticClient.mockReturnValue({});
     mockGetFormatEvents.mockResolvedValue(mockEvents);
 
     const result = await fetchFormatEvents("gen9vgc2025regg");
@@ -826,7 +600,6 @@ describe("fetchFormatEvents", () => {
   });
 
   it("returns failure when query throws", async () => {
-    mockCreateStaticClient.mockReturnValue({});
     mockGetFormatEvents.mockRejectedValue(new Error("DB failure"));
 
     const result = await fetchFormatEvents("gen9vgc2025regg");
@@ -841,19 +614,16 @@ describe("fetchFormatEvents", () => {
 
 describe("calculateAllSourceUsage", () => {
   it("sums results across all sources (rk9 + limitless)", async () => {
-    // rk9: 2 events, 1 format, 3 buckets
-    mockComputeSourceUsage
+    // rk9: 2 events, 1 format
+    mockCompileSourceTeamSlots
       .mockResolvedValueOnce({
-        eventsComputed: 2,
+        eventsCompiled: 2,
         formats: ["gen9vgc2025regg"],
       })
       .mockResolvedValueOnce({
-        eventsComputed: 5,
+        eventsCompiled: 5,
         formats: ["gen9vgc2025regg", "gen9vgc2025regs"],
       });
-    mockComputeUsageRollups
-      .mockResolvedValueOnce({ formatsProcessed: 1, bucketsWritten: 3 })
-      .mockResolvedValueOnce({ formatsProcessed: 2, bucketsWritten: 4 });
 
     const result = await calculateAllSourceUsage();
 
@@ -862,15 +632,15 @@ describe("calculateAllSourceUsage", () => {
       expect(result.data).toEqual({
         eventsComputed: 7,
         formatsProcessed: 3,
-        bucketsWritten: 7,
+        bucketsWritten: 0,
       });
     }
   });
 
   it("returns zero counts when both sources have no new events", async () => {
-    mockComputeSourceUsage
-      .mockResolvedValueOnce({ eventsComputed: 0, formats: [] })
-      .mockResolvedValueOnce({ eventsComputed: 0, formats: [] });
+    mockCompileSourceTeamSlots
+      .mockResolvedValueOnce({ eventsCompiled: 0, formats: [] })
+      .mockResolvedValueOnce({ eventsCompiled: 0, formats: [] });
 
     const result = await calculateAllSourceUsage();
 
@@ -882,13 +652,13 @@ describe("calculateAllSourceUsage", () => {
         bucketsWritten: 0,
       });
     }
-    // No new events → rollup must be skipped for both sources
-    expect(mockComputeUsageRollups).not.toHaveBeenCalled();
+    // No new events → no cache tags busted
+    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns failure if any source fails", async () => {
     // First source (rk9) fails immediately
-    mockComputeSourceUsage.mockRejectedValueOnce(new Error("boom"));
+    mockCompileSourceTeamSlots.mockRejectedValueOnce(new Error("boom"));
 
     const result = await calculateAllSourceUsage();
 
@@ -900,16 +670,12 @@ describe("calculateAllSourceUsage", () => {
 
   it("returns failure if second source fails", async () => {
     // rk9 succeeds, limitless fails
-    mockComputeSourceUsage
+    mockCompileSourceTeamSlots
       .mockResolvedValueOnce({
-        eventsComputed: 2,
+        eventsCompiled: 2,
         formats: ["gen9vgc2025regg"],
       })
       .mockRejectedValueOnce(new Error("limitless boom"));
-    mockComputeUsageRollups.mockResolvedValueOnce({
-      formatsProcessed: 1,
-      bucketsWritten: 2,
-    });
 
     const result = await calculateAllSourceUsage();
 
@@ -928,7 +694,7 @@ describe("calculateAllSourceUsage", () => {
     if (!result.success) {
       expect(result.error).toBe("Not authenticated");
     }
-    expect(mockComputeSourceUsage).not.toHaveBeenCalled();
+    expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
   });
 
   it("returns error when user is not a site admin", async () => {
@@ -940,6 +706,6 @@ describe("calculateAllSourceUsage", () => {
     if (!result.success) {
       expect(result.error).toBe("Requires site admin");
     }
-    expect(mockComputeSourceUsage).not.toHaveBeenCalled();
+    expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
   });
 });

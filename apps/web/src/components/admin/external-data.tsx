@@ -27,7 +27,7 @@ import {
   triggerLimitlessSync,
   triggerImportQueue,
 } from "@/actions/limitless";
-import { triggerUsageRollup, calculateAllSourceUsage } from "@/actions/usage";
+import { calculateAllSourceUsage } from "@/actions/usage";
 import { formatTimeAgo, getErrorMessage } from "@trainers/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsClient } from "@/hooks/use-is-client";
@@ -181,9 +181,6 @@ export function ExternalData() {
     total: number;
   } | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
-
-  // Usage rollup state
-  const [recomputingUsage, setRecomputingUsage] = useState(false);
 
   // Global cross-source usage calculation state
   const [calculatingUsage, setCalculatingUsage] = useState(false);
@@ -733,27 +730,6 @@ export function ExternalData() {
     }
   }
 
-  async function handleRecomputeUsage() {
-    setRecomputingUsage(true);
-    try {
-      const result = await triggerUsageRollup({ force: true });
-      if (!result.success) throw new Error(result.error);
-      const { ran, formatsProcessed, bucketsWritten } = result.data;
-      if (ran) {
-        toast.success(
-          `Recomputed ${formatsProcessed} format(s) · ${bucketsWritten} bucket(s)`
-        );
-        setLastCalculatedAt(new Date().toISOString());
-      } else {
-        toast.success("No dirty formats — skipped");
-      }
-    } catch (err) {
-      toast.error(getErrorMessage(err, "Recompute failed"));
-    } finally {
-      setRecomputingUsage(false);
-    }
-  }
-
   async function handleCalculateUsage() {
     setCalculatingUsage(true);
     try {
@@ -1192,8 +1168,6 @@ export function ExternalData() {
               }
               isFetching={isFetching}
               onRefresh={() => setRefreshKey((k) => k + 1)}
-              onRecomputeUsage={handleRecomputeUsage}
-              recomputingUsage={recomputingUsage}
               onCalculateUsage={handleCalculateUsage}
               calculatingUsage={calculatingUsage}
               lastCalculatedAt={lastCalculatedAt}
