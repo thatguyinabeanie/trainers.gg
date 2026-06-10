@@ -68,7 +68,7 @@ runs:
           REPO_ID=$(curl -sS --max-time 10 \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}" \
-            | jq -r '.id // empty')
+            | jq -r '.id // empty') || REPO_ID=""
 
           if [ -z "$REPO_ID" ] || [ "$REPO_ID" = "null" ]; then
             echo "::error::Could not retrieve GitHub repo ID — cannot trigger redeployment"
@@ -104,7 +104,7 @@ runs:
             "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "$PAYLOAD")
+            -d "$PAYLOAD") || HTTP_CODE="000"
 
           local BODY
           BODY=$(cat "$HTTP_FILE")
@@ -142,7 +142,7 @@ runs:
               -o "$HTTP_FILE" \
               -w "%{http_code}" \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
-              "https://api.vercel.com/v13/deployments/${DEP_ID}?teamId=$VERCEL_TEAM_ID")
+              "https://api.vercel.com/v13/deployments/${DEP_ID}?teamId=$VERCEL_TEAM_ID") || HTTP_CODE="000"
 
             local BODY
             BODY=$(cat "$HTTP_FILE")
@@ -181,8 +181,8 @@ runs:
         if [ -n "$INPUT_DEPLOYMENT_ID" ]; then
           echo "Polling specific deployment $INPUT_DEPLOYMENT_ID (readyState)..."
           # Max 50 attempts × 15s = 12.5 min
-          RESULT_URL=$(poll_by_id "$INPUT_DEPLOYMENT_ID" 50 15)
-          if [ $? -ne 0 ]; then
+          # `if !` so a non-zero return is handled here, not aborted by errexit.
+          if ! RESULT_URL=$(poll_by_id "$INPUT_DEPLOYMENT_ID" 50 15); then
             exit 1
           fi
           # Verify the URL responds
@@ -219,7 +219,7 @@ runs:
             -o "$HTTP_FILE" \
             -w "%{http_code}" \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=10&projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_TEAM_ID")
+            "https://api.vercel.com/v6/deployments?sha=$PR_SHA&limit=10&projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_TEAM_ID") || HTTP_CODE="000"
 
           RESPONSE=$(cat "$HTTP_FILE")
           rm -f "$HTTP_FILE"
@@ -247,16 +247,14 @@ runs:
 
             if [ "$NO_DEPLOY_COUNT" -ge "$NO_DEPLOY_THRESHOLD" ] && [ -z "$REDEPLOY_ID" ]; then
               echo "::warning::No deployment appeared after $NO_DEPLOY_COUNT polls — triggering fresh deployment..."
-              NEW_ID=$(trigger_redeploy)
-              if [ $? -ne 0 ]; then
+              if ! NEW_ID=$(trigger_redeploy); then
                 echo "::error::Failed to trigger fallback deployment"
                 exit 1
               fi
               REDEPLOY_ID="$NEW_ID"
               echo "Fallback deployment triggered: $REDEPLOY_ID — switching to by-ID poll..."
               # Poll the specific deployment by ID (max 40 attempts × 15s = 10 min)
-              RESULT_URL=$(poll_by_id "$REDEPLOY_ID" 40 15)
-              if [ $? -ne 0 ]; then
+              if ! RESULT_URL=$(poll_by_id "$REDEPLOY_ID" 40 15); then
                 exit 1
               fi
               HTTP_FILE=$(mktemp)

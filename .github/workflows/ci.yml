@@ -422,9 +422,10 @@ jobs:
     # and dependency bumps don't need E2E/Lighthouse validation
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    # Increased from 15 to 25: new flow = initial wait + optional redeploy + second wait.
-    # Poll loops are capped so the explicit exit 1 path is always reachable inside 25 min.
-    timeout-minutes: 25
+    # Increased from 15 to 30: worst case is initial wait (~13m) + redeploy +
+    # second by-id wait (~10m) + checkout/branch/env-inject overhead, which can
+    # approach ~28m. 30 keeps the step-7 diagnostic + explicit exit 1 reachable.
+    timeout-minutes: 30
     outputs:
       url: ${{ steps.final-url.outputs.url }}
       branch-db-ready: ${{ steps.db-check-second.outputs.ready || steps.db-check-first.outputs.ready }}
