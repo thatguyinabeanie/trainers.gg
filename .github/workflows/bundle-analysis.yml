@@ -126,9 +126,11 @@ jobs:
         if: success() && github.event_name == 'pull_request'
         run: |
           BODY=$(cat .next/analyze/__bundle_analysis_comment.txt)
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$BODY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "body<<EOF"
+            echo "$BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
       - name: Find existing comment
