@@ -1,7 +1,7 @@
 "use client";
 
 import { PostHogProvider as PHProvider, usePostHog } from "posthog-js/react";
-import { Suspense, useEffect, useRef, type ReactNode } from "react";
+import { Suspense, use, useEffect, useRef, type ReactNode } from "react";
 
 import { setErrorSink } from "@trainers/utils";
 
@@ -10,10 +10,13 @@ import { getConsentStatus } from "@/components/cookie-consent";
 import { captureException, initPostHog, posthog } from "@/lib/posthog/client";
 import { PostHogPageview } from "@/lib/posthog/posthog-pageview";
 
-function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
+/**
+ * Syncs the authenticated user's identity with PostHog.
+ * Always rendered — does not depend on impersonation state.
+ */
+function PostHogUserSync() {
   const { user, isAuthenticated } = useAuthContext();
   const ph = usePostHog();
-  const wasImpersonating = useRef(false);
 
   useEffect(() => {
     if (!ph) return;
@@ -35,6 +38,21 @@ function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
       console.error("PostHog auth sync failed:", e);
     }
   }, [ph, user, isAuthenticated]);
+
+  return null;
+}
+
+/**
+ * Syncs impersonation state with PostHog session recording.
+ * Only rendered when isImpersonating resolves to a value.
+ */
+function PostHogImpersonationSync({
+  isImpersonating,
+}: {
+  isImpersonating: boolean;
+}) {
+  const ph = usePostHog();
+  const wasImpersonating = useRef(false);
 
   // During impersonation: stop session recording and tag events as impersonated
   useEffect(() => {
@@ -62,14 +80,28 @@ function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
   return null;
 }
 
+/**
+ * Resolves the isImpersonating promise (passed from the root layout shell)
+ * and forwards the boolean to PostHogImpersonationSync. Wrapped in a Suspense
+ * boundary so the shell never awaits cookies() during SSR render.
+ */
+function ImpersonationSync({
+  isImpersonatingPromise,
+}: {
+  isImpersonatingPromise: Promise<boolean>;
+}) {
+  const isImpersonating = use(isImpersonatingPromise);
+  return <PostHogImpersonationSync isImpersonating={isImpersonating} />;
+}
+
 interface PostHogProviderProps {
   children: ReactNode;
-  isImpersonating?: boolean;
+  isImpersonatingPromise?: Promise<boolean>;
 }
 
 export function PostHogProvider({
   children,
-  isImpersonating = false,
+  isImpersonatingPromise,
 }: PostHogProviderProps) {
   useEffect(() => {
     initPostHog();
@@ -125,7 +157,12 @@ export function PostHogProvider({
 
   return (
     <PHProvider client={posthog}>
-      <PostHogAuthSync isImpersonating={isImpersonating} />
+      <PostHogUserSync />
+      {isImpersonatingPromise && (
+        <Suspense fallback={null}>
+          <ImpersonationSync isImpersonatingPromise={isImpersonatingPromise} />
+        </Suspense>
+      )}
       <Suspense fallback={null}>
         <PostHogPageview />
       </Suspense>

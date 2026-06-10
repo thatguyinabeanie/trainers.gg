@@ -1,16 +1,9 @@
 "use server";
 
-import { unstable_cache } from "next/cache";
-
 import { getErrorMessage } from "@trainers/utils";
 import { z, type ActionResult } from "@trainers/validators";
 import {
   compileSourceTeamSlots,
-  getSpeciesUsage,
-  getSpeciesUsageDetail,
-  getFormatUsageTimeseries,
-  getPipelineData,
-  getFormatEvents,
   type FormatUsageRow,
   type FormatUsageTimeseriesPoint,
   type SpeciesUsagePeriod,
@@ -18,14 +11,16 @@ import {
   type PipelineDataResult,
   type FormatEvent,
 } from "@trainers/supabase";
-import {
-  createStaticClient,
-  createServiceRoleClient,
-  getUserId,
-} from "@/lib/supabase/server";
+import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
-import { CacheTags } from "@/lib/cache";
 import { invalidateUsageStatsCaches } from "@/lib/cache-invalidation";
+import {
+  getCachedSpeciesUsageDetail,
+  getCachedFormatUsage,
+  getCachedFormatUsageTimeseries,
+  getCachedPipelineData,
+  getCachedFormatEvents,
+} from "@/lib/data/usage-cache";
 
 // ---------------------------------------------------------------------------
 // Source-scoped usage computation
@@ -158,12 +153,8 @@ export async function calculateAllSourceUsage(): Promise<
 
 /**
  * Public (non-admin) server action to fetch trailing usage periods for a
- * species.  Data is public — all tournament usage stats are visible to
- * everyone — so this uses `createStaticClient()` wrapped in `unstable_cache`
- * for ISR caching.
- *
- * Cache revalidation: 3600s (1 hour).  The USAGE_STATS and per-format
- * tags can be used for on-demand invalidation after a compile completes.
+ * species. Delegates to getCachedSpeciesUsageDetail in lib/data/usage-cache
+ * for 'use cache' caching with USAGE_STATS + per-format tags.
  */
 export async function fetchSpeciesUsageDetail(
   params: SpeciesUsageDetailParams
@@ -178,30 +169,14 @@ export async function fetchSpeciesUsageDetail(
       minPlayers = 0,
     } = params;
 
-    const cacheKey = `usage-detail:${format}:${source}:${species}:${periodType}:${limit}:${minPlayers}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        // createStaticClient() — anonymous, no cookies — required inside
-        // unstable_cache so the cached value is shared across all users.
-        const supabase = createStaticClient();
-        return getSpeciesUsageDetail(supabase, {
-          format,
-          species,
-          source,
-          periodType,
-          limit,
-          minPlayers,
-        });
-      },
-      [cacheKey],
-      {
-        revalidate: 3600, // 1 hour
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
+    const data = await getCachedSpeciesUsageDetail({
+      format,
+      species,
+      source,
+      periodType,
+      limit,
+      minPlayers,
+    });
     return { success: true, data };
   } catch (e) {
     return {
@@ -229,14 +204,7 @@ export interface FetchFormatUsageParams {
 
 /**
  * Public (non-admin) server action to fetch the latest-period species ranking
- * for a format.
- *
- * Returns every `FormatUsageRow` for the most-recent rollup bucket so the
- * species picker can show a `USG %` column for every species at once.
- *
- * Data is public — all tournament usage stats are visible to everyone — so
- * this uses `createStaticClient()` wrapped in `unstable_cache` for ISR
- * caching. Cache revalidation: 3600s (1 hour).
+ * for a format. Delegates to getCachedFormatUsage in lib/data/usage-cache.
  */
 export async function fetchFormatUsage(
   params: FetchFormatUsageParams
@@ -249,26 +217,12 @@ export async function fetchFormatUsage(
       minPlayers = 0,
     } = params;
 
-    const cacheKey = `usage-format:${format}:${source}:${periodType}:${minPlayers}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        const supabase = createStaticClient();
-        return getSpeciesUsage(supabase, {
-          format,
-          source,
-          periodType,
-          minPlayers,
-        });
-      },
-      [cacheKey],
-      {
-        revalidate: 3600, // 1 hour
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
+    const data = await getCachedFormatUsage({
+      format,
+      source,
+      periodType,
+      minPlayers,
+    });
     return { success: true, data };
   } catch (e) {
     return {
@@ -300,16 +254,7 @@ export interface FetchFormatUsageTimeseriesParams {
 
 /**
  * Public (non-admin) server action to fetch all-species × all-periods usage
- * data for a format.
- *
- * Returns a `FormatUsageTimeseriesPoint[]` ordered oldest→newest.  Each point
- * carries a `usage` map (`species → usage_pct`) covering every tracked species
- * in that period.  This is the data shape needed to render a streamgraph on the
- * public /data page.
- *
- * Data is public — all tournament usage stats are visible to everyone — so this
- * uses `createStaticClient()` wrapped in `unstable_cache` for ISR caching.
- * Cache revalidation: 3600s (1 hour).
+ * data for a format. Delegates to getCachedFormatUsageTimeseries.
  */
 export async function fetchFormatUsageTimeseries(
   params: FetchFormatUsageTimeseriesParams
@@ -324,28 +269,14 @@ export async function fetchFormatUsageTimeseries(
       minPlayers = 0,
     } = params;
 
-    const cacheKey = `usage-timeseries:${format}:${source}:${periodType}:${periodStart ?? ""}:${periodEnd ?? ""}:${minPlayers}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        const supabase = createStaticClient();
-        return getFormatUsageTimeseries(supabase, {
-          format,
-          source,
-          periodType,
-          periodStart,
-          periodEnd,
-          minPlayers,
-        });
-      },
-      [cacheKey],
-      {
-        revalidate: 3600, // 1 hour — matches fetchFormatUsage / fetchSpeciesUsageDetail
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
+    const data = await getCachedFormatUsageTimeseries({
+      format,
+      source,
+      periodType,
+      periodStart,
+      periodEnd,
+      minPlayers,
+    });
     return { success: true, data };
   } catch (e) {
     return {
@@ -371,12 +302,7 @@ export interface FetchPipelineDataParams {
 
 /**
  * Public server action to fetch species + histogram data for the Meta Pipeline
- * Sankey. Returns null when no data matches the filters.
- *
- * Delegates to `getPipelineData()` which reads the team_slots fact table
- * directly — the minPlayers filter is applied in SQL, not client-side.
- *
- * Uses `createStaticClient()` + `unstable_cache` for 1h ISR caching.
+ * Sankey. Delegates to getCachedPipelineData.
  */
 export async function fetchPipelineData(
   params: FetchPipelineDataParams
@@ -390,27 +316,13 @@ export async function fetchPipelineData(
       minPlayers = 0,
     } = params;
 
-    const cacheKey = `pipeline-data:${format}:${source}:${periodStart ?? ""}:${periodEnd ?? ""}:${minPlayers}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        const supabase = createStaticClient();
-        return getPipelineData(supabase, {
-          format,
-          source,
-          periodStart,
-          periodEnd,
-          minPlayers,
-        });
-      },
-      [cacheKey],
-      {
-        revalidate: 3600,
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
+    const data = await getCachedPipelineData({
+      format,
+      source,
+      periodStart,
+      periodEnd,
+      minPlayers,
+    });
     return { success: true, data };
   } catch (e) {
     return {
@@ -426,29 +338,13 @@ export async function fetchPipelineData(
 
 /**
  * Public server action to fetch distinct event dates for a format.
- *
- * Returns `FormatEvent[]` for rendering annotation pins on the usage
- * timeline's X-axis. Uses `createStaticClient()` + `unstable_cache` for 1h ISR.
+ * Delegates to getCachedFormatEvents.
  */
 export async function fetchFormatEvents(
   format: string
 ): Promise<ActionResult<FormatEvent[]>> {
   try {
-    const cacheKey = `format-events:${format}`;
-
-    const getCached = unstable_cache(
-      async () => {
-        const supabase = createStaticClient();
-        return getFormatEvents(supabase, format);
-      },
-      [cacheKey],
-      {
-        revalidate: 3600,
-        tags: [CacheTags.USAGE_STATS, CacheTags.usageStats(format)],
-      }
-    );
-
-    const data = await getCached();
+    const data = await getCachedFormatEvents(format);
     return { success: true, data };
   } catch (e) {
     return {

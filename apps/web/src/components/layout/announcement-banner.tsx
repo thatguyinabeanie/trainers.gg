@@ -1,6 +1,10 @@
-import { createStaticClient } from "@/lib/supabase/server";
+import { cacheLife, cacheTag } from "next/cache";
+
 import { getActiveAnnouncements } from "@trainers/supabase";
 import { getErrorMessage } from "@trainers/utils";
+
+import { CacheTags } from "@/lib/cache";
+import { createStaticClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, XCircle, CheckCircle2 } from "lucide-react";
 
@@ -27,20 +31,27 @@ const typeConfig = {
   },
 } as const;
 
+async function getCachedAnnouncements() {
+  "use cache";
+  cacheTag(CacheTags.ANNOUNCEMENTS);
+  cacheLife("minutes");
+
+  const supabase = createStaticClient();
+  return getActiveAnnouncements(supabase);
+}
+
 /**
  * Server component that fetches and displays active announcements.
  * Placed in the root layout, above the main content.
  *
- * Uses createStaticClient() to avoid forcing all pages to be dynamic.
- * Data is revalidated every 60 seconds via ISR for a balance of
- * performance and freshness.
+ * Uses 'use cache' with cacheTag(CacheTags.ANNOUNCEMENTS) + cacheLife("minutes")
+ * for on-demand invalidation via invalidateAnnouncementCaches().
  */
 export async function AnnouncementBanner() {
   let announcements: Awaited<ReturnType<typeof getActiveAnnouncements>> = [];
 
   try {
-    const supabase = createStaticClient();
-    announcements = await getActiveAnnouncements(supabase);
+    announcements = await getCachedAnnouncements();
   } catch (err) {
     console.error(
       "[announcement-banner] Failed to fetch announcements:",

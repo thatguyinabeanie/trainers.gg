@@ -14,18 +14,11 @@ jest.mock("../api", () => ({
   getGuildRoles: mockGetGuildRoles,
 }));
 
-// unstable_cache: execute the cached function inline so we can assert on
-// the key/options it was called with, and verify the delegate is invoked.
-const mockUnstableCache = jest.fn(
-  (
-    fn: () => Promise<unknown>,
-    _key: string[],
-    _opts: { revalidate: number; tags: string[] }
-  ) => fn
-);
-
+// 'use cache' is a compile-time directive — inert under Jest.
+// cacheTag / cacheLife are no-ops; the functions execute without caching.
 jest.mock("next/cache", () => ({
-  unstable_cache: mockUnstableCache,
+  cacheTag: jest.fn(),
+  cacheLife: jest.fn(),
 }));
 
 // =============================================================================
@@ -40,8 +33,6 @@ import { getCachedGuildChannels, getCachedGuildRoles } from "../guild-cache";
 
 const GUILD_ID = "guild-999";
 const SERVER_ID = 42;
-const DISCORD_GUILD_TAG = `discord-guild:${SERVER_ID}`;
-const CACHE_TTL = 300;
 
 // =============================================================================
 // Fixtures
@@ -64,18 +55,6 @@ describe("getCachedGuildChannels", () => {
     jest.clearAllMocks();
   });
 
-  it("calls unstable_cache with the correct key, TTL, and tag", async () => {
-    mockGetGuildChannels.mockResolvedValue([TEXT_CHANNEL]);
-
-    await getCachedGuildChannels(GUILD_ID, SERVER_ID);
-
-    expect(mockUnstableCache).toHaveBeenCalledWith(
-      expect.any(Function),
-      ["discord-guild-channels", GUILD_ID],
-      { revalidate: CACHE_TTL, tags: [DISCORD_GUILD_TAG] }
-    );
-  });
-
   it("delegates to getGuildChannels and returns only text channels (type 0)", async () => {
     mockGetGuildChannels.mockResolvedValue([
       TEXT_CHANNEL,
@@ -96,6 +75,18 @@ describe("getCachedGuildChannels", () => {
 
     expect(result).toEqual([]);
   });
+
+  it("returns all text channels when the guild has only text channels", async () => {
+    const textChannels = [
+      { id: "ch-1", name: "general", type: 0 },
+      { id: "ch-2", name: "announcements", type: 0 },
+    ];
+    mockGetGuildChannels.mockResolvedValue(textChannels);
+
+    const result = await getCachedGuildChannels(GUILD_ID, SERVER_ID);
+
+    expect(result).toEqual(textChannels);
+  });
 });
 
 // =============================================================================
@@ -105,18 +96,6 @@ describe("getCachedGuildChannels", () => {
 describe("getCachedGuildRoles", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  it("calls unstable_cache with the correct key, TTL, and tag", async () => {
-    mockGetGuildRoles.mockResolvedValue([REGULAR_ROLE]);
-
-    await getCachedGuildRoles(GUILD_ID, SERVER_ID);
-
-    expect(mockUnstableCache).toHaveBeenCalledWith(
-      expect.any(Function),
-      ["discord-guild-roles", GUILD_ID],
-      { revalidate: CACHE_TTL, tags: [DISCORD_GUILD_TAG] }
-    );
   });
 
   it("delegates to getGuildRoles and excludes managed roles", async () => {
@@ -138,5 +117,13 @@ describe("getCachedGuildRoles", () => {
     const result = await getCachedGuildRoles(GUILD_ID, SERVER_ID);
 
     expect(result).toEqual([]);
+  });
+
+  it("returns all roles when none are managed", async () => {
+    mockGetGuildRoles.mockResolvedValue([REGULAR_ROLE, EVERYONE_ROLE]);
+
+    const result = await getCachedGuildRoles(GUILD_ID, SERVER_ID);
+
+    expect(result).toEqual([REGULAR_ROLE, EVERYONE_ROLE]);
   });
 });

@@ -11,6 +11,7 @@ import {
   withAdminAction,
   type ActionResult,
 } from "@/lib/auth/with-admin-action";
+import { invalidateAnnouncementCaches } from "@/lib/cache-invalidation";
 import {
   createFeatureFlag,
   updateFeatureFlag,
@@ -128,6 +129,7 @@ export async function createAnnouncementAction(data: {
 
   return withAdminAction(async (supabase, adminUserId) => {
     await createAnnouncement(supabase, parsed.data, adminUserId);
+    invalidateAnnouncementCaches();
     return { success: true };
   }, "Error creating announcement");
 }
@@ -169,6 +171,7 @@ export async function updateAnnouncementAction(
       parsedData.data,
       adminUserId
     );
+    invalidateAnnouncementCaches();
     return { success: true };
   }, "Error updating announcement");
 }
@@ -190,6 +193,7 @@ export async function deleteAnnouncementAction(
 
   return withAdminAction(async (supabase, adminUserId) => {
     await deleteAnnouncement(supabase, parsedId.data, adminUserId);
+    invalidateAnnouncementCaches();
     return { success: true };
   }, "Error deleting announcement");
 }

@@ -25,30 +25,39 @@ jest.mock("@trainers/supabase", () => ({
   getFormatEvents: jest.fn(),
 }));
 
+// 'use cache' is a compile-time directive — inert under Jest.
+// cacheTag / cacheLife are no-ops; they never run here.
 jest.mock("next/cache", () => ({
   updateTag: jest.fn(),
-  unstable_cache: jest.fn((fn: () => unknown) => fn),
+  cacheTag: jest.fn(),
+  cacheLife: jest.fn(),
+}));
+
+// Mock the usage-cache lib module so tests exercise the action logic in
+// isolation without triggering 'use cache' at the lib layer.
+jest.mock("@/lib/data/usage-cache", () => ({
+  getCachedSpeciesUsageDetail: jest.fn(),
+  getCachedFormatUsage: jest.fn(),
+  getCachedFormatUsageTimeseries: jest.fn(),
+  getCachedPipelineData: jest.fn(),
+  getCachedFormatEvents: jest.fn(),
 }));
 
 // ---------------------------------------------------------------------------
 // Imports (after mocks are registered)
 // ---------------------------------------------------------------------------
 
-import {
-  createServiceRoleClient,
-  createStaticClient,
-  getUserId,
-} from "@/lib/supabase/server";
+import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import { isSiteAdmin } from "@/lib/sudo/server";
-import {
-  compileSourceTeamSlots,
-  getSpeciesUsageDetail,
-  getSpeciesUsage,
-  getFormatUsageTimeseries,
-  getPipelineData,
-  getFormatEvents,
-} from "@trainers/supabase";
+import { compileSourceTeamSlots } from "@trainers/supabase";
 import { updateTag } from "next/cache";
+import {
+  getCachedSpeciesUsageDetail,
+  getCachedFormatUsage,
+  getCachedFormatUsageTimeseries,
+  getCachedPipelineData,
+  getCachedFormatEvents,
+} from "@/lib/data/usage-cache";
 import {
   calculateSourceUsage,
   calculateAllSourceUsage,
@@ -66,14 +75,15 @@ import {
 const mockGetUserId = getUserId as jest.Mock;
 const mockIsSiteAdmin = isSiteAdmin as jest.Mock;
 const mockCreateServiceRoleClient = createServiceRoleClient as jest.Mock;
-const mockCreateStaticClient = createStaticClient as jest.Mock;
 const mockCompileSourceTeamSlots = compileSourceTeamSlots as jest.Mock;
-const mockGetSpeciesUsageDetail = getSpeciesUsageDetail as jest.Mock;
-const mockGetSpeciesUsage = getSpeciesUsage as jest.Mock;
-const mockGetFormatUsageTimeseries = getFormatUsageTimeseries as jest.Mock;
-const mockGetPipelineData = getPipelineData as jest.Mock;
-const mockGetFormatEvents = getFormatEvents as jest.Mock;
 const mockUpdateTag = updateTag as jest.Mock;
+const mockGetCachedSpeciesUsageDetail =
+  getCachedSpeciesUsageDetail as jest.Mock;
+const mockGetCachedFormatUsage = getCachedFormatUsage as jest.Mock;
+const mockGetCachedFormatUsageTimeseries =
+  getCachedFormatUsageTimeseries as jest.Mock;
+const mockGetCachedPipelineData = getCachedPipelineData as jest.Mock;
+const mockGetCachedFormatEvents = getCachedFormatEvents as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // Shared setup
@@ -223,13 +233,7 @@ describe("calculateSourceUsage", () => {
 // ---------------------------------------------------------------------------
 
 describe("fetchSpeciesUsageDetail", () => {
-  beforeEach(() => {
-    // fetchSpeciesUsageDetail uses createStaticClient inside unstable_cache
-    // (which is mocked as passthrough). Give it a minimal stub.
-    mockCreateStaticClient.mockReturnValue({});
-  });
-
-  it("happy path: returns data from getSpeciesUsageDetail", async () => {
+  it("happy path: returns data from getCachedSpeciesUsageDetail", async () => {
     const periods = [
       {
         id: 1,
@@ -242,7 +246,7 @@ describe("fetchSpeciesUsageDetail", () => {
         period_end: "2025-01-07",
       },
     ];
-    mockGetSpeciesUsageDetail.mockResolvedValueOnce(periods);
+    mockGetCachedSpeciesUsageDetail.mockResolvedValueOnce(periods);
 
     const result = await fetchSpeciesUsageDetail({
       format: "gen9vgc2025regg",
@@ -252,8 +256,7 @@ describe("fetchSpeciesUsageDetail", () => {
     expect(result.success).toBe(true);
     if (!result.success) throw new Error("expected success");
     expect(result.data).toEqual(periods);
-    expect(mockGetSpeciesUsageDetail).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedSpeciesUsageDetail).toHaveBeenCalledWith(
       expect.objectContaining({
         format: "gen9vgc2025regg",
         species: "koraidon",
@@ -262,8 +265,8 @@ describe("fetchSpeciesUsageDetail", () => {
     );
   });
 
-  it("passes custom source and periodType to getSpeciesUsageDetail", async () => {
-    mockGetSpeciesUsageDetail.mockResolvedValueOnce([]);
+  it("passes custom source and periodType to getCachedSpeciesUsageDetail", async () => {
+    mockGetCachedSpeciesUsageDetail.mockResolvedValueOnce([]);
 
     await fetchSpeciesUsageDetail({
       format: "gen9vgc2025regg",
@@ -273,8 +276,7 @@ describe("fetchSpeciesUsageDetail", () => {
       limit: 6,
     });
 
-    expect(mockGetSpeciesUsageDetail).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedSpeciesUsageDetail).toHaveBeenCalledWith(
       expect.objectContaining({
         source: "rk9",
         periodType: "month",
@@ -283,8 +285,8 @@ describe("fetchSpeciesUsageDetail", () => {
     );
   });
 
-  it("includes minPlayers in cache key and passes it through", async () => {
-    mockGetSpeciesUsageDetail.mockResolvedValueOnce([]);
+  it("includes minPlayers and passes it through", async () => {
+    mockGetCachedSpeciesUsageDetail.mockResolvedValueOnce([]);
 
     await fetchSpeciesUsageDetail({
       format: "gen9vgc2025regg",
@@ -292,14 +294,13 @@ describe("fetchSpeciesUsageDetail", () => {
       minPlayers: 100,
     });
 
-    expect(mockGetSpeciesUsageDetail).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedSpeciesUsageDetail).toHaveBeenCalledWith(
       expect.objectContaining({ minPlayers: 100 })
     );
   });
 
-  it("returns { success: false } when getSpeciesUsageDetail throws", async () => {
-    mockGetSpeciesUsageDetail.mockRejectedValueOnce(
+  it("returns { success: false } when getCachedSpeciesUsageDetail throws", async () => {
+    mockGetCachedSpeciesUsageDetail.mockRejectedValueOnce(
       new Error("species query failed")
     );
 
@@ -320,10 +321,6 @@ describe("fetchSpeciesUsageDetail", () => {
 // ---------------------------------------------------------------------------
 
 describe("fetchFormatUsage", () => {
-  beforeEach(() => {
-    mockCreateStaticClient.mockReturnValue({});
-  });
-
   it("happy path: returns format usage rows", async () => {
     const rows = [
       { species: "koraidon", usagePct: 52.3, rank: 1, usageChange7d: null },
@@ -334,15 +331,14 @@ describe("fetchFormatUsage", () => {
         usageChange7d: 1.2,
       },
     ];
-    mockGetSpeciesUsage.mockResolvedValueOnce(rows);
+    mockGetCachedFormatUsage.mockResolvedValueOnce(rows);
 
     const result = await fetchFormatUsage({ format: "gen9vgc2025regg" });
 
     expect(result.success).toBe(true);
     if (!result.success) throw new Error("expected success");
     expect(result.data).toEqual(rows);
-    expect(mockGetSpeciesUsage).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedFormatUsage).toHaveBeenCalledWith(
       expect.objectContaining({
         format: "gen9vgc2025regg",
         source: "all",
@@ -351,8 +347,8 @@ describe("fetchFormatUsage", () => {
     );
   });
 
-  it("passes custom source and periodType through to getSpeciesUsage", async () => {
-    mockGetSpeciesUsage.mockResolvedValueOnce([]);
+  it("passes custom source and periodType through to getCachedFormatUsage", async () => {
+    mockGetCachedFormatUsage.mockResolvedValueOnce([]);
 
     await fetchFormatUsage({
       format: "gen9vgc2025regg",
@@ -360,14 +356,15 @@ describe("fetchFormatUsage", () => {
       periodType: "month",
     });
 
-    expect(mockGetSpeciesUsage).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedFormatUsage).toHaveBeenCalledWith(
       expect.objectContaining({ source: "rk9", periodType: "month" })
     );
   });
 
-  it("returns { success: false } when getSpeciesUsage throws", async () => {
-    mockGetSpeciesUsage.mockRejectedValueOnce(new Error("format query failed"));
+  it("returns { success: false } when getCachedFormatUsage throws", async () => {
+    mockGetCachedFormatUsage.mockRejectedValueOnce(
+      new Error("format query failed")
+    );
 
     const result = await fetchFormatUsage({ format: "gen9vgc2025regg" });
 
@@ -378,33 +375,31 @@ describe("fetchFormatUsage", () => {
   });
 
   it("defaults source to 'all' and periodType to 'week' when not provided", async () => {
-    mockGetSpeciesUsage.mockResolvedValueOnce([]);
+    mockGetCachedFormatUsage.mockResolvedValueOnce([]);
 
     await fetchFormatUsage({ format: "gen9vgc2025regg" });
 
-    expect(mockGetSpeciesUsage).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedFormatUsage).toHaveBeenCalledWith(
       expect.objectContaining({ source: "all", periodType: "week" })
     );
   });
 
-  it("passes minPlayers through to getSpeciesUsage", async () => {
-    mockGetSpeciesUsage.mockResolvedValueOnce([]);
+  it("passes minPlayers through to getCachedFormatUsage", async () => {
+    mockGetCachedFormatUsage.mockResolvedValueOnce([]);
 
     await fetchFormatUsage({ format: "gen9vgc2025regg", minPlayers: 100 });
 
-    expect(mockGetSpeciesUsage).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedFormatUsage).toHaveBeenCalledWith(
       expect.objectContaining({ minPlayers: 100 })
     );
   });
 });
 
-describe("fetchFormatUsageTimeseries", () => {
-  beforeEach(() => {
-    mockCreateStaticClient.mockReturnValue({});
-  });
+// ---------------------------------------------------------------------------
+// fetchFormatUsageTimeseries
+// ---------------------------------------------------------------------------
 
+describe("fetchFormatUsageTimeseries", () => {
   it("happy path: returns timeseries points", async () => {
     const points = [
       {
@@ -413,7 +408,7 @@ describe("fetchFormatUsageTimeseries", () => {
         usage: { koraidon: 52.3 },
       },
     ];
-    mockGetFormatUsageTimeseries.mockResolvedValueOnce(points);
+    mockGetCachedFormatUsageTimeseries.mockResolvedValueOnce(points);
 
     const result = await fetchFormatUsageTimeseries({
       format: "gen9vgc2025regg",
@@ -422,8 +417,7 @@ describe("fetchFormatUsageTimeseries", () => {
     expect(result.success).toBe(true);
     if (!result.success) throw new Error("expected success");
     expect(result.data).toEqual(points);
-    expect(mockGetFormatUsageTimeseries).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedFormatUsageTimeseries).toHaveBeenCalledWith(
       expect.objectContaining({
         format: "gen9vgc2025regg",
         source: "all",
@@ -433,7 +427,7 @@ describe("fetchFormatUsageTimeseries", () => {
   });
 
   it("passes custom source and periodType through", async () => {
-    mockGetFormatUsageTimeseries.mockResolvedValueOnce([]);
+    mockGetCachedFormatUsageTimeseries.mockResolvedValueOnce([]);
 
     await fetchFormatUsageTimeseries({
       format: "gen9vgc2025regg",
@@ -441,14 +435,13 @@ describe("fetchFormatUsageTimeseries", () => {
       periodType: "month",
     });
 
-    expect(mockGetFormatUsageTimeseries).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedFormatUsageTimeseries).toHaveBeenCalledWith(
       expect.objectContaining({ source: "rk9", periodType: "month" })
     );
   });
 
   it("passes periodStart, periodEnd, and minPlayers through", async () => {
-    mockGetFormatUsageTimeseries.mockResolvedValueOnce([]);
+    mockGetCachedFormatUsageTimeseries.mockResolvedValueOnce([]);
 
     await fetchFormatUsageTimeseries({
       format: "gen9vgc2025regg",
@@ -457,8 +450,7 @@ describe("fetchFormatUsageTimeseries", () => {
       minPlayers: 64,
     });
 
-    expect(mockGetFormatUsageTimeseries).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedFormatUsageTimeseries).toHaveBeenCalledWith(
       expect.objectContaining({
         periodStart: "2025-01-01",
         periodEnd: "2025-03-31",
@@ -468,7 +460,7 @@ describe("fetchFormatUsageTimeseries", () => {
   });
 
   it("returns { success: false } when query throws", async () => {
-    mockGetFormatUsageTimeseries.mockRejectedValueOnce(
+    mockGetCachedFormatUsageTimeseries.mockRejectedValueOnce(
       new Error("timeseries query failed")
     );
 
@@ -488,10 +480,6 @@ describe("fetchFormatUsageTimeseries", () => {
 // =============================================================================
 
 describe("fetchPipelineData", () => {
-  beforeEach(() => {
-    mockCreateStaticClient.mockReturnValue({});
-  });
-
   it("returns success with pipeline data", async () => {
     const mockData = {
       data: [
@@ -507,7 +495,7 @@ describe("fetchPipelineData", () => {
       periodStart: "2025-01-24",
       periodEnd: "2025-01-31",
     };
-    mockGetPipelineData.mockResolvedValue(mockData);
+    mockGetCachedPipelineData.mockResolvedValue(mockData);
 
     const result = await fetchPipelineData({
       format: "gen9vgc2025regg",
@@ -518,8 +506,7 @@ describe("fetchPipelineData", () => {
     if (result.success) {
       expect(result.data?.data[0]?.species).toBe("Sneasler");
     }
-    expect(mockGetPipelineData).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedPipelineData).toHaveBeenCalledWith(
       expect.objectContaining({
         format: "gen9vgc2025regg",
         source: "all",
@@ -527,8 +514,8 @@ describe("fetchPipelineData", () => {
     );
   });
 
-  it("passes periodStart, periodEnd, and minPlayers through to getPipelineData", async () => {
-    mockGetPipelineData.mockResolvedValue(null);
+  it("passes periodStart, periodEnd, and minPlayers through to getCachedPipelineData", async () => {
+    mockGetCachedPipelineData.mockResolvedValue(null);
 
     await fetchPipelineData({
       format: "gen9vgc2025regg",
@@ -538,8 +525,7 @@ describe("fetchPipelineData", () => {
       minPlayers: 100,
     });
 
-    expect(mockGetPipelineData).toHaveBeenCalledWith(
-      {},
+    expect(mockGetCachedPipelineData).toHaveBeenCalledWith(
       expect.objectContaining({
         source: "rk9",
         periodStart: "2025-01-01",
@@ -550,7 +536,7 @@ describe("fetchPipelineData", () => {
   });
 
   it("returns success with null when no data exists", async () => {
-    mockGetPipelineData.mockResolvedValue(null);
+    mockGetCachedPipelineData.mockResolvedValue(null);
 
     const result = await fetchPipelineData({
       format: "gen9vgc2025regg",
@@ -564,7 +550,7 @@ describe("fetchPipelineData", () => {
   });
 
   it("returns failure when query throws", async () => {
-    mockGetPipelineData.mockRejectedValue(new Error("DB failure"));
+    mockGetCachedPipelineData.mockRejectedValue(new Error("DB failure"));
 
     const result = await fetchPipelineData({
       format: "gen9vgc2025regg",
@@ -580,15 +566,11 @@ describe("fetchPipelineData", () => {
 // =============================================================================
 
 describe("fetchFormatEvents", () => {
-  beforeEach(() => {
-    mockCreateStaticClient.mockReturnValue({});
-  });
-
   it("returns success with event list", async () => {
     const mockEvents = [
       { eventKey: "rk9:001", eventDate: "2025-01-12", source: "rk9" },
     ];
-    mockGetFormatEvents.mockResolvedValue(mockEvents);
+    mockGetCachedFormatEvents.mockResolvedValue(mockEvents);
 
     const result = await fetchFormatEvents("gen9vgc2025regg");
 
@@ -596,11 +578,11 @@ describe("fetchFormatEvents", () => {
     if (result.success) {
       expect(result.data).toHaveLength(1);
     }
-    expect(mockGetFormatEvents).toHaveBeenCalledWith({}, "gen9vgc2025regg");
+    expect(mockGetCachedFormatEvents).toHaveBeenCalledWith("gen9vgc2025regg");
   });
 
   it("returns failure when query throws", async () => {
-    mockGetFormatEvents.mockRejectedValue(new Error("DB failure"));
+    mockGetCachedFormatEvents.mockRejectedValue(new Error("DB failure"));
 
     const result = await fetchFormatEvents("gen9vgc2025regg");
 
