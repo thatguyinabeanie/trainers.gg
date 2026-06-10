@@ -60,7 +60,11 @@ function defaultSink(
 ): void {
   const message = getErrorMessage(error, "<unknown error>");
   const ctx = context ? ` ${JSON.stringify(context)}` : "";
-  console.error(`[error-sink] ${scope}: ${message}${ctx}`, error);
+  // Use a constant format string and pass the dynamic, potentially
+  // externally-controlled parts (error message, JSON context) as %s args so
+  // they can't be interpreted as console format specifiers
+  // (CodeQL js/tainted-format-string). Output shape is unchanged.
+  console.error("[error-sink] %s: %s%s", scope, message, ctx, error);
 }
 
 let currentSink: ErrorSink = defaultSink;
@@ -101,6 +105,6 @@ export function logError(
   } catch {
     // The sink itself failing must never propagate — fall back to a bare
     // console.error so we don't lose the original signal.
-    console.error(`[error-sink:fallback] ${scope}`, error);
+    console.error("[error-sink:fallback] %s", scope, error);
   }
 }
