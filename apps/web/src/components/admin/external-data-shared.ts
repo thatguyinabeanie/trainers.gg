@@ -64,6 +64,8 @@ export interface RK9EventRow {
   import_attempts: number | null;
   /** When the event was last queued for import. */
   import_requested_at: string | null;
+  /** When the event fully completed import (import_status = 'complete'). */
+  imported_at: string | null;
 }
 
 export interface LimitlessTournamentRow {

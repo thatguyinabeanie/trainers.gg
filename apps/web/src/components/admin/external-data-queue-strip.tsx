@@ -154,8 +154,10 @@ export function QueueStrip({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Unqueue all imports?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will return all {totalQueued} queued rows to Pending.
-                    They will not be imported until they are queued again.
+                    This will return queued rows to Pending. Rows currently
+                    in-progress will continue until their current run finishes.
+                    Unqueued rows will not be imported until they are queued
+                    again.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

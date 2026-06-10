@@ -207,7 +207,7 @@ export function ExternalData() {
           .schema("rk9")
           .from("events")
           .select(
-            "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count, import_attempts, import_requested_at"
+            "event_id, name, tier, format_id, date_start, date_end, location_city, location_country, player_count, has_team_lists, import_status, import_error, teams_imported_count, import_attempts, import_requested_at, imported_at"
           )
           .order("date_start", { ascending: false })
           .order("event_id", { ascending: false })
@@ -509,9 +509,8 @@ export function ExternalData() {
       return new Date(t.data_imported_at) >= tenMinAgo;
     }).length +
     (rk9Events ?? []).filter((e) => {
-      if (e.import_status !== "complete" || !e.import_requested_at)
-        return false;
-      return new Date(e.import_requested_at) >= tenMinAgo;
+      if (!e.imported_at) return false;
+      return new Date(e.imported_at) >= tenMinAgo;
     }).length;
 
   // Count selected rows that are currently queued (eligible for unqueue).
@@ -851,7 +850,7 @@ export function ExternalData() {
       return;
     }
     // RK9: queue for server-side processing
-    setQueuingIds((prev) => new Set(prev).add(row.id));
+    setQueuingIds((prev) => new Set(prev).add(row.rk9!.event_id));
     try {
       const result = await queueRk9Event(row.rk9!.event_id);
       if (!result.success) throw new Error(result.error);
@@ -862,7 +861,7 @@ export function ExternalData() {
     } finally {
       setQueuingIds((prev) => {
         const next = new Set(prev);
-        next.delete(row.id);
+        next.delete(row.rk9!.event_id);
         return next;
       });
     }

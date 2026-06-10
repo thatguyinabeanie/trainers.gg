@@ -91,7 +91,10 @@ export async function GET(request: Request): Promise<Response> {
   ): boolean {
     if (lastRunAt === null || lastRunAt === undefined) return true;
     if (typeof lastRunAt !== "string") return true;
-    const elapsed = (now - new Date(lastRunAt).getTime()) / 1000;
+    const ts = new Date(lastRunAt).getTime();
+    // Treat unparseable timestamps as elapsed so the source is not permanently skipped
+    if (isNaN(ts)) return true;
+    const elapsed = (now - ts) / 1000;
     return elapsed >= intervalSeconds;
   }
 
@@ -107,7 +110,9 @@ export async function GET(request: Request): Promise<Response> {
   function elapsedSeconds(lastRunAt: unknown): number | null {
     if (lastRunAt === null || lastRunAt === undefined) return null;
     if (typeof lastRunAt !== "string") return null;
-    return Math.round((now - new Date(lastRunAt).getTime()) / 1000);
+    const ts = new Date(lastRunAt).getTime();
+    if (isNaN(ts)) return null;
+    return Math.round((now - ts) / 1000);
   }
 
   // ---------------------------------------------------------------------------
