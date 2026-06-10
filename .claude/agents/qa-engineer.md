@@ -34,8 +34,9 @@ CI enforces 60% patch coverage — but **60% is the minimum, not the goal. Aim f
 6. Write tests that verify domain logic and decisions, not framework behavior
 7. Use `it.each` for parameterized test cases
 8. Test error paths — every `throw` and error branch should have a test
-9. Run the tests to confirm they pass: `pnpm test --filter <package>`
-10. Check coverage: `pnpm test --filter <package> -- --coverage` — verify 80%+ on new files
+9. Run ONLY the specific test files you are writing: `pnpm test --filter <pkg> -- path/to/file.test.ts`. Never run the package's full suite, never the repo suite, never E2E.
+10. Coverage is verified in CI (codecov) — do not run coverage locally.
+11. Do not commit or push. Report back: changed files, a short summary, and a suggested commit message — the orchestrator commits.
 
 ## What to Prioritize
 

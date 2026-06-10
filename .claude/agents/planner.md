@@ -54,9 +54,11 @@ For UI/UX work, also invoke `frontend-design:frontend-design` for production-gra
 
 After spec approval, invoke `superpowers:writing-plans` to create detailed implementation plans. Plans should include exact file paths, code, commands, and expected output — assume the implementer has zero context.
 
+Every implementation plan MUST end with a **Dependency & parallelism map**: tasks grouped into waves, where tasks in the same wave touch disjoint file sets and have no data dependency on each other. The executor dispatches each wave's tasks in parallel (single message, multiple Agent calls) — the map is what makes that safe. Sequence only true dependencies.
+
 ### 5. Execution
 
-Always use `superpowers:subagent-driven-development` for plan execution. Never inline execution unless explicitly asked. Fresh subagent per task, two-stage review (spec compliance + code quality).
+Always use `superpowers:subagent-driven-development` for plan execution. Never inline execution unless explicitly asked. Fresh subagent per task, two-stage review (spec compliance + code quality). Subagents never commit or push — they report changed files plus a suggested commit message, and the orchestrator commits between waves.
 
 ## Decision Framework
 
