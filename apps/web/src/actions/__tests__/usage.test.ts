@@ -240,6 +240,18 @@ describe("calculateSourceUsage", () => {
     // Cache busting must not happen when compilation fails
     expect(mockUpdateTag).not.toHaveBeenCalled();
   });
+
+  it("returns error and skips compile for an invalid source value", async () => {
+    // TypeScript narrows the param to "rk9"|"limitless" at compile time,
+    // but the Zod guard exists for forged requests that bypass the type system.
+    const result = await calculateSourceUsage("badvalue" as "rk9");
+
+    expect(result.success).toBe(false);
+    expect((result as { success: false; error: string }).error).toBe(
+      "Invalid source"
+    );
+    expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -686,7 +698,9 @@ describe("calculateAllSourceUsage", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toBe("Not authenticated");
+      // calculateAllSourceUsage prefixes the failing source so logs/UI show
+      // which source broke; "rk9" is iterated first and fails the auth check.
+      expect(result.error).toBe("[rk9] Not authenticated");
     }
     expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
   });
@@ -698,7 +712,7 @@ describe("calculateAllSourceUsage", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toBe("Requires site admin");
+      expect(result.error).toBe("[rk9] Requires site admin");
     }
     expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
   });

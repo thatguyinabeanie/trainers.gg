@@ -1,11 +1,13 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import {
   type SpeciesUsagePeriod,
   type SpeciesTeammatesResult,
 } from "@trainers/supabase";
+
+import { fetchSpeciesUsageDetail } from "@/actions/usage";
 
 import { SpeciesDrilldown } from "../species-drilldown";
 
@@ -277,5 +279,29 @@ describe("SpeciesDrilldown — species switcher", () => {
     renderDrilldown();
     // The combobox input renders with a placeholder
     expect(screen.getByPlaceholderText(/Switch Pokémon/i)).toBeInTheDocument();
+  });
+});
+
+describe("SpeciesDrilldown — error state", () => {
+  it("shows an error alert when the detail query fails after a filter change", async () => {
+    // Override the mock to return failure
+    (fetchSpeciesUsageDetail as jest.Mock).mockResolvedValueOnce({
+      success: false,
+      error: "Supabase is down",
+    });
+
+    // Use a non-default source so keyMatchesInitial is false → no initialData →
+    // the queryFn fires immediately and picks up the failure mock. (A bogus
+    // format would just coerce back to the default and still match.)
+    mockSearchParams = new URLSearchParams("source=rk9");
+
+    renderDrilldown({ initialDetail: [] });
+
+    // Wait for the query to settle in error state and the Alert to appear.
+    await waitFor(() => {
+      expect(
+        screen.getByText(/failed to load usage data/i)
+      ).toBeInTheDocument();
+    });
   });
 });

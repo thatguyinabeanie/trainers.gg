@@ -38,7 +38,9 @@ test.describe("Dashboard home page", () => {
   test("sidebar Home link is active on dashboard", async ({ page }) => {
     await page.goto("/dashboard");
 
-    const sidebar = page.locator("[data-sidebar='sidebar']");
+    const sidebar = page.locator(
+      "[data-sidebar='sidebar']:not([data-mobile='true'])"
+    );
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // "Home" link should be present in sidebar
