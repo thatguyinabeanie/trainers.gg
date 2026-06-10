@@ -19,6 +19,15 @@ shareable for content creators.
   materialized view → SQL-defined aggregate tables → partitioning. Likeliest
   first matview candidate: the usage timeseries.
 
+## Design Docs
+
+- [Phase 2 Design](meta-explorer/phase2-design.md) — six overview charts, tabbed layout, two new RPCs, all decisions locked
+- [Phase 2 Plan](meta-explorer/phase2-plan.md) — task-by-task implementation plan (10 tasks, parallelism map)
+- [Phase 3 Design](meta-explorer/phase3-design.md) — per-Pokémon drill-down, two new RPCs, all decisions locked
+- [Phase 4 Design](meta-explorer/phase4-design.md) — metadata breakdown views, choropleth country map, all decisions locked
+
+---
+
 ## Phase 2 — Overview page charts
 
 | Chart                           | What it shows                                                                                       | Data                                  |
@@ -40,15 +49,15 @@ shareable for content creators.
 | Teammate core heatmap         | Top-N × top-N co-occurrence matrix                                                                   | self-join on `player_key`                                |
 | Single-species usage timeline | Existing line chart scoped to one species with event pins                                            | `get_species_usage_detail` + `get_format_events`         |
 
-Sankey fate: open to replacing it once the moveset combo view exists.
+**Sankey fate: DECIDED — removed in Phase 3.** The treemap (Phase 2) becomes the primary "meta now" snapshot on the Overview tab. `get_usage_pipeline` RPC is retained; only `usage-pipeline-chart.tsx`, `usage-pipeline.ts`, and the `columns` sidebar control are deleted.
 
 ## Phase 4 — Metadata views
 
-| Chart                | What it shows                      | Data                      |
-| -------------------- | ---------------------------------- | ------------------------- |
-| Usage by country map | Regional meta differences          | `country` (RK9/Limitless) |
-| Division comparison  | Masters vs Seniors vs Juniors meta | `division` (RK9)          |
-| Placement-band usage | Winning teams vs. the field        | `placement`               |
+| Chart                | What it shows                                                                                                                                                         | Data                                                   |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Usage by country map | Regional meta differences — **choropleth world map** (`d3-geo` + `world-atlas`; clicking a country opens its top-10 species vs global; mobile = same map scaled down) | `country` (RK9/Limitless; 20-player suppression floor) |
+| Division comparison  | Masters vs Seniors vs Juniors meta                                                                                                                                    | `division` (RK9)                                       |
+| Placement-band usage | Winning teams vs. the field                                                                                                                                           | `placement`                                            |
 
 ## Future inputs
 

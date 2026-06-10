@@ -560,10 +560,9 @@ components/data/
                                           + groupByBand() pure helpers
   data-tabs.tsx                 (MODIFY, from Phase 2) add 4th tab pill
 
-  usage-country-breakdown.tsx   (NEW) ranked flag list + per-country drill (View 1)
+  usage-country-breakdown.tsx   (NEW) d3-geo choropleth + ranked list companion (View 1, Decision 1)
   usage-division-comparison.tsx (NEW) 3-column small-multiples sprite lists (View 2)
-  usage-placement-bands.tsx     (NEW) species × band heatmap (View 3, option 3a)
-                                       OR a mode on usage-top-share-dumbbell (3b)
+  usage-placement-bands.tsx     (NEW) species × band heatmap (View 3, Decision 3)
   data-sprite-row-list.tsx      (NEW) small shared "top-N sprite rows with usage
                                        bars" presentational helper used by all 3
 ```
@@ -588,30 +587,30 @@ small `data-shared.ts` constant map) — `"RK9 + Limitless events only"`,
 
 ---
 
-## Open Questions (for the user)
+## Decisions (locked 2026-06-09)
 
-1. **Country view — list or map?** Recommended: **ranked flag list, zero deps**
-   (answers "which species over-index per country," renders well on mobile). If
-   you want a literal choropleth world map for visual impact, that adds **two
-   small deps** (`d3-geo` + a `world-atlas` topojson, ~tens of KB) and is
-   weak/empty at current data volume. Your call.
+All questions from the design phase are now answered. These are authoritative.
 
-2. **Tab placement.** Recommended: **a fourth "Breakdowns" tab** holding all
-   three views. Alternatives: distribute into existing tabs (country/division
-   crowd Overview; placement-band folds into the Sources dumbbell), or a separate
-   `/data/breakdowns` sub-route (loses shared filter state). Which do you prefer?
+1. **Country view: CHOROPLETH WORLD MAP.** This overrides the doc's ranked-flag-list
+   recommendation. `d3-geo` + `world-atlas` topojson are accepted new dependencies.
+   Clicking a country opens its top-10 species panel vs global usage. Mobile = same
+   map scaled down (pinch/tap friendly at 393px). The ranked flag list is the
+   documented fallback / sparse-state companion — not the primary build target.
 
-3. **Placement-band — standalone heatmap or fold into Phase 2's dumbbell?**
-   Recommended: **standalone species × band heatmap** (shows the whole field's
-   concentration across 4 bands — a different read from the 2-dot dumbbell). The
-   leaner alternative: add a `2-band | 4-band` mode toggle to Phase 2's existing
-   Top-10% dumbbell (no new card). Which?
+2. **Tab placement: "Breakdowns" tab (fourth tab, after Overview / Trends / Sources).**
+   Tab value `?tab=breakdowns`. All three metadata views live here.
 
-4. **Band definitions.** Proposed exclusive bands: **Winners (top 1%) · Top 10%
-   · Top 25% · Field**, percentile-based per event. Are these the right edges, or
-   do you want different cuts (e.g. 1/8/16%)? Should the edges be a
-   user-adjustable control or fixed?
+3. **Placement bands: standalone species × band heatmap** with its own
+   `get_usage_by_placement_band` RPC. No folding into Phase 2's dumbbell — the
+   multi-band heatmap shows the whole field's concentration pattern, which a
+   dumbbell cannot.
 
-5. **Country suppression floor.** Proposed: **hide countries with fewer than 20
-   sampled players** in the slice (re-identification safety + avoids 3-player
-   "100%" rows). Is 20 the right floor, or higher/lower?
+4. **Band edges: default 1% / 10% / 25%, user-adjustable via preset chips in the UI.**
+   The RPC already takes `p_band_edges`; the UI adds preset chips (e.g.
+   "1/10/25" | "1/8/16") URL-persisted, omitted from URL when at the default.
+   Consistent with the Phase 2 `topPct` threshold control pattern.
+
+5. **Country suppression floor: 20 players** (`p_min_country_players = 20` default).
+   Enforced in SQL (`HAVING country_total >= p_min_country_players`), never just
+   the UI. A muted footer notes: _"Countries with fewer than 20 sampled players
+   are hidden."_
