@@ -2,7 +2,6 @@ import { type SourceUsageRow } from "@trainers/supabase";
 
 // =============================================================================
 // Source colors — one teal-family OKLCH hue per data source
-// (mirrors COLUMN_COLORS style in usage-pipeline.ts)
 // =============================================================================
 
 /**

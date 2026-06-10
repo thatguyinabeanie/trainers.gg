@@ -7,8 +7,6 @@ import { pipelineSpeciesFactory } from "@trainers/test-utils";
 import { DataSidebar } from "../data-sidebar";
 import {
   type UsageFilters,
-  type PipelineColumn,
-  ALL_PIPELINE_COLUMNS,
   DEFAULT_MIN_PLAYERS,
   applyPreset,
 } from "../usage-filters";
@@ -24,18 +22,9 @@ jest.mock("@trainers/pokemon", () => ({
   ],
 }));
 
-// DataSidebar uses assignColor (usage-series) and COLUMN_COLORS (usage-pipeline)
+// DataSidebar uses assignColor (usage-series)
 jest.mock("../usage-series", () => ({
   assignColor: () => "#cccccc",
-}));
-
-jest.mock("../usage-pipeline", () => ({
-  COLUMN_COLORS: {
-    ability: "#aaa",
-    item: "#bbb",
-    nature: "#ccc",
-    move: "#ddd",
-  },
 }));
 
 // =============================================================================
@@ -48,27 +37,21 @@ const DEFAULT_FILTERS: UsageFilters = {
   periodType: "week",
 };
 
-const ALL_COLUMNS: PipelineColumn[] = [...ALL_PIPELINE_COLUMNS];
-
 const TWENTY_SPECIES = pipelineSpeciesFactory.buildList(20);
 
 function renderSidebar(overrides?: {
   collapsed?: boolean;
-  columns?: PipelineColumn[];
   selectedSpecies?: string[];
   onSelectionChange?: jest.Mock;
-  onColumnsChange?: jest.Mock;
   onFiltersChange?: jest.Mock;
   onMinPlayersChange?: jest.Mock;
 }) {
   const onSelectionChange = overrides?.onSelectionChange ?? jest.fn();
-  const onColumnsChange = overrides?.onColumnsChange ?? jest.fn();
   const onFiltersChange = overrides?.onFiltersChange ?? jest.fn();
   const onMinPlayersChange = overrides?.onMinPlayersChange ?? jest.fn();
 
   return {
     onSelectionChange,
-    onColumnsChange,
     onFiltersChange,
     onMinPlayersChange,
     ...render(
@@ -76,11 +59,9 @@ function renderSidebar(overrides?: {
         filters={DEFAULT_FILTERS}
         allSpecies={TWENTY_SPECIES}
         selectedSpecies={overrides?.selectedSpecies ?? []}
-        columns={overrides?.columns ?? ALL_COLUMNS}
         minPlayers={DEFAULT_MIN_PLAYERS}
         onFiltersChange={onFiltersChange}
         onSelectionChange={onSelectionChange}
-        onColumnsChange={onColumnsChange}
         onMinPlayersChange={onMinPlayersChange}
       />
     ),
@@ -160,46 +141,6 @@ describe("DataSidebar — preset buttons", () => {
     expect(onSelectionChange).toHaveBeenCalledWith(
       applyPreset(TWENTY_SPECIES, "all")
     );
-  });
-});
-
-// =============================================================================
-// Column show/hide + aria-pressed
-// =============================================================================
-
-describe("DataSidebar — column show/hide", () => {
-  it("renders enabled columns with aria-pressed=true and disabled columns with aria-pressed=false", () => {
-    // Only "ability" is enabled; the rest are disabled
-    renderSidebar({ columns: ["ability"] });
-
-    expect(
-      screen.getByRole("button", { name: "Hide ability" })
-    ).toHaveAttribute("aria-pressed", "true");
-
-    for (const col of ["item", "nature", "move"] as PipelineColumn[]) {
-      expect(
-        screen.getByRole("button", { name: `Show ${col}` })
-      ).toHaveAttribute("aria-pressed", "false");
-    }
-  });
-
-  it("calls onColumnsChange with the column removed when Hide is clicked", async () => {
-    const onColumnsChange = jest.fn();
-    // All columns enabled; hide "item"
-    renderSidebar({ columns: ALL_COLUMNS, onColumnsChange });
-    await userEvent.click(screen.getByRole("button", { name: "Hide item" }));
-    const nextColumns: PipelineColumn[] = ALL_COLUMNS.filter(
-      (c) => c !== "item"
-    );
-    expect(onColumnsChange).toHaveBeenCalledWith(nextColumns);
-  });
-
-  it("calls onColumnsChange with the column appended when Show is clicked", async () => {
-    const onColumnsChange = jest.fn();
-    // Only "ability" enabled; show "item"
-    renderSidebar({ columns: ["ability"], onColumnsChange });
-    await userEvent.click(screen.getByRole("button", { name: "Show item" }));
-    expect(onColumnsChange).toHaveBeenCalledWith(["ability", "item"]);
   });
 });
 

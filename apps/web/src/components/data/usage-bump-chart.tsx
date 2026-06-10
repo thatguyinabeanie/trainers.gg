@@ -106,7 +106,7 @@ interface EndLabelProps {
  * Renders a Pokemon sprite + rank number at the rightmost data point of
  * each bump line. Only renders on the last period bucket.
  *
- * Uses an SVG `<image>` element — the same technique as UsagePipelineChart.
+ * Uses an SVG `<image>` element for sprite rendering.
  * Sprite pixel dimensions are API-bound (SPRITE_SIZE px) — allowed exception
  * per code-style rule for API-bound pixel params.
  */

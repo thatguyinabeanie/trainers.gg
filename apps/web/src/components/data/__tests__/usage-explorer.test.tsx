@@ -72,10 +72,6 @@ jest.mock("../usage-line-chart", () => ({
   ),
 }));
 
-jest.mock("../usage-pipeline-chart", () => ({
-  UsagePipelineChart: () => <div data-testid="usage-pipeline-chart" />,
-}));
-
 // Stub the Phase 2 chart components — they render real recharts
 // (ResponsiveContainer needs ResizeObserver, absent in JSDOM). Each has its
 // own dedicated test; the explorer test only cares about wiring/tab logic.
@@ -217,7 +213,7 @@ describe("UsageExplorer — rendering", () => {
 
   it("renders both chart panels", () => {
     renderExplorer();
-    expect(screen.getByTestId("usage-pipeline-chart")).toBeInTheDocument();
+    expect(screen.getByTestId("usage-treemap")).toBeInTheDocument();
     expect(screen.getByTestId("usage-line-chart")).toBeInTheDocument();
   });
 
@@ -382,12 +378,10 @@ describe("UsageExplorer — tab URL state", () => {
 // =============================================================================
 
 describe("UsageExplorer — tab panel content", () => {
-  it("renders the pipeline chart inside the overview panel", () => {
+  it("renders the treemap inside the overview panel", () => {
     renderExplorer();
     const overview = screen.getByTestId("tab-overview");
-    expect(overview).toContainElement(
-      screen.getByTestId("usage-pipeline-chart")
-    );
+    expect(overview).toContainElement(screen.getByTestId("usage-treemap"));
   });
 
   it("renders the line chart inside the trends panel", () => {

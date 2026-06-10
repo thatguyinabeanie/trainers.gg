@@ -23,7 +23,6 @@ import {
 
 import { DataSidebar } from "./data-sidebar";
 import { DataTabs } from "./data-tabs";
-import { UsagePipelineChart } from "./usage-pipeline-chart";
 import { UsageLineChart } from "./usage-line-chart";
 import { UsageTreemap } from "./usage-treemap";
 import { UsageConversionScatter } from "./usage-conversion-scatter";
@@ -33,7 +32,6 @@ import { UsageBumpChart } from "./usage-bump-chart";
 import { groupBySource } from "./usage-series";
 import {
   type UsageFilters,
-  type PipelineColumn,
   type DataTab,
   type TopPct,
   coerceFormat,
@@ -42,7 +40,6 @@ import {
   coerceSelectedSpecies,
   coerceRangeStart,
   coerceRangeEnd,
-  coerceColumns,
   coerceMinPlayers,
   coerceTab,
   coerceTopPct,
@@ -105,7 +102,6 @@ export function UsageExplorer({
   const selectedSpecies = coerceSelectedSpecies(searchParams.get("species"));
   const rangeStart = coerceRangeStart(searchParams.get("rangeStart"));
   const rangeEnd = coerceRangeEnd(searchParams.get("rangeEnd"));
-  const columns = coerceColumns(searchParams.get("columns") ?? undefined);
   const minPlayers = coerceMinPlayers(searchParams.get("minPlayers"));
 
   // Tab + topPct are URL-persisted for shareable links.
@@ -156,7 +152,7 @@ export function UsageExplorer({
   // ── URL updater ───────────────────────────────────────────────────────────
   const updateUrl = (
     // Species param has three states, signalled by nextSpecies:
-    //   undefined  → leave the param untouched (unrelated change: range, columns…)
+    //   undefined  → leave the param untouched (unrelated change: range, range…)
     //   "reset"    → delete the param → default preset (Top 20) for the new context
     //   string[]   → set explicitly; an empty array writes "species=" (present-empty)
     //                so the explicit "no selection" state is preserved, not snapped
@@ -165,7 +161,6 @@ export function UsageExplorer({
     nextSpecies?: string[] | "reset",
     nextRangeStart?: string | null,
     nextRangeEnd?: string | null,
-    nextColumns?: PipelineColumn[],
     nextMinPlayers?: number,
     nextTab?: DataTab,
     nextTopPct?: TopPct
@@ -175,6 +170,7 @@ export function UsageExplorer({
     params.set("source", nextFilters.source);
     params.set("periodType", nextFilters.periodType);
     params.delete("threshold"); // clean up any legacy threshold param
+    params.delete("columns"); // clean up any legacy columns param from old shared links
 
     if (nextSpecies === "reset") {
       params.delete("species");
@@ -193,9 +189,6 @@ export function UsageExplorer({
     else params.delete("rangeStart");
     if (re) params.set("rangeEnd", re);
     else params.delete("rangeEnd");
-
-    const cols = nextColumns ?? columns;
-    params.set("columns", cols.join(","));
 
     const mp = nextMinPlayers !== undefined ? nextMinPlayers : minPlayers;
     if (mp !== DEFAULT_MIN_PLAYERS) {
@@ -236,22 +229,11 @@ export function UsageExplorer({
   const handleRangeChange = (start: string | null, end: string | null) =>
     updateUrl(currentFilters, undefined, start, end);
 
-  const handleColumnsChange = (next: PipelineColumn[]) =>
-    updateUrl(currentFilters, undefined, undefined, undefined, next);
-
   const handleMinPlayersChange = (n: number) =>
-    updateUrl(currentFilters, undefined, undefined, undefined, undefined, n);
+    updateUrl(currentFilters, undefined, undefined, undefined, n);
 
   const handleTabChange = (next: DataTab) =>
-    updateUrl(
-      currentFilters,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      next
-    );
+    updateUrl(currentFilters, undefined, undefined, undefined, undefined, next);
 
   // ── TanStack Query — timeseries ───────────────────────────────────────────
   const isInitTimeseries =
@@ -288,7 +270,7 @@ export function UsageExplorer({
     placeholderData: (prev) => prev,
     staleTime: 5 * 60 * 1000,
     // Enablement matrix (see below) — timeseries always enabled:
-    // Overview treemap + Sankey and Trends line/bump/stream all reuse it;
+    // Overview treemap and Trends line/bump/stream all reuse it;
     // pipeline also powers the sidebar species list.
   });
 
@@ -326,7 +308,7 @@ export function UsageExplorer({
     placeholderData: (prev) => prev,
     staleTime: 5 * 60 * 1000,
     // Enablement matrix — pipeline always enabled: powers the Overview treemap +
-    // Sankey + sidebar species list.
+    // sidebar species list.
   });
 
   // ── TanStack Query — events ───────────────────────────────────────────────
@@ -346,7 +328,7 @@ export function UsageExplorer({
   //
   // Enablement matrix:
   //   timeseries  — always enabled (Overview treemap + Trends line/bump/stream + sidebar)
-  //   pipeline    — always enabled (Overview treemap + Sankey + sidebar species list)
+  //   pipeline    — always enabled (Overview treemap + sidebar species list)
   //   conversion  — enabled when tab === "overview" || tab === "sources"
   //                 (scatter on Overview, top-share dumbbell on Sources)
   //   source      — enabled when tab === "sources" only
@@ -441,23 +423,6 @@ export function UsageExplorer({
       <UsageTreemap data={pipelineResult?.data ?? []} />
 
       <UsageConversionScatter rows={conversionRows} topPct={topPct} />
-
-      {/* Meta Pipeline (Sankey) — existing, moved from the flat layout */}
-      <div className="bg-card flex flex-col rounded-xl shadow-sm">
-        <div className="flex items-center justify-between border-b px-4 py-2.5">
-          <span className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
-            Meta Pipeline
-          </span>
-        </div>
-        <div>
-          <UsagePipelineChart
-            pipelineResult={pipelineResult}
-            selectedSpecies={effectiveSelected}
-            columns={columns}
-            onSpeciesClick={handleSpeciesClick}
-          />
-        </div>
-      </div>
     </div>
   );
 
@@ -498,11 +463,9 @@ export function UsageExplorer({
         filters={currentFilters}
         allSpecies={allSpecies}
         selectedSpecies={effectiveSelected}
-        columns={columns}
         minPlayers={minPlayers}
         onFiltersChange={handleFiltersChange}
         onSelectionChange={handleSelectionChange}
-        onColumnsChange={handleColumnsChange}
         onMinPlayersChange={handleMinPlayersChange}
       />
 
