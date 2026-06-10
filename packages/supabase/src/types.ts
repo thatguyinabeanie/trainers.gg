@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   limitless: {
     Tables: {
       match_results: {
@@ -2345,6 +2320,84 @@ export type Database = {
           },
         ]
       }
+      team_slots: {
+        Row: {
+          ability: string | null
+          compiled_at: string
+          country: string | null
+          division: string | null
+          event_date: string
+          event_key: string
+          event_tier: string | null
+          format: string
+          held_item: string | null
+          id: number
+          is_online: boolean
+          losses: number | null
+          moves: string[]
+          nature: string | null
+          placement: number | null
+          player_key: string
+          position: number
+          source: string
+          species: string
+          tera_type: string | null
+          ties: number | null
+          total_players: number
+          wins: number | null
+        }
+        Insert: {
+          ability?: string | null
+          compiled_at?: string
+          country?: string | null
+          division?: string | null
+          event_date: string
+          event_key: string
+          event_tier?: string | null
+          format: string
+          held_item?: string | null
+          id?: never
+          is_online: boolean
+          losses?: number | null
+          moves?: string[]
+          nature?: string | null
+          placement?: number | null
+          player_key: string
+          position: number
+          source: string
+          species: string
+          tera_type?: string | null
+          ties?: number | null
+          total_players: number
+          wins?: number | null
+        }
+        Update: {
+          ability?: string | null
+          compiled_at?: string
+          country?: string | null
+          division?: string | null
+          event_date?: string
+          event_key?: string
+          event_tier?: string | null
+          format?: string
+          held_item?: string | null
+          id?: never
+          is_online?: boolean
+          losses?: number | null
+          moves?: string[]
+          nature?: string | null
+          placement?: number | null
+          player_key?: string
+          position?: number
+          source?: string
+          species?: string
+          tera_type?: string | null
+          ties?: number | null
+          total_players?: number
+          wins?: number | null
+        }
+        Relationships: []
+      }
       teams: {
         Row: {
           created_at: string | null
@@ -3953,6 +4006,45 @@ export type Database = {
         Args: { p_group_role_id: number }
         Returns: string
       }
+      get_species_usage: {
+        Args: {
+          p_format: string
+          p_min_players?: number
+          p_period_type?: string
+          p_source?: string
+        }
+        Returns: {
+          rank: number
+          species: string
+          usage_change_7d: number
+          usage_pct: number
+        }[]
+      }
+      get_species_usage_detail: {
+        Args: {
+          p_format: string
+          p_limit?: number
+          p_min_players?: number
+          p_period_type?: string
+          p_source?: string
+          p_species: string
+        }
+        Returns: {
+          abilities: Json
+          ability_items: Json
+          items: Json
+          moves: Json
+          natures: Json
+          period_end: string
+          period_start: string
+          rank: number
+          sample_size: number
+          tera_types: Json
+          usage_change_30d: number
+          usage_change_7d: number
+          usage_pct: number
+        }[]
+      }
       get_top_returning_players: {
         Args: { p_community_id: number; p_limit?: number }
         Returns: {
@@ -3967,6 +4059,47 @@ export type Database = {
         Returns: {
           count: number
           status: string
+        }[]
+      }
+      get_usage_pipeline: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_source?: string
+          p_start?: string
+        }
+        Returns: {
+          abilities: Json
+          ability_items: Json
+          items: Json
+          moves: Json
+          natures: Json
+          period_end: string
+          period_start: string
+          players: number
+          rank: number
+          species: string
+          tera_types: Json
+          usage_pct: number
+        }[]
+      }
+      get_usage_timeseries: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_period_type?: string
+          p_source?: string
+          p_start?: string
+        }
+        Returns: {
+          period_end: string
+          period_start: string
+          players: number
+          species: string
+          total_players: number
+          usage_pct: number
         }[]
       }
       get_user_growth_stats: {
@@ -4666,9 +4799,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   limitless: {
     Enums: {},
   },
