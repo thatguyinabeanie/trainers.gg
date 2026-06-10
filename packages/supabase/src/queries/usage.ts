@@ -181,6 +181,83 @@ export interface FormatEvent {
   source: string;
 }
 
+/** One true 4-move combo from get_species_move_combos. */
+export interface MoveComboRow {
+  /** The sorted, lowercased 4-move set (the grouping key). */
+  moves: string[];
+  /** Distinct players running exactly this 4-move set. */
+  players: number;
+  /** players / distinct players running any complete 4-move set of the focal species. */
+  comboPct: number;
+  rank: number;
+}
+
+/** Parameters for getSpeciesMoveCombos. */
+export interface GetSpeciesMoveCombosParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** Species slug (e.g. "koraidon"). */
+  species: string;
+  /** Data source filter. Defaults to "all". */
+  source?: string;
+  /** If provided, restrict to periods >= this date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this date. */
+  periodEnd?: string;
+  /**
+   * Minimum total_players per event-division row.
+   * Events with fewer players are excluded. Defaults to 0 (no filter).
+   */
+  minPlayers?: number;
+  /** Max combos returned server-side. Defaults to 25 (client shows ~12). */
+  limit?: number;
+}
+
+/** One teammate pair-rate row from get_species_teammates. */
+export interface TeammateRow {
+  teammate: string;
+  pairCount: number;
+  pairPct: number;
+  rank: number;
+}
+
+/** Parsed top-N co-occurrence matrix among the focal species' teammates. */
+export interface TeammateMatrix {
+  /** Ordered teammate slugs (top → down), ≤8 entries. */
+  order: string[];
+  /** Keyed "a||b" with a < b lexicographically. Diagonal not included. */
+  cells: Record<string, { count: number; pct: number }>;
+}
+
+/** Combined result from get_species_teammates (powers constellation + heatmap). */
+export interface SpeciesTeammatesResult {
+  /** Distinct players running the focal species — the pair-rate denominator. */
+  focalPlayers: number;
+  teammates: TeammateRow[];
+  matrix: TeammateMatrix;
+}
+
+/** Parameters for getSpeciesTeammates. */
+export interface GetSpeciesTeammatesParams {
+  /** Format ID (e.g. "gen9vgc2025regg"). */
+  format: string;
+  /** Species slug (e.g. "koraidon"). */
+  species: string;
+  /** Data source filter. Defaults to "all". */
+  source?: string;
+  /** If provided, restrict to periods >= this date. */
+  periodStart?: string;
+  /** If provided, restrict to periods <= this date. */
+  periodEnd?: string;
+  /**
+   * Minimum total_players per event-division row.
+   * Events with fewer players are excluded. Defaults to 0 (no filter).
+   */
+  minPlayers?: number;
+  /** Teammates returned; matrix uses min(topN, 8). Defaults to 12. */
+  topN?: number;
+}
+
 // =============================================================================
 // Queries
 // =============================================================================
@@ -567,4 +644,150 @@ export async function getUsageConversion(
       row.conversion_pct === null ? null : Number(row.conversion_pct),
     rankedPlayers: Number(row.ranked_players),
   }));
+}
+
+/**
+ * Fetch the true 4-move joint distribution for one species in a given format.
+ *
+ * Delegates to the `get_species_move_combos` RPC, which groups complete
+ * (cardinality=4) move sets for the focal species into a ranked list. Each
+ * row's `moves` is a sorted, lowercased 4-element array — the grouping key.
+ * Incomplete or malformed move sets (cardinality != 4) are excluded entirely.
+ *
+ * Returns [] when no qualifying data exists.
+ *
+ * Powers the moveset combo view on the species drill-down page.
+ *
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
+ * @param params.format - Format ID (e.g. "gen9vgc2025regg").
+ * @param params.species - Species slug (e.g. "koraidon").
+ * @param params.source - Data source filter. Defaults to "all".
+ * @param params.periodStart - If provided, restrict to periods >= this date.
+ * @param params.periodEnd - If provided, restrict to periods <= this date.
+ * @param params.minPlayers - Minimum players per event-division. Defaults to 0.
+ * @param params.limit - Max combos returned. Defaults to 25.
+ */
+export async function getSpeciesMoveCombos(
+  supabase: TypedClient,
+  params: GetSpeciesMoveCombosParams
+): Promise<MoveComboRow[]> {
+  const {
+    format,
+    species,
+    source = "all",
+    periodStart,
+    periodEnd,
+    minPlayers = 0,
+    limit = 25,
+  } = params;
+
+  const { data, error } = await supabase.rpc("get_species_move_combos", {
+    p_format: format,
+    p_species: species,
+    p_source: source,
+    p_start: periodStart,
+    p_end: periodEnd,
+    p_min_players: minPlayers,
+    p_limit: limit,
+  });
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch move combos for ${species} in ${format}: ${error.message}`
+    );
+  }
+
+  return (data ?? []).map((row) => ({
+    moves: row.moves,
+    players: Number(row.players),
+    comboPct: Number(row.combo_pct),
+    rank: row.rank,
+  }));
+}
+
+/**
+ * Fetch teammate pair rates and a top-N co-occurrence matrix for one species.
+ *
+ * Delegates to the `get_species_teammates` RPC, which returns one row per
+ * teammate with the pair rate denominator (`focal_players`) and the matrix
+ * jsonb duplicated on every row. This function reshapes the flat result into
+ * a single `SpeciesTeammatesResult` object.
+ *
+ * - When the RPC returns zero rows (species has no focal teams in the selected
+ *   filters), returns `{ focalPlayers: 0, teammates: [], matrix: { order: [], cells: {} } }`.
+ * - The `matrix` jsonb is read from the first row only (it is identical on
+ *   every row). If the jsonb is missing or malformed, falls back to `{ order: [], cells: {} }`.
+ *
+ * Powers the teammate constellation and teammate core heatmap.
+ *
+ * @param supabase - Use `createStaticClient()` for public ISR caching.
+ * @param params.format - Format ID (e.g. "gen9vgc2025regg").
+ * @param params.species - Species slug (e.g. "koraidon").
+ * @param params.source - Data source filter. Defaults to "all".
+ * @param params.periodStart - If provided, restrict to periods >= this date.
+ * @param params.periodEnd - If provided, restrict to periods <= this date.
+ * @param params.minPlayers - Minimum players per event-division. Defaults to 0.
+ * @param params.topN - Max teammates returned; matrix uses min(topN, 8). Defaults to 12.
+ */
+export async function getSpeciesTeammates(
+  supabase: TypedClient,
+  params: GetSpeciesTeammatesParams
+): Promise<SpeciesTeammatesResult> {
+  const emptyResult: SpeciesTeammatesResult = {
+    focalPlayers: 0,
+    teammates: [],
+    matrix: { order: [], cells: {} },
+  };
+
+  const {
+    format,
+    species,
+    source = "all",
+    periodStart,
+    periodEnd,
+    minPlayers = 0,
+    topN = 12,
+  } = params;
+
+  const { data, error } = await supabase.rpc("get_species_teammates", {
+    p_format: format,
+    p_species: species,
+    p_source: source,
+    p_start: periodStart,
+    p_end: periodEnd,
+    p_min_players: minPlayers,
+    p_top_n: topN,
+  });
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch teammates for ${species} in ${format}: ${error.message}`
+    );
+  }
+
+  if (!data || data.length === 0) return emptyResult;
+
+  const focalPlayers = Number(data[0]!.focal_players);
+
+  // The matrix jsonb is identical on every row — read from the first row only.
+  // Use a defensive fallback if the jsonb is absent or does not match the
+  // expected shape (same `as unknown as` cast the histogram fields use).
+  const rawMatrix = data[0]!.matrix as unknown as TeammateMatrix | null;
+  const matrix: TeammateMatrix =
+    rawMatrix &&
+    typeof rawMatrix === "object" &&
+    Array.isArray(rawMatrix.order) &&
+    rawMatrix.cells !== null &&
+    typeof rawMatrix.cells === "object"
+      ? rawMatrix
+      : { order: [], cells: {} };
+
+  const teammates: TeammateRow[] = data.map((row) => ({
+    teammate: row.teammate,
+    pairCount: Number(row.pair_count),
+    pairPct: Number(row.pair_pct),
+    rank: row.teammate_rank,
+  }));
+
+  return { focalPlayers, teammates, matrix };
 }

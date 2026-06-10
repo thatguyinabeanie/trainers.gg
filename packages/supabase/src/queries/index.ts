@@ -373,6 +373,8 @@ export {
   getFormatEvents,
   getUsageBySource,
   getUsageConversion,
+  getSpeciesMoveCombos,
+  getSpeciesTeammates,
 } from "./usage";
 
 export type {
@@ -391,4 +393,10 @@ export type {
   GetUsageBySourceParams,
   ConversionRow,
   GetUsageConversionParams,
+  MoveComboRow,
+  GetSpeciesMoveCombosParams,
+  TeammateRow,
+  TeammateMatrix,
+  SpeciesTeammatesResult,
+  GetSpeciesTeammatesParams,
 } from "./usage";

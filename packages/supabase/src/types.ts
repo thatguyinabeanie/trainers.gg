@@ -3807,6 +3807,42 @@ export type Database = {
         Args: { p_group_role_id: number }
         Returns: string
       }
+      get_species_move_combos: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_limit?: number
+          p_min_players?: number
+          p_source?: string
+          p_species: string
+          p_start?: string
+        }
+        Returns: {
+          combo_pct: number
+          moves: string[]
+          players: number
+          rank: number
+        }[]
+      }
+      get_species_teammates: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_source?: string
+          p_species: string
+          p_start?: string
+          p_top_n?: number
+        }
+        Returns: {
+          focal_players: number
+          matrix: Json
+          pair_count: number
+          pair_pct: number
+          teammate: string
+          teammate_rank: number
+        }[]
+      }
       get_species_usage: {
         Args: {
           p_format: string
