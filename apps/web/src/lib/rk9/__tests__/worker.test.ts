@@ -96,7 +96,7 @@ jest.mock("@/lib/rk9/scraper", () => ({
 // Imports — after mocks
 // =============================================================================
 
-import { processRk9Queue } from "../worker";
+import { processRk9Queue, buildRk9Url, runTeamsBatch } from "../worker";
 
 // =============================================================================
 // Supabase chain variables — rebuilt per test in beforeEach
@@ -894,4 +894,204 @@ describe("processRk9Queue", () => {
       expect(result.remainingQueued).toBe(7);
     });
   });
+});
+
+// =============================================================================
+// buildRk9Url — path-traversal rejection (new branch coverage)
+// =============================================================================
+
+describe("buildRk9Url", () => {
+  it.each([
+    ["/roster/../../../etc/passwd", "double-dot traversal"],
+    ["/roster/./test", "single-dot segment"],
+  ])(
+    "throws for path with traversal segments: %s (%s)",
+    (path: string, _label: string) => {
+      expect(() => buildRk9Url(path)).toThrow(/Invalid RK9 path/);
+    }
+  );
+
+  it("returns a valid URL for a safe teamlist path", () => {
+    const url = buildRk9Url("/teamlist/public/event1/entry1");
+    expect(url).toBe("https://rk9.gg/teamlist/public/event1/entry1");
+  });
+
+  it("returns a valid URL for a safe roster path", () => {
+    const url = buildRk9Url("/roster/evt-abc123");
+    expect(url).toBe("https://rk9.gg/roster/evt-abc123");
+  });
+
+  it("throws for a path with characters not matching the allowed pattern", () => {
+    expect(() => buildRk9Url("/roster/bad path?query=1")).toThrow(
+      /Invalid RK9 path/
+    );
+  });
+});
+
+// =============================================================================
+// runTeamsBatch — invalid entryId validation (new branch coverage)
+// =============================================================================
+
+describe("runTeamsBatch — invalid roster_entry_id", () => {
+  /**
+   * Build a supabase stub tailored for runTeamsBatch calls.
+   * runTeamsBatch issues these queries in order when standings exist:
+   *   standings: SELECT (pagination, page 1 returns standings, page 2 empty)
+   *   events:    UPDATE { import_status: "teams" }
+   *   species_map: SELECT
+   *   standings: UPDATE { team_scrape_attempted_at } .in(id, [...])
+   *   team_pokemon: SELECT standing_id .in(standing_id, [...]) (count)
+   *   events:    UPDATE (final status)
+   */
+  function buildBatchSupabaseMock({
+    standingsPages,
+    teamPokemonData = [],
+  }: {
+    standingsPages: Array<
+      Array<{
+        id: number;
+        roster_entry_id: string | null;
+        team_scrape_attempted_at: string | null;
+      }>
+    >;
+    teamPokemonData?: Array<{ standing_id: number }>;
+  }) {
+    let standingsPageIdx = 0;
+    const standingsChainInner = makeChain(() => {
+      const page = standingsPages[standingsPageIdx] ?? [];
+      standingsPageIdx++;
+      return { data: page, error: null };
+    });
+
+    const eventsChainInner = makeChain(() => ({ data: null, error: null }));
+    const speciesMapChainInner = makeChain(() => ({ data: [], error: null }));
+    const teamPokemonChainInner = makeChain(() => ({
+      data: teamPokemonData,
+      error: null,
+    }));
+
+    return {
+      _eventsChain: eventsChainInner,
+      _standingsChain: standingsChainInner,
+      supabase: {
+        schema: jest.fn().mockImplementation((_schema: string) => ({
+          from: jest.fn().mockImplementation((table: string) => {
+            if (table === "standings") return standingsChainInner;
+            if (table === "events") return eventsChainInner;
+            if (table === "species_map") return speciesMapChainInner;
+            if (table === "team_pokemon") return teamPokemonChainInner;
+            return makeChain(() => ({ data: null, error: null }));
+          }),
+        })),
+      },
+    };
+  }
+
+  it("does not call fetch for a standing with an invalid roster_entry_id", async () => {
+    const invalidStanding = {
+      id: 42,
+      roster_entry_id: "../../bad",
+      team_scrape_attempted_at: null,
+    };
+
+    const { supabase } = buildBatchSupabaseMock({
+      standingsPages: [[invalidStanding], []],
+    });
+
+    await runTeamsBatch(supabase as never, "evt-1", {
+      batchSize: 10,
+      concurrency: 1,
+    });
+
+    // fetch should NOT have been called for the team-list URL
+    const fetchCalls = (global.fetch as jest.Mock).mock.calls as Array<
+      [string]
+    >;
+    const teamFetches = fetchCalls.filter(([url]) =>
+      url.includes("/teamlist/")
+    );
+    expect(teamFetches).toHaveLength(0);
+  });
+
+  it("stamps the standing as processed (failed:1) even for an invalid entryId", async () => {
+    // Invalid entryId returns { scraped: 0, failed: 1 }
+    // The merge loop adds the standing to processedIds when failed > 0
+    // So the standings UPDATE .in("id", [...]) MUST be called with [42]
+    const invalidStanding = {
+      id: 42,
+      roster_entry_id: "../../bad",
+      team_scrape_attempted_at: null,
+    };
+
+    const { supabase, _standingsChain } = buildBatchSupabaseMock({
+      standingsPages: [[invalidStanding], []],
+    });
+
+    await runTeamsBatch(supabase as never, "evt-1", {
+      batchSize: 10,
+      concurrency: 1,
+    });
+
+    // The stamp UPDATE uses .in("id", processedIdsList) on standings
+    const inCalls = (_standingsChain.in as jest.Mock).mock.calls as Array<
+      [string, number[]]
+    >;
+    const stampCall = inCalls.find(([col]) => col === "id");
+    // processedIds should contain standing 42 (failed > 0 → processedIds.add)
+    expect(stampCall).toBeDefined();
+    expect(stampCall?.[1]).toContain(42);
+  });
+
+  it("returns scraped:0, failed:1 in the batch result for an invalid entryId standing", async () => {
+    const invalidStanding = {
+      id: 99,
+      roster_entry_id: "../../evil",
+      team_scrape_attempted_at: null,
+    };
+
+    const { supabase } = buildBatchSupabaseMock({
+      standingsPages: [[invalidStanding], []],
+    });
+
+    const result = await runTeamsBatch(supabase as never, "evt-1", {
+      batchSize: 10,
+      concurrency: 1,
+    });
+
+    // batchScraped is 0 (no successful scrape), total is 1
+    expect(result.batchScraped).toBe(0);
+    expect(result.total).toBe(1);
+  });
+
+  it.each([
+    ["../../bad", "path traversal with slashes"],
+    ["bad entry id!", "special chars"],
+    ["entry id with spaces", "spaces in id"],
+  ])(
+    "treats roster_entry_id '%s' (%s) as invalid and skips the fetch",
+    async (entryId: string, _label: string) => {
+      const standing = {
+        id: 1,
+        roster_entry_id: entryId,
+        team_scrape_attempted_at: null,
+      };
+
+      const { supabase } = buildBatchSupabaseMock({
+        standingsPages: [[standing], []],
+      });
+
+      await runTeamsBatch(supabase as never, "evt-1", {
+        batchSize: 10,
+        concurrency: 1,
+      });
+
+      const fetchCalls = (global.fetch as jest.Mock).mock.calls as Array<
+        [string]
+      >;
+      const teamFetches = fetchCalls.filter(([url]) =>
+        url.includes("/teamlist/")
+      );
+      expect(teamFetches).toHaveLength(0);
+    }
+  );
 });
