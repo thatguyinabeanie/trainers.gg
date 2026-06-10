@@ -148,8 +148,8 @@ flip the gated `speciesHref` from absent to present. No chart internals change.
 
 - **Back to `/data`**: a breadcrumb `Data / {Format} / {Species}` at the top.
   The "Data" and "{Format}" crumbs link back to `/data` preserving filters.
-- **Species switcher** (Open Question 2 — recommended **A**): a Base UI
-  `Combobox` in the hero header, seeded from the format's species list (reuse the
+- **Species switcher** (Decision 2 — Base UI `Combobox` type-ahead in the hero): a
+  searchable `Combobox` in the hero header, seeded from the format's species list (reuse the
   pipeline/`get_species_usage` ranking the page can fetch, or the sidebar's
   existing species list). Selecting a species navigates to that species' page,
   carrying the current filter query. This lets a user hop Koraidon → Miraidon
@@ -346,10 +346,8 @@ Click a header sprite → that teammate's drill-down.
 
 **Mobile.** An 8×8 grid is tight at 393px. **Cap to top 5×5 on narrow viewports**
 (the strongest cores), cells become tap-targets ≥40px where possible; the header
-sprites shrink. Same component, reduced N — no fallback. (This is the one place
-where Decision 6's "same chart scaled down" needs an explicit N reduction to stay
-legible; documented as an Open Question if the user wants 8×8 forced even on
-mobile — see Open Question 3.)
+sprites shrink. Same component, reduced N — no fallback. (Decision 3: capped to
+5×5 at phone widths for legibility; desktop renders 8×8.)
 
 ---
 
@@ -488,7 +486,7 @@ Computation:
   companion column on a single header row. **Recommendation: return the matrix as
   a separate small set is overkill; duplicating a compact jsonb keyed by the
   top-8 pairs (≤28 entries) on each of ≤12 rows is negligible and keeps it one
-  RPC.** (See Open Question 5 if the user prefers two RPCs for separation.)
+  RPC.** (Decision 5: one combined RPC is the build target.)
 
 Why one RPC for #3 and #4: both need the identical focal-teams CTE (the expensive
 part — the self-join over focal teams). Computing teammates and the matrix in one
@@ -746,11 +744,12 @@ Rationale:
    data flow still use the pipeline/detail RPCs; only the Sankey _rendering_ is
    removed.
 
-**If the user prefers to keep it:** the lowest-friction alternative is to keep the
-Sankey on the Overview tab but **relabel it** so the marginal caveat is explicit
-(e.g. "Marginal breakdown — not joint sets; see a species page for real
-movesets") and link each species node to its drill-down. This is offered as the
-fallback in Open Question 6. The **primary recommendation remains removal.**
+**Decision 6 — the Sankey is REMOVED.** Phase 3 includes deleting the Sankey
+rendering from the Overview tab; the treemap (Phase 2) becomes the primary "meta
+now" snapshot. `get_usage_pipeline` RPC is **retained** — the treemap and
+fingerprint data flow still use it. Only the Sankey component
+(`usage-pipeline-chart.tsx`) and its `columns` URL param and sidebar control are
+deleted.
 
 ---
 
