@@ -816,52 +816,33 @@ Siblings never import each other — shared symbols go through `usage-series.ts`
 
 ---
 
-## Open Questions (genuinely user-decidable)
+## Decisions (locked 2026-06-09)
 
-These need the user's call; everything else is decided above.
+All questions from the design phase are now answered. These are authoritative.
 
-1. **Species display-name source.** Slugs (`urshifu-rapid-strike`) need a
-   human-readable display name + type chips. Does `@trainers/pokemon` already
-   expose a slug→display-name helper (and a slug-aware `isValidSpecies`), or
-   should the page title-case the slug segments as a fallback? (Affects hero
-   header + metadata + 404 validation.)
-   - **A** — use an existing pokemon-package display helper if one exists
-     (preferred — correct casing like "Ho-Oh", "Porygon-Z").
-   - **B** — title-case slug segments as a fallback (simple, occasional odd
-     casing).
+1. **Species display name:** use `Dex.species.get(slug).name` from `@pkmn/dex`
+   (already used in `apps/web/src/components/team-builder/validation-hooks.ts`
+   and `packages/pokemon/src/stats-calculator.ts`). Returns proper names like
+   "Urshifu-Rapid-Strike", "Calyrex-Ice-Rider", "Ho-Oh". An invalid slug →
+   `notFound()` (never a 500).
 
-2. **Species switcher control.** How should the on-page switcher look?
-   - **A** — Base UI `Combobox` (searchable, sprite + name + usage%) in the hero.
-     (Recommended — fast keyboard switching.)
-   - **B** — a simple sprite-grid popover (visual, no typing).
-   - **C** — no switcher; rely on breadcrumb-back + overview click-through only.
+2. **Species switcher:** Base UI `Combobox` type-ahead in the hero header,
+   seeded from the format's species list. Supports keyboard navigation (fast
+   hop between species without returning to `/data`).
 
-3. **Heatmap size on mobile.** The 8×8 core heatmap is tight at 393px.
-   - **A** — cap to top **5×5** on mobile for legibility (recommended).
-   - **B** — keep **8×8** with horizontal-scroll inside the card (denser, scrolls).
+3. **Heatmap on mobile:** cap to **5×5** at phone widths (≤393px). Desktop
+   renders 8×8. Same component, reduced N — no separate mobile component.
 
-4. **OG image for shareability.** Phase 2 made the page shareable; what OG card?
-   - **A** — static default site OG card (ships now; simplest).
-   - **B** — dynamic per-species OG (sprite + name + headline usage on a teal
-     card) via `next/og` — needs its own small design; can be a follow-up.
+4. **OG image:** static default site OG card for Phase 3. A dynamic per-species
+   OG card (sprite + name + headline usage via `next/og`) is **explicitly
+   deferred** — not part of Phase 3 — and requires its own separate design.
 
-5. **One RPC vs two for teammates + matrix.** RPC B returns both the teammate list
-   and the co-occurrence matrix in one call (shared focal-teams CTE, one round
-   trip). Acceptable, or prefer two separate RPCs
-   (`get_species_teammates` + `get_species_teammate_matrix`) for cleaner
-   separation at the cost of recomputing the focal-teams set twice?
-   - **A** — one combined RPC (recommended — avoids recomputing the costly CTE).
-   - **B** — two RPCs (cleaner contracts, two cache entries, doubles the join).
+5. **Teammates RPC:** the single combined `get_species_teammates` RPC (teammate
+   list + jsonb co-occurrence matrix in one call), as the doc recommends. Avoids
+   recomputing the costly focal-teams CTE twice.
 
-6. **Sankey's fate (the decision the roadmap left open).**
-   - **A** — **Remove** the Sankey from Overview, treemap becomes the primary
-     snapshot; delete `usage-pipeline*` + `columns` param (recommended — the
-     combo view + fingerprint honestly replace it).
-   - **B** — **Keep** it, relabeled with a "marginal, not joint" caveat and
-     species-node links to drill-downs (fallback).
-   - **C** — **Defer** the decision; ship Phase 3 drill-down without touching the
-     Overview tab, revisit the Sankey separately.
-
-```
-
-```
+6. **Sankey: REMOVE.** Phase 3 includes deleting the Sankey rendering from the
+   Overview tab. The treemap (Phase 2) becomes the primary "meta now" snapshot.
+   `get_usage_pipeline` RPC is **retained** (treemap + fingerprint still use it).
+   Only `usage-pipeline-chart.tsx`, `usage-pipeline.ts`, the `columns` URL param,
+   and the sidebar column control are deleted.
