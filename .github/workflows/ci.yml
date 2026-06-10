@@ -152,12 +152,16 @@ jobs:
       - name: Typecheck
         run: pnpm turbo run typecheck --log-prefix=none
 
-  # ── Unit tests (Jest) — 3 jobs: web, mobile, packages ─────
+  # ── Unit tests (Jest) — web (sharded x2), mobile, packages ─────
   test-web:
-    name: Test @trainers/web
+    name: Test @trainers/web (shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [install]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -167,7 +171,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
-          turbo-prefix: test-web
+          turbo-prefix: test-web-${{ matrix.shard }}
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
@@ -175,13 +179,24 @@ jobs:
         uses: actions/cache@v5
         with:
           path: apps/web/.jest-cache
-          key: jest-web-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
+          # Shard-distinct key: both shards save independently without colliding.
+          key: jest-web-${{ matrix.shard }}-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
           restore-keys: |
-            jest-web-${{ runner.os }}-${{ github.ref }}-
-            jest-web-${{ runner.os }}-refs/heads/main-
+            jest-web-${{ matrix.shard }}-${{ runner.os }}-${{ github.ref }}-
+            jest-web-${{ matrix.shard }}-${{ runner.os }}-refs/heads/main-
 
-      - name: Run tests
-        run: pnpm turbo run test --filter=@trainers/web --ui stream
+      # Build only @trainers/web's dependencies (turbo remote cache makes this
+      # fast), then run jest directly with --shard. Bypassing `turbo run test`
+      # is required to pass --shard; CI=true still auto-enables coverage + junit
+      # via the shared jest config. Coverage goes to a shard-distinct dir so the
+      # two shards' lcov files never overwrite each other on artifact merge.
+      - name: Run tests (shard ${{ matrix.shard }})
+        run: |
+          pnpm turbo run build --filter=@trainers/web^...
+          pnpm --filter @trainers/web exec jest \
+            --shard=${{ matrix.shard }}/2 \
+            --ci \
+            --coverageDirectory=coverage/shard-${{ matrix.shard }}
         env:
           CI: true
           JEST_JUNIT_OUTPUT_DIR: test-results
@@ -195,15 +210,16 @@ jobs:
         if: always()
         with:
           files: "**/test-results/**/*.xml"
-          comment_title: "Test Results / web"
+          check_name: "Test Results / web (shard ${{ matrix.shard }})"
+          comment_title: "Test Results / web (shard ${{ matrix.shard }})"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: coverage-web
-          path: "**/coverage/lcov.info"
+          name: coverage-web-${{ matrix.shard }}
+          path: "**/coverage/shard-${{ matrix.shard }}/lcov.info"
           retention-days: 1
           if-no-files-found: ignore
 
@@ -249,6 +265,7 @@ jobs:
         if: always()
         with:
           files: "**/test-results/**/*.xml"
+          check_name: "Test Results / mobile"
           comment_title: "Test Results / mobile"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
@@ -310,6 +327,7 @@ jobs:
         if: always()
         with:
           files: "**/test-results/**/*.xml"
+          check_name: "Test Results / packages"
           comment_title: "Test Results / packages"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
