@@ -6,7 +6,9 @@ test.describe("Dashboard alt switcher", () => {
   }) => {
     await page.goto("/dashboard");
 
-    const sidebar = page.locator("[data-sidebar='sidebar']");
+    const sidebar = page.locator(
+      "[data-sidebar='sidebar']:not([data-mobile='true'])"
+    );
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // The sidebar should render without errors

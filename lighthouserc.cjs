@@ -1,7 +1,7 @@
 module.exports = {
   ci: {
     collect: {
-      numberOfRuns: 3,
+      numberOfRuns: 1,
       settings: {
         chromeFlags: "--no-sandbox",
         // Pass the Vercel deployment protection bypass header

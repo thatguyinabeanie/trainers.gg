@@ -44,10 +44,10 @@ test.describe("Discord user settings", () => {
     await page.goto("/dashboard/settings/notifications");
     await page.waitForLoadState("domcontentloaded");
 
-    // The #discord-dms section is Server-rendered. Scroll it into view so
-    // Playwright's toBeVisible check passes (element must be in viewport).
+    // The #discord-dms section renders inside a Suspense boundary. Use the
+    // web-first toBeVisible assertion (auto-retries through hydration/detach)
+    // rather than scrollIntoViewIfNeeded, which throws if the subtree swaps.
     const discordSection = page.locator("#discord-dms");
-    await discordSection.scrollIntoViewIfNeeded();
     await expect(discordSection).toBeVisible({ timeout: 10000 });
   });
 
@@ -61,7 +61,6 @@ test.describe("Discord user settings", () => {
     await page.waitForLoadState("domcontentloaded");
 
     const discordSection = page.locator("#discord-dms");
-    await discordSection.scrollIntoViewIfNeeded();
     await expect(discordSection).toBeVisible({ timeout: 10000 });
 
     // Should show the "Link Discord" prompt link, not a connected handle
@@ -85,12 +84,10 @@ test.describe("Discord user settings", () => {
     await page.waitForLoadState("domcontentloaded");
 
     const discordSection = page.locator("#discord-dms");
-    await discordSection.scrollIntoViewIfNeeded();
     await expect(discordSection).toBeVisible({ timeout: 10000 });
 
     // The master switch carries id="discord-dm-master"
     const masterSwitch = page.locator("#discord-dm-master");
-    await masterSwitch.scrollIntoViewIfNeeded();
     await expect(masterSwitch).toBeVisible();
 
     // Disabled because no Discord account is linked (prop passed from page)
@@ -104,7 +101,6 @@ test.describe("Discord user settings", () => {
     await page.waitForLoadState("domcontentloaded");
 
     const discordSection = page.locator("#discord-dms");
-    await discordSection.scrollIntoViewIfNeeded();
     await expect(discordSection).toBeVisible({ timeout: 10000 });
 
     // The three category group headings should all be present in the section
@@ -151,7 +147,6 @@ test.describe("Discord user settings", () => {
     // The "Show Discord handle on profile" switch should be rendered
     // after the isLoading guard clears
     const discordSwitch = page.locator("#show-discord-publicly");
-    await discordSwitch.scrollIntoViewIfNeeded();
     await expect(discordSwitch).toBeVisible({ timeout: 10000 });
   });
 
@@ -175,7 +170,6 @@ test.describe("Discord user settings", () => {
     await waitForProfilePageLoaded(page);
 
     const discordSwitch = page.locator("#show-discord-publicly");
-    await discordSwitch.scrollIntoViewIfNeeded();
     await expect(discordSwitch).toBeVisible({ timeout: 10000 });
 
     const isCurrentlyChecked = await discordSwitch.isChecked();
@@ -203,7 +197,6 @@ test.describe("Discord user settings", () => {
     await waitForProfilePageLoaded(page);
 
     const discordSwitch = page.locator("#show-discord-publicly");
-    await discordSwitch.scrollIntoViewIfNeeded();
     await expect(discordSwitch).toBeVisible({ timeout: 10000 });
 
     // Ensure it is ON first so we can test toggling it off
@@ -231,7 +224,6 @@ test.describe("Discord user settings", () => {
     await waitForProfilePageLoaded(page);
 
     const discordSwitch = page.locator("#show-discord-publicly");
-    await discordSwitch.scrollIntoViewIfNeeded();
     await expect(discordSwitch).toBeVisible({ timeout: 10000 });
 
     // Start in a known off state
@@ -262,7 +254,6 @@ test.describe("Discord user settings", () => {
     await waitForProfilePageLoaded(page);
 
     const discordSwitch = page.locator("#show-discord-publicly");
-    await discordSwitch.scrollIntoViewIfNeeded();
     await expect(discordSwitch).toBeVisible({ timeout: 10000 });
 
     const isOn = await discordSwitch.isChecked();

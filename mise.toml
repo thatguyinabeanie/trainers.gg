@@ -1,11 +1,9 @@
 [env]
 BUN_JSC_forceRAMSize=25769803776
 BUN_JSC_gcMaxHeapSize=17179869184
-UV_PYTHON = { value = "{{ tools.python.path | default(value='') }}", tools = true }
 
 [settings]
 experimental = true
-python.uv_venv_auto = "create|source"
 
 [tools]
 node = "22"
@@ -19,8 +17,6 @@ java = "zulu-21"
 ruby = "3.3"
 lefthook = "latest"
 supabase = "latest"
-python = "3.12"
-uv = "latest"
 neovim = "latest"
 # Android SDK is NOT included here — most devs already have it via Android Studio.
 # If you don't, create a mise.local.toml with:
@@ -32,7 +28,7 @@ postinstall = "mise run install-lefthook ::: install-submodules ::: install-pnpm
 
 [tasks.install-lefthook]
 description = "Install lefthook git hooks into the local repo"
-run = "lefthook install"
+run = "lefthook install --force"
 
 [tasks.install-submodules]
 description = "Initialize git submodules (idempotent — safe to re-run)"

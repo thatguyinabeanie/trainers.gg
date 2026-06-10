@@ -116,7 +116,7 @@
           },
           {
             "type": "command",
-            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git push'*) echo 'Push landed. Dispatch the ci-monitor agent (haiku) in the BACKGROUND now to watch CI checks — do not poll CI inline.';; esac; exit 0"
+            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git push'*) echo 'Push landed. Dispatch BOTH in the BACKGROUND now: background-checker (haiku, scoped lint/typecheck on changed packages) and ci-monitor (haiku, watch CI checks). Do not poll CI inline; keep working.';; esac; exit 0"
           },
           {
             "type": "command",

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useLayoutEffect } from "react";
-import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { getActiveFormats } from "@trainers/pokemon";
 import { type PipelineSpeciesData } from "@trainers/supabase";
@@ -22,26 +22,16 @@ import {
   type UsageSource,
   type PeriodType,
   type DataPreset,
-  type PipelineColumn,
-  ALL_PIPELINE_COLUMNS,
   applyPreset,
   getActivePreset,
 } from "./usage-filters";
 import { assignColor } from "./usage-series";
-import { COLUMN_COLORS } from "./usage-pipeline";
 
 // =============================================================================
 // Constants
 // =============================================================================
 
 const STORAGE_KEY = "data-sidebar-collapsed";
-
-const PIPELINE_COLUMN_LABELS: Record<PipelineColumn, string> = {
-  ability: "Ability",
-  item: "Item",
-  nature: "Nature",
-  move: "Move",
-};
 
 const PRESETS: { label: string; value: DataPreset }[] = [
   { label: "Top 10", value: "top10" },
@@ -58,11 +48,9 @@ interface DataSidebarProps {
   filters: UsageFilters;
   allSpecies: PipelineSpeciesData[];
   selectedSpecies: string[];
-  columns: PipelineColumn[];
   minPlayers: number;
   onFiltersChange: (filters: UsageFilters) => void;
   onSelectionChange: (selected: string[]) => void;
-  onColumnsChange: (columns: PipelineColumn[]) => void;
   onMinPlayersChange: (n: number) => void;
 }
 
@@ -74,11 +62,9 @@ export function DataSidebar({
   filters,
   allSpecies,
   selectedSpecies,
-  columns,
   minPlayers,
   onFiltersChange,
   onSelectionChange,
-  onColumnsChange,
   onMinPlayersChange,
 }: DataSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
@@ -86,10 +72,17 @@ export function DataSidebar({
   const formats = getActiveFormats();
   const activePreset = getActivePreset(allSpecies, selectedSpecies);
 
-  // Restore collapsed state from localStorage before first paint to prevent flash.
+  // Before first paint (no flash): collapse on phone viewports — the expanded
+  // w-52 rail + chart column overflows 393px — otherwise restore the user's
+  // saved preference from localStorage.
   useLayoutEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
-    if (localStorage.getItem(STORAGE_KEY) === "true") setCollapsed(true);
+    if (
+      window.innerWidth < 768 ||
+      localStorage.getItem(STORAGE_KEY) === "true"
+    ) {
+      setCollapsed(true);
+    }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
@@ -226,87 +219,6 @@ export function DataSidebar({
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
-
-      {/* Pipeline columns */}
-      <div className="flex flex-shrink-0 flex-col gap-2 px-3 pb-3">
-        <span className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
-          Pipeline
-        </span>
-        <div className="flex flex-col gap-0.5">
-          {/* Enabled columns — in order, with reorder arrows */}
-          {columns.map((col, idx) => (
-            <div key={col} className="flex items-center gap-1">
-              <span
-                className="h-2 w-2 flex-shrink-0 rounded-full"
-                style={{ background: COLUMN_COLORS[col] }}
-              />
-              <span className="min-w-0 flex-1 truncate text-xs">
-                {PIPELINE_COLUMN_LABELS[col]}
-              </span>
-              <button
-                onClick={() => {
-                  if (idx === 0) return;
-                  const next = [...columns];
-                  [next[idx - 1], next[idx]] = [next[idx]!, next[idx - 1]!];
-                  onColumnsChange(next);
-                }}
-                disabled={idx === 0}
-                aria-label={`Move ${col} up`}
-                className="text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded disabled:opacity-20"
-              >
-                <ArrowUp className="size-3" />
-              </button>
-              <button
-                onClick={() => {
-                  if (idx === columns.length - 1) return;
-                  const next = [...columns];
-                  [next[idx], next[idx + 1]] = [next[idx + 1]!, next[idx]!];
-                  onColumnsChange(next);
-                }}
-                disabled={idx === columns.length - 1}
-                aria-label={`Move ${col} down`}
-                className="text-muted-foreground hover:text-foreground flex size-5 items-center justify-center rounded disabled:opacity-20"
-              >
-                <ArrowDown className="size-3" />
-              </button>
-              <button
-                onClick={() =>
-                  onColumnsChange(columns.filter((c) => c !== col))
-                }
-                aria-label={`Hide ${col}`}
-                aria-pressed={true}
-                className="text-primary flex size-5 items-center justify-center rounded text-xs"
-                title="Hide"
-              >
-                ☑
-              </button>
-            </div>
-          ))}
-          {/* Disabled columns — shown below, click to re-enable */}
-          {ALL_PIPELINE_COLUMNS.filter((col) => !columns.includes(col)).map(
-            (col) => (
-              <div key={col} className="flex items-center gap-1 opacity-40">
-                <span
-                  className="h-2 w-2 flex-shrink-0 rounded-full"
-                  style={{ background: COLUMN_COLORS[col] }}
-                />
-                <span className="min-w-0 flex-1 truncate text-xs">
-                  {PIPELINE_COLUMN_LABELS[col]}
-                </span>
-                <button
-                  onClick={() => onColumnsChange([...columns, col])}
-                  aria-label={`Show ${col}`}
-                  aria-pressed={false}
-                  className="text-muted-foreground flex size-5 items-center justify-center rounded text-xs"
-                  title="Show"
-                >
-                  ☐
-                </button>
-              </div>
-            )
-          )}
         </div>
       </div>
 

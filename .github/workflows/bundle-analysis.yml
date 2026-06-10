@@ -2,6 +2,7 @@ name: Bundle Analysis
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - "apps/web/**"
@@ -32,12 +33,13 @@ jobs:
     name: Analyze Bundle
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@v6.0.6 # pinned: early v6 had lockfile/PATH bugs
 
       - uses: actions/setup-node@v6
         with:
@@ -52,6 +54,18 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-${{ github.ref_name }}-
             turbo-${{ runner.os }}-
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tooling/*/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -112,9 +126,11 @@ jobs:
         if: success() && github.event_name == 'pull_request'
         run: |
           BODY=$(cat .next/analyze/__bundle_analysis_comment.txt)
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$BODY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "body<<EOF"
+            echo "$BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
       - name: Find existing comment

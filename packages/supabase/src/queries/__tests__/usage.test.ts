@@ -5,6 +5,10 @@ import {
   getSpeciesUsage,
   getSpeciesUsageDetail,
   getFormatEvents,
+  getUsageBySource,
+  getUsageConversion,
+  getSpeciesMoveCombos,
+  getSpeciesTeammates,
 } from "../usage";
 import type { TypedClient } from "../../client";
 
@@ -651,6 +655,660 @@ describe("getPipelineData — with data", () => {
     expect(row.natures).toEqual([]);
     expect(row.moves).toEqual([]);
     expect(row.tera).toEqual([]);
+  });
+});
+
+// =============================================================================
+// getUsageBySource
+// =============================================================================
+
+describe("getUsageBySource", () => {
+  it("calls get_usage_by_source with correct payload including all params", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getUsageBySource(client, {
+      format: "gen9vgc2025regg",
+      periodStart: "2025-01-01",
+      periodEnd: "2025-03-31",
+      minPlayers: 16,
+    });
+    expect((client.rpc as jest.Mock).mock.calls[0]).toEqual([
+      "get_usage_by_source",
+      {
+        p_format: "gen9vgc2025regg",
+        p_start: "2025-01-01",
+        p_end: "2025-03-31",
+        p_min_players: 16,
+      },
+    ]);
+  });
+
+  it("defaults minPlayers to 0 and dates to undefined when omitted", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getUsageBySource(client, { format: "gen9vgc2025regg" });
+    expect((client.rpc as jest.Mock).mock.calls[0]).toEqual([
+      "get_usage_by_source",
+      {
+        p_format: "gen9vgc2025regg",
+        p_start: undefined,
+        p_end: undefined,
+        p_min_players: 0,
+      },
+    ]);
+  });
+
+  it("maps RPC rows to SourceUsageRow shape with Number() coercion", async () => {
+    const rows = [
+      { species: "Koraidon", source: "rk9", players: 128, usage_pct: 42.5 },
+      {
+        species: "Incineroar",
+        source: "limitless",
+        players: 96,
+        usage_pct: 32.0,
+      },
+      {
+        species: "Miraidon",
+        source: "trainers.gg",
+        players: 64,
+        usage_pct: 21.3,
+      },
+    ];
+    const client = makeSingleRpcClient({ data: rows, error: null });
+    const result = await getUsageBySource(client, {
+      format: "gen9vgc2025regg",
+    });
+    expect(result).toEqual([
+      { species: "Koraidon", source: "rk9", players: 128, usagePct: 42.5 },
+      {
+        species: "Incineroar",
+        source: "limitless",
+        players: 96,
+        usagePct: 32.0,
+      },
+      {
+        species: "Miraidon",
+        source: "trainers.gg",
+        players: 64,
+        usagePct: 21.3,
+      },
+    ]);
+  });
+
+  it("coerces bigint-like string players via Number()", async () => {
+    // Supabase bigint columns sometimes arrive as strings
+    const rows = [
+      { species: "Sneasler", source: "rk9", players: "200", usage_pct: "55.5" },
+    ];
+    const client = makeSingleRpcClient({ data: rows, error: null });
+    const [row] = await getUsageBySource(client, { format: "gen9vgc2025regg" });
+    expect(row!.players).toBe(200);
+    expect(row!.usagePct).toBe(55.5);
+  });
+
+  it("returns [] when RPC returns empty array", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    const result = await getUsageBySource(client, {
+      format: "gen9vgc2025regg",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("returns [] when RPC returns null", async () => {
+    const client = makeSingleRpcClient({ data: null, error: null });
+    const result = await getUsageBySource(client, {
+      format: "gen9vgc2025regg",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("throws a descriptive error on RPC failure", async () => {
+    const client = makeSingleRpcClient({
+      data: null,
+      error: { message: "timeout" },
+    });
+    await expect(
+      getUsageBySource(client, { format: "gen9vgc2025regg" })
+    ).rejects.toThrow(
+      "Failed to fetch usage by source for gen9vgc2025regg: timeout"
+    );
+  });
+});
+
+// =============================================================================
+// getUsageConversion
+// =============================================================================
+
+describe("getUsageConversion", () => {
+  it("calls get_usage_conversion with all params forwarded correctly", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getUsageConversion(client, {
+      format: "gen9vgc2025regg",
+      source: "rk9",
+      periodStart: "2025-01-01",
+      periodEnd: "2025-03-31",
+      minPlayers: 32,
+      topPct: 0.2,
+    });
+    expect((client.rpc as jest.Mock).mock.calls[0]).toEqual([
+      "get_usage_conversion",
+      {
+        p_format: "gen9vgc2025regg",
+        p_source: "rk9",
+        p_start: "2025-01-01",
+        p_end: "2025-03-31",
+        p_min_players: 32,
+        p_top_percentile: 0.2,
+      },
+    ]);
+  });
+
+  it("defaults source to 'all', minPlayers to 0, dates to undefined, topPct to 0.10 when omitted", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getUsageConversion(client, { format: "gen9vgc2025regg" });
+    expect((client.rpc as jest.Mock).mock.calls[0]).toEqual([
+      "get_usage_conversion",
+      {
+        p_format: "gen9vgc2025regg",
+        p_source: "all",
+        p_start: undefined,
+        p_end: undefined,
+        p_min_players: 0,
+        p_top_percentile: 0.1,
+      },
+    ]);
+  });
+
+  it("maps a fully-populated RPC row to ConversionRow shape", async () => {
+    const rows = [
+      {
+        species: "Koraidon",
+        players: 300,
+        usage_pct: 55.0,
+        top_players: 30,
+        top_field: 50,
+        top_share_pct: 60.0,
+        conversion_pct: 25.5,
+        ranked_players: 120,
+      },
+    ];
+    const client = makeSingleRpcClient({ data: rows, error: null });
+    const [row] = await getUsageConversion(client, {
+      format: "gen9vgc2025regg",
+    });
+    expect(row).toEqual({
+      species: "Koraidon",
+      players: 300,
+      usagePct: 55.0,
+      topPlayers: 30,
+      topField: 50,
+      topSharePct: 60.0,
+      conversionPct: 25.5,
+      rankedPlayers: 120,
+    });
+  });
+
+  it("preserves conversionPct as null (does NOT coerce to 0)", async () => {
+    const rows = [
+      {
+        species: "Miraidon",
+        players: 200,
+        usage_pct: 40.0,
+        top_players: 0,
+        top_field: 0,
+        top_share_pct: 0,
+        conversion_pct: null,
+        ranked_players: 0,
+      },
+    ];
+    const client = makeSingleRpcClient({ data: rows, error: null });
+    const [row] = await getUsageConversion(client, {
+      format: "gen9vgc2025regg",
+    });
+    expect(row!.conversionPct).toBeNull();
+  });
+
+  it("forwards p_top_percentile from topPct param", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getUsageConversion(client, {
+      format: "gen9vgc2025regg",
+      topPct: 0.05,
+    });
+    const args = (client.rpc as jest.Mock).mock.calls[0]![1] as Record<
+      string,
+      unknown
+    >;
+    expect(args["p_top_percentile"]).toBe(0.05);
+  });
+
+  it("returns [] when RPC returns empty array", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    const result = await getUsageConversion(client, {
+      format: "gen9vgc2025regg",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("returns [] when RPC returns null", async () => {
+    const client = makeSingleRpcClient({ data: null, error: null });
+    const result = await getUsageConversion(client, {
+      format: "gen9vgc2025regg",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("throws a descriptive error on RPC failure", async () => {
+    const client = makeSingleRpcClient({
+      data: null,
+      error: { message: "DB error" },
+    });
+    await expect(
+      getUsageConversion(client, { format: "gen9vgc2025regg" })
+    ).rejects.toThrow(
+      "Failed to fetch usage conversion for gen9vgc2025regg: DB error"
+    );
+  });
+});
+
+// =============================================================================
+// getSpeciesMoveCombos
+// =============================================================================
+
+describe("getSpeciesMoveCombos", () => {
+  const comboRows = [
+    {
+      moves: ["fake-out", "glacial-lance", "ice-spinner", "protect"],
+      players: 120,
+      combo_pct: 47.24,
+      rank: 1,
+    },
+    {
+      moves: ["fake-out", "glacial-lance", "protect", "tera-blast"],
+      players: 60,
+      combo_pct: 23.62,
+      rank: 2,
+    },
+  ];
+
+  it("calls get_species_move_combos with correct default args", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getSpeciesMoveCombos(client, {
+      format: "gen9vgc2025regg",
+      species: "chien-pao",
+    });
+    expect((client.rpc as jest.Mock).mock.calls[0]).toEqual([
+      "get_species_move_combos",
+      {
+        p_format: "gen9vgc2025regg",
+        p_species: "chien-pao",
+        p_source: "all",
+        p_start: undefined,
+        p_end: undefined,
+        p_min_players: 0,
+        p_limit: 25,
+      },
+    ]);
+  });
+
+  it("forwards all params including custom source, minPlayers, limit, and dates", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getSpeciesMoveCombos(client, {
+      format: "gen9vgc2025regg",
+      species: "chien-pao",
+      source: "rk9",
+      periodStart: "2025-01-01",
+      periodEnd: "2025-03-31",
+      minPlayers: 32,
+      limit: 12,
+    });
+    const args = (client.rpc as jest.Mock).mock.calls[0]![1] as Record<
+      string,
+      unknown
+    >;
+    expect(args["p_source"]).toBe("rk9");
+    expect(args["p_start"]).toBe("2025-01-01");
+    expect(args["p_end"]).toBe("2025-03-31");
+    expect(args["p_min_players"]).toBe(32);
+    expect(args["p_limit"]).toBe(12);
+  });
+
+  it("maps RPC rows to MoveComboRow shape with Number() coercion", async () => {
+    const client = makeSingleRpcClient({ data: comboRows, error: null });
+    const result = await getSpeciesMoveCombos(client, {
+      format: "gen9vgc2025regg",
+      species: "chien-pao",
+    });
+    expect(result).toEqual([
+      {
+        moves: ["fake-out", "glacial-lance", "ice-spinner", "protect"],
+        players: 120,
+        comboPct: 47.24,
+        rank: 1,
+      },
+      {
+        moves: ["fake-out", "glacial-lance", "protect", "tera-blast"],
+        players: 60,
+        comboPct: 23.62,
+        rank: 2,
+      },
+    ]);
+  });
+
+  it("coerces bigint-like string players and combo_pct via Number()", async () => {
+    const rows = [
+      {
+        moves: ["fake-out", "glacial-lance", "ice-spinner", "protect"],
+        players: "200",
+        combo_pct: "55.5",
+        rank: 1,
+      },
+    ];
+    const client = makeSingleRpcClient({ data: rows, error: null });
+    const [row] = await getSpeciesMoveCombos(client, {
+      format: "gen9vgc2025regg",
+      species: "chien-pao",
+    });
+    expect(row!.players).toBe(200);
+    expect(row!.comboPct).toBe(55.5);
+  });
+
+  it("preserves the moves array as-is (string[] passthrough)", async () => {
+    const client = makeSingleRpcClient({ data: [comboRows[0]!], error: null });
+    const [row] = await getSpeciesMoveCombos(client, {
+      format: "gen9vgc2025regg",
+      species: "chien-pao",
+    });
+    expect(row!.moves).toEqual([
+      "fake-out",
+      "glacial-lance",
+      "ice-spinner",
+      "protect",
+    ]);
+    expect(row!.moves).toHaveLength(4);
+  });
+
+  it("returns [] when RPC returns empty array", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    const result = await getSpeciesMoveCombos(client, {
+      format: "gen9vgc2025regg",
+      species: "chien-pao",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("returns [] when RPC returns null", async () => {
+    const client = makeSingleRpcClient({ data: null, error: null });
+    const result = await getSpeciesMoveCombos(client, {
+      format: "gen9vgc2025regg",
+      species: "chien-pao",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("defaults limit to 25 when not provided", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getSpeciesMoveCombos(client, {
+      format: "gen9vgc2025regg",
+      species: "chien-pao",
+    });
+    const args = (client.rpc as jest.Mock).mock.calls[0]![1] as Record<
+      string,
+      unknown
+    >;
+    expect(args["p_limit"]).toBe(25);
+  });
+
+  it("throws a descriptive error on RPC failure", async () => {
+    const client = makeSingleRpcClient({
+      data: null,
+      error: { message: "connection refused" },
+    });
+    await expect(
+      getSpeciesMoveCombos(client, {
+        format: "gen9vgc2025regg",
+        species: "chien-pao",
+      })
+    ).rejects.toThrow(
+      "Failed to fetch move combos for chien-pao in gen9vgc2025regg: connection refused"
+    );
+  });
+});
+
+// =============================================================================
+// getSpeciesTeammates
+// =============================================================================
+
+describe("getSpeciesTeammates", () => {
+  const matrix = {
+    order: ["flutter-mane", "incineroar"],
+    cells: {
+      "flutter-mane||incineroar": { count: 88, pct: 24.1 },
+    },
+  };
+
+  const teammateRows = [
+    {
+      focal_players: 365,
+      teammate: "flutter-mane",
+      pair_count: 290,
+      pair_pct: 79.45,
+      teammate_rank: 1,
+      matrix,
+    },
+    {
+      focal_players: 365,
+      teammate: "incineroar",
+      pair_count: 250,
+      pair_pct: 68.49,
+      teammate_rank: 2,
+      matrix,
+    },
+  ];
+
+  it("calls get_species_teammates with correct default args", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    expect((client.rpc as jest.Mock).mock.calls[0]).toEqual([
+      "get_species_teammates",
+      {
+        p_format: "gen9vgc2025regg",
+        p_species: "miraidon",
+        p_source: "all",
+        p_start: undefined,
+        p_end: undefined,
+        p_min_players: 0,
+        p_top_n: 12,
+      },
+    ]);
+  });
+
+  it("forwards topN as p_top_n and all other params", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+      source: "limitless",
+      periodStart: "2025-01-01",
+      periodEnd: "2025-03-31",
+      minPlayers: 16,
+      topN: 20,
+    });
+    const args = (client.rpc as jest.Mock).mock.calls[0]![1] as Record<
+      string,
+      unknown
+    >;
+    expect(args["p_source"]).toBe("limitless");
+    expect(args["p_start"]).toBe("2025-01-01");
+    expect(args["p_end"]).toBe("2025-03-31");
+    expect(args["p_min_players"]).toBe(16);
+    expect(args["p_top_n"]).toBe(20);
+  });
+
+  it("defaults topN to 12 when not provided", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    await getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    const args = (client.rpc as jest.Mock).mock.calls[0]![1] as Record<
+      string,
+      unknown
+    >;
+    expect(args["p_top_n"]).toBe(12);
+  });
+
+  it("returns the empty result when RPC returns empty array (zero focal teams)", async () => {
+    const client = makeSingleRpcClient({ data: [], error: null });
+    const result = await getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    expect(result).toEqual({
+      focalPlayers: 0,
+      teammates: [],
+      matrix: { order: [], cells: {} },
+    });
+  });
+
+  it("returns the empty result when RPC returns null", async () => {
+    const client = makeSingleRpcClient({ data: null, error: null });
+    const result = await getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    expect(result).toEqual({
+      focalPlayers: 0,
+      teammates: [],
+      matrix: { order: [], cells: {} },
+    });
+  });
+
+  it("reads focalPlayers from the first row", async () => {
+    const client = makeSingleRpcClient({ data: teammateRows, error: null });
+    const result = await getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    expect(result.focalPlayers).toBe(365);
+  });
+
+  it("maps every row to a TeammateRow with Number() coercion on pairCount and pairPct", async () => {
+    const client = makeSingleRpcClient({ data: teammateRows, error: null });
+    const result = await getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    expect(result.teammates).toEqual([
+      { teammate: "flutter-mane", pairCount: 290, pairPct: 79.45, rank: 1 },
+      { teammate: "incineroar", pairCount: 250, pairPct: 68.49, rank: 2 },
+    ]);
+  });
+
+  it("maps teammate_rank column to the rank field", async () => {
+    const client = makeSingleRpcClient({ data: teammateRows, error: null });
+    const result = await getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    expect(result.teammates[0]!.rank).toBe(1);
+    expect(result.teammates[1]!.rank).toBe(2);
+  });
+
+  it("parses the matrix jsonb from the first row only", async () => {
+    const client = makeSingleRpcClient({ data: teammateRows, error: null });
+    const result = await getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    expect(result.matrix).toEqual(matrix);
+    expect(result.matrix.order).toEqual(["flutter-mane", "incineroar"]);
+    expect(result.matrix.cells["flutter-mane||incineroar"]).toEqual({
+      count: 88,
+      pct: 24.1,
+    });
+  });
+
+  // The RPC builds the matrix with jsonb_build_object + COALESCE, so a null or
+  // malformed matrix is a contract violation — the query throws so the action
+  // layer logs it via logError instead of silently rendering an empty heatmap.
+  it("throws on shape mismatch when the matrix jsonb is null", async () => {
+    const rowsWithNullMatrix = teammateRows.map((r) => ({
+      ...r,
+      matrix: null,
+    }));
+    const client = makeSingleRpcClient({
+      data: rowsWithNullMatrix,
+      error: null,
+    });
+    // The CodeQL js/tainted-format-string fix keeps the message constant and
+    // attaches species/format as structured properties instead of interpolating
+    // them into the message — assert both the message and the attached context.
+    const nullMatrixCall = getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    await expect(nullMatrixCall).rejects.toThrow("matrix jsonb shape mismatch");
+    await expect(nullMatrixCall).rejects.toMatchObject({
+      species: "miraidon",
+      format: "gen9vgc2025regg",
+    });
+  });
+
+  it("throws on shape mismatch when the matrix jsonb is malformed (missing order array)", async () => {
+    const rowsWithBadMatrix = teammateRows.map((r) => ({
+      ...r,
+      matrix: { cells: {} }, // missing order
+    }));
+    const client = makeSingleRpcClient({
+      data: rowsWithBadMatrix,
+      error: null,
+    });
+    const badMatrixCall = getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    await expect(badMatrixCall).rejects.toThrow("matrix jsonb shape mismatch");
+    await expect(badMatrixCall).rejects.toMatchObject({
+      species: "miraidon",
+      format: "gen9vgc2025regg",
+    });
+  });
+
+  it("coerces bigint-like string focal_players, pair_count, and pair_pct via Number()", async () => {
+    const rows = [
+      {
+        focal_players: "365",
+        teammate: "flutter-mane",
+        pair_count: "290",
+        pair_pct: "79.45",
+        teammate_rank: 1,
+        matrix,
+      },
+    ];
+    const client = makeSingleRpcClient({ data: rows, error: null });
+    const result = await getSpeciesTeammates(client, {
+      format: "gen9vgc2025regg",
+      species: "miraidon",
+    });
+    expect(result.focalPlayers).toBe(365);
+    expect(result.teammates[0]!.pairCount).toBe(290);
+    expect(result.teammates[0]!.pairPct).toBe(79.45);
+  });
+
+  it("throws a descriptive error on RPC failure", async () => {
+    const client = makeSingleRpcClient({
+      data: null,
+      error: { message: "timeout" },
+    });
+    await expect(
+      getSpeciesTeammates(client, {
+        format: "gen9vgc2025regg",
+        species: "miraidon",
+      })
+    ).rejects.toThrow(
+      "Failed to fetch teammates for miraidon in gen9vgc2025regg: timeout"
+    );
   });
 });
 

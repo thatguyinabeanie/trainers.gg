@@ -72,6 +72,10 @@ function ComboboxInput({
             size="icon-xs"
             variant="ghost"
             render={<ComboboxTrigger />}
+            // ComboboxTrigger renders a native <button>, so override Button's
+            // `render ? false` heuristic — otherwise Base UI warns that
+            // nativeButton is false while a real <button> was rendered.
+            nativeButton
             data-slot="input-group-button"
             className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
             disabled={disabled}

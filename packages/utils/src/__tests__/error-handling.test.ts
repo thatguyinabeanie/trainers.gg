@@ -103,8 +103,10 @@ describe("logError + setErrorSink", () => {
     const original = new Error("primary");
     expect(() => logError("scope.tag", original)).not.toThrow();
 
+    // Constant format string + scope as a %s arg (CodeQL js/tainted-format-string).
     expect(consoleSpy).toHaveBeenCalledWith(
-      "[error-sink:fallback] scope.tag",
+      "[error-sink:fallback] %s",
+      "scope.tag",
       original
     );
     consoleSpy.mockRestore();

@@ -38,9 +38,9 @@ test.describe("Dashboard home page", () => {
   test("sidebar Home link is active on dashboard", async ({ page }) => {
     await page.goto("/dashboard");
 
-    // Use .first() to resolve strict-mode violation during SSR-Suspense hydration,
-    // when a skeleton sidebar and the real sidebar briefly coexist in the DOM.
-    const sidebar = page.locator("[data-sidebar='sidebar']").first();
+    const sidebar = page.locator(
+      "[data-sidebar='sidebar']:not([data-mobile='true'])"
+    );
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // "Home" link should be present in sidebar

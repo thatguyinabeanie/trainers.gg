@@ -3832,6 +3832,42 @@ export type Database = {
         Args: { p_group_role_id: number }
         Returns: string
       }
+      get_species_move_combos: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_limit?: number
+          p_min_players?: number
+          p_source?: string
+          p_species: string
+          p_start?: string
+        }
+        Returns: {
+          combo_pct: number
+          moves: string[]
+          players: number
+          rank: number
+        }[]
+      }
+      get_species_teammates: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_source?: string
+          p_species: string
+          p_start?: string
+          p_top_n?: number
+        }
+        Returns: {
+          focal_players: number
+          matrix: Json
+          pair_count: number
+          pair_pct: number
+          teammate: string
+          teammate_rank: number
+        }[]
+      }
       get_species_usage: {
         Args: {
           p_format: string
@@ -3885,6 +3921,40 @@ export type Database = {
         Returns: {
           count: number
           status: string
+        }[]
+      }
+      get_usage_by_source: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_start?: string
+        }
+        Returns: {
+          players: number
+          source: string
+          species: string
+          usage_pct: number
+        }[]
+      }
+      get_usage_conversion: {
+        Args: {
+          p_end?: string
+          p_format: string
+          p_min_players?: number
+          p_source?: string
+          p_start?: string
+          p_top_percentile?: number
+        }
+        Returns: {
+          conversion_pct: number
+          players: number
+          ranked_players: number
+          species: string
+          top_field: number
+          top_players: number
+          top_share_pct: number
+          usage_pct: number
         }[]
       }
       get_usage_pipeline: {

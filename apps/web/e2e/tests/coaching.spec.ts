@@ -350,12 +350,20 @@ test.describe("Coaching privacy", () => {
     // If the coaching flag is off, notFound() also fires — 404 in both cases.
     const response = await page.goto("/coaching/brock");
 
+    // Under cacheComponents, a streamed notFound() can return a 200 shell with
+    // the not-found UI rendered in-stream, so the HTTP status alone is not
+    // reliable. Also match the rendered not-found content — the default Next.js
+    // boundary shows "404" / "This page could not be found", and any custom
+    // boundary shows "<X> not found".
     const is404Status = response?.status() === 404;
+    // `isVisible()` does not auto-wait; under cacheComponents the streamed
+    // not-found UI paints after goto() resolves on the 200 shell, so use
+    // `waitFor` to retry until the not-found content appears (or times out).
     const is404Page = await page
-      .getByRole("heading", {
-        name: /not found|this page could not be found|404/i,
-      })
-      .isVisible({ timeout: 10000 })
+      .getByText(/not found|page could not be found|^404$/i)
+      .first()
+      .waitFor({ state: "visible", timeout: 10000 })
+      .then(() => true)
       .catch(() => false);
 
     expect(is404Status || is404Page).toBe(true);
@@ -368,12 +376,20 @@ test.describe("Coaching privacy", () => {
       "/coaching/this-handle-does-not-exist-e2e-test"
     );
 
+    // Under cacheComponents, a streamed notFound() can return a 200 shell with
+    // the not-found UI rendered in-stream, so the HTTP status alone is not
+    // reliable. Also match the rendered not-found content — the default Next.js
+    // boundary shows "404" / "This page could not be found", and any custom
+    // boundary shows "<X> not found".
     const is404Status = response?.status() === 404;
+    // `isVisible()` does not auto-wait; under cacheComponents the streamed
+    // not-found UI paints after goto() resolves on the 200 shell, so use
+    // `waitFor` to retry until the not-found content appears (or times out).
     const is404Page = await page
-      .getByRole("heading", {
-        name: /not found|this page could not be found|404/i,
-      })
-      .isVisible({ timeout: 10000 })
+      .getByText(/not found|page could not be found|^404$/i)
+      .first()
+      .waitFor({ state: "visible", timeout: 10000 })
+      .then(() => true)
       .catch(() => false);
 
     expect(is404Status || is404Page).toBe(true);

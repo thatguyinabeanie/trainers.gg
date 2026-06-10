@@ -5,7 +5,9 @@ test.describe("Dashboard sidebar navigation", () => {
     await page.goto("/dashboard");
 
     // Sidebar should be visible with the user's display info
-    const sidebar = page.locator("[data-sidebar='sidebar']");
+    const sidebar = page.locator(
+      "[data-sidebar='sidebar']:not([data-mobile='true'])"
+    );
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // Nav links for main dashboard pages should be present
@@ -19,7 +21,9 @@ test.describe("Dashboard sidebar navigation", () => {
   test("navigates between dashboard pages via sidebar", async ({ page }) => {
     await page.goto("/dashboard");
 
-    const sidebar = page.locator("[data-sidebar='sidebar']");
+    const sidebar = page.locator(
+      "[data-sidebar='sidebar']:not([data-mobile='true'])"
+    );
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // Navigate to Tournaments (exact match — "Browse Tournaments" also exists in sidebar)
@@ -36,7 +40,9 @@ test.describe("Dashboard sidebar navigation", () => {
   test("settings link in sidebar navigates to settings", async ({ page }) => {
     await page.goto("/dashboard");
 
-    const sidebar = page.locator("[data-sidebar='sidebar']");
+    const sidebar = page.locator(
+      "[data-sidebar='sidebar']:not([data-mobile='true'])"
+    );
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // Settings link is at the bottom of the sidebar
