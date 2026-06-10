@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { AlertTriangle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
@@ -36,6 +37,7 @@ import { SpeciesTeammateConstellation } from "./species-teammate-constellation";
 import { SpeciesTeammateHeatmap } from "./species-teammate-heatmap";
 import { PageContainer } from "@/components/layout/page-container";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // =============================================================================
 // Types
@@ -151,7 +153,9 @@ export function SpeciesDrilldown({
 
   // ── TanStack Query hooks ─────────────────────────────────────────────────
 
-  const { data: detail = [] } = useQuery<SpeciesUsagePeriod[]>({
+  const { data: detail = [], isError: isDetailError } = useQuery<
+    SpeciesUsagePeriod[]
+  >({
     queryKey: [
       "species-detail",
       format,
@@ -364,6 +368,17 @@ export function SpeciesDrilldown({
         onSpeciesSelect={handleSpeciesSelect}
         filterBarProps={filterBarProps}
       />
+
+      {isDetailError && (
+        <div className="mb-3">
+          <Alert variant="destructive">
+            <AlertTriangle className="size-4" />
+            <AlertDescription>
+              Failed to load usage data. Try refreshing the page.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {!hasData && detail.length === 0 ? (
         <EmptyState

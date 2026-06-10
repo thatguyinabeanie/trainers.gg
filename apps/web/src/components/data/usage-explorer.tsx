@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { BarChart2 } from "lucide-react";
+import { BarChart2, AlertTriangle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
@@ -20,6 +20,7 @@ import {
   fetchUsageBySource,
   fetchUsageConversion,
 } from "@/actions/usage";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { DataSidebar } from "./data-sidebar";
 import { DataTabs } from "./data-tabs";
@@ -246,7 +247,9 @@ export function UsageExplorer({
     rangeEnd === initTimeseriesKey.rangeEnd &&
     minPlayers === initTimeseriesKey.minPlayers;
 
-  const { data: points = [] } = useQuery<FormatUsageTimeseriesPoint[]>({
+  const { data: points = [], isError: isTimeseriesError } = useQuery<
+    FormatUsageTimeseriesPoint[]
+  >({
     queryKey: [
       "usage-timeseries",
       format,
@@ -515,6 +518,17 @@ export function UsageExplorer({
             Pokémon usage across tournaments
           </span>
         </div>
+
+        {isTimeseriesError && (
+          <div className="px-5 pb-2">
+            <Alert variant="destructive">
+              <AlertTriangle className="size-4" />
+              <AlertDescription>
+                Failed to load usage data. Try refreshing the page.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
         {/* Tab shell */}
         <div className="px-5 pb-4">
