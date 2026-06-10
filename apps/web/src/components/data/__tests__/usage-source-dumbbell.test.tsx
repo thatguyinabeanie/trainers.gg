@@ -125,21 +125,14 @@ describe("UsageSourceDumbbell — row ordering", () => {
 // =============================================================================
 
 describe("UsageSourceDumbbell — top-N cap", () => {
-  it("caps to 30 rows on desktop", () => {
-    mockUseIsMobile.mockReturnValue(false);
+  it.each([
+    { isMobile: false, expectedCap: 30, label: "desktop" },
+    { isMobile: true, expectedCap: 15, label: "mobile" },
+  ])("caps to $expectedCap rows on $label", ({ isMobile, expectedCap }) => {
+    mockUseIsMobile.mockReturnValue(isMobile);
     const rows = makeRows(50);
     render(<UsageSourceDumbbell rows={rows} />);
-    // There should be 30 sprite images (one per row).
-    const imgs = screen.getAllByRole("img");
-    expect(imgs).toHaveLength(30);
-  });
-
-  it("caps to 15 rows on mobile", () => {
-    mockUseIsMobile.mockReturnValue(true);
-    const rows = makeRows(50);
-    render(<UsageSourceDumbbell rows={rows} />);
-    const imgs = screen.getAllByRole("img");
-    expect(imgs).toHaveLength(15);
+    expect(screen.getAllByRole("img")).toHaveLength(expectedCap);
   });
 
   it("renders fewer rows than the cap when input is smaller", () => {

@@ -68,34 +68,18 @@ function makeRows(count: number): ConversionRow[] {
 // =============================================================================
 
 describe("UsageTopShareDumbbell — dynamic title", () => {
-  it("renders 'Overall vs. Top 10% usage' for topPct=0.1", () => {
+  it.each([
+    { topPct: 0.1, expectedLabel: "Overall vs. Top 10% usage" },
+    { topPct: 0.05, expectedLabel: "Overall vs. Top 5% usage" },
+    { topPct: 0.25, expectedLabel: "Overall vs. Top 25% usage" },
+  ])("renders '$expectedLabel' for topPct=$topPct", ({ topPct, expectedLabel }) => {
     render(
       <UsageTopShareDumbbell
         rows={[makeRow("Koraidon", 30, 40)]}
-        topPct={0.1}
+        topPct={topPct}
       />
     );
-    expect(screen.getByText("Overall vs. Top 10% usage")).toBeInTheDocument();
-  });
-
-  it("renders 'Overall vs. Top 5% usage' for topPct=0.05", () => {
-    render(
-      <UsageTopShareDumbbell
-        rows={[makeRow("Koraidon", 30, 40)]}
-        topPct={0.05}
-      />
-    );
-    expect(screen.getByText("Overall vs. Top 5% usage")).toBeInTheDocument();
-  });
-
-  it("renders 'Overall vs. Top 25% usage' for topPct=0.25", () => {
-    render(
-      <UsageTopShareDumbbell
-        rows={[makeRow("Koraidon", 30, 40)]}
-        topPct={0.25}
-      />
-    );
-    expect(screen.getByText("Overall vs. Top 25% usage")).toBeInTheDocument();
+    expect(screen.getByText(expectedLabel)).toBeInTheDocument();
   });
 
   it("never uses the phrase 'top cut'", () => {
@@ -191,21 +175,14 @@ describe("UsageTopShareDumbbell — row ordering", () => {
 // =============================================================================
 
 describe("UsageTopShareDumbbell — top-N cap", () => {
-  it("caps to 20 rows on desktop", () => {
-    mockUseIsMobile.mockReturnValue(false);
+  it.each([
+    { isMobile: false, expectedCap: 20, label: "desktop" },
+    { isMobile: true, expectedCap: 15, label: "mobile" },
+  ])("caps to $expectedCap rows on $label", ({ isMobile, expectedCap }) => {
+    mockUseIsMobile.mockReturnValue(isMobile);
     const rows = makeRows(30);
     render(<UsageTopShareDumbbell rows={rows} topPct={0.1} />);
-    const imgs = screen.getAllByRole("img");
-    // 20 sprites rendered
-    expect(imgs).toHaveLength(20);
-  });
-
-  it("caps to 15 rows on mobile", () => {
-    mockUseIsMobile.mockReturnValue(true);
-    const rows = makeRows(25);
-    render(<UsageTopShareDumbbell rows={rows} topPct={0.1} />);
-    const imgs = screen.getAllByRole("img");
-    expect(imgs).toHaveLength(15);
+    expect(screen.getAllByRole("img")).toHaveLength(expectedCap);
   });
 
   it("renders fewer rows than the cap when input is smaller", () => {

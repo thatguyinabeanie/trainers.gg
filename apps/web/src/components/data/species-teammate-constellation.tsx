@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Dex } from "@pkmn/dex";
 
@@ -160,16 +161,17 @@ export function SpeciesTeammateConstellation({
 
         {/* Focal species — absolutely centered */}
         <div className="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-          <img
+          {/* sprite w/h are API-bound pixel props from getPokemonSprite */}
+          <Image
             src={focalSprite.url}
             width={focalSprite.w}
             height={focalSprite.h}
             alt={focalDisplayName}
-            className={
-              focalSprite.pixelated ? "[image-rendering:pixelated]" : undefined
-            }
-            // Sprite API-bound pixel dimensions — Tailwind scale doesn't map exactly.
-            style={{ width: 56, height: 56, objectFit: "contain" }}
+            className={cn(
+              "size-14 object-contain",
+              focalSprite.pixelated && "[image-rendering:pixelated]"
+            )}
+            unoptimized={focalSprite.pixelated}
           />
         </div>
 
@@ -210,15 +212,17 @@ export function SpeciesTeammateConstellation({
                   sizeClass
                 )}
               >
-                <img
+                {/* sprite w/h are API-bound pixel props from getPokemonSprite */}
+                <Image
                   src={sprite.url}
                   width={sprite.w}
                   height={sprite.h}
                   alt={displayName}
                   className={cn(
                     "h-full w-full object-contain",
-                    sprite.pixelated ? "[image-rendering:pixelated]" : undefined
+                    sprite.pixelated && "[image-rendering:pixelated]"
                   )}
+                  unoptimized={sprite.pixelated}
                 />
               </Link>
             </div>
