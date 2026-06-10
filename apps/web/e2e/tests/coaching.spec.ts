@@ -350,9 +350,15 @@ test.describe("Coaching privacy", () => {
     // If the coaching flag is off, notFound() also fires — 404 in both cases.
     const response = await page.goto("/coaching/brock");
 
+    // Under cacheComponents, a streamed notFound() can return a 200 shell with
+    // the not-found UI rendered in-stream, so the HTTP status alone is not
+    // reliable. Also match the rendered not-found content — the default Next.js
+    // boundary shows "404" / "This page could not be found", and any custom
+    // boundary shows "<X> not found".
     const is404Status = response?.status() === 404;
     const is404Page = await page
-      .getByRole("heading", { name: /not found/i })
+      .getByText(/not found|page could not be found|^404$/i)
+      .first()
       .isVisible({ timeout: 10000 })
       .catch(() => false);
 
@@ -366,9 +372,15 @@ test.describe("Coaching privacy", () => {
       "/coaching/this-handle-does-not-exist-e2e-test"
     );
 
+    // Under cacheComponents, a streamed notFound() can return a 200 shell with
+    // the not-found UI rendered in-stream, so the HTTP status alone is not
+    // reliable. Also match the rendered not-found content — the default Next.js
+    // boundary shows "404" / "This page could not be found", and any custom
+    // boundary shows "<X> not found".
     const is404Status = response?.status() === 404;
     const is404Page = await page
-      .getByRole("heading", { name: /not found/i })
+      .getByText(/not found|page could not be found|^404$/i)
+      .first()
       .isVisible({ timeout: 10000 })
       .catch(() => false);
 
