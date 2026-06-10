@@ -356,10 +356,14 @@ test.describe("Coaching privacy", () => {
     // boundary shows "404" / "This page could not be found", and any custom
     // boundary shows "<X> not found".
     const is404Status = response?.status() === 404;
+    // `isVisible()` does not auto-wait; under cacheComponents the streamed
+    // not-found UI paints after goto() resolves on the 200 shell, so use
+    // `waitFor` to retry until the not-found content appears (or times out).
     const is404Page = await page
       .getByText(/not found|page could not be found|^404$/i)
       .first()
-      .isVisible({ timeout: 10000 })
+      .waitFor({ state: "visible", timeout: 10000 })
+      .then(() => true)
       .catch(() => false);
 
     expect(is404Status || is404Page).toBe(true);
@@ -378,10 +382,14 @@ test.describe("Coaching privacy", () => {
     // boundary shows "404" / "This page could not be found", and any custom
     // boundary shows "<X> not found".
     const is404Status = response?.status() === 404;
+    // `isVisible()` does not auto-wait; under cacheComponents the streamed
+    // not-found UI paints after goto() resolves on the 200 shell, so use
+    // `waitFor` to retry until the not-found content appears (or times out).
     const is404Page = await page
       .getByText(/not found|page could not be found|^404$/i)
       .first()
-      .isVisible({ timeout: 10000 })
+      .waitFor({ state: "visible", timeout: 10000 })
+      .then(() => true)
       .catch(() => false);
 
     expect(is404Status || is404Page).toBe(true);
