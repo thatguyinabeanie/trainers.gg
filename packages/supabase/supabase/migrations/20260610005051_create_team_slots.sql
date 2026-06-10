@@ -348,86 +348,96 @@ AS $$
     FROM slots
   ),
   -- Per-species detail histograms
+  -- Inner layer produces exactly ONE deduplicated row per (species, dimension_value)
+  -- with its distinct-player count; outer layer aggregates with explicit ORDER BY.
+  -- This prevents jsonb_agg from emitting N identical entries (one per player row)
+  -- when multiple players share the same dimension value.
+  species_hist_ability AS (
+    SELECT species, ability AS value,
+           COUNT(DISTINCT player_key) AS cnt,
+           sc.player_count
+    FROM slots
+    INNER JOIN species_counts sc USING (species)
+    WHERE ability IS NOT NULL
+    GROUP BY species, ability, sc.player_count
+  ),
+  species_hist_item AS (
+    SELECT species, held_item AS value,
+           COUNT(DISTINCT player_key) AS cnt,
+           sc.player_count
+    FROM slots
+    INNER JOIN species_counts sc USING (species)
+    WHERE held_item IS NOT NULL
+    GROUP BY species, held_item, sc.player_count
+  ),
+  species_hist_nature AS (
+    SELECT species, nature AS value,
+           COUNT(DISTINCT player_key) AS cnt,
+           sc.player_count
+    FROM slots
+    INNER JOIN species_counts sc USING (species)
+    WHERE nature IS NOT NULL
+    GROUP BY species, nature, sc.player_count
+  ),
+  species_hist_tera AS (
+    SELECT species, tera_type AS value,
+           COUNT(DISTINCT player_key) AS cnt,
+           sc.player_count
+    FROM slots
+    INNER JOIN species_counts sc USING (species)
+    WHERE tera_type IS NOT NULL
+    GROUP BY species, tera_type, sc.player_count
+  ),
+  species_hist_combo AS (
+    SELECT species,
+           ability || ' + ' || COALESCE(held_item, 'No Item') AS value,
+           COUNT(DISTINCT player_key) AS cnt,
+           sc.player_count
+    FROM slots
+    INNER JOIN species_counts sc USING (species)
+    WHERE ability IS NOT NULL
+    GROUP BY species, ability || ' + ' || COALESCE(held_item, 'No Item'), sc.player_count
+  ),
   species_histograms AS (
     SELECT
-      s.species,
-      COUNT(DISTINCT s.player_key) AS sp_players,
-      -- abilities
-      jsonb_agg(
-        jsonb_build_object('value', s.ability, 'count', cnt_ability, 'pct', pct_ability)
-        ORDER BY cnt_ability DESC, s.ability ASC
-      ) FILTER (WHERE s.ability IS NOT NULL) AS abilities,
+      sc.species,
+      sc.player_count AS sp_players,
+      -- abilities: one row per value already, aggregate with correct ordering
+      (SELECT jsonb_agg(
+         jsonb_build_object('value', h.value, 'count', h.cnt,
+           'pct', CASE WHEN h.player_count > 0
+                    THEN round(100.0 * h.cnt / h.player_count, 2) ELSE 0 END)
+         ORDER BY h.cnt DESC, h.value ASC)
+       FROM species_hist_ability h WHERE h.species = sc.species) AS abilities,
       -- items
-      jsonb_agg(
-        jsonb_build_object('value', s.held_item, 'count', cnt_item, 'pct', pct_item)
-        ORDER BY cnt_item DESC, s.held_item ASC
-      ) FILTER (WHERE s.held_item IS NOT NULL) AS items,
+      (SELECT jsonb_agg(
+         jsonb_build_object('value', h.value, 'count', h.cnt,
+           'pct', CASE WHEN h.player_count > 0
+                    THEN round(100.0 * h.cnt / h.player_count, 2) ELSE 0 END)
+         ORDER BY h.cnt DESC, h.value ASC)
+       FROM species_hist_item h WHERE h.species = sc.species) AS items,
       -- natures
-      jsonb_agg(
-        jsonb_build_object('value', s.nature, 'count', cnt_nature, 'pct', pct_nature)
-        ORDER BY cnt_nature DESC, s.nature ASC
-      ) FILTER (WHERE s.nature IS NOT NULL) AS natures,
+      (SELECT jsonb_agg(
+         jsonb_build_object('value', h.value, 'count', h.cnt,
+           'pct', CASE WHEN h.player_count > 0
+                    THEN round(100.0 * h.cnt / h.player_count, 2) ELSE 0 END)
+         ORDER BY h.cnt DESC, h.value ASC)
+       FROM species_hist_nature h WHERE h.species = sc.species) AS natures,
       -- tera types
-      jsonb_agg(
-        jsonb_build_object('value', s.tera_type, 'count', cnt_tera, 'pct', pct_tera)
-        ORDER BY cnt_tera DESC, s.tera_type ASC
-      ) FILTER (WHERE s.tera_type IS NOT NULL) AS tera_types,
+      (SELECT jsonb_agg(
+         jsonb_build_object('value', h.value, 'count', h.cnt,
+           'pct', CASE WHEN h.player_count > 0
+                    THEN round(100.0 * h.cnt / h.player_count, 2) ELSE 0 END)
+         ORDER BY h.cnt DESC, h.value ASC)
+       FROM species_hist_tera h WHERE h.species = sc.species) AS tera_types,
       -- ability+item combos
-      jsonb_agg(
-        jsonb_build_object('value', s.combo, 'count', cnt_combo, 'pct', pct_combo)
-        ORDER BY cnt_combo DESC, s.combo ASC
-      ) FILTER (WHERE s.combo IS NOT NULL) AS ability_items
-    FROM (
-      -- Expand and count per-species per-dimension, with pct relative to species player_count
-      SELECT
-        outer_s.species,
-        outer_s.player_key,
-        -- ability dim
-        outer_s.ability,
-        COUNT(outer_s.player_key) OVER (PARTITION BY outer_s.species, outer_s.ability) AS cnt_ability,
-        CASE WHEN sc.player_count > 0
-          THEN round(100.0 * COUNT(outer_s.player_key) OVER (PARTITION BY outer_s.species, outer_s.ability) / sc.player_count, 2)
-          ELSE 0 END AS pct_ability,
-        -- item dim
-        outer_s.held_item,
-        COUNT(outer_s.player_key) OVER (PARTITION BY outer_s.species, outer_s.held_item) AS cnt_item,
-        CASE WHEN sc.player_count > 0
-          THEN round(100.0 * COUNT(outer_s.player_key) OVER (PARTITION BY outer_s.species, outer_s.held_item) / sc.player_count, 2)
-          ELSE 0 END AS pct_item,
-        -- nature dim
-        outer_s.nature,
-        COUNT(outer_s.player_key) OVER (PARTITION BY outer_s.species, outer_s.nature) AS cnt_nature,
-        CASE WHEN sc.player_count > 0
-          THEN round(100.0 * COUNT(outer_s.player_key) OVER (PARTITION BY outer_s.species, outer_s.nature) / sc.player_count, 2)
-          ELSE 0 END AS pct_nature,
-        -- tera dim
-        outer_s.tera_type,
-        COUNT(outer_s.player_key) OVER (PARTITION BY outer_s.species, outer_s.tera_type) AS cnt_tera,
-        CASE WHEN sc.player_count > 0
-          THEN round(100.0 * COUNT(outer_s.player_key) OVER (PARTITION BY outer_s.species, outer_s.tera_type) / sc.player_count, 2)
-          ELSE 0 END AS pct_tera,
-        -- ability+item combo
-        CASE WHEN outer_s.ability IS NOT NULL
-          THEN outer_s.ability || ' + ' || COALESCE(outer_s.held_item, 'No Item')
-          ELSE NULL END AS combo,
-        CASE WHEN outer_s.ability IS NOT NULL
-          THEN COUNT(outer_s.player_key) OVER (
-            PARTITION BY outer_s.species,
-            CASE WHEN outer_s.ability IS NOT NULL
-              THEN outer_s.ability || ' + ' || COALESCE(outer_s.held_item, 'No Item')
-              ELSE NULL END)
-          ELSE NULL END AS cnt_combo,
-        CASE WHEN outer_s.ability IS NOT NULL AND sc.player_count > 0
-          THEN round(100.0 * COUNT(outer_s.player_key) OVER (
-            PARTITION BY outer_s.species,
-            CASE WHEN outer_s.ability IS NOT NULL
-              THEN outer_s.ability || ' + ' || COALESCE(outer_s.held_item, 'No Item')
-              ELSE NULL END) / sc.player_count, 2)
-          ELSE 0 END AS pct_combo
-      FROM slots outer_s
-      INNER JOIN species_counts sc ON sc.species = outer_s.species
-    ) s
-    GROUP BY s.species
+      (SELECT jsonb_agg(
+         jsonb_build_object('value', h.value, 'count', h.cnt,
+           'pct', CASE WHEN h.player_count > 0
+                    THEN round(100.0 * h.cnt / h.player_count, 2) ELSE 0 END)
+         ORDER BY h.cnt DESC, h.value ASC)
+       FROM species_hist_combo h WHERE h.species = sc.species) AS ability_items
+    FROM species_counts sc
   ),
   -- Moves histogram (unnest required — separate CTE)
   moves_agg AS (
@@ -721,96 +731,96 @@ AS $$
     INNER JOIN target_buckets tb ON tb.bucket = s.bucket
     WHERE s.species = p_species
   ),
+  -- Detail histograms: inner layer produces ONE deduplicated row per (bucket, value)
+  -- with its distinct-player count; outer layer aggregates with explicit ORDER BY.
+  -- Avoids jsonb_agg(DISTINCT ... ORDER BY jsonb_build_object(...)) which sorts by
+  -- jsonb text representation (count key sorts before value key alphabetically),
+  -- producing ascending-count order instead of the required count DESC, value ASC.
+  detail_hist_ability AS (
+    SELECT ds.bucket, ds.ability AS value,
+           COUNT(DISTINCT ds.player_key) AS cnt,
+           tc.player_count
+    FROM detail_slots ds
+    INNER JOIN target_counts tc ON tc.bucket = ds.bucket
+    WHERE ds.ability IS NOT NULL
+    GROUP BY ds.bucket, ds.ability, tc.player_count
+  ),
+  detail_hist_item AS (
+    SELECT ds.bucket, ds.held_item AS value,
+           COUNT(DISTINCT ds.player_key) AS cnt,
+           tc.player_count
+    FROM detail_slots ds
+    INNER JOIN target_counts tc ON tc.bucket = ds.bucket
+    WHERE ds.held_item IS NOT NULL
+    GROUP BY ds.bucket, ds.held_item, tc.player_count
+  ),
+  detail_hist_nature AS (
+    SELECT ds.bucket, ds.nature AS value,
+           COUNT(DISTINCT ds.player_key) AS cnt,
+           tc.player_count
+    FROM detail_slots ds
+    INNER JOIN target_counts tc ON tc.bucket = ds.bucket
+    WHERE ds.nature IS NOT NULL
+    GROUP BY ds.bucket, ds.nature, tc.player_count
+  ),
+  detail_hist_tera AS (
+    SELECT ds.bucket, ds.tera_type AS value,
+           COUNT(DISTINCT ds.player_key) AS cnt,
+           tc.player_count
+    FROM detail_slots ds
+    INNER JOIN target_counts tc ON tc.bucket = ds.bucket
+    WHERE ds.tera_type IS NOT NULL
+    GROUP BY ds.bucket, ds.tera_type, tc.player_count
+  ),
+  detail_hist_combo AS (
+    SELECT ds.bucket, ds.combo AS value,
+           COUNT(DISTINCT ds.player_key) AS cnt,
+           tc.player_count
+    FROM detail_slots ds
+    INNER JOIN target_counts tc ON tc.bucket = ds.bucket
+    WHERE ds.combo IS NOT NULL
+    GROUP BY ds.bucket, ds.combo, tc.player_count
+  ),
   species_histograms AS (
     SELECT
-      ds.bucket,
-      COUNT(DISTINCT ds.player_key)          AS sp_players,
-      -- abilities
-      jsonb_agg(DISTINCT jsonb_build_object(
-        'value', ds.ability,
-        'count', cnt_ability,
-        'pct',   pct_ability
-      ) ORDER BY jsonb_build_object(
-        'value', ds.ability,
-        'count', cnt_ability,
-        'pct',   pct_ability
-      )) FILTER (WHERE ds.ability IS NOT NULL) AS abilities,
+      tc.bucket,
+      tc.player_count AS sp_players,
+      -- abilities: one row per value, aggregate with correct ordering
+      (SELECT jsonb_agg(
+         jsonb_build_object('value', h.value, 'count', h.cnt,
+           'pct', CASE WHEN h.player_count > 0
+                    THEN round(100.0 * h.cnt / h.player_count, 2) ELSE 0 END)
+         ORDER BY h.cnt DESC, h.value ASC)
+       FROM detail_hist_ability h WHERE h.bucket = tc.bucket) AS abilities,
       -- items
-      jsonb_agg(DISTINCT jsonb_build_object(
-        'value', ds.held_item,
-        'count', cnt_item,
-        'pct',   pct_item
-      ) ORDER BY jsonb_build_object(
-        'value', ds.held_item,
-        'count', cnt_item,
-        'pct',   pct_item
-      )) FILTER (WHERE ds.held_item IS NOT NULL) AS items,
+      (SELECT jsonb_agg(
+         jsonb_build_object('value', h.value, 'count', h.cnt,
+           'pct', CASE WHEN h.player_count > 0
+                    THEN round(100.0 * h.cnt / h.player_count, 2) ELSE 0 END)
+         ORDER BY h.cnt DESC, h.value ASC)
+       FROM detail_hist_item h WHERE h.bucket = tc.bucket) AS items,
       -- natures
-      jsonb_agg(DISTINCT jsonb_build_object(
-        'value', ds.nature,
-        'count', cnt_nature,
-        'pct',   pct_nature
-      ) ORDER BY jsonb_build_object(
-        'value', ds.nature,
-        'count', cnt_nature,
-        'pct',   pct_nature
-      )) FILTER (WHERE ds.nature IS NOT NULL) AS natures,
+      (SELECT jsonb_agg(
+         jsonb_build_object('value', h.value, 'count', h.cnt,
+           'pct', CASE WHEN h.player_count > 0
+                    THEN round(100.0 * h.cnt / h.player_count, 2) ELSE 0 END)
+         ORDER BY h.cnt DESC, h.value ASC)
+       FROM detail_hist_nature h WHERE h.bucket = tc.bucket) AS natures,
       -- tera types
-      jsonb_agg(DISTINCT jsonb_build_object(
-        'value', ds.tera_type,
-        'count', cnt_tera,
-        'pct',   pct_tera
-      ) ORDER BY jsonb_build_object(
-        'value', ds.tera_type,
-        'count', cnt_tera,
-        'pct',   pct_tera
-      )) FILTER (WHERE ds.tera_type IS NOT NULL) AS tera_types,
+      (SELECT jsonb_agg(
+         jsonb_build_object('value', h.value, 'count', h.cnt,
+           'pct', CASE WHEN h.player_count > 0
+                    THEN round(100.0 * h.cnt / h.player_count, 2) ELSE 0 END)
+         ORDER BY h.cnt DESC, h.value ASC)
+       FROM detail_hist_tera h WHERE h.bucket = tc.bucket) AS tera_types,
       -- ability+item combos
-      jsonb_agg(DISTINCT jsonb_build_object(
-        'value', ds.combo,
-        'count', cnt_combo,
-        'pct',   pct_combo
-      ) ORDER BY jsonb_build_object(
-        'value', ds.combo,
-        'count', cnt_combo,
-        'pct',   pct_combo
-      )) FILTER (WHERE ds.combo IS NOT NULL) AS ability_items
-    FROM (
-      SELECT
-        ds_inner.bucket,
-        ds_inner.player_key,
-        ds_inner.ability,
-        ds_inner.held_item,
-        ds_inner.nature,
-        ds_inner.tera_type,
-        ds_inner.combo,
-        -- window counts per (bucket, dimension_value)
-        COUNT(ds_inner.player_key) OVER (PARTITION BY ds_inner.bucket, ds_inner.ability)   AS cnt_ability,
-        COUNT(ds_inner.player_key) OVER (PARTITION BY ds_inner.bucket, ds_inner.held_item) AS cnt_item,
-        COUNT(ds_inner.player_key) OVER (PARTITION BY ds_inner.bucket, ds_inner.nature)    AS cnt_nature,
-        COUNT(ds_inner.player_key) OVER (PARTITION BY ds_inner.bucket, ds_inner.tera_type) AS cnt_tera,
-        COUNT(ds_inner.player_key) OVER (PARTITION BY ds_inner.bucket, ds_inner.combo)     AS cnt_combo,
-        -- pct relative to species player count in the bucket
-        CASE WHEN tc.player_count > 0
-          THEN round(100.0 * COUNT(ds_inner.player_key) OVER (PARTITION BY ds_inner.bucket, ds_inner.ability)   / tc.player_count, 2)
-          ELSE 0 END AS pct_ability,
-        CASE WHEN tc.player_count > 0
-          THEN round(100.0 * COUNT(ds_inner.player_key) OVER (PARTITION BY ds_inner.bucket, ds_inner.held_item) / tc.player_count, 2)
-          ELSE 0 END AS pct_item,
-        CASE WHEN tc.player_count > 0
-          THEN round(100.0 * COUNT(ds_inner.player_key) OVER (PARTITION BY ds_inner.bucket, ds_inner.nature)    / tc.player_count, 2)
-          ELSE 0 END AS pct_nature,
-        CASE WHEN tc.player_count > 0
-          THEN round(100.0 * COUNT(ds_inner.player_key) OVER (PARTITION BY ds_inner.bucket, ds_inner.tera_type) / tc.player_count, 2)
-          ELSE 0 END AS pct_tera,
-        CASE WHEN tc.player_count > 0
-          THEN round(100.0 * COUNT(ds_inner.player_key) OVER (PARTITION BY ds_inner.bucket, ds_inner.combo)     / tc.player_count, 2)
-          ELSE 0 END AS pct_combo
-      FROM detail_slots ds_inner
-      INNER JOIN target_counts tc
-        ON tc.bucket = ds_inner.bucket
-    ) ds
-    GROUP BY ds.bucket
+      (SELECT jsonb_agg(
+         jsonb_build_object('value', h.value, 'count', h.cnt,
+           'pct', CASE WHEN h.player_count > 0
+                    THEN round(100.0 * h.cnt / h.player_count, 2) ELSE 0 END)
+         ORDER BY h.cnt DESC, h.value ASC)
+       FROM detail_hist_combo h WHERE h.bucket = tc.bucket) AS ability_items
+    FROM target_counts tc
   ),
   -- Moves histogram (unnest in separate CTE)
   moves_agg AS (
