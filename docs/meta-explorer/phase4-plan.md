@@ -360,7 +360,7 @@ CREATE OR REPLACE FUNCTION public.get_usage_by_placement_band(
   p_start       date      DEFAULT NULL,
   p_end         date      DEFAULT NULL,
   p_min_players int       DEFAULT 0,
-  p_band_edges  numeric[] DEFAULT '{0.01,0.10,0.25}'   -- Decision 4: exclusive band boundaries
+  p_band_edges  numeric[] DEFAULT ARRAY[0.01,0.10,0.25]   -- Decision 4: exclusive band boundaries
 )
 RETURNS TABLE (
   species      text,

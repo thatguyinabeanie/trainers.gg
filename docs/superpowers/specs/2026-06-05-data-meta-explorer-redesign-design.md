@@ -15,7 +15,7 @@ Goal: give competitive players and analysts a single page that answers both "who
 
 ## Layout
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │  Controls bar (shared, sticky)               │
 ├─────────────────────────────────────────────┤
@@ -106,7 +106,7 @@ Below the chart: selected species chips + active time range label.
 
 ### Reused (no changes)
 - `getFormatUsageTimeseries()` — line chart data (`packages/supabase/src/queries/usage.ts`)
-- `fetchFormatUsageTimeseries()` — server action with 1h ISR cache
+- `fetchFormatUsageTimeseries()` — server action with 1h data cache
 - `format_meta_stats`, `pokemon_usage_stats`, `pokemon_detail_stats` tables
 
 ### New: `getPipelineData()`

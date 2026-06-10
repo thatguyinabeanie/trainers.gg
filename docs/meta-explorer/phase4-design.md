@@ -70,7 +70,7 @@ Add one tab holding all three metadata views, stacked as cards:
 │ SIDEBAR│  ── Breakdowns tab ──────────────────────────────  │
 │        │  ┌────────────────────────────────────────────┐   │
 │ format │  │  Usage by country   · "RK9 + Limitless"     │   │
-│ source │  │  ranked flag list + per-country drill       │   │
+│ source │  │  choropleth world map + ranked-list companion│   │
 │ gran.  │  └────────────────────────────────────────────┘   │
 │ min pl │  ┌────────────────────────────────────────────┐   │
 │        │  │  Division comparison · "RK9 events only"    │   │
@@ -122,15 +122,15 @@ the Phase 2 structure and keeps the source-scoped honesty captions together.
 
 **What it shows.** For each country with enough sample, which species the
 country's players over- or under-index on relative to the global meta. The
-honest, low-dependency presentation is a **ranked country list**: each row is a
-country (flag + name + player count), and expanding/selecting a country reveals
-its **top-10 species with a usage bar, paired with the global usage % for the
-same species** so the regional skew is visible (e.g. "JP runs Incineroar at 42%
-vs 31% globally").
+primary presentation is a **choropleth world map**: countries shaded by a
+usage-weighted score, clicking a country opens its **top-10 species with a usage
+bar, paired with the global usage % for the same species** so the regional skew
+is visible (e.g. "JP runs Incineroar at 42% vs 31% globally"). A ranked flag list
+(flag + name + player count) renders below the map as the sparse-state companion
+and accessible navigation fallback.
 
-**Country view rendering — Decision 1: CHOROPLETH WORLD MAP.** This overrides the
-doc's original ranked-flag-list recommendation. The primary build target is a
-`d3-geo` + `world-atlas` topojson choropleth: countries shaded by a usage-weighted
+**Country view rendering — Decision 1: CHOROPLETH WORLD MAP.** The build target
+is a `d3-geo` + `world-atlas` topojson choropleth: countries shaded by a usage-weighted
 score (or "number of distinct meta picks over-indexing"), clicking a country opens
 its top-10 species panel vs global usage. `d3-geo` and `world-atlas` are accepted
 new dependencies. Mobile = same map scaled down (pinch/tap friendly, legible at
@@ -158,7 +158,7 @@ Source filter is set to `trainers.gg`, this view has no data → empty state
 suppresses any country whose total sampled players in the slice is **below 20**
 (`p_min_country_players = 20` default). This prevents a 3-player country reading as
 "100% usage" and, critically, prevents a small-country slice from fingerprinting
-an individual. The floor is applied in SQL (`HAVING country_players >= p_min_country_players`),
+an individual. The floor is applied in SQL (`HAVING country_total >= p_min_country_players`),
 not just hidden in the UI, so the suppressed rows never leave the database. A
 muted footer notes: _"Countries with fewer than N sampled players are hidden."_
 
