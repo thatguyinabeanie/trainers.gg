@@ -171,7 +171,8 @@ export function SpeciesDrilldown({
         limit: 12,
         minPlayers,
       });
-      return result.success ? result.data : [];
+      if (!result.success) throw new Error(result.error);
+      return result.data;
     },
     initialData: keyMatchesInitial ? initialDetail : undefined,
     placeholderData: (prev) => prev,
@@ -198,7 +199,8 @@ export function SpeciesDrilldown({
         minPlayers,
         limit: 25,
       });
-      return result.success ? result.data : [];
+      if (!result.success) throw new Error(result.error);
+      return result.data;
     },
     initialData: keyMatchesInitial ? initialCombos : undefined,
     placeholderData: (prev) => prev,
@@ -232,7 +234,8 @@ export function SpeciesDrilldown({
           minPlayers,
           topN: 20,
         });
-        return result.success ? result.data : emptyTeammates;
+        if (!result.success) throw new Error(result.error);
+        return result.data;
       },
       initialData: keyMatchesInitial ? initialTeammates : undefined,
       placeholderData: (prev) => prev,
@@ -244,7 +247,8 @@ export function SpeciesDrilldown({
     queryKey: ["format-events", format],
     queryFn: async () => {
       const result = await fetchFormatEvents(format);
-      return result.success ? result.data : [];
+      if (!result.success) throw new Error(result.error);
+      return result.data;
     },
     initialData: format === initialKey.format ? initialEvents : undefined,
     placeholderData: (prev) => prev,
@@ -257,7 +261,7 @@ export function SpeciesDrilldown({
     queryKey: ["format-species", format],
     queryFn: async () => {
       const result = await fetchFormatUsage({ format });
-      if (!result.success) return initialSpeciesList;
+      if (!result.success) throw new Error(result.error);
       const { Dex } = await import("@pkmn/dex");
       return result.data.map((row) => ({
         slug: row.species,
