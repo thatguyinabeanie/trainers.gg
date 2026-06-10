@@ -128,28 +128,25 @@ its **top-10 species with a usage bar, paired with the global usage % for the
 same species** so the regional skew is visible (e.g. "JP runs Incineroar at 42%
 vs 31% globally").
 
-**Why not a choropleth (recommended approach + the open question).** A real
-choropleth needs `d3-geo` + a `topojson` world atlas (~tens of KB of geometry +
-projection code) and answers the question "which broad regions differ" — but at
-v1 data volume the answer is dominated by a handful of countries (US, JP, a few
-EU). A world map would render mostly empty with a few colored countries, which
-_understates_ the data we have (top species per country) while _adding_ deps and
-mobile-rendering complexity (pan/zoom on a 393px screen is poor). Three options,
-weighed honestly:
+**Country view rendering — Decision 1: CHOROPLETH WORLD MAP.** This overrides the
+doc's original ranked-flag-list recommendation. The primary build target is a
+`d3-geo` + `world-atlas` topojson choropleth: countries shaded by a usage-weighted
+score (or "number of distinct meta picks over-indexing"), clicking a country opens
+its top-10 species panel vs global usage. `d3-geo` and `world-atlas` are accepted
+new dependencies. Mobile = same map scaled down (pinch/tap friendly, legible at
+393px), consistent with the project's "same charts, scaled down" stance.
 
-| Approach                                           | New deps        | What it answers well                                         | Mobile                 | Verdict                                                                 |
-| -------------------------------------------------- | --------------- | ------------------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------- |
-| (a) Choropleth (`d3-geo` + `world-atlas` topojson) | 2 (~tens of KB) | "which regions differ" — but sparse at v1                    | poor (pan/zoom)        | not worth it at current volume                                          |
-| (b) **Ranked flag list + per-country drill**       | **0**           | "which species over-index per country" — the actual question | excellent (rows stack) | **recommended**                                                         |
-| (c) Grid-cartogram (CSS grid of country tiles)     | 0               | spatial-ish glance                                           | OK                     | rejected — tile placement is arbitrary without geo data; reads as noise |
+The ranked flag list (option b below) is retained as the **documented fallback /
+empty-sparse-state companion** — displayed alongside or below the map when data
+is too sparse to shade a meaningful proportion of the world's countries.
 
-**Recommendation: (b) ranked flag list, zero deps.** It answers the more useful
-question (per-country species skew, not just "this country is darker"), renders
-perfectly on mobile, and reuses the existing `countryFlag()` + `getCountryName()`
-helpers. If the user wants a literal map for the "wow" factor, option (a) is the
-fallback — flagged as the one open question with its dependency cost. The drill
-interaction (top-10 species vs global) is identical regardless of which shell
-wraps it, so the map can be added later without reworking the data layer.
+Design options weighed (for rationale trail — the choropleth is the build target):
+
+| Approach                                       | New deps | What it answers well                                         | Mobile                 | Verdict                                                                 |
+| ---------------------------------------------- | -------- | ------------------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------- |
+| **(a) Choropleth (`d3-geo` + `world-atlas`)**  | **2**    | "which regions differ" — visual impact + geographic context  | same map, scaled down  | **BUILD TARGET (Decision 1)**                                           |
+| (b) Ranked flag list + per-country drill       | 0        | "which species over-index per country" — the actual question | excellent (rows stack) | fallback / sparse-state companion                                       |
+| (c) Grid-cartogram (CSS grid of country tiles) | 0        | spatial-ish glance                                           | OK                     | rejected — tile placement is arbitrary without geo data; reads as noise |
 
 **Data scope + honesty.** `country` is populated for **RK9 and Limitless only**
 (trainers.gg is NULL in v1, privacy-gated by `show_country_flag`). Card caption:
@@ -157,19 +154,27 @@ _"Country data is available for RK9 and Limitless events only."_ When the global
 Source filter is set to `trainers.gg`, this view has no data → empty state
 (below).
 
-**Re-identification floor (hard constraint).** The RPC suppresses any country
-whose total sampled players in the slice is **below the floor** (proposed
-default **20**, an open question). This prevents a 3-player country reading as
+**Re-identification floor (hard constraint — Decision 5: 20 players).** The RPC
+suppresses any country whose total sampled players in the slice is **below 20**
+(`p_min_country_players = 20` default). This prevents a 3-player country reading as
 "100% usage" and, critically, prevents a small-country slice from fingerprinting
 an individual. The floor is applied in SQL (`HAVING country_players >= p_min_country_players`),
 not just hidden in the UI, so the suppressed rows never leave the database. A
 muted footer notes: _"Countries with fewer than N sampled players are hidden."_
 
-**Component.** `usage-country-breakdown.tsx` — a CSS list (not recharts): rows
-of `flag · name · player-count · mini usage spark or rank` sorted by player
-count desc. Selecting a row expands an inline panel of top-10 sprite rows, each
-with two bars (country usage teal/primary, global usage muted) on a shared
-`usage-series.ts` percentage track. Reuses `data-sprite-tooltip.tsx`.
+**Component.** `usage-country-breakdown.tsx` — primary: a `d3-geo` choropleth
+world map (SVG projection, countries shaded by usage data) with a click handler
+that opens a side panel of the country's top-10 species vs global usage. The
+ranked flag list (CSS rows of `flag · name · player-count · rank`) renders below
+the map as the sparse-state companion and provides accessible navigation.
+Selecting a country (map or list) expands an inline panel of top-10 sprite rows,
+each with two bars (country usage teal/primary, global usage muted). Reuses
+`data-sprite-tooltip.tsx`.
+
+**Mobile (393px).** Same choropleth map scaled to fit the viewport — pinch/tap
+friendly; tap a country to open its panel. The ranked list below provides a
+fallback for very small screens where the map is too small to tap individual
+countries.
 
 **Interactions.** Click a country row → expand its top-10 vs global. Click a
 species sprite → Phase 3 drill-down (gated behind the same absent-in-Phase-4
