@@ -47,10 +47,10 @@ a minimum-sample floor is enforced in SQL, not just the UI.
   shared primitives** beyond a tiny sprite-row list helper.
 - **`usage-dumbbell.tsx`** (NEW in Phase 2) — the shared dumbbell track/row
   primitive. The placement-band view can reuse it for its banded variant.
-- Only **`recharts ^2.15.4`** and **`d3-sankey`** are installed. No `d3-geo`,
-  `topojson`, `react-simple-maps`, `visx`, or `nivo`. **This design adds zero
-  new dependencies** — the country view uses a ranked flag list, not a
-  choropleth (see "Country view rendering" and the open question).
+- Only **`recharts ^2.15.4`** and **`d3-sankey`** are installed in the current
+  web app. **Phase 4 adds two new dependencies** for the country choropleth:
+  `d3-geo` + `world-atlas` topojson (Decision 1 — choropleth world map is the
+  build target). These are accepted new deps per the locked decision.
 
 ---
 
@@ -110,12 +110,9 @@ into the Phase 2 Top-10% dumbbell on the Sources tab.
 - Con: breaks the single-page filter-sidebar model; users lose the shared
   filter state on navigation; weakest discoverability. Rejected.
 
-**Recommendation: Option A (Breakdowns tab).** It is the smallest consistent
-extension of the Phase 2 structure and keeps the source-scoped honesty captions
-together. The one nuance worth the user's call: **placement-band overlaps Phase
-2's Top-10% dumbbell** — see view 3 for whether it earns a standalone card or
-folds in. (This is the only genuine cross-phase decision; it's listed as an open
-question.)
+**Decision 2: Option A (Breakdowns tab).** Fourth tab after Overview / Trends /
+Sources. Tab value `?tab=breakdowns`. It is the smallest consistent extension of
+the Phase 2 structure and keeps the source-scoped honesty captions together.
 
 ---
 
