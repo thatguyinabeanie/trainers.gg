@@ -209,12 +209,17 @@ export async function runRosterStage(
     }
 
     // Detect format — only fetch HTML for Champions-era events
-    const { data: eventRow } = await supabase
+    const { data: eventRow, error: dateErr } = await supabase
       .schema("rk9")
       .from("events")
       .select("date_start")
       .eq("event_id", eventId)
       .single();
+    if (dateErr) {
+      throw new Error(
+        `Failed to read date_start for ${eventId}: ${dateErr.message}`
+      );
+    }
     const dateStart = eventRow?.date_start ?? "";
     let formatId: string | null = null;
 
@@ -227,11 +232,16 @@ export async function runRosterStage(
     }
 
     if (formatId) {
-      await supabase
+      const { error: formatErr } = await supabase
         .schema("rk9")
         .from("events")
         .update({ format_id: formatId })
         .eq("event_id", eventId);
+      if (formatErr) {
+        throw new Error(
+          `Failed to update format_id for ${eventId}: ${formatErr.message}`
+        );
+      }
     }
 
     // Fetch and import the roster

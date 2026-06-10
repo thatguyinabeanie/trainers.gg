@@ -9,7 +9,7 @@
  * Supabase client and ensure the invocation is trusted.
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { type SupabaseClient } from "@supabase/supabase-js";
 
 import { processImportQueue } from "@/lib/limitless";
 

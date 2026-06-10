@@ -668,7 +668,11 @@ export function ExternalData() {
       }
       const { limitless, rk9 } = result.data;
       const total =
-        limitless.processed + rk9.teamsScraped + limitless.errors + rk9.errors;
+        limitless.processed +
+        rk9.eventsTouched +
+        rk9.teamsScraped +
+        limitless.errors +
+        rk9.errors;
       if (total === 0) {
         toast.success("No pending items to process");
       } else {
@@ -749,22 +753,27 @@ export function ExternalData() {
           }),
     ]);
 
-    if (!lResult.success) {
-      toast.error(lResult.error ?? "Limitless unqueue failed");
+    // Refresh + clear selection unconditionally — one source may have
+    // unqueued successfully even when the other errored (mirrors handleUnqueueAll).
+    setSelectedIds(new Set());
+    setRefreshKey((k) => k + 1);
+
+    const errors = [
+      ...(lResult.success ? [] : [lResult.error ?? "Limitless unqueue failed"]),
+      ...(rResult.success ? [] : [rResult.error ?? "RK9 unqueue failed"]),
+    ];
+    if (errors.length > 0) {
+      toast.error(errors.join(" · "));
       return;
     }
-    if (!rResult.success) {
-      toast.error(rResult.error ?? "RK9 unqueue failed");
-      return;
-    }
-    const total = (lResult.data?.unqueued ?? 0) + (rResult.data?.unqueued ?? 0);
+    const total =
+      (lResult.success ? lResult.data.unqueued : 0) +
+      (rResult.success ? rResult.data.unqueued : 0);
     toast.success(
       total > 0
         ? `Returned ${total} queued item(s) to pending`
         : "Nothing to unqueue"
     );
-    setSelectedIds(new Set());
-    setRefreshKey((k) => k + 1);
   }
 
   /**
@@ -776,21 +785,24 @@ export function ExternalData() {
       resetStuckRk9Events(),
     ]);
 
-    if (!lResult.success) {
-      toast.error(lResult.error ?? "Limitless reset failed");
+    // Refresh unconditionally — one source may have reset successfully
+    // even when the other errored (mirrors handleUnqueueAll).
+    setRefreshKey((k) => k + 1);
+
+    const errors = [
+      ...(lResult.success ? [] : [lResult.error ?? "Limitless reset failed"]),
+      ...(rResult.success ? [] : [rResult.error ?? "RK9 reset failed"]),
+    ];
+    if (errors.length > 0) {
+      toast.error(errors.join(" · "));
       return;
     }
-    if (!rResult.success) {
-      toast.error(rResult.error ?? "RK9 reset failed");
-      return;
-    }
-    const lCount = lResult.data?.reset ?? 0;
-    const rCount = rResult.data?.reset ?? 0;
-    const total = lCount + rCount;
+    const total =
+      (lResult.success ? lResult.data.reset : 0) +
+      (rResult.success ? rResult.data.reset : 0);
     toast.success(
       total > 0 ? `Reset ${total} stuck item(s)` : "No stuck items found"
     );
-    setRefreshKey((k) => k + 1);
   }
 
   async function handleCalculateUsage() {
@@ -854,7 +866,11 @@ export function ExternalData() {
     try {
       const result = await queueRk9Event(row.rk9!.event_id);
       if (!result.success) throw new Error(result.error);
-      toast.success("Queued — imports run in the background");
+      toast.success(
+        result.data.queued > 0
+          ? "Queued — imports run in the background"
+          : "Already queued or not eligible"
+      );
       setRefreshKey((k) => k + 1);
     } catch (e) {
       toast.error(getErrorMessage(e, "Failed to queue event"));
@@ -892,21 +908,21 @@ export function ExternalData() {
 
     setBatchQueuing(true);
     try {
-      const promises: Promise<unknown>[] = [];
-      if (limitlessIds.length > 0) {
-        promises.push(batchQueueTournaments(limitlessIds));
-      }
-      if (rk9ImportIds.length > 0) {
-        promises.push(batchQueueRk9Events(rk9ImportIds));
-      }
-      const results = await Promise.all(promises);
-      for (const result of results) {
-        const r = result as { success: boolean; error?: string };
-        if (!r.success) throw new Error(r.error);
-      }
-      const total = limitlessIds.length + rk9ImportIds.length;
+      const [lResult, rResult] = await Promise.all([
+        limitlessIds.length > 0
+          ? batchQueueTournaments(limitlessIds)
+          : Promise.resolve({ success: true as const, data: { queued: 0 } }),
+        rk9ImportIds.length > 0
+          ? batchQueueRk9Events(rk9ImportIds)
+          : Promise.resolve({ success: true as const, data: { queued: 0 } }),
+      ]);
+      if (!lResult.success) throw new Error(lResult.error);
+      if (!rResult.success) throw new Error(rResult.error);
+      const total = lResult.data.queued + rResult.data.queued;
       toast.success(
-        `Queued ${total} — imports run in the background. Use Process now to start immediately.`
+        total > 0
+          ? `Queued ${total} — imports run in the background. Use Process now to start immediately.`
+          : "No new items to queue"
       );
     } catch (e) {
       toast.error(getErrorMessage(e, "Failed to queue events"));
@@ -942,21 +958,21 @@ export function ExternalData() {
 
     setBatchQueuing(true);
     try {
-      const promises: Promise<unknown>[] = [];
-      if (limitlessIds.length > 0) {
-        promises.push(batchQueueTournaments(limitlessIds));
-      }
-      if (rk9ImportIds.length > 0) {
-        promises.push(batchQueueRk9Events(rk9ImportIds));
-      }
-      const results = await Promise.all(promises);
-      for (const result of results) {
-        const r = result as { success: boolean; error?: string };
-        if (!r.success) throw new Error(r.error);
-      }
-      const total = limitlessIds.length + rk9ImportIds.length;
+      const [lResult, rResult] = await Promise.all([
+        limitlessIds.length > 0
+          ? batchQueueTournaments(limitlessIds)
+          : Promise.resolve({ success: true as const, data: { queued: 0 } }),
+        rk9ImportIds.length > 0
+          ? batchQueueRk9Events(rk9ImportIds)
+          : Promise.resolve({ success: true as const, data: { queued: 0 } }),
+      ]);
+      if (!lResult.success) throw new Error(lResult.error);
+      if (!rResult.success) throw new Error(rResult.error);
+      const total = lResult.data.queued + rResult.data.queued;
       toast.success(
-        `Queued ${total} — imports run in the background. Use Process now to start immediately.`
+        total > 0
+          ? `Queued ${total} — imports run in the background. Use Process now to start immediately.`
+          : "No new items to queue"
       );
     } catch (e) {
       toast.error(getErrorMessage(e, "Failed to queue events"));
@@ -1029,21 +1045,21 @@ export function ExternalData() {
 
     setBatchQueuing(true);
     try {
-      const promises: Promise<unknown>[] = [];
-      if (limitlessIds.length > 0) {
-        promises.push(batchQueueTournaments(limitlessIds));
-      }
-      if (rk9ImportIds.length > 0) {
-        promises.push(batchQueueRk9Events(rk9ImportIds));
-      }
-      const results = await Promise.all(promises);
-      for (const result of results) {
-        const r = result as { success: boolean; error?: string };
-        if (!r.success) throw new Error(r.error);
-      }
-      const total = limitlessIds.length + rk9ImportIds.length;
+      const [lResult, rResult] = await Promise.all([
+        limitlessIds.length > 0
+          ? batchQueueTournaments(limitlessIds)
+          : Promise.resolve({ success: true as const, data: { queued: 0 } }),
+        rk9ImportIds.length > 0
+          ? batchQueueRk9Events(rk9ImportIds)
+          : Promise.resolve({ success: true as const, data: { queued: 0 } }),
+      ]);
+      if (!lResult.success) throw new Error(lResult.error);
+      if (!rResult.success) throw new Error(rResult.error);
+      const total = lResult.data.queued + rResult.data.queued;
       toast.success(
-        `Queued ${total} — imports run in the background. Use Process now to start immediately.`
+        total > 0
+          ? `Queued ${total} — imports run in the background. Use Process now to start immediately.`
+          : "No new items to queue"
       );
     } catch (e) {
       toast.error(getErrorMessage(e, "Failed to queue events"));
