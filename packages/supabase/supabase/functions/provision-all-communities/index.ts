@@ -6,6 +6,8 @@
 // Call after deploying the pds_handles migration to provision existing communities.
 // Safe to re-run — skips communities that already have active PDS accounts.
 
+import { timingSafeEqual } from "node:crypto";
+
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import {
@@ -19,6 +21,15 @@ import {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+/**
+ * Compares two strings in constant time to prevent timing attacks.
+ * Returns false if lengths differ; otherwise delegates to `timingSafeEqual`.
+ */
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 interface ProvisionResult {
   communityId: number;
@@ -42,24 +53,37 @@ Deno.serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing authorization" }),
-        { status: 401, headers: { ...cors, "Content-Type": "application/json" } }
+        {
+          status: 401,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
       );
     }
 
     const token = authHeader.replace("Bearer ", "");
 
     // Verify it's the service role key (not a user JWT)
-    if (token !== SUPABASE_SERVICE_ROLE_KEY) {
+    if (!safeCompare(token, SUPABASE_SERVICE_ROLE_KEY)) {
       // If it's a user JWT, verify it's a site admin
-      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-        auth: { autoRefreshToken: false, persistSession: false },
-      });
+      const supabaseAdmin = createClient(
+        SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: { autoRefreshToken: false, persistSession: false },
+        }
+      );
 
-      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+      const {
+        data: { user },
+        error: userError,
+      } = await supabaseAdmin.auth.getUser(token);
       if (userError || !user) {
         return new Response(
           JSON.stringify({ success: false, error: "Unauthorized" }),
-          { status: 401, headers: { ...cors, "Content-Type": "application/json" } }
+          {
+            status: 401,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
         );
       }
 
@@ -74,7 +98,10 @@ Deno.serve(async (req) => {
       if (!adminRole) {
         return new Response(
           JSON.stringify({ success: false, error: "Admin access required" }),
-          { status: 403, headers: { ...cors, "Content-Type": "application/json" } }
+          {
+            status: 403,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
         );
       }
     }
@@ -83,13 +110,20 @@ Deno.serve(async (req) => {
     if (!PDS_CONFIG.hasAdminPassword) {
       return new Response(
         JSON.stringify({ success: false, error: "PDS is not configured" }),
-        { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
+        {
+          status: 500,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
       );
     }
 
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    const supabaseAdmin = createClient(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: { autoRefreshToken: false, persistSession: false },
+      }
+    );
 
     // Fetch all communities that don't have an active PDS account
     const { data: communities, error: fetchError } = await supabaseAdmin
@@ -100,14 +134,24 @@ Deno.serve(async (req) => {
     if (fetchError) {
       return new Response(
         JSON.stringify({ success: false, error: fetchError.message }),
-        { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
+        {
+          status: 500,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
       );
     }
 
     if (!communities || communities.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: "All communities already provisioned", results: [] }),
-        { status: 200, headers: { ...cors, "Content-Type": "application/json" } }
+        JSON.stringify({
+          success: true,
+          message: "All communities already provisioned",
+          results: [],
+        }),
+        {
+          status: 200,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -157,7 +201,12 @@ Deno.serve(async (req) => {
 
         // Create PDS account
         const communityEmail = `community-${community.slug}@trainers.gg`;
-        const pdsResult = await createPdsAccount(handle, communityEmail, pdsPassword, inviteCode);
+        const pdsResult = await createPdsAccount(
+          handle,
+          communityEmail,
+          pdsPassword,
+          inviteCode
+        );
 
         if ("error" in pdsResult) {
           result.error = pdsResult.error;
@@ -167,29 +216,48 @@ Deno.serve(async (req) => {
 
         // Store password in Vault
         const secretName = `pds_password_community_${community.id}`;
-        const { error: vaultError } = await supabaseAdmin.rpc("vault_create_secret", {
-          secret_value: pdsPassword,
-          secret_name: secretName,
-          secret_description: `PDS password for community ${community.name} (${community.id})`,
-        });
+        const { error: vaultError } = await supabaseAdmin.rpc(
+          "vault_create_secret",
+          {
+            secret_value: pdsPassword,
+            secret_name: secretName,
+            secret_description: `PDS password for community ${community.name} (${community.id})`,
+          }
+        );
 
         if (vaultError) {
-          await supabaseAdmin.from("communities").update({ bluesky_did: pdsResult.did, bluesky_handle: handle, pds_status: "failed" }).eq("id", community.id);
+          await supabaseAdmin
+            .from("communities")
+            .update({
+              bluesky_did: pdsResult.did,
+              bluesky_handle: handle,
+              pds_status: "failed",
+            })
+            .eq("id", community.id);
           result.error = `Vault storage failed: ${vaultError.message}`;
           results.push(result);
           continue;
         }
 
         // Register in pds_handles
-        const { error: registryError } = await supabaseAdmin.from("pds_handles").insert({
-          handle,
-          entity_type: "community",
-          entity_id: community.id.toString(),
-          did: pdsResult.did,
-        });
+        const { error: registryError } = await supabaseAdmin
+          .from("pds_handles")
+          .insert({
+            handle,
+            entity_type: "community",
+            entity_id: community.id.toString(),
+            did: pdsResult.did,
+          });
 
         if (registryError) {
-          await supabaseAdmin.from("communities").update({ bluesky_did: pdsResult.did, bluesky_handle: handle, pds_status: "failed" }).eq("id", community.id);
+          await supabaseAdmin
+            .from("communities")
+            .update({
+              bluesky_did: pdsResult.did,
+              bluesky_handle: handle,
+              pds_status: "failed",
+            })
+            .eq("id", community.id);
           result.error = `Registry insert failed: ${registryError.message}`;
           results.push(result);
           continue;

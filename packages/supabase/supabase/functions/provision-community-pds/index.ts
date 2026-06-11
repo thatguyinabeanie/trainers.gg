@@ -14,6 +14,8 @@
 //
 // Authentication: Requires JWT (only community owner can provision)
 
+import { timingSafeEqual } from "node:crypto";
+
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import {
@@ -27,6 +29,15 @@ import {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+/**
+ * Compares two strings in constant time to prevent timing attacks.
+ * Returns false if lengths differ; otherwise delegates to `timingSafeEqual`.
+ */
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 interface ProvisionCommunityPdsResponse {
   success: boolean;
@@ -72,12 +83,16 @@ Deno.serve(async (req) => {
     const jwt = authHeader.replace("Bearer ", "");
 
     // Create service role client for admin operations
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
+    const supabaseAdmin = createClient(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
 
     // Verify JWT and get user
     const {
@@ -90,7 +105,7 @@ Deno.serve(async (req) => {
     // decoding JWT claims, which would be forgeable without signature verification.
     let isServiceRole = false;
     if (userError || !user) {
-      isServiceRole = jwt === SUPABASE_SERVICE_ROLE_KEY;
+      isServiceRole = safeCompare(jwt, SUPABASE_SERVICE_ROLE_KEY);
 
       if (!isServiceRole) {
         return new Response(
@@ -206,7 +221,9 @@ Deno.serve(async (req) => {
     let pdsResultDid: string;
 
     if (community.bluesky_did) {
-      console.log(`Resuming provisioning for community ${communityId} with existing DID ${community.bluesky_did}`);
+      console.log(
+        `Resuming provisioning for community ${communityId} with existing DID ${community.bluesky_did}`
+      );
       pdsResultDid = community.bluesky_did;
     } else {
       // Fresh provisioning: check handle availability and create account
@@ -270,10 +287,18 @@ Deno.serve(async (req) => {
       // Use a synthetic email for the community (not tied to any user)
       const communityEmail = `community-${community.slug}@trainers.gg`;
 
-      const pdsResult = await createPdsAccount(handle, communityEmail, pdsPassword, inviteCode);
+      const pdsResult = await createPdsAccount(
+        handle,
+        communityEmail,
+        pdsPassword,
+        inviteCode
+      );
 
       if ("error" in pdsResult) {
-        console.error("PDS account creation failed for community:", pdsResult.error);
+        console.error(
+          "PDS account creation failed for community:",
+          pdsResult.error
+        );
         return new Response(
           JSON.stringify({
             success: false,
@@ -291,14 +316,20 @@ Deno.serve(async (req) => {
 
       // Store password in Vault (needed for profile sync and future posting)
       const secretName = `pds_password_community_${communityId}`;
-      const { error: vaultError } = await supabaseAdmin.rpc("vault_create_secret", {
-        secret_value: pdsPassword,
-        secret_name: secretName,
-        secret_description: `PDS password for community ${community.name} (${communityId})`,
-      });
+      const { error: vaultError } = await supabaseAdmin.rpc(
+        "vault_create_secret",
+        {
+          secret_value: pdsPassword,
+          secret_name: secretName,
+          secret_description: `PDS password for community ${community.name} (${communityId})`,
+        }
+      );
 
       if (vaultError) {
-        console.error("Failed to store community PDS password in vault:", vaultError);
+        console.error(
+          "Failed to store community PDS password in vault:",
+          vaultError
+        );
 
         // Persist DID with 'failed' status so the community isn't stuck
         // (retries would otherwise hit HANDLE_TAKEN with no DID recorded)
@@ -327,12 +358,14 @@ Deno.serve(async (req) => {
     }
 
     // Register in pds_handles registry (fatal — without this the namespace uniqueness guarantee is broken)
-    const { error: registryError } = await supabaseAdmin.from("pds_handles").insert({
-      handle,
-      entity_type: "community",
-      entity_id: communityId.toString(),
-      did: pdsResultDid,
-    });
+    const { error: registryError } = await supabaseAdmin
+      .from("pds_handles")
+      .insert({
+        handle,
+        entity_type: "community",
+        entity_id: communityId.toString(),
+        did: pdsResultDid,
+      });
 
     if (registryError) {
       console.error("Failed to register handle in registry:", registryError);
@@ -377,7 +410,8 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "PDS account was created but database update failed. Please try again.",
+          error:
+            "PDS account was created but database update failed. Please try again.",
           code: "DB_UPDATE_FAILED",
         } satisfies ProvisionCommunityPdsResponse),
         {

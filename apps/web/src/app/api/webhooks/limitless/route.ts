@@ -19,6 +19,7 @@
  */
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { safeCompare } from "@/lib/timing-safe";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (body.secret !== expectedSecret) {
+    if (!safeCompare(String(body.secret ?? ""), expectedSecret)) {
       return NextResponse.json(
         { success: false, error: "Invalid secret" },
         { status: 401 }

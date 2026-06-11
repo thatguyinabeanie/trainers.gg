@@ -4,6 +4,8 @@
 // Authenticated by comparing the Authorization bearer to the Vault-injected
 // service-role key — there is no end-user JWT here.
 
+import { timingSafeEqual } from "node:crypto";
+
 import { createClient } from "@supabase/supabase-js";
 import { recordImportRuns } from "@trainers/supabase/mutations";
 import {
@@ -11,6 +13,15 @@ import {
   runImportStage,
   runCompileStage,
 } from "@trainers/supabase/pipeline";
+
+/**
+ * Compares two strings in constant time to prevent timing attacks.
+ * Returns false if lengths differ; otherwise delegates to `timingSafeEqual`.
+ */
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -28,7 +39,7 @@ function isValidStage(value: string | null): value is Stage {
 Deno.serve(async (req) => {
   // 1. Auth: bearer must equal the service-role key passed by pg_net.
   const bearer = req.headers.get("authorization")?.replace("Bearer ", "") ?? "";
-  if (!bearer || bearer !== SERVICE_ROLE_KEY) {
+  if (!bearer || !safeCompare(bearer, SERVICE_ROLE_KEY)) {
     return new Response(
       JSON.stringify({ error: "Unauthorized", code: "UNAUTHORIZED" }),
       {
