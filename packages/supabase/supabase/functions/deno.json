@@ -26,8 +26,6 @@
     "@trainers/validators/action-result": "../../../validators/src/action-result.ts",
     "@trainers/utils": "../../../utils/src/index.ts",
     "@trainers/supabase/mutations": "../../src/mutations/index.ts",
-    "@trainers/supabase/mutations/pipeline": "../../src/mutations/pipeline.ts",
-    "@trainers/supabase/mutations/import-runs": "../../src/mutations/import-runs.ts",
     "@trainers/supabase/queries": "../../src/queries/index.ts",
     "@trainers/supabase/sources": "../../src/sources/index.ts",
     "@trainers/supabase/types": "../../src/types.ts",
