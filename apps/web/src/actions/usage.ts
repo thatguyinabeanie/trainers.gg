@@ -1,9 +1,8 @@
 "use server";
 
 import { getErrorMessage, logError } from "@trainers/utils";
-import { z, type ActionResult } from "@trainers/validators";
+import { type ActionResult } from "@trainers/validators";
 import {
-  compileSourceTeamSlots,
   type FormatUsageRow,
   type FormatUsageTimeseriesPoint,
   type SpeciesUsagePeriod,
@@ -15,9 +14,6 @@ import {
   type MoveComboRow,
   type SpeciesTeammatesResult,
 } from "@trainers/supabase";
-import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
-import { isSiteAdmin } from "@/lib/sudo/server";
-import { invalidateUsageStatsCaches } from "@/lib/cache-invalidation";
 import {
   getCachedSpeciesUsageDetail,
   getCachedFormatUsage,
@@ -29,127 +25,6 @@ import {
   getCachedSpeciesMoveCombos,
   getCachedSpeciesTeammates,
 } from "@/lib/data/usage-cache";
-
-// ---------------------------------------------------------------------------
-// Source-scoped usage computation
-// ---------------------------------------------------------------------------
-
-// Runtime validation for the source parameter — TypeScript union types are
-// erased at runtime, so a forged request could pass any string.
-const usageSourceSchema = z.enum(["rk9", "limitless"]);
-
-/**
- * Compiles team_slots facts for a specific data source's new/unprocessed
- * events, then invalidates caches for formats that were touched.
- *
- * Admin-gated (requires site admin). Uses the service-role client to bypass
- * RLS for writing team_slots rows.
- *
- * After a successful compile the per-format and global usage caches are
- * invalidated so the team builder reflects the new data immediately.
- *
- * @param source - The data source to process ("rk9" or "limitless").
- */
-export async function calculateSourceUsage(
-  source: "rk9" | "limitless"
-): Promise<
-  ActionResult<{
-    eventsComputed: number;
-    formatsProcessed: number;
-  }>
-> {
-  try {
-    const userId = await getUserId();
-    if (!userId) return { success: false, error: "Not authenticated" };
-
-    const isAdmin = await isSiteAdmin();
-    if (!isAdmin) return { success: false, error: "Requires site admin" };
-
-    const parsedSource = usageSourceSchema.safeParse(source);
-    if (!parsedSource.success) {
-      return { success: false, error: "Invalid source" };
-    }
-    const validatedSource = parsedSource.data;
-
-    const supabase = createServiceRoleClient();
-
-    // Compile team_slots facts for new events belonging to this source only.
-    const { eventsCompiled, formats } = await compileSourceTeamSlots(
-      supabase,
-      validatedSource
-    );
-
-    // Nothing new — return early.
-    if (formats.length === 0) {
-      return {
-        success: true,
-        data: {
-          eventsComputed: eventsCompiled,
-          formatsProcessed: 0,
-        },
-      };
-    }
-
-    // Bust caches for every touched format plus the global usage tag so the
-    // builder's species usage columns reflect the freshly compiled facts.
-    invalidateUsageStatsCaches(formats);
-
-    return {
-      success: true,
-      data: {
-        eventsComputed: eventsCompiled,
-        formatsProcessed: formats.length,
-      },
-    };
-  } catch (e) {
-    logError("calculateSourceUsage", e, { source });
-    return {
-      success: false,
-      error: getErrorMessage(e, "Usage calculation failed"),
-    };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Cross-source usage computation
-// ---------------------------------------------------------------------------
-
-/**
- * Calculate usage across ALL sources (cross-source). Calls
- * `calculateSourceUsage` sequentially for each known source and sums the
- * totals. Returns a merged result even when some sources had no new events
- * (those contribute zeros). Fails fast on any source error.
- *
- * Admin-gated.
- */
-export async function calculateAllSourceUsage(): Promise<
-  ActionResult<{
-    eventsComputed: number;
-    formatsProcessed: number;
-  }>
-> {
-  try {
-    const sources = ["rk9", "limitless"] as const;
-    let eventsComputed = 0,
-      formatsProcessed = 0;
-    for (const s of sources) {
-      const r = await calculateSourceUsage(s);
-      if (!r.success) throw new Error(`[${s}] ${r.error}`);
-      eventsComputed += r.data.eventsComputed;
-      formatsProcessed += r.data.formatsProcessed;
-    }
-    return {
-      success: true,
-      data: { eventsComputed, formatsProcessed },
-    };
-  } catch (e) {
-    logError("calculateAllSourceUsage", e);
-    return {
-      success: false,
-      error: getErrorMessage(e, "Failed to calculate usage"),
-    };
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Public read: species usage detail
