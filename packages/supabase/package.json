@@ -45,6 +45,7 @@
     "@trainers/pokemon": "workspace:*",
     "@trainers/utils": "workspace:*",
     "@trainers/validators": "workspace:*",
+    "cheerio": "^1.2.0",
     "zod": "catalog:"
   },
   "peerDependencies": {
