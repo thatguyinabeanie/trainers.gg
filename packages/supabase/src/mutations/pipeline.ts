@@ -5,6 +5,10 @@
  * per scheduled run. They coordinate across sources (RK9, Limitless) and
  * apply cross-cutting concerns like tombstone filtering.
  *
+ * Reachable only via the dedicated `@trainers/supabase/pipeline` subpath (used
+ * solely by the edge function) — never the general barrels — so the scraper
+ * graph (cheerio, @pkmn/sim) stays out of the web/Jest module graph.
+ *
  * Key exports:
  * - `runSyncStage`       — discover + enqueue new RK9 and Limitless events
  * - `runImportStage`     — drain the import queue (1 RK9 event + Limitless batch)
