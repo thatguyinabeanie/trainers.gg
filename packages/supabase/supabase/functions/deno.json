@@ -24,6 +24,10 @@
     "@trainers/utils": "../../../utils/src/index.ts",
     "@trainers/supabase/mutations": "../../src/mutations/index.ts",
     "@trainers/supabase/queries": "../../src/queries/index.ts",
+    "@trainers/supabase/sources": "../../src/sources/index.ts",
+    "@trainers/supabase/types": "../../src/types.ts",
+    "@trainers/supabase/usage": "../../src/usage/compile.ts",
+    "@trainers/pokemon": "../../../pokemon/src/index.ts",
     "@trainers/posthog": "../../../posthog/src/index.ts"
   },
   "lint": {
