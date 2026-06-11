@@ -142,6 +142,13 @@ export interface TeamSlotRow {
   moves: string[];
   /** Nature; null for Limitless or when not captured by the source. */
   nature: string | null;
+  /**
+   * Polymorphic source-event FK (Decision 1). Exactly one of these is set for
+   * rk9/limitless rows; both null for trainers.gg. Drives ON DELETE CASCADE
+   * from the parent event to its team_slots rows.
+   */
+  rk9_event_id: string | null;
+  limitless_tournament_id: string | null;
 }
 
 // =============================================================================
@@ -218,6 +225,16 @@ export function buildTeamSlotRows(
 ): TeamSlotRow[] {
   if (raw.length === 0) return [];
 
+  // Decision 1: derive the polymorphic source-event FK from the event key.
+  // event_key is source-qualified ("rk9:TO027" / "limitless:12345" /
+  // "trainers.gg:42"); the native parent id is the part after the first colon.
+  // Only rk9/limitless have a source-schema parent → an FK column; trainers.gg
+  // keeps both null.
+  const nativeEventId = meta.eventKey.slice(meta.eventKey.indexOf(":") + 1);
+  const rk9EventId = meta.source === "rk9" ? nativeEventId : null;
+  const limitlessTournamentId =
+    meta.source === "limitless" ? nativeEventId : null;
+
   // Pre-compute total_players per division group (includes blank-species rows
   // because those players still participated — the blank will be skipped below
   // but the player still counts toward the denominator).
@@ -236,6 +253,8 @@ export function buildTeamSlotRows(
       // Event-level meta (stamped on every row)
       source: meta.source,
       event_key: meta.eventKey,
+      rk9_event_id: rk9EventId,
+      limitless_tournament_id: limitlessTournamentId,
       format: meta.format,
       event_date: meta.eventDate,
       event_tier: meta.eventTier,

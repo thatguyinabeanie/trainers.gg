@@ -616,6 +616,8 @@ describe("buildTeamSlotRows — output shape", () => {
     const EXPECTED_KEYS: (keyof TeamSlotRow)[] = [
       "source",
       "event_key",
+      "rk9_event_id",
+      "limitless_tournament_id",
       "format",
       "event_date",
       "event_tier",
@@ -646,5 +648,74 @@ describe("buildTeamSlotRows — output shape", () => {
     }
     // Exactly as many keys as expected — no extra fields snuck in
     expect(keys).toHaveLength(EXPECTED_KEYS.length);
+  });
+});
+
+// =============================================================================
+// Polymorphic FK column stamping (Decision 1)
+// =============================================================================
+
+const rawSlotForFk: RawSlotRow = {
+  playerKey: "rk9:5",
+  division: "masters",
+  placement: 1,
+  wins: null,
+  losses: null,
+  ties: null,
+  country: "US",
+  position: 1,
+  species: "miraidon",
+  heldItem: "choice-specs",
+  ability: "hadron-engine",
+  teraType: "electric",
+  moves: ["volt-switch"],
+  nature: "modest",
+};
+
+describe("buildTeamSlotRows polymorphic FK column (Decision 1)", () => {
+  it("stamps rk9_event_id for rk9 events and leaves limitless_tournament_id null", () => {
+    const meta: EventMeta = {
+      source: "rk9",
+      eventKey: "rk9:TO027",
+      format: "gen9vgc2024regh",
+      eventDate: "2026-01-01",
+      eventTier: "regional",
+      isOnline: false,
+    };
+    const rows = buildTeamSlotRows(meta, [rawSlotForFk]);
+    expect(rows[0]?.rk9_event_id).toBe("TO027");
+    expect(rows[0]?.limitless_tournament_id).toBeNull();
+  });
+
+  it("stamps limitless_tournament_id for limitless events and leaves rk9_event_id null", () => {
+    const meta: EventMeta = {
+      source: "limitless",
+      eventKey: "limitless:12345",
+      format: "gen9vgc2024regh",
+      eventDate: "2026-01-01",
+      eventTier: null,
+      isOnline: true,
+    };
+    const rows = buildTeamSlotRows(meta, [
+      { ...rawSlotForFk, playerKey: "limitless:5" },
+    ]);
+    expect(rows[0]?.limitless_tournament_id).toBe("12345");
+    expect(rows[0]?.rk9_event_id).toBeNull();
+  });
+
+  it("leaves both FK columns null for trainers.gg events", () => {
+    const meta: EventMeta = {
+      source: "trainers.gg",
+      eventKey: "trainers.gg:42",
+      format: "gen9vgc2024regh",
+      eventDate: "2026-01-01",
+      eventTier: null,
+      isOnline: true,
+    };
+    const rows = buildTeamSlotRows(meta, [
+      { ...rawSlotForFk, playerKey: "trainers.gg:5" },
+    ]);
+    expect(rows[0]?.rk9_event_id).toBeNull();
+    expect(rows[0]?.limitless_tournament_id).toBeNull();
   });
 });
