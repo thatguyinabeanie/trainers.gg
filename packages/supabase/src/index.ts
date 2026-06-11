@@ -65,6 +65,10 @@ export {
   extractPathFromUrl,
 } from "./storage";
 
+// Limitless format constants — pure (cheerio-free); the scraper graph stays
+// out of the web bundle, only this Set of valid format IDs is re-exported.
+export { ALL_VALID_FORMATS } from "./sources/limitless/format";
+
 // AT Protocol extended types
 export type {
   AtprotoDatabase,

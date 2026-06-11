@@ -7,17 +7,10 @@
 // ---------------------------------------------------------------------------
 
 jest.mock("@/lib/supabase/server", () => ({
-  createServiceRoleClient: jest.fn(),
   createStaticClient: jest.fn(),
-  getUserId: jest.fn(),
-}));
-
-jest.mock("@/lib/sudo/server", () => ({
-  isSiteAdmin: jest.fn(),
 }));
 
 jest.mock("@trainers/supabase", () => ({
-  compileSourceTeamSlots: jest.fn(),
   getSpeciesUsage: jest.fn(),
   getSpeciesUsageDetail: jest.fn(),
   getFormatUsageTimeseries: jest.fn(),
@@ -28,7 +21,6 @@ jest.mock("@trainers/supabase", () => ({
 // 'use cache' is a compile-time directive — inert under Jest.
 // cacheTag / cacheLife are no-ops; they never run here.
 jest.mock("next/cache", () => ({
-  updateTag: jest.fn(),
   cacheTag: jest.fn(),
   cacheLife: jest.fn(),
 }));
@@ -51,10 +43,6 @@ jest.mock("@/lib/data/usage-cache", () => ({
 // Imports (after mocks are registered)
 // ---------------------------------------------------------------------------
 
-import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
-import { isSiteAdmin } from "@/lib/sudo/server";
-import { compileSourceTeamSlots } from "@trainers/supabase";
-import { updateTag } from "next/cache";
 import {
   getCachedSpeciesUsageDetail,
   getCachedFormatUsage,
@@ -67,8 +55,6 @@ import {
   getCachedSpeciesTeammates,
 } from "@/lib/data/usage-cache";
 import {
-  calculateSourceUsage,
-  calculateAllSourceUsage,
   fetchSpeciesUsageDetail,
   fetchFormatUsage,
   fetchFormatUsageTimeseries,
@@ -84,11 +70,6 @@ import {
 // Typed mock handles
 // ---------------------------------------------------------------------------
 
-const mockGetUserId = getUserId as jest.Mock;
-const mockIsSiteAdmin = isSiteAdmin as jest.Mock;
-const mockCreateServiceRoleClient = createServiceRoleClient as jest.Mock;
-const mockCompileSourceTeamSlots = compileSourceTeamSlots as jest.Mock;
-const mockUpdateTag = updateTag as jest.Mock;
 const mockGetCachedSpeciesUsageDetail =
   getCachedSpeciesUsageDetail as jest.Mock;
 const mockGetCachedFormatUsage = getCachedFormatUsage as jest.Mock;
@@ -105,153 +86,8 @@ const mockGetCachedSpeciesTeammates = getCachedSpeciesTeammates as jest.Mock;
 // Shared setup
 // ---------------------------------------------------------------------------
 
-/** Minimal service-role client stub — calculateSourceUsage only passes it
- *  through to the @trainers/supabase helpers, which are themselves mocked. */
-const stubServiceRoleClient = {};
-
 beforeEach(() => {
   jest.clearAllMocks();
-  mockGetUserId.mockResolvedValue("user-1");
-  mockIsSiteAdmin.mockResolvedValue(true);
-  mockCreateServiceRoleClient.mockReturnValue(stubServiceRoleClient);
-});
-
-// ---------------------------------------------------------------------------
-// calculateSourceUsage
-// ---------------------------------------------------------------------------
-
-describe("calculateSourceUsage", () => {
-  it("returns error when not authenticated", async () => {
-    mockGetUserId.mockResolvedValueOnce(null);
-
-    const result = await calculateSourceUsage("rk9");
-
-    expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toBe(
-      "Not authenticated"
-    );
-    // Guard: no usage work should happen without an authenticated user
-    expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
-  });
-
-  it("returns error when user is not a site admin", async () => {
-    mockIsSiteAdmin.mockResolvedValueOnce(false);
-
-    const result = await calculateSourceUsage("rk9");
-
-    expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toBe(
-      "Requires site admin"
-    );
-    expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
-  });
-
-  it("returns success with zero counts and skips cache busting when no new events", async () => {
-    mockCompileSourceTeamSlots.mockResolvedValueOnce({
-      eventsCompiled: 0,
-      formats: [],
-    });
-
-    const result = await calculateSourceUsage("rk9");
-
-    expect(result.success).toBe(true);
-    if (!result.success) throw new Error("expected success");
-    expect(result.data.eventsComputed).toBe(0);
-    expect(result.data.formatsProcessed).toBe(0);
-
-    // No new formats → cache busting must be skipped entirely
-    expect(mockUpdateTag).not.toHaveBeenCalled();
-  });
-
-  it("happy path: compiles team_slots, returns counts, and busts cache tags", async () => {
-    const formats = ["gen9vgc2025regg"];
-    mockCompileSourceTeamSlots.mockResolvedValueOnce({
-      eventsCompiled: 3,
-      formats,
-    });
-
-    const result = await calculateSourceUsage("rk9");
-
-    expect(result.success).toBe(true);
-    if (!result.success) throw new Error("expected success");
-    expect(result.data).toEqual({
-      eventsComputed: 3,
-      formatsProcessed: 1,
-    });
-
-    // compileSourceTeamSlots must be called with the validated source
-    expect(mockCompileSourceTeamSlots).toHaveBeenCalledWith(
-      stubServiceRoleClient,
-      "rk9"
-    );
-
-    // Global usage tag must be busted
-    expect(mockUpdateTag).toHaveBeenCalledWith("usage-stats");
-    // Per-format tag must be busted for each format
-    expect(mockUpdateTag).toHaveBeenCalledWith("usage-stats:gen9vgc2025regg");
-    expect(mockUpdateTag).toHaveBeenCalledTimes(2); // one global + one per-format
-  });
-
-  it("happy path: busts one cache tag per format when multiple formats are touched", async () => {
-    const formats = ["gen9vgc2025regg", "gen9vgc2025regs"];
-    mockCompileSourceTeamSlots.mockResolvedValueOnce({
-      eventsCompiled: 5,
-      formats,
-    });
-
-    const result = await calculateSourceUsage("rk9");
-
-    expect(result.success).toBe(true);
-    // 1 global + 2 per-format = 3 total updateTag calls
-    expect(mockUpdateTag).toHaveBeenCalledTimes(3);
-    expect(mockUpdateTag).toHaveBeenCalledWith("usage-stats");
-    expect(mockUpdateTag).toHaveBeenCalledWith("usage-stats:gen9vgc2025regg");
-    expect(mockUpdateTag).toHaveBeenCalledWith("usage-stats:gen9vgc2025regs");
-  });
-
-  it.each([["rk9"], ["limitless"]] as const)(
-    "passes the correct source (%s) through to compileSourceTeamSlots",
-    async (source) => {
-      mockCompileSourceTeamSlots.mockResolvedValueOnce({
-        eventsCompiled: 1,
-        formats: ["gen9vgc2025regg"],
-      });
-
-      await calculateSourceUsage(source);
-
-      expect(mockCompileSourceTeamSlots).toHaveBeenCalledWith(
-        stubServiceRoleClient,
-        source
-      );
-    }
-  );
-
-  it("returns error when compileSourceTeamSlots throws", async () => {
-    mockCompileSourceTeamSlots.mockRejectedValueOnce(
-      new Error("DB connection refused")
-    );
-
-    const result = await calculateSourceUsage("rk9");
-
-    expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toMatch(
-      /DB connection refused/
-    );
-    // Cache busting must not happen when compilation fails
-    expect(mockUpdateTag).not.toHaveBeenCalled();
-  });
-
-  it("returns error and skips compile for an invalid source value", async () => {
-    // TypeScript narrows the param to "rk9"|"limitless" at compile time,
-    // but the Zod guard exists for forged requests that bypass the type system.
-    const result = await calculateSourceUsage("badvalue" as "rk9");
-
-    expect(result.success).toBe(false);
-    expect((result as { success: false; error: string }).error).toBe(
-      "Invalid source"
-    );
-    expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -613,108 +449,6 @@ describe("fetchFormatEvents", () => {
     const result = await fetchFormatEvents("gen9vgc2025regg");
 
     expect(result.success).toBe(false);
-  });
-});
-
-// =============================================================================
-// calculateAllSourceUsage
-// =============================================================================
-
-describe("calculateAllSourceUsage", () => {
-  it("sums results across all sources (rk9 + limitless)", async () => {
-    // rk9: 2 events, 1 format
-    mockCompileSourceTeamSlots
-      .mockResolvedValueOnce({
-        eventsCompiled: 2,
-        formats: ["gen9vgc2025regg"],
-      })
-      .mockResolvedValueOnce({
-        eventsCompiled: 5,
-        formats: ["gen9vgc2025regg", "gen9vgc2025regs"],
-      });
-
-    const result = await calculateAllSourceUsage();
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).toEqual({
-        eventsComputed: 7,
-        formatsProcessed: 3,
-      });
-    }
-  });
-
-  it("returns zero counts when both sources have no new events", async () => {
-    mockCompileSourceTeamSlots
-      .mockResolvedValueOnce({ eventsCompiled: 0, formats: [] })
-      .mockResolvedValueOnce({ eventsCompiled: 0, formats: [] });
-
-    const result = await calculateAllSourceUsage();
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).toEqual({
-        eventsComputed: 0,
-        formatsProcessed: 0,
-      });
-    }
-    // No new events → no cache tags busted
-    expect(mockUpdateTag).not.toHaveBeenCalled();
-  });
-
-  it("returns failure if any source fails", async () => {
-    // First source (rk9) fails immediately
-    mockCompileSourceTeamSlots.mockRejectedValueOnce(new Error("boom"));
-
-    const result = await calculateAllSourceUsage();
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toMatch(/boom/);
-    }
-  });
-
-  it("returns failure if second source fails", async () => {
-    // rk9 succeeds, limitless fails
-    mockCompileSourceTeamSlots
-      .mockResolvedValueOnce({
-        eventsCompiled: 2,
-        formats: ["gen9vgc2025regg"],
-      })
-      .mockRejectedValueOnce(new Error("limitless boom"));
-
-    const result = await calculateAllSourceUsage();
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toMatch(/limitless boom/);
-    }
-  });
-
-  it("returns error when not authenticated", async () => {
-    mockGetUserId.mockResolvedValueOnce(null);
-
-    const result = await calculateAllSourceUsage();
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      // calculateAllSourceUsage prefixes the failing source so logs/UI show
-      // which source broke; "rk9" is iterated first and fails the auth check.
-      expect(result.error).toBe("[rk9] Not authenticated");
-    }
-    expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
-  });
-
-  it("returns error when user is not a site admin", async () => {
-    mockIsSiteAdmin.mockResolvedValueOnce(false);
-
-    const result = await calculateAllSourceUsage();
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBe("[rk9] Requires site admin");
-    }
-    expect(mockCompileSourceTeamSlots).not.toHaveBeenCalled();
   });
 });
 

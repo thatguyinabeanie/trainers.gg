@@ -11,6 +11,7 @@
     "./hooks": "./src/hooks/index.ts",
     "./queries": "./src/queries/index.ts",
     "./mutations": "./src/mutations/index.ts",
+    "./pipeline": "./src/mutations/pipeline.ts",
     "./storage": "./src/storage/index.ts",
     "./types": "./src/types.ts"
   },
@@ -29,7 +30,7 @@
     "test:watch": "jest --watch",
     "lint": "eslint . --max-warnings 0 --cache",
     "typecheck": "tsc --noEmit",
-    "generate-types": "supabase gen types typescript --local --schema public,limitless,rk9 > src/types.ts",
+    "generate-types": "supabase gen types typescript --local > src/types.ts",
     "generate-seed-json": "tsx scripts/generate-seed-data/generate-user-data.ts",
     "generate-seeds": "tsx scripts/generate-seed-data/index.ts",
     "db:migrate": "supabase db push",
@@ -45,6 +46,7 @@
     "@trainers/pokemon": "workspace:*",
     "@trainers/utils": "workspace:*",
     "@trainers/validators": "workspace:*",
+    "cheerio": "^1.2.0",
     "zod": "catalog:"
   },
   "peerDependencies": {

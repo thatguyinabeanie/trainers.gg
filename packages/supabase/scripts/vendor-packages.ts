@@ -39,7 +39,18 @@ const sharedConfig: esbuild.BuildOptions = {
   platform: "neutral",
   target: "esnext",
   treeShaking: true,
-  external: ["@supabase/supabase-js", "zod", "obscenity", ...pkmnExternals],
+  // cheerio is the RK9/Limitless scrapers' HTML parser. It must stay external
+  // (resolved as npm:cheerio by deno.json + the bare-specifier rewrite), NOT be
+  // inlined: cheerio's transitive graph (undici, css-what, whatwg-mimetype,
+  // node:stream, …) is Node-oriented and esbuild's "neutral" platform cannot
+  // resolve node: builtins — bundling it produces 121 unresolved-import errors.
+  external: [
+    "@supabase/supabase-js",
+    "zod",
+    "obscenity",
+    "cheerio",
+    ...pkmnExternals,
+  ],
 };
 
 const trainersResolvePlugin: esbuild.Plugin = {
@@ -58,9 +69,12 @@ const trainersResolvePlugin: esbuild.Plugin = {
       return { path: resolve(validatorsSrc, `${subpath}.ts`) };
     });
 
-    build.onResolve({ filter: /^@trainers\/pokemon\/regulation-calendar/ }, () => ({
-      path: resolve(pokemonSrc, "regulation-calendar.ts"),
-    }));
+    build.onResolve(
+      { filter: /^@trainers\/pokemon\/regulation-calendar/ },
+      () => ({
+        path: resolve(pokemonSrc, "regulation-calendar.ts"),
+      })
+    );
   },
 };
 
@@ -123,6 +137,14 @@ async function main() {
     outdir: resolve(vendorDir, "supabase"),
   });
 
+  console.log("  Bundling @trainers/supabase/pipeline...");
+  await esbuild.build({
+    ...sharedConfig,
+    plugins: [trainersResolvePlugin],
+    entryPoints: { pipeline: resolve(supabaseSrc, "mutations/pipeline.ts") },
+    outdir: resolve(vendorDir, "supabase"),
+  });
+
   console.log("  Bundling @trainers/pokemon/regulation-calendar...");
   await esbuild.build({
     ...sharedConfig,
@@ -154,6 +176,7 @@ async function main() {
       ),
       resolve(vendorDir, "supabase/queries.js"),
       resolve(vendorDir, "supabase/mutations.js"),
+      resolve(vendorDir, "supabase/pipeline.js"),
       resolve(vendorDir, "pokemon/regulation-calendar.js"),
     ];
 
@@ -190,6 +213,7 @@ async function main() {
       ),
       "@trainers/supabase/queries": "vendor/supabase/queries.js",
       "@trainers/supabase/mutations": "vendor/supabase/mutations.js",
+      "@trainers/supabase/pipeline": "vendor/supabase/pipeline.js",
       "@trainers/pokemon/regulation-calendar":
         "vendor/pokemon/regulation-calendar.js",
     };

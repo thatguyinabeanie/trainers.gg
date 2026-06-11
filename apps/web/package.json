@@ -42,7 +42,6 @@
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.24",
     "@trainers/atproto": "workspace:*",
-    "@trainers/data-sources": "workspace:*",
     "@trainers/pokemon": "workspace:*",
     "@trainers/posthog": "workspace:*",
     "@trainers/supabase": "workspace:*",

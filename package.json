@@ -70,10 +70,11 @@
   "devDependencies": {
     "@supabase/supabase-js": "catalog:supabase",
     "@trainers/prettier-config": "workspace:*",
-    "dotenv": "^17.4.2",
+    "dotenv": "catalog:",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "catalog:",
     "tsx": "catalog:",
-    "turbo": "^2.9.16"
+    "turbo": "^2.9.16",
+    "typescript": "catalog:"
   }
 }

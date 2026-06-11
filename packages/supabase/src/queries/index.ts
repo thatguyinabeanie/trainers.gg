@@ -368,6 +368,9 @@ export {
   type RoleSyncFailureRow,
 } from "./discord";
 
+// pipeline.ts — autonomous import monitor (event list + status counts)
+export * from "./pipeline";
+
 // Usage stats queries
 export {
   getSpeciesUsageDetail,

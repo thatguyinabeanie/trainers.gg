@@ -101,6 +101,8 @@ export async function compileEventTeamSlots(
         (r: TeamSlotRow) => ({
           source: r.source,
           event_key: r.event_key,
+          rk9_event_id: r.rk9_event_id,
+          limitless_tournament_id: r.limitless_tournament_id,
           format: r.format,
           event_date: r.event_date,
           event_tier: r.event_tier,

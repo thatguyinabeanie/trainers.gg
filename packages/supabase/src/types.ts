@@ -1474,6 +1474,33 @@ export type Database = {
           },
         ]
       }
+      import_exclusions: {
+        Row: {
+          excluded_at: string
+          excluded_by: string | null
+          id: number
+          reason: string | null
+          source: string
+          source_event_id: string
+        }
+        Insert: {
+          excluded_at?: string
+          excluded_by?: string | null
+          id?: never
+          reason?: string | null
+          source: string
+          source_event_id: string
+        }
+        Update: {
+          excluded_at?: string
+          excluded_by?: string | null
+          id?: never
+          reason?: string | null
+          source?: string
+          source_event_id?: string
+        }
+        Relationships: []
+      }
       import_runs: {
         Row: {
           detail: Json | null
@@ -2222,12 +2249,14 @@ export type Database = {
           held_item: string | null
           id: number
           is_online: boolean
+          limitless_tournament_id: string | null
           losses: number | null
           moves: string[]
           nature: string | null
           placement: number | null
           player_key: string
           position: number
+          rk9_event_id: string | null
           source: string
           species: string
           tera_type: string | null
@@ -2247,12 +2276,14 @@ export type Database = {
           held_item?: string | null
           id?: never
           is_online: boolean
+          limitless_tournament_id?: string | null
           losses?: number | null
           moves?: string[]
           nature?: string | null
           placement?: number | null
           player_key: string
           position: number
+          rk9_event_id?: string | null
           source: string
           species: string
           tera_type?: string | null
@@ -2272,12 +2303,14 @@ export type Database = {
           held_item?: string | null
           id?: never
           is_online?: boolean
+          limitless_tournament_id?: string | null
           losses?: number | null
           moves?: string[]
           nature?: string | null
           placement?: number | null
           player_key?: string
           position?: number
+          rk9_event_id?: string | null
           source?: string
           species?: string
           tera_type?: string | null
@@ -3726,6 +3759,17 @@ export type Database = {
       add_pokemon_to_team: {
         Args: { p_pokemon: Json; p_position: number; p_team_id: number }
         Returns: number
+      }
+      admin_alter_cron_schedule: {
+        Args: { p_job_name: string; p_schedule: string }
+        Returns: undefined
+      }
+      admin_get_cron_schedules: {
+        Args: never
+        Returns: {
+          job_name: string
+          schedule: string
+        }[]
       }
       advance_to_top_cut: {
         Args: { p_top_cut_size?: number; p_tournament_id: number }

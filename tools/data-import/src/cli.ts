@@ -35,7 +35,7 @@ import {
   syncTournamentList,
   importTournament,
   type RK9Pokemon,
-} from "@trainers/data-sources";
+} from "@trainers/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 // =============================================================================
 // Helpers
@@ -144,7 +144,11 @@ rk9
 
         console.log(`\nScraping ${eventId}...`);
         const { roster } = await scrapeRoster(eventId, dateStart);
-        await scrapeTeams(eventId, roster, parsePositiveInt(opts.concurrency, "--concurrency"));
+        await scrapeTeams(
+          eventId,
+          roster,
+          parsePositiveInt(opts.concurrency, "--concurrency")
+        );
         await scrapeMatches(eventId);
         console.log(`\nDone scraping ${eventId}`);
 
@@ -170,7 +174,8 @@ rk9
               .from("events")
               .update({ format_id: formatId })
               .eq("event_id", eventId);
-            if (fmtErr) throw new Error(`Failed to update format_id: ${fmtErr.message}`);
+            if (fmtErr)
+              throw new Error(`Failed to update format_id: ${fmtErr.message}`);
           }
 
           console.log(`\nImporting ${eventId}...`);
@@ -280,7 +285,8 @@ rk9
           .from("events")
           .update({ format_id: formatId })
           .eq("event_id", eventId);
-        if (fmtErr) throw new Error(`Failed to update format_id: ${fmtErr.message}`);
+        if (fmtErr)
+          throw new Error(`Failed to update format_id: ${fmtErr.message}`);
       }
 
       console.log(`\nImporting ${eventId}...`);
@@ -379,7 +385,10 @@ rk9
           .from("events")
           .select("event_id")
           .eq("import_status", "complete");
-        if (completedErr) throw new Error(`Failed to query completed events: ${completedErr.message}`);
+        if (completedErr)
+          throw new Error(
+            `Failed to query completed events: ${completedErr.message}`
+          );
         const completed = new Set((completedRows ?? []).map((r) => r.event_id));
 
         const pending = events.filter((e) => {
@@ -398,8 +407,14 @@ rk9
         // Upsert all discovered events first
         await syncEvents(supabase, events);
 
-        const teamConcurrency = parsePositiveInt(opts.concurrency, "--concurrency");
-        const eventConcurrency = parsePositiveInt(opts.eventConcurrency, "--event-concurrency");
+        const teamConcurrency = parsePositiveInt(
+          opts.concurrency,
+          "--concurrency"
+        );
+        const eventConcurrency = parsePositiveInt(
+          opts.eventConcurrency,
+          "--event-concurrency"
+        );
 
         // Pool pattern: N event workers share a queue index.
         // Each picks the next event, processes it fully, then picks the next.
@@ -481,7 +496,12 @@ rk9
               }
 
               // Update format_id from meta.json if available
-              const metaPath = join(DATA_DIR, "rk9", event.eventId, "meta.json");
+              const metaPath = join(
+                DATA_DIR,
+                "rk9",
+                event.eventId,
+                "meta.json"
+              );
               if (existsSync(metaPath)) {
                 const meta = await readJson<EventMeta>(metaPath);
                 if (meta.formatId) {
@@ -490,7 +510,10 @@ rk9
                     .from("events")
                     .update({ format_id: meta.formatId })
                     .eq("event_id", event.eventId);
-                  if (fmtErr) console.warn(`${tag} Failed to update format_id: ${fmtErr.message}`);
+                  if (fmtErr)
+                    console.warn(
+                      `${tag} Failed to update format_id: ${fmtErr.message}`
+                    );
                 }
               }
 
@@ -567,7 +590,10 @@ rk9
           "event_id",
           events.map((e) => e.event_id)
         );
-      if (withMatchesErr) throw new Error(`Failed to query match results: ${withMatchesErr.message}`);
+      if (withMatchesErr)
+        throw new Error(
+          `Failed to query match results: ${withMatchesErr.message}`
+        );
 
       const hasMatches = new Set((withMatches ?? []).map((r) => r.event_id));
       const toProcess = events.filter((e) => !hasMatches.has(e.event_id));
@@ -742,12 +768,16 @@ limitless
         const { tournaments } = await syncTournamentList(supabase, apiKey);
 
         // Step 2: Find unimported tournaments with known format mappings
-        const { data: alreadyImported, error: alreadyImportedErr } = await supabase
-          .schema("limitless")
-          .from("tournaments")
-          .select("tournament_id")
-          .not("data_imported_at", "is", null);
-        if (alreadyImportedErr) throw new Error(`Failed to query imported tournaments: ${alreadyImportedErr.message}`);
+        const { data: alreadyImported, error: alreadyImportedErr } =
+          await supabase
+            .schema("limitless")
+            .from("tournaments")
+            .select("tournament_id")
+            .not("data_imported_at", "is", null);
+        if (alreadyImportedErr)
+          throw new Error(
+            `Failed to query imported tournaments: ${alreadyImportedErr.message}`
+          );
         const imported = new Set(
           (alreadyImported ?? []).map((r) => r.tournament_id)
         );
@@ -782,7 +812,10 @@ limitless
             : `\n${toImport.length} tournaments to scrape+import${filterDesc} (${imported.size} already done)`
         );
 
-        const eventConcurrency = parsePositiveInt(opts.eventConcurrency, "--event-concurrency");
+        const eventConcurrency = parsePositiveInt(
+          opts.eventConcurrency,
+          "--event-concurrency"
+        );
         let nextIdx = 0;
 
         async function processTournament(): Promise<void> {
