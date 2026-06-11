@@ -5,12 +5,12 @@
 // service-role key — there is no end-user JWT here.
 
 import { createClient } from "@supabase/supabase-js";
+import { recordImportRuns } from "@trainers/supabase/mutations";
 import {
   runSyncStage,
   runImportStage,
   runCompileStage,
-  recordImportRuns,
-} from "@trainers/supabase/mutations";
+} from "@trainers/supabase/pipeline";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

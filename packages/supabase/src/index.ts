@@ -65,9 +65,6 @@ export {
   extractPathFromUrl,
 } from "./storage";
 
-// sources — RK9 + Limitless import logic (scrapers, importers, queue workers)
-export * from "./sources";
-
 // AT Protocol extended types
 export type {
   AtprotoDatabase,

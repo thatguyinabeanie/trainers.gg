@@ -58,9 +58,12 @@ const trainersResolvePlugin: esbuild.Plugin = {
       return { path: resolve(validatorsSrc, `${subpath}.ts`) };
     });
 
-    build.onResolve({ filter: /^@trainers\/pokemon\/regulation-calendar/ }, () => ({
-      path: resolve(pokemonSrc, "regulation-calendar.ts"),
-    }));
+    build.onResolve(
+      { filter: /^@trainers\/pokemon\/regulation-calendar/ },
+      () => ({
+        path: resolve(pokemonSrc, "regulation-calendar.ts"),
+      })
+    );
   },
 };
 
@@ -123,6 +126,14 @@ async function main() {
     outdir: resolve(vendorDir, "supabase"),
   });
 
+  console.log("  Bundling @trainers/supabase/pipeline...");
+  await esbuild.build({
+    ...sharedConfig,
+    plugins: [trainersResolvePlugin],
+    entryPoints: { pipeline: resolve(supabaseSrc, "mutations/pipeline.ts") },
+    outdir: resolve(vendorDir, "supabase"),
+  });
+
   console.log("  Bundling @trainers/pokemon/regulation-calendar...");
   await esbuild.build({
     ...sharedConfig,
@@ -154,6 +165,7 @@ async function main() {
       ),
       resolve(vendorDir, "supabase/queries.js"),
       resolve(vendorDir, "supabase/mutations.js"),
+      resolve(vendorDir, "supabase/pipeline.js"),
       resolve(vendorDir, "pokemon/regulation-calendar.js"),
     ];
 
@@ -190,6 +202,7 @@ async function main() {
       ),
       "@trainers/supabase/queries": "vendor/supabase/queries.js",
       "@trainers/supabase/mutations": "vendor/supabase/mutations.js",
+      "@trainers/supabase/pipeline": "vendor/supabase/pipeline.js",
       "@trainers/pokemon/regulation-calendar":
         "vendor/pokemon/regulation-calendar.js",
     };
