@@ -68,6 +68,29 @@ Codecov checks patch coverage on changed lines. The project minimum is 60%; aim 
 - Fix by adding tests for the uncovered new code — do not reduce coverage thresholds
 - If a file is legitimately untestable (generated code, config), add it to `.codecov.yml`'s `ignore` list (check if that file exists first)
 
+### Find the gap from the CI artifact — don't re-run coverage locally
+
+CI already computed coverage on the exact pushed commit. **Pull its `lcov.info` artifact instead of running `jest --coverage` locally** — it's faster, matches what Codecov measured, and avoids a slow local instrumentation pass just to find which lines are missing.
+
+```bash
+# 1. Find the run for the commit, then its artifacts (look for coverage-web / coverage-packages / coverage-mobile)
+RID=$(gh run list --workflow=ci.yml --branch="$BRANCH" --limit 1 --json databaseId -q '.[0].databaseId')
+gh api repos/{owner}/{repo}/actions/runs/$RID/artifacts | jq -r '.artifacts[].name'
+
+# 2. Download the lcov (coverage-web lives at apps/web/coverage/lcov.info)
+gh run download "$RID" --name coverage-web --dir /tmp/cov-web
+
+# 3. Rank changed production files by uncovered (hits=0) lines
+git diff --name-only origin/main...HEAD -- 'apps/web/src/**/*.ts' 'apps/web/src/**/*.tsx' \
+  | grep -vE "__tests__|\.test\." | sed 's#apps/web/##' > /tmp/changed-prod.txt
+awk '/^SF:/{f=$0;sub(/^SF:/,"",f);m=0;t=0} /^DA:/{split($0,a,",");t++;if(a[2]+0==0)m++} /^end_of_record/{print m"\t"t"\t"f}' \
+  /tmp/cov-web/apps/web/coverage/lcov.info \
+  | while IFS=$'\t' read -r m t f; do s=$(echo "$f"|grep -oE "src/.*"); grep -qxF "$s" /tmp/changed-prod.txt && [ "$m" -gt 0 ] && echo "$m missing / $t  $s"; done \
+  | sort -rn
+```
+
+Caveat: lcov's per-file miss count is **whole-file** (an upper bound) — `codecov/patch` only counts the _changed_ subset of those lines. For exact patch lines, intersect the `hits=0` line numbers with the file's `git diff` added-line ranges. For prioritizing which files to test, the whole-file ranking is enough — start with the biggest, and the 0%-covered new files (small, high-yield).
+
 ## Submodule Gotcha
 
 Every `actions/checkout` step in CI uses `submodules: recursive` to check out `vendor/damage-calc`. If you see a build error like `Cannot find module '@smogon/calc'`, the submodule was not initialized. This is a CI configuration issue — never work around it by changing the `@smogon/calc` dependency to a git tarball. See the root `CLAUDE.md` for the full constraint.

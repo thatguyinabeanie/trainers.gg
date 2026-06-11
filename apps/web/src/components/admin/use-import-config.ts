@@ -32,7 +32,13 @@ export function useImportConfig() {
   const limitlessCronIntervalCommitted = useRef(limitlessCronInterval);
   const limitlessBatchSizeCommitted = useRef(limitlessBatchSize);
 
-  // Single loading flag for all site config fields — set false once all 7 resolve
+  // Last-run timestamps (read-only; set by the cron worker)
+  const [rk9LastRunAt, setRk9LastRunAt] = useState<string | null>(null);
+  const [limitlessLastRunAt, setLimitlessLastRunAt] = useState<string | null>(
+    null
+  );
+
+  // Single loading flag for all site config fields — set false once all 9 resolve
   const [configLoading, setConfigLoading] = useState(true);
 
   // -------------------------------------------------------------------------
@@ -51,6 +57,8 @@ export function useImportConfig() {
           concurrency,
           rk9Cron,
           limCron,
+          rk9LastRun,
+          limLastRun,
         ] = await Promise.all([
           getSiteConfig<boolean>("rk9_backend_auto_import"),
           getSiteConfig<boolean>("limitless_backend_auto_import"),
@@ -59,6 +67,8 @@ export function useImportConfig() {
           getSiteConfig<number>("rk9_team_concurrency"),
           getSiteConfig<number>("rk9_cron_interval_seconds"),
           getSiteConfig<number>("limitless_cron_interval_seconds"),
+          getSiteConfig<string>("rk9_last_run_at"),
+          getSiteConfig<string>("limitless_last_run_at"),
         ]);
         if (cancelled) return;
         if (rk9Auto.success && rk9Auto.data !== null)
@@ -75,6 +85,8 @@ export function useImportConfig() {
           setRk9CronInterval(rk9Cron.data);
         if (limCron.success && limCron.data !== null)
           setLimitlessCronInterval(limCron.data);
+        if (rk9LastRun.success) setRk9LastRunAt(rk9LastRun.data ?? null);
+        if (limLastRun.success) setLimitlessLastRunAt(limLastRun.data ?? null);
       } finally {
         if (!cancelled) setConfigLoading(false);
       }
@@ -220,6 +232,10 @@ export function useImportConfig() {
     rk9CronInterval,
     limitlessCronInterval,
     limitlessBatchSize,
+    /** ISO timestamp of when the RK9 cron last ran (read-only). */
+    rk9LastRunAt,
+    /** ISO timestamp of when the Limitless cron last ran (read-only). */
+    limitlessLastRunAt,
     handleToggleRk9Backend,
     handleToggleLimitlessBackend,
     handleRk9TeamsPerTickChange,

@@ -1,4 +1,5 @@
 import {
+  isQueueable,
   queueableIds,
   rosterEligibleIds,
   teamsEligibleIds,
@@ -48,15 +49,19 @@ function limRow(id: string, import_status: string | null): UnifiedRow {
   return { ...row, displayStatus: deriveDisplayStatus(row) };
 }
 
-function rk9Row(id: string, import_status: string): UnifiedRow {
+function rk9Row(
+  id: string,
+  import_status: string,
+  overrides: Partial<{ status: string; date_start: string }> = {}
+): UnifiedRow {
   return {
     id: `rk9-${id}`,
     source: "rk9",
     name: id,
     category: "VG",
-    date: "2026-06-04",
+    date: overrides.date_start ?? "2026-06-04",
     playerCount: 10,
-    status: "pending",
+    status: overrides.status ?? "pending",
     statusDetail: import_status,
     displayStatus: "pending",
     error: null,
@@ -69,7 +74,7 @@ function rk9Row(id: string, import_status: string): UnifiedRow {
       name: id,
       tier: "VG",
       format_id: "gen9vgc2025regg",
-      date_start: "2026-06-04",
+      date_start: overrides.date_start ?? "2026-06-04",
       date_end: "2026-06-04",
       location_city: null,
       location_country: "US",
@@ -78,6 +83,9 @@ function rk9Row(id: string, import_status: string): UnifiedRow {
       import_status,
       import_error: null,
       teams_imported_count: 0,
+      import_attempts: 0,
+      import_requested_at: null,
+      imported_at: null,
     },
   };
 }
@@ -119,5 +127,60 @@ describe("teamsEligibleIds (RK9)", () => {
       rk9Row("d", "complete"),
     ];
     expect(teamsEligibleIds(rows)).toEqual(["b", "c", "d"]);
+  });
+});
+
+// =============================================================================
+// isQueueable — single source of truth for UI eligibility
+// =============================================================================
+
+describe("isQueueable (RK9)", () => {
+  it.each([
+    ["pending", true],
+    ["failed", true],
+    ["queued", false],
+    ["roster", false],
+    ["teams", false],
+    ["complete", false],
+  ])("rk9 import_status=%s → isQueueable=%s", (import_status, expected) => {
+    expect(isQueueable(rk9Row("x", import_status))).toBe(expected);
+  });
+
+  it("returns false for an upcoming RK9 row regardless of import_status", () => {
+    // Upcoming rows have status="upcoming" set by the caller — simulate that
+    const upcomingPending = rk9Row("u", "pending", {
+      status: "upcoming",
+      date_start: "2999-01-01",
+    });
+    expect(isQueueable(upcomingPending)).toBe(false);
+  });
+});
+
+describe("isQueueable (Limitless)", () => {
+  it.each([
+    // null import_status → pending → queueable
+    [null, true],
+    // explicit failed → queueable
+    ["failed", true],
+    // already queued → not queueable
+    ["queued", false],
+    // actively importing → not queueable
+    ["importing", false],
+    // fully imported — completed row has data_imported_at set → displayStatus "imported"
+    ["completed", false],
+  ])(
+    "limitless import_status=%s → isQueueable=%s",
+    (import_status, expected) => {
+      expect(isQueueable(limRow("y", import_status))).toBe(expected);
+    }
+  );
+
+  it("returns false for a limitless row with an unmapped format_id (skipped)", () => {
+    // Rows with unmapped format resolve to displayStatus "skipped" — not queueable
+    const row: UnifiedRow = {
+      ...limRow("z", null),
+      displayStatus: "skipped",
+    };
+    expect(isQueueable(row)).toBe(false);
   });
 });

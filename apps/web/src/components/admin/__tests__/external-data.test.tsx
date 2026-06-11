@@ -36,6 +36,11 @@ jest.mock("@/actions/rk9", () => ({
   scrapeRk9Roster: jest.fn(),
   scrapeRk9TeamsBatch: jest.fn(),
   resetRk9EventData: jest.fn(),
+  queueRk9Event: jest.fn(),
+  batchQueueRk9Events: jest.fn(),
+  unqueueRk9Events: jest.fn(),
+  resetStuckRk9Events: jest.fn(),
+  requeueFailedRk9Events: jest.fn(),
 }));
 
 jest.mock("next/navigation", () => ({
@@ -47,7 +52,14 @@ jest.mock("@/actions/limitless", () => ({
   importLimitlessTournament: jest.fn(),
   batchQueueTournaments: jest.fn(),
   triggerLimitlessSync: jest.fn(),
-  triggerImportQueue: jest.fn(),
+  unqueueLimitlessTournaments: jest.fn(),
+  resetStuckLimitlessImports: jest.fn(),
+  requeueFailedLimitlessTournaments: jest.fn(),
+}));
+
+jest.mock("@/actions/import-queue", () => ({
+  processImportQueuesNow: jest.fn(),
+  getRecentImportRuns: jest.fn(),
 }));
 
 // Per-table data returned by the useSupabaseQuery mock. The component calls
@@ -105,6 +117,17 @@ jest.mock("@/lib/limitless", () => ({
 // focused on ExternalData's own conditional-render branches.
 jest.mock("../expanded-row-data", () => ({
   ExpandedRowData: () => <div data-testid="expanded-row" />,
+}));
+
+// Stub RecentRuns — it has its own test suite; here we only verify it mounts.
+jest.mock("../recent-runs", () => ({
+  RecentRuns: ({ runs, loading }: { runs: unknown[]; loading?: boolean }) => (
+    <div
+      data-testid="recent-runs-stub"
+      data-count={runs.length}
+      data-loading={loading ? "true" : "false"}
+    />
+  ),
 }));
 jest.mock("../player-expanded-data", () => ({
   PlayerExpandedData: () => <div data-testid="player-expanded-row" />,
@@ -294,24 +317,26 @@ jest.mock("../external-data-cards", () => ({
   EventList: () => <div data-testid="event-list-stub" />,
 }));
 
-// Stub QueueStrip — renders a sentinel + Run Import button so drain-loop tests can
-// trigger it; it has its own unit tests in external-data-queue-strip.test.tsx.
+// Stub QueueStrip — renders sentinel buttons for process/unqueue/reset so handler
+// tests can trigger them. Has its own unit tests in external-data-queue-strip.test.tsx.
 jest.mock("../external-data-queue-strip", () => ({
   QueueStrip: ({
-    onRunImport,
-    draining,
-    queuedCount,
+    onProcessNow,
+    onUnqueueAll,
+    onResetStuck,
+    processing,
   }: {
-    onRunImport: () => void;
-    draining: boolean;
-    queuedCount: number;
+    onProcessNow: () => void;
+    onUnqueueAll: () => void;
+    onResetStuck: () => void;
+    processing: boolean;
   }) => (
     <div data-testid="queue-strip-stub">
-      {queuedCount > 0 && (
-        <button onClick={onRunImport} disabled={draining}>
-          Run Import
-        </button>
-      )}
+      <button onClick={onProcessNow} disabled={processing}>
+        Process Now
+      </button>
+      <button onClick={onUnqueueAll}>Unqueue All</button>
+      <button onClick={onResetStuck}>Reset Stuck</button>
     </div>
   ),
 }));
@@ -347,6 +372,9 @@ describe("ExternalData slider handlers", () => {
       return { success: true, data: 10 };
     });
     mockSetSiteConfig.mockResolvedValue({ success: true });
+    jest
+      .requireMock("@/actions/import-queue")
+      .getRecentImportRuns.mockResolvedValue({ success: true, data: [] });
   });
 
   afterEach(() => {
@@ -537,6 +565,11 @@ function setupSiteConfigMocks() {
     return { success: true, data: 10 };
   });
   mockSetSiteConfig.mockResolvedValue({ success: true });
+
+  // Default: admin-gated action returns an empty run list
+  jest
+    .requireMock("@/actions/import-queue")
+    .getRecentImportRuns.mockResolvedValue({ success: true, data: [] });
 }
 
 async function renderAndWaitForRk9Tab() {
@@ -992,16 +1025,9 @@ describe("ExternalData events table rendering", () => {
     expect(screen.getByText(/50\/100 teams/i)).toBeInTheDocument();
   });
 
-  it("triggers roster scrape then team scrape when Import is clicked on a pending RK9 row", async () => {
-    const { scrapeRk9Roster, scrapeRk9TeamsBatch } =
-      jest.requireMock("@/actions/rk9");
-    scrapeRk9Roster.mockResolvedValue({ success: true });
-    scrapeRk9TeamsBatch.mockResolvedValue({
-      success: true,
-      done: true,
-      scraped: 0,
-      total: 0,
-    });
+  it("queues a pending RK9 row for server-side import when Import is clicked", async () => {
+    const { queueRk9Event } = jest.requireMock("@/actions/rk9");
+    queueRk9Event.mockResolvedValue({ success: true, data: { queued: 1 } });
 
     render(<ExternalData />);
     await waitFor(() =>
@@ -1017,21 +1043,15 @@ describe("ExternalData events table rendering", () => {
       );
     });
 
-    // One-pass: roster first, then teams — both must be called in a single click
-    await waitFor(() => expect(scrapeRk9Roster).toHaveBeenCalled());
-    await waitFor(() => expect(scrapeRk9TeamsBatch).toHaveBeenCalled());
+    // handleImport for RK9 queues via queueRk9Event (server-side pickup), not scrape
+    await waitFor(() =>
+      expect(queueRk9Event).toHaveBeenCalledWith("e-pending")
+    );
   });
 
-  it("triggers roster scrape then team scrape when Import is clicked on a roster-ready RK9 row", async () => {
-    const { scrapeRk9Roster, scrapeRk9TeamsBatch } =
-      jest.requireMock("@/actions/rk9");
-    scrapeRk9Roster.mockResolvedValue({ success: true });
-    scrapeRk9TeamsBatch.mockResolvedValue({
-      success: true,
-      done: true,
-      scraped: 0,
-      total: 0,
-    });
+  it("queues a roster-ready RK9 row for server-side import when Import is clicked", async () => {
+    const { queueRk9Event } = jest.requireMock("@/actions/rk9");
+    queueRk9Event.mockResolvedValue({ success: true, data: { queued: 1 } });
 
     render(<ExternalData />);
     await waitFor(() =>
@@ -1047,17 +1067,15 @@ describe("ExternalData events table rendering", () => {
       );
     });
 
-    // One-pass: roster first, then teams — both must be called in a single click
-    await waitFor(() => expect(scrapeRk9Roster).toHaveBeenCalled());
-    await waitFor(() => expect(scrapeRk9TeamsBatch).toHaveBeenCalled());
+    await waitFor(() => expect(queueRk9Event).toHaveBeenCalledWith("e-roster"));
   });
 
-  it("does not scrape teams if roster scrape fails", async () => {
-    const { scrapeRk9Roster, scrapeRk9TeamsBatch } =
-      jest.requireMock("@/actions/rk9");
-    scrapeRk9Roster.mockResolvedValue({
+  it("shows error toast if queueRk9Event fails", async () => {
+    const { queueRk9Event } = jest.requireMock("@/actions/rk9");
+    const { toast } = jest.requireMock("sonner");
+    queueRk9Event.mockResolvedValue({
       success: false,
-      error: "Network error",
+      error: "Queue failed",
     });
 
     render(<ExternalData />);
@@ -1074,9 +1092,9 @@ describe("ExternalData events table rendering", () => {
       );
     });
 
-    await waitFor(() => expect(scrapeRk9Roster).toHaveBeenCalled());
-    // Teams must NOT be scraped if roster failed
-    expect(scrapeRk9TeamsBatch).not.toHaveBeenCalled();
+    await waitFor(() => expect(queueRk9Event).toHaveBeenCalled());
+    // Error toast shown on failure
+    expect(toast.error).toHaveBeenCalled();
   });
 
   it("resets event data after confirmation when the reset button is clicked", async () => {
@@ -1583,6 +1601,170 @@ describe("Limitless status tabs + skipped", () => {
       expect(
         screen.getByRole("button", { name: /Import matching \(2\)/i })
       ).toBeInTheDocument();
+    });
+  });
+});
+
+// =============================================================================
+// isQueueable integration — rk9 in-progress rows excluded from batch calls
+// =============================================================================
+
+describe("Import all/matching excludes rk9 in-progress rows", () => {
+  beforeEach(() => {
+    setupSiteConfigMocks();
+    // Mix: one pending (queueable), one roster/in-progress (NOT queueable),
+    // one failed (queueable). The batch call must only receive pending + failed.
+    mockSupabaseData = {
+      events: [
+        makeEvent({
+          event_id: "e-pending",
+          name: "Pending Event",
+          import_status: "pending",
+        }),
+        makeEvent({
+          event_id: "e-roster",
+          name: "Roster In-Progress",
+          import_status: "roster",
+        }),
+        makeEvent({
+          event_id: "e-failed",
+          name: "Failed Event",
+          import_status: "failed",
+        }),
+      ],
+    };
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    mockSupabaseData = {};
+  });
+
+  it("Import all only batches pending/failed rk9 ids — never in-progress", async () => {
+    const { batchQueueRk9Events } = jest.requireMock("@/actions/rk9");
+    batchQueueRk9Events.mockResolvedValue({
+      success: true,
+      data: { queued: 2 },
+    });
+
+    render(<ExternalData />);
+    await waitFor(() =>
+      expect(screen.getByText("Pending Event")).toBeInTheDocument()
+    );
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: /Import all \(\d+\)/i })
+      );
+    });
+
+    await waitFor(() => expect(batchQueueRk9Events).toHaveBeenCalled());
+
+    // The batch call must include pending + failed but NOT the roster (in-progress) id
+    const [calledIds] = batchQueueRk9Events.mock.calls[0] as [string[]];
+    expect(calledIds).toContain("e-pending");
+    expect(calledIds).toContain("e-failed");
+    expect(calledIds).not.toContain("e-roster");
+  });
+
+  it("Import matching only batches pending/failed rk9 ids — never in-progress", async () => {
+    const { batchQueueRk9Events } = jest.requireMock("@/actions/rk9");
+    batchQueueRk9Events.mockResolvedValue({
+      success: true,
+      data: { queued: 2 },
+    });
+
+    render(<ExternalData />);
+    await waitFor(() =>
+      expect(screen.getByText("Pending Event")).toBeInTheDocument()
+    );
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: /Import matching \(\d+\)/i })
+      );
+    });
+
+    await waitFor(() => expect(batchQueueRk9Events).toHaveBeenCalled());
+
+    const [calledIds] = batchQueueRk9Events.mock.calls[0] as [string[]];
+    expect(calledIds).toContain("e-pending");
+    expect(calledIds).toContain("e-failed");
+    expect(calledIds).not.toContain("e-roster");
+  });
+});
+
+// =============================================================================
+// RecentRuns panel wiring
+// =============================================================================
+
+describe("RecentRuns panel", () => {
+  beforeEach(() => {
+    setupSiteConfigMocks();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    mockSupabaseData = {};
+  });
+
+  it("renders the RecentRuns stub when getRecentImportRuns resolves", async () => {
+    jest
+      .requireMock("@/actions/import-queue")
+      .getRecentImportRuns.mockResolvedValue({ success: true, data: [] });
+
+    render(<ExternalData />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("recent-runs-stub")).toBeInTheDocument();
+    });
+  });
+
+  it("passes run rows to the stub when the action returns data", async () => {
+    jest
+      .requireMock("@/actions/import-queue")
+      .getRecentImportRuns.mockResolvedValue({
+        success: true,
+        data: [
+          {
+            id: 1,
+            source: "limitless",
+            status: "ok",
+            trigger: "manual",
+            processed: 5,
+            errors: 0,
+            remaining: 0,
+            skip_reason: null,
+            started_at: new Date().toISOString(),
+            finished_at: new Date().toISOString(),
+            detail: {},
+          },
+        ],
+      });
+
+    render(<ExternalData />);
+
+    await waitFor(() => {
+      const stub = screen.getByTestId("recent-runs-stub");
+      expect(stub).toBeInTheDocument();
+      expect(stub.getAttribute("data-count")).toBe("1");
+    });
+  });
+
+  it("renders the stub with empty runs when getRecentImportRuns fails", async () => {
+    jest
+      .requireMock("@/actions/import-queue")
+      .getRecentImportRuns.mockResolvedValue({
+        success: false,
+        error: "Not authenticated",
+      });
+
+    render(<ExternalData />);
+
+    await waitFor(() => {
+      const stub = screen.getByTestId("recent-runs-stub");
+      expect(stub).toBeInTheDocument();
+      expect(stub.getAttribute("data-count")).toBe("0");
     });
   });
 });

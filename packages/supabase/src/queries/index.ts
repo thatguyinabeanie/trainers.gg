@@ -162,6 +162,10 @@ export {
 } from "./audit-log";
 export type { AuditLogEntry } from "./audit-log";
 
+// Import-runs observability log queries
+export { listRecentImportRuns } from "./import-runs";
+export type { ImportRunRow } from "./import-runs";
+
 // Sudo mode queries
 export {
   getActiveSudoSession,

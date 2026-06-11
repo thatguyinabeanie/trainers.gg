@@ -10,6 +10,9 @@ export interface SelectionBarProps {
   // Unified import action (both sources)
   importEligibleCount?: number;
   onImportSelected?: () => void;
+  // Unqueue selected queued rows (returns them to Pending)
+  unqueueEligibleCount?: number;
+  onUnqueueSelected?: () => void;
   // RK9 reset (only RK9 rows have reset)
   resetEligibleCount?: number;
   onResetEvents?: () => void;
@@ -29,6 +32,16 @@ export function SelectionBar(props: SelectionBarProps) {
       >
         Import selected ({props.importEligibleCount ?? 0})
       </Button>
+      {(props.unqueueEligibleCount ?? 0) > 0 && (
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={props.bulkProcessing}
+          onClick={props.onUnqueueSelected}
+        >
+          Unqueue ({props.unqueueEligibleCount ?? 0})
+        </Button>
+      )}
       {(props.resetEligibleCount ?? 0) > 0 && (
         <Button
           size="sm"

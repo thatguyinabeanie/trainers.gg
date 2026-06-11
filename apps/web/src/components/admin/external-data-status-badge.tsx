@@ -1,6 +1,13 @@
 "use client";
 
-import { CheckCircle2, Clock, Loader2, Users, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  Hourglass,
+  Loader2,
+  Users,
+  XCircle,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 
@@ -8,38 +15,22 @@ import { type UnifiedRow } from "./external-data-shared";
 
 interface StatusBadgeProps {
   row: UnifiedRow;
-  activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
 }
 
-export function StatusBadge({ row, activeJobs }: StatusBadgeProps) {
-  // RK9 active job display
-  if (row.rk9) {
-    const activeJob = activeJobs.get(row.rk9.event_id);
-    if (activeJob) {
-      if (
-        activeJob.type === "teams" &&
-        activeJob.total &&
-        activeJob.total > 0
-      ) {
-        const pct = Math.round(
-          ((activeJob.scraped ?? 0) / activeJob.total) * 100
-        );
-        return (
-          <Badge variant="secondary" className="text-xs">
-            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            Teams {activeJob.scraped}/{activeJob.total} ({pct}%)
-          </Badge>
-        );
-      }
-      return (
-        <Badge variant="secondary" className="text-xs">
-          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          {activeJob.type === "roster"
-            ? "Scraping roster..."
-            : "Scraping teams..."}
-        </Badge>
-      );
-    }
+export function StatusBadge({ row }: StatusBadgeProps) {
+  // Rows waiting in the import queue but not yet actively importing — muted
+  // amber tone with a hourglass icon to distinguish from the spinner used for
+  // actively-running imports.
+  if (row.displayStatus === "queued") {
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400"
+      >
+        <Hourglass className="mr-1 h-3 w-3" />
+        Queued
+      </Badge>
+    );
   }
 
   // Limitless rows whose format can't be imported (e.g. CUSTOM) — surfaced as a
@@ -75,17 +66,6 @@ export function StatusBadge({ row, activeJobs }: StatusBadgeProps) {
         </Badge>
       );
     case "in-progress":
-      if (row.limitless?.import_status === "queued") {
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400"
-          >
-            <Clock className="mr-1 h-3 w-3" />
-            Queued
-          </Badge>
-        );
-      }
       if (row.limitless?.import_status === "importing") {
         return (
           <Badge
@@ -112,16 +92,19 @@ export function StatusBadge({ row, activeJobs }: StatusBadgeProps) {
           Teams partial
         </Badge>
       );
-    case "failed":
+    case "failed": {
+      // import_attempts lives on whichever source backs this row (Limitless or
+      // RK9) — show the retry-count suffix for both, not just Limitless.
+      const attempts =
+        row.limitless?.import_attempts ?? row.rk9?.import_attempts;
       return (
         <Badge variant="destructive" className="text-xs">
           <XCircle className="mr-1 h-3 w-3" />
           Failed
-          {row.limitless?.import_attempts
-            ? ` (${row.limitless.import_attempts}x)`
-            : ""}
+          {attempts ? ` (${attempts}x)` : ""}
         </Badge>
       );
+    }
     default:
       return (
         <Badge variant="outline" className="text-xs">

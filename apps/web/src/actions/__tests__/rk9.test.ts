@@ -80,6 +80,16 @@ jest.mock("@/lib/rk9/index", () => ({
   seedSpeciesMap: jest.fn().mockResolvedValue(undefined),
 }));
 
+// The worker (@/lib/rk9/worker) imports importEvent/seedSpeciesMap from the
+// package directly (not via the barrel, to avoid a circular import), so the
+// package must be mocked too.
+jest.mock("@trainers/data-sources", () => ({
+  ...jest.requireActual("@trainers/data-sources"),
+  syncEvents: jest.fn(),
+  importEvent: jest.fn(),
+  seedSpeciesMap: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock("@/actions/site-config", () => ({
   getSiteConfig: jest
     .fn()
@@ -662,7 +672,7 @@ describe("scrapeRk9Roster", () => {
   it("returns success:true with playerCount when roster import succeeds", async () => {
     const { parseRosterPage, formatDetectionNeedsHtml } =
       jest.requireMock("@/lib/rk9/scraper");
-    const { importEvent } = jest.requireMock("@/lib/rk9/index");
+    const { importEvent } = jest.requireMock("@trainers/data-sources");
 
     // Skip the HTML-based format detection path (simpler mock path)
     formatDetectionNeedsHtml.mockReturnValueOnce(false);
