@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { PipelineEvent } from "@trainers/supabase/queries";
+import { type PipelineEvent } from "@trainers/supabase/queries";
 
 // Map unified display status → StatusBadge semantic color bucket
 const DISPLAY_TO_BADGE: Record<

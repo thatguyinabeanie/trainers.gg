@@ -12,7 +12,7 @@ jest.mock("@/lib/utils", () => ({
 // ── Import under test (after mocks) ──────────────────────────────────────────
 
 import { StatusChips } from "../status-chips";
-import type { DisplayStatus, StatusCounts } from "@trainers/supabase/queries";
+import { type DisplayStatus, type StatusCounts } from "@trainers/supabase/queries";
 
 // =============================================================================
 // Helpers

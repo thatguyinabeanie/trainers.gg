@@ -363,7 +363,23 @@ describe("clearExclusionAction", () => {
     if (!result.success) expect(result.error).toMatch(/admin/i);
   });
 
-  it("clears the exclusion by id", async () => {
+  it.each([
+    [1.5, "non-integer float"],
+    [-1, "negative id"],
+    [0, "zero id"],
+    ["abc", "string id"],
+  ])(
+    "returns Invalid input and does not call clearExclusion for %p (%s)",
+    async (badInput) => {
+      asAdmin();
+      const result = await clearExclusionAction(badInput);
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error).toBe("Invalid input");
+      expect(mockClearExclusion).not.toHaveBeenCalled();
+    }
+  );
+
+  it("clears the exclusion by id for a valid positive integer", async () => {
     asAdmin();
     mockClearExclusion.mockResolvedValue(undefined);
 
@@ -376,7 +392,7 @@ describe("clearExclusionAction", () => {
     asAdmin();
     mockClearExclusion.mockRejectedValue(new Error("not found"));
 
-    const result = await clearExclusionAction(0);
+    const result = await clearExclusionAction(5);
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toContain("not found");
   });
@@ -567,6 +583,44 @@ describe("getPipelineConfigAction", () => {
     if (result.success) expect(result.data.limitlessBatchSize).toBe(25);
   });
 
+  it.each([
+    ["abc", "non-numeric string → NaN"],
+    [0, "zero is below range"],
+    [999, "above 100 is out of range"],
+  ])(
+    "clamps limitlessBatchSize to 25 when stored value is %p (%s)",
+    async (malformedValue) => {
+      asAdmin();
+      const mockSupabase = {
+        from: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            in: jest.fn().mockResolvedValue({
+              data: [
+                { key: "pipeline_enabled", value: true },
+                {
+                  key: "limitless_import_batch_size",
+                  value: malformedValue,
+                },
+              ],
+              error: null,
+            }),
+          }),
+        }),
+      };
+      const { createServiceRoleClient } = jest.requireMock(
+        "@/lib/supabase/server"
+      ) as { createServiceRoleClient: jest.Mock };
+      createServiceRoleClient.mockReturnValue(mockSupabase);
+
+      const result = await getPipelineConfigAction();
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.limitlessBatchSize).toBe(25);
+        expect(Number.isNaN(result.data.limitlessBatchSize)).toBe(false);
+      }
+    }
+  );
+
   it("forwards DB errors as failure", async () => {
     asAdmin();
     const mockSupabase = {
@@ -600,6 +654,32 @@ describe("setPipelineEnabledAction", () => {
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toMatch(/admin/i);
   });
+
+  it.each([
+    ["true", "string true"],
+    [1, "number 1"],
+    [null, "null"],
+    [undefined, "undefined"],
+    [{}, "object"],
+  ])(
+    "returns Invalid input and does not upsert for %p (%s)",
+    async (badInput) => {
+      asAdmin();
+      const mockUpsert = jest.fn();
+      const mockSupabase = {
+        from: jest.fn().mockReturnValue({ upsert: mockUpsert }),
+      };
+      const { createServiceRoleClient } = jest.requireMock(
+        "@/lib/supabase/server"
+      ) as { createServiceRoleClient: jest.Mock };
+      createServiceRoleClient.mockReturnValue(mockSupabase);
+
+      const result = await setPipelineEnabledAction(badInput);
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error).toBe("Invalid input");
+      expect(mockUpsert).not.toHaveBeenCalled();
+    }
+  );
 
   it("upserts enabled=true for admin", async () => {
     asAdmin();

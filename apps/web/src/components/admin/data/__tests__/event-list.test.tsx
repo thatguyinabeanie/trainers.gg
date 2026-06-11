@@ -14,7 +14,7 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import type { PipelineEvent } from "@trainers/supabase/queries";
+import { type PipelineEvent } from "@trainers/supabase/queries";
 
 // ── Button mock — passes through key props including disabled/onClick ─────────
 

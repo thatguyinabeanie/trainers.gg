@@ -1,7 +1,7 @@
 "use client";
 
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { Status } from "@/components/ui/status-badge";
+import { type Status } from "@/components/ui/status-badge";
 
 export interface StageCard {
   stage: "sync" | "import" | "compile";

@@ -10,8 +10,8 @@ import { isSiteAdmin } from "@/lib/sudo/server";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 
 import { DataPage } from "@/components/admin/data/data-page";
-import type { StageCard } from "@/components/admin/data/pipeline-cards";
-import type { CronSchedules } from "@/components/admin/data/use-pipeline-config";
+import { type StageCard } from "@/components/admin/data/pipeline-cards";
+import { type CronSchedules } from "@/components/admin/data/use-pipeline-config";
 
 // =============================================================================
 // Constants
@@ -131,10 +131,12 @@ export default async function AdminDataPage() {
   // broken config row should not prevent the rest of the page from rendering.
   let config = { pipelineEnabled: false, limitlessBatchSize: 25 };
   try {
-    const { data: configRows } = await supabase
+    const { data: configRows, error: configError } = await supabase
       .from("site_config")
       .select("key, value")
       .in("key", ["pipeline_enabled", "limitless_import_batch_size"]);
+    if (configError)
+      throw new Error(`site_config read failed: ${configError.message}`);
     const cfgMap = new Map((configRows ?? []).map((r) => [r.key, r.value]));
     config = {
       pipelineEnabled: cfgMap.get("pipeline_enabled") === true,

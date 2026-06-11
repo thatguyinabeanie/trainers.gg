@@ -7,9 +7,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import { ConfigTab } from "./config-tab";
 import { MonitorTab } from "./monitor-tab";
-import type { StageCard } from "./pipeline-cards";
-import type { CronSchedules } from "./use-pipeline-config";
-import type { PipelineMonitor } from "@trainers/supabase/queries";
+import { type StageCard } from "./pipeline-cards";
+import { type CronSchedules } from "./use-pipeline-config";
+import { type PipelineMonitor } from "@trainers/supabase/queries";
 
 // =============================================================================
 // Types

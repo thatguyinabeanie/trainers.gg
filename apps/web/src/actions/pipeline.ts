@@ -137,7 +137,18 @@ export async function deleteEventAction(
       parsed.data.source,
       parsed.data.sourceEventId
     );
-    if (formats.length > 0) await invalidateUsageStatsCaches(formats);
+    // Best-effort: DB delete already committed — don't let a cache failure
+    // falsely report the delete as failed.
+    if (formats.length > 0) {
+      try {
+        await invalidateUsageStatsCaches(formats);
+      } catch (cacheError) {
+        console.error(
+          "[deleteEventAction] cache invalidation failed after committed delete:",
+          cacheError
+        );
+      }
+    }
     return { success: true, data: undefined };
   } catch (error) {
     return {
@@ -167,7 +178,18 @@ export async function excludeEventAction(
       parsed.data.reason ?? null,
       userId
     );
-    if (formats.length > 0) await invalidateUsageStatsCaches(formats);
+    // Best-effort: DB exclude already committed — don't let a cache failure
+    // falsely report the exclude as failed.
+    if (formats.length > 0) {
+      try {
+        await invalidateUsageStatsCaches(formats);
+      } catch (cacheError) {
+        console.error(
+          "[excludeEventAction] cache invalidation failed after committed exclude:",
+          cacheError
+        );
+      }
+    }
     return { success: true, data: undefined };
   } catch (error) {
     return {
@@ -182,13 +204,15 @@ export async function excludeEventAction(
  * Admin-only.
  */
 export async function clearExclusionAction(
-  id: number
+  input: unknown
 ): Promise<ActionResult<void>> {
   const userId = await requireAdmin();
   if (!userId) return { success: false, error: "Requires site admin" };
+  const parsed = z.number().int().positive().safeParse(input);
+  if (!parsed.success) return { success: false, error: "Invalid input" };
   try {
     const supabase = createServiceRoleClient();
-    await clearExclusion(supabase, id);
+    await clearExclusion(supabase, parsed.data);
     return { success: true, data: undefined };
   } catch (error) {
     return {
@@ -304,13 +328,22 @@ export async function getPipelineConfigAction(): Promise<
       .in("key", ["pipeline_enabled", "limitless_import_batch_size"]);
     if (error) throw new Error(error.message);
     const map = new Map((data ?? []).map((r) => [r.key, r.value]));
+    const rawBatchSize = Number(map.get("limitless_import_batch_size") ?? 25);
+    // Validate the stored value is a finite integer within the 1..100 contract
+    // enforced by setLimitlessBatchSizeAction. "abc" → NaN, 0/999 → out of range —
+    // all fall back to the default (25) so the returned config is always well-formed.
+    const limitlessBatchSize =
+      Number.isFinite(rawBatchSize) &&
+      Number.isInteger(rawBatchSize) &&
+      rawBatchSize >= 1 &&
+      rawBatchSize <= 100
+        ? rawBatchSize
+        : 25;
     return {
       success: true,
       data: {
         pipelineEnabled: map.get("pipeline_enabled") === true,
-        limitlessBatchSize: Number(
-          map.get("limitless_import_batch_size") ?? 25
-        ),
+        limitlessBatchSize,
       },
     };
   } catch (error) {
@@ -325,16 +358,18 @@ export async function getPipelineConfigAction(): Promise<
  * Toggle the pipeline_enabled flag in site_config. Admin-only.
  */
 export async function setPipelineEnabledAction(
-  enabled: boolean
+  input: unknown
 ): Promise<ActionResult<void>> {
   const userId = await requireAdmin();
   if (!userId) return { success: false, error: "Requires site admin" };
+  const parsed = z.boolean().safeParse(input);
+  if (!parsed.success) return { success: false, error: "Invalid input" };
   try {
     const supabase = createServiceRoleClient();
     const { error } = await supabase
       .from("site_config")
       .upsert(
-        { key: "pipeline_enabled", value: enabled, updated_by: userId },
+        { key: "pipeline_enabled", value: parsed.data, updated_by: userId },
         { onConflict: "key" }
       );
     if (error) throw new Error(error.message);

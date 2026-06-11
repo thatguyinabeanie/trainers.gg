@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { DisplayStatus, StatusCounts } from "@trainers/supabase/queries";
+import { type DisplayStatus, type StatusCounts } from "@trainers/supabase/queries";
 
 const CHIPS: { value: DisplayStatus; label: string }[] = [
   { value: "queued", label: "Queued" },
