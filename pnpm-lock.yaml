@@ -949,6 +949,9 @@ importers:
       '@trainers/validators':
         specifier: workspace:*
         version: link:../validators
+      cheerio:
+        specifier: ^1.2.0
+        version: 1.2.0
       expo-secure-store:
         specifier: catalog:expo
         version: 55.0.13(expo@55.0.19)
