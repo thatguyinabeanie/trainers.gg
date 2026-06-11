@@ -20,6 +20,7 @@ catalog:
   tsx: ^4.21.0
   typescript: ^5.9.3
   zod: ^3.25.76
+  dotenv: ^17
 
 catalogs:
   atproto:
@@ -104,7 +105,7 @@ allowBuilds:
   sharp: true
   supabase: true
   utf-8-validate: true
-  '@nestjs/core': true
-  '@swc/core': true
+  "@nestjs/core": true
+  "@swc/core": true
   cbor-extract: true
   protobufjs: true
