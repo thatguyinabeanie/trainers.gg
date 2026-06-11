@@ -18,6 +18,41 @@ import { loginPdsAgent } from "../_shared/pds.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+/**
+ * Validate a community logo URL before fetching it.
+ *
+ * `logo_url` is owner-writable free text, so fetching it unchecked is an SSRF
+ * vector (an authenticated owner could point it at internal hosts such as
+ * http://169.254.169.254/). Community logos are always uploaded to the
+ * Supabase Storage bucket, so the only legitimate host is the Supabase storage
+ * domain. We require https and restrict the host to the project's Supabase host
+ * (derived from SUPABASE_URL) or the Supabase storage CDN domains.
+ *
+ * Throws if the URL is malformed, not https, or not a Supabase storage host.
+ */
+function assertSupabaseStorageUrl(logoUrl: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(logoUrl);
+  } catch {
+    throw new Error("logo_url is not a valid URL");
+  }
+
+  if (parsed.protocol !== "https:") {
+    throw new Error("logo_url must use https");
+  }
+
+  const supabaseHost = new URL(SUPABASE_URL).hostname;
+  const hostAllowed =
+    parsed.hostname === supabaseHost ||
+    parsed.hostname.endsWith(".supabase.co") ||
+    parsed.hostname.endsWith(".supabase.in");
+
+  if (!hostAllowed) {
+    throw new Error("logo_url must be a Supabase storage URL");
+  }
+}
+
 interface SyncProfileResponse {
   success: boolean;
   error?: string;
@@ -57,12 +92,16 @@ Deno.serve(async (req) => {
     const jwt = authHeader.replace("Bearer ", "");
 
     // Create service role client for admin operations
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
+    const supabaseAdmin = createClient(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
 
     // Verify JWT and get user
     const {
@@ -163,7 +202,10 @@ Deno.serve(async (req) => {
     );
 
     if (vaultError || !vaultData) {
-      console.error("Failed to read community PDS password from vault:", vaultError);
+      console.error(
+        "Failed to read community PDS password from vault:",
+        vaultError
+      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -183,7 +225,10 @@ Deno.serve(async (req) => {
     const loginResult = await loginPdsAgent(community.bluesky_did, pdsPassword);
 
     if (!loginResult.success) {
-      console.error("Failed to login as community PDS account:", loginResult.error);
+      console.error(
+        "Failed to login as community PDS account:",
+        loginResult.error
+      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -201,19 +246,34 @@ Deno.serve(async (req) => {
 
     // Build the profile record
     // Download avatar blob if community has a logo_url
-    let avatarBlob: { $type: "blob"; ref: { $link: string }; mimeType: string; size: number } | undefined;
+    let avatarBlob:
+      | {
+          $type: "blob";
+          ref: { $link: string };
+          mimeType: string;
+          size: number;
+        }
+      | undefined;
 
     if (community.logo_url) {
       try {
+        // Reject owner-writable URLs that aren't Supabase storage before
+        // fetching — prevents SSRF against internal hosts. Treated as
+        // non-fatal: the profile sync continues without an avatar.
+        assertSupabaseStorageUrl(community.logo_url);
         const logoResponse = await fetch(community.logo_url);
         if (logoResponse.ok) {
           const logoData = await logoResponse.arrayBuffer();
-          const mimeType = logoResponse.headers.get("content-type") || "image/png";
+          const mimeType =
+            logoResponse.headers.get("content-type") || "image/png";
 
           // Upload blob to PDS
-          const uploadResult = await agent.uploadBlob(new Uint8Array(logoData), {
-            encoding: mimeType,
-          });
+          const uploadResult = await agent.uploadBlob(
+            new Uint8Array(logoData),
+            {
+              encoding: mimeType,
+            }
+          );
 
           if (uploadResult.success) {
             avatarBlob = uploadResult.data.blob;

@@ -10,6 +10,42 @@ import {
 const DISCORD_INVITE_HOSTS = ["discord.gg", "discord.com"];
 
 /**
+ * Validate a community logo URL before it is persisted.
+ *
+ * `logo_url` is later fetched server-side by the sync-community-profile edge
+ * function (to mirror the avatar onto the community's PDS profile), so an
+ * unchecked value is an SSRF vector — an owner could point it at an internal
+ * host such as http://169.254.169.254/. Community logos are always uploaded to
+ * Supabase Storage, so the only legitimate host is the Supabase storage domain.
+ * We require https and restrict the host to the Supabase storage CDN domains.
+ *
+ * Throws if the URL is malformed, not https, or not a Supabase storage host.
+ * No-op for null/undefined (logo_url is optional).
+ */
+function assertValidLogoUrl(logoUrl: string | null | undefined): void {
+  if (logoUrl == null) return;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(logoUrl);
+  } catch {
+    throw new Error("Logo URL is not a valid URL");
+  }
+
+  if (parsed.protocol !== "https:") {
+    throw new Error("Logo URL must use https");
+  }
+
+  const hostAllowed =
+    parsed.hostname.endsWith(".supabase.co") ||
+    parsed.hostname.endsWith(".supabase.in");
+
+  if (!hostAllowed) {
+    throw new Error("Logo URL must be a Supabase storage URL");
+  }
+}
+
+/**
  * Extract a valid Discord invite URL from a social links array.
  * Only promotes URLs with https:// and recognized Discord hosts.
  */
@@ -119,9 +155,7 @@ export async function createCommunity(
     .maybeSingle();
 
   if (existingHandle) {
-    throw new Error(
-      "This name is already taken on the Bluesky network"
-    );
+    throw new Error("This name is already taken on the Bluesky network");
   }
 
   // Validate social links if provided
@@ -135,6 +169,10 @@ export async function createCommunity(
     }
     validatedLinks = parsed.data;
   }
+
+  // Reject non-https / non-Supabase-storage logo URLs (SSRF guard — see
+  // assertValidLogoUrl). Optional, so null/undefined is skipped.
+  assertValidLogoUrl(data.logoUrl);
 
   // Create organization with user as owner
   const { data: community, error } = await supabase
@@ -213,7 +251,12 @@ export async function updateCommunity(
     // Keep discord_invite_url in sync with the social links array
     updateData.discord_invite_url = extractDiscordInviteUrl(parsed.data);
   }
-  if (updates.logoUrl !== undefined) updateData.logo_url = updates.logoUrl;
+  if (updates.logoUrl !== undefined) {
+    // Reject non-https / non-Supabase-storage logo URLs (SSRF guard — see
+    // assertValidLogoUrl). null clears the logo and is allowed.
+    assertValidLogoUrl(updates.logoUrl);
+    updateData.logo_url = updates.logoUrl;
+  }
 
   const { error } = await supabase
     .from("communities")
