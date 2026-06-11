@@ -27,15 +27,30 @@ Decisions from the cost/architecture planning session (Vercel vs Supabase edge f
 | 9   | Grants ≫ policies          | **Revoke unused verbs** table-by-table so grants ≈ policies (defense-in-depth second wall; self-documenting privilege map).                                                                                                                                                                                                                                                                                                              |
 | 10  | DELETE by omission         | **Draft-only DELETE + comment.** Staff with manage permission can delete `status='draft'` tournaments; published+ are never client-deletable (cancel is the verb); `COMMENT ON TABLE` documents it.                                                                                                                                                                                                                                      |
 
-## Architecture decisions still open (decision map)
+## Architecture decisions — ALL LOCKED (June 11, 2026, same session)
 
-1. **Data-access split (Decision 1, pending lock):** leading candidate is the audit-backed **split model** — S-bucket (shared) reads via cached API layer; P-bucket (per-user) reads direct PostgREST+RLS; R-bucket hot tables get qual flattening or API routing. A full-L2 variant (everything through the API) remains on the table given the owner's no-over-scraping constraint; the audit fixes narrow the gap between the two.
-2. **Where the API layer lives:** Supabase edge functions (Cloudflare CDN) vs Next.js BFF (Vercel Edge CDN).
-3. **Spectator realtime:** live push for logged-out viewers vs SSR/cached-only (current lean: cached-only).
-4. **Client caching conventions:** TanStack Query everywhere on web (replacing uncached `useSupabaseQuery`, 81 files); `@supabase-cache-helpers` adoption (PostgREST-only — fits web direct reads, not edge-function calls); staleTime tiers; SSR → `initialData` handoff.
-5. **Payload-driven realtime:** update state from `payload.new` (or `setQueryData`) instead of refetch-on-event (match page currently re-reads the DB on every `match_games` event).
-6. **Optimistic mutations** as the default UX pattern.
-7. **Rollout order.**
+1. **Data-access split — LOCKED: split model.** S-bucket (shared) reads via cached API layer; P-bucket (per-user, 9 tables, audit-verified self-scoping) reads direct PostgREST+RLS; R-bucket hot tables get qual flattening; X-bucket locked. Full-L2 rejected: post-audit, the only delta was the airtight P-tables — routing them through an API adds cost for no security or caching gain.
+
+2. **API layer home — LOCKED: Next.js/Vercel route handlers** (owner decision; initial edge-function recommendation vetoed). Web client reads, the migrated mobile API, and the future versioned public API (`/api/v1/…`) all live on Next.js routes. Decisive rationale: the tag-based cache invalidation system (`cache-invalidation.ts`, `updateTag`/`revalidateTag`) is Vercel-native — S-bucket endpoints get tag-invalidated CDN caching (fresh on change, cached otherwise) instead of TTL-only headers.
+   - **Mobile migrates to Next.js routes** — one canonical API; the `api-*` edge functions retire.
+   - **Edge functions' remaining role = Supabase plumbing only** (never client-called): `send-auth-email` (Auth webhook), `signup`/`bluesky-auth` (atomic auth+PDS session minting), the 5 PDS/Vault provisioning functions, `send-org-request-notification`, `import-tick` (pg_cron pipeline worker).
+   - SSR/ISR pages keep querying the DB directly (service-role) — pages never ride the API.
+
+3. **Spectator realtime — LOCKED: none for logged-out viewers.** Anonymous/spectator views are SSR/ISR + tag revalidation; realtime is for authenticated participants/staff. Bonus: spectators consume zero realtime connections (protects the 10k ceiling at marquee events).
+
+4. **Client caching conventions — LOCKED.** Web consolidates all client reads onto TanStack Query (eliminating the 81 uncached `useSupabaseQuery` sites). P-bucket direct reads use `@supabase-cache-helpers` (auto keys, auto cache-on-mutation). S-bucket API reads use a shared hand-rolled factory (promote mobile's `query-factory.ts` into `@trainers/supabase`). staleTime tiers: static `Infinity` · lists 30–60s · live surfaces realtime-driven · notifications 10s. SSR → `initialData` handoff. CDN `Cache-Control` + cache tags on S-bucket endpoints.
+
+5. **Payload-driven realtime — LOCKED.** Handlers update via `setQueryData(payload.new)`; no refetch-per-event (erases ~50k live DB reads/round at 7k players). Keep `postgres_changes` on the realtime six (no Broadcast migration needed). Flatten `tournament_id`/`community_id` onto `match_games`/`match_messages` to defuse the 4-hop RLS join.
+
+6. **Optimistic mutations — LOCKED** as the default pattern for interactive writes (report game, check-in, register, team edits).
+
+7. **Rollout — LOCKED: security first.**
+   - Phase 0: RLS fixes #1–#4 (users view, team-sheet matrix, registrations view + private bucket, realtime publication) — independent, ship ASAP.
+   - Phase 1: fixes #5–#10 + modest schema reorg (`internal` unexposed schema for system tables; `api` schema for curated views/RPCs) + qual flattening.
+   - Phase 2: S-bucket client reads → Next.js routes; mobile API migration; then revoke anon/authenticated on S base tables.
+   - Phase 3: TanStack consolidation + cache-helpers + payload-driven realtime + optimistic mutations.
+   - Phase 4: `.claude/` docs (checklist below) + memory. **Note:** `.claude/` conventions update per-phase as each pattern becomes real — documenting an unimplemented architecture would mislead agents working on current code.
+     Each phase = own branch/PR with migration/security review per repo auto-delegation rules.
 
 ## Follow-through checklist (required once architecture decisions land)
 
