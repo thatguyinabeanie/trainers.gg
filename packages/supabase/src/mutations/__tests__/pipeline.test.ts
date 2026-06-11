@@ -1,9 +1,7 @@
 import { describe, it, expect, jest } from "@jest/globals";
 
+import { runSyncStage, runImportStage, runCompileStage } from "../pipeline";
 import {
-  runSyncStage,
-  runImportStage,
-  runCompileStage,
   eventKeyFor,
   deleteSourceEvent,
   excludeSourceEvent,
@@ -11,7 +9,7 @@ import {
   resetStuckEvents,
   requeueFailedEvents,
   forceImportEvent,
-} from "../pipeline";
+} from "../import-recovery";
 import type { TypedClient } from "../../client";
 
 // Minimal fakes: syncEvents/syncTournamentList are stubbed via jest.mock below.

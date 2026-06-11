@@ -157,3 +157,15 @@ export {
   type ImportRunTrigger,
   type ImportRunStatus,
 } from "./import-runs";
+
+// import-recovery.ts — pipeline recovery/admin mutations (delete/exclude/reset/
+// requeue/force-import) + eventKeyFor. Pure DB; scraper-free so web can import.
+export {
+  eventKeyFor,
+  deleteSourceEvent,
+  excludeSourceEvent,
+  clearExclusion,
+  resetStuckEvents,
+  requeueFailedEvents,
+  forceImportEvent,
+} from "./import-recovery";
