@@ -64,6 +64,18 @@ Decisions from the cost/architecture planning session (Vercel vs Supabase edge f
 5. **Double-egress accepted.** Mobile-via-Vercel consciously pays Supabase→Vercel + Vercel→client egress on cache misses; cache hits pay once. The old mobile-direct cost rationale is **superseded** (update `.claude/CLAUDE.md`). Revisit only if egress becomes material in billing.
 6. **Marquee-event runbook (Phase 4 deliverable).** `docs/runbooks/marquee-events.md`: pre-event (raise realtime connection quota via support — 7k concurrent vs 10k default ceiling; watch 2,500 msg/s; bump DB compute tier days ahead), during-event monitoring, post-event scale-down. Written before the first 1,000+ player event.
 
+## Code-layer security findings (June 2026 follow-up)
+
+A code-layer review (complementary to the RLS audit above) surfaced findings the RLS audit could not see by construction — logic flaws in application code rather than missing database policies.
+
+- **F-2 — `logo_url` SSRF in community/organization update actions (FIXED this branch).** Server Actions accepted arbitrary `logo_url` values and passed them to a server-side fetch without allowlisting, allowing an attacker to make the server issue requests to internal network addresses. Fixed: URL origin is now validated against an allowlist before any server-side fetch.
+
+- **F-3 — Pipeline sudo gate missing (FIXED this branch).** The import pipeline's admin-only entry points lacked an explicit `is_site_admin()` gate and relied solely on RLS to block non-admin callers. Fixed: an explicit capability check was added at the action layer before any pipeline work begins.
+
+- **F-1 — `bluesky-auth` edge function trusts a public DID with no ownership proof (DEFERRED — mobile inactive).** Mobile sign-in sends only `{ did, handle }` strings; the function verifies via a public profile lookup with no proof of key ownership. Since DID+handle are public, anyone who knows a victim's DID could mint a Supabase session for that account. Web sign-in is not affected (it uses a full server-side code-exchange). Full details and fix options are documented in `apps/mobile/CLAUDE.md` — address when mobile work resumes.
+
+- **`atproto_sessions` RLS reconciliation (TODO — Phase 1).** The RLS audit plan notes that `atproto_sessions` policies should be reconciled with the init-plan `(SELECT auth.uid())` pattern and scoped verb grants; this was not explicitly covered in the code-layer review and should be included in the Phase 1 RLS-fix PR.
+
 ## Follow-through checklist (required once architecture decisions land)
 
 Update the agent-facing docs so future sessions inherit the decisions:
