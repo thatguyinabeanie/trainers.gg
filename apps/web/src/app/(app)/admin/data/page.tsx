@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import {
   getPipelineMonitor,
   listRecentImportRuns,
+  type PipelineMonitor,
 } from "@trainers/supabase/queries";
 
 import { isSiteAdmin } from "@/lib/sudo/server";
@@ -24,6 +25,22 @@ const DEFAULT_SCHEDULES: CronSchedules = {
   sync: "*/5 * * * *",
   import: "* * * * *",
   compile: "*/2 * * * *",
+};
+
+/**
+ * Empty PipelineMonitor used as a safe fallback when the monitor query fails
+ * (e.g. stale PostgREST schema cache for import_runs). The Monitor tab polls
+ * via TanStack Query and will recover automatically once the cache refreshes.
+ */
+const EMPTY_MONITOR: PipelineMonitor = {
+  events: [],
+  counts: {
+    queued: 0,
+    processing: 0,
+    failed: 0,
+    skipped: 0,
+    complete: 0,
+  },
 };
 
 // =============================================================================
@@ -49,11 +66,39 @@ export default async function AdminDataPage() {
 
   const supabase = createServiceRoleClient();
 
-  // Fetch pipeline monitor + recent runs in parallel.
-  const [monitor, runs] = await Promise.all([
+  // Fetch pipeline monitor + recent runs independently so a failure in one
+  // (e.g. stale PostgREST schema cache for import_runs) does not crash the page.
+  // The Monitor tab polls via TanStack Query and recovers automatically.
+  let monitor: PipelineMonitor = EMPTY_MONITOR;
+  let runs: Awaited<ReturnType<typeof listRecentImportRuns>> = [];
+  let loadError: string | null = null;
+
+  const [monitorResult, runsResult] = await Promise.allSettled([
     getPipelineMonitor(supabase),
     listRecentImportRuns(supabase, 30),
   ]);
+
+  if (monitorResult.status === "fulfilled") {
+    monitor = monitorResult.value;
+  } else {
+    console.error(
+      "[admin/data] getPipelineMonitor failed:",
+      monitorResult.reason
+    );
+    loadError =
+      "Couldn't load the latest pipeline data — showing what's available. It'll refresh automatically.";
+  }
+
+  if (runsResult.status === "fulfilled") {
+    runs = runsResult.value;
+  } else {
+    console.error(
+      "[admin/data] listRecentImportRuns failed:",
+      runsResult.reason
+    );
+    loadError ??=
+      "Couldn't load the latest pipeline data — showing what's available. It'll refresh automatically.";
+  }
 
   // Build the three stage cards from the most recent run per source.
   const latest = (source: string) =>
@@ -82,16 +127,25 @@ export default async function AdminDataPage() {
     },
   ];
 
-  // Config (site_config) via the service-role client.
-  const { data: configRows } = await supabase
-    .from("site_config")
-    .select("key, value")
-    .in("key", ["pipeline_enabled", "limitless_import_batch_size"]);
-  const cfgMap = new Map((configRows ?? []).map((r) => [r.key, r.value]));
-  const config = {
-    pipelineEnabled: cfgMap.get("pipeline_enabled") === true,
-    limitlessBatchSize: Number(cfgMap.get("limitless_import_batch_size") ?? 25),
-  };
+  // Config (site_config) via the service-role client. Soft-fail: a missing or
+  // broken config row should not prevent the rest of the page from rendering.
+  let config = { pipelineEnabled: false, limitlessBatchSize: 25 };
+  try {
+    const { data: configRows } = await supabase
+      .from("site_config")
+      .select("key, value")
+      .in("key", ["pipeline_enabled", "limitless_import_batch_size"]);
+    const cfgMap = new Map((configRows ?? []).map((r) => [r.key, r.value]));
+    config = {
+      pipelineEnabled: cfgMap.get("pipeline_enabled") === true,
+      limitlessBatchSize: Number(
+        cfgMap.get("limitless_import_batch_size") ?? 25
+      ),
+    };
+  } catch (err) {
+    // Non-fatal: keep the safe defaults above. loadError already set if monitor/runs failed.
+    console.error("[admin/data] site_config fetch failed:", err);
+  }
 
   // Read the LIVE cron cadence from cron.job so the Config inputs reflect
   // production, not just seeded defaults. The admin_get_cron_schedules RPC
@@ -126,6 +180,7 @@ export default async function AdminDataPage() {
       cards={cards}
       config={config}
       schedules={schedules}
+      loadError={loadError}
     />
   );
 }

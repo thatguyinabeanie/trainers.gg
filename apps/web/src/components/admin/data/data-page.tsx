@@ -1,5 +1,8 @@
 "use client";
 
+import { TriangleAlertIcon } from "lucide-react";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import { ConfigTab } from "./config-tab";
@@ -17,6 +20,10 @@ interface DataPageProps {
   cards: StageCard[];
   config: { pipelineEnabled: boolean; limitlessBatchSize: number };
   schedules: CronSchedules;
+  /** Set when the server-side data load partially failed. The Monitor tab
+   *  polls via TanStack Query and recovers automatically once the DB is
+   *  reachable again (e.g. after a PostgREST schema cache refresh). */
+  loadError?: string | null;
 }
 
 // =============================================================================
@@ -34,7 +41,13 @@ interface DataPageProps {
  * loading flash on first paint. Client-side polling and mutations are wired
  * inside the individual tab components via TanStack Query.
  */
-export function DataPage({ monitor, cards, config, schedules }: DataPageProps) {
+export function DataPage({
+  monitor,
+  cards,
+  config,
+  schedules,
+  loadError,
+}: DataPageProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -44,6 +57,14 @@ export function DataPage({ monitor, cards, config, schedules }: DataPageProps) {
           server-side on a schedule.
         </p>
       </div>
+
+      {loadError != null && (
+        <Alert>
+          <TriangleAlertIcon />
+          <AlertDescription>{loadError}</AlertDescription>
+        </Alert>
+      )}
+
       <Tabs defaultValue="monitor">
         <TabsList>
           <TabsTrigger value="monitor">Monitor</TabsTrigger>
