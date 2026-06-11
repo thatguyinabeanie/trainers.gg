@@ -200,7 +200,12 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.rewrite(url);
     }
 
-    // Check for active sudo mode (site_admin role alone is not sufficient)
+    // Check for active sudo mode (site_admin role alone is not sufficient).
+    // This cookie-presence check is a ROUTING-level defense-in-depth signal only:
+    // it gates navigation to /admin/* pages in the proxy so unelevated admins are
+    // redirected before they reach any admin layout or action. The authoritative
+    // sudo enforcement is requireAdminWithSudo(), which runs server-side in admin
+    // layouts and Server Actions and validates the session against the database.
     const cookieStore = await cookies();
     const sudoCookie = cookieStore.get("sudo_mode");
     const hasSudoCookie = !!sudoCookie?.value;
@@ -267,7 +272,10 @@ export default async function proxy(request: NextRequest) {
   if (!user && isProtectedRoute(effectivePathname)) {
     const signInUrl = new URL("/sign-in", request.url);
     // Use raw pathname on subdomains (the rewrite will re-add the prefix after auth)
-    signInUrl.searchParams.set("redirect", rewriteBase ? pathname : effectivePathname);
+    signInUrl.searchParams.set(
+      "redirect",
+      rewriteBase ? pathname : effectivePathname
+    );
     return NextResponse.redirect(signInUrl);
   }
 

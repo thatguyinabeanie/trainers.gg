@@ -13,6 +13,8 @@ import {
   type ActionResult,
 } from "@trainers/validators";
 
+import { createClient } from "@/lib/supabase/server";
+
 /**
  * GET /api/tournaments/:id
  * Get tournament details by ID
@@ -116,6 +118,22 @@ export async function PATCH(
 
     const { id } = await params;
     const tournamentId = positiveIntSchema.parse(id);
+
+    // Defense-in-depth: verify the session cookie contains an authenticated user
+    // before invoking the mutation. The authoritative access control is the RLS
+    // policy on the tournaments table, but this early return avoids unnecessary
+    // DB calls and produces a clear 401 for unauthenticated requests.
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      const result: ActionResult<void> = {
+        success: false,
+        error: "Not authenticated.",
+      };
+      return NextResponse.json(result, { status: 401 });
+    }
 
     const body = await request.json();
     const parsed = updateTournamentSchema.parse(body);
