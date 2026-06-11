@@ -72,15 +72,18 @@ describe("UsageTopShareDumbbell — dynamic title", () => {
     { topPct: 0.1, expectedLabel: "Overall vs. Top 10% usage" },
     { topPct: 0.05, expectedLabel: "Overall vs. Top 5% usage" },
     { topPct: 0.25, expectedLabel: "Overall vs. Top 25% usage" },
-  ])("renders '$expectedLabel' for topPct=$topPct", ({ topPct, expectedLabel }) => {
-    render(
-      <UsageTopShareDumbbell
-        rows={[makeRow("Koraidon", 30, 40)]}
-        topPct={topPct}
-      />
-    );
-    expect(screen.getByText(expectedLabel)).toBeInTheDocument();
-  });
+  ])(
+    "renders '$expectedLabel' for topPct=$topPct",
+    ({ topPct, expectedLabel }) => {
+      render(
+        <UsageTopShareDumbbell
+          rows={[makeRow("Koraidon", 30, 40)]}
+          topPct={topPct}
+        />
+      );
+      expect(screen.getByText(expectedLabel)).toBeInTheDocument();
+    }
+  );
 
   it("never uses the phrase 'top cut'", () => {
     const { container } = render(

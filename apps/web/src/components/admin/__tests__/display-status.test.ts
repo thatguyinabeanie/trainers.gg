@@ -1,5 +1,5 @@
 import { deriveDisplayStatus } from "../display-status";
-import type { RK9EventRow, UnifiedRow } from "../external-data-shared";
+import { type RK9EventRow, type UnifiedRow } from "../external-data-shared";
 
 const MAPPED = "gen9championsvgc2026regma";
 
@@ -89,9 +89,9 @@ describe("deriveDisplayStatus", () => {
       "skipped",
     ],
     [
-      "limitless queued → in-progress",
+      "limitless queued → queued",
       limRow({ import_status: "queued" }),
-      "in-progress",
+      "queued",
     ],
     [
       "limitless importing → in-progress",
@@ -116,6 +116,7 @@ describe("deriveDisplayStatus", () => {
   it.each([
     ["rk9 upcoming → pending", rk9Row("upcoming"), "pending"],
     ["rk9 pending → pending", rk9Row("pending"), "pending"],
+    ["rk9 queued → queued", rk9Row("queued"), "queued"],
     ["rk9 in-progress → in-progress", rk9Row("in-progress"), "in-progress"],
     // A genuinely complete event (teams actually imported) stays as "imported"
     [

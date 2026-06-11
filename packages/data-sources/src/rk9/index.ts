@@ -20,3 +20,7 @@ export {
   seedSpeciesMap,
 } from "./import";
 export { collectUniqueSpecies } from "./normalize";
+
+// state-machine — import lifecycle types and transition helpers
+export type { Rk9ImportStatus, Rk9QueueableStatus } from "./state-machine";
+export { canTransition, RK9_QUEUEABLE } from "./state-machine";

@@ -8,7 +8,6 @@ import { type UnifiedRow } from "./external-data-shared";
 
 export interface RowActionsProps {
   row: UnifiedRow;
-  activeJobs: Map<string, { type: string; scraped?: number; total?: number }>;
   queuingIds: Set<string>;
   batchQueuing: boolean;
   isUpcomingRow: boolean;
@@ -18,7 +17,6 @@ export interface RowActionsProps {
 
 export function RowActions({
   row,
-  activeJobs,
   queuingIds,
   batchQueuing,
   isUpcomingRow,
@@ -29,8 +27,9 @@ export function RowActions({
     const event = row.rk9;
     if (isUpcomingRow) return null;
 
-    const activeJob = activeJobs.get(event.event_id);
-    const isBusy = activeJob !== null && activeJob !== undefined;
+    // Per-row busy state: the row was just queued from this client. Server-side
+    // progress shows through the row's own import_status via StatusBadge.
+    const isBusy = queuingIds.has(event.event_id);
 
     const resetButton =
       event.import_status !== "pending" ? (

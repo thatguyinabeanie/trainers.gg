@@ -785,10 +785,10 @@ export async function getSpeciesTeammates(
           // attach the externally-controlled values (species, format) as
           // structured cause properties rather than interpolating them into
           // the message, so they cannot flow into a format-string position.
-          throw Object.assign(
-            new Error("matrix jsonb shape mismatch"),
-            { species: params.species, format: params.format }
-          );
+          throw Object.assign(new Error("matrix jsonb shape mismatch"), {
+            species: params.species,
+            format: params.format,
+          });
         })();
 
   const teammates: TeammateRow[] = data.map((row) => ({

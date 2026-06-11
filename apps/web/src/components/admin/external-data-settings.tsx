@@ -60,8 +60,8 @@ export function ExternalDataSettings(props: ExternalDataSettingsProps) {
           )}
         </label>
         <p className="text-muted-foreground text-xs">
-          Note: the backend cron is not currently active — import runs when you
-          click Run Import.
+          Imports run automatically via the site cron (every 5 min). The
+          interval setting is the minimum seconds between runs per source.
         </p>
 
         {props.tab === "rk9" ? (

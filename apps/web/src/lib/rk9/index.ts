@@ -21,3 +21,23 @@ export {
 } from "@trainers/data-sources";
 
 export * from "./scraper";
+export {
+  runRosterStage,
+  runTeamsBatch,
+  processRk9Queue,
+  normalizeSpeciesInline,
+  fetchRk9Html,
+  buildRk9Url,
+  assertValidEventId,
+  sleep,
+  FETCH_TIMEOUT_MS,
+  DELAY_ROSTER_MS,
+  TEAMS_BATCH_SIZE,
+} from "./worker";
+export type {
+  RosterStageResult,
+  TeamsBatchOpts,
+  TeamsBatchResult,
+  ProcessRk9QueueOpts,
+  ProcessRk9QueueResult,
+} from "./worker";
