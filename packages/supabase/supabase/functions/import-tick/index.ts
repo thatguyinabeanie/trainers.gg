@@ -9,8 +9,8 @@ import {
   runSyncStage,
   runImportStage,
   runCompileStage,
-} from "@trainers/supabase/mutations";
-import { recordImportRuns } from "@trainers/supabase/mutations";
+} from "@trainers/supabase/mutations/pipeline";
+import { recordImportRuns } from "@trainers/supabase/mutations/import-runs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
