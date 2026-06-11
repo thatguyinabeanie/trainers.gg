@@ -1,11 +1,8 @@
 import { mkdir, writeFile, readFile } from "fs/promises";
 import { fileURLToPath } from "url";
 import { dirname, resolve, join } from "path";
-import {
-  fetchTournamentList,
-  fetchTournamentData,
-} from "@trainers/data-sources";
-import type { LimitlessTournament, TournamentData } from "@trainers/data-sources";
+import { fetchTournamentList, fetchTournamentData } from "@trainers/supabase";
+import type { LimitlessTournament, TournamentData } from "@trainers/supabase";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const DATA_DIR = resolve(__dirname, "../../data");
@@ -32,10 +29,7 @@ export async function syncTournaments(
 ): Promise<LimitlessTournament[]> {
   const tournaments = await fetchTournamentList(apiKey);
   await ensureDir(join(DATA_DIR, "limitless"));
-  await writeJson(
-    join(DATA_DIR, "limitless", "tournaments.json"),
-    tournaments
-  );
+  await writeJson(join(DATA_DIR, "limitless", "tournaments.json"), tournaments);
   console.log(
     `Synced ${tournaments.length} tournaments → data/limitless/tournaments.json`
   );

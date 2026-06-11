@@ -1,4 +1,4 @@
-import { ALL_VALID_FORMATS } from "@/lib/limitless";
+import { ALL_VALID_FORMATS } from "@trainers/supabase";
 
 /** Mutually-exclusive display buckets for a Limitless tournament row. */
 export type DisplayStatus =
