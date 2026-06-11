@@ -515,7 +515,6 @@ jobs:
             '{
               name: $name,
               project: $project,
-              target: "preview",
               gitSource: {
                 type: "github",
                 repoId: $repoId,
