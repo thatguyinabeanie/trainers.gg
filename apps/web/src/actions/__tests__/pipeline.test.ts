@@ -14,6 +14,7 @@
 // =============================================================================
 
 jest.mock("@/lib/supabase/server", () => ({
+  createClient: jest.fn().mockResolvedValue({}),
   createServiceRoleClient: jest.fn().mockReturnValue({}),
   getUserId: jest.fn(),
 }));
@@ -45,7 +46,7 @@ jest.mock("@/lib/cache-invalidation", () => ({
 // =============================================================================
 
 import { isSiteAdmin } from "@/lib/sudo/server";
-import { getUserId } from "@/lib/supabase/server";
+import { createClient, getUserId } from "@/lib/supabase/server";
 import {
   getPipelineMonitor,
   getImportExclusions,
@@ -69,6 +70,11 @@ import {
   resetStuckAction,
   requeueFailedAction,
   forceImportAction,
+  getPipelineConfigAction,
+  setPipelineEnabledAction,
+  setLimitlessBatchSizeAction,
+  alterCronScheduleAction,
+  getCronSchedulesAction,
 } from "../pipeline";
 
 // =============================================================================
@@ -77,6 +83,9 @@ import {
 
 const mockIsSiteAdmin = isSiteAdmin as jest.MockedFunction<typeof isSiteAdmin>;
 const mockGetUserId = getUserId as jest.MockedFunction<typeof getUserId>;
+const mockCreateClient = createClient as jest.MockedFunction<
+  typeof createClient
+>;
 const mockGetPipelineMonitor = getPipelineMonitor as jest.MockedFunction<
   typeof getPipelineMonitor
 >;
@@ -486,5 +495,326 @@ describe("forceImportAction", () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toContain("force failed");
+  });
+});
+
+// =============================================================================
+// getPipelineConfigAction
+// =============================================================================
+
+describe("getPipelineConfigAction", () => {
+  it("rejects non-admins", async () => {
+    asNonAdmin();
+    const result = await getPipelineConfigAction();
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toMatch(/admin/i);
+  });
+
+  it("rejects unauthenticated callers", async () => {
+    asUnauthenticated();
+    const result = await getPipelineConfigAction();
+    expect(result.success).toBe(false);
+  });
+
+  it("returns parsed config for admin", async () => {
+    asAdmin();
+    const mockSupabase = {
+      from: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          in: jest.fn().mockResolvedValue({
+            data: [
+              { key: "pipeline_enabled", value: true },
+              { key: "limitless_import_batch_size", value: 50 },
+            ],
+            error: null,
+          }),
+        }),
+      }),
+    };
+    // Override the service-role mock just for this test
+    const { createServiceRoleClient } = jest.requireMock(
+      "@/lib/supabase/server"
+    ) as { createServiceRoleClient: jest.Mock };
+    createServiceRoleClient.mockReturnValue(mockSupabase);
+
+    const result = await getPipelineConfigAction();
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.pipelineEnabled).toBe(true);
+      expect(result.data.limitlessBatchSize).toBe(50);
+    }
+  });
+
+  it("defaults limitlessBatchSize to 25 when key is absent", async () => {
+    asAdmin();
+    const mockSupabase = {
+      from: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          in: jest.fn().mockResolvedValue({
+            data: [{ key: "pipeline_enabled", value: false }],
+            error: null,
+          }),
+        }),
+      }),
+    };
+    const { createServiceRoleClient } = jest.requireMock(
+      "@/lib/supabase/server"
+    ) as { createServiceRoleClient: jest.Mock };
+    createServiceRoleClient.mockReturnValue(mockSupabase);
+
+    const result = await getPipelineConfigAction();
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.limitlessBatchSize).toBe(25);
+  });
+
+  it("forwards DB errors as failure", async () => {
+    asAdmin();
+    const mockSupabase = {
+      from: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          in: jest
+            .fn()
+            .mockResolvedValue({ data: null, error: { message: "db error" } }),
+        }),
+      }),
+    };
+    const { createServiceRoleClient } = jest.requireMock(
+      "@/lib/supabase/server"
+    ) as { createServiceRoleClient: jest.Mock };
+    createServiceRoleClient.mockReturnValue(mockSupabase);
+
+    const result = await getPipelineConfigAction();
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("db error");
+  });
+});
+
+// =============================================================================
+// setPipelineEnabledAction
+// =============================================================================
+
+describe("setPipelineEnabledAction", () => {
+  it("rejects non-admins", async () => {
+    asNonAdmin();
+    const result = await setPipelineEnabledAction(true);
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toMatch(/admin/i);
+  });
+
+  it("upserts enabled=true for admin", async () => {
+    asAdmin();
+    const mockUpsert = jest.fn().mockResolvedValue({ error: null });
+    const mockSupabase = {
+      from: jest.fn().mockReturnValue({ upsert: mockUpsert }),
+    };
+    const { createServiceRoleClient } = jest.requireMock(
+      "@/lib/supabase/server"
+    ) as { createServiceRoleClient: jest.Mock };
+    createServiceRoleClient.mockReturnValue(mockSupabase);
+
+    const result = await setPipelineEnabledAction(true);
+    expect(result.success).toBe(true);
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({ key: "pipeline_enabled", value: true }),
+      { onConflict: "key" }
+    );
+  });
+
+  it("forwards DB errors as failure", async () => {
+    asAdmin();
+    const mockSupabase = {
+      from: jest.fn().mockReturnValue({
+        upsert: jest
+          .fn()
+          .mockResolvedValue({ error: { message: "write failed" } }),
+      }),
+    };
+    const { createServiceRoleClient } = jest.requireMock(
+      "@/lib/supabase/server"
+    ) as { createServiceRoleClient: jest.Mock };
+    createServiceRoleClient.mockReturnValue(mockSupabase);
+
+    const result = await setPipelineEnabledAction(false);
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("write failed");
+  });
+});
+
+// =============================================================================
+// setLimitlessBatchSizeAction
+// =============================================================================
+
+describe("setLimitlessBatchSizeAction", () => {
+  it("rejects non-admins", async () => {
+    asNonAdmin();
+    const result = await setLimitlessBatchSizeAction(10);
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toMatch(/admin/i);
+  });
+
+  it.each([
+    [0, "out-of-range (0)"],
+    [101, "out-of-range (101)"],
+    [1.5, "non-integer"],
+  ])("rejects batch size %i (%s)", async (size) => {
+    asAdmin();
+    const result = await setLimitlessBatchSizeAction(size);
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toMatch(/batch size/i);
+  });
+
+  it.each([1, 25, 100])("accepts valid batch size %i", async (size) => {
+    asAdmin();
+    const mockUpsert = jest.fn().mockResolvedValue({ error: null });
+    const mockSupabase = {
+      from: jest.fn().mockReturnValue({ upsert: mockUpsert }),
+    };
+    const { createServiceRoleClient } = jest.requireMock(
+      "@/lib/supabase/server"
+    ) as { createServiceRoleClient: jest.Mock };
+    createServiceRoleClient.mockReturnValue(mockSupabase);
+
+    const result = await setLimitlessBatchSizeAction(size);
+    expect(result.success).toBe(true);
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: "limitless_import_batch_size",
+        value: size,
+      }),
+      { onConflict: "key" }
+    );
+  });
+});
+
+// =============================================================================
+// alterCronScheduleAction
+// =============================================================================
+
+describe("alterCronScheduleAction", () => {
+  it("rejects non-admins", async () => {
+    asNonAdmin();
+    const result = await alterCronScheduleAction({
+      job: "import-tick-sync",
+      schedule: "*/5 * * * *",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toMatch(/admin/i);
+  });
+
+  it.each([
+    [{ job: "unknown-job", schedule: "*/5 * * * *" }, "invalid job name"],
+    [
+      { job: "import-tick-sync", schedule: "not-a-cron" },
+      "invalid schedule (3 fields)",
+    ],
+    [
+      { job: "import-tick-sync", schedule: "rm -rf / * * *" },
+      "illegal characters",
+    ],
+  ])("rejects invalid input: %s", async (input) => {
+    asAdmin();
+    const result = await alterCronScheduleAction(input);
+    expect(result.success).toBe(false);
+  });
+
+  it("calls admin_alter_cron_schedule RPC via authenticated client", async () => {
+    asAdmin();
+    const mockRpc = jest.fn().mockResolvedValue({ error: null });
+    const mockAuthClient = { rpc: mockRpc };
+    mockCreateClient.mockResolvedValue(mockAuthClient as never);
+
+    const result = await alterCronScheduleAction({
+      job: "import-tick-sync",
+      schedule: "*/5 * * * *",
+    });
+    expect(result.success).toBe(true);
+    expect(mockRpc).toHaveBeenCalledWith("admin_alter_cron_schedule", {
+      p_job_name: "import-tick-sync",
+      p_schedule: "*/5 * * * *",
+    });
+    // Confirm it uses the authenticated client, not service-role
+    expect(mockCreateClient).toHaveBeenCalled();
+  });
+
+  it("forwards RPC errors as failure", async () => {
+    asAdmin();
+    const mockAuthClient = {
+      rpc: jest
+        .fn()
+        .mockResolvedValue({ error: { message: "not authorized" } }),
+    };
+    mockCreateClient.mockResolvedValue(mockAuthClient as never);
+
+    const result = await alterCronScheduleAction({
+      job: "import-tick-import",
+      schedule: "* * * * *",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("not authorized");
+  });
+});
+
+// =============================================================================
+// getCronSchedulesAction
+// =============================================================================
+
+describe("getCronSchedulesAction", () => {
+  it("rejects non-admins", async () => {
+    asNonAdmin();
+    const result = await getCronSchedulesAction();
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toMatch(/admin/i);
+  });
+
+  it("returns live schedules from RPC via authenticated client", async () => {
+    asAdmin();
+    const mockRpc = jest.fn().mockResolvedValue({
+      data: [
+        { job_name: "import-tick-sync", schedule: "*/10 * * * *" },
+        { job_name: "import-tick-import", schedule: "*/2 * * * *" },
+        { job_name: "import-tick-compile", schedule: "*/3 * * * *" },
+      ],
+      error: null,
+    });
+    const mockAuthClient = { rpc: mockRpc };
+    mockCreateClient.mockResolvedValue(mockAuthClient as never);
+
+    const result = await getCronSchedulesAction();
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.sync).toBe("*/10 * * * *");
+      expect(result.data.import).toBe("*/2 * * * *");
+      expect(result.data.compile).toBe("*/3 * * * *");
+    }
+    // Confirm it uses the authenticated client, not service-role
+    expect(mockCreateClient).toHaveBeenCalled();
+  });
+
+  it("falls back to seeded defaults when job is absent from RPC result", async () => {
+    asAdmin();
+    const mockRpc = jest.fn().mockResolvedValue({ data: [], error: null });
+    mockCreateClient.mockResolvedValue({ rpc: mockRpc } as never);
+
+    const result = await getCronSchedulesAction();
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.sync).toBe("*/5 * * * *");
+      expect(result.data.import).toBe("* * * * *");
+      expect(result.data.compile).toBe("*/2 * * * *");
+    }
+  });
+
+  it("forwards RPC errors as failure", async () => {
+    asAdmin();
+    const mockAuthClient = {
+      rpc: jest
+        .fn()
+        .mockResolvedValue({ data: null, error: { message: "rpc failed" } }),
+    };
+    mockCreateClient.mockResolvedValue(mockAuthClient as never);
+
+    const result = await getCronSchedulesAction();
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("rpc failed");
   });
 });
