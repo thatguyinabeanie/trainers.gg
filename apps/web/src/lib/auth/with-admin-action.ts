@@ -4,7 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { requireAdminWithSudo } from "./require-admin";
 import type { TypedClient } from "@trainers/supabase";
 
-// Shared return type for all admin server actions
+// Shared return type for data-less admin server actions
 export type ActionResult = { success: boolean; error?: string };
 
 /**
@@ -16,13 +16,18 @@ export type ActionResult = { success: boolean; error?: string };
  * - Creates a service-role Supabase client (bypasses RLS)
  * - Catches errors and logs them with the provided `errorMessage`
  *
+ * Generic over the callback's result shape `R`, so callers may return either a
+ * data-less `{ success: true }` or a data-carrying `{ success: true; data }`
+ * (e.g. the validators `ActionResult<T>` union) without a cast. On auth/sudo
+ * failure or a thrown error it returns `{ success: false, error }`.
+ *
  * Zod validation should happen BEFORE calling this helper, so that
  * invalid input is rejected before the admin/sudo check runs.
  */
-export async function withAdminAction(
-  action: (supabase: TypedClient, adminUserId: string) => Promise<ActionResult>,
+export async function withAdminAction<R extends { success: boolean }>(
+  action: (supabase: TypedClient, adminUserId: string) => Promise<R>,
   errorMessage = "An unexpected error occurred"
-): Promise<ActionResult> {
+): Promise<R | { success: false; error: string }> {
   try {
     const adminCheck = await requireAdminWithSudo();
     if ("success" in adminCheck) return adminCheck;
@@ -32,6 +37,6 @@ export async function withAdminAction(
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("%s: %s", errorMessage, detail, err);
-    return { success: false, error: `${errorMessage}: ${detail}` };
+    return { success: false, error: errorMessage };
   }
 }
