@@ -38,10 +38,15 @@ import { computeStats } from "./compute-stats";
 // =============================================================================
 
 /**
+ * _userId scopes the cache key to the requesting user so alt-ID reuse or
+ * ownership changes can never cause cross-user cache collisions. It is not
+ * used inside the function body — its presence as a parameter is what
+ * participates in the Next.js Cache Components cache key.
+ *
  * sortedAltIds must be pre-sorted (ascending) by the caller so the cache key
  * is stable regardless of the order alts are returned from the DB.
  */
-async function getCachedBulkStats(sortedAltIds: number[]) {
+async function getCachedBulkStats(_userId: string, sortedAltIds: number[]) {
   "use cache";
   cacheTag(CacheTags.DASHBOARD_STATS);
   cacheLife("max");
@@ -50,10 +55,15 @@ async function getCachedBulkStats(sortedAltIds: number[]) {
 }
 
 /**
+ * _userId scopes the cache key to the requesting user so alt-ID reuse or
+ * ownership changes can never cause cross-user cache collisions. It is not
+ * used inside the function body — its presence as a parameter is what
+ * participates in the Next.js Cache Components cache key.
+ *
  * sortedAltIds must be pre-sorted (ascending) by the caller so the cache key
  * is stable regardless of the order alts are returned from the DB.
  */
-async function getCachedBulkRatings(sortedAltIds: number[]) {
+async function getCachedBulkRatings(_userId: string, sortedAltIds: number[]) {
   "use cache";
   cacheTag(CacheTags.DASHBOARD_RATINGS);
   cacheLife("max");
@@ -119,8 +129,8 @@ export default async function DashboardHomePage() {
   if (altIds.length > 0) {
     const [statsResult, ratingsResult, matchResult, dashboardResult] =
       await Promise.allSettled([
-        getCachedBulkStats(sortedAltIds),
-        getCachedBulkRatings(sortedAltIds),
+        getCachedBulkStats(user.id, sortedAltIds),
+        getCachedBulkRatings(user.id, sortedAltIds),
         mainAltId ? getActiveMatch(supabase, mainAltId) : Promise.resolve(null),
         mainAltId
           ? getMyDashboardData(supabase, mainAltId)
