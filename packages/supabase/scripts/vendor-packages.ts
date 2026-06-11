@@ -39,7 +39,18 @@ const sharedConfig: esbuild.BuildOptions = {
   platform: "neutral",
   target: "esnext",
   treeShaking: true,
-  external: ["@supabase/supabase-js", "zod", "obscenity", ...pkmnExternals],
+  // cheerio is the RK9/Limitless scrapers' HTML parser. It must stay external
+  // (resolved as npm:cheerio by deno.json + the bare-specifier rewrite), NOT be
+  // inlined: cheerio's transitive graph (undici, css-what, whatwg-mimetype,
+  // node:stream, …) is Node-oriented and esbuild's "neutral" platform cannot
+  // resolve node: builtins — bundling it produces 121 unresolved-import errors.
+  external: [
+    "@supabase/supabase-js",
+    "zod",
+    "obscenity",
+    "cheerio",
+    ...pkmnExternals,
+  ],
 };
 
 const trainersResolvePlugin: esbuild.Plugin = {
