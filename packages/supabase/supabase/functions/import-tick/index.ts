@@ -29,10 +29,13 @@ Deno.serve(async (req) => {
   // 1. Auth: bearer must equal the service-role key passed by pg_net.
   const bearer = req.headers.get("authorization")?.replace("Bearer ", "") ?? "";
   if (!bearer || bearer !== SERVICE_ROLE_KEY) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Unauthorized", code: "UNAUTHORIZED" }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 
   // 2. Stage selection.
@@ -42,6 +45,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: "Invalid or missing ?stage=sync|import|compile",
+        code: "INVALID_STAGE",
       }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
@@ -58,8 +62,12 @@ Deno.serve(async (req) => {
     .eq("key", "pipeline_enabled")
     .maybeSingle();
   if (configError) {
+    console.error("[import-tick] config read failed:", configError);
     return new Response(
-      JSON.stringify({ error: `config read failed: ${configError.message}` }),
+      JSON.stringify({
+        error: "config read failed",
+        code: "CONFIG_READ_FAILED",
+      }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -82,24 +90,28 @@ Deno.serve(async (req) => {
         isExcluded: (source: "rk9" | "limitless", id: string) =>
           exclusions.has(`${source}:${id}`),
       });
-      await recordImportRuns(supabase, "cron", [
-        {
-          source: "rk9",
-          status: "ok",
-          processed: result.rk9.discovered,
-          errors: 0,
-          remaining: null,
-          detail: result.rk9,
-        },
-        {
-          source: "limitless",
-          status: "ok",
-          processed: result.limitless.discovered,
-          errors: 0,
-          remaining: null,
-          detail: result.limitless,
-        },
-      ]);
+      try {
+        await recordImportRuns(supabase, "cron", [
+          {
+            source: "rk9",
+            status: "ok",
+            processed: result.rk9.discovered,
+            errors: 0,
+            remaining: null,
+            detail: result.rk9,
+          },
+          {
+            source: "limitless",
+            status: "ok",
+            processed: result.limitless.discovered,
+            errors: 0,
+            remaining: null,
+            detail: result.limitless,
+          },
+        ]);
+      } catch (e) {
+        console.error("[import-tick] failed to record run:", e);
+      }
       return json({ stage, result });
     }
 
@@ -114,39 +126,47 @@ Deno.serve(async (req) => {
         limitlessBatchSize: batchSize,
         deadlineMs,
       });
-      await recordImportRuns(supabase, "cron", [
-        {
-          source: "rk9",
-          status: result.rk9.errors > 0 ? "partial" : "ok",
-          processed: result.rk9.processed,
-          errors: result.rk9.errors,
-          remaining: result.rk9.remaining,
-          detail: result.rk9,
-        },
-        {
-          source: "limitless",
-          status: result.limitless.errors > 0 ? "partial" : "ok",
-          processed: result.limitless.processed,
-          errors: result.limitless.errors,
-          remaining: result.limitless.remaining,
-          detail: result.limitless,
-        },
-      ]);
+      try {
+        await recordImportRuns(supabase, "cron", [
+          {
+            source: "rk9",
+            status: result.rk9.errors > 0 ? "partial" : "ok",
+            processed: result.rk9.processed,
+            errors: result.rk9.errors,
+            remaining: result.rk9.remaining,
+            detail: result.rk9,
+          },
+          {
+            source: "limitless",
+            status: result.limitless.errors > 0 ? "partial" : "ok",
+            processed: result.limitless.processed,
+            errors: result.limitless.errors,
+            remaining: result.limitless.remaining,
+            detail: result.limitless,
+          },
+        ]);
+      } catch (e) {
+        console.error("[import-tick] failed to record run:", e);
+      }
       return json({ stage, result });
     }
 
     // stage === "compile"
     const result = await runCompileStage(supabase);
-    await recordImportRuns(supabase, "cron", [
-      {
-        source: "compile",
-        status: "ok",
-        processed: result.eventsCompiled,
-        errors: 0,
-        remaining: null,
-        detail: result,
-      },
-    ]);
+    try {
+      await recordImportRuns(supabase, "cron", [
+        {
+          source: "compile",
+          status: "ok",
+          processed: result.eventsCompiled,
+          errors: 0,
+          remaining: null,
+          detail: result,
+        },
+      ]);
+    } catch (e) {
+      console.error("[import-tick] failed to record run:", e);
+    }
     // Revalidate the public /data usage caches for affected formats.
     if (result.formats.length > 0) {
       await revalidateUsage(result.formats);
@@ -154,20 +174,27 @@ Deno.serve(async (req) => {
     return json({ stage, result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal error";
-    await recordImportRuns(supabase, "cron", [
+    try {
+      await recordImportRuns(supabase, "cron", [
+        {
+          source: stage === "compile" ? "compile" : "rk9",
+          status: "error",
+          processed: 0,
+          errors: 1,
+          remaining: null,
+          detail: { message },
+        },
+      ]);
+    } catch (e) {
+      console.error("[import-tick] failed to record run:", e);
+    }
+    return new Response(
+      JSON.stringify({ stage, error: message, code: "STAGE_FAILED" }),
       {
-        source: stage === "compile" ? "compile" : "rk9",
-        status: "error",
-        processed: 0,
-        errors: 1,
-        remaining: null,
-        detail: { message },
-      },
-    ]);
-    return new Response(JSON.stringify({ stage, error: message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 });
 
@@ -207,7 +234,12 @@ async function readNumberConfig(
 async function revalidateUsage(formats: string[]): Promise<void> {
   const secret = Deno.env.get("USAGE_REVALIDATE_SECRET");
   const siteUrl = Deno.env.get("SITE_URL");
-  if (!secret || !siteUrl) return; // best-effort; cron read-side cache will still age out
+  if (!secret || !siteUrl) {
+    console.warn(
+      "[import-tick] USAGE_REVALIDATE_SECRET or SITE_URL not set — skipping cache revalidation"
+    );
+    return; // best-effort; cron read-side cache will still age out
+  }
   const res = await fetch(`${siteUrl}/api/revalidate/usage`, {
     method: "POST",
     headers: {
