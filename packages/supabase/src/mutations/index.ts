@@ -157,3 +157,6 @@ export {
   type ImportRunTrigger,
   type ImportRunStatus,
 } from "./import-runs";
+
+// pipeline.ts — autonomous import stage entry points (sync/import/compile)
+export * from "./pipeline";
