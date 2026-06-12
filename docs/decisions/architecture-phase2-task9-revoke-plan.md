@@ -9,6 +9,31 @@ Companion audit: `docs/audits/2026-06-11-rls-audit.md` (the table classification
 
 ---
 
+> **Revision 2026-06-12 (simplification pass)**
+>
+> A batch of confirmed product decisions reduced scope and removed several planned items:
+>
+> - **Realtime "six" → "five":** All four `tournament_registrations` realtime subscriptions dropped (D1 —
+>   live TO check-in board is not a needed feature); `tournament_registrations` leaves the exclusion set and
+>   joins the Step-4 revoke set (18 tables to revoke, up from 17).
+> - **Dashboard + manage overview realtime removed:** `home-client.tsx` and `overview-client.tsx` active-match
+>   subs dropped (D2, folded into T3j); manage `tournament-overview.tsx` matches + rounds subs dropped (D3,
+>   folded into T3n). Judge board keeps realtime for now (Phase 3 payload candidate).
+> - **Invitations realtime removed:** `tournament-registrations.tsx:166-193` channel dropped (D4, T3o).
+> - **Two routes deleted, one shrunk:** `GET /api/v1/admin/roles` deleted — `admin/config/page.tsx`
+>   converts to server component; `GET /api/v1/tournaments/[id]/registrations` deleted — manage Players tab
+>   gets auth-gated staff read (scope of T3o); `GET /api/v1/admin/users` kept but T3g shrunk —
+>   `admin/page.tsx` converts to server component (D5).
+> - **`current-match-banner.tsx` added to Part A audit** (D6 — previously missing).
+> - **`organization_with_owner` view removed** from exclusion list — already dropped by migration
+>   `20260127000008_drop_unused_organization_with_owner_view.sql` (D7).
+> - **Dedicated fetcher files** confirmed as the default (D8 — no appending to existing endpoint files).
+> - **`isSiteAdmin()` from `apps/web/src/lib/sudo/server.ts:28`** is the canonical admin check for
+>   `/api/v1/admin/*` routes (D9).
+> - **§9 open questions resolved** (D10 — all four questions answered, section rewritten).
+
+---
+
 ## 0. Why this plan exists (read this first)
 
 The parent Phase 2 plan treated "Task 9 — revoke S-bucket base-table SELECT" as a **single migration**
@@ -196,7 +221,7 @@ to explain the service-role rationale (§0.2) so the next reader does not "fix" 
    → `createServiceRoleClient` in ~17 server fetchers / pages. No behavior change, just key change.
 3. **Step 3 — Client-component migration (Part A):** ~27 files. Anon-reachable → SSR; auth-gated →
    `/api/v1`. `use-current-user.ts` goes **first** (highest blast radius — many components depend on it).
-4. **Step 4 — Revoke the remaining ~17 tables** once their readers (Steps 2 + 3) are migrated. Second
+4. **Step 4 — Revoke the remaining 18 tables** once their readers (Steps 2 + 3) are migrated. Second
    migration; gated on Steps 2 and 3 completing.
 
 ### 3.2 The 13 trivially-revocable tables (Step 1 — no client reads)
@@ -212,17 +237,29 @@ team_slots, permissions, role_permissions, follows, post_likes, posts, pds_handl
 ```
 tournaments, tournament_phases, tournament_standings, tournament_player_stats,
 alts, teams, team_pokemon, player_ratings, pokemon, communities, community_staff,
-groups, roles, group_roles, user_group_roles, coach_profiles, announcements, user_roles
+groups, roles, group_roles, user_group_roles, coach_profiles, announcements, user_roles,
+tournament_registrations
 ```
+
+> **Note on `tournament_registrations`:** all four realtime subscriptions to this table have been dropped
+> (D1 — live check-in board is not a needed feature). Before revoking it, verify which readers go through
+> the safe view `public_tournament_registrations` (kept) vs the base table directly. The manage Players
+> tab reads staff-internal columns, so its read must move to an auth-gated path. T3o's scope is extended
+> to repoint `manage/tournament-registrations.tsx` reads onto an authenticated server fetch (via
+> `auth.supabase` inside the `/api/v1` route handler). That covers the staff-column requirement and keeps
+> the anon view path for public consumers.
 
 ### 3.4 Exclusions — NEVER revoke
 
-- **Realtime six** (keep `authenticated` SELECT — payloads can't be column-filtered, scoped quals govern
-  delivery): `notifications`, `match_games`, `match_messages`, `tournament_matches`,
-  `tournament_registrations`, `tournament_rounds`.
+- **Realtime five** (keep `authenticated` SELECT — payloads can't be column-filtered, scoped quals govern
+  delivery): `notifications`, `match_games`, `match_messages`, `tournament_matches`, `tournament_rounds`.
+  (`tournament_registrations` was previously in this set but is removed per D1 — all its realtime
+  subscriptions are dropped and it now joins the Step-4 revoke set.)
 - **`users`** — already locked in Phase 0/1; not in scope.
 - **Views** (the public read path — must stay `anon`/`authenticated` SELECTable):
-  `public_user_profiles`, `public_tournament_registrations`, `organization_with_owner`.
+  `public_user_profiles`, `public_tournament_registrations`.
+  (`organization_with_owner` was already dropped by migration
+  `20260127000008_drop_unused_organization_with_owner_view.sql` — it is not in scope.)
 
 ### 3.5 Part B — server readers needing the mechanical swap (file → tables)
 
@@ -271,6 +308,12 @@ tournament-standings, tournament-registrations, tournament-overview}.tsx`;
 `components/tournaments/create/tournament-basic-info.tsx`;
 `components/topnav-auth-section.tsx`; `components/tournament/match-report-dialog.tsx`.
 
+**AUTH-GATED → move read to `/api/v1` (additional entry previously missing from audit — D6):**
+
+| #    | File                                                                          | Tables                             | Notes                                                                                                   |
+| ---- | ----------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| A-G* | `apps/web/src/components/tournament/current-match-banner.tsx` (lines 41–77)  | `alts`, `tournament_matches`       | Auth-gated (query fires only with `userId`). Repoint `alts` read onto `useCurrentUser` (T3-gate) or `/api/v1/me/profile`; `tournament_matches` keeps its grant (realtime five). Optional cleanup: consolidate its inline current-match query with `getActiveMatch` into one query fn. Assign to T3n or a small disjoint Wave 3d sibling; confirm allowlist doesn't conflict. |
+
 **VERIFY-MAYBE-SAFE (joins may be clean — confirm in-file, only migrate if a revoke-set table is read):**
 
 - `apps/web/src/app/(dashboard)/dashboard/community/[communitySlug]/settings/page.tsx` (discord — likely safe)
@@ -298,35 +341,38 @@ These do **not** exist yet (verified — only `standings`, `communities/**`, `pl
 | `GET /api/v1/me/tournament-history`               | `overview-client.tsx`, `tournaments-client.tsx`, `stats-client.tsx`          | per-user          |
 | `GET /api/v1/me/teams`                            | `teams-sub-table.tsx`                                                        | per-user          |
 | `GET /api/v1/me/invitations`                      | `invitation-list.tsx`, `tournament-invitations-view.tsx`                     | per-user          |
-| `GET /api/v1/admin/roles`                         | `admin/config/page.tsx`, `flag-allowlist-sheet.tsx`                          | admin (no cache)  |
-| `GET /api/v1/admin/users`                         | `admin/users/page.tsx`, `admin/page.tsx`                                     | admin             |
+| `GET /api/v1/admin/users`                         | `admin/users/page.tsx`                                                       | admin             |
 | `GET /api/v1/admin/communities`                   | `admin/communities/page.tsx`                                                 | admin             |
 | `GET /api/v1/admin/coaches`                       | `admin/coaches/coaches-manager.tsx`                                          | admin             |
 | `GET /api/v1/players/search`                      | `invite/player-search.tsx`, `create/tournament-basic-info.tsx`              | public S-bucket (cache OK) |
 | `GET /api/v1/tournaments/[id]/pairings`           | `manage/tournament-pairings.tsx`, `tournament-pairings-judge.tsx`, `match-report-dialog.tsx` | public S-bucket (cache OK) |
 | `GET /api/v1/tournaments/[id]/player-stats`       | `manage/tournament-standings.tsx`, `manage/tournament-overview.tsx`, `create-tournament-client` | public S-bucket (cache OK) |
-| `GET /api/v1/tournaments/[id]/registrations`      | `manage/tournament-registrations.tsx`                                        | realtime table — see note |
+
+> **Routes deleted vs. original plan (D5):**
+> - `GET /api/v1/admin/roles` — **deleted.** `admin/config/page.tsx` converts to a server component
+>   reading roles + site-admins via service-role, passing props to a client island for interactive dialogs.
+>   `flag-allowlist-sheet.tsx`'s user-search (which searches alts) is repointed onto
+>   `GET /api/v1/players/search` (already planned in T3a). No dedicated roles route needed.
+> - `GET /api/v1/tournaments/[id]/registrations` — **deleted.** All registration realtime subs are
+>   dropped (D1); the manage Players tab's staff-column read is served by T3o extending
+>   `manage/tournament-registrations.tsx` to use an authenticated server fetch via `auth.supabase`.
+>   The public view `public_tournament_registrations` continues to cover anon readers. `admin/page.tsx`
+>   (6 one-shot stat reads) converts to a server component (Promise.all + props) — no route needed for it.
 
 **`/api/v1/me/*` auth rule:** these read the *caller's own* data, so they use `auth.userId` +
 `auth.supabase` (the identity-bound client from `resolveApiAuth`) for the read — **no `'use cache'`**,
 `Cache-Control: private, no-store`.
 
-**`/api/v1/admin/*` auth rule:** after `resolveApiAuth`, additionally assert the caller is a site admin
-(reuse the existing server-side admin check — grep `isSiteAdmin` / the JWT role check used by current admin
-pages) → `403` if not. No cache.
-
-**`/api/v1/tournaments/[id]/registrations` note:** `tournament_registrations` is one of the **realtime
-six** and is **not** revoked. This route exists only to give the manage client a cached *initial-load
-snapshot*; the realtime subscription stays (Phase 3 makes it payload-driven). Because the table keeps
-`authenticated` SELECT, this route may read via `auth.supabase`. It is included for consistency with the
-other manage reads but is **not** load-bearing for the revoke — flag it as optional if it adds churn.
+**`/api/v1/admin/*` auth rule:** after `resolveApiAuth`, call **`isSiteAdmin()`** from
+`apps/web/src/lib/sudo/server.ts:28` → `403` if it returns false. This is the canonical read-only admin
+gate (not `requireAdminWithSudo` — that is the mutation gate). No cache.
 
 ---
 
 ## 5. The two revoke migrations
 
 Both live under `packages/supabase/supabase/migrations/<UTC-timestamp>_*.sql`, both idempotent, both with
-`COMMENT ON TABLE`, both excluding the realtime six / `users` / views.
+`COMMENT ON TABLE`, both excluding the **realtime five** / `users` / two views.
 
 ### 5.1 Step-1 migration — `..._phase2_revoke_s_bucket_zero_reader_tables.sql`
 
@@ -345,9 +391,11 @@ guard is needed on the `REVOKE` itself; the migration replays cleanly on a fresh
 
 ### 5.2 Step-4 migration — `..._phase2_revoke_s_bucket_remaining_tables.sql`
 
-Revokes the remaining ~17 tables (§3.3). Lands **only after Steps 2 and 3 are fully merged** (every reader
+Revokes the remaining 18 tables (§3.3). Lands **only after Steps 2 and 3 are fully merged** (every reader
 of these tables now goes through service-role or `/api/v1`). Same per-table `REVOKE` + `COMMENT ON TABLE`
-pattern. Explicitly does **not** touch the realtime six, `users`, or the three views.
+pattern. Explicitly does **not** touch the **realtime five** (`notifications`, `match_games`,
+`match_messages`, `tournament_matches`, `tournament_rounds`), `users`, or the two views
+(`public_user_profiles`, `public_tournament_registrations`).
 
 Both migrations get reviewed by `migration-reviewer` **and** `security-reviewer` (auto-dispatched per repo
 rules for migration + RLS/grant changes).
@@ -414,24 +462,23 @@ service-role rationale (§0.2). Tasks touch **disjoint files** — they run in o
 | Task | Files (disjoint allowlist)                                                                                                                                                                                       | What changes                                                                                                            | Tests                                                                            | Model  | Reviewers        |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------ | ---------------- |
 | T3a  | CREATE `apps/web/src/app/api/v1/players/search/route.ts` + test; CREATE `apps/web/src/lib/data/players-search-endpoint.ts` (`'use cache'`, service-role)                                                          | Public player search route + cached fetcher (reuse `searchPlayers`-style query in `queries/players.ts`)                | route test (locked shape) + fetcher test                                         | sonnet | code-reviewer    |
-| T3b  | CREATE `apps/web/src/app/api/v1/tournaments/[id]/pairings/route.ts` + test; CREATE the `'use cache'` fetcher in `apps/web/src/lib/data/tournaments-endpoints.ts` **append-only** (coordinate: see disjointness note) | Public pairings route + cached fetcher                                                                                  | route test + fetcher test                                                        | sonnet | code-reviewer    |
+| T3b  | CREATE `apps/web/src/app/api/v1/tournaments/[id]/pairings/route.ts` + test; CREATE `apps/web/src/lib/data/tournament-pairings-endpoint.ts` (new dedicated file, `'use cache'`, service-role) | Public pairings route + cached fetcher                                                                                  | route test + fetcher test                                                        | sonnet | code-reviewer    |
 | T3c  | CREATE `apps/web/src/app/api/v1/tournaments/[id]/player-stats/route.ts` + test; CREATE its `'use cache'` fetcher in a NEW file `apps/web/src/lib/data/tournament-player-stats-endpoint.ts`                          | Public player-stats route + cached fetcher                                                                              | route test + fetcher test                                                        | sonnet | code-reviewer    |
 | T3d  | MODIFY `apps/web/src/components/tournament/public-pairings.tsx` (A-S1): convert to SSR — split into a server wrapper that fetches via service-role and a presentational client child fed by props                  | anon-reachable → SSR (NOT `/api/v1`)                                                                                    | component test: presentational child renders pairings from props; server wrapper fetch mocked | sonnet | code-reviewer, ui-verifier |
 | T3e  | MODIFY `apps/web/src/components/tournament/tournament-sidebar-card.tsx` (A-S2): convert to SSR; **remove** the registration-count `postgres_changes` realtime subscription, replace with the tag-revalidated cached count (per parent plan) | anon-reachable → SSR; drop realtime sub                                                                                 | component test: renders count from props; assert no realtime subscription remains | sonnet | code-reviewer, ui-verifier |
 
-> **Disjointness note for T3b:** T2a also owns `tournaments-endpoints.ts`. T3b runs in a **later wave**
-> (Step 3, after Step 2 has committed), so there is no concurrent edit — the file is free again. To keep
-> T3b's addition append-only and avoid churn, it adds a new exported fetcher at the end of the file. If the
-> orchestrator prefers strict file isolation, T3b may instead create
-> `apps/web/src/lib/data/tournament-pairings-endpoint.ts` (a new file) — choose one and note it in the
-> dispatch prompt.
+> **Disjointness note for T3b:** T3b uses a **dedicated new file**
+> `apps/web/src/lib/data/tournament-pairings-endpoint.ts` (D8 — dedicated-file preference confirmed).
+> The same pattern applies wherever the plan previously offered an append-to-existing-endpoint option:
+> always create a new dedicated file. This makes wave disjointness trivially verifiable and avoids
+> concurrent-edit contention with T2a's earlier ownership of `tournaments-endpoints.ts`.
 
 **Wave 3c (parallel — admin routes + their consumers; disjoint files):**
 
 | Task | Files (disjoint allowlist)                                                                                                                                                                                  | What changes                                                                                                          | Tests                                              | Model  | Reviewers                     |
 | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------ | ----------------------------- |
-| T3f  | CREATE `apps/web/src/app/api/v1/admin/roles/route.ts` + test; MODIFY `apps/web/src/app/(app)/admin/config/page.tsx`, `apps/web/src/app/(app)/admin/config/flag-allowlist-sheet.tsx`                          | Admin roles route (`resolveApiAuth` + site-admin assert → 403); repoint the two config clients via `useApiQuery`     | route test incl. 403-non-admin; component tests    | sonnet | security-reviewer, code-reviewer |
-| T3g  | CREATE `apps/web/src/app/api/v1/admin/users/route.ts` + test; MODIFY `apps/web/src/app/(app)/admin/users/page.tsx`, `apps/web/src/app/(app)/admin/page.tsx`                                                   | Admin users route + repoint                                                                                          | route test incl. 403; component tests              | sonnet | security-reviewer, code-reviewer |
+| T3f  | MODIFY `apps/web/src/app/(app)/admin/config/page.tsx`, `apps/web/src/app/(app)/admin/config/flag-allowlist-sheet.tsx` | Convert `admin/config/page.tsx` to a server component: read roles + site-admins via `createServiceRoleClient()`, pass as props to client island for interactive dialogs (no API route needed). Repoint `flag-allowlist-sheet.tsx` user-search (searches alts) onto `GET /api/v1/players/search` (built in T3a) via `useApiQuery`. | component tests (server-component render + client island interactions) | sonnet | security-reviewer, code-reviewer |
+| T3g  | CREATE `apps/web/src/app/api/v1/admin/users/route.ts` + test; MODIFY `apps/web/src/app/(app)/admin/users/page.tsx`; CONVERT `apps/web/src/app/(app)/admin/page.tsx` to server component | Admin users route (`resolveApiAuth` + `isSiteAdmin()` → 403) + repoint `admin/users/page.tsx` via `useApiQuery`. `admin/page.tsx` (6 one-shot stat reads, lines 370–402) converts to server component using `Promise.all` + props — no API route. | route test incl. 403; component tests              | sonnet | security-reviewer, code-reviewer |
 | T3h  | CREATE `apps/web/src/app/api/v1/admin/communities/route.ts` + test; MODIFY `apps/web/src/app/(app)/admin/communities/page.tsx`                                                                                | Admin communities route + repoint                                                                                   | route test incl. 403; component test               | sonnet | security-reviewer, code-reviewer |
 | T3i  | CREATE `apps/web/src/app/api/v1/admin/coaches/route.ts` + test; MODIFY `apps/web/src/app/(app)/admin/coaches/coaches-manager.tsx`                                                                             | Admin coaches route + repoint                                                                                       | route test incl. 403; component test               | sonnet | security-reviewer, code-reviewer |
 
@@ -439,12 +486,12 @@ service-role rationale (§0.2). Tasks touch **disjoint files** — they run in o
 
 | Task | Files (disjoint allowlist)                                                                                                                                                                                                          | What changes                                                                                            | Tests                                              | Model  | Reviewers        |
 | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------ | ---------------- |
-| T3j  | CREATE `apps/web/src/app/api/v1/me/communities/route.ts` + test; CREATE `apps/web/src/app/api/v1/me/tournament-history/route.ts` + test; MODIFY `apps/web/src/app/(dashboard)/dashboard/overview/overview-client.tsx`, `.../tournaments/tournaments-client.tsx`, `.../stats/stats-client.tsx` | `me/*` routes (per-user, no cache); repoint the three dashboard clients via `useApiQuery`               | route tests; component tests                       | sonnet | code-reviewer    |
+| T3j  | CREATE `apps/web/src/app/api/v1/me/communities/route.ts` + test; CREATE `apps/web/src/app/api/v1/me/tournament-history/route.ts` + test; MODIFY `apps/web/src/app/(dashboard)/dashboard/overview/overview-client.tsx`, `.../tournaments/tournaments-client.tsx`, `.../stats/stats-client.tsx`; MODIFY `apps/web/src/components/home-client.tsx` | `me/*` routes (per-user, no cache); repoint the three dashboard clients via `useApiQuery`. Remove `tournament_matches` realtime sub from `overview-client.tsx` (lines 68–121) and `home-client.tsx` (lines 89–133); replace with fetch-on-load + `visibilitychange` refetch, copying the TanStack pattern from `current-match-banner.tsx`. | route tests; component tests (including assert no realtime sub in home-client + overview-client) | sonnet | code-reviewer    |
 | T3k  | CREATE `apps/web/src/app/api/v1/me/teams/route.ts` + test; MODIFY `apps/web/src/app/(dashboard)/dashboard/components/teams-sub-table.tsx`                                                                                            | `me/teams` route; repoint                                                                               | route test; component test                         | sonnet | code-reviewer    |
 | T3l  | CREATE `apps/web/src/app/api/v1/me/invitations/route.ts` + test; MODIFY `apps/web/src/components/tournaments/invite/invitation-list.tsx`, `apps/web/src/components/tournaments/tournament-invitations-view.tsx`                      | `me/invitations` route; repoint                                                                         | route test; component tests                        | sonnet | code-reviewer    |
 | T3m  | MODIFY `apps/web/src/components/tournaments/invite/player-search.tsx`, `apps/web/src/components/tournaments/create/tournament-basic-info.tsx`                                                                                        | repoint onto `GET /api/v1/players/search` (built in T3a)                                                | component tests                                    | sonnet | code-reviewer    |
-| T3n  | MODIFY `apps/web/src/components/tournaments/manage/{tournament-pairings,tournament-pairings-judge,tournament-overview}.tsx`                                                                                                          | repoint onto `/api/v1/tournaments/[id]/pairings` (T3b) + `/player-stats` (T3c)                          | component tests                                    | sonnet | code-reviewer    |
-| T3o  | MODIFY `apps/web/src/components/tournaments/manage/{tournament-standings,tournament-registrations}.tsx`, `apps/web/src/components/tournament/match-report-dialog.tsx`                                                                | repoint standings onto existing `/api/v1/.../standings`; registrations onto `/api/v1/.../registrations` (keep realtime sub); match dialog onto pairings/player-stats | component tests                                    | sonnet | code-reviewer    |
+| T3n  | MODIFY `apps/web/src/components/tournaments/manage/{tournament-pairings,tournament-pairings-judge,tournament-overview}.tsx`                                                                                                          | Repoint `tournament-pairings.tsx` + `tournament-pairings-judge.tsx` onto `/api/v1/tournaments/[id]/pairings` (T3b) + `/player-stats` (T3c). Remove both realtime subs from `tournament-overview.tsx` — matches sub (lines 188–212) and rounds sub (lines 216–240) — replacing with mutation-driven cache busting via `invalidateTournamentCaches`. `tournament-pairings-judge.tsx` **keeps** its realtime matches/rounds subs (Phase 3 payload-driven candidate; only the `/api/v1` repoint is in scope here). | component tests (assert overview has no realtime subs; judge retains them) | sonnet | code-reviewer    |
+| T3o  | MODIFY `apps/web/src/components/tournaments/manage/{tournament-standings,tournament-registrations}.tsx`, `apps/web/src/components/tournament/match-report-dialog.tsx`                                                                | Repoint `tournament-standings.tsx` onto existing `/api/v1/.../standings`; repoint match dialog onto pairings/player-stats. For `tournament-registrations.tsx`: (1) remove the `registrations` realtime channel (line 131) and all four registration subs; (2) remove the `tournament_invitations` realtime channel (lines 166–193) — invite/accept/decline mutations cache-bust instead; (3) repoint the manage Players tab reads onto an authenticated server fetch via `auth.supabase` in the route handler (staff-internal columns require auth; the public view `public_tournament_registrations` covers anon consumers); (4) replace with fetch-on-load + mutation-driven revalidation. | component tests (assert neither realtime channel remains; staff-column read requires auth) | sonnet | security-reviewer, code-reviewer |
 | T3p  | MODIFY `apps/web/src/components/topnav-auth-section.tsx`, the 3 community manage clients `apps/web/src/components/.../tournament-manage-client.tsx`, `.../tournament-settings-page-client.tsx`, `.../create-tournament-client.tsx` | repoint onto `useCurrentUser` (now API-backed, T3-gate) + `me/communities` (T3j)                        | component tests                                    | sonnet | code-reviewer    |
 | T3q  | VERIFY-only: `apps/web/src/app/(dashboard)/dashboard/community/[communitySlug]/settings/page.tsx`, `apps/web/src/app/(dashboard)/dashboard/community/request/page.tsx` — confirm no revoke-set table is read; migrate only if it is | confirm-or-migrate                                                                                      | only if migrated                                   | haiku  | code-reviewer    |
 
@@ -452,11 +499,11 @@ service-role rationale (§0.2). Tasks touch **disjoint files** — they run in o
 > built in T3a/T3b/T3c (Wave 3b) — that is a true data dependency, hence the wave ordering. Within 3d, no
 > two tasks touch the same file (verified against §3.6). T3q is a cheap verification (haiku).
 
-### Step 4 — Revoke the remaining ~17 tables (Wave 4 — sequential, gated on Steps 2 + 3)
+### Step 4 — Revoke the remaining 18 tables (Wave 4 — sequential, gated on Steps 2 + 3)
 
 | Task | Files (allowlist)                                                                                                                                                | Tables             | What changes                                                                              | Tests                                                                                                          | Model  | Reviewers                          |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------ | ---------------------------------- |
-| T4   | CREATE `packages/supabase/supabase/migrations/<ts>_phase2_revoke_s_bucket_remaining_tables.sql`; (regen) `packages/supabase/src/types.ts`; MODIFY `apps/mobile/CLAUDE.md` (deferred-mobile note) | the 17 (§3.3)      | `REVOKE SELECT FROM anon, authenticated` + `COMMENT ON TABLE` per table; idempotent; exclude realtime six / users / views | extend the privilege-map guardrail test (or smoke-assert anon `select` on `tournaments` denied while `public_user_profiles` view still returns rows). `pnpm db:reset` clean replay. | sonnet | migration-reviewer, security-reviewer |
+| T4   | CREATE `packages/supabase/supabase/migrations/<ts>_phase2_revoke_s_bucket_remaining_tables.sql`; (regen) `packages/supabase/src/types.ts`; MODIFY `apps/mobile/CLAUDE.md` (deferred-mobile note) | the 18 (§3.3)      | `REVOKE SELECT FROM anon, authenticated` + `COMMENT ON TABLE` per table; idempotent; exclude realtime five / users / two views | extend the privilege-map guardrail test (or smoke-assert anon `select` on `tournaments` denied while `public_user_profiles` view still returns rows). `pnpm db:reset` clean replay. | sonnet | migration-reviewer, security-reviewer |
 
 Step 4 must not start until every Step 2 and Step 3 task is merged — those are the readers being protected.
 
@@ -468,9 +515,9 @@ Run as a dedicated closing task (dispatch a sonnet subagent for the sweeps; it r
 the orchestrator does not ingest raw output):
 
 1. **No anon reads of revoked base tables remain.** Sweep:
-   - `rg "createStaticClient" apps/web/src` — every remaining hit must read a **view** (`public_user_profiles`,
-     `public_tournament_registrations`, `organization_with_owner`) or a non-revoked table. No hit may read a
-     revoke-set base table.
+   - `rg "createStaticClient" apps/web/src` — every remaining hit must read a **view** (`public_user_profiles`
+     or `public_tournament_registrations`) or a non-revoked table. No hit may read a revoke-set base table.
+     (`organization_with_owner` was already dropped by migration — do not expect or accept hits to it.)
    - `rg "createClientReadOnly" apps/web/src` — confirm none is used for a *public* read of a revoked table
      (auth-gated per-user reads via this client are fine and expected).
    - `rg "useSupabaseQuery" apps/web/src` — every remaining hit must read a non-revoked table or be one of
@@ -481,8 +528,9 @@ the orchestrator does not ingest raw output):
    pnpm generate-types     # regenerate; commit the type changes
    ```
 3. **Grant assertions hold:** anon PostgREST `SELECT` on a revoked table (e.g. `tournaments`, `posts`) is
-   denied / returns no rows; the three views still return rows to anon; the **realtime six** still return
-   rows to an authed client.
+   denied / returns no rows; the **two views** (`public_user_profiles`, `public_tournament_registrations`)
+   still return rows to anon; the **realtime five** (`notifications`, `match_games`, `match_messages`,
+   `tournament_matches`, `tournament_rounds`) still return rows to an authed client.
 4. **Quality + tests:** `pnpm typecheck`, `pnpm lint`, the new route-handler tests, the migrated-component
    tests, and the fetcher tests all pass (offload to CI per push policy; the closing subagent may run scoped
    `--filter` checks).
@@ -529,23 +577,25 @@ WAVE 3b — new public-S-bucket routes + SSR conversions (PARALLEL, disjoint fil
   T3e  tournament-sidebar-card.tsx → SSR (drop realtime count sub)      ─┘ routes later.
 
 WAVE 3c — admin routes + consumers (PARALLEL, disjoint files):
-  T3f  /api/v1/admin/roles + config page + flag-allowlist-sheet         ─┐
-  T3g  /api/v1/admin/users + admin users/admin page                      │ disjoint
+  T3f  admin/config/page → server component + flag-allowlist-sheet      ─┐  (no route built)
+  T3g  /api/v1/admin/users + admin users/page; admin/page → server comp  │ disjoint
   T3h  /api/v1/admin/communities + admin communities page                │
   T3i  /api/v1/admin/coaches + coaches-manager                          ─┘
 
 WAVE 3d — me/* routes + dashboard/manage/invite consumers (PARALLEL, disjoint files):
   T3j  me/communities + me/tournament-history + 3 dashboard clients     ─┐
+       + home-client.tsx (remove active-match realtime sub)              │
   T3k  me/teams + teams-sub-table                                        │
   T3l  me/invitations + invitation-list + invitations-view              │ disjoint;
   T3m  player-search + tournament-basic-info  (consume T3a)              │ 3m/3n/3o
-  T3n  manage pairings/judge/overview        (consume T3b, T3c)          │ depend on
-  T3o  manage standings/registrations + match-report-dialog             │ 3a/3b/3c
+  T3n  manage pairings/judge/overview (remove overview realtime subs)    │ depend on
+  T3o  manage standings/registrations (drop all realtime subs + invit.  │ 3a/3b/3c
+       channel; auth-gate staff read) + match-report-dialog             │
   T3p  topnav-auth-section + 3 community manage clients (consume gate+3j)│
   T3q  VERIFY settings/page + request/page (haiku)                      ─┘
 
 WAVE 4 — Step 4 revoke (sequential, owns db:reset/generate-types, gated on Waves 2+3):
-  T4   Revoke the remaining 17 tables + mobile CLAUDE.md note
+  T4   Revoke the remaining 18 tables + mobile CLAUDE.md note
        └─ cannot start until every reader (Waves 2+3) is merged.
 
 WAVE 5 — Final verification (sequential closing task):
@@ -567,25 +617,31 @@ consume them) → T4 (revoke) → Wave 5 (verify).** Everything else fans out in
 
 1. **Only one task may hold `db:reset` / `generate-types` at a time.** T1 and T4 are the only DB tasks; they
    are in different waves (1 and 4) and never run concurrently. No other task runs `generate-types`.
-2. **T4 (the remaining-tables revoke) is gated on ALL of Waves 2 and 3 being merged.** Revoking before a
-   reader is migrated would silently empty that reader's data. This is the single most important ordering
-   rule in the plan.
+2. **T4 (the 18-table remaining-tables revoke) is gated on ALL of Waves 2 and 3 being merged.** Revoking
+   before a reader is migrated would silently empty that reader's data. This is the single most important
+   ordering rule in the plan.
 
 ---
 
-## 9. Open questions to confirm before execution
+## 9. Resolved decisions (formerly open questions)
 
-1. **B16 exact tables:** `admin/limitless/[tournamentId]/page.tsx` is listed as "tournaments, alts —
-   verify exact." Confirm the precise revoke-set tables it reads when T2h opens the file; if it reads more,
-   the swap still covers it (service-role reads everything), but the audit note should be corrected.
-2. **T3b file isolation:** append the pairings fetcher to `tournaments-endpoints.ts` (smaller surface) or
-   create a dedicated `tournament-pairings-endpoint.ts` (strict isolation)? Default: dedicated file, to keep
-   waves trivially disjoint. Confirm preference.
-3. **Registrations route necessity:** `/api/v1/tournaments/[id]/registrations` reads a non-revoked realtime
-   table and is included only for snapshot consistency. Keep it, or drop it to reduce churn (the realtime
-   sub already feeds the manage client)? Default: drop unless the manage client needs a non-realtime initial
-   snapshot.
-4. **Admin-check helper:** confirm the canonical server-side site-admin assertion to reuse in the
-   `/api/v1/admin/*` routes (grep surfaced `isSiteAdmin` / a JWT-role check) so all four admin routes use
-   one helper, not four ad-hoc checks.
-```
+All questions from the original plan are resolved. No open items remain.
+
+1. **B16 exact tables — resolved:** `admin/limitless/[tournamentId]/page.tsx` is listed as "tournaments,
+   alts — verify exact." The service-role swap in T2h covers it regardless of the precise table list.
+   The implementer corrects the audit note in-file when they open the file. No blocker.
+
+2. **T3b file isolation — resolved (D8):** T3b uses a **new dedicated file**
+   `apps/web/src/lib/data/tournament-pairings-endpoint.ts`. The same dedicated-file preference applies
+   anywhere else the plan offered an append-to-existing-endpoint option. Never append to an existing
+   endpoint file; always create a new dedicated file.
+
+3. **Registrations route + realtime — resolved (D1 + D5):** `GET /api/v1/tournaments/[id]/registrations`
+   is **deleted**. All four `tournament_registrations` realtime subscriptions are dropped (live check-in
+   board is not a needed feature). The manage Players tab's staff-column read is migrated to an auth-gated
+   path in T3o. `tournament_registrations` now joins the Step-4 revoke set.
+
+4. **Admin-check helper — resolved (D9):** The canonical server-side admin check for all
+   `/api/v1/admin/*` read routes is **`isSiteAdmin()`** from
+   `apps/web/src/lib/sudo/server.ts:28`. Not `requireAdminWithSudo` — that is the mutation gate. All
+   admin read routes use `isSiteAdmin()` → `403` if false.
