@@ -58,9 +58,13 @@ export async function checkUsernameAvailability(
   try {
     const supabase = await createClient();
 
-    // Check users table (case-insensitive)
+    // Check users table (case-insensitive). RLS audit #1: this runs on the
+    // sign-up path under the anon client (no session yet), and public.users
+    // SELECT is now locked to own-row + admin — anon would see zero rows and
+    // every taken username would look available. Read the safe
+    // public_user_profiles view, which exposes id + username for every row.
     const { data: existingUser, error: usersError } = await supabase
-      .from("users")
+      .from("public_user_profiles")
       .select("id")
       .ilike("username", escaped)
       .maybeSingle();

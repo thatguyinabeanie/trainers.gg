@@ -253,12 +253,30 @@ async function resolveUserIdsToDiscordIds(
 
   // getDiscordIdsByUserIds only returns the discord snowflake IDs, not the user_id mapping.
   // We need to query auth.identities ourselves to get the (user_id → discord_id) pairs.
-  const result = await (
-    supabase as TypedClient & {
-      from: (table: "auth.identities") => ReturnType<TypedClient["from"]>;
-    }
-  )
-    .from("auth.identities" as never)
+  // auth.identities is not in the generated public types, so use a minimal
+  // explicit query interface. (The generated relation overloads don't cover
+  // the auth schema, and after the public_user_profiles view was added the
+  // inference otherwise mis-resolves onto a public relation.)
+  const authQuery = supabase as unknown as {
+    from(table: string): {
+      select(cols: string): {
+        eq(
+          col: string,
+          val: string
+        ): {
+          in(
+            col: string,
+            vals: string[]
+          ): Promise<{
+            data: Array<{ user_id: string; identity_id: string }> | null;
+            error: unknown;
+          }>;
+        };
+      };
+    };
+  };
+  const result = await authQuery
+    .from("auth.identities")
     .select("user_id, identity_id")
     .eq("provider", "discord")
     .in("user_id", userIds);
@@ -266,10 +284,7 @@ async function resolveUserIdsToDiscordIds(
   if (result.error) throw result.error;
 
   const map = new Map<string, string>();
-  for (const row of result.data as Array<{
-    user_id: string;
-    identity_id: string;
-  }>) {
+  for (const row of result.data ?? []) {
     map.set(row.user_id, row.identity_id);
   }
   return map;

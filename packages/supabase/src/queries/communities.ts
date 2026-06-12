@@ -1311,10 +1311,13 @@ export async function getCommunityActivity(
         .order("created_at", { ascending: false })
         .limit(limit),
 
-      // Recent staff joins
+      // Recent staff joins. RLS audit #1: the user embed on community_staff is
+      // no longer possible (public.users SELECT is locked). Fetch staff rows
+      // here, then resolve usernames via the safe public_user_profiles view in
+      // a second step below.
       supabase
         .from("community_staff")
-        .select("created_at, user:users(username)")
+        .select("created_at, user_id")
         .eq("community_id", communityId)
         .order("created_at", { ascending: false })
         .limit(limit),
@@ -1365,11 +1368,38 @@ export async function getCommunityActivity(
     });
   }
 
+  // RLS audit #1: resolve staff usernames via the safe public_user_profiles
+  // view (the user embed on community_staff is no longer permitted).
+  const staffUserIds = [
+    ...new Set(
+      (staffResult.data ?? [])
+        .map((s) => s.user_id)
+        .filter((id): id is string => id != null)
+    ),
+  ];
+  const staffUsernameById = new Map<string, string>();
+  if (staffUserIds.length > 0) {
+    const { data: staffProfiles, error: staffProfilesError } = await supabase
+      .from("public_user_profiles")
+      .select("id, username")
+      .in("id", staffUserIds);
+    if (staffProfilesError)
+      throw new Error(
+        `Failed to resolve staff usernames: ${staffProfilesError.message}`
+      );
+    for (const p of staffProfiles ?? []) {
+      // public_user_profiles.id and username are nullable in generated types.
+      if (p.id && p.username) staffUsernameById.set(p.id, p.username);
+    }
+  }
+
   for (const s of staffResult.data ?? []) {
     if (s.created_at) {
       items.push({
         type: "staff_joined",
-        actorName: s.user?.username ?? "Unknown staff",
+        actorName:
+          (s.user_id ? staffUsernameById.get(s.user_id) : null) ??
+          "Unknown staff",
         targetName: "",
         timestamp: s.created_at,
       });

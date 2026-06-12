@@ -368,6 +368,12 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
 
   const profile = profileResult;
 
+  // A public profile resolved by handle always has a user id; the
+  // public_user_profiles view types it as nullable, so guard to narrow.
+  if (!profile.userId) {
+    notFound();
+  }
+
   // Fetch follow counts, Discord handle, and coach badge in parallel (all
   // depend on profile). The coach-badge lookup is NOT cached with the profile:
   // it is gated on the global coaching flag and per-user coach status, neither

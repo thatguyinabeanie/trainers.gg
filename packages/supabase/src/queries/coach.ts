@@ -50,8 +50,9 @@ export async function getCoachProfileByHandle(
   let userId: string | null = null;
   let userName: string | null = null;
   let userImage: string | null = null;
+  // RLS audit #1: read the safe public_user_profiles view, not public.users.
   const { data: byUser, error: byUserError } = await supabase
-    .from("users")
+    .from("public_user_profiles")
     .select("id, is_coach, main_alt_id, name, image")
     .eq("username", handle)
     .maybeSingle();
@@ -69,11 +70,12 @@ export async function getCoachProfileByHandle(
   userImage = byUser?.image ?? null;
 
   if (!userId) {
+    // RLS audit #1: the user embed on alts is no longer possible (public.users
+    // SELECT is locked). Resolve the owning user_id from alts, then read the
+    // user via the safe public_user_profiles view in a second step.
     const { data: alt, error: altError } = await supabase
       .from("alts")
-      .select(
-        "user_id, is_public, user:users!profiles_user_id_fkey(id, is_coach, main_alt_id, name, image)"
-      )
+      .select("user_id, is_public")
       .eq("username", handle)
       .eq("is_public", true)
       .maybeSingle();
@@ -82,11 +84,21 @@ export async function getCoachProfileByHandle(
         `Failed to look up alt by username "${handle}": ${altError.message}`
       );
     }
-    if (alt?.user) {
-      const user = Array.isArray(alt.user) ? alt.user[0] : alt.user;
+    if (alt?.user_id) {
+      const { data: user, error: userViewError } = await supabase
+        .from("public_user_profiles")
+        .select("id, is_coach, main_alt_id, name, image")
+        .eq("id", alt.user_id)
+        .maybeSingle();
+      if (userViewError) {
+        throw new Error(
+          `Failed to load user (id=${alt.user_id}) for alt "${handle}": ${userViewError.message}`
+        );
+      }
       if (user) {
+        // public_user_profiles columns are nullable in generated types.
         userId = user.id;
-        isCoach = user.is_coach;
+        isCoach = user.is_coach ?? false;
         mainAltId = user.main_alt_id;
         userName = user.name ?? null;
         userImage = user.image ?? null;
