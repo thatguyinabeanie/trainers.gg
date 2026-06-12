@@ -16,9 +16,8 @@ import {
 } from "@dnd-kit/core";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useApiQuery } from "@trainers/supabase";
 import {
-  listCommunityStaffWithRoles,
   type StaffWithRole,
   type CommunityGroup,
 } from "@trainers/supabase";
@@ -725,17 +724,27 @@ export function StaffClient({
     useSensor(KeyboardSensor)
   );
 
-  // Fetch staff data
-  const queryFn = (
-    supabase: Parameters<typeof listCommunityStaffWithRoles>[0]
-  ) => listCommunityStaffWithRoles(supabase, communityId);
-
+  // Fetch staff data via the /api/v1/communities/[slug]/staff route.
+  // useApiQuery unwraps ActionResult<T>; the fetcher wraps the raw fetch response.
   const {
     data: staffMembers,
     isLoading,
     error: queryError,
     refetch,
-  } = useSupabaseQuery(queryFn, [communityId]);
+  } = useApiQuery<StaffWithRole[]>(
+    ["community-staff", communitySlug],
+    async () => {
+      const res = await fetch(
+        `/api/v1/communities/${encodeURIComponent(communitySlug)}/staff`
+      );
+      if (!res.ok) {
+        return { success: false as const, error: `HTTP ${res.status}` };
+      }
+      const data = (await res.json()) as StaffWithRole[];
+      return { success: true as const, data };
+    },
+    { staleTime: 30_000 }
+  );
 
   useEffect(() => {
     if (queryError) {

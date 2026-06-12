@@ -38,10 +38,10 @@ export const DEFAULT_WINDOW_MS = 60_000;
 export interface RateLimitOptions {
   /** Opaque string that scopes the counter (userId when authed, else request IP). */
   identifier: string;
-  /** Maximum number of requests allowed within `windowMs`. */
-  limit: number;
-  /** Sliding-window size in milliseconds. */
-  windowMs: number;
+  /** Maximum number of requests allowed within `windowMs`. Defaults to DEFAULT_API_LIMIT (120). */
+  limit?: number;
+  /** Sliding-window size in milliseconds. Defaults to DEFAULT_WINDOW_MS (60s). */
+  windowMs?: number;
 }
 
 export interface RateLimitResult {
@@ -72,8 +72,8 @@ export interface RateLimitResult {
  */
 export async function enforceRateLimit({
   identifier,
-  limit,
-  windowMs,
+  limit = DEFAULT_API_LIMIT,
+  windowMs = DEFAULT_WINDOW_MS,
 }: RateLimitOptions): Promise<RateLimitResult> {
   const supabase = createServiceRoleClient();
   const now = new Date();

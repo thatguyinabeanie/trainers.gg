@@ -19,11 +19,10 @@ jest.mock("@trainers/utils", () => ({
   formatTimeAgo: (s: string) => `ago(${s})`,
 }));
 
-// Mock @/lib/supabase to avoid creating a real Supabase client in JSDOM.
-// useSupabaseQuery returns the loading=false + no-data state so each of the
-// three query branches renders its empty-state UI path.
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: () => ({
+// Mock useApiQuery from @trainers/supabase — returns loading=false + no data
+// so each query branch renders its empty-state UI path.
+jest.mock("@trainers/supabase", () => ({
+  useApiQuery: () => ({
     data: undefined,
     isLoading: false,
     error: null,

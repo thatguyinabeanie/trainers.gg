@@ -36,10 +36,9 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@trainers/supabase/types";
 
-import { createClientReadOnly } from "@/lib/supabase/server";
+import { resolveApiAuth } from "@/lib/api/auth";
+import { enforceRateLimit, extractRequestIp, DEFAULT_API_LIMIT, DEFAULT_WINDOW_MS } from "@/lib/api/rate-limit";
 import { getCachedTournamentStandings } from "@/lib/data/standings-endpoint";
 
 /**
@@ -47,41 +46,6 @@ import { getCachedTournamentStandings } from "@/lib/data/standings-endpoint";
  * rationale. Long shared-CDN TTL + SWR; on-demand tag bust is the real refresh.
  */
 const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400";
-
-/**
- * Validate the request carries an authenticated identity (web cookie OR mobile
- * Bearer). Returns the userId on success, or `null` for anonymous/invalid.
- *
- * TODO(phase2-task2): swap to shared resolveApiAuth() once Task 2 lands. This
- * inline version is the spike's minimal stand-in.
- */
-async function resolveAuthUserId(request: NextRequest): Promise<string | null> {
-  const authHeader = request.headers.get("authorization");
-
-  if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
-    // Mobile path: the token is a Supabase access JWT. Bind it to an anon
-    // client and let Supabase validate it via getUser(). Never log the token.
-    const token = authHeader.slice("bearer ".length).trim();
-    if (!token) return null;
-
-    const supabase = createSupabaseClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    );
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.id ?? null;
-  }
-
-  // Web path: cookie session, read-only (a route handler must not mutate it).
-  const supabase = await createClientReadOnly();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user?.id ?? null;
-}
 
 export async function GET(
   request: NextRequest,
@@ -98,9 +62,26 @@ export async function GET(
   }
 
   // Auth required (no anonymous open Data API). Read OUTSIDE the cache scope.
-  const userId = await resolveAuthUserId(request);
-  if (!userId) {
+  const auth = await resolveApiAuth(request);
+  if (!auth) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  // Rate-limit: keyed on userId when authed, request IP as fallback.
+  const identifier = auth.userId ?? extractRequestIp(request);
+  const { allowed, resetAt } = await enforceRateLimit({
+    identifier,
+    limit: DEFAULT_API_LIMIT,
+    windowMs: DEFAULT_WINDOW_MS,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      {
+        status: 429,
+        headers: { "Retry-After": resetAt.toUTCString() },
+      }
+    );
   }
 
   const standings = await getCachedTournamentStandings(tournamentId);

@@ -7,25 +7,23 @@
 // =============================================================================
 
 const mockGetCachedTournamentStandings = jest.fn();
-
-// Cookie-path client: createClientReadOnly().auth.getUser()
-const mockCookieGetUser = jest.fn();
-// Bearer-path client: createSupabaseClient(...).auth.getUser()
-const mockBearerGetUser = jest.fn();
+const mockEnforceRateLimit = jest.fn();
+const mockResolveApiAuth = jest.fn();
 
 jest.mock("@/lib/data/standings-endpoint", () => ({
   getCachedTournamentStandings: (...args: unknown[]) =>
     mockGetCachedTournamentStandings(...args),
 }));
 
-jest.mock("@/lib/supabase/server", () => ({
-  createClientReadOnly: jest.fn(() =>
-    Promise.resolve({ auth: { getUser: mockCookieGetUser } })
-  ),
+jest.mock("@/lib/api/auth", () => ({
+  resolveApiAuth: (...args: unknown[]) => mockResolveApiAuth(...args),
 }));
 
-jest.mock("@supabase/supabase-js", () => ({
-  createClient: jest.fn(() => ({ auth: { getUser: mockBearerGetUser } })),
+jest.mock("@/lib/api/rate-limit", () => ({
+  enforceRateLimit: (...args: unknown[]) => mockEnforceRateLimit(...args),
+  extractRequestIp: jest.fn(() => "127.0.0.1"),
+  DEFAULT_API_LIMIT: 120,
+  DEFAULT_WINDOW_MS: 60_000,
 }));
 
 // =============================================================================
@@ -44,6 +42,11 @@ const STANDINGS = [
   { id: 1, tournament_id: 42, rank: 1, alt: { id: 7, username: "ash" } },
   { id: 2, tournament_id: 42, rank: 2, alt: { id: 8, username: "gary" } },
 ];
+
+const AUTHED_COOKIE = { mode: "cookie" as const, userId: "user-cookie-1", supabase: {} };
+const AUTHED_BEARER = { mode: "bearer" as const, userId: "user-bearer-1", supabase: {} };
+const RATE_LIMIT_OK = { allowed: true, remaining: 119, resetAt: new Date() };
+const RATE_LIMIT_DENIED = { allowed: false, remaining: 0, resetAt: new Date("2030-01-01") };
 
 function makeRequest(options: { token?: string } = {}): NextRequest {
   const headers: Record<string, string> = {};
@@ -70,9 +73,9 @@ async function getJson(response: Response) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetCachedTournamentStandings.mockResolvedValue(STANDINGS);
-  // Default: anonymous (both auth paths fail) unless a test overrides.
-  mockCookieGetUser.mockResolvedValue({ data: { user: null } });
-  mockBearerGetUser.mockResolvedValue({ data: { user: null } });
+  mockEnforceRateLimit.mockResolvedValue(RATE_LIMIT_OK);
+  // Default: anonymous — tests that need auth must override this.
+  mockResolveApiAuth.mockResolvedValue(null);
 });
 
 // =============================================================================
@@ -85,7 +88,8 @@ describe("param validation", () => {
 
     expect(response.status).toBe(404);
     expect(await getJson(response)).toEqual({ error: "Tournament not found" });
-    // Never touches the DB on a bad id.
+    // Never touches auth or DB on a bad id.
+    expect(mockResolveApiAuth).not.toHaveBeenCalled();
     expect(mockGetCachedTournamentStandings).not.toHaveBeenCalled();
   });
 
@@ -108,28 +112,22 @@ describe("authentication", () => {
     expect(await getJson(response)).toEqual({ error: "Not authenticated" });
     expect(mockGetCachedTournamentStandings).not.toHaveBeenCalled();
   });
+});
 
-  it("returns 401 for an empty Bearer token", async () => {
-    const response = await GET(makeRequest({ token: "" }), makeParams("42"));
+// =============================================================================
+// Rate limiting
+// =============================================================================
 
-    // The `Authorization: Bearer ` header (empty token) has its trailing space
-    // stripped by the Headers normalizer, so it no longer matches the
-    // "bearer " prefix and falls through to the cookie path — anonymous here.
-    expect(response.status).toBe(401);
-    expect(mockBearerGetUser).not.toHaveBeenCalled();
-    expect(mockCookieGetUser).toHaveBeenCalled();
-  });
+describe("rate limiting", () => {
+  it("returns 429 when rate limit is exceeded", async () => {
+    mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
+    mockEnforceRateLimit.mockResolvedValue(RATE_LIMIT_DENIED);
 
-  it("returns 401 when the Bearer token is invalid/expired", async () => {
-    mockBearerGetUser.mockResolvedValue({ data: { user: null } });
+    const response = await GET(makeRequest(), makeParams("42"));
 
-    const response = await GET(
-      makeRequest({ token: "bad-jwt" }),
-      makeParams("42")
-    );
-
-    expect(response.status).toBe(401);
-    expect(mockBearerGetUser).toHaveBeenCalled();
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBeTruthy();
+    expect(mockGetCachedTournamentStandings).not.toHaveBeenCalled();
   });
 });
 
@@ -139,9 +137,7 @@ describe("authentication", () => {
 
 describe("success", () => {
   it("returns 200 + standings JSON for a valid web cookie session", async () => {
-    mockCookieGetUser.mockResolvedValue({
-      data: { user: { id: "user-cookie-1" } },
-    });
+    mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
 
     const response = await GET(makeRequest(), makeParams("42"));
 
@@ -151,9 +147,7 @@ describe("success", () => {
   });
 
   it("returns 200 + standings JSON for a valid mobile Bearer token", async () => {
-    mockBearerGetUser.mockResolvedValue({
-      data: { user: { id: "user-bearer-1" } },
-    });
+    mockResolveApiAuth.mockResolvedValue(AUTHED_BEARER);
 
     const response = await GET(
       makeRequest({ token: "valid-jwt" }),
@@ -163,15 +157,10 @@ describe("success", () => {
     expect(response.status).toBe(200);
     expect(await getJson(response)).toEqual(STANDINGS);
     expect(mockGetCachedTournamentStandings).toHaveBeenCalledWith(42);
-    // Bearer path validated the token; cookie path was never consulted.
-    expect(mockBearerGetUser).toHaveBeenCalled();
-    expect(mockCookieGetUser).not.toHaveBeenCalled();
   });
 
   it("sets the tag-invalidated Cache-Control header on success", async () => {
-    mockCookieGetUser.mockResolvedValue({
-      data: { user: { id: "user-cookie-2" } },
-    });
+    mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
 
     const response = await GET(makeRequest(), makeParams("42"));
 

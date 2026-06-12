@@ -11,14 +11,8 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useApiQuery, type FormatUsageRow, type SpeciesUsagePeriod } from "@trainers/supabase";
 import { getActiveFormats, VGC_FORMATS } from "@trainers/pokemon";
-import {
-  getSpeciesUsage,
-  getSpeciesUsageDetail,
-  type FormatUsageRow,
-  type SpeciesUsagePeriod,
-} from "@trainers/supabase";
 
 // =============================================================================
 // Constants
@@ -39,6 +33,56 @@ const PERIOD_LABELS: Record<string, string> = {
 
 type SourceKey = "all" | "rk9" | "limitless" | "trainers.gg";
 type PeriodType = "day" | "week" | "month";
+
+// =============================================================================
+// Fetcher helpers — wrap fetch() responses into ActionResult<T> for useApiQuery
+// =============================================================================
+
+/**
+ * Fetch the species ranking for a format from the /api/v1/usage/species endpoint.
+ * Returns ActionResult<FormatUsageRow[]> for consumption by useApiQuery.
+ */
+async function fetchSpeciesUsage(
+  format: string,
+  source: string,
+  periodType: string
+) {
+  const params = new URLSearchParams({ format, source, periodType });
+  const res = await fetch(`/api/v1/usage/species?${params.toString()}`);
+  if (!res.ok) {
+    return { success: false as const, error: `HTTP ${res.status}` };
+  }
+  const data = (await res.json()) as FormatUsageRow[];
+  return { success: true as const, data };
+}
+
+/**
+ * Fetch trailing detail periods for one species from the /api/v1/usage/species/[species]/detail endpoint.
+ * Returns ActionResult<SpeciesUsagePeriod[]> for consumption by useApiQuery.
+ */
+async function fetchSpeciesDetail(
+  format: string,
+  species: string,
+  source: string,
+  periodType: string,
+  limit: number
+) {
+  const params = new URLSearchParams({
+    format,
+    source,
+    periodType,
+    limit: String(limit),
+  });
+  const encodedSpecies = encodeURIComponent(species);
+  const res = await fetch(
+    `/api/v1/usage/species/${encodedSpecies}/detail?${params.toString()}`
+  );
+  if (!res.ok) {
+    return { success: false as const, error: `HTTP ${res.status}` };
+  }
+  const data = (await res.json()) as SpeciesUsagePeriod[];
+  return { success: true as const, data };
+}
 
 // =============================================================================
 // Sub-components
@@ -115,46 +159,54 @@ export function UsageInspector() {
   // ---------------------------------------------------------------------------
   // Query 1 — species ranking (also drives the stat strip via first-row detail)
   // ---------------------------------------------------------------------------
-  const { data: usageRows, isLoading: usageLoading } = useSupabaseQuery(
-    async (sb) => getSpeciesUsage(sb, { format, source, periodType }),
-    [format, source, periodType]
-  );
+  const { data: usageRows, isLoading: usageLoading } =
+    useApiQuery<FormatUsageRow[]>(
+      ["usage", "species", format, source, periodType],
+      () => fetchSpeciesUsage(format, source, periodType),
+      { staleTime: 5 * 60 * 1000 } // 5 min — matches the "hours" cache profile
+    );
 
   // ---------------------------------------------------------------------------
   // Query 2 — period/sample meta from the top species (drives the stat strip)
   // ---------------------------------------------------------------------------
   const topSpecies = usageRows?.[0]?.species ?? null;
-  const { data: topDetail, isLoading: metaLoading } = useSupabaseQuery(
-    async (sb): Promise<SpeciesUsagePeriod[]> => {
-      if (!topSpecies) return [];
-      return getSpeciesUsageDetail(sb, {
-        format,
-        species: topSpecies,
-        source,
-        periodType,
-        limit: 1,
-      });
-    },
-    [format, source, periodType, topSpecies]
-  );
+  const { data: topDetail, isLoading: metaLoading } =
+    useApiQuery<SpeciesUsagePeriod[]>(
+      ["usage", "species-detail", format, source, periodType, topSpecies, 1],
+      () =>
+        topSpecies
+          ? fetchSpeciesDetail(format, topSpecies, source, periodType, 1)
+          : Promise.resolve({ success: true as const, data: [] }),
+      {
+        enabled: topSpecies !== null,
+        staleTime: 5 * 60 * 1000,
+      }
+    );
   const metaBucket = topDetail?.[0] ?? null;
 
   // ---------------------------------------------------------------------------
   // Query 3 — species detail drill-down (only when a row is expanded)
   // ---------------------------------------------------------------------------
-  const { data: detailPeriods, isLoading: detailLoading } = useSupabaseQuery(
-    async (sb): Promise<SpeciesUsagePeriod[]> => {
-      if (!expandedSpecies) return [];
-      return getSpeciesUsageDetail(sb, {
+  const { data: detailPeriods, isLoading: detailLoading } =
+    useApiQuery<SpeciesUsagePeriod[]>(
+      [
+        "usage",
+        "species-detail",
         format,
-        species: expandedSpecies,
         source,
         periodType,
-        limit: 1,
-      });
-    },
-    [format, source, periodType, expandedSpecies]
-  );
+        expandedSpecies,
+        1,
+      ],
+      () =>
+        expandedSpecies
+          ? fetchSpeciesDetail(format, expandedSpecies, source, periodType, 1)
+          : Promise.resolve({ success: true as const, data: [] }),
+      {
+        enabled: expandedSpecies !== null,
+        staleTime: 5 * 60 * 1000,
+      }
+    );
 
   const latestDetail: SpeciesUsagePeriod | undefined = detailPeriods?.[0];
 

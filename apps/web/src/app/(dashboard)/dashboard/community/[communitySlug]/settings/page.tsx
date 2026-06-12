@@ -8,8 +8,8 @@ import { MarkdownContent } from "@/components/ui/markdown-content";
 import { toast } from "sonner";
 
 import {
-  getCommunityBySlug,
   getDiscordServerByCommunityId,
+  useApiQuery,
 } from "@trainers/supabase";
 import { type TypedSupabaseClient } from "@trainers/supabase";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@trainers/validators";
@@ -84,6 +84,25 @@ function parseSocialLinks(raw: unknown): CommunitySocialLink[] {
 }
 
 // ============================================================================
+// Shared types
+// ============================================================================
+
+/** Community fields consumed by the Settings page and form. */
+interface SettingsFormOrg {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  about: string | null;
+  social_links: unknown;
+  logo_url: string | null;
+  banner_url: string | null;
+  bluesky_did: string | null;
+  bluesky_handle: string | null;
+  pds_status: string | null;
+}
+
+// ============================================================================
 // Page
 // ============================================================================
 
@@ -94,14 +113,25 @@ interface PageProps {
 export default function DashboardSettingsPage({ params }: PageProps) {
   const { communitySlug } = use(params);
 
-  const communityQueryFn = (client: TypedSupabaseClient) =>
-    getCommunityBySlug(client, communitySlug);
-
+  // Fetch community via the /api/v1/communities/[slug] route (Phase 2 S-bucket migration).
   const {
     data: org,
     isLoading,
     refetch,
-  } = useSupabaseQuery(communityQueryFn, [communitySlug]);
+  } = useApiQuery<SettingsFormOrg | null>(
+    ["community", communitySlug],
+    async () => {
+      const res = await fetch(
+        `/api/v1/communities/${encodeURIComponent(communitySlug)}`
+      );
+      if (!res.ok) {
+        return { success: false as const, error: `HTTP ${res.status}` };
+      }
+      const data = (await res.json()) as SettingsFormOrg | null;
+      return { success: true as const, data };
+    },
+    { staleTime: 30_000 }
+  );
 
   return (
     <>
@@ -143,19 +173,7 @@ function SettingsSkeleton() {
 // ============================================================================
 
 interface SettingsFormProps {
-  org: {
-    id: number;
-    name: string;
-    slug: string;
-    description: string | null;
-    about: string | null;
-    social_links: unknown;
-    logo_url: string | null;
-    banner_url: string | null;
-    bluesky_did: string | null;
-    bluesky_handle: string | null;
-    pds_status: string | null;
-  };
+  org: SettingsFormOrg;
   communitySlug: string;
   onSaved: () => void;
 }

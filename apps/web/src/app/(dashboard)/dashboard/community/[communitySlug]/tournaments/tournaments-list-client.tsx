@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { listCommunityTournaments } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase";
+import { type CommunityTournamentsResult } from "@/lib/data/communities-endpoints";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,16 +50,26 @@ export function TournamentsListClient({
     initialStatus ||
     "all") as TournamentStatus;
 
-  const queryFn = (supabase: Parameters<typeof listCommunityTournaments>[0]) =>
-    listCommunityTournaments(supabase, communityId, {
-      status: currentStatus === "all" ? undefined : currentStatus,
-      limit: 50,
-    });
-
-  const { data, isLoading, error } = useSupabaseQuery(queryFn, [
-    communityId,
-    currentStatus,
-  ]);
+  const { data, isLoading, error } = useApiQuery<CommunityTournamentsResult>(
+    ["community-tournaments", communityId, currentStatus],
+    async () => {
+      const params = new URLSearchParams({ limit: "50" });
+      if (currentStatus !== "all") params.set("status", currentStatus);
+      const res = await fetch(
+        `/api/v1/communities/${communitySlug}/tournaments?${params.toString()}`
+      );
+      if (!res.ok) {
+        return {
+          success: false,
+          error: `Failed to load tournaments (${res.status})`,
+        };
+      }
+      return {
+        success: true,
+        data: (await res.json()) as CommunityTournamentsResult,
+      };
+    }
+  );
 
   const tournaments = data?.tournaments ?? [];
   const basePath = `/dashboard/community/${communitySlug}`;

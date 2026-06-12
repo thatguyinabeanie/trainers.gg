@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TournamentsListClient } from "../tournaments-list-client";
-import { useSupabaseQuery } from "@/lib/supabase";
 
 // Mock Next.js navigation hooks
 jest.mock("next/navigation", () => ({
@@ -11,14 +10,12 @@ jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(),
 }));
 
-// Mock Supabase query hook
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(),
-}));
-
-// Mock the supabase query function to prevent real DB calls
+// Mock useApiQuery — the component fetches from /api/v1 via this hook.
+// useApiQuery wraps TanStack Query's useQuery; we return the unwrapped data shape
+// { data, isLoading, error } directly since that's what the component destructures.
+const mockUseApiQuery = jest.fn();
 jest.mock("@trainers/supabase", () => ({
-  listCommunityTournaments: jest.fn(),
+  useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
 }));
 
 // Mock tournament list components — testing routing/grouping logic here,
@@ -69,7 +66,7 @@ const makeTournament = (overrides = {}) => ({
 });
 
 const mockQuerySuccess = (tournaments: ReturnType<typeof makeTournament>[]) => {
-  (useSupabaseQuery as jest.Mock).mockReturnValue({
+  mockUseApiQuery.mockReturnValue({
     data: { tournaments },
     isLoading: false,
     error: null,
@@ -77,16 +74,16 @@ const mockQuerySuccess = (tournaments: ReturnType<typeof makeTournament>[]) => {
 };
 
 const mockQueryLoading = () => {
-  (useSupabaseQuery as jest.Mock).mockReturnValue({
-    data: null,
+  mockUseApiQuery.mockReturnValue({
+    data: undefined,
     isLoading: true,
     error: null,
   });
 };
 
 const mockQueryError = () => {
-  (useSupabaseQuery as jest.Mock).mockReturnValue({
-    data: null,
+  mockUseApiQuery.mockReturnValue({
+    data: undefined,
     isLoading: false,
     error: new Error("Failed to fetch"),
   });
