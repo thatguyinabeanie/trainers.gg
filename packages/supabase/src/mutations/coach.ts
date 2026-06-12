@@ -1,11 +1,17 @@
 import { type CoachProfileInput } from "@trainers/validators";
 
 import { type Json } from "../types";
-import { type TypedClient } from "../client";
+import { type ServiceRoleClient, type TypedClient } from "../client";
+import { writeAuditLog } from "./audit-log";
 
-/** Admin: grant coach status (service-role client; bypasses RLS). */
+/**
+ * Admin: grant coach status (service-role client; bypasses RLS).
+ *
+ * Requires `ServiceRoleClient` so that the `audit_log` insert is guaranteed to
+ * succeed at the RLS level. Passing an anon/session client is a compile error.
+ */
 export async function grantCoachStatus(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   userId: string,
   adminUserId: string
 ) {
@@ -20,18 +26,21 @@ export async function grantCoachStatus(
     .upsert({ user_id: userId }, { onConflict: "user_id", ignoreDuplicates: true });
   if (profileError) throw profileError;
 
-  const { error: auditError } = await supabase.from("audit_log").insert({
+  await writeAuditLog(supabase, {
     action: "admin.coach_granted" as const,
     actor_user_id: adminUserId,
     metadata: { target_user_id: userId } as unknown as Json,
   });
-  if (auditError)
-    console.error("Failed to log coach grant", { userId, auditError });
 }
 
-/** Admin: revoke coach status. Retains the coach_profiles row (hidden via is_coach). */
+/**
+ * Admin: revoke coach status. Retains the coach_profiles row (hidden via is_coach).
+ *
+ * Requires `ServiceRoleClient` so that the `audit_log` insert is guaranteed to
+ * succeed at the RLS level. Passing an anon/session client is a compile error.
+ */
 export async function revokeCoachStatus(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   userId: string,
   adminUserId: string,
   reason?: string
@@ -42,7 +51,7 @@ export async function revokeCoachStatus(
     .eq("id", userId);
   if (userError) throw userError;
 
-  const { error: auditError } = await supabase.from("audit_log").insert({
+  await writeAuditLog(supabase, {
     action: "admin.coach_revoked" as const,
     actor_user_id: adminUserId,
     metadata: {
@@ -50,8 +59,6 @@ export async function revokeCoachStatus(
       ...(reason && { reason }),
     } as unknown as Json,
   });
-  if (auditError)
-    console.error("Failed to log coach revoke", { userId, auditError });
 }
 
 /**

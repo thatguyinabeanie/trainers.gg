@@ -12,6 +12,7 @@ export {
   createAdminSupabaseClient,
   type TypedSupabaseClient,
   type TypedClient,
+  type ServiceRoleClient,
 } from "./client";
 
 // Query exports
