@@ -451,10 +451,22 @@ describe("discord queries", () => {
   // getUserByDiscordId — identity resolution
   // ===========================================================================
 
+  /**
+   * Helper: sets up `.schema("auth").from("identities")` on mockClient.
+   * authIdentities() calls .schema("auth") first, then .from("identities").
+   * The mock client has no schema() method, so we add it inline here.
+   */
+  function mockAuthIdentities(
+    queryBuilder: ReturnType<TypedClient["from"]>
+  ): void {
+    (mockClient as unknown as Record<string, unknown>).schema = jest
+      .fn()
+      .mockReturnValue({ from: jest.fn().mockReturnValue(queryBuilder) });
+  }
+
   describe("getUserByDiscordId", () => {
     it("returns user_id when Discord account is linked", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
+      mockAuthIdentities({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         maybeSingle: jest
@@ -471,8 +483,7 @@ describe("discord queries", () => {
     });
 
     it("returns null when no linked account is found", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
+      mockAuthIdentities({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
@@ -483,32 +494,29 @@ describe("discord queries", () => {
       expect(result).toBeNull();
     });
 
-    it("queries auth.identities with provider=discord", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
+    it("queries auth schema with provider=discord filter", async () => {
       const eqMock = jest.fn().mockReturnThis();
-      // Terminal eq call returns the resolved value
-      eqMock.mockReturnValueOnce({
-        eq: jest.fn().mockReturnThis(),
-        maybeSingle: jest
-          .fn()
-          .mockResolvedValue({ data: { user_id: "uuid-abc" }, error: null }),
-      });
-      fromSpy.mockReturnValueOnce({
+      const maybeSingleMock = jest
+        .fn()
+        .mockResolvedValue({ data: { user_id: "uuid-abc" }, error: null });
+      mockAuthIdentities({
         select: jest.fn().mockReturnThis(),
         eq: eqMock,
-        maybeSingle: jest
-          .fn()
-          .mockResolvedValue({ data: { user_id: "uuid-abc" }, error: null }),
+        maybeSingle: maybeSingleMock,
       } as unknown as ReturnType<TypedClient["from"]>);
 
       await getUserByDiscordId(mockClient, "snowflake-456");
 
-      expect(fromSpy).toHaveBeenCalledWith("auth.identities");
+      // schema("auth") should have been called, and the eq filter for provider applied
+      const schemaMock = (
+        mockClient as unknown as Record<string, jest.Mock>
+      ).schema;
+      expect(schemaMock).toHaveBeenCalledWith("auth");
+      expect(eqMock).toHaveBeenCalledWith("provider", "discord");
     });
 
     it("throws a descriptive error on DB failure", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
+      mockAuthIdentities({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({
@@ -1292,7 +1300,7 @@ describe("discord queries", () => {
 
   describe("getPublicDiscordHandle", () => {
     it("returns null when the user has no linked Discord account", async () => {
-      jest.spyOn(mockClient, "from").mockReturnValueOnce({
+      mockAuthIdentities({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
@@ -1307,7 +1315,7 @@ describe("discord queries", () => {
       const identityRow = {
         identity_data: { global_name: "Ash Ketchum", username: "ash_ketchum" },
       };
-      jest.spyOn(mockClient, "from").mockReturnValueOnce({
+      mockAuthIdentities({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         maybeSingle: jest
@@ -1324,7 +1332,7 @@ describe("discord queries", () => {
       const identityRow = {
         identity_data: { username: "ash_ketchum" },
       };
-      jest.spyOn(mockClient, "from").mockReturnValueOnce({
+      mockAuthIdentities({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         maybeSingle: jest
@@ -1337,8 +1345,23 @@ describe("discord queries", () => {
       expect(result).toBe("ash_ketchum");
     });
 
+    it("returns null when both global_name and username are absent", async () => {
+      const identityRow = { identity_data: {} };
+      mockAuthIdentities({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest
+          .fn()
+          .mockResolvedValue({ data: identityRow, error: null }),
+      } as unknown as ReturnType<TypedClient["from"]>);
+
+      const result = await getPublicDiscordHandle(mockClient, "user-123");
+
+      expect(result).toBeNull();
+    });
+
     it("throws a descriptive error on DB failure", async () => {
-      jest.spyOn(mockClient, "from").mockReturnValueOnce({
+      mockAuthIdentities({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({

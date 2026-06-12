@@ -57,12 +57,12 @@ describe("getCoachProfileByHandle", () => {
   });
 
   it("resolves via users.username and returns a profile when the user is a coach", async () => {
-    // users lookup → coach user found (no main_alt_id to keep mocks simple)
+    // public_user_profiles lookup → coach user found (no main_alt_id to keep mocks simple)
     // coach_profiles lookup → profile data
     let fromCallCount = 0;
     mockClient.from.mockImplementation((table: string) => {
       fromCallCount++;
-      if (table === "users" && fromCallCount === 1) {
+      if (table === "public_user_profiles" && fromCallCount === 1) {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -126,7 +126,7 @@ describe("getCoachProfileByHandle", () => {
 
   it("returns null when the resolved account is not a coach", async () => {
     mockClient.from.mockImplementation((table: string) => {
-      if (table === "users") {
+      if (table === "public_user_profiles") {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -164,15 +164,16 @@ describe("getCoachProfileByHandle", () => {
   });
 
   it("resolves via a public alt username fallback when users.username does not match", async () => {
-    // Call sequence:
-    //   1. from("users") → null (no direct username match)
-    //   2. from("alts") (alt-by-username with .eq().eq().maybeSingle) → alt with joined user
-    //   3. from("coach_profiles") → profile
+    // Call sequence (RLS audit #1 — two-step alt resolution):
+    //   1. from("public_user_profiles") by username → null (no direct match)
+    //   2. from("alts") by username+is_public → { user_id, is_public }
+    //   3. from("public_user_profiles") by id → full user row
+    //   4. from("coach_profiles") → profile
     let fromCallCount = 0;
     mockClient.from.mockImplementation((table: string) => {
       fromCallCount++;
-      // 1. users lookup — no match
-      if (table === "users" && fromCallCount === 1) {
+      // 1. public_user_profiles username lookup — no match
+      if (table === "public_user_profiles" && fromCallCount === 1) {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -183,7 +184,7 @@ describe("getCoachProfileByHandle", () => {
           }),
         };
       }
-      // 2. alts fallback lookup (fromCallCount === 2)
+      // 2. alts fallback by username + is_public=true
       if (table === "alts" && fromCallCount === 2) {
         return {
           select: jest.fn().mockReturnValue({
@@ -193,13 +194,6 @@ describe("getCoachProfileByHandle", () => {
                   data: {
                     user_id: "user-3",
                     is_public: true,
-                    user: {
-                      id: "user-3",
-                      is_coach: true,
-                      main_alt_id: null,
-                      name: "Misty",
-                      image: "https://example.com/misty.png",
-                    },
                   },
                   error: null,
                 }),
@@ -208,7 +202,26 @@ describe("getCoachProfileByHandle", () => {
           }),
         };
       }
-      // 3. coach_profiles lookup
+      // 3. public_user_profiles by id — second step of two-step resolution
+      if (table === "public_user_profiles" && fromCallCount === 3) {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest.fn().mockResolvedValue({
+                data: {
+                  id: "user-3",
+                  is_coach: true,
+                  main_alt_id: null,
+                  name: "Misty",
+                  image: "https://example.com/misty.png",
+                },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      // 4. coach_profiles lookup
       if (table === "coach_profiles") {
         return {
           select: jest.fn().mockReturnValue({
@@ -252,7 +265,7 @@ describe("getCoachProfileByHandle", () => {
     const dbError = { message: "connection refused" };
 
     mockClient.from.mockImplementation((table: string) => {
-      if (table === "users") {
+      if (table === "public_user_profiles") {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({

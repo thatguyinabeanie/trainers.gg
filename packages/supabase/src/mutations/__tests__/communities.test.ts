@@ -54,7 +54,8 @@ describe("Community Mutations", () => {
       name: "Test Org",
       slug: "test-org",
       description: "A test community",
-      logoUrl: "https://test.org/logo.png",
+      logoUrl:
+        "https://abcdefghijklmnop.supabase.co/storage/v1/object/public/logos/logo.png",
     };
 
     // Helper: mock a successful create flow (slug check + pds_handles check + insert + staff insert)
@@ -327,7 +328,8 @@ describe("Community Mutations", () => {
     const updates = {
       name: "Updated Name",
       description: "Updated description",
-      logoUrl: "https://updated.org/logo.png",
+      logoUrl:
+        "https://abcdefghijklmnop.supabase.co/storage/v1/object/public/logos/updated.png",
     };
 
     // Helper: mock ownership check returning a specific owner
