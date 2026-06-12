@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
-import { getMyDashboardData, getActiveMatch } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import { toast } from "sonner";
 import { Trophy } from "lucide-react";
 import {
@@ -14,6 +13,12 @@ import {
   RecentAchievements,
   WhatsNext,
 } from "@/components/dashboard";
+import { type ActionResult } from "@trainers/validators";
+import { type getMyDashboardData, type getActiveMatch } from "@trainers/supabase";
+
+// =============================================================================
+// Types
+// =============================================================================
 
 type OverviewMode =
   | "active-competition"
@@ -21,8 +26,15 @@ type OverviewMode =
   | "post-tournament"
   | "idle";
 
+type DashboardData = NonNullable<Awaited<ReturnType<typeof getMyDashboardData>>>;
+type ActiveMatchData = Awaited<ReturnType<typeof getActiveMatch>>;
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
 /**
- * Determine the current overview mode based on dashboard data
+ * Determine the current overview mode based on dashboard data.
  */
 function getOverviewContext(
   tournaments: Array<{ startDate: number | null; hasTeam: boolean }>,
@@ -32,95 +44,80 @@ function getOverviewContext(
   if (hasActiveMatch) return "active-competition";
 
   // Check for urgent actions (tournaments needing team or check-in)
-  const now = Date.now();
   const needsAction = tournaments.some((t) => !t.hasTeam);
-
   if (needsAction) return "pre-tournament";
 
   // Check for recent matches (within last 24 hours)
+  const now = Date.now();
   const recentMatches = recentActivity.filter((m) => {
     const hoursSince = (now - m.date) / (1000 * 60 * 60);
     return hoursSince >= 0 && hoursSince < 24;
   });
-
   if (recentMatches.length > 0) return "post-tournament";
 
   return "idle";
 }
 
+async function fetchDashboardData(
+  altId: string
+): Promise<ActionResult<DashboardData | null>> {
+  const params = new URLSearchParams({ altId });
+  const res = await fetch(`/api/v1/me/dashboard?${params.toString()}`);
+  return res.json() as Promise<ActionResult<DashboardData | null>>;
+}
+
+async function fetchActiveMatch(
+  altId: string
+): Promise<ActionResult<ActiveMatchData>> {
+  const params = new URLSearchParams({ altId });
+  const res = await fetch(`/api/v1/me/active-match?${params.toString()}`);
+  return res.json() as Promise<ActionResult<ActiveMatchData>>;
+}
+
+// =============================================================================
+// Component
+// =============================================================================
+
 export function OverviewClient() {
   const { user } = useAuth();
   const profileId = user?.profile?.id;
   const toastShown = useRef(false);
-  const supabase = useSupabase();
-  const [refreshKey, setRefreshKey] = useState(0);
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const triggerRefreshRef = useRef(() => {
-    if (refreshTimeoutRef.current) {
-      clearTimeout(refreshTimeoutRef.current);
+  // TanStack Query for dashboard data (replaces useSupabaseQuery).
+  // staleTime=30_000: dashboard data changes infrequently; don't hammer the API.
+  // refetchOnWindowFocus: true (default) covers the visibilitychange pattern —
+  // when the user tabs back the query refetches if data is stale.
+  const { data: dashboardData } = useApiQuery<DashboardData | null>(
+    ["me", "dashboard", profileId],
+    () =>
+      profileId
+        ? fetchDashboardData(String(profileId))
+        : Promise.resolve({ success: true, data: null } as ActionResult<null>),
+    {
+      enabled: !!profileId,
+      staleTime: 30_000,
     }
-    refreshTimeoutRef.current = setTimeout(() => {
-      setRefreshKey((k) => k + 1);
-    }, 500);
-  });
+  );
 
-  useEffect(() => {
-    if (!profileId) return;
+  // TanStack Query for the active match.
+  // refetchOnWindowFocus: true handles the visibilitychange refetch
+  // (replaces the old realtime subscription on tournament_matches).
+  const { data: activeMatch } = useApiQuery<ActiveMatchData>(
+    ["me", "active-match", profileId],
+    () =>
+      profileId
+        ? fetchActiveMatch(String(profileId))
+        : Promise.resolve({ success: true, data: null } as ActionResult<null>),
+    {
+      enabled: !!profileId,
+      // Active match data should be near-real-time. 0 means always refetch
+      // from the server when the window regains focus (visibilitychange).
+      staleTime: 0,
+      refetchOnWindowFocus: true,
+    }
+  );
 
-    const channel = supabase
-      .channel(`dashboard-matches-${profileId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `alt1_id=eq.${profileId}`,
-        },
-        () => triggerRefreshRef.current()
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `alt2_id=eq.${profileId}`,
-        },
-        () => triggerRefreshRef.current()
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `alt1_id=eq.${profileId}`,
-        },
-        () => triggerRefreshRef.current()
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `alt2_id=eq.${profileId}`,
-        },
-        () => triggerRefreshRef.current()
-      )
-      .subscribe();
-
-    return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-      channel.unsubscribe();
-    };
-  }, [supabase, profileId]);
-
-  // Show welcome toast for users with placeholder usernames
+  // Show welcome toast for users with placeholder usernames.
   useEffect(() => {
     if (toastShown.current) return;
     const username = (user?.user_metadata?.username as string) ?? "";
@@ -133,42 +130,7 @@ export function OverviewClient() {
     }
   }, [user]);
 
-  const dashboardDataQueryFn = (
-    supabase: Parameters<typeof getMyDashboardData>[0]
-  ) =>
-    profileId
-      ? getMyDashboardData(supabase, profileId)
-      : Promise.resolve({
-          myTournaments: [],
-          recentActivity: [],
-          achievements: [],
-          stats: {
-            winRate: 0,
-            winRateChange: 0,
-            currentRating: 0,
-            ratingRank: 0,
-            activeTournaments: 0,
-            totalEnrolled: 0,
-            championPoints: 0,
-          },
-        });
-
-  const { data: dashboardData } = useSupabaseQuery(dashboardDataQueryFn, [
-    profileId,
-  ]);
-
-  // Fetch active match
-  const activeMatchQueryFn = (
-    supabase: Parameters<typeof getActiveMatch>[0]
-  ) =>
-    profileId ? getActiveMatch(supabase, profileId) : Promise.resolve(null);
-
-  const { data: activeMatch } = useSupabaseQuery(activeMatchQueryFn, [
-    profileId,
-    refreshKey,
-  ]);
-
-  // Transform Supabase data to match expected component formats
+  // Transform API data to match expected component formats
   const transformedTournaments =
     dashboardData?.myTournaments.map((t) => ({
       id: t.id,

@@ -1,4 +1,22 @@
-"use client";
+/**
+ * Admin Dashboard page — Server Component.
+ *
+ * Phase 2 Task 9 (T3g) — converted from a "use client" page with 6 one-shot
+ * `useSupabaseQuery` reads to a server component that fetches all 6 dashboard
+ * stats via `Promise.all` using the service-role client, then passes them as
+ * props to the client rendering layer.
+ *
+ * WHY: Once `REVOKE SELECT ... FROM anon, authenticated` lands on S-bucket base
+ * tables (including `users`, `audit_log`, `communities`, `tournaments`), the
+ * browser-keyed reads would silently return zero rows. Running the reads
+ * server-side with service-role bypasses the revoke safely because the admin
+ * layout's `requireSiteAdmin()` guard already enforces that only admins reach
+ * this page.
+ *
+ * NO 'use cache': admin dashboard data includes PII and admin-sensitive counts
+ * — it is per-admin-session data and must never be cached in a shared CDN or
+ * browser cache.
+ */
 
 import { Label, Pie, PieChart } from "recharts";
 import {
@@ -19,9 +37,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getPlatformOverview,
   getActiveUserStats,
@@ -29,8 +45,12 @@ import {
   getAuditLog,
   getOrganizationStats,
   getTournamentStats,
+  type PlatformOverview,
+  type ActiveUserStats,
+  type OrganizationStats,
 } from "@trainers/supabase";
-import type { TypedSupabaseClient, Database } from "@trainers/supabase";
+import type { Database } from "@trainers/supabase";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
   AuditActionBadge,
   getActionPrefix,
@@ -49,6 +69,10 @@ import {
 } from "./helpers";
 
 type AuditAction = Database["public"]["Enums"]["audit_action"];
+
+// Derive return types from the query functions for use as prop types below.
+type AuditLogStats = Awaited<ReturnType<typeof getAuditLogStats>>;
+type AuditLogResult = Awaited<ReturnType<typeof getAuditLog>>;
 
 // ── Metric Card ─────────────────────────────────────────────────────
 
@@ -86,21 +110,15 @@ const metricThemes = {
   },
 } satisfies Record<string, MetricTheme>;
 
-function MetricCard({
-  title,
-  value,
-  icon: Icon,
-  subtitle,
-  isLoading,
-  theme,
-}: {
+interface MetricCardProps {
   title: string;
   value: number | undefined;
   icon: LucideIcon;
   subtitle?: string;
-  isLoading: boolean;
   theme: MetricTheme;
-}) {
+}
+
+function MetricCard({ title, value, icon: Icon, subtitle, theme }: MetricCardProps) {
   return (
     <Card className={cn("border-l-[3px]", theme.border)}>
       <CardContent className="pt-5">
@@ -109,13 +127,9 @@ function MetricCard({
             <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               {title}
             </p>
-            {isLoading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <p className="text-3xl font-semibold tracking-tight tabular-nums">
-                {formatNumber(value ?? 0)}
-              </p>
-            )}
+            <p className="text-3xl font-semibold tracking-tight tabular-nums">
+              {formatNumber(value ?? 0)}
+            </p>
             {subtitle && (
               <p className="text-muted-foreground text-xs">{subtitle}</p>
             )}
@@ -131,17 +145,13 @@ function MetricCard({
 
 // ── Donut Breakdown Chart ───────────────────────────────────────────
 
-function DonutBreakdownCard({
-  title,
-  data,
-  labels,
-  isLoading,
-}: {
+interface DonutBreakdownCardProps {
   title: string;
   data: Record<string, number> | undefined;
   labels: Record<string, string>;
-  isLoading: boolean;
-}) {
+}
+
+function DonutBreakdownCard({ title, data, labels }: DonutBreakdownCardProps) {
   const { chartData, chartConfig, total } = buildChartData(data, labels);
 
   return (
@@ -152,20 +162,12 @@ function DonutBreakdownCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex flex-col items-center gap-3 py-4">
-            <Skeleton className="size-[120px] rounded-full" />
-            <div className="flex gap-4">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-3 w-16" />
-            </div>
-          </div>
-        ) : chartData.length > 0 ? (
+        {chartData.length > 0 ? (
           <div className="flex flex-col items-center">
             {/* Donut chart */}
             <ChartContainer
               config={chartConfig}
-              className="aspect-square h-[140px]"
+              className="aspect-square h-36"
             >
               <PieChart>
                 <ChartTooltip
@@ -266,29 +268,11 @@ interface RecentEntry {
   actor_user: { username: string; image: string | null } | null;
 }
 
-function RecentActivityFeed({
-  entries,
-  isLoading,
-}: {
+interface RecentActivityFeedProps {
   entries: RecentEntry[];
-  isLoading: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <div className="space-y-1">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-2 py-2.5">
-            <Skeleton className="size-7 shrink-0 rounded-full" />
-            <div className="flex-1 space-y-1">
-              <Skeleton className="h-3.5 w-24" />
-            </div>
-            <Skeleton className="h-5 w-20" />
-          </div>
-        ))}
-      </div>
-    );
-  }
+}
 
+function RecentActivityFeed({ entries }: RecentActivityFeedProps) {
   if (entries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -360,58 +344,29 @@ function RecentActivityFeed({
   );
 }
 
-// ── Dashboard Content ───────────────────────────────────────────────
+// ── Dashboard Stats Content ─────────────────────────────────────────
 
-function DashboardContent() {
-  const {
-    data: overview,
-    isLoading: overviewLoading,
-    error: overviewError,
-  } = useSupabaseQuery((s) => getPlatformOverview(s), []);
+interface DashboardContentProps {
+  overview: PlatformOverview | null;
+  activeUsers: ActiveUserStats | null;
+  auditStats: AuditLogStats | null;
+  recentLog: AuditLogResult | null;
+  communityStats: OrganizationStats | null;
+  tournamentStats: Record<string, number> | null;
+  hasError: boolean;
+}
 
-  const {
-    data: activeUsers,
-    isLoading: activeLoading,
-    error: activeError,
-  } = useSupabaseQuery((s) => getActiveUserStats(s), []);
-
-  const {
-    data: auditStats,
-    isLoading: auditStatsLoading,
-    error: auditStatsError,
-  } = useSupabaseQuery((s) => getAuditLogStats(s), []);
-
-  const recentQueryFn = (s: TypedSupabaseClient) =>
-    getAuditLog(s, { limit: 10, offset: 0 });
-  const {
-    data: recentLog,
-    isLoading: recentLoading,
-    error: recentError,
-  } = useSupabaseQuery(recentQueryFn, []);
-
-  const {
-    data: communityStats,
-    isLoading: communityLoading,
-    error: communityError,
-  } = useSupabaseQuery((s) => getOrganizationStats(s), []);
-
-  const {
-    data: tournamentStats,
-    isLoading: tournamentLoading,
-    error: tournamentError,
-  } = useSupabaseQuery((s) => getTournamentStats(s), []);
-
+function DashboardContent({
+  overview,
+  activeUsers,
+  auditStats,
+  recentLog,
+  communityStats,
+  tournamentStats,
+  hasError,
+}: DashboardContentProps) {
   const recentEntries = (recentLog?.data ?? []) as RecentEntry[];
   const pendingCommunities = communityStats?.byStatus?.pending ?? 0;
-
-  // Collect any query errors into a single check
-  const hasError =
-    overviewError ||
-    activeError ||
-    auditStatsError ||
-    recentError ||
-    communityError ||
-    tournamentError;
 
   return (
     <div className="space-y-8">
@@ -423,7 +378,7 @@ function DashboardContent() {
       )}
 
       {/* ── Pending Org Alert ──────────────────────────────────── */}
-      {!communityLoading && pendingCommunities > 0 && (
+      {pendingCommunities > 0 && (
         <Link href="/admin/communities">
           <Card className="group border-amber-500/30 bg-amber-500/5 transition-colors hover:border-amber-500/50">
             <CardContent className="flex items-center gap-4 pt-5">
@@ -451,7 +406,6 @@ function DashboardContent() {
           title="Total Users"
           value={overview?.totalUsers}
           icon={Users}
-          isLoading={overviewLoading}
           theme={metricThemes.teal}
         />
         <MetricCard
@@ -463,21 +417,18 @@ function DashboardContent() {
               ? `${((activeUsers.active7d / Math.max(overview.totalUsers, 1)) * 100).toFixed(0)}% of total`
               : undefined
           }
-          isLoading={activeLoading}
           theme={metricThemes.blue}
         />
         <MetricCard
           title="Communities"
           value={overview?.totalOrganizations}
           icon={Building2}
-          isLoading={overviewLoading}
           theme={metricThemes.amber}
         />
         <MetricCard
           title="Tournaments"
           value={overview?.totalTournaments}
           icon={Trophy}
-          isLoading={overviewLoading}
           theme={metricThemes.emerald}
         />
         <MetricCard
@@ -489,7 +440,6 @@ function DashboardContent() {
               ? `${formatNumber(auditStats.total7d)} this week`
               : undefined
           }
-          isLoading={auditStatsLoading}
           theme={metricThemes.purple}
         />
       </div>
@@ -507,34 +457,28 @@ function DashboardContent() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <RecentActivityFeed
-              entries={recentEntries}
-              isLoading={recentLoading}
-            />
+            <RecentActivityFeed entries={recentEntries} />
           </CardContent>
         </Card>
 
-        {/* Sidebar: Charts + Funnel */}
+        {/* Sidebar: Charts */}
         <div className="space-y-4 lg:col-span-2">
           <DonutBreakdownCard
             title="Tournaments by Status"
-            data={tournamentStats}
+            data={tournamentStats ?? undefined}
             labels={TOURNAMENT_STATUS_LABELS}
-            isLoading={tournamentLoading}
           />
 
           <DonutBreakdownCard
             title="Communities by Status"
             data={communityStats?.byStatus}
             labels={ORG_STATUS_LABELS}
-            isLoading={communityLoading}
           />
 
           <DonutBreakdownCard
             title="Communities by Tier"
             data={communityStats?.byTier}
             labels={ORG_TIER_LABELS}
-            isLoading={communityLoading}
           />
         </div>
       </div>
@@ -542,9 +486,42 @@ function DashboardContent() {
   );
 }
 
-// ── Main page ───────────────────────────────────────────────────────
+// ── Main Page (Server Component) ────────────────────────────────────
 
-export default function AdminPage() {
+/**
+ * Admin dashboard page. Server component — fetches all 6 stat reads in parallel
+ * via service-role (safe because the admin layout's `requireSiteAdmin()` gate
+ * already ensures only site admins reach this page).
+ */
+export default async function AdminPage() {
+  const supabase = createServiceRoleClient();
+
+  // Fetch all 6 dashboard stats in parallel. `.catch(() => null)` lets the
+  // page render a partial error state instead of throwing a full 500.
+  const [
+    overview,
+    activeUsers,
+    auditStats,
+    recentLog,
+    communityStats,
+    tournamentStats,
+  ] = await Promise.all([
+    getPlatformOverview(supabase).catch(() => null),
+    getActiveUserStats(supabase).catch(() => null),
+    getAuditLogStats(supabase).catch(() => null),
+    getAuditLog(supabase, { limit: 10, offset: 0 }).catch(() => null),
+    getOrganizationStats(supabase).catch(() => null),
+    getTournamentStats(supabase).catch(() => null),
+  ]);
+
+  const hasError =
+    overview === null ||
+    activeUsers === null ||
+    auditStats === null ||
+    recentLog === null ||
+    communityStats === null ||
+    tournamentStats === null;
+
   return (
     <Tabs defaultValue="dashboard">
       <TabsList>
@@ -559,7 +536,15 @@ export default function AdminPage() {
       </TabsList>
 
       <TabsContent value="dashboard">
-        <DashboardContent />
+        <DashboardContent
+          overview={overview}
+          activeUsers={activeUsers}
+          auditStats={auditStats}
+          recentLog={recentLog}
+          communityStats={communityStats}
+          tournamentStats={tournamentStats}
+          hasError={hasError}
+        />
       </TabsContent>
 
       <TabsContent value="activity">

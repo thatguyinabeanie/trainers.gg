@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import {
-  getTournamentInvitationsReceived,
+  type getTournamentInvitationsReceived,
   respondToTournamentInvitation,
 } from "@trainers/supabase";
+import { getErrorMessage } from "@trainers/utils";
+import { type ActionResult } from "@trainers/validators";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +23,9 @@ import {
   Trophy,
   User,
   MessageSquare,
+  AlertTriangle,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertDialog,
@@ -48,20 +54,38 @@ export function TournamentInvitationsView({
   className,
 }: TournamentInvitationsViewProps) {
   const [respondingTo, setRespondingTo] = useState<number | null>(null);
+  const queryClient = useQueryClient();
 
+  // Fetch received invitations via the auth-gated API route. The read moved off
+  // the browser anon client because Phase 2 Task 9 revokes `authenticated`
+  // SELECT on `alts` — the browser-keyed read would silently return zero rows.
+  // The route runs the read server-side as the caller's identity.
+  type ReceivedInvitationsResult = Awaited<
+    ReturnType<typeof getTournamentInvitationsReceived>
+  >;
   const {
     data: invitations,
     isLoading,
-    refetch,
-  } = useSupabaseQuery(
-    (supabase) => getTournamentInvitationsReceived(supabase),
-    []
+    isError,
+    error,
+  } = useApiQuery<ReceivedInvitationsResult>(
+    ["me", "invitations"],
+    (): Promise<ActionResult<ReceivedInvitationsResult>> =>
+      fetch("/api/v1/me/invitations").then((r) => r.json()),
+    { staleTime: 30_000 }
   );
 
-  const { mutateAsync: respondToInvitation } = useSupabaseMutation(
-    (supabase, args: RespondArgs) =>
-      respondToTournamentInvitation(supabase, args.invitationId, args.response)
-  );
+  const { mutateAsync: respondToInvitation } = useMutation({
+    mutationFn: (args: RespondArgs) =>
+      respondToTournamentInvitation(
+        createClient(),
+        args.invitationId,
+        args.response
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["me", "invitations"] });
+    },
+  });
 
   const handleResponse = async (
     invitationId: number,
@@ -82,20 +106,29 @@ export function TournamentInvitationsView({
             `You have ${response === "accept" ? "accepted" : "declined"} the tournament invitation.`,
         }
       );
-
-      // Refetch invitations after response
-      refetch();
     } catch (error) {
       toast.error("Failed to respond", {
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred",
+        description: getErrorMessage(error, "An unexpected error occurred"),
       });
     } finally {
       setRespondingTo(null);
     }
   };
+
+  if (isError) {
+    return (
+      <div className={cn("space-y-4", className)}>
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertDescription>
+            {error instanceof Error
+              ? error.message
+              : "Failed to load invitations"}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TournamentTabs, type PhaseData } from "./tournament-tabs";
+import { PublicPairings } from "./public-pairings";
 import { PageContainer } from "@/components/layout/page-container";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TournamentSidebarCard } from "@/components/tournament";
@@ -582,7 +583,13 @@ export default async function TournamentPage({ params }: PageProps) {
         scheduleCard={<ScheduleCard tournament={tournament} />}
         formatCard={<FormatCard tournament={tournament} />}
         phases={phases}
-        canManage={canManage}
+        pairingsSlot={
+          <PublicPairings
+            tournamentId={tournament.id}
+            tournamentSlug={tournament.slug}
+            canManage={canManage}
+          />
+        }
         sidebarCard={
           <TournamentSidebarCard
             tournamentId={tournament.id}

@@ -19,12 +19,16 @@ const mockMutateAsync = jest.fn();
 let mockMatchDetails: unknown = null;
 
 jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(() => ({ data: mockMatchDetails })),
   useSupabaseMutation: jest.fn(() => ({ mutateAsync: mockMutateAsync })),
 }));
 
+// The dialog reads match details from the auth-gated API via useApiQuery
+// (Phase 2 Task 9 T3o) — no more direct anon getMatchDetails read.
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: jest.fn(() => ({ data: mockMatchDetails })),
+}));
+
 jest.mock("@trainers/supabase", () => ({
-  getMatchDetails: jest.fn(),
   reportMatchResult: jest.fn(),
 }));
 
@@ -184,6 +188,30 @@ describe("MatchReportDialog", () => {
     it("renders nothing when open is false", () => {
       renderDialog({ ...defaultProps, open: false });
       expect(screen.queryByTestId("dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("data source (Phase 2 Task 9 T3o)", () => {
+    it("reads match details via the auth-gated API (useApiQuery), keyed on matchId", async () => {
+      mockMatchDetails = buildMatchDetails();
+      const { useApiQuery } = await import("@trainers/supabase/react-query");
+      renderDialog();
+      expect(useApiQuery).toHaveBeenCalledWith(
+        ["match", 1, "details"],
+        expect.any(Function),
+        expect.objectContaining({ enabled: true })
+      );
+    });
+
+    it("disables the query when matchId is null", async () => {
+      mockMatchDetails = null;
+      const { useApiQuery } = await import("@trainers/supabase/react-query");
+      renderDialog({ ...defaultProps, matchId: null });
+      expect(useApiQuery).toHaveBeenCalledWith(
+        ["match", null, "details"],
+        expect.any(Function),
+        expect.objectContaining({ enabled: false })
+      );
     });
   });
 

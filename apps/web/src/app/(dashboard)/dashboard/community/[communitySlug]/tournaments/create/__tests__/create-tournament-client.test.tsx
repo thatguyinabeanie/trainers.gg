@@ -3,15 +3,22 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
 import { CreateTournamentClient } from "../create-tournament-client";
-import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
+import { useSupabaseMutation } from "@/lib/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
 }));
 
+// useApiQuery — community read (migrated off useSupabaseQuery in T3p)
+const mockUseApiQuery = jest.fn();
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
+}));
+
+// useSupabaseMutation — createTournament write (not a community/org read;
+// out of T3p scope — this mutation path is addressed in a later wave)
 jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(),
   useSupabaseMutation: jest.fn(),
 }));
 
@@ -73,9 +80,12 @@ function setupMocks() {
     user: { id: "user-1" },
     isLoading: false,
   });
-  (useSupabaseQuery as jest.Mock).mockReturnValue({
+  // Community read now comes from useApiQuery → /api/v1/communities/[slug]
+  mockUseApiQuery.mockReturnValue({
     data: mockOrganization,
     isLoading: false,
+    isError: false,
+    error: null,
   });
   (useSupabaseMutation as jest.Mock).mockReturnValue({
     mutateAsync: jest.fn(),
@@ -138,9 +148,11 @@ describe("CreateTournamentClient", () => {
       user: null,
       isLoading: true,
     });
-    (useSupabaseQuery as jest.Mock).mockReturnValue({
+    mockUseApiQuery.mockReturnValue({
       data: null,
       isLoading: true,
+      isError: false,
+      error: null,
     });
 
     const { container } = render(
@@ -156,9 +168,11 @@ describe("CreateTournamentClient", () => {
   // ── Community not found ───────────────────────────────────────────────────────
 
   it("shows 'Community not found' when organization is null", () => {
-    (useSupabaseQuery as jest.Mock).mockReturnValue({
+    mockUseApiQuery.mockReturnValue({
       data: null,
       isLoading: false,
+      isError: false,
+      error: null,
     });
 
     render(<CreateTournamentClient communitySlug="unknown-org" />);
@@ -167,6 +181,24 @@ describe("CreateTournamentClient", () => {
     expect(
       screen.getByRole("button", { name: /back to communities/i })
     ).toBeInTheDocument();
+  });
+
+  // ── Community fetch error ─────────────────────────────────────────────────────
+
+  it("shows 'Couldn't load community' card when useApiQuery isError is true", () => {
+    mockUseApiQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error("HTTP 503"),
+    });
+
+    render(<CreateTournamentClient communitySlug="test-org" />);
+
+    expect(
+      screen.getByText(/couldn['']t load community/i)
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
 
   // ── Not authenticated ────────────────────────────────────────────────────────
@@ -181,9 +213,11 @@ describe("CreateTournamentClient", () => {
       user: null,
       isLoading: false,
     });
-    (useSupabaseQuery as jest.Mock).mockReturnValue({
+    mockUseApiQuery.mockReturnValue({
       data: mockOrganization,
       isLoading: false,
+      isError: false,
+      error: null,
     });
 
     // The parent server layout enforces auth; this client renders null
@@ -209,15 +243,17 @@ describe("CreateTournamentClient", () => {
       isLoading: false,
       error: new Error("PostgrestError: rls denied"),
     });
-    (useSupabaseQuery as jest.Mock).mockReturnValue({
+    mockUseApiQuery.mockReturnValue({
       data: mockOrganization,
       isLoading: false,
+      isError: false,
+      error: null,
     });
 
     render(<CreateTournamentClient communitySlug="test-org" />);
 
     expect(
-      screen.getByText(/couldn['’]t load your account/i)
+      screen.getByText(/couldn['']t load your account/i)
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
@@ -229,9 +265,11 @@ describe("CreateTournamentClient", () => {
       user: { id: "different-user" },
       isLoading: false,
     });
-    (useSupabaseQuery as jest.Mock).mockReturnValue({
+    mockUseApiQuery.mockReturnValue({
       data: { ...mockOrganization, owner_user_id: "user-1" },
       isLoading: false,
+      isError: false,
+      error: null,
     });
 
     render(<CreateTournamentClient communitySlug="test-org" />);
@@ -240,6 +278,23 @@ describe("CreateTournamentClient", () => {
     expect(
       screen.getByRole("button", { name: /view community/i })
     ).toBeInTheDocument();
+  });
+
+  // ── Community read — useApiQuery wiring ────────────────────────────────────
+
+  describe("community read — useApiQuery wiring", () => {
+    it("queries /api/v1/communities/[slug] via useApiQuery with staleTime:30s", () => {
+      render(<CreateTournamentClient communitySlug="test-org" />);
+
+      const call = mockUseApiQuery.mock.calls.find(
+        ([queryKey]: [string[]]) =>
+          Array.isArray(queryKey) && queryKey[0] === "community"
+      );
+      expect(call).toBeDefined();
+      const [queryKey, , options] = call as [string[], unknown, { staleTime: number }];
+      expect(queryKey).toEqual(["community", "test-org"]);
+      expect(options).toMatchObject({ staleTime: 30_000 });
+    });
   });
 
   // ── Multi-step navigation ────────────────────────────────────────────────────
@@ -384,9 +439,11 @@ describe("CreateTournamentClient", () => {
 
     it("shows 'Community not found' state when organization is missing (no submit possible)", async () => {
       // Organization returns null — the form never renders so submit can't be triggered
-      (useSupabaseQuery as jest.Mock).mockReturnValue({
+      mockUseApiQuery.mockReturnValue({
         data: null,
         isLoading: false,
+        isError: false,
+        error: null,
       });
 
       render(<CreateTournamentClient communitySlug="unknown-org" />);

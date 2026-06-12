@@ -4,9 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { Trophy, ChevronDown, ChevronRight, Loader2, X } from "lucide-react";
 
-import { useSupabaseQuery } from "@/lib/supabase";
-import { getUserTournamentHistory } from "@trainers/supabase";
-import type { TypedSupabaseClient } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
+import type { getUserTournamentHistory } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -269,11 +268,27 @@ function EmptyState() {
 }
 
 // ---------------------------------------------------------------------------
-// Main component
+// Types
 // ---------------------------------------------------------------------------
 
-const historyQueryFn = (client: TypedSupabaseClient) =>
-  getUserTournamentHistory(client);
+type TournamentHistoryItem = NonNullable<
+  Awaited<ReturnType<typeof getUserTournamentHistory>>
+>[number];
+
+// ---------------------------------------------------------------------------
+// API fetch helper
+// ---------------------------------------------------------------------------
+
+async function fetchTournamentHistory() {
+  const res = await fetch("/api/v1/me/tournament-history");
+  return res.json() as Promise<
+    import("@trainers/validators").ActionResult<TournamentHistoryItem[]>
+  >;
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
 export function TournamentsClient({
   selectedAltUsername,
@@ -293,8 +308,13 @@ export function TournamentsClient({
   const {
     data: history,
     isLoading,
+    isError: historyIsError,
     error: historyError,
-  } = useSupabaseQuery(historyQueryFn, ["tournamentHistory"]);
+  } = useApiQuery<TournamentHistoryItem[]>(
+    ["me", "tournament-history"],
+    fetchTournamentHistory,
+    { staleTime: 30_000 }
+  );
 
   if (isLoading) {
     return (
@@ -304,15 +324,16 @@ export function TournamentsClient({
     );
   }
 
-  if (historyError) {
+  if (historyIsError) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <p className="text-destructive text-sm font-medium">
           Something went wrong
         </p>
         <p className="text-muted-foreground mt-1 text-xs">
-          {historyError.message ||
-            "Failed to load data. Please try refreshing."}
+          {historyError instanceof Error
+            ? historyError.message
+            : "Failed to load data. Please try refreshing."}
         </p>
       </div>
     );

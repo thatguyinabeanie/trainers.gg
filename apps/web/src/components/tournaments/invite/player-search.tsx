@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { searchAlts } from "@trainers/supabase";
+import { useEffect, useState } from "react";
+
+import { type PlayerDirectoryEntry } from "@trainers/supabase";
 import type { SelectedPlayer } from "@trainers/tournaments/types";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useApiQuery } from "@trainers/supabase/react-query";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, UserPlus, Loader2, X, Users, Star } from "lucide-react";
+import { Search, UserPlus, Loader2, X, Users, Star, AlertTriangle } from "lucide-react";
 
 interface PlayerSearchProps {
   tournamentId: number;
@@ -20,10 +23,11 @@ interface PlayerSearchProps {
   maxSelections?: number;
 }
 
-interface SearchResult {
-  id: number;
-  username: string;
-  avatar_url?: string | null;
+/** Shape returned by GET /api/v1/players/search */
+interface PlayerSearchApiResult {
+  players: PlayerDirectoryEntry[];
+  totalCount: number;
+  page: number;
 }
 
 export function PlayerSearch({
@@ -35,38 +39,57 @@ export function PlayerSearch({
   maxSelections,
 }: PlayerSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  // Debounced query — only fires the API call 300ms after the user stops typing.
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Search for players when query is at least 2 characters
-  const { data: searchResults, isLoading } = useSupabaseQuery(
-    (supabase) =>
-      searchQuery.length >= 2
-        ? searchAlts(supabase, searchQuery, 20)
-        : Promise.resolve([]),
-    [searchQuery]
+  useEffect(() => {
+    if (!searchQuery) {
+      setDebouncedQuery("");
+      return;
+    }
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Search for players via GET /api/v1/players/search.
+  // Disabled when the debounced query is shorter than 2 chars to avoid noise.
+  const { data: searchResult, isLoading, isError, error } = useApiQuery<PlayerSearchApiResult>(
+    ["players", "search", debouncedQuery],
+    () =>
+      fetch(
+        `/api/v1/players/search?q=${encodeURIComponent(debouncedQuery)}&sort=alphabetical`
+      ).then((r) => r.json()),
+    { enabled: debouncedQuery.length >= 2, staleTime: 30_000 }
   );
 
-  // Filter out already selected and excluded players
-  const filteredResults = (() => {
-    if (!searchResults) return [];
+  const searchResults = searchResult?.players ?? [];
 
+  // Filter out already selected and excluded players.
+  // PlayerDirectoryEntry uses `altId` (number | null) as the alt identifier.
+  const filteredResults = (() => {
     const selectedIds = new Set(selectedPlayers.map((p) => p.id));
     const excludedIds = new Set(excludePlayerIds);
 
     return searchResults.filter(
-      (player: SearchResult) =>
-        !selectedIds.has(player.id) && !excludedIds.has(player.id)
+      (player) =>
+        player.altId !== null &&
+        !selectedIds.has(player.altId) &&
+        !excludedIds.has(player.altId)
     );
   })();
 
-  const handleSelectPlayer = (player: SearchResult) => {
+  const handleSelectPlayer = (player: PlayerDirectoryEntry) => {
     if (maxSelections && selectedPlayers.length >= maxSelections) {
       return;
     }
+    if (player.altId === null) return;
     onSelectPlayer({
-      id: player.id,
+      id: player.altId,
       username: player.username,
       displayName: player.username,
-      avatarUrl: player.avatar_url ?? undefined,
+      avatarUrl: player.avatarUrl ?? undefined,
       tier: undefined,
     });
     setSearchQuery("");
@@ -156,34 +179,43 @@ export function PlayerSearch({
       </div>
 
       {/* Search Results */}
-      {searchQuery.length >= 2 && (
+      {debouncedQuery.length >= 2 && (
         <div className="rounded-md border">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
             </div>
+          ) : isError ? (
+            <Alert variant="destructive" className="m-3">
+              <AlertTriangle className="size-4" />
+              <AlertDescription>
+                {error instanceof Error
+                  ? error.message
+                  : "Failed to load search results"}
+              </AlertDescription>
+            </Alert>
           ) : filteredResults.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Users className="text-muted-foreground mb-2 h-8 w-8" />
               <p className="text-muted-foreground text-sm">
-                {searchResults?.length === 0
+                {searchResults.length === 0
                   ? "No players found"
                   : "All matching players are already selected"}
               </p>
             </div>
           ) : (
-            <ScrollArea className="max-h-[240px]">
+            <ScrollArea className="max-h-60">
               <div className="divide-y">
-                {filteredResults.map((player: SearchResult) => (
+                {filteredResults.map((player) => (
                   <button
-                    key={player.id}
+                    key={player.altId}
                     onClick={() => handleSelectPlayer(player)}
                     disabled={isAtMaxSelections}
                     className="hover:bg-muted/50 flex w-full items-center justify-between p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={player.avatar_url ?? undefined} />
+                        <AvatarImage src={player.avatarUrl ?? undefined} />
                         <AvatarFallback>
                           {player.username.slice(0, 2).toUpperCase()}
                         </AvatarFallback>

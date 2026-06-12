@@ -117,6 +117,9 @@ export type {
   AltStats,
   AltTeam,
   PublicTournamentStandingRow,
+  TournamentRegistrationRow,
+  TournamentInvitationSentRow,
+  MatchDetails,
 } from "./tournaments";
 // CommunityWithCounts already exported above
 

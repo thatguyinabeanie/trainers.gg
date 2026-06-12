@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
+
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSupabaseQuery } from "@/lib/supabase";
+
 import {
   getTournamentBySlug,
-  getCommunityBySlug,
   getTournamentPhases,
+  type getCommunityBySlug,
 } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
+
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useSupabaseQuery } from "@/lib/supabase";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,13 +81,28 @@ export function TournamentManageClient({
   // Auth is enforced server-side by the (dashboard) layout; do not redirect
   // from this client (causes a /sign-in ↔ /dashboard race).
 
-  // Fetch organization by slug
-  const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
-    getCommunityBySlug(supabase, communitySlug);
+  // Fetch the community that owns this tournament via the auth-gated
+  // `/api/v1/communities/[slug]` route (Phase 2 S-bucket migration).
+  // The route returns the community object directly (not ActionResult-wrapped).
+  type CommunityDetail = NonNullable<Awaited<ReturnType<typeof getCommunityBySlug>>>;
 
-  const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
-    orgQueryFn,
-    [communitySlug]
+  const {
+    data: organization,
+    isLoading: orgLoading,
+    isError: orgError,
+  } = useApiQuery<CommunityDetail | null>(
+    ["community", communitySlug],
+    async () => {
+      const res = await fetch(
+        `/api/v1/communities/${encodeURIComponent(communitySlug)}`
+      );
+      if (!res.ok) {
+        return { success: false as const, error: `HTTP ${res.status}` };
+      }
+      const data = (await res.json()) as CommunityDetail | null;
+      return { success: true as const, data };
+    },
+    { staleTime: 30_000 }
   );
 
   // Fetch tournament by slug
@@ -143,6 +162,24 @@ export function TournamentManageClient({
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
       </div>
+    );
+  }
+
+  // Org fetch error
+  if (orgError) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <ShieldAlert className="text-muted-foreground mb-4 h-12 w-12" />
+          <h3 className="mb-2 text-lg font-semibold">
+            Couldn&apos;t load community
+          </h3>
+          <p className="text-muted-foreground mb-4 text-center">
+            Try refreshing the page. If this keeps happening, contact support.
+          </p>
+          <Button onClick={() => router.refresh()}>Retry</Button>
+        </CardContent>
+      </Card>
     );
   }
 

@@ -1,5 +1,20 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+/**
+ * Tests for dashboard/tournaments/tournaments-client.tsx
+ *
+ * The component fetches tournament history via `useApiQuery` against
+ * `/api/v1/me/tournament-history`. No direct Supabase client or realtime
+ * subscription is used.
+ */
+
+// =============================================================================
+// Mocks — declared before imports so Jest hoisting works correctly
+// =============================================================================
+
+// --- @trainers/supabase/react-query ---
+const mockUseApiQuery = jest.fn();
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
+}));
 
 // --- @/hooks/use-mobile ---
 const mockUseIsMobile = jest.fn();
@@ -22,16 +37,6 @@ jest.mock("../tournaments-cards", () => ({
       ))}
     </div>
   ),
-}));
-
-// --- @/lib/supabase ---
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(),
-}));
-
-// --- @trainers/supabase ---
-jest.mock("@trainers/supabase", () => ({
-  getUserTournamentHistory: jest.fn(),
 }));
 
 // --- @trainers/pokemon/sprites ---
@@ -109,13 +114,14 @@ jest.mock("lucide-react", () => ({
   X: () => <svg data-testid="icon-x" />,
 }));
 
-import React from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { TournamentsClient } from "../tournaments-client";
+// =============================================================================
+// Imports (after mocks)
+// =============================================================================
 
-const mockUseSupabaseQuery = useSupabaseQuery as jest.MockedFunction<
-  typeof useSupabaseQuery
->;
+import React from "react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { TournamentsClient } from "../tournaments-client";
 
 // =============================================================================
 // Helpers
@@ -125,6 +131,7 @@ type TournamentEntry = {
   id: number;
   tournamentName: string;
   tournamentSlug: string;
+  altId: number;
   altUsername: string;
   format: string | null;
   startDate: string | null;
@@ -140,6 +147,7 @@ function makeEntry(overrides: Partial<TournamentEntry> = {}): TournamentEntry {
     id: 1,
     tournamentName: "Kanto Regional",
     tournamentSlug: "kanto-regional",
+    altId: 10,
     altUsername: "ash_alt",
     format: "vgc-2024",
     startDate: "2026-03-15",
@@ -152,319 +160,338 @@ function makeEntry(overrides: Partial<TournamentEntry> = {}): TournamentEntry {
   };
 }
 
+/** Default idle result — no data, not loading, no error. */
+const idleResult = {
+  data: undefined,
+  isLoading: false,
+  isError: false,
+  error: null,
+};
+
 function setupQuery(
   data: TournamentEntry[] | undefined,
   isLoading = false,
   error: Error | null = null
 ) {
-  mockUseSupabaseQuery.mockReturnValue({
+  mockUseApiQuery.mockReturnValue({
     data,
     isLoading,
+    isError: error !== null,
     error,
-    refetch: jest.fn(),
-  } as ReturnType<typeof useSupabaseQuery>);
+  });
 }
 
 // =============================================================================
-// Tests
+// Setup
 // =============================================================================
 
-describe("TournamentsClient", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockUseIsClient.mockReturnValue(true);
-    mockUseIsMobile.mockReturnValue(false);
-  });
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockUseIsClient.mockReturnValue(true);
+  mockUseIsMobile.mockReturnValue(false);
+  mockUseApiQuery.mockReturnValue(idleResult);
+});
 
-  // ---------------------------------------------------------------------------
-  // Loading
-  // ---------------------------------------------------------------------------
+// =============================================================================
+// Loading
+// =============================================================================
 
-  it("renders loading spinner while data is loading", () => {
-    setupQuery(undefined, true);
+it("renders loading spinner while data is loading", () => {
+  setupQuery(undefined, true);
+  render(<TournamentsClient selectedAltUsername={null} />);
+  expect(screen.getByTestId("icon-loader")).toBeInTheDocument();
+});
+
+// =============================================================================
+// Error state
+// =============================================================================
+
+it("renders error state when query errors", () => {
+  setupQuery(undefined, false, new Error("DB error"));
+  render(<TournamentsClient selectedAltUsername={null} />);
+  expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+});
+
+it("renders error message from error object", () => {
+  setupQuery(undefined, false, new Error("Connection refused"));
+  render(<TournamentsClient selectedAltUsername={null} />);
+  expect(screen.getByText("Connection refused")).toBeInTheDocument();
+});
+
+// =============================================================================
+// Empty state
+// =============================================================================
+
+it("renders empty state when history is empty", () => {
+  setupQuery([]);
+  render(<TournamentsClient selectedAltUsername={null} />);
+  expect(screen.getByText("No tournaments yet")).toBeInTheDocument();
+});
+
+it("renders Browse Tournaments link in empty state", () => {
+  setupQuery([]);
+  render(<TournamentsClient selectedAltUsername={null} />);
+  expect(
+    screen.getByRole("link", { name: /browse tournaments/i })
+  ).toBeInTheDocument();
+});
+
+// =============================================================================
+// Populated state
+// =============================================================================
+
+describe("with tournament history", () => {
+  it("renders Tournaments heading", () => {
+    setupQuery([makeEntry()]);
     render(<TournamentsClient selectedAltUsername={null} />);
-    expect(screen.getByTestId("icon-loader")).toBeInTheDocument();
+    expect(screen.getByText("Tournaments")).toBeInTheDocument();
   });
 
-  // ---------------------------------------------------------------------------
-  // Error state
-  // ---------------------------------------------------------------------------
-
-  it("renders error state when historyError is set", () => {
-    setupQuery(undefined, false, new Error("DB error"));
+  it("renders tournament name", () => {
+    setupQuery([makeEntry({ tournamentName: "Johto League" })]);
     render(<TournamentsClient selectedAltUsername={null} />);
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText("Johto League")).toBeInTheDocument();
   });
 
-  it("renders error message from historyError", () => {
-    setupQuery(undefined, false, new Error("Connection refused"));
+  it("renders alt username as link", () => {
+    setupQuery([makeEntry({ altUsername: "misty_alt" })]);
     render(<TournamentsClient selectedAltUsername={null} />);
-    expect(screen.getByText("Connection refused")).toBeInTheDocument();
+    const items = screen.getAllByText("misty_alt");
+    expect(items.length).toBeGreaterThanOrEqual(1);
   });
 
-  // ---------------------------------------------------------------------------
-  // Empty state
-  // ---------------------------------------------------------------------------
+  it("renders format column", () => {
+    setupQuery([makeEntry({ format: "vgc-2024" })]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    const items = screen.getAllByText("vgc-2024");
+    expect(items.length).toBeGreaterThanOrEqual(1);
+  });
 
-  it("renders empty state when history is empty", () => {
+  it("renders w-l record for completed entries", () => {
+    setupQuery([makeEntry({ wins: 7, losses: 1 })]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    expect(screen.getByText("7-1")).toBeInTheDocument();
+  });
+
+  it("renders placement as ordinal", () => {
+    setupQuery([makeEntry({ placement: 1 })]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    // ordinalSuffix(1) = "1st" with trophy
+    expect(screen.getByText(/1st 🏆/)).toBeInTheDocument();
+  });
+
+  it("renders — for null placement", () => {
+    setupQuery([makeEntry({ placement: null })]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renders — for null format", () => {
+    setupQuery([makeEntry({ format: null })]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renders Completed status badge for entries", () => {
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    const completed = screen.getAllByText("Completed");
+    expect(completed.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// =============================================================================
+// useApiQuery is used (not useSupabaseQuery or realtime)
+// =============================================================================
+
+describe("uses useApiQuery for data fetching", () => {
+  it("calls useApiQuery with the tournament-history query key", () => {
     setupQuery([]);
     render(<TournamentsClient selectedAltUsername={null} />);
-    expect(screen.getByText("No tournaments yet")).toBeInTheDocument();
+    expect(mockUseApiQuery).toHaveBeenCalledWith(
+      expect.arrayContaining(["me", "tournament-history"]),
+      expect.any(Function),
+      expect.objectContaining({ staleTime: 30_000 })
+    );
+  });
+});
+
+// =============================================================================
+// Filter chips
+// =============================================================================
+
+describe("filter chips", () => {
+  it("renders all filter chip labels", () => {
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    expect(screen.getByText("All")).toBeInTheDocument();
+    expect(screen.getByText("Live")).toBeInTheDocument();
+    expect(screen.getByText("Upcoming")).toBeInTheDocument();
+    const completedLabels = screen.getAllByText("Completed");
+    expect(completedLabels.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders Browse Tournaments link in empty state", () => {
-    setupQuery([]);
+  it("shows total count in All chip", () => {
+    setupQuery([makeEntry(), makeEntry({ id: 2 })]);
     render(<TournamentsClient selectedAltUsername={null} />);
+    // All=2, Live=0, Upcoming=0, Completed=2
+    const chips = screen.getAllByText("2");
+    expect(chips.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("switches active chip when clicked", async () => {
+    const user = userEvent.setup();
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+
+    const completedChip = screen.getByRole("button", { name: /^completed/i });
+    await user.click(completedChip);
+    // Entry remains visible because all entries are "completed"
+    expect(screen.getByText("Kanto Regional")).toBeInTheDocument();
+  });
+
+  it("shows no entries when 'Live' chip is selected", async () => {
+    const user = userEvent.setup();
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+
+    await user.click(screen.getByRole("button", { name: /^live/i }));
     expect(
-      screen.getByRole("link", { name: /browse tournaments/i })
+      screen.getByText("No tournaments match the current filters.")
     ).toBeInTheDocument();
   });
+});
 
-  // ---------------------------------------------------------------------------
-  // Populated state
-  // ---------------------------------------------------------------------------
+// =============================================================================
+// Summary stats
+// =============================================================================
 
-  describe("with tournament history", () => {
-    it("renders Tournaments heading", () => {
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.getByText("Tournaments")).toBeInTheDocument();
-    });
-
-    it("renders tournament name", () => {
-      setupQuery([makeEntry({ tournamentName: "Johto League" })]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.getByText("Johto League")).toBeInTheDocument();
-    });
-
-    it("renders alt username as link", () => {
-      setupQuery([makeEntry({ altUsername: "misty_alt" })]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      const items = screen.getAllByText("misty_alt");
-      expect(items.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it("renders format column", () => {
-      setupQuery([makeEntry({ format: "vgc-2024" })]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      const items = screen.getAllByText("vgc-2024");
-      expect(items.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it("renders w-l record for completed entries", () => {
-      setupQuery([makeEntry({ wins: 7, losses: 1 })]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.getByText("7-1")).toBeInTheDocument();
-    });
-
-    it("renders placement as ordinal", () => {
-      setupQuery([makeEntry({ placement: 1 })]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      // ordinalSuffix(1) = "1st" with trophy
-      expect(screen.getByText(/1st 🏆/)).toBeInTheDocument();
-    });
-
-    it("renders — for null placement", () => {
-      setupQuery([makeEntry({ placement: null })]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      const dashes = screen.getAllByText("—");
-      expect(dashes.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it("renders — for null format", () => {
-      setupQuery([makeEntry({ format: null })]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      const dashes = screen.getAllByText("—");
-      expect(dashes.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it("renders Completed status badge for entries", () => {
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      const completed = screen.getAllByText("Completed");
-      expect(completed.length).toBeGreaterThanOrEqual(1);
-    });
+describe("summary stats", () => {
+  it("renders Played stat", () => {
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    expect(screen.getByText("Played")).toBeInTheDocument();
   });
 
-  // ---------------------------------------------------------------------------
-  // Filter chips
-  // ---------------------------------------------------------------------------
+  it("renders Win Rate stat", () => {
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    expect(screen.getByText("Win Rate")).toBeInTheDocument();
+  });
 
-  describe("filter chips", () => {
-    it("renders all filter chip labels", () => {
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.getByText("All")).toBeInTheDocument();
-      expect(screen.getByText("Live")).toBeInTheDocument();
-      expect(screen.getByText("Upcoming")).toBeInTheDocument();
-      const completedLabels = screen.getAllByText("Completed");
-      expect(completedLabels.length).toBeGreaterThanOrEqual(1);
-    });
+  it("renders Best Finish stat", () => {
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    expect(screen.getByText("Best Finish")).toBeInTheDocument();
+  });
 
-    it("shows total count in All chip", () => {
-      setupQuery([makeEntry(), makeEntry({ id: 2 })]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      // All=2, Live=0, Upcoming=0, Completed=2
-      const chips = screen.getAllByText("2");
-      expect(chips.length).toBeGreaterThanOrEqual(1);
-    });
+  it("renders Avg Place stat", () => {
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    expect(screen.getByText("Avg Place")).toBeInTheDocument();
+  });
 
-    it("switches active chip when clicked", async () => {
-      const user = userEvent.setup();
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
+  it("renders correct played count", () => {
+    setupQuery([makeEntry(), makeEntry({ id: 2 }), makeEntry({ id: 3 })]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    const threes = screen.getAllByText("3");
+    expect(threes.length).toBeGreaterThanOrEqual(1);
+  });
+});
 
-      const completedChip = screen.getByRole("button", { name: /^completed/i });
-      await user.click(completedChip);
-      // Entry remains visible because all entries are "completed"
-      expect(screen.getByText("Kanto Regional")).toBeInTheDocument();
-    });
+// =============================================================================
+// Row expand/collapse
+// =============================================================================
 
-    it("shows no entries when 'Live' chip is selected", async () => {
-      const user = userEvent.setup();
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
+describe("row expand/collapse", () => {
+  it("toggles expanded state on row click", async () => {
+    const user = userEvent.setup();
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
 
-      await user.click(screen.getByRole("button", { name: /^live/i }));
+    const row = screen.getByText("Kanto Regional").closest("tr");
+    expect(row).not.toBeNull();
+    await user.click(row!);
+
+    // Expanded panel shows round-by-round placeholder
+    await waitFor(() => {
       expect(
-        screen.getByText("No tournaments match the current filters.")
+        screen.getByText("Round-by-round data not yet available")
       ).toBeInTheDocument();
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // Summary stats
-  // ---------------------------------------------------------------------------
+  it("collapses row when clicked again", async () => {
+    const user = userEvent.setup();
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
 
-  describe("summary stats", () => {
-    it("renders Played stat", () => {
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.getByText("Played")).toBeInTheDocument();
-    });
+    const row = screen.getByText("Kanto Regional").closest("tr");
+    await user.click(row!);
+    await user.click(row!);
 
-    it("renders Win Rate stat", () => {
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.getByText("Win Rate")).toBeInTheDocument();
-    });
-
-    it("renders Best Finish stat", () => {
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.getByText("Best Finish")).toBeInTheDocument();
-    });
-
-    it("renders Avg Place stat", () => {
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.getByText("Avg Place")).toBeInTheDocument();
-    });
-
-    it("renders correct played count", () => {
-      setupQuery([makeEntry(), makeEntry({ id: 2 }), makeEntry({ id: 3 })]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      const threes = screen.getAllByText("3");
-      expect(threes.length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Row expand/collapse
-  // ---------------------------------------------------------------------------
-
-  describe("row expand/collapse", () => {
-    it("toggles expanded state on row click", async () => {
-      const user = userEvent.setup();
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-
-      const row = screen.getByText("Kanto Regional").closest("tr");
-      expect(row).not.toBeNull();
-      await user.click(row!);
-
-      // Expanded panel shows round-by-round placeholder
-      await waitFor(() => {
-        expect(
-          screen.getByText("Round-by-round data not yet available")
-        ).toBeInTheDocument();
-      });
-    });
-
-    it("collapses row when clicked again", async () => {
-      const user = userEvent.setup();
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-
-      const row = screen.getByText("Kanto Regional").closest("tr");
-      await user.click(row!);
-      await user.click(row!);
-
-      await waitFor(() => {
-        expect(
-          screen.queryByText("Round-by-round data not yet available")
-        ).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // initialSelectedAltUsername
-  // ---------------------------------------------------------------------------
-
-  describe("selectedAltUsername prop", () => {
-    it("pre-selects alt filter from prop", () => {
-      setupQuery([makeEntry({ altUsername: "ash_alt" })]);
-      render(<TournamentsClient selectedAltUsername="ash_alt" />);
-      // Entry is still visible because the alt matches
-      expect(screen.getByText("Kanto Regional")).toBeInTheDocument();
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Conditional mount (mobile/desktop)
-  // ---------------------------------------------------------------------------
-
-  describe("conditional mount", () => {
-    it("renders skeleton when isClient is false", () => {
-      mockUseIsClient.mockReturnValue(false);
-      mockUseIsMobile.mockReturnValue(false);
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    await waitFor(() => {
       expect(
-        screen.queryByTestId("tournaments-cards")
+        screen.queryByText("Round-by-round data not yet available")
       ).not.toBeInTheDocument();
     });
+  });
+});
 
-    it("renders desktop table when isClient is true and isMobile is false", () => {
-      mockUseIsClient.mockReturnValue(true);
-      mockUseIsMobile.mockReturnValue(false);
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.getByRole("table")).toBeInTheDocument();
-      expect(
-        screen.queryByTestId("tournaments-cards")
-      ).not.toBeInTheDocument();
-    });
+// =============================================================================
+// selectedAltUsername prop
+// =============================================================================
 
-    it("renders mobile cards when isClient is true and isMobile is true", () => {
-      mockUseIsClient.mockReturnValue(true);
-      mockUseIsMobile.mockReturnValue(true);
-      setupQuery([makeEntry()]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      expect(screen.getByTestId("tournaments-cards")).toBeInTheDocument();
-      expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    });
+describe("selectedAltUsername prop", () => {
+  it("pre-selects alt filter from prop", () => {
+    setupQuery([makeEntry({ altUsername: "ash_alt" })]);
+    render(<TournamentsClient selectedAltUsername="ash_alt" />);
+    // Entry is still visible because the alt matches
+    expect(screen.getByText("Kanto Regional")).toBeInTheDocument();
+  });
+});
 
-    it("propagates filter changes to the mobile variant", async () => {
-      mockUseIsClient.mockReturnValue(true);
-      mockUseIsMobile.mockReturnValue(true);
-      setupQuery([makeEntry({ id: 1 }), makeEntry({ id: 2 })]);
-      render(<TournamentsClient selectedAltUsername={null} />);
-      // Both entries pass through to the mobile cards stub.
-      expect(screen.getByTestId("mobile-card-1")).toBeInTheDocument();
-      expect(screen.getByTestId("mobile-card-2")).toBeInTheDocument();
-    });
+// =============================================================================
+// Conditional mount (mobile/desktop)
+// =============================================================================
+
+describe("conditional mount", () => {
+  it("renders skeleton when isClient is false", () => {
+    mockUseIsClient.mockReturnValue(false);
+    mockUseIsMobile.mockReturnValue(false);
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tournaments-cards")).not.toBeInTheDocument();
+  });
+
+  it("renders desktop table when isClient is true and isMobile is false", () => {
+    mockUseIsClient.mockReturnValue(true);
+    mockUseIsMobile.mockReturnValue(false);
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.queryByTestId("tournaments-cards")).not.toBeInTheDocument();
+  });
+
+  it("renders mobile cards when isClient is true and isMobile is true", () => {
+    mockUseIsClient.mockReturnValue(true);
+    mockUseIsMobile.mockReturnValue(true);
+    setupQuery([makeEntry()]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    expect(screen.getByTestId("tournaments-cards")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
+  it("propagates filter changes to the mobile variant", () => {
+    mockUseIsClient.mockReturnValue(true);
+    mockUseIsMobile.mockReturnValue(true);
+    setupQuery([makeEntry({ id: 1 }), makeEntry({ id: 2 })]);
+    render(<TournamentsClient selectedAltUsername={null} />);
+    // Both entries pass through to the mobile cards stub.
+    expect(screen.getByTestId("mobile-card-1")).toBeInTheDocument();
+    expect(screen.getByTestId("mobile-card-2")).toBeInTheDocument();
   });
 });

@@ -12,7 +12,9 @@ jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(),
 }));
 
-// Mock Supabase hooks
+// Mock Supabase hooks (still needed for tournament reads: getTournamentBySlug,
+// getTournamentPhases — those are tournament-context reads, not community reads,
+// and are migrated in a later wave).
 const mockChannel = {
   on: jest.fn().mockReturnThis(),
   subscribe: jest.fn((callback) => {
@@ -33,7 +35,13 @@ jest.mock("@/lib/supabase", () => ({
   useSupabase: jest.fn(() => mockSupabase),
 }));
 
-// Mock current user hook
+// Mock useApiQuery (used for community read via /api/v1/communities/[slug])
+const mockUseApiQuery = jest.fn();
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
+}));
+
+// Mock current user hook (API-backed; hook itself is tested separately)
 jest.mock("@/hooks/use-current-user", () => ({
   useCurrentUser: jest.fn(),
 }));
@@ -143,11 +151,22 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
     tournament_id: bigint;
   }> = [];
 
-  // Helper function to setup useSupabaseQuery mocks
-  // Uses a persistent counter that resets at the start of each render cycle
-  // by tracking if the component is re-rendering (callIndex wraps around)
+  /**
+   * Set up mocks for a successful render:
+   * - useApiQuery returns the community (for /api/v1/communities/[slug] fetch)
+   * - useSupabaseQuery returns tournament then phases (still on S-bucket reads)
+   */
   const setupQueryMocks = () => {
-    const mockResponses = [mockOrganization, mockTournament, mockPhases];
+    // Community read — useApiQuery (migrated off useSupabaseQuery in T3p)
+    mockUseApiQuery.mockReturnValue({
+      data: mockOrganization,
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    // Tournament reads — useSupabaseQuery (tournament-context; migrated later)
+    const mockResponses = [mockTournament, mockPhases];
     let callIndex = 0;
     (useSupabaseQuery as jest.Mock).mockImplementation(() => {
       const response = mockResponses[callIndex % mockResponses.length];
@@ -500,9 +519,108 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
       );
 
       expect(
-        screen.getByText(/couldn['’]t load your account/i)
+        screen.getByText(/couldn['']t load your account/i)
       ).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+    });
+  });
+
+  describe("community read — useApiQuery wiring", () => {
+    it("queries /api/v1/communities/[slug] via useApiQuery with staleTime:30s", () => {
+      setupQueryMocks();
+
+      render(
+        <TournamentManageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      // useApiQuery should have been called for the community
+      const call = mockUseApiQuery.mock.calls.find(
+        ([queryKey]: [string[]]) =>
+          Array.isArray(queryKey) && queryKey[0] === "community"
+      );
+      expect(call).toBeDefined();
+      const [queryKey, , options] = call as [string[], unknown, { staleTime: number }];
+      expect(queryKey).toEqual(["community", "test-org"]);
+      expect(options).toMatchObject({ staleTime: 30_000 });
+    });
+
+    it("renders org-error card when useApiQuery isError is true", () => {
+      // Community fetch error
+      mockUseApiQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: new Error("HTTP 503"),
+      });
+      // Tournament reads still work
+      (useSupabaseQuery as jest.Mock).mockReturnValue({
+        data: mockTournament,
+        isLoading: false,
+      });
+
+      render(
+        <TournamentManageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      expect(
+        screen.getByText(/couldn['']t load community/i)
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+    });
+
+    it("renders 'Organization not found' card when useApiQuery data is null", () => {
+      mockUseApiQuery.mockReturnValue({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+      });
+      (useSupabaseQuery as jest.Mock).mockReturnValue({
+        data: mockTournament,
+        isLoading: false,
+      });
+
+      render(
+        <TournamentManageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      expect(screen.getByText(/organization not found/i)).toBeInTheDocument();
+    });
+
+    it("shows Access Denied when user is not the org owner", () => {
+      mockUseApiQuery.mockReturnValue({
+        data: { ...mockOrganization, owner_user_id: "someone-else" },
+        isLoading: false,
+        isError: false,
+        error: null,
+      });
+      (useCurrentUser as jest.Mock).mockReturnValue({
+        user: { id: "user-1" },
+        isLoading: false,
+      });
+      let callCount = 0;
+      (useSupabaseQuery as jest.Mock).mockImplementation(() => {
+        callCount++;
+        return { data: callCount === 1 ? mockTournament : mockPhases, isLoading: false };
+      });
+
+      render(
+        <TournamentManageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      expect(screen.getByText(/access denied/i)).toBeInTheDocument();
     });
   });
 

@@ -19,6 +19,13 @@ jest.mock("@/hooks/use-current-user", () => ({
   useCurrentUser: () => mockUseCurrentUser(),
 }));
 
+// useApiQuery — community read (migrated off useSupabaseQuery in T3p)
+const mockUseApiQuery = jest.fn();
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
+}));
+
+// useSupabaseQuery — tournament read (tournament-context; migrated in a later wave)
 const mockUseSupabaseQuery = jest.fn();
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: (queryFn: unknown, deps: unknown[]) =>
@@ -68,6 +75,11 @@ const mockTournament = {
   phases: [],
 };
 
+/**
+ * Set up mocks for a render:
+ * - useApiQuery returns the community (for /api/v1/communities/[slug])
+ * - useSupabaseQuery returns the tournament (still on S-bucket read)
+ */
 function setupQueries({
   organization,
   tournament,
@@ -75,17 +87,18 @@ function setupQueries({
   organization: typeof mockOrganization | null;
   tournament: typeof mockTournament | null;
 }) {
-  mockUseSupabaseQuery.mockImplementation(
-    (_fn: unknown, deps: readonly unknown[]) => {
-      // First call: organization (deps = [communitySlug])
-      // Second call: tournament (deps = [tournamentSlug])
-      const [dep] = deps;
-      if (dep === "test-org") {
-        return { data: organization, isLoading: false };
-      }
-      return { data: tournament, isLoading: false };
-    }
-  );
+  mockUseApiQuery.mockReturnValue({
+    data: organization,
+    isLoading: false,
+    isError: false,
+    error: null,
+  });
+
+  // Tournament read — still via useSupabaseQuery
+  mockUseSupabaseQuery.mockReturnValue({
+    data: tournament,
+    isLoading: false,
+  });
 }
 
 // =============================================================================
@@ -152,7 +165,7 @@ describe("TournamentSettingsPageClient", () => {
     );
 
     expect(
-      screen.getByText(/couldn['’]t load your account/i)
+      screen.getByText(/couldn['']t load your account/i)
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
@@ -184,5 +197,66 @@ describe("TournamentSettingsPageClient", () => {
     );
 
     expect(screen.getByText(/tournament not found/i)).toBeInTheDocument();
+  });
+
+  // ── Community read — useApiQuery wiring ────────────────────────────────────
+
+  describe("community read — useApiQuery wiring", () => {
+    it("queries /api/v1/communities/[slug] via useApiQuery with staleTime:30s", () => {
+      render(
+        <TournamentSettingsPageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      const call = mockUseApiQuery.mock.calls.find(
+        ([queryKey]: [string[]]) =>
+          Array.isArray(queryKey) && queryKey[0] === "community"
+      );
+      expect(call).toBeDefined();
+      const [queryKey, , options] = call as [string[], unknown, { staleTime: number }];
+      expect(queryKey).toEqual(["community", "test-org"]);
+      expect(options).toMatchObject({ staleTime: 30_000 });
+    });
+
+    it("shows 'Couldn't load community' card when useApiQuery isError is true", () => {
+      mockUseApiQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: new Error("HTTP 503"),
+      });
+
+      render(
+        <TournamentSettingsPageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      expect(
+        screen.getByText(/couldn['']t load community/i)
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+    });
+
+    it("shows 'Organization not found' card when useApiQuery data is null", () => {
+      mockUseApiQuery.mockReturnValue({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+      });
+
+      render(
+        <TournamentSettingsPageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      expect(screen.getByText(/organization not found/i)).toBeInTheDocument();
+    });
   });
 });

@@ -4,7 +4,6 @@ import { type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkdownContent } from "@/components/ui/markdown-content";
-import { PublicPairings } from "./public-pairings";
 import { TournamentStandings } from "@/components/tournaments/manage/tournament-standings";
 import { CurrentMatchBanner } from "./current-match-banner";
 import { ArrowDown, Clock, Layers, Shield, Timer, Users } from "lucide-react";
@@ -28,11 +27,17 @@ interface TournamentTabsProps {
   scheduleCard: ReactNode;
   formatCard: ReactNode;
   sidebarCard: ReactNode;
+  /**
+   * Server-rendered pairings panel (`<PublicPairings />`). Passed as a slot so
+   * the async Server Component can run server-side — a `"use client"` component
+   * like this one cannot render an async Server Component directly. The parent
+   * (`page.tsx`) wires `canManage` into this slot.
+   */
+  pairingsSlot: ReactNode;
   phases: PhaseData[];
   tournamentId: number;
   tournamentSlug: string;
   tournamentStatus: string;
-  canManage?: boolean;
 }
 
 const VALID_TABS = [
@@ -161,11 +166,11 @@ export function TournamentTabs({
   scheduleCard,
   formatCard,
   sidebarCard,
+  pairingsSlot,
   phases,
   tournamentId,
   tournamentSlug,
   tournamentStatus,
-  canManage = false,
 }: TournamentTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -263,11 +268,7 @@ export function TournamentTabs({
               </p>
             </div>
           ) : (
-            <PublicPairings
-              tournamentId={tournamentId}
-              tournamentSlug={tournamentSlug}
-              canManage={canManage}
-            />
+            pairingsSlot
           )}
         </TabsContent>
 

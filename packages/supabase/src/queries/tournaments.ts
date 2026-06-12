@@ -486,6 +486,17 @@ export async function getTournamentRegistrations(
 }
 
 /**
+ * A single tournament registration row with its joined alt and team — the
+ * staff-facing shape returned by `getTournamentRegistrations`. Includes
+ * staff-internal columns (drop category, check-in state), so consumers must be
+ * authenticated + tournament-manage-authorized (Phase 2 Task 9: the base
+ * `tournament_registrations` SELECT is revoked from anon/authenticated).
+ */
+export type TournamentRegistrationRow = Awaited<
+  ReturnType<typeof getTournamentRegistrations>
+>[number];
+
+/**
  * Check if alt is registered for tournament
  */
 export async function isRegisteredForTournament(
@@ -1187,6 +1198,17 @@ export async function getMatchDetails(supabase: TypedClient, matchId: number) {
 }
 
 /**
+ * Full match-detail shape returned by `getMatchDetails` — match row plus joined
+ * players (`alts`), round, phase, and tournament. Reads several Phase 2 Task 9
+ * revoke-set tables (`alts`, `tournament_phases`, `tournaments`), so client
+ * consumers (the match-report dialog) must read it through an auth-gated
+ * `/api/v1` route backed by `auth.supabase`, not the browser anon key.
+ */
+export type MatchDetails = NonNullable<
+  Awaited<ReturnType<typeof getMatchDetails>>
+>;
+
+/**
  * Get match details by tournament slug, round number, and table number.
  *
  * Looks up the tournament by slug, then finds the match through the
@@ -1830,6 +1852,16 @@ export async function getTournamentInvitationsSent(
       : null,
   }));
 }
+
+/**
+ * A single sent-invitation row with its (normalised) invited player — the shape
+ * returned by `getTournamentInvitationsSent`. Reads `tournament_invitations`
+ * (kept SELECTable) plus an `alts` join; served through the auth-gated staff
+ * registrations route after the Phase 2 Task 9 `alts` revoke.
+ */
+export type TournamentInvitationSentRow = Awaited<
+  ReturnType<typeof getTournamentInvitationsSent>
+>[number];
 
 /**
  * Get tournament invitations received by current user

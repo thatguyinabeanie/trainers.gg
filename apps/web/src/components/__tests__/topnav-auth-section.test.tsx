@@ -34,13 +34,13 @@ jest.mock("@/components/auth/auth-provider", () => ({
   getUserDisplayName: (...args: unknown[]) => mockGetUserDisplayName(...args),
 }));
 
-// --- @/lib/supabase ---
-const mockUseSupabaseQuery = jest.fn();
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: (...args: unknown[]) => mockUseSupabaseQuery(...args),
+// --- @trainers/supabase/react-query (useApiQuery for me/communities) ---
+const mockUseApiQuery = jest.fn();
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
 }));
 
-// --- @trainers/supabase ---
+// --- @trainers/supabase (type-only import for listMyCommunities shape) ---
 jest.mock("@trainers/supabase", () => ({
   listMyCommunities: jest.fn(),
 }));
@@ -92,10 +92,12 @@ function makeUser(overrides: Record<string, unknown> = {}) {
   };
 }
 
+type MockCommunity = { id: number; name: string; slug: string };
+
 function setupDefaultMocks({
   user = makeUser(),
   loading = false,
-  organizations = [] as { id: number; name: string; slug: string }[],
+  organizations = [] as MockCommunity[],
 } = {}) {
   mockUseAuth.mockReturnValue({
     user,
@@ -105,11 +107,12 @@ function setupDefaultMocks({
     refetchUser: jest.fn(),
   } as ReturnType<typeof useAuth>);
 
-  mockUseSupabaseQuery.mockReturnValue({
+  // useApiQuery is called once for ["me", "communities"] — return the org list
+  mockUseApiQuery.mockReturnValue({
     data: organizations,
     isLoading: false,
+    isError: false,
     error: null,
-    refetch: jest.fn(),
   });
 
   mockCheckSudoStatus.mockResolvedValue({
@@ -140,11 +143,12 @@ describe("TopNavAuthSection", () => {
         signOut: mockSignOut,
         refetchUser: jest.fn(),
       } as ReturnType<typeof useAuth>);
-      mockUseSupabaseQuery.mockReturnValue({
-        data: [],
+      // No user — useApiQuery is called with enabled:false, returns no data
+      mockUseApiQuery.mockReturnValue({
+        data: undefined,
         isLoading: false,
+        isError: false,
         error: null,
-        refetch: jest.fn(),
       });
       mockCheckSudoStatus.mockResolvedValue({
         isActive: false,
@@ -198,11 +202,11 @@ describe("TopNavAuthSection", () => {
         signOut: mockSignOut,
         refetchUser: jest.fn(),
       } as ReturnType<typeof useAuth>);
-      mockUseSupabaseQuery.mockReturnValue({
-        data: [],
+      mockUseApiQuery.mockReturnValue({
+        data: undefined,
         isLoading: true,
+        isError: false,
         error: null,
-        refetch: jest.fn(),
       });
       mockCheckSudoStatus.mockResolvedValue({
         isActive: false,
@@ -262,6 +266,26 @@ describe("TopNavAuthSection", () => {
       mockGetUserDisplayName.mockReturnValue("Ash Ketchum");
       render(<TopNavAuthSection />);
       expect(screen.getByText("Ash Ketchum")).toBeInTheDocument();
+    });
+
+    it("queries /api/v1/me/communities with enabled:true when user is present", () => {
+      render(<TopNavAuthSection />);
+      const [[queryKey, , options]] = mockUseApiQuery.mock.calls;
+      expect(queryKey).toEqual(["me", "communities"]);
+      expect(options).toMatchObject({ staleTime: 30_000, enabled: true });
+    });
+
+    it("queries with enabled:false when user is absent (no 401 flash)", () => {
+      mockUseAuth.mockReturnValue({
+        user: null,
+        loading: false,
+        isAuthenticated: false,
+        signOut: mockSignOut,
+        refetchUser: jest.fn(),
+      } as ReturnType<typeof useAuth>);
+      render(<TopNavAuthSection />);
+      const [[, , options]] = mockUseApiQuery.mock.calls;
+      expect(options).toMatchObject({ enabled: false });
     });
   });
 
