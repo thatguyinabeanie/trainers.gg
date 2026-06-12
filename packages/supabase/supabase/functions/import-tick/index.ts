@@ -4,8 +4,6 @@
 // Authenticated by comparing the Authorization bearer to the Vault-injected
 // service-role key — there is no end-user JWT here.
 
-import { timingSafeEqual } from "node:crypto";
-
 import { createClient } from "@supabase/supabase-js";
 import { recordImportRuns } from "@trainers/supabase/mutations";
 import {
@@ -16,11 +14,16 @@ import {
 
 /**
  * Compares two strings in constant time to prevent timing attacks.
- * Returns false if lengths differ; otherwise delegates to `timingSafeEqual`.
+ * Returns false if lengths differ; otherwise XOR-accumulates char codes.
+ * (node:crypto's timingSafeEqual is unavailable in the Supabase edge bundler.)
  */
 function safeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
-  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
