@@ -36,6 +36,7 @@ import {
   getTournamentRegistrations,
   getTournamentInvitationsSent,
   getUnpairedCheckedInPlayers,
+  type Enums,
 } from "@trainers/supabase";
 import { getTournamentAuditLog } from "@trainers/supabase";
 import { listCommunityTournaments } from "@trainers/supabase";
@@ -251,13 +252,75 @@ export async function getCachedTournamentInvitationsSent(
 // Audit log
 // =============================================================================
 
+type AuditAction = Enums<"audit_action">;
+
+/**
+ * Maps a UI category string to the set of `audit_action` enum values that
+ * belong to that category. Mirrors the `categoryActions` map in
+ * `activity-tab.tsx` — keep these in sync when adding new action types.
+ */
+const CATEGORY_ACTIONS: Record<string, AuditAction[]> = {
+  match: [
+    "match.score_submitted",
+    "match.score_agreed",
+    "match.score_disputed",
+    "match.result_reported",
+    "match.staff_requested",
+    "match.staff_resolved",
+  ],
+  judge: [
+    "judge.game_reset",
+    "judge.match_reset",
+    "judge.game_override",
+    "judge.match_override",
+  ],
+  tournament: [
+    "tournament.started",
+    "tournament.round_created",
+    "tournament.round_started",
+    "tournament.round_completed",
+    "tournament.phase_advanced",
+    "tournament.completed",
+  ],
+  admin: [
+    "admin.sudo_activated",
+    "admin.sudo_deactivated",
+    "admin.user_suspended",
+    "admin.user_unsuspended",
+    "admin.role_granted",
+    "admin.role_revoked",
+    "admin.impersonation_started",
+    "admin.impersonation_ended",
+    "admin.org_approved",
+    "admin.org_rejected",
+    "admin.org_suspended",
+    "admin.org_unsuspended",
+    "admin.org_ownership_transferred",
+    "admin.flag_created",
+    "admin.flag_toggled",
+    "admin.flag_deleted",
+    "admin.announcement_created",
+    "admin.announcement_updated",
+    "admin.announcement_deleted",
+  ],
+  team: ["team.submitted", "team.locked", "team.unlocked"],
+  registration: [
+    "registration.checked_in",
+    "registration.dropped",
+    "registration.late_checkin",
+  ],
+};
+
 /**
  * Cached fetch of the tournament audit log.
  *
  * @param tournamentId - Numeric tournament id.
  * @param limit - Maximum number of entries to return (default 50).
  * @param offset - Pagination offset (default 0).
- * @param categoryFilter - Optional audit action category filter.
+ * @param categoryFilter - Optional audit action category filter (e.g. "match",
+ *   "judge"). Pass `null` to fetch all actions. The category is mapped to the
+ *   corresponding `AuditAction` enum values before being forwarded to
+ *   `getTournamentAuditLog`.
  */
 export async function getCachedTournamentAuditLog(
   tournamentId: number,
@@ -271,13 +334,17 @@ export async function getCachedTournamentAuditLog(
 
   const supabase = createServiceRoleClient();
 
-  // The `actions` option filters by category name prefix — pass null to get all.
-  // Category filtering is done in the component after fetching.
+  // Translate the category string to the matching AuditAction enum values.
+  // Pass undefined when no filter so getTournamentAuditLog returns all actions.
+  const actions: AuditAction[] | undefined =
+    categoryFilter != null
+      ? (CATEGORY_ACTIONS[categoryFilter] ?? undefined)
+      : undefined;
+
   const result = await getTournamentAuditLog(supabase, tournamentId, {
     limit,
     offset,
-    // Pass undefined when no filter to get all actions.
-    actions: categoryFilter ? undefined : undefined,
+    actions,
   });
   return result ?? [];
 }

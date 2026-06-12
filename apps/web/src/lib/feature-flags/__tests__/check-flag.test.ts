@@ -101,6 +101,36 @@ describe("checkFeatureAccess", () => {
     );
     expect(await checkFeatureAccess("some_flag", "user-1")).toBe(false);
   });
+
+  it("returns false and does not throw when allowed_users is a non-array value", async () => {
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({ enabled: false, metadata: { allowed_users: "user-1" } })
+    );
+    expect(await checkFeatureAccess("some_flag", "user-1")).toBe(false);
+  });
+
+  it("returns false on DB error (fail closed)", async () => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    mockGetFeatureFlag.mockRejectedValue(new Error("DB error"));
+    expect(await checkFeatureAccess("some_flag", "user-1")).toBe(false);
+    jest.restoreAllMocks();
+  });
+
+  it("logs error to console.error on DB failure", async () => {
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    mockGetFeatureFlag.mockRejectedValue(new Error("DB error"));
+
+    await checkFeatureAccess("some_flag", "user-1");
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[feature-flags] Failed to check flag for user:",
+      { flagKey: "some_flag", userId: "user-1" },
+      expect.any(Error)
+    );
+    consoleSpy.mockRestore();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -132,6 +162,28 @@ describe("isCoachingPublic", () => {
       buildFlag({ enabled: false, metadata: { allowed_users: ["user-1"] } })
     );
     expect(await isCoachingPublic()).toBe(false);
+  });
+
+  it("returns false on DB error (fail closed)", async () => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    mockGetFeatureFlag.mockRejectedValue(new Error("DB error"));
+    expect(await isCoachingPublic()).toBe(false);
+    jest.restoreAllMocks();
+  });
+
+  it("logs error to console.error on DB failure", async () => {
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    mockGetFeatureFlag.mockRejectedValue(new Error("timeout"));
+
+    await isCoachingPublic();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[feature-flags] Failed to check coaching flag:",
+      expect.any(Error)
+    );
+    consoleSpy.mockRestore();
   });
 });
 
@@ -168,6 +220,20 @@ describe("checkCommunityFeatureAccess", () => {
         enabled: false,
         metadata: { allowed_communities: [99, 100] },
       })
+    );
+    expect(await checkCommunityFeatureAccess("discord", 42)).toBe(false);
+  });
+
+  it("returns false and does not throw when allowed_communities is a non-array value", async () => {
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({ enabled: false, metadata: { allowed_communities: 42 } })
+    );
+    expect(await checkCommunityFeatureAccess("discord", 42)).toBe(false);
+  });
+
+  it("returns false when metadata has no allowed_communities", async () => {
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({ enabled: false, metadata: {} })
     );
     expect(await checkCommunityFeatureAccess("discord", 42)).toBe(false);
   });

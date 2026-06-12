@@ -23,6 +23,8 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { z } from "@trainers/validators";
+
 import { resolveApiAuth } from "@/lib/api/auth";
 import {
   enforceRateLimit,
@@ -30,6 +32,9 @@ import {
   DEFAULT_WINDOW_MS,
 } from "@/lib/api/rate-limit";
 import { getCachedFormatUsage } from "@/lib/data/usage-cache";
+
+/** Allowed data source values. */
+const sourceSchema = z.enum(["all", "rk9", "limitless", "trainers.gg"]);
 
 /** Cache-Control for usage data: shorter s-maxage than tag-invalidated entity
  *  data because usage imports arrive throughout the day. Tag bust is the
@@ -79,9 +84,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const sourceResult = sourceSchema.safeParse(source);
+  if (!sourceResult.success) {
+    return NextResponse.json(
+      {
+        error:
+          "Invalid source — must be one of: all, rk9, limitless, trainers.gg",
+      },
+      { status: 400 }
+    );
+  }
+
   const rows = await getCachedFormatUsage({
     format,
-    source,
+    source: sourceResult.data,
     periodType: periodType as "day" | "week" | "month",
     minPlayers: 0,
   });

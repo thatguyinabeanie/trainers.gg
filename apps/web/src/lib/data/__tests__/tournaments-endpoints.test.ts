@@ -292,6 +292,105 @@ describe("getCachedTournamentAuditLog", () => {
     const result = await getCachedTournamentAuditLog(42, 50, 0, null);
     expect(result).toEqual([]);
   });
+
+  it("passes undefined actions when categoryFilter is null (fetch all)", async () => {
+    await getCachedTournamentAuditLog(42, 50, 0, null);
+    expect(mockGetTournamentAuditLog).toHaveBeenCalledWith(
+      SERVICE_ROLE_CLIENT,
+      42,
+      expect.objectContaining({ actions: undefined })
+    );
+  });
+
+  it("forwards match category actions when categoryFilter is 'match'", async () => {
+    await getCachedTournamentAuditLog(42, 50, 0, "match");
+    expect(mockGetTournamentAuditLog).toHaveBeenCalledWith(
+      SERVICE_ROLE_CLIENT,
+      42,
+      expect.objectContaining({
+        actions: expect.arrayContaining([
+          "match.score_submitted",
+          "match.score_agreed",
+          "match.score_disputed",
+          "match.result_reported",
+          "match.staff_requested",
+          "match.staff_resolved",
+        ]),
+      })
+    );
+  });
+
+  it("forwards judge category actions when categoryFilter is 'judge'", async () => {
+    await getCachedTournamentAuditLog(42, 25, 50, "judge");
+    expect(mockGetTournamentAuditLog).toHaveBeenCalledWith(
+      SERVICE_ROLE_CLIENT,
+      42,
+      expect.objectContaining({
+        limit: 25,
+        offset: 50,
+        actions: expect.arrayContaining([
+          "judge.game_reset",
+          "judge.match_reset",
+          "judge.game_override",
+          "judge.match_override",
+        ]),
+      })
+    );
+  });
+
+  it("forwards tournament category actions when categoryFilter is 'tournament'", async () => {
+    await getCachedTournamentAuditLog(42, 50, 0, "tournament");
+    expect(mockGetTournamentAuditLog).toHaveBeenCalledWith(
+      SERVICE_ROLE_CLIENT,
+      42,
+      expect.objectContaining({
+        actions: expect.arrayContaining([
+          "tournament.started",
+          "tournament.round_created",
+          "tournament.completed",
+        ]),
+      })
+    );
+  });
+
+  it("forwards team category actions when categoryFilter is 'team'", async () => {
+    await getCachedTournamentAuditLog(42, 50, 0, "team");
+    expect(mockGetTournamentAuditLog).toHaveBeenCalledWith(
+      SERVICE_ROLE_CLIENT,
+      42,
+      expect.objectContaining({
+        actions: expect.arrayContaining([
+          "team.submitted",
+          "team.locked",
+          "team.unlocked",
+        ]),
+      })
+    );
+  });
+
+  it("forwards registration category actions when categoryFilter is 'registration'", async () => {
+    await getCachedTournamentAuditLog(42, 50, 0, "registration");
+    expect(mockGetTournamentAuditLog).toHaveBeenCalledWith(
+      SERVICE_ROLE_CLIENT,
+      42,
+      expect.objectContaining({
+        actions: expect.arrayContaining([
+          "registration.checked_in",
+          "registration.dropped",
+          "registration.late_checkin",
+        ]),
+      })
+    );
+  });
+
+  it("passes undefined actions for an unrecognized categoryFilter", async () => {
+    await getCachedTournamentAuditLog(42, 50, 0, "unknown_category");
+    expect(mockGetTournamentAuditLog).toHaveBeenCalledWith(
+      SERVICE_ROLE_CLIENT,
+      42,
+      expect.objectContaining({ actions: undefined })
+    );
+  });
 });
 
 // =============================================================================

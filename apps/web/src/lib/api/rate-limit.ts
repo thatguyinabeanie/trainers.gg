@@ -107,21 +107,36 @@ export async function enforceRateLimit({
   // Append the current timestamp only when the request is allowed.
   const updatedTimestamps = allowed ? [...inWindow, now.toISOString()] : inWindow;
 
-  // Upsert the row (creates on first request, updates thereafter).
-  const { error: upsertError } = await supabase.from("rate_limits").upsert(
-    {
-      identifier,
-      request_timestamps: updatedTimestamps,
-      window_start: windowStart.toISOString(),
-      expires_at: expiresAt.toISOString(),
-    },
-    { onConflict: "identifier" }
-  );
+  // Determine whether the row actually changed:
+  //   - allowed path: a new timestamp was appended (always changed).
+  //   - denied path: only write if stale timestamps were pruned; skip the
+  //     upsert when nothing changed to avoid an unnecessary DB write on every
+  //     rejected request.
+  //
+  // TODO(rate-limit): this read-then-write sequence has a known race condition
+  // under concurrent requests for the same identifier. The correct fix is an
+  // atomic RPC (SELECT FOR UPDATE inside a transaction) so that concurrent
+  // callers serialize rather than clobber each other's timestamp arrays.
+  // Tracked for a future refactor — this guard is a best-effort improvement
+  // that does not make the race worse.
+  const rowChanged = allowed || inWindow.length < rawTimestamps.length;
 
-  if (upsertError) {
-    // On write failure, fail open. The rate limit state is still usable from
-    // the in-memory calculation done above.
-    console.error("[rate-limit] upsert error:", upsertError.message);
+  if (rowChanged) {
+    const { error: upsertError } = await supabase.from("rate_limits").upsert(
+      {
+        identifier,
+        request_timestamps: updatedTimestamps,
+        window_start: windowStart.toISOString(),
+        expires_at: expiresAt.toISOString(),
+      },
+      { onConflict: "identifier" }
+    );
+
+    if (upsertError) {
+      // On write failure, fail open. The rate limit state is still usable from
+      // the in-memory calculation done above.
+      console.error("[rate-limit] upsert error:", upsertError.message);
+    }
   }
 
   // resetAt: the moment the oldest in-window timestamp leaves the window.

@@ -22,6 +22,8 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { z } from "@trainers/validators";
+
 import { resolveApiAuth } from "@/lib/api/auth";
 import {
   enforceRateLimit,
@@ -29,6 +31,12 @@ import {
   DEFAULT_WINDOW_MS,
 } from "@/lib/api/rate-limit";
 import { getCachedSpeciesUsageDetail } from "@/lib/data/usage-cache";
+
+/** Allowed data source values. */
+const sourceSchema = z.enum(["all", "rk9", "limitless", "trainers.gg"]);
+
+/** Positive integer with a sensible upper bound for trailing-period queries. */
+const limitSchema = z.coerce.number().int().positive().max(52);
 
 const CACHE_CONTROL = "public, s-maxage=3600, stale-while-revalidate=300";
 
@@ -70,8 +78,7 @@ export async function GET(
   const format = searchParams.get("format");
   const source = searchParams.get("source") ?? "all";
   const periodType = searchParams.get("periodType") ?? "week";
-  const limitParam = searchParams.get("limit");
-  const limitNum = limitParam !== null ? Number(limitParam) : 1;
+  const limitParam = searchParams.get("limit") ?? "1";
 
   if (!format) {
     return NextResponse.json(
@@ -87,9 +94,21 @@ export async function GET(
     );
   }
 
-  if (Number.isNaN(limitNum) || limitNum < 1) {
+  const sourceResult = sourceSchema.safeParse(source);
+  if (!sourceResult.success) {
     return NextResponse.json(
-      { error: "Invalid limit — must be a positive integer" },
+      {
+        error:
+          "Invalid source — must be one of: all, rk9, limitless, trainers.gg",
+      },
+      { status: 400 }
+    );
+  }
+
+  const limitResult = limitSchema.safeParse(limitParam);
+  if (!limitResult.success) {
+    return NextResponse.json(
+      { error: "Invalid limit — must be a positive integer (max 52)" },
       { status: 400 }
     );
   }
@@ -97,9 +116,9 @@ export async function GET(
   const periods = await getCachedSpeciesUsageDetail({
     format,
     species,
-    source,
+    source: sourceResult.data,
     periodType: periodType as "day" | "week" | "month",
-    limit: limitNum,
+    limit: limitResult.data,
     minPlayers: 0,
   });
 

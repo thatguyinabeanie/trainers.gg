@@ -150,6 +150,32 @@ describe("param validation", () => {
       expect(response.status).toBe(200);
     }
   );
+
+  it("returns 400 for an invalid source", async () => {
+    const response = await GET(
+      makeRequest({
+        format: "gen9vgc2025regg",
+        source: "smogon",
+        periodType: "week",
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(await getJson(response)).toMatchObject({
+      error: expect.stringContaining("source"),
+    });
+    expect(mockGetCachedFormatUsage).not.toHaveBeenCalled();
+  });
+
+  it.each([["all"], ["rk9"], ["limitless"], ["trainers.gg"]])(
+    "accepts source=%s",
+    async (src) => {
+      const response = await GET(
+        makeRequest({ format: "gen9vgc2025regg", source: src, periodType: "week" })
+      );
+      expect(response.status).toBe(200);
+    }
+  );
 });
 
 // =============================================================================

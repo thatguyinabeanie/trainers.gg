@@ -128,7 +128,10 @@ describe("enforceRateLimit", () => {
       await enforceRateLimit(baseOptions);
 
       expect(mockUpsert).toHaveBeenCalledTimes(1);
-      const [upsertPayload] = mockUpsert.mock.calls[0] as [{ request_timestamps: string[] }, unknown];
+      const [upsertPayload] = mockUpsert.mock.calls[0] as [
+        { identifier: string; request_timestamps: string[] },
+        unknown,
+      ];
       // Should include the original in-window timestamp plus the newly appended one
       expect(upsertPayload.request_timestamps).toHaveLength(2);
       expect(upsertPayload.identifier).toBe("user-abc");
@@ -171,9 +174,32 @@ describe("enforceRateLimit", () => {
 
       await enforceRateLimit(baseOptions);
 
-      const [upsertPayload] = mockUpsert.mock.calls[0] as [{ request_timestamps: string[] }, unknown];
+      const [upsertPayload] = mockUpsert.mock.calls[0] as [
+        { identifier: string; request_timestamps: string[] },
+        unknown,
+      ];
       // Should still be 5 — no new timestamp appended on denial
       expect(upsertPayload.request_timestamps).toHaveLength(5);
+    });
+
+    it("does NOT upsert when denied and no timestamps were pruned", async () => {
+      // All 5 timestamps are within the window — nothing to prune, request denied.
+      // The row is unchanged, so no DB write should occur.
+      const now = Date.now();
+      const inWindowTs = Array.from({ length: 5 }, (_, i) =>
+        new Date(now - (10_000 + i * 1_000)).toISOString()
+      );
+
+      buildQueryChain(
+        { data: { request_timestamps: inWindowTs }, error: null },
+        { error: null }
+      );
+
+      const result = await enforceRateLimit(baseOptions);
+
+      expect(result.allowed).toBe(false);
+      // No upsert should have been called — nothing changed
+      expect(mockUpsert).not.toHaveBeenCalled();
     });
   });
 

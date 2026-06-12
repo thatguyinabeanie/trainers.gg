@@ -189,6 +189,46 @@ describe("param validation", () => {
 
     expect(response.status).toBe(400);
   });
+
+  it("returns 400 for a non-integer limit (float)", async () => {
+    const response = await GET(
+      makeRequest("Koraidon", { format: "gen9vgc2025regg", limit: "1.5" }),
+      makeParams("Koraidon")
+    );
+
+    expect(response.status).toBe(400);
+    expect(await getJson(response)).toMatchObject({
+      error: expect.stringContaining("limit"),
+    });
+    expect(mockGetCachedSpeciesUsageDetail).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for an invalid source", async () => {
+    const response = await GET(
+      makeRequest("Koraidon", { format: "gen9vgc2025regg", source: "smogon" }),
+      makeParams("Koraidon")
+    );
+
+    expect(response.status).toBe(400);
+    expect(await getJson(response)).toMatchObject({
+      error: expect.stringContaining("source"),
+    });
+    expect(mockGetCachedSpeciesUsageDetail).not.toHaveBeenCalled();
+  });
+
+  it.each([["all"], ["rk9"], ["limitless"], ["trainers.gg"]])(
+    "accepts source=%s",
+    async (src) => {
+      const response = await GET(
+        makeRequest("Koraidon", {
+          format: "gen9vgc2025regg",
+          source: src,
+        }),
+        makeParams("Koraidon")
+      );
+      expect(response.status).toBe(200);
+    }
+  );
 });
 
 // =============================================================================
