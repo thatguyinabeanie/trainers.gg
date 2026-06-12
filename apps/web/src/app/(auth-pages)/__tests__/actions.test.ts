@@ -95,9 +95,9 @@ describe("checkUsernameAvailability", () => {
     expect(mockFrom).not.toHaveBeenCalled();
   });
 
-  it("returns unavailable when the username exists in the users table", async () => {
+  it("returns unavailable when the username exists in the public_user_profiles view", async () => {
     mockFrom.mockImplementation((table: string) => {
-      if (table === "users") {
+      if (table === "public_user_profiles") {
         return {
           select: jest.fn().mockReturnValue({
             ilike: jest.fn().mockReturnValue({
@@ -121,12 +121,12 @@ describe("checkUsernameAvailability", () => {
     const result = await checkUsernameAvailability("taken_user");
 
     expect(result).toEqual({ available: false, error: null });
-    expect(mockFrom).toHaveBeenCalledWith("users");
+    expect(mockFrom).toHaveBeenCalledWith("public_user_profiles");
   });
 
   it("returns unavailable when the username exists in the alts table", async () => {
     mockFrom.mockImplementation((table: string) => {
-      if (table === "users") {
+      if (table === "public_user_profiles") {
         return {
           select: jest.fn().mockReturnValue({
             ilike: jest.fn().mockReturnValue({
@@ -150,7 +150,7 @@ describe("checkUsernameAvailability", () => {
     const result = await checkUsernameAvailability("taken_alt");
 
     expect(result).toEqual({ available: false, error: null });
-    expect(mockFrom).toHaveBeenCalledWith("users");
+    expect(mockFrom).toHaveBeenCalledWith("public_user_profiles");
     expect(mockFrom).toHaveBeenCalledWith("alts");
   });
 
@@ -166,7 +166,7 @@ describe("checkUsernameAvailability", () => {
     const result = await checkUsernameAvailability("fresh_name");
 
     expect(result).toEqual({ available: true, error: null });
-    expect(mockFrom).toHaveBeenCalledWith("users");
+    expect(mockFrom).toHaveBeenCalledWith("public_user_profiles");
     expect(mockFrom).toHaveBeenCalledWith("alts");
   });
 });

@@ -89,9 +89,11 @@ describe("grantCoachStatusAction", () => {
 
     const result = await grantCoachStatusAction(TARGET_USER_ID);
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to grant coach status: User not found",
+      error: "Failed to grant coach status",
     });
   });
 
@@ -180,9 +182,11 @@ describe("revokeCoachStatusAction", () => {
 
     const result = await revokeCoachStatusAction(TARGET_USER_ID);
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to revoke coach status: DB constraint failed",
+      error: "Failed to revoke coach status",
     });
   });
 
