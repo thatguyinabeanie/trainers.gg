@@ -241,6 +241,24 @@ const currentAlt = selectedAlt ?? alts[0] ?? null;
 
 Never pass unvalidated external input directly to database queries — a `NaN` or stale reference should produce a 404, not a 500.
 
+## API Route Cache-Control
+
+**Auth-gated `/api/v1` routes (any route calling `resolveApiAuth` that returns 401 for anon) must use `Cache-Control: private, no-store` — never `public` or `s-maxage`.**
+
+`public, s-maxage=…` lets a shared CDN store an authenticated 200 and replay it to anonymous callers — even when the data itself is non-sensitive. The auth gate is what matters, not data sensitivity. The server-side `'use cache'` + `cacheTag`/`cacheLife` layer handles caching; the HTTP header is a separate guard.
+
+```ts
+// ✅ Auth-gated route
+const CACHE_CONTROL = "private, no-store";
+
+// ❌ Auth-gated route — allows CDN to cache and serve to anon callers
+const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400";
+```
+
+**Also: never read PII (e.g., `users(email)`) inside a shared `'use cache'` scope.** Move such reads outside the cache boundary, use a request-scoped client (`createClient()`), and gate the route with authorization + `private, no-store`.
+
+See `reviewing-caching` skill for the full rationale, PII-in-cache-scope rule, and the route checklist.
+
 ## Environment Safety
 
 - Never expose server-only secrets to client code

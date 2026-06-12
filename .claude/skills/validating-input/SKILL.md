@@ -106,6 +106,37 @@ Skip profanity validation for:
 
 `auth.ts` (username), `user.ts` (displayName, bio, location), `alt.ts` (username, battleTag), `community.ts` (name, slug, description, social link labels), `organization-request.ts` (name, slug, description), `tournament.ts` (name, slug, description), `match.ts` (chat message content), `team.ts` (Pokemon nicknames via `validateTeamStructure()`, raw team text)
 
+## Validating Route and Query Params
+
+**Parse numeric route/query params with a Zod positive-integer schema, not `Number()` + `isNaN`/`isFinite`.** Loose runtime checks let floats (`"1.5"`), zero, and negatives through — `Number("1.5")` is a finite number, so `!isNaN` passes it.
+
+Use `z.coerce.number().int().positive()` (with `.max()` where bounded) and `.safeParse()` — return 400 on failure.
+
+```typescript
+// ✅ Strict — rejects floats, zero, negatives, non-numeric strings
+// Reference: apps/web/src/app/api/v1/tournaments/[id]/standings/route.ts
+const parsed = z.coerce.number().int().positive().safeParse(params.id);
+if (!parsed.success) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+const id = parsed.data;
+
+// ❌ Loose — accepts "1.5", "-1", and Infinity
+const id = Number(params.id);
+if (!Number.isFinite(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+```
+
+**Also validate string params against an explicit `z.enum([...])` allowlist before forwarding to queries or cache keys.** An unsanitized `source` or `format` param can poison cache keys or fan out to unintended DB branches.
+
+```typescript
+// ✅ Allowlisted enum — unknown values are rejected at the boundary
+const sourceSchema = z.enum(["rk9", "limitless", "trainers"]);
+const parsed = sourceSchema.safeParse(searchParams.get("source"));
+if (!parsed.success) return NextResponse.json({ error: "Invalid source" }, { status: 400 });
+
+// ❌ Forwarded unsanitized — arbitrary strings reach the query and cache key
+const source = searchParams.get("source") ?? "rk9";
+const data = await getStatsBySource(supabase, source); // source could be anything
+```
+
 ## Finding Things
 
 All schemas re-exported from `src/index.ts`. Named subpaths exist for some domains — see `package.json` exports field.
