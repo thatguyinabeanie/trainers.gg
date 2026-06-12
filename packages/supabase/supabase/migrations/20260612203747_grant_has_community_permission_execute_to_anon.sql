@@ -1,0 +1,54 @@
+-- =============================================================================
+-- Grant EXECUTE on has_community_permission to anon (CodeRabbit Major fix)
+-- =============================================================================
+--
+-- PROBLEM
+-- -------
+-- Migration 20260611020600_default_deny_function_execute.sql removed the blanket
+-- PUBLIC EXECUTE grant on all public functions and re-granted EXECUTE explicitly
+-- per RPC. It classified public.has_community_permission(bigint, text) as
+-- AUTH_ONLY (EXECUTE granted to `authenticated` only), on the assumption it is
+-- only ever called from authenticated contexts.
+--
+-- That assumption is wrong for one path: the tournament_team_sheets SELECT RLS
+-- policy "Team sheets visible per tournament state"
+-- (20260611020400_team_sheets_state_gated_rls.sql) is declared
+-- `FOR SELECT TO anon, authenticated`, and its predicate has an anon-reachable
+-- branch:
+--
+--   OR (
+--     t.status IN ('active', 'paused')
+--     AND t.open_team_sheets = false
+--     AND public.has_community_permission(t.community_id, 'tournament.manage')
+--   )
+--
+-- When an ANON spectator reads team sheets for an active/paused tournament with
+-- closed team sheets, Postgres evaluates this branch and CALLS
+-- has_community_permission. Because anon lacks EXECUTE, this raises a hard
+-- `permission denied for function has_community_permission` (SQLSTATE 42501)
+-- instead of cleanly returning zero rows. The intended behaviour is "anon sees
+-- nothing here" (zero rows), not an error.
+--
+-- WHY GRANTING TO anon IS SAFE
+-- ----------------------------
+-- has_community_permission is SECURITY DEFINER, STABLE, SET search_path = '',
+-- and side-effect-free (read-only EXISTS checks, returns boolean). It reads the
+-- caller via current_user_id := (SELECT auth.uid()), which is NULL for anon:
+--   * Owner check:  c.owner_user_id = NULL    -> never matches (NULL is unknown)
+--   * Role check:   ugr.user_id     = NULL    -> never matches
+-- so for anon it deterministically falls through to RETURN false. It leaks
+-- nothing and cannot error for an anonymous caller — it simply makes the
+-- closed-sheets staff branch evaluate to false, which is exactly the desired
+-- "anon sees nothing" outcome. Granting EXECUTE to anon is therefore the minimal
+-- correct fix and matches the RLS policy's intent (anon CAN read open/completed
+-- sheets; the function call is just part of the visibility predicate).
+--
+-- This is the `anon_or_auth_fns` treatment that 20260611020600 already applies to
+-- the other RPCs reachable on public pages — has_community_permission belongs in
+-- that category because an anon-facing RLS policy invokes it. We do NOT edit the
+-- committed 20260611020600 migration; we add this corrective grant instead.
+--
+-- GRANT is idempotent, so this migration is safe to replay.
+-- =============================================================================
+
+GRANT EXECUTE ON FUNCTION public.has_community_permission(bigint, text) TO anon;
