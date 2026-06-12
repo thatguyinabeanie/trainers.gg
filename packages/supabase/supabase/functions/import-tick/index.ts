@@ -11,20 +11,7 @@ import {
   runImportStage,
   runCompileStage,
 } from "@trainers/supabase/pipeline";
-
-/**
- * Compares two strings in constant time to prevent timing attacks.
- * Returns false if lengths differ; otherwise XOR-accumulates char codes.
- * (node:crypto's timingSafeEqual is unavailable in the Supabase edge bundler.)
- */
-function safeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return diff === 0;
-}
+import { safeCompare } from "../_shared/timing-safe.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

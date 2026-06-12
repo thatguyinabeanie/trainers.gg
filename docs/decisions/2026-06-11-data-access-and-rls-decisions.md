@@ -74,7 +74,7 @@ A code-layer review (complementary to the RLS audit above) surfaced findings the
 
 - **F-1 — `bluesky-auth` edge function trusts a public DID with no ownership proof (DEFERRED — mobile inactive).** Mobile sign-in sends only `{ did, handle }` strings; the function verifies via a public profile lookup with no proof of key ownership. Since DID+handle are public, anyone who knows a victim's DID could mint a Supabase session for that account. Web sign-in is not affected (it uses a full server-side code-exchange). Full details and fix options are documented in `apps/mobile/CLAUDE.md` — address when mobile work resumes.
 
-- **`atproto_sessions` RLS reconciliation (TODO — Phase 1).** The RLS audit plan notes that `atproto_sessions` policies should be reconciled with the init-plan `(SELECT auth.uid())` pattern and scoped verb grants; this was not explicitly covered in the code-layer review and should be included in the Phase 1 RLS-fix PR.
+- **`atproto_sessions` RLS reconciliation (RESOLVED).** Fixed by migration `20260128000000_fix_performance_advisors.sql`, which applied the init-plan `(SELECT auth.uid())` pattern to the `atproto_sessions` SELECT policy, enabling users to read only their own sessions.
 
 ## Follow-through checklist (required once architecture decisions land)
 

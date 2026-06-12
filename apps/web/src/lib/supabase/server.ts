@@ -1,10 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import type { Database } from "@trainers/supabase/types";
-import type { AtprotoDatabase, ServiceRoleClient } from "@trainers/supabase";
+import { type Database } from "@trainers/supabase/types";
+import { type AtprotoDatabase, type ServiceRoleClient } from "@trainers/supabase";
 import { COOKIE_DOMAIN } from "@trainers/supabase";
-import type { User } from "@supabase/supabase-js";
+import { type User } from "@supabase/supabase-js";
 
 /**
  * Create a Supabase client for static/ISR pages.

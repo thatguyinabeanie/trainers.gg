@@ -32,6 +32,8 @@ jest.mock("@/lib/api/rate-limit", () => ({
 
 import { NextRequest } from "next/server";
 
+import { publicStandingFactory } from "@trainers/test-utils/factories";
+
 import { GET } from "../route";
 
 // =============================================================================
@@ -39,8 +41,18 @@ import { GET } from "../route";
 // =============================================================================
 
 const STANDINGS = [
-  { id: 1, tournament_id: 42, rank: 1, alt: { id: 7, username: "ash" } },
-  { id: 2, tournament_id: 42, rank: 2, alt: { id: 8, username: "gary" } },
+  publicStandingFactory.build({
+    id: 1,
+    tournament_id: 42,
+    rank: 1,
+    alt: { id: 7, username: "ash", avatar_url: null },
+  }),
+  publicStandingFactory.build({
+    id: 2,
+    tournament_id: 42,
+    rank: 2,
+    alt: { id: 8, username: "gary", avatar_url: null },
+  }),
 ];
 
 const AUTHED_COOKIE = { mode: "cookie" as const, userId: "user-cookie-1", supabase: {} };

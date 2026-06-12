@@ -1,4 +1,4 @@
-import type { Database } from "@trainers/supabase/types";
+import { type Database } from "@trainers/supabase/types";
 import { useApiQuery, useApiMutation } from "./query-factory";
 import { apiCall } from "./client";
 
