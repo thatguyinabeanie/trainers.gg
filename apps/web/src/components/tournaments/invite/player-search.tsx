@@ -42,11 +42,14 @@ export function PlayerSearch({
   // Debounced query — only fires the API call 300ms after the user stops typing.
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
+  // Clear debouncedQuery immediately during render when searchQuery is emptied
+  // (render-time adjustment — avoids a synchronous setState inside an effect).
+  if (!searchQuery && debouncedQuery !== "") {
+    setDebouncedQuery("");
+  }
+
   useEffect(() => {
-    if (!searchQuery) {
-      setDebouncedQuery("");
-      return;
-    }
+    if (!searchQuery) return; // no setState here — clear handled above during render
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
     }, 300);

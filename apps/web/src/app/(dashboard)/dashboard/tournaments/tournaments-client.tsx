@@ -6,6 +6,7 @@ import { Trophy, ChevronDown, ChevronRight, Loader2, X } from "lucide-react";
 
 import { useApiQuery } from "@trainers/supabase/react-query";
 import type { getUserTournamentHistory } from "@trainers/supabase";
+import { type ActionResult } from "@trainers/validators";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -281,9 +282,7 @@ type TournamentHistoryItem = NonNullable<
 
 async function fetchTournamentHistory() {
   const res = await fetch("/api/v1/me/tournament-history");
-  return res.json() as Promise<
-    import("@trainers/validators").ActionResult<TournamentHistoryItem[]>
-  >;
+  return res.json() as Promise<ActionResult<TournamentHistoryItem[]>>;
 }
 
 // ---------------------------------------------------------------------------
