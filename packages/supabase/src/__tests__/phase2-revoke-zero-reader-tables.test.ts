@@ -63,7 +63,7 @@ describe("Phase 2 Task 9 — Step 1 revoke migration guardrail", () => {
     migrationSql = fs.readFileSync(MIGRATION_PATH, "utf8");
   });
 
-  it("contains a REVOKE SELECT FROM anon, authenticated for each of the 13 zero-reader tables", () => {
+  it("contains a REVOKE SELECT FROM anon, authenticated for each of the 11 zero-reader tables", () => {
     const missing: string[] = [];
 
     for (const table of ZERO_READER_TABLES) {
@@ -141,7 +141,7 @@ describe("Phase 2 Task 9 — Step 1 revoke migration guardrail", () => {
     }
   });
 
-  it("has a COMMENT ON TABLE for each of the 13 zero-reader tables", () => {
+  it("has a COMMENT ON TABLE for each of the 11 zero-reader tables", () => {
     const missing: string[] = [];
 
     for (const table of ZERO_READER_TABLES) {
@@ -191,7 +191,7 @@ describe("Phase 2 Task 9 — Step 1 revoke migration guardrail", () => {
     }
   });
 
-  it("covers exactly the 13 expected tables — no extra tables accidentally revoked", () => {
+  it("covers exactly the 11 expected tables — no extra tables accidentally revoked", () => {
     // Find all tables that appear in a REVOKE SELECT statement.
     const revokeSelectPattern =
       /REVOKE\s+SELECT\s+ON\s+public\.(\w+)\s+FROM\s+anon/gi;
