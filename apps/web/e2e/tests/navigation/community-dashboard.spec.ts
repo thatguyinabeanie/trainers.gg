@@ -78,9 +78,12 @@ test.describe("Community dashboard", () => {
         page.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
-      // .first(): the card title renders in both the desktop and mobile
-      // layouts (one hidden), so an unscoped match is a strict-mode violation.
-      await expect(page.getByText("Upcoming Tournaments").first()).toBeVisible({
+      // filter({ visible: true }) scopes to the rendered layout — the card
+      // title appears in both the desktop and mobile renders (one hidden), so
+      // an unscoped match is a strict-mode violation.
+      await expect(
+        page.getByText("Upcoming Tournaments").filter({ visible: true })
+      ).toBeVisible({
         timeout: 10000,
       });
     });
@@ -106,8 +109,12 @@ test.describe("Community dashboard", () => {
         page.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
-      // .first(): renders in both desktop + mobile layouts (strict-mode safe).
-      await expect(page.getByText(/Top Regulars/i).first()).toBeVisible({
+      // filter({ visible: true }) scopes to the rendered layout — renders in
+      // both desktop + mobile layouts (one hidden), so an unscoped match is a
+      // strict-mode violation.
+      await expect(
+        page.getByText(/Top Regulars/i).filter({ visible: true })
+      ).toBeVisible({
         timeout: 10000,
       });
     });

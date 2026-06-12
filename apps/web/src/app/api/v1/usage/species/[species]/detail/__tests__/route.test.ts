@@ -301,8 +301,6 @@ describe("success", () => {
       makeParams("Koraidon")
     );
 
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=3600, stale-while-revalidate=300"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 });

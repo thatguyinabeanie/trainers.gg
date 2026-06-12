@@ -63,7 +63,7 @@ test.describe("Discord user settings", () => {
     await page.goto("/dashboard/settings/notifications");
     await page.waitForLoadState("domcontentloaded");
 
-    const discordSection = page.locator("#discord-dms");
+    const discordSection = page.locator("#discord-dms:visible");
     await expect(discordSection).toBeVisible({ timeout: 10000 });
 
     // Should show the "Link Discord" prompt link, not a connected handle
@@ -86,7 +86,7 @@ test.describe("Discord user settings", () => {
     await page.goto("/dashboard/settings/notifications");
     await page.waitForLoadState("domcontentloaded");
 
-    const discordSection = page.locator("#discord-dms");
+    const discordSection = page.locator("#discord-dms:visible");
     await expect(discordSection).toBeVisible({ timeout: 10000 });
 
     // The master switch carries id="discord-dm-master"
@@ -103,7 +103,7 @@ test.describe("Discord user settings", () => {
     await page.goto("/dashboard/settings/notifications");
     await page.waitForLoadState("domcontentloaded");
 
-    const discordSection = page.locator("#discord-dms");
+    const discordSection = page.locator("#discord-dms:visible");
     await expect(discordSection).toBeVisible({ timeout: 10000 });
 
     // The three category group headings should all be present in the section

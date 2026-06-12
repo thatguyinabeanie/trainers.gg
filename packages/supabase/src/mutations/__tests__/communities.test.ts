@@ -242,6 +242,58 @@ describe("Community Mutations", () => {
       );
     });
 
+    it.each([
+      {
+        desc: "non-Supabase host",
+        logoUrl: "https://test.org/logo.png",
+        expectedError: "Logo URL must be a Supabase storage URL",
+      },
+      {
+        desc: "http (not https)",
+        logoUrl: "http://abcdefghijklmnop.supabase.co/storage/v1/object/public/logos/logo.png",
+        expectedError: "Logo URL must use https",
+      },
+      {
+        desc: "malformed URL",
+        logoUrl: "not-a-url",
+        expectedError: "Logo URL is not a valid URL",
+      },
+    ])(
+      "should reject invalid logoUrl ($desc)",
+      async ({ logoUrl, expectedError }) => {
+        const fromSpy = jest.spyOn(mockClient, "from");
+
+        // Slug check passes
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: null, error: null }),
+        } as unknown as MockQueryBuilder);
+
+        // pds_handles check passes
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+        } as unknown as MockQueryBuilder);
+
+        await expect(
+          createCommunity(mockClient, { ...communityData, logoUrl })
+        ).rejects.toThrow(expectedError);
+      }
+    );
+
+    it("should pass through undefined logoUrl without error", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      const { insertMock } = mockSuccessfulCreate(fromSpy);
+
+      await createCommunity(mockClient, { ...communityData, logoUrl: undefined });
+
+      expect(insertMock).toHaveBeenCalledWith(
+        expect.objectContaining({ logo_url: undefined })
+      );
+    });
+
     it("should throw error if not authenticated", async () => {
       (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
         data: { user: null },
@@ -470,6 +522,45 @@ describe("Community Mutations", () => {
         ).rejects.toThrow("Invalid social links");
       }
     );
+
+    it.each([
+      {
+        desc: "non-Supabase host",
+        logoUrl: "https://evil.example.com/logo.png",
+        expectedError: "Logo URL must be a Supabase storage URL",
+      },
+      {
+        desc: "http (not https)",
+        logoUrl: "http://abcdefghijklmnop.supabase.co/storage/v1/object/public/logos/logo.png",
+        expectedError: "Logo URL must use https",
+      },
+      {
+        desc: "malformed URL",
+        logoUrl: "not-a-url",
+        expectedError: "Logo URL is not a valid URL",
+      },
+    ])(
+      "should reject invalid logoUrl ($desc)",
+      async ({ logoUrl, expectedError }) => {
+        const fromSpy = jest.spyOn(mockClient, "from");
+        mockOwnershipCheck(fromSpy, mockUser.id);
+
+        await expect(
+          updateCommunity(mockClient, communityId, { logoUrl })
+        ).rejects.toThrow(expectedError);
+      }
+    );
+
+    it("should allow null logoUrl (clears logo)", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      const { updateMock } = mockSuccessfulUpdate(fromSpy);
+
+      await updateCommunity(mockClient, communityId, { logoUrl: null });
+
+      expect(updateMock).toHaveBeenCalledWith(
+        expect.objectContaining({ logo_url: null })
+      );
+    });
 
     it("should throw error if not authenticated", async () => {
       (mockClient.auth.getUser as jest.Mock).mockResolvedValue({

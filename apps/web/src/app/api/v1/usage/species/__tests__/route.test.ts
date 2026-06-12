@@ -226,8 +226,6 @@ describe("success", () => {
       makeRequest({ format: "gen9vgc2025regg", source: "all", periodType: "week" })
     );
 
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=3600, stale-while-revalidate=300"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 });

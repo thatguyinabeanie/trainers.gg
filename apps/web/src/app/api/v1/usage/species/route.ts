@@ -13,12 +13,12 @@
  *
  * AUTH: Bearer (mobile) or cookie (web) — anonymous → 401.
  *
- * CACHE-CONTROL: long shared-CDN TTL, tag-busted on import completion.
- *   `public, s-maxage=3600, stale-while-revalidate=300`
- *   Usage stats change at most once per import cycle (not per user action),
- *   so a 1-hour s-maxage with 5-min SWR is appropriate — shorter than
- *   tournaments (which use 1y) because imports arrive throughout the day.
- *   Tag invalidation is the primary freshness mechanism.
+ * CACHE-CONTROL: `private, no-store`
+ *   This route is auth-gated. A `public` CDN cache could serve an authed 200
+ *   response to an anonymous caller, undermining the no-anonymous-Data-API
+ *   policy. Server-side `'use cache'` on the underlying fetcher (usage-cache.ts)
+ *   is the real cache layer; this header keeps CDN/proxies from storing the
+ *   response at all.
  */
 
 import { NextResponse, type NextRequest } from "next/server";
@@ -36,10 +36,13 @@ import { getCachedFormatUsage } from "@/lib/data/usage-cache";
 /** Allowed data source values. */
 const sourceSchema = z.enum(["all", "rk9", "limitless", "trainers.gg"]);
 
-/** Cache-Control for usage data: shorter s-maxage than tag-invalidated entity
- *  data because usage imports arrive throughout the day. Tag bust is the
- *  primary freshness mechanism. */
-const CACHE_CONTROL = "public, s-maxage=3600, stale-while-revalidate=300";
+/**
+ * Cache-Control for auth-gated routes: `private, no-store` to prevent CDN/
+ * proxy nodes from storing an authed 200 and serving it to anonymous callers.
+ * Server-side `'use cache'` on the underlying fetcher (usage-cache.ts) is the
+ * real cache layer.
+ */
+const CACHE_CONTROL = "private, no-store";
 
 export async function GET(request: NextRequest) {
   // Auth required — no anonymous open Data API.
