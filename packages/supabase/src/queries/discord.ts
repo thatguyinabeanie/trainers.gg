@@ -1,8 +1,10 @@
 import { type SupabaseClient } from "@supabase/supabase-js";
 
+import { escapeLike } from "@trainers/utils";
+
 import type { TypedClient } from "../client";
 import type { Enums, Tables } from "../types";
-import { escapeLike } from "@trainers/utils";
+import { fetchInChunks } from "./players";
 
 // =============================================================================
 // auth.identities typed accessor
@@ -585,17 +587,19 @@ export async function getDiscordIdsByUserIds(
 ): Promise<string[]> {
   if (userIds.length === 0) return [];
 
-  const { data, error } = await authIdentities(supabase)
-    .select("identity_id")
-    .eq("provider", "discord")
-    .in("user_id", userIds);
+  // auth.identities can span large communities (hundreds of members). Chunking
+  // the user_id IN-list keeps each PostgREST request well under the URI length
+  // limit; a single oversized list returns "URI too long" which, if unchecked,
+  // silently drops every Discord identity — breaking role-sync for the whole
+  // community. fetchInChunks throws on any chunk error so failures are visible.
+  const rows = await fetchInChunks(userIds, (idChunk) =>
+    authIdentities(supabase)
+      .select("identity_id")
+      .eq("provider", "discord")
+      .in("user_id", idChunk)
+  );
 
-  if (error)
-    throw new Error(
-      `Failed to resolve user IDs to Discord IDs: ${error.message}`
-    );
-
-  return (data ?? []).map((r) => r.identity_id);
+  return rows.map((r) => r.identity_id);
 }
 
 /**

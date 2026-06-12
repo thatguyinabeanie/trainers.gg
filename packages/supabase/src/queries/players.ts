@@ -113,7 +113,7 @@ function chunk<T>(items: T[], size: number): T[][] {
  * partial/empty set (the bug this guards against stripped every altId and all
  * coach badges from the directory).
  */
-async function fetchInChunks<Id extends string | number, Row>(
+export async function fetchInChunks<Id extends string | number, Row>(
   ids: Id[],
   fetcher: (
     idChunk: Id[]
