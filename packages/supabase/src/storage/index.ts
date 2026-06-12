@@ -2,7 +2,15 @@ import type { TypedClient } from "../client";
 
 /** Bucket name constants for type-safe storage access */
 export const STORAGE_BUCKETS = {
+  /** Public bucket — objects served without auth tokens (avatars, logos, banners). */
   UPLOADS: "uploads",
+  /**
+   * PRIVATE bucket for tournament rental-team photos (RLS audit #3).
+   * Objects are NOT publicly reachable — reads must go through a signed URL
+   * (see `createSignedUrl`). Storage RLS restricts read to the owner + staff
+   * with tournament.manage on the relevant community.
+   */
+  RENTAL_PHOTOS: "rental-photos",
 } as const;
 
 /**
@@ -46,6 +54,31 @@ export async function uploadFile(
   });
   if (error) throw error;
   return getPublicUrl(supabase, bucket, path);
+}
+
+/**
+ * Generate a short-lived signed URL for a file in a PRIVATE storage bucket.
+ *
+ * Use this for objects that must NOT be publicly reachable (e.g. rental-team
+ * photos in the `rental-photos` bucket). The caller must use a server-side
+ * client whose RLS context (owner or staff) is allowed to read the object —
+ * Supabase only issues a signed URL when the read policy passes.
+ *
+ * @param ttlSeconds How long the signed URL stays valid. Defaults to 1 hour.
+ * @returns The signed URL, or null when the object is missing or the caller
+ *          lacks read access (RLS denied).
+ */
+export async function createSignedUrl(
+  supabase: TypedClient,
+  bucket: string,
+  path: string,
+  ttlSeconds = 3600
+): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(path, ttlSeconds);
+  if (error || !data) return null;
+  return data.signedUrl;
 }
 
 /**

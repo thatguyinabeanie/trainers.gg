@@ -2618,6 +2618,13 @@ export type Database = {
             foreignKeyName: "tournament_invitations_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
+            referencedRelation: "public_tournament_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_invitations_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
             referencedRelation: "tournament_registrations"
             referencedColumns: ["id"]
           },
@@ -3108,6 +3115,13 @@ export type Database = {
             foreignKeyName: "tournament_registration_pokemon_tournament_registration_id_fkey"
             columns: ["tournament_registration_id"]
             isOneToOne: false
+            referencedRelation: "public_tournament_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_registration_pokemon_tournament_registration_id_fkey"
+            columns: ["tournament_registration_id"]
+            isOneToOne: false
             referencedRelation: "tournament_registrations"
             referencedColumns: ["id"]
           },
@@ -3408,6 +3422,13 @@ export type Database = {
             columns: ["alt_id"]
             isOneToOne: false
             referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_team_sheets_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "public_tournament_registrations"
             referencedColumns: ["id"]
           },
           {
@@ -3917,6 +3938,73 @@ export type Database = {
       }
     }
     Views: {
+      public_tournament_registrations: {
+        Row: {
+          alt_id: number | null
+          checked_in_at: string | null
+          display_name_option: string | null
+          id: number | null
+          in_game_name: string | null
+          registered_at: string | null
+          show_country_flag: boolean | null
+          status: Database["public"]["Enums"]["registration_status"] | null
+          team_id: number | null
+          team_name: string | null
+          team_submitted_at: string | null
+          tournament_id: number | null
+        }
+        Insert: {
+          alt_id?: number | null
+          checked_in_at?: string | null
+          display_name_option?: string | null
+          id?: number | null
+          in_game_name?: string | null
+          registered_at?: string | null
+          show_country_flag?: boolean | null
+          status?: Database["public"]["Enums"]["registration_status"] | null
+          team_id?: number | null
+          team_name?: string | null
+          team_submitted_at?: string | null
+          tournament_id?: number | null
+        }
+        Update: {
+          alt_id?: number | null
+          checked_in_at?: string | null
+          display_name_option?: string | null
+          id?: number | null
+          in_game_name?: string | null
+          registered_at?: string | null
+          show_country_flag?: boolean | null
+          status?: Database["public"]["Enums"]["registration_status"] | null
+          team_id?: number | null
+          team_name?: string | null
+          team_submitted_at?: string | null
+          tournament_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_registrations_alt_id_fkey"
+            columns: ["alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_registrations_team_fk"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_registrations_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_user_profiles: {
         Row: {
           bio: string | null

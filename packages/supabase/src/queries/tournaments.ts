@@ -335,10 +335,13 @@ export async function getTournamentByOrgAndSlug(
 
   if (error || !tournament) return null;
 
-  // Get additional details
+  // Get additional details.
+  // Registrations read the public_tournament_registrations VIEW (RLS audit #3):
+  // the base table SELECT is now locked to own + staff, but this public path
+  // (anon static client) only needs the safe, non-staff-internal columns.
   const [registrations, phases, currentPhase] = await Promise.all([
     supabase
-      .from("tournament_registrations")
+      .from("public_tournament_registrations")
       .select("*")
       .eq("tournament_id", tournament.id),
     supabase
@@ -404,10 +407,13 @@ export async function getTournamentBySlug(
 
   if (error || !tournament) return null;
 
-  // Get additional details including tournament rounds for schedule calculation
+  // Get additional details including tournament rounds for schedule calculation.
+  // Registrations read the public_tournament_registrations VIEW (RLS audit #3):
+  // the base table SELECT is now locked to own + staff, but this public path
+  // (anon static client) only needs the safe, non-staff-internal columns.
   const [registrations, phases, currentPhase] = await Promise.all([
     supabase
-      .from("tournament_registrations")
+      .from("public_tournament_registrations")
       .select("*")
       .eq("tournament_id", tournament.id),
     supabase

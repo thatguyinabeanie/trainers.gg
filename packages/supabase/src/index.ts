@@ -61,6 +61,7 @@ export {
   STORAGE_BUCKETS,
   getUploadPath,
   getPublicUrl,
+  createSignedUrl,
   uploadFile,
   deleteFile,
   extractPathFromUrl,

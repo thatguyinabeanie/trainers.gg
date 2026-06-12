@@ -94,25 +94,59 @@ async function getCachedTournamentTeams(tournamentId: number, slug: string) {
   cacheLife("max");
 
   const supabase = createStaticClient();
-  const { data } = await supabase
-    .from("tournament_registrations")
-    .select(
-      `
-          alt_id,
-          alts:alts!tournament_registrations_alt_id_fkey(username, display_name),
-          team:teams(
-            id, name,
-            team_pokemon(
-              team_position,
-              pokemon:pokemon(species, nickname, held_item, ability, tera_type)
-            )
-          )
-        `
-    )
+
+  // Two-step lookup (RLS audit #3): the base tournament_registrations SELECT is
+  // locked to own + staff, so the public path reads the safe-column VIEW first,
+  // then fetches teams/pokemon separately. We avoid relying on PostgREST view
+  // embedding — teams are resolved by team_id in a second query (the teams /
+  // team_pokemon tables already carry their own public open-team-sheet RLS).
+  const { data: registrations } = await supabase
+    .from("public_tournament_registrations")
+    .select("alt_id, team_id, registered_at")
     .eq("tournament_id", tournamentId)
     .not("team_id", "is", null)
     .order("registered_at");
-  return data ?? [];
+
+  if (!registrations || registrations.length === 0) return [];
+
+  const altIds = registrations
+    .map((r) => r.alt_id)
+    .filter((id): id is number => id != null);
+  const teamIds = registrations
+    .map((r) => r.team_id)
+    .filter((id): id is number => id != null);
+
+  const [altsResult, teamsResult] = await Promise.all([
+    supabase
+      .from("alts")
+      .select("id, username")
+      .in("id", altIds),
+    supabase
+      .from("teams")
+      .select(
+        `
+          id, name,
+          team_pokemon(
+            team_position,
+            pokemon:pokemon(species, nickname, held_item, ability, tera_type)
+          )
+        `
+      )
+      .in("id", teamIds),
+  ]);
+
+  const altsById = new Map(
+    (altsResult.data ?? []).map((alt) => [alt.id, alt])
+  );
+  const teamsById = new Map(
+    (teamsResult.data ?? []).map((team) => [team.id, team])
+  );
+
+  return registrations.map((r) => ({
+    alt_id: r.alt_id,
+    alts: r.alt_id != null ? (altsById.get(r.alt_id) ?? null) : null,
+    team: r.team_id != null ? (teamsById.get(r.team_id) ?? null) : null,
+  }));
 }
 
 // ============================================================================
