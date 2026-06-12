@@ -43,6 +43,7 @@ describe("Organization Request Mutations", () => {
       name: "Pallet Town League",
       slug: "pallet-town-league",
       description: "A competitive league",
+      discord_invite_url: "https://discord.gg/pallettown",
     };
 
     function mockSuccessfulSubmit(fromSpy: jest.SpyInstance) {

@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import type { Database } from "@trainers/supabase/types";
-import type { AtprotoDatabase } from "@trainers/supabase";
+import type { AtprotoDatabase, ServiceRoleClient } from "@trainers/supabase";
 import { COOKIE_DOMAIN } from "@trainers/supabase";
 import type { User } from "@supabase/supabase-js";
 
@@ -104,8 +104,13 @@ export async function getUserId(): Promise<string | null> {
  * Create a Supabase client with service role privileges.
  * USE WITH CAUTION: This bypasses RLS policies.
  * Only use for system operations like OAuth state management.
+ *
+ * Returns the branded `ServiceRoleClient` type so that service-role-only
+ * mutations (e.g. `grantCoachStatus`, `writeAuditLog`) accept this client
+ * at compile time. The single `as ServiceRoleClient` cast is the trusted
+ * assertion boundary — all other code receives the brand via parameters.
  */
-export function createServiceRoleClient() {
+export function createServiceRoleClient(): ServiceRoleClient {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -120,7 +125,7 @@ export function createServiceRoleClient() {
       autoRefreshToken: false,
       persistSession: false,
     },
-  });
+  }) as ServiceRoleClient;
 }
 
 /**

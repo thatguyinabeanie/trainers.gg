@@ -2,7 +2,7 @@
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { requireAdminWithSudo } from "./require-admin";
-import type { TypedClient } from "@trainers/supabase";
+import type { ServiceRoleClient } from "@trainers/supabase";
 
 // Shared return type for data-less admin server actions
 export type ActionResult = { success: boolean; error?: string };
@@ -25,7 +25,7 @@ export type ActionResult = { success: boolean; error?: string };
  * invalid input is rejected before the admin/sudo check runs.
  */
 export async function withAdminAction<R extends { success: boolean }>(
-  action: (supabase: TypedClient, adminUserId: string) => Promise<R>,
+  action: (supabase: ServiceRoleClient, adminUserId: string) => Promise<R>,
   errorMessage = "An unexpected error occurred"
 ): Promise<R | { success: false; error: string }> {
   try {
