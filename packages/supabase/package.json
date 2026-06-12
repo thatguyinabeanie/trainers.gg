@@ -51,6 +51,7 @@
   },
   "peerDependencies": {
     "@supabase/ssr": "catalog:supabase",
+    "@tanstack/react-query": "catalog:tanstack",
     "expo-secure-store": "catalog:expo",
     "next": "catalog:",
     "react": "catalog:react",
@@ -58,6 +59,9 @@
   },
   "peerDependenciesMeta": {
     "@supabase/ssr": {
+      "optional": true
+    },
+    "@tanstack/react-query": {
       "optional": true
     },
     "expo-secure-store": {
@@ -76,6 +80,7 @@
   "devDependencies": {
     "@faker-js/faker": "catalog:",
     "@jest/globals": "catalog:testing",
+    "@tanstack/react-query": "catalog:tanstack",
     "@testing-library/react": "catalog:testing",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",

@@ -18,9 +18,13 @@ type Game = Database["public"]["Tables"]["match_games"]["Row"];
  * ```
  */
 export function useMatch(id: string) {
-  return useApiQuery<Match>(["match", id], `api-matches/${id}`, {
-    staleTime: 30_000, // 30 seconds - matches update frequently during tournaments
-  });
+  return useApiQuery<Match>(
+    ["match", id],
+    () => apiCall<Match>(`api-matches/${id}`),
+    {
+      staleTime: 30_000, // 30 seconds - matches update frequently during tournaments
+    }
+  );
 }
 
 /**

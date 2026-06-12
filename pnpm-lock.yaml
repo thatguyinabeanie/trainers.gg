@@ -928,6 +928,9 @@ importers:
       '@jest/globals':
         specifier: catalog:testing
         version: 29.7.0
+      '@tanstack/react-query':
+        specifier: catalog:tanstack
+        version: 5.100.9(react@19.2.5)
       '@testing-library/react':
         specifier: catalog:testing
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)

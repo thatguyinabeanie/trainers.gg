@@ -81,3 +81,7 @@ export type {
   UsersTableWithAtproto,
   PdsAccountStatus,
 } from "./types-atproto";
+
+// API Query Factory — shared TanStack Query wrappers for ActionResult<T> endpoints
+// (requires @tanstack/react-query to be installed by the consumer)
+export { useApiQuery, useApiMutation } from "./hooks/query-factory";

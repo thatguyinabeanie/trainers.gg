@@ -17,9 +17,13 @@ type Community = Database["public"]["Tables"]["communities"]["Row"];
  * ```
  */
 export function useCommunities() {
-  return useApiQuery<Community[]>(["communities"], "api-organizations", {
-    staleTime: 300_000, // 5 minutes - communities change infrequently
-  });
+  return useApiQuery<Community[]>(
+    ["communities"],
+    () => apiCall<Community[]>("api-organizations"),
+    {
+      staleTime: 300_000, // 5 minutes - communities change infrequently
+    }
+  );
 }
 
 /**
@@ -33,7 +37,7 @@ export function useCommunities() {
 export function useCommunity(slug: string) {
   return useApiQuery<Community>(
     ["community", slug],
-    `api-organizations/${slug}`,
+    () => apiCall<Community>(`api-organizations/${slug}`),
     {
       staleTime: 300_000, // 5 minutes
     }
