@@ -416,6 +416,14 @@ Reviewers: `migration-reviewer` + `security-reviewer` on both revoke migrations 
 `code-reviewer` on every wave; `ui-verifier` on the SSR-converted components (A-S1, A-S2) and any
 dashboard/admin page whose render path changed.
 
+> **Execution regrouping (2026-06-12 parallelism pass):** the step tables below define **WHAT** each task
+> does; **§8 defines WHEN**. Tasks from different steps run concurrently whenever their file sets are
+> disjoint and no data dependency exists — the original 8 sequential waves collapse to **4 execution
+> waves** (see §8). The Model column in each table is binding: **opus** for the complex conversions
+> (`T3-gate`, `T3d`, `T3e`, `T3o`), **haiku** for run-and-report work (`T3q`, the Wave-4 sweeps,
+> `background-checker`/`ci-monitor`, between-wave scoped typecheck/lint), **sonnet** for everything else.
+> Pass `model` explicitly on every dispatch.
+
 ### Step 1 — Revoke the 13 zero-reader tables (Wave 1)
 
 | Task | Files (disjoint allowlist)                                                                                     | Tables                   | What changes                                                                 | Tests                                                                 | Model  | Reviewers                          |
@@ -451,7 +459,7 @@ service-role rationale (§0.2). Tasks touch **disjoint files** — they run in o
 
 | Task | Files (allowlist)                                                                                                                                                                                                       | What changes                                                                                                                                                                 | Tests                                                                                                                       | Model  | Reviewers                     |
 | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------ | ----------------------------- |
-| T3-gate | CREATE `apps/web/src/app/api/v1/me/profile/route.ts` + `__tests__/route.test.ts`; MODIFY `apps/web/src/hooks/use-current-user.ts`; MODIFY `apps/web/src/hooks/index.ts` (if the barrel needs no change, leave it) | Build `/api/v1/me/profile` (per-user, `auth.supabase`, no cache, `private, no-store`). Rewrite `useCurrentUser` from `useSupabaseQuery(getCurrentUser)` → `useApiQuery(["me","profile"], () => fetch("/api/v1/me/profile").then(r => r.json()), { staleTime: 60_000 })`. | Route test (404 n/a — no id; 401 anon; 429; 200 cookie; 200 bearer; `private` cache header). Component test: `useCurrentUser` returns user/alt from a mocked `useApiQuery`; loading + error states. | sonnet | security-reviewer, code-reviewer |
+| T3-gate | CREATE `apps/web/src/app/api/v1/me/profile/route.ts` + `__tests__/route.test.ts`; MODIFY `apps/web/src/hooks/use-current-user.ts`; MODIFY `apps/web/src/hooks/index.ts` (if the barrel needs no change, leave it) | Build `/api/v1/me/profile` (per-user, `auth.supabase`, no cache, `private, no-store`). Rewrite `useCurrentUser` from `useSupabaseQuery(getCurrentUser)` → `useApiQuery(["me","profile"], () => fetch("/api/v1/me/profile").then(r => r.json()), { staleTime: 60_000 })`. | Route test (404 n/a — no id; 401 anon; 429; 200 cookie; 200 bearer; `private` cache header). Component test: `useCurrentUser` returns user/alt from a mocked `useApiQuery`; loading + error states. | **opus** (app-wide hook rewiring — highest blast radius) | security-reviewer, code-reviewer |
 
 > Why a gate: many auth-gated components (`topnav-auth-section`, `overview-client`, the manage clients)
 > depend on `useCurrentUser`. Migrating the hook first means the dependent components can be migrated in
@@ -464,8 +472,8 @@ service-role rationale (§0.2). Tasks touch **disjoint files** — they run in o
 | T3a  | CREATE `apps/web/src/app/api/v1/players/search/route.ts` + test; CREATE `apps/web/src/lib/data/players-search-endpoint.ts` (`'use cache'`, service-role)                                                          | Public player search route + cached fetcher (reuse `searchPlayers`-style query in `queries/players.ts`)                | route test (locked shape) + fetcher test                                         | sonnet | code-reviewer    |
 | T3b  | CREATE `apps/web/src/app/api/v1/tournaments/[id]/pairings/route.ts` + test; CREATE `apps/web/src/lib/data/tournament-pairings-endpoint.ts` (new dedicated file, `'use cache'`, service-role) | Public pairings route + cached fetcher                                                                                  | route test + fetcher test                                                        | sonnet | code-reviewer    |
 | T3c  | CREATE `apps/web/src/app/api/v1/tournaments/[id]/player-stats/route.ts` + test; CREATE its `'use cache'` fetcher in a NEW file `apps/web/src/lib/data/tournament-player-stats-endpoint.ts`                          | Public player-stats route + cached fetcher                                                                              | route test + fetcher test                                                        | sonnet | code-reviewer    |
-| T3d  | MODIFY `apps/web/src/components/tournament/public-pairings.tsx` (A-S1): convert to SSR — split into a server wrapper that fetches via service-role and a presentational client child fed by props                  | anon-reachable → SSR (NOT `/api/v1`)                                                                                    | component test: presentational child renders pairings from props; server wrapper fetch mocked | sonnet | code-reviewer, ui-verifier |
-| T3e  | MODIFY `apps/web/src/components/tournament/tournament-sidebar-card.tsx` (A-S2): convert to SSR; **remove** the registration-count `postgres_changes` realtime subscription, replace with the tag-revalidated cached count (per parent plan) | anon-reachable → SSR; drop realtime sub                                                                                 | component test: renders count from props; assert no realtime subscription remains | sonnet | code-reviewer, ui-verifier |
+| T3d  | MODIFY `apps/web/src/components/tournament/public-pairings.tsx` (A-S1): convert to SSR — split into a server wrapper that fetches via service-role and a presentational client child fed by props                  | anon-reachable → SSR (NOT `/api/v1`)                                                                                    | component test: presentational child renders pairings from props; server wrapper fetch mocked | **opus** (SSR split must preserve auth-gated match-click interactivity inside an anon page) | code-reviewer, ui-verifier |
+| T3e  | MODIFY `apps/web/src/components/tournament/tournament-sidebar-card.tsx` (A-S2): convert to SSR; **remove** the registration-count `postgres_changes` realtime subscription, replace with the tag-revalidated cached count (per parent plan) | anon-reachable → SSR; drop realtime sub                                                                                 | component test: renders count from props; assert no realtime subscription remains | **opus** (hybrid: anon SSR data + per-user check-in actions client island) | code-reviewer, ui-verifier |
 
 > **Disjointness note for T3b:** T3b uses a **dedicated new file**
 > `apps/web/src/lib/data/tournament-pairings-endpoint.ts` (D8 — dedicated-file preference confirmed).
@@ -491,7 +499,7 @@ service-role rationale (§0.2). Tasks touch **disjoint files** — they run in o
 | T3l  | CREATE `apps/web/src/app/api/v1/me/invitations/route.ts` + test; MODIFY `apps/web/src/components/tournaments/invite/invitation-list.tsx`, `apps/web/src/components/tournaments/tournament-invitations-view.tsx`                      | `me/invitations` route; repoint                                                                         | route test; component tests                        | sonnet | code-reviewer    |
 | T3m  | MODIFY `apps/web/src/components/tournaments/invite/player-search.tsx`, `apps/web/src/components/tournaments/create/tournament-basic-info.tsx`                                                                                        | repoint onto `GET /api/v1/players/search` (built in T3a)                                                | component tests                                    | sonnet | code-reviewer    |
 | T3n  | MODIFY `apps/web/src/components/tournaments/manage/{tournament-pairings,tournament-pairings-judge,tournament-overview}.tsx`                                                                                                          | Repoint `tournament-pairings.tsx` + `tournament-pairings-judge.tsx` onto `/api/v1/tournaments/[id]/pairings` (T3b) + `/player-stats` (T3c). Remove both realtime subs from `tournament-overview.tsx` — matches sub (lines 188–212) and rounds sub (lines 216–240) — replacing with mutation-driven cache busting via `invalidateTournamentCaches`. `tournament-pairings-judge.tsx` **keeps** its realtime matches/rounds subs (Phase 3 payload-driven candidate; only the `/api/v1` repoint is in scope here). | component tests (assert overview has no realtime subs; judge retains them) | sonnet | code-reviewer    |
-| T3o  | MODIFY `apps/web/src/components/tournaments/manage/{tournament-standings,tournament-registrations}.tsx`, `apps/web/src/components/tournament/match-report-dialog.tsx`                                                                | Repoint `tournament-standings.tsx` onto existing `/api/v1/.../standings`; repoint match dialog onto pairings/player-stats. For `tournament-registrations.tsx`: (1) remove the `registrations` realtime channel (line 131) and all four registration subs; (2) remove the `tournament_invitations` realtime channel (lines 166–193) — invite/accept/decline mutations cache-bust instead; (3) repoint the manage Players tab reads onto an authenticated server fetch via `auth.supabase` in the route handler (staff-internal columns require auth; the public view `public_tournament_registrations` covers anon consumers); (4) replace with fetch-on-load + mutation-driven revalidation. | component tests (assert neither realtime channel remains; staff-column read requires auth) | sonnet | security-reviewer, code-reviewer |
+| T3o  | MODIFY `apps/web/src/components/tournaments/manage/{tournament-standings,tournament-registrations}.tsx`, `apps/web/src/components/tournament/match-report-dialog.tsx`                                                                | Repoint `tournament-standings.tsx` onto existing `/api/v1/.../standings`; repoint match dialog onto pairings/player-stats. For `tournament-registrations.tsx`: (1) remove the `registrations` realtime channel (line 131) and all four registration subs; (2) remove the `tournament_invitations` realtime channel (lines 166–193) — invite/accept/decline mutations cache-bust instead; (3) repoint the manage Players tab reads onto an authenticated server fetch via `auth.supabase` in the route handler (staff-internal columns require auth; the public view `public_tournament_registrations` covers anon consumers); (4) replace with fetch-on-load + mutation-driven revalidation. | component tests (assert neither realtime channel remains; staff-column read requires auth) | **opus** (staff-column auth-gated read redesign + two channel removals + repoints) | security-reviewer, code-reviewer |
 | T3p  | MODIFY `apps/web/src/components/topnav-auth-section.tsx`, the 3 community manage clients `apps/web/src/components/.../tournament-manage-client.tsx`, `.../tournament-settings-page-client.tsx`, `.../create-tournament-client.tsx` | repoint onto `useCurrentUser` (now API-backed, T3-gate) + `me/communities` (T3j)                        | component tests                                    | sonnet | code-reviewer    |
 | T3q  | VERIFY-only: `apps/web/src/app/(dashboard)/dashboard/community/[communitySlug]/settings/page.tsx`, `apps/web/src/app/(dashboard)/dashboard/community/request/page.tsx` — confirm no revoke-set table is read; migrate only if it is | confirm-or-migrate                                                                                      | only if migrated                                   | haiku  | code-reviewer    |
 
@@ -511,8 +519,10 @@ Step 4 must not start until every Step 2 and Step 3 task is merged — those are
 
 ## 7. Final verification phase (before opening/declaring the PR)
 
-Run as a dedicated closing task (dispatch a sonnet subagent for the sweeps; it returns a concise report —
-the orchestrator does not ingest raw output):
+Run as a dedicated closing task (dispatch a **haiku** subagent for the sweeps — they are pure
+run-and-report (`rg`, `db:reset`, grant probes); it returns a concise report and the orchestrator does not
+ingest raw output. Any failure it surfaces is fixed by a follow-up **sonnet** task, then the haiku sweep
+re-runs):
 
 1. **No anon reads of revoked base tables remain.** Sweep:
    - `rg "createStaticClient" apps/web/src` — every remaining hit must read a **view** (`public_user_profiles`
@@ -549,77 +559,85 @@ the orchestrator does not ingest raw output):
 
 ## 8. Dependency & parallelism map
 
+The original step-by-step waves over-serialized: Steps 1, 2, and the route-creation half of Step 3 have
+**no data dependencies on each other** — only disjoint file sets. Regrouped into 4 execution waves:
+
 ```
-WAVE 1 — Step 1 revoke (sequential, owns db:reset/generate-types):
-  T1   Revoke the 13 zero-reader tables (own migration, ZERO app changes)
-       └─ independent of everything else; lands first to de-risk.
+EXECUTION WAVE 1 — maximal parallel batch (14 agents, all disjoint files):
+  T1       revoke migration, 13 zero-reader tables — sole db:reset holder  [sonnet]
+  T2a–T2h  mechanical service-role swaps (8 tasks)                         [sonnet ×8]
+  T3-gate  /api/v1/me/profile + use-current-user.ts rewiring               [opus]
+  T3a      /api/v1/players/search + dedicated fetcher (new files only)     [sonnet]
+  T3b      /api/v1/tournaments/[id]/pairings + dedicated fetcher (new)     [sonnet]
+  T3c      /api/v1/tournaments/[id]/player-stats + dedicated fetcher (new) [sonnet]
+  T3q      VERIFY-only settings/page + request/page                        [haiku]
+  └─ Why concurrent: T1 touches only packages/supabase (and grants don't appear in generated
+     types, so the types.ts regen is a no-op — zero contention). T2* swap clients in existing
+     files. T3-gate + T3a–c create NEW files and consume only infrastructure that already
+     landed (resolveApiAuth, rate-limit, useApiQuery). T3q is read-only. No two tasks share a file.
 
-WAVE 2 — Step 2 mechanical server swap (ALL PARALLEL, disjoint files, NO db:reset):
-  T2a  lib/data: standings-endpoint.ts + tournaments-endpoints.ts      ─┐
-  T2b  lib/data: communities-endpoints.ts + players-endpoints.ts        │
-  T2c  (app) tournaments/communities/players pages                      │ disjoint
-  T2d  (app) user/coaching pages + dashboard/coaching                   │ file sets;
-  T2e  (dashboard) dashboard/page + dashboard/teams                     │ one wave,
-  T2f  (dashboard) alts/[username]/teams/* (4 files)                    │ multi-Agent
-  T2g  (app) tournaments/[tournamentSlug]/page                          │
-  T2h  announcement-banner + admin/limitless + community create page   ─┘
-       └─ all depend only on the service-role client (already exists); none on each other.
+EXECUTION WAVE 2 — consumers of Wave 1's routes + hook (13 agents, all disjoint files):
+  T3d  public-pairings.tsx → SSR (DROP-IN — see shared-page rule below)    [opus]
+  T3e  tournament-sidebar-card.tsx → SSR + drop sub (DROP-IN)              [opus]
+  T3f  admin/config → server component + flag-sheet repoint (consumes T3a) [sonnet]
+  T3g  /api/v1/admin/users + repoint; admin/page → server component        [sonnet]
+  T3h  /api/v1/admin/communities + repoint                                 [sonnet]
+  T3i  /api/v1/admin/coaches + coaches-manager repoint                     [sonnet]
+  T3j  me/communities + me/tournament-history routes + 3 dashboard clients
+       + home-client.tsx (remove active-match realtime subs)               [sonnet]
+  T3k  me/teams route + teams-sub-table                                    [sonnet]
+  T3l  me/invitations route + invitation-list + invitations-view           [sonnet]
+  T3m  player-search + tournament-basic-info (consume T3a)                 [sonnet]
+  T3n  manage pairings/judge/overview (consume T3b/T3c; remove overview
+       realtime subs; judge keeps realtime)                                [sonnet]
+  T3o  manage standings/registrations + match-report-dialog (drop both
+       channels; auth-gate staff-column read)                              [opus]
+  T3p  topnav-auth-section + 3 community manage clients (consume gate+T3j) [sonnet]
+  └─ Intra-wave consumption (T3p → T3j's me/communities) is safe: repoints fetch by URL
+     (no compile-time import of the route), tests mock fetch, and both land in the same
+     wave commit. All file sets disjoint.
 
-WAVE 3a — Step 3 GATE (sequential, single task):
-  T3-gate  /api/v1/me/profile route + use-current-user.ts migration
-           └─ blocks 3c/3d consumers that depend on useCurrentUser.
+EXECUTION WAVE 3 — Step 4 revoke (sequential, second db:reset holder, gated on Waves 1+2):
+  T4   Revoke the remaining 18 tables + mobile CLAUDE.md note              [sonnet]
+       └─ cannot start until every reader (Waves 1+2) is merged.
 
-WAVE 3b — new public-S-bucket routes + SSR conversions (PARALLEL, disjoint files):
-  T3a  /api/v1/players/search + cached fetcher                          ─┐
-  T3b  /api/v1/tournaments/[id]/pairings + fetcher                       │ disjoint;
-  T3c  /api/v1/tournaments/[id]/player-stats + fetcher                   │ 3d/3n/3o/3m
-  T3d  public-pairings.tsx → SSR                                         │ consume these
-  T3e  tournament-sidebar-card.tsx → SSR (drop realtime count sub)      ─┘ routes later.
-
-WAVE 3c — admin routes + consumers (PARALLEL, disjoint files):
-  T3f  admin/config/page → server component + flag-allowlist-sheet      ─┐  (no route built)
-  T3g  /api/v1/admin/users + admin users/page; admin/page → server comp  │ disjoint
-  T3h  /api/v1/admin/communities + admin communities page                │
-  T3i  /api/v1/admin/coaches + coaches-manager                          ─┘
-
-WAVE 3d — me/* routes + dashboard/manage/invite consumers (PARALLEL, disjoint files):
-  T3j  me/communities + me/tournament-history + 3 dashboard clients     ─┐
-       + home-client.tsx (remove active-match realtime sub)              │
-  T3k  me/teams + teams-sub-table                                        │
-  T3l  me/invitations + invitation-list + invitations-view              │ disjoint;
-  T3m  player-search + tournament-basic-info  (consume T3a)              │ 3m/3n/3o
-  T3n  manage pairings/judge/overview (remove overview realtime subs)    │ depend on
-  T3o  manage standings/registrations (drop all realtime subs + invit.  │ 3a/3b/3c
-       channel; auth-gate staff read) + match-report-dialog             │
-  T3p  topnav-auth-section + 3 community manage clients (consume gate+3j)│
-  T3q  VERIFY settings/page + request/page (haiku)                      ─┘
-
-WAVE 4 — Step 4 revoke (sequential, owns db:reset/generate-types, gated on Waves 2+3):
-  T4   Revoke the remaining 18 tables + mobile CLAUDE.md note
-       └─ cannot start until every reader (Waves 2+3) is merged.
-
-WAVE 5 — Final verification (sequential closing task):
-  rg sweeps + db:reset + generate-types + grant assertions + enumerate CI checks.
+EXECUTION WAVE 4 — Final verification (sequential closing task):
+  rg sweeps + db:reset + grant assertions + enumerate CI checks            [haiku]
+  └─ failures fixed by follow-up sonnet tasks, then the haiku sweep re-runs.
 ```
+
+### Shared-page rule for T3d/T3e (Wave 2)
+
+Both components are rendered by `apps/web/src/app/(app)/tournaments/[tournamentSlug]/page.tsx`. Neither
+task gets that page in its allowlist. Both conversions must be **drop-in**: the component file itself
+becomes a server component with the same import path and props interface, so the parent page needs no
+edit. If a parent-page change turns out to be unavoidable, the task REPORTS it instead of editing, and the
+orchestrator applies the page change between waves.
 
 ### Critical-path dependency chain
 
 ```
-T1  →  Wave 2 (T2a–T2h, parallel)  →  T3-gate  →  Wave 3b (T3a–T3e, parallel)
-    →  Waves 3c + 3d (parallel; 3c/3d-me-routes have no cross-dep, but 3m/3n/3o wait on 3b's routes)
-    →  T4  →  Wave 5
+Wave 1 (14 parallel)  →  Wave 2 (13 parallel)  →  T4  →  Wave 4 (verify)
 ```
 
-The longest chain is: **T3-gate → T3b/T3c (build pairings + player-stats routes) → T3n/T3o (manage clients
-consume them) → T4 (revoke) → Wave 5 (verify).** Everything else fans out in parallel around that spine.
+Four sequential points total. The longest chain is bounded by the slowest single task in each of the two
+parallel waves, not by step ordering.
 
 ### Serialization constraints (the two non-negotiable sequence points)
 
-1. **Only one task may hold `db:reset` / `generate-types` at a time.** T1 and T4 are the only DB tasks; they
-   are in different waves (1 and 4) and never run concurrently. No other task runs `generate-types`.
-2. **T4 (the 18-table remaining-tables revoke) is gated on ALL of Waves 2 and 3 being merged.** Revoking
+1. **Only one task may hold `db:reset` / `generate-types` at a time.** T1 (Wave 1) and T4 (Wave 3) are the
+   only DB tasks and never run concurrently. No other task runs `generate-types`.
+2. **T4 (the 18-table remaining-tables revoke) is gated on ALL of Waves 1 and 2 being merged.** Revoking
    before a reader is migrated would silently empty that reader's data. This is the single most important
    ordering rule in the plan.
+
+### Model tier summary (binding — pass `model` explicitly on every dispatch)
+
+| Model      | Tasks                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------- |
+| **opus**   | `T3-gate`, `T3d`, `T3e`, `T3o` — app-wide hook rewiring; SSR splits preserving auth-gated interactivity; staff-read redesign |
+| **sonnet** | `T1`, `T2a`–`T2h`, `T3a`–`T3c`, `T3f`–`T3n` (except `T3q`), `T3p`, `T4`, fix-up tasks from Wave-4 findings |
+| **haiku**  | `T3q`, the Wave-4 verification sweeps, between-wave scoped typecheck/lint, `background-checker` + `ci-monitor` after every push |
 
 ---
 
