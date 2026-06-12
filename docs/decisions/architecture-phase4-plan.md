@@ -80,7 +80,7 @@ ALL TASKS PARALLEL (one wave — docs only, disjoint files, sonnet):
 "Mobile data access" memory in `.claude/CLAUDE.md` ("Mobile app hits Supabase directly… proxying
 through Vercel adds cost without meaningful savings") is **superseded**.
 
-**Files (allowlist):** `/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/.claude/CLAUDE.md`
+**Files (allowlist):** `.claude/CLAUDE.md`
 
 **Edit (Architecture Guidelines section):** Replace the "Mobile data access" bullet with the new
 reality:
@@ -108,7 +108,7 @@ meaningful savings" text; the decisions-doc path is referenced.
 **Objective.** Add the high-level data-access posture so a fresh agent reading the root file knows
 the rules of the road. Keep it brief — detail lives in the rules/skills.
 
-**Files (allowlist):** `/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/CLAUDE.md`
+**Files (allowlist):** `CLAUDE.md`
 
 **Edits:**
 
@@ -134,7 +134,7 @@ routing table here (that's Task 8).
 **Objective.** Add the S/P/R/X bucket → client-selection rules so agents pick the right read path.
 
 **Files (allowlist):**
-`/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/.claude/skills/querying-supabase/SKILL.md`
+`.claude/skills/querying-supabase/SKILL.md`
 
 **Edit (Client Selection section):** add a table mapping data class → read path:
 
@@ -162,7 +162,7 @@ scope (existing rule); the API layer's `resolveApiAuth` lives at `apps/web/src/l
 caching playbook (the new surface Phase 2 introduced) so reviewers check it.
 
 **Files (allowlist):**
-`/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/.claude/skills/reviewing-caching/SKILL.md`
+`.claude/skills/reviewing-caching/SKILL.md`
 
 **Edit:** add a short "S-bucket API route caching" subsection:
 
@@ -188,7 +188,7 @@ caching playbook (the new surface Phase 2 introduced) so reviewers check it.
 data-fetching guidance.
 
 **Files (allowlist):**
-`/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/.claude/skills/building-web-app/SKILL.md`
+`.claude/skills/building-web-app/SKILL.md`
 
 **Edit (Data Fetching section):** document the decision tree for a new web read:
 SSR page → direct cached fetcher; client read of S data → `useApiQuery` against `/api/v1`; client
@@ -209,8 +209,8 @@ Next.js API routes").
 
 **Files (allowlist):**
 
-- `/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/.claude/skills/building-mobile-app/SKILL.md`
-- `/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/apps/mobile/CLAUDE.md`
+- `.claude/skills/building-mobile-app/SKILL.md`
+- `apps/mobile/CLAUDE.md`
 
 **Edits:**
 
@@ -239,7 +239,7 @@ publication requirements and the column-homogeneous-sensitivity rule, and state 
 postgres_changes decision.
 
 **Files (allowlist):**
-`/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/.claude/skills/using-realtime/SKILL.md`
+`.claude/skills/using-realtime/SKILL.md`
 
 **Edits:**
 
@@ -270,9 +270,9 @@ auto-load when agents work in the matching code.
 
 **Files (allowlist):**
 
-- `/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/.claude/rules/supabase-patterns.md`
-- `/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/.claude/rules/architecture.md`
-- `/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/.claude/rules/nextjs-conventions.md`
+- `.claude/rules/supabase-patterns.md`
+- `.claude/rules/architecture.md`
+- `.claude/rules/nextjs-conventions.md`
 
 **Edits:**
 
@@ -301,7 +301,7 @@ for 1,000+ player events. `docs/runbooks/` does **not** exist yet — create the
 
 **Files (allowlist):**
 
-- CREATE `/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/docs/runbooks/marquee-events.md`
+- CREATE `docs/runbooks/marquee-events.md`
 
 **Contents (from the decisions doc):**
 
@@ -333,12 +333,10 @@ architecture so future planner/implementer sessions act on it.
 
 **Files (allowlist):**
 
-- `/Users/gmendoza/source/trainers.gg/.claude/worktrees/import-queue/.claude/agent-memory/planner/MEMORY.md`
+- `.claude/agent-memory/planner/MEMORY.md`
   (+ a new memory file it points to, e.g. `project_data_access_implemented.md`)
-- The global memory at
-  `/Users/gmendoza/.claude/projects/-Users-gmendoza-source-trainers-gg/memory/MEMORY.md` already
-  has a high-level "Data-access architecture" entry (`project_data_access_architecture.md`) marked
-  "ALL LOCKED … docs update per-phase as patterns land." **Update that entry's status** from
+- The global memory entry `project_data_access_architecture.md` (in the user's global `~/.claude/projects/` memory)
+  is already marked "ALL LOCKED … docs update per-phase as patterns land." **Update that entry's status** from
   "locked/planned" to "implemented (Phases 0–4 shipped)" and point it at the three phase plans +
   this reconciliation, OR add a short follow-up note. (Only the _planner_ writes to the worktree
   planner memory; the global memory entry update is a one-line status flip.)
