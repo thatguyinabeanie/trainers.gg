@@ -8,6 +8,6 @@
  *
  * Mobile callers should continue importing from this path — the shim ensures
  * zero blast radius for existing code. New code may import directly from
- * `@trainers/supabase` or `@trainers/supabase/hooks`.
+ * `@trainers/supabase/react-query`.
  */
-export { useApiQuery, useApiMutation } from "@trainers/supabase";
+export { useApiQuery, useApiMutation } from "@trainers/supabase/react-query";

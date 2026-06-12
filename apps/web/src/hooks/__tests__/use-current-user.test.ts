@@ -7,8 +7,12 @@ const mockUseApiQuery = jest.fn();
 // The hook also imports getCurrentUser (for its return-type only) — provide a
 // no-op so the module loads under Jest.
 jest.mock("@trainers/supabase", () => ({
-  useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
   getCurrentUser: jest.fn(),
+}));
+
+// useApiQuery now lives behind the dedicated react-query subpath.
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
 }));
 
 import { renderHook } from "@testing-library/react";

@@ -1,6 +1,7 @@
 "use client";
 
-import { type getCurrentUser, useApiQuery } from "@trainers/supabase";
+import { type getCurrentUser } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import { type ActionResult } from "@trainers/validators";
 
 /** The current-user shape returned by `getCurrentUser` (null when unavailable). */

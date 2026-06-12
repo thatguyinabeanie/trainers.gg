@@ -7,10 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 import { toast } from "sonner";
 
-import {
-  getDiscordServerByCommunityId,
-  useApiQuery,
-} from "@trainers/supabase";
+import { getDiscordServerByCommunityId } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import { type TypedSupabaseClient } from "@trainers/supabase";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@trainers/validators";
 import {

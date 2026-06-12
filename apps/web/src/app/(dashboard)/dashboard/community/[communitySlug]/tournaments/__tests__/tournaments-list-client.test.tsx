@@ -14,7 +14,7 @@ jest.mock("next/navigation", () => ({
 // useApiQuery wraps TanStack Query's useQuery; we return the unwrapped data shape
 // { data, isLoading, error } directly since that's what the component destructures.
 const mockUseApiQuery = jest.fn();
-jest.mock("@trainers/supabase", () => ({
+jest.mock("@trainers/supabase/react-query", () => ({
   useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
 }));
 

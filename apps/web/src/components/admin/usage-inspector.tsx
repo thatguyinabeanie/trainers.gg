@@ -19,10 +19,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import {
-  useApiQuery,
   type FormatUsageRow,
   type SpeciesUsagePeriod,
 } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import { getActiveFormats, VGC_FORMATS } from "@trainers/pokemon";
 
 // =============================================================================

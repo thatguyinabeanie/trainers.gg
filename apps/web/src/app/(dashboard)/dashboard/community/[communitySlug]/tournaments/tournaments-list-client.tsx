@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useApiQuery } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import { type CommunityTournamentsResult } from "@/lib/data/communities-endpoints";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

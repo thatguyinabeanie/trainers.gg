@@ -9,6 +9,7 @@
     "./client": "./src/clients/client.ts",
     "./mobile": "./src/clients/mobile.ts",
     "./hooks": "./src/hooks/index.ts",
+    "./react-query": "./src/react-query.ts",
     "./queries": "./src/queries/index.ts",
     "./mutations": "./src/mutations/index.ts",
     "./pipeline": "./src/mutations/pipeline.ts",

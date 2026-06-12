@@ -82,6 +82,8 @@ export type {
   PdsAccountStatus,
 } from "./types-atproto";
 
-// API Query Factory — shared TanStack Query wrappers for ActionResult<T> endpoints
-// (requires @tanstack/react-query to be installed by the consumer)
-export { useApiQuery, useApiMutation } from "./hooks/query-factory";
+// NOTE: The TanStack Query wrappers (useApiQuery / useApiMutation) are
+// intentionally NOT re-exported here — they live behind the dedicated
+// `@trainers/supabase/react-query` subpath so the root barrel stays
+// framework-agnostic and does not couple every consumer to
+// `@tanstack/react-query`. Import them from "@trainers/supabase/react-query".

@@ -24,7 +24,7 @@ import {
   type UseMutationOptions,
   type QueryKey,
 } from "@tanstack/react-query";
-import type { ActionResult } from "@trainers/validators";
+import { type ActionResult } from "@trainers/validators";
 
 // =============================================================================
 // useApiQuery
@@ -137,7 +137,7 @@ export function useApiMutation<TData, TVariables>(
       }
       return result.data;
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, onMutateResult, context) => {
       // Invalidate caller-specified queries after every successful mutation.
       if (invalidates) {
         const queryKeys = invalidates(variables);
@@ -146,19 +146,23 @@ export function useApiMutation<TData, TVariables>(
         });
       }
 
-      // Forward to any caller-provided onSuccess handler.
+      // Forward to any caller-provided onSuccess handler. TanStack Query v5
+      // passes four args — (data, variables, onMutateResult, context) — and
+      // awaits the returned promise before settling the mutation, so we forward
+      // all four and RETURN the handler's result rather than swallowing it.
       if (userOnSuccess) {
         // Type assertion needed due to TanStack Query type-parameter complexity:
         // the inferred TData in the outer overload does not narrow through the
         // conditional Options type, so we cast here rather than fight the
         // generated overload signatures.
-        (
+        return (
           userOnSuccess as (
             data: TData,
             variables: TVariables,
+            onMutateResult: unknown,
             context: unknown
-          ) => void
-        )(data, variables, context);
+          ) => unknown
+        )(data, variables, onMutateResult, context);
       }
     },
     ...mutationOptions,

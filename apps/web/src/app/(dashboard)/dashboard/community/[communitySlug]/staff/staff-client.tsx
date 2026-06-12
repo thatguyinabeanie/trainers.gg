@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/core";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { useApiQuery } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import {
   type StaffWithRole,
   type CommunityGroup,

@@ -23,7 +23,10 @@ jest.mock("@trainers/utils", () => ({
 // Mutable mock so individual tests can override return values.
 const mockUseApiQuery = jest.fn();
 
-jest.mock("@trainers/supabase", () => ({
+// useApiQuery now lives behind the dedicated react-query subpath. The component
+// also imports FormatUsageRow / SpeciesUsagePeriod from "@trainers/supabase",
+// but those are type-only and erased at runtime — no module mock needed.
+jest.mock("@trainers/supabase/react-query", () => ({
   useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
 }));
 

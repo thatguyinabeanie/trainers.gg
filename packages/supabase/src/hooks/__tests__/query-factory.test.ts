@@ -30,7 +30,12 @@ let capturedMutationFn: ((vars: unknown) => Promise<unknown>) | undefined;
 
 /** The onSuccess handler passed to the most recent useMutation call. */
 let capturedOnSuccess:
-  | ((data: unknown, variables: unknown, context: unknown) => void)
+  | ((
+      data: unknown,
+      variables: unknown,
+      onMutateResult: unknown,
+      context: unknown
+    ) => unknown)
   | undefined;
 
 const mockInvalidateQueries = jest.fn<
@@ -45,7 +50,12 @@ jest.mock("@tanstack/react-query", () => ({
   useMutation: jest.fn(
     (opts: {
       mutationFn: (vars: unknown) => Promise<unknown>;
-      onSuccess?: (data: unknown, variables: unknown, context: unknown) => void;
+      onSuccess?: (
+        data: unknown,
+        variables: unknown,
+        onMutateResult: unknown,
+        context: unknown
+      ) => unknown;
     }) => {
       capturedMutationFn = opts.mutationFn;
       capturedOnSuccess = opts.onSuccess;
@@ -168,16 +178,17 @@ describe("useApiMutation", () => {
       expect(result).toBe("done");
     });
 
-    it("throws when mutationFn returns success:false", async () => {
+    it.each([
+      ["registration closed"],
+      ["already checked in"],
+    ])("throws %p when mutationFn returns success:false", async (message) => {
       const fn = jest
         .fn<(v: { id: string }) => Promise<ActionResult<string>>>()
-        .mockResolvedValue(fail("registration closed"));
+        .mockResolvedValue(fail(message));
 
       useApiMutation(fn);
 
-      await expect(capturedMutationFn!({ id: "x" })).rejects.toThrow(
-        "registration closed"
-      );
+      await expect(capturedMutationFn!({ id: "x" })).rejects.toThrow(message);
     });
   });
 
@@ -198,7 +209,12 @@ describe("useApiMutation", () => {
 
       // Simulate TanStack calling onSuccess after a successful mutation.
       expect(capturedOnSuccess).toBeDefined();
-      await capturedOnSuccess!("done", { tournamentId: "t-1" }, undefined);
+      await capturedOnSuccess!(
+        "done",
+        { tournamentId: "t-1" },
+        undefined,
+        undefined
+      );
 
       expect(invalidates).toHaveBeenCalledWith({ tournamentId: "t-1" });
       expect(mockInvalidateQueries).toHaveBeenCalledTimes(2);
@@ -217,7 +233,7 @@ describe("useApiMutation", () => {
 
       useApiMutation(fn);
 
-      await capturedOnSuccess!("done", {}, undefined);
+      await capturedOnSuccess!("done", {}, undefined, undefined);
 
       expect(mockInvalidateQueries).not.toHaveBeenCalled();
     });
@@ -230,7 +246,12 @@ describe("useApiMutation", () => {
         .mockResolvedValue(ok("result"));
 
       const userOnSuccess = jest.fn<
-        (data: string, variables: { id: string }, context: unknown) => void
+        (
+          data: string,
+          variables: { id: string },
+          onMutateResult: unknown,
+          context: unknown
+        ) => void
       >();
 
       const invalidates = jest
@@ -239,14 +260,49 @@ describe("useApiMutation", () => {
 
       useApiMutation(fn, { invalidates, onSuccess: userOnSuccess });
 
-      await capturedOnSuccess!("result", { id: "1" }, undefined);
+      await capturedOnSuccess!("result", { id: "1" }, "ctx", undefined);
 
       // invalidateQueries called first
       expect(mockInvalidateQueries).toHaveBeenCalledWith({
         queryKey: ["some-key"],
       });
-      // then user callback
-      expect(userOnSuccess).toHaveBeenCalledWith("result", { id: "1" }, undefined);
+      // then user callback — all four TanStack v5 args forwarded
+      expect(userOnSuccess).toHaveBeenCalledWith(
+        "result",
+        { id: "1" },
+        "ctx",
+        undefined
+      );
+    });
+
+    it("returns the user-supplied onSuccess handler's result so TanStack awaits it", async () => {
+      const fn = jest
+        .fn<(v: { id: string }) => Promise<ActionResult<string>>>()
+        .mockResolvedValue(ok("result"));
+
+      // Handler returns a promise — TanStack v5 awaits the onSuccess return
+      // before settling the mutation, so our wrapper must propagate it.
+      const userOnSuccess = jest
+        .fn<
+          (
+            data: string,
+            variables: { id: string },
+            onMutateResult: unknown,
+            context: unknown
+          ) => Promise<string>
+        >()
+        .mockResolvedValue("handler-done");
+
+      useApiMutation(fn, { onSuccess: userOnSuccess });
+
+      const returned = await capturedOnSuccess!(
+        "result",
+        { id: "1" },
+        undefined,
+        undefined
+      );
+
+      expect(returned).toBe("handler-done");
     });
 
     it("does not call userOnSuccess when it is not provided", () => {
@@ -257,7 +313,9 @@ describe("useApiMutation", () => {
       useApiMutation(fn);
 
       // onSuccess should not throw when no userOnSuccess is provided
-      expect(() => capturedOnSuccess!("done", {}, undefined)).not.toThrow();
+      expect(() =>
+        capturedOnSuccess!("done", {}, undefined, undefined)
+      ).not.toThrow();
     });
   });
 });

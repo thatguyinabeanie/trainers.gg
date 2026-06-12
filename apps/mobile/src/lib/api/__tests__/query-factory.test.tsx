@@ -6,7 +6,7 @@ import type { ActionResult } from "@trainers/validators";
 
 /**
  * These tests exercise the generalized factory imported via the back-compat shim
- * (`apps/mobile/src/lib/api/query-factory.ts` → `@trainers/supabase`).
+ * (`apps/mobile/src/lib/api/query-factory.ts` → `@trainers/supabase/react-query`).
  *
  * The new API takes a **fetcher function** instead of a string endpoint, so
  * tests construct an inline fetcher rather than calling `apiCall` directly.
