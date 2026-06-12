@@ -6,15 +6,10 @@
 // Mock setup — all jest.mock() calls must be hoisted above imports
 // =============================================================================
 
-// Chainable Supabase query builder
-const mockMaybeSingle = jest.fn();
-const mockUpsert = jest.fn();
-const mockEq = jest.fn();
-const mockSelect = jest.fn();
-const mockFrom = jest.fn();
+const mockRpc = jest.fn();
 
 const mockServiceRoleClient = {
-  from: mockFrom,
+  rpc: mockRpc,
 };
 
 jest.mock("@/lib/supabase/server", () => ({
@@ -36,19 +31,17 @@ import {
 // Helpers
 // =============================================================================
 
-function buildQueryChain(selectResult: unknown, upsertResult: unknown) {
-  mockMaybeSingle.mockResolvedValue(selectResult);
-  mockUpsert.mockResolvedValue(upsertResult);
-  mockEq.mockReturnValue({ maybeSingle: mockMaybeSingle });
-  mockSelect.mockReturnValue({ eq: mockEq });
-  mockFrom.mockImplementation((table: string) => {
-    if (table === "rate_limits") {
-      return {
-        select: mockSelect,
-        upsert: mockUpsert,
-      };
-    }
-    return {};
+/**
+ * Stub the `check_rate_limit` RPC. The RPC returns a TABLE, so its `data` is an
+ * array of decision rows; we model that here.
+ */
+function mockRpcDecision(
+  decision: { allowed: boolean; reset_at: string } | null,
+  error: { message: string } | null = null
+) {
+  mockRpc.mockResolvedValue({
+    data: decision === null ? null : [decision],
+    error,
   });
 }
 
@@ -81,217 +74,85 @@ describe("enforceRateLimit", () => {
     windowMs: 60_000,
   };
 
-  describe("under-limit behaviour", () => {
-    it("allows the request and decrements remaining when below limit", async () => {
-      // Two recent timestamps inside the window
-      const now = Date.now();
-      const inWindowTs = [
-        new Date(now - 10_000).toISOString(),
-        new Date(now - 5_000).toISOString(),
-      ];
-
-      buildQueryChain(
-        { data: { request_timestamps: inWindowTs }, error: null },
-        { error: null }
-      );
-
-      const result = await enforceRateLimit(baseOptions);
-
-      expect(result.allowed).toBe(true);
-      // 2 in-window + 1 appended now = 3 used → 5 - 3 = 2 remaining
-      expect(result.remaining).toBe(2);
-      expect(result.resetAt).toBeInstanceOf(Date);
-    });
-
-    it("allows when no prior row exists (first request)", async () => {
-      buildQueryChain(
-        { data: null, error: null },
-        { error: null }
-      );
-
-      const result = await enforceRateLimit(baseOptions);
-
-      expect(result.allowed).toBe(true);
-      // 0 in-window + 1 appended = 1 used → 5 - 1 = 4 remaining
-      expect(result.remaining).toBe(4);
-    });
-
-    it("upserts the new timestamp list when allowed", async () => {
-      const now = Date.now();
-      const inWindowTs = [new Date(now - 1_000).toISOString()];
-
-      buildQueryChain(
-        { data: { request_timestamps: inWindowTs }, error: null },
-        { error: null }
-      );
+  describe("RPC invocation", () => {
+    it("calls check_rate_limit with the identifier, limit, and window", async () => {
+      mockRpcDecision({
+        allowed: true,
+        reset_at: new Date().toISOString(),
+      });
 
       await enforceRateLimit(baseOptions);
 
-      expect(mockUpsert).toHaveBeenCalledTimes(1);
-      const [upsertPayload] = mockUpsert.mock.calls[0] as [
-        { identifier: string; request_timestamps: string[] },
-        unknown,
-      ];
-      // Should include the original in-window timestamp plus the newly appended one
-      expect(upsertPayload.request_timestamps).toHaveLength(2);
-      expect(upsertPayload.identifier).toBe("user-abc");
+      expect(mockRpc).toHaveBeenCalledTimes(1);
+      expect(mockRpc).toHaveBeenCalledWith("check_rate_limit", {
+        p_identifier: "user-abc",
+        p_limit: 5,
+        p_window_ms: 60_000,
+      });
+    });
+
+    it("applies DEFAULT_API_LIMIT and DEFAULT_WINDOW_MS when omitted", async () => {
+      mockRpcDecision({
+        allowed: true,
+        reset_at: new Date().toISOString(),
+      });
+
+      await enforceRateLimit({ identifier: "anon-1.2.3.4" });
+
+      expect(mockRpc).toHaveBeenCalledWith("check_rate_limit", {
+        p_identifier: "anon-1.2.3.4",
+        p_limit: DEFAULT_API_LIMIT,
+        p_window_ms: DEFAULT_WINDOW_MS,
+      });
     });
   });
 
-  describe("over-limit behaviour", () => {
-    it("denies the request when at the limit", async () => {
-      const now = Date.now();
-      // Exactly `limit` (5) timestamps inside the window
-      const inWindowTs = [
-        new Date(now - 50_000).toISOString(),
-        new Date(now - 40_000).toISOString(),
-        new Date(now - 30_000).toISOString(),
-        new Date(now - 20_000).toISOString(),
-        new Date(now - 10_000).toISOString(),
-      ];
-
-      buildQueryChain(
-        { data: { request_timestamps: inWindowTs }, error: null },
-        { error: null }
-      );
-
-      const result = await enforceRateLimit(baseOptions);
-
-      expect(result.allowed).toBe(false);
-      expect(result.remaining).toBe(0);
-    });
-
-    it("does NOT append a new timestamp when denied", async () => {
-      const now = Date.now();
-      const inWindowTs = Array.from({ length: 5 }, (_, i) =>
-        new Date(now - (50_000 - i * 5_000)).toISOString()
-      );
-
-      buildQueryChain(
-        { data: { request_timestamps: inWindowTs }, error: null },
-        { error: null }
-      );
-
-      await enforceRateLimit(baseOptions);
-
-      const [upsertPayload] = mockUpsert.mock.calls[0] as [
-        { identifier: string; request_timestamps: string[] },
-        unknown,
-      ];
-      // Should still be 5 — no new timestamp appended on denial
-      expect(upsertPayload.request_timestamps).toHaveLength(5);
-    });
-
-    it("does NOT upsert when denied and no timestamps were pruned", async () => {
-      // All 5 timestamps are within the window — nothing to prune, request denied.
-      // The row is unchanged, so no DB write should occur.
-      const now = Date.now();
-      const inWindowTs = Array.from({ length: 5 }, (_, i) =>
-        new Date(now - (10_000 + i * 1_000)).toISOString()
-      );
-
-      buildQueryChain(
-        { data: { request_timestamps: inWindowTs }, error: null },
-        { error: null }
-      );
-
-      const result = await enforceRateLimit(baseOptions);
-
-      expect(result.allowed).toBe(false);
-      // No upsert should have been called — nothing changed
-      expect(mockUpsert).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("window expiry / pruning", () => {
-    it("prunes stale timestamps and resets available capacity", async () => {
-      const now = Date.now();
-      // 3 old timestamps (outside window) + 1 recent (inside window)
-      const timestamps = [
-        new Date(now - 120_000).toISOString(), // 2 min ago — outside 1-min window
-        new Date(now - 90_000).toISOString(),  // 1.5 min ago — outside
-        new Date(now - 75_000).toISOString(),  // 1.25 min ago — outside
-        new Date(now - 5_000).toISOString(),   // 5 sec ago — inside
-      ];
-
-      buildQueryChain(
-        { data: { request_timestamps: timestamps }, error: null },
-        { error: null }
-      );
-
-      const result = await enforceRateLimit(baseOptions);
-
-      // Only 1 in-window timestamp, so after appending now: 2 used → 3 remaining
-      expect(result.allowed).toBe(true);
-      expect(result.remaining).toBe(3);
-    });
-
-    it("allows a full limit's worth of requests after the window fully expires", async () => {
-      const now = Date.now();
-      // All timestamps older than windowMs — effectively expired
-      const expiredTimestamps = Array.from({ length: 5 }, (_, i) =>
-        new Date(now - (120_000 + i * 1_000)).toISOString()
-      );
-
-      buildQueryChain(
-        { data: { request_timestamps: expiredTimestamps }, error: null },
-        { error: null }
-      );
-
-      const result = await enforceRateLimit(baseOptions);
-
-      // All pruned → 0 in-window → 1 appended now → 4 remaining
-      expect(result.allowed).toBe(true);
-      expect(result.remaining).toBe(4);
-    });
-
-    it("sets resetAt to when the oldest in-window timestamp leaves the window", async () => {
-      const now = Date.now();
-      const oldestInWindow = new Date(now - 30_000); // 30 sec ago
-      const inWindowTs = [oldestInWindow.toISOString()];
-
-      buildQueryChain(
-        { data: { request_timestamps: inWindowTs }, error: null },
-        { error: null }
-      );
-
-      const result = await enforceRateLimit(baseOptions);
-
-      // resetAt should be approximately oldestInWindow + windowMs (30 sec from now)
-      const expectedResetAt = new Date(
-        oldestInWindow.getTime() + baseOptions.windowMs
-      );
-      expect(result.resetAt.getTime()).toBeCloseTo(expectedResetAt.getTime(), -2);
-    });
-  });
-
-  describe("error resilience (fail-open)", () => {
-    it("fails open on a fetch error", async () => {
-      buildQueryChain(
-        { data: null, error: { message: "connection refused" } },
-        { error: null }
-      );
+  describe("allowed decision", () => {
+    it("maps an allowed decision to allowed: true with remaining and resetAt", async () => {
+      const resetAt = new Date(Date.now() + 30_000);
+      mockRpcDecision({ allowed: true, reset_at: resetAt.toISOString() });
 
       const result = await enforceRateLimit(baseOptions);
 
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(baseOptions.limit - 1);
+      expect(result.resetAt).toBeInstanceOf(Date);
+      expect(result.resetAt.getTime()).toBe(resetAt.getTime());
     });
+  });
 
-    it("still returns allowed on an upsert error after a successful fetch", async () => {
-      const now = Date.now();
-      const inWindowTs = [new Date(now - 5_000).toISOString()];
-
-      buildQueryChain(
-        { data: { request_timestamps: inWindowTs }, error: null },
-        { error: { message: "deadlock detected" } }
-      );
+  describe("denied decision (429 path)", () => {
+    it("maps a denied decision to allowed: false with remaining 0", async () => {
+      const resetAt = new Date(Date.now() + 45_000);
+      mockRpcDecision({ allowed: false, reset_at: resetAt.toISOString() });
 
       const result = await enforceRateLimit(baseOptions);
 
-      // The rate-limit calculation already completed; the upsert failure does not
-      // flip the allow/deny decision — we fail open to avoid blocking traffic.
+      expect(result.allowed).toBe(false);
+      expect(result.remaining).toBe(0);
+      // resetAt is preserved so callers can build a Retry-After header.
+      expect(result.resetAt.getTime()).toBe(resetAt.getTime());
+    });
+  });
+
+  describe("error resilience (fail-open)", () => {
+    it("fails open when the RPC returns an error", async () => {
+      mockRpcDecision(null, { message: "connection refused" });
+
+      const result = await enforceRateLimit(baseOptions);
+
       expect(result.allowed).toBe(true);
+      expect(result.remaining).toBe(baseOptions.limit - 1);
+      expect(result.resetAt).toBeInstanceOf(Date);
+    });
+
+    it("fails open when the RPC returns no decision row", async () => {
+      mockRpcDecision(null);
+
+      const result = await enforceRateLimit(baseOptions);
+
+      expect(result.allowed).toBe(true);
+      expect(result.remaining).toBe(baseOptions.limit - 1);
     });
   });
 });

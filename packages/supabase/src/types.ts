@@ -4091,6 +4091,13 @@ export type Database = {
       }
       cancel_judge_request: { Args: { p_match_id: number }; Returns: undefined }
       check_no_show_escalation: { Args: never; Returns: undefined }
+      check_rate_limit: {
+        Args: { p_identifier: string; p_limit: number; p_window_ms: number }
+        Returns: {
+          allowed: boolean
+          reset_at: string
+        }[]
+      }
       clear_judge_request: { Args: { p_match_id: number }; Returns: undefined }
       compute_tournament_elo: {
         Args: { p_tournament_id: number }

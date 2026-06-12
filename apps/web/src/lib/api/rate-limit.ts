@@ -2,8 +2,11 @@
  * Rate-limit helper for API routes.
  *
  * Implements a sliding-window rate limit backed by the `rate_limits` Postgres
- * table. All reads/writes use `createServiceRoleClient()` because the table's
- * RLS policy denies every non-service-role client (`USING (false)`).
+ * table. The read-prune-decide-write cycle runs inside the atomic
+ * `check_rate_limit` RPC (SECURITY DEFINER, row-locking) so concurrent requests
+ * for the same identifier serialize instead of racing. We call it through
+ * `createServiceRoleClient()` because the table's RLS denies every
+ * non-service-role client (`USING (false)`).
  *
  * ## IP extraction caveat
  * When `identifier` is derived from the `x-forwarded-for` header (i.e. the
@@ -60,12 +63,17 @@ export interface RateLimitResult {
 /**
  * Enforce a sliding-window rate limit for a given `identifier`.
  *
- * Algorithm:
- * 1. Fetch the existing row for `identifier` (may not exist yet).
- * 2. Prune timestamps older than `windowMs` from `request_timestamps`.
- * 3. Count the remaining (in-window) timestamps.
- * 4. If count < limit → append `now`, upsert, return `allowed: true`.
- *    If count >= limit → upsert pruned state, return `allowed: false`.
+ * Delegates the entire read-prune-decide-write cycle to the atomic
+ * `check_rate_limit` Postgres RPC, which row-locks the identifier's row so
+ * concurrent requests serialize rather than clobbering each other's timestamp
+ * arrays. Time is server-authoritative (the RPC uses `now()` internally).
+ *
+ * The RPC returns a single row of `{ allowed, reset_at }`. `remaining` is not
+ * returned by the RPC (it would require an extra in-window count round-trip);
+ * we report a coarse `remaining` derived from `allowed` instead — sufficient
+ * for the `Retry-After` use case.
+ *
+ * On RPC failure we fail open (allow) to avoid blocking legitimate traffic.
  *
  * Callers should map `allowed: false` to an HTTP 429 with a
  * `Retry-After: <resetAt.toUTCString()>` header.
@@ -77,77 +85,45 @@ export async function enforceRateLimit({
 }: RateLimitOptions): Promise<RateLimitResult> {
   const supabase = createServiceRoleClient();
   const now = new Date();
-  const windowStart = new Date(now.getTime() - windowMs);
-  // expires_at gives the DB enough information to GC stale rows automatically.
-  const expiresAt = new Date(now.getTime() + windowMs);
 
-  // Fetch the existing row for this identifier.
-  const { data: existing, error: fetchError } = await supabase
-    .from("rate_limits")
-    .select("request_timestamps")
-    .eq("identifier", identifier)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("check_rate_limit", {
+    p_identifier: identifier,
+    p_limit: limit,
+    p_window_ms: windowMs,
+  });
 
-  if (fetchError) {
-    // On read failure, fail open (allow) to avoid blocking legitimate traffic.
+  if (error) {
+    // On RPC failure, fail open (allow) to avoid blocking legitimate traffic.
     // Log the error but do not surface it to the caller.
-    console.error("[rate-limit] fetch error:", fetchError.message);
-    return { allowed: true, remaining: limit - 1, resetAt: expiresAt };
+    console.error("[rate-limit] rpc error:", error.message);
+    return {
+      allowed: true,
+      remaining: limit - 1,
+      resetAt: new Date(now.getTime() + windowMs),
+    };
   }
 
-  // Prune timestamps outside the current window.
-  const rawTimestamps: string[] = existing?.request_timestamps ?? [];
-  const inWindow = rawTimestamps.filter(
-    (ts) => new Date(ts).getTime() > windowStart.getTime()
-  );
+  // The RPC returns a TABLE, so `data` is an array with a single decision row.
+  const decision = Array.isArray(data) ? data[0] : data;
 
-  const count = inWindow.length;
-  const allowed = count < limit;
-
-  // Append the current timestamp only when the request is allowed.
-  const updatedTimestamps = allowed ? [...inWindow, now.toISOString()] : inWindow;
-
-  // Determine whether the row actually changed:
-  //   - allowed path: a new timestamp was appended (always changed).
-  //   - denied path: only write if stale timestamps were pruned; skip the
-  //     upsert when nothing changed to avoid an unnecessary DB write on every
-  //     rejected request.
-  //
-  // TODO(rate-limit): this read-then-write sequence has a known race condition
-  // under concurrent requests for the same identifier. The correct fix is an
-  // atomic RPC (SELECT FOR UPDATE inside a transaction) so that concurrent
-  // callers serialize rather than clobber each other's timestamp arrays.
-  // Tracked for a future refactor — this guard is a best-effort improvement
-  // that does not make the race worse.
-  const rowChanged = allowed || inWindow.length < rawTimestamps.length;
-
-  if (rowChanged) {
-    const { error: upsertError } = await supabase.from("rate_limits").upsert(
-      {
-        identifier,
-        request_timestamps: updatedTimestamps,
-        window_start: windowStart.toISOString(),
-        expires_at: expiresAt.toISOString(),
-      },
-      { onConflict: "identifier" }
-    );
-
-    if (upsertError) {
-      // On write failure, fail open. The rate limit state is still usable from
-      // the in-memory calculation done above.
-      console.error("[rate-limit] upsert error:", upsertError.message);
-    }
+  if (!decision) {
+    // No row returned is unexpected; fail open rather than block traffic.
+    console.error("[rate-limit] rpc returned no decision row");
+    return {
+      allowed: true,
+      remaining: limit - 1,
+      resetAt: new Date(now.getTime() + windowMs),
+    };
   }
 
-  // resetAt: the moment the oldest in-window timestamp leaves the window.
-  // If there are no in-window timestamps the reset is effectively now.
-  const oldestTimestamp =
-    inWindow.length > 0 ? new Date(inWindow[0]!) : now;
-  const resetAt = new Date(oldestTimestamp.getTime() + windowMs);
+  const allowed = decision.allowed;
+  const resetAt = new Date(decision.reset_at);
 
   return {
+    // `remaining` is coarse: 0 when denied, otherwise at least one slot was
+    // free at decision time. The RPC does not return the exact in-window count.
     allowed,
-    remaining: allowed ? limit - updatedTimestamps.length : 0,
+    remaining: allowed ? limit - 1 : 0,
     resetAt,
   };
 }
