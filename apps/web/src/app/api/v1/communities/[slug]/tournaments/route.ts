@@ -10,9 +10,11 @@
  *   offset  — pagination offset (default: 0)
  *
  * AUTH: Dual-mode (Bearer OR cookie). Anonymous → 401.
- * CACHE-CONTROL: `public, s-maxage=31536000, stale-while-revalidate=86400`
- * Tag-invalidated via `invalidateCommunityPageCaches(slug, id)` on tournament
- * status changes, and via `invalidateTournamentListCaches` on registration changes.
+ * CACHE-CONTROL: `private, no-store`
+ * Auth is required on every request, so CDN caching is unsafe — a CDN could
+ * serve an authenticated 200 to an anonymous caller. Server-side `'use cache'`
+ * on the underlying fetchers handles shared caching; the HTTP response must not
+ * be stored by any intermediate cache.
  */
 
 import { NextResponse, type NextRequest } from "next/server";
@@ -25,8 +27,12 @@ import {
   type CommunityTournamentStatus,
 } from "@/lib/data/communities-endpoints";
 
-/** Cache-Control for tag-invalidated public data. */
-const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400";
+/**
+ * Cache-Control for auth-gated routes. CDN must not cache authenticated
+ * responses — a cached 200 could be served to anonymous callers.
+ * Server-side `'use cache'` on the underlying fetchers handles shared caching.
+ */
+const CACHE_CONTROL = "private, no-store";
 
 /** Valid tournament status values accepted as a query param. */
 const VALID_STATUSES: ReadonlySet<string> = new Set([
@@ -62,8 +68,11 @@ export async function GET(
         status: 429,
         headers: {
           "Retry-After": String(
-            Math.ceil(
-              (rateLimit.resetAt.getTime() - Date.now()) / 1000
+            Math.max(
+              1,
+              Math.ceil(
+                (rateLimit.resetAt.getTime() - Date.now()) / 1000
+              )
             )
           ),
         },

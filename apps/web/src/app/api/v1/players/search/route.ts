@@ -50,12 +50,14 @@ import {
 } from "@/lib/data/players-search-endpoint";
 
 /**
- * Cache-Control for tag-invalidated public player search data.
- * Long shared-CDN TTL; tag bust via `invalidatePlayerDirectoryCaches` is the
- * real refresh mechanism — the time-based TTL is a safety net, not the clock.
+ * Cache-Control: this route is auth-gated (resolveApiAuth -> 401 for anon), so
+ * the HTTP response must not be shared by a CDN — a `public` header would let a
+ * CDN serve an authenticated 200 to an anonymous caller, undermining the
+ * "no anonymous open Data API" decision. Server-side `'use cache'` (tag-busted
+ * via `invalidatePlayerDirectoryCaches`) is the real caching layer; the
+ * CDN-facing response stays private.
  */
-const CACHE_CONTROL =
-  "public, s-maxage=31536000, stale-while-revalidate=86400";
+const CACHE_CONTROL = "private, no-store";
 
 const VALID_SORTS = new Set<string>([
   "tournaments",

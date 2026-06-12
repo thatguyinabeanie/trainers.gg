@@ -23,23 +23,33 @@
  *   the route handler. Do NOT revert this to `createStaticClient()` — that would
  *   silently return zero rows once the grant revoke lands.
  *
+ * `getPublicTournamentStandings` is used here (not `getTournamentStandings`) so
+ * that new columns added to `tournament_standings` or `alts` in future migrations
+ * do NOT silently leak through this versioned, cached public API. The explicit
+ * column list is the contract; add columns there intentionally when the API
+ * contract should expand.
+ *
  * Standings rows are public (rank, record, joined alt) — no PII is cached.
  */
 
 import { cacheTag, cacheLife } from "next/cache";
 
-import { getTournamentStandings } from "@trainers/supabase";
+import { getPublicTournamentStandings } from "@trainers/supabase";
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 
-/** A single standings row with its joined alt — the shape `getTournamentStandings` returns. */
+/** A single standings row with its joined alt — the explicit-column shape `getPublicTournamentStandings` returns. */
 export type TournamentStandingRow = Awaited<
-  ReturnType<typeof getTournamentStandings>
+  ReturnType<typeof getPublicTournamentStandings>
 >[number];
 
 /**
  * Cached fetch of the full ranked standings for one tournament.
+ *
+ * Uses `getPublicTournamentStandings` (explicit column allowlist) rather than
+ * `getTournamentStandings` (select-*) to prevent future schema additions from
+ * silently leaking through this versioned public endpoint.
  *
  * @param tournamentId - Numeric tournament id (validated by the caller before
  *   reaching this function — a `NaN` should produce a 404 at the route boundary,
@@ -53,5 +63,5 @@ export async function getCachedTournamentStandings(
   cacheLife("max");
 
   const supabase = createServiceRoleClient();
-  return getTournamentStandings(supabase, tournamentId);
+  return getPublicTournamentStandings(supabase, tournamentId);
 }

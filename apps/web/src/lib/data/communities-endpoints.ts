@@ -30,6 +30,7 @@ import {
   getCommunityBySlug,
   listCommunityStaffWithRoles,
   listCommunityTournaments,
+  type TypedSupabaseClient,
 } from "@trainers/supabase";
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
@@ -80,33 +81,31 @@ export async function getCachedCommunityBySlug(
 }
 
 // =============================================================================
-// getCachedCommunityStaff
+// getCommunityStaff (REQUEST-SCOPED — NOT cached)
 // =============================================================================
 
 /**
- * Cached fetch of community staff with their group/role assignments.
+ * Request-scoped fetch of community staff with their group/role assignments.
  *
- * Uses `createServiceRoleClient()` inside the `'use cache'` scope so reads of
- * S-bucket base tables (`community_staff`, `groups`, `roles`, etc.) survive the
- * Phase 2 Task 9 `REVOKE SELECT ... FROM anon, authenticated`. Service-role is
- * a constant identity — it does not vary the cache key. Data is public S-bucket.
+ * SECURITY: this is the one community fetcher that is **deliberately NOT cached**.
+ * The staff roster embeds `user.email` (PII), so it must never become a shared,
+ * auth-unscoped cache entry — a CodeRabbit + security review flagged the previous
+ * `'use cache'` + `createServiceRoleClient()` version as a PII-leak: any viewer's
+ * response (with emails) could be replayed to every other caller.
  *
+ * Instead, the caller passes a **request-scoped, RLS-bound client** (the
+ * `auth.supabase` from `resolveApiAuth`). The route handler authenticates the
+ * caller (401), rate-limits (429), and verifies the caller manages this community
+ * (`canManageCommunity` → 403) before invoking this. Do NOT re-add `'use cache'`,
+ * `cacheTag`, `cacheLife`, or `createServiceRoleClient()` here.
+ *
+ * @param supabase - Request-scoped client bound to the authenticated caller.
  * @param communityId - Numeric community ID.
- * @param communitySlug - Community slug (added to cache tags so slug-based
- *   cache invalidation also busts this entry).
  */
-export async function getCachedCommunityStaff(
-  communityId: number,
-  communitySlug: string
+export async function getCommunityStaff(
+  supabase: TypedSupabaseClient,
+  communityId: number
 ): Promise<CommunityStaffMember[]> {
-  "use cache";
-  cacheTag(
-    CacheTags.community(communityId),
-    CacheTags.community(communitySlug)
-  );
-  cacheLife("max");
-
-  const supabase = createServiceRoleClient();
   return listCommunityStaffWithRoles(supabase, communityId);
 }
 

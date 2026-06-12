@@ -18,6 +18,8 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { positiveIntSchema } from "@trainers/validators";
+
 import { resolveApiAuth } from "@/lib/api/auth";
 import {
   enforceRateLimit,
@@ -27,9 +29,12 @@ import {
 } from "@/lib/api/rate-limit";
 import { getCachedLeaderboard } from "@/lib/data/players-endpoints";
 
-/** Cache-Control for tag-invalidated public leaderboard data. */
-const CACHE_CONTROL =
-  "public, s-maxage=31536000, stale-while-revalidate=86400";
+/**
+ * Cache-Control: private, no-store — auth-gated routes must not be cached by
+ * shared/CDN caches; a "public" cache-control would allow a CDN to serve an
+ * authed 200 response to an anonymous caller.
+ */
+const CACHE_CONTROL = "private, no-store";
 
 const MAX_LIMIT = 50;
 
@@ -52,20 +57,28 @@ export async function GET(request: NextRequest) {
       { error: "Too many requests" },
       {
         status: 429,
-        headers: { "Retry-After": rl.resetAt.toUTCString() },
+        headers: {
+          "Retry-After": String(
+            Math.max(1, Math.ceil((rl.resetAt.getTime() - Date.now()) / 1000))
+          ),
+        },
       }
     );
   }
 
-  // Parse limit param.
+  // Validate limit — must be a positive integer ≤ MAX_LIMIT (rejects floats,
+  // zero, negatives, and non-numeric strings). Default to 5 when omitted.
   const rawLimit = request.nextUrl.searchParams.get("limit");
-  const limit = rawLimit ? Number(rawLimit) : 5;
-  if (!Number.isFinite(limit) || limit < 1 || limit > MAX_LIMIT) {
+  const limitResult = positiveIntSchema
+    .max(MAX_LIMIT)
+    .safeParse(rawLimit ?? "5");
+  if (!limitResult.success) {
     return NextResponse.json(
       { error: `limit must be between 1 and ${MAX_LIMIT}` },
       { status: 400 }
     );
   }
+  const limit = limitResult.data;
 
   const entries = await getCachedLeaderboard(limit);
 

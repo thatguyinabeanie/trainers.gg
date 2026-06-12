@@ -117,6 +117,7 @@ describe("limit param validation", () => {
     ["0", "zero"],
     ["51", "above max (50)"],
     ["-1", "negative"],
+    ["1.5", "float"],
   ])("returns 400 for limit=%s (%s)", async (limitVal) => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_USER);
 
@@ -138,9 +139,7 @@ describe("success", () => {
 
     expect(response.status).toBe(200);
     expect(await getJson(response)).toEqual(LEADERBOARD);
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=31536000, stale-while-revalidate=86400"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("passes limit param to getCachedLeaderboard", async () => {

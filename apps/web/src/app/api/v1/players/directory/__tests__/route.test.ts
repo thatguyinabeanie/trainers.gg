@@ -150,6 +150,15 @@ describe("query param validation", () => {
     expect(response.status).toBe(400);
   });
 
+  it("returns 400 for a float page (e.g. 1.5)", async () => {
+    mockResolveApiAuth.mockResolvedValue(AUTHED_USER);
+
+    const response = await GET(makeRequest({ page: "1.5" }));
+
+    expect(response.status).toBe(400);
+    expect(await getJson(response)).toEqual({ error: "Invalid page parameter" });
+  });
+
   it("ignores unknown sort values (passes undefined for sort)", async () => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_USER);
 
@@ -175,9 +184,7 @@ describe("success", () => {
 
     expect(response.status).toBe(200);
     expect(await getJson(response)).toEqual(DIRECTORY_RESULT);
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=31536000, stale-while-revalidate=86400"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("passes q, country, format, sort and page to the fetcher", async () => {

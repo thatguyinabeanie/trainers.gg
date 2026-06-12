@@ -3,24 +3,26 @@
  *
  * Tests for getCachedTournamentStandings.
  *
- * The fetcher is a thin `'use cache'` wrapper around getTournamentStandings.
- * We verify:
+ * The fetcher is a thin `'use cache'` wrapper around getPublicTournamentStandings
+ * (explicit column allowlist). We verify:
  *   1. It calls the underlying query with the correct client and tournamentId.
  *   2. It returns the query result as-is.
  *   3. The mocked service-role client (not the anon client) is what gets passed
  *      to the query — proving the Phase 2 Task 9 mechanical swap is in effect.
+ *   4. The explicit-column variant (not select-*) is used, so new schema columns
+ *      cannot silently leak through this versioned public endpoint.
  */
 
 // =============================================================================
 // Mocks — declared before imports so Jest hoisting works correctly
 // =============================================================================
 
-const mockGetTournamentStandings = jest.fn();
+const mockGetPublicTournamentStandings = jest.fn();
 const mockCreateServiceRoleClient = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
-  getTournamentStandings: (...args: unknown[]) =>
-    mockGetTournamentStandings(...args),
+  getPublicTournamentStandings: (...args: unknown[]) =>
+    mockGetPublicTournamentStandings(...args),
 }));
 
 jest.mock("@/lib/supabase/server", () => ({
@@ -64,7 +66,7 @@ const SERVICE_ROLE_CLIENT = { __serviceRole: true, from: jest.fn() };
 beforeEach(() => {
   jest.clearAllMocks();
   mockCreateServiceRoleClient.mockReturnValue(SERVICE_ROLE_CLIENT);
-  mockGetTournamentStandings.mockResolvedValue(STANDINGS);
+  mockGetPublicTournamentStandings.mockResolvedValue(STANDINGS);
 });
 
 // =============================================================================
@@ -72,17 +74,19 @@ beforeEach(() => {
 // =============================================================================
 
 describe("getCachedTournamentStandings", () => {
-  it("returns the standings returned by getTournamentStandings", async () => {
+  it("returns the standings returned by getPublicTournamentStandings", async () => {
     const result = await getCachedTournamentStandings(42);
 
     expect(result).toEqual(STANDINGS);
   });
 
-  it("calls getTournamentStandings with the service-role client and correct tournamentId", async () => {
+  it("calls getPublicTournamentStandings (explicit-column variant) — not getTournamentStandings (select-*)", async () => {
     await getCachedTournamentStandings(42);
 
-    expect(mockGetTournamentStandings).toHaveBeenCalledTimes(1);
-    expect(mockGetTournamentStandings).toHaveBeenCalledWith(
+    // Must use the explicit-column variant so future schema additions don't
+    // silently leak through this versioned public endpoint.
+    expect(mockGetPublicTournamentStandings).toHaveBeenCalledTimes(1);
+    expect(mockGetPublicTournamentStandings).toHaveBeenCalledWith(
       SERVICE_ROLE_CLIENT,
       42
     );
@@ -98,14 +102,14 @@ describe("getCachedTournamentStandings", () => {
   it("passes the correct tournamentId to the query for different ids", async () => {
     await getCachedTournamentStandings(7);
 
-    expect(mockGetTournamentStandings).toHaveBeenCalledWith(
+    expect(mockGetPublicTournamentStandings).toHaveBeenCalledWith(
       SERVICE_ROLE_CLIENT,
       7
     );
   });
 
   it("propagates an empty array from the query unchanged", async () => {
-    mockGetTournamentStandings.mockResolvedValue([]);
+    mockGetPublicTournamentStandings.mockResolvedValue([]);
 
     const result = await getCachedTournamentStandings(42);
 

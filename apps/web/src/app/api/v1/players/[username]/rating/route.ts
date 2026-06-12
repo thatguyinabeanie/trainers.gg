@@ -27,6 +27,8 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { positiveIntSchema } from "@trainers/validators";
+
 import { resolveApiAuth } from "@/lib/api/auth";
 import {
   enforceRateLimit,
@@ -36,9 +38,12 @@ import {
 } from "@/lib/api/rate-limit";
 import { getCachedPlayerRating } from "@/lib/data/players-endpoints";
 
-/** Cache-Control for tag-invalidated public rating data. */
-const CACHE_CONTROL =
-  "public, s-maxage=31536000, stale-while-revalidate=86400";
+/**
+ * Cache-Control: private, no-store — auth-gated routes must not be cached by
+ * shared/CDN caches; a "public" cache-control would allow a CDN to serve an
+ * authed 200 response to an anonymous caller.
+ */
+const CACHE_CONTROL = "private, no-store";
 
 export async function GET(
   request: NextRequest,
@@ -62,12 +67,17 @@ export async function GET(
       { error: "Too many requests" },
       {
         status: 429,
-        headers: { "Retry-After": rl.resetAt.toUTCString() },
+        headers: {
+          "Retry-After": String(
+            Math.max(1, Math.ceil((rl.resetAt.getTime() - Date.now()) / 1000))
+          ),
+        },
       }
     );
   }
 
-  // Validate altId.
+  // Validate altId — must be a positive integer (rejects floats, zero,
+  // negatives, and non-numeric strings).
   const rawAltId = request.nextUrl.searchParams.get("altId");
   if (!rawAltId) {
     return NextResponse.json(
@@ -75,13 +85,14 @@ export async function GET(
       { status: 400 }
     );
   }
-  const altId = Number(rawAltId);
-  if (Number.isNaN(altId)) {
+  const altIdResult = positiveIntSchema.safeParse(rawAltId);
+  if (!altIdResult.success) {
     return NextResponse.json(
       { error: "Invalid altId parameter" },
       { status: 400 }
     );
   }
+  const altId = altIdResult.data;
 
   const format =
     request.nextUrl.searchParams.get("format") ?? "overall";

@@ -24,6 +24,8 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { positiveIntSchema } from "@trainers/validators";
+
 import { resolveApiAuth } from "@/lib/api/auth";
 import {
   enforceRateLimit,
@@ -38,9 +40,12 @@ import {
   type PlayerSortOption,
 } from "@/lib/data/players-endpoints";
 
-/** Cache-Control for tag-invalidated public player data. */
-const CACHE_CONTROL =
-  "public, s-maxage=31536000, stale-while-revalidate=86400";
+/**
+ * Cache-Control: private, no-store — auth-gated routes must not be cached by
+ * shared/CDN caches; a "public" cache-control would allow a CDN to serve an
+ * authed 200 response to an anonymous caller.
+ */
+const CACHE_CONTROL = "private, no-store";
 
 const VALID_SORTS = new Set<string>([
   "tournaments",
@@ -69,7 +74,11 @@ export async function GET(request: NextRequest) {
       { error: "Too many requests" },
       {
         status: 429,
-        headers: { "Retry-After": rl.resetAt.toUTCString() },
+        headers: {
+          "Retry-After": String(
+            Math.max(1, Math.ceil((rl.resetAt.getTime() - Date.now()) / 1000))
+          ),
+        },
       }
     );
   }
@@ -87,13 +96,16 @@ export async function GET(request: NextRequest) {
       ? (rawSort as PlayerSortOption)
       : undefined;
 
-  const page = rawPage ? Number(rawPage) : 1;
-  if (!Number.isFinite(page) || page < 1) {
+  // Validate page — must be a positive integer (rejects floats, zero,
+  // negatives, and non-numeric strings). Default to 1 when omitted.
+  const pageResult = positiveIntSchema.safeParse(rawPage ?? "1");
+  if (!pageResult.success) {
     return NextResponse.json(
       { error: "Invalid page parameter" },
       { status: 400 }
     );
   }
+  const page = pageResult.data;
 
   const filters: PlayerSearchFilters = {};
   if (q !== undefined) filters.query = q;

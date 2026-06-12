@@ -649,6 +649,59 @@ export async function getTournamentStandings(
 }
 
 /**
+ * Get standings for a tournament — public API variant with an explicit column
+ * allowlist.
+ *
+ * Use this function instead of `getTournamentStandings` whenever the result is
+ * served through a versioned public endpoint (e.g. `GET /api/v1/tournaments/[id]/standings`).
+ * An explicit select list prevents new columns added to `tournament_standings`
+ * or `alts` from silently leaking through the cached, versioned API.
+ *
+ * Included columns:
+ *   tournament_standings — all public statistical fields (rank, record, tiebreakers)
+ *   alts — public identity only (id, username, avatar_url); PII/internal fields omitted
+ */
+export async function getPublicTournamentStandings(
+  supabase: TypedClient,
+  tournamentId: number
+) {
+  const { data, error } = await supabase
+    .from("tournament_standings")
+    .select(
+      `
+      id,
+      tournament_id,
+      alt_id,
+      rank,
+      round_number,
+      match_points,
+      match_win_percentage,
+      game_wins,
+      game_losses,
+      game_win_percentage,
+      opponent_match_win_percentage,
+      opponent_game_win_percentage,
+      created_at,
+      alt:alts(
+        id,
+        username,
+        avatar_url
+      )
+    `
+    )
+    .eq("tournament_id", tournamentId)
+    .order("rank", { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** A single public standings row with its joined alt. */
+export type PublicTournamentStandingRow = NonNullable<
+  Awaited<ReturnType<typeof getPublicTournamentStandings>>
+>[number];
+
+/**
  * Get player stats for a tournament
  */
 export async function getPlayerTournamentStats(

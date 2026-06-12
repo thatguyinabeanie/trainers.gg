@@ -8,9 +8,11 @@
  * `createStaticClient()` (cookie-less) so per-viewer sessions never pollute the
  * shared cache entry.
  *
- * CACHE-CONTROL: `public, s-maxage=31536000, stale-while-revalidate=86400`
- * Tag-invalidated via `invalidateCommunityPageCaches(slug, id)` on any mutation.
- * A long CDN TTL is safe because the tag bust is the real refresh signal.
+ * CACHE-CONTROL: `private, no-store`
+ * Auth is required on every request, so CDN caching is unsafe — a CDN could
+ * serve an authenticated 200 to an anonymous caller. Server-side `'use cache'`
+ * on the underlying fetcher handles shared caching; the HTTP response must not
+ * be stored by any intermediate cache.
  *
  * RETURNS: `null` when the community does not exist → caller receives `null` JSON
  * (the route itself stays 200 so clients can distinguish "not found" from errors).
@@ -23,8 +25,12 @@ import { resolveApiAuth } from "@/lib/api/auth";
 import { enforceRateLimit } from "@/lib/api/rate-limit";
 import { getCachedCommunityBySlug } from "@/lib/data/communities-endpoints";
 
-/** Cache-Control for tag-invalidated public community data. */
-const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400";
+/**
+ * Cache-Control for auth-gated routes. CDN must not cache authenticated
+ * responses — a cached 200 could be served to anonymous callers.
+ * Server-side `'use cache'` on the underlying fetcher handles shared caching.
+ */
+const CACHE_CONTROL = "private, no-store";
 
 export async function GET(
   request: NextRequest,
@@ -52,8 +58,11 @@ export async function GET(
         status: 429,
         headers: {
           "Retry-After": String(
-            Math.ceil(
-              (rateLimit.resetAt.getTime() - Date.now()) / 1000
+            Math.max(
+              1,
+              Math.ceil(
+                (rateLimit.resetAt.getTime() - Date.now()) / 1000
+              )
             )
           ),
         },

@@ -238,14 +238,12 @@ describe("success", () => {
     );
   });
 
-  it("sets the tag-invalidated Cache-Control header on success", async () => {
+  it("sets a private, no-store Cache-Control header on success", async () => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
 
     const response = await GET(makeRequest());
 
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=31536000, stale-while-revalidate=86400"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("passes q, country, format, sort, and page to the fetcher", async () => {

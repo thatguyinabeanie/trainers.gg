@@ -146,6 +146,42 @@ describe("altId validation", () => {
     expect(response.status).toBe(400);
     expect(await getJson(response)).toEqual({ error: "Invalid altId parameter" });
   });
+
+  it("returns 400 when altId is a float (e.g. 1.5)", async () => {
+    mockResolveApiAuth.mockResolvedValue(AUTHED_USER);
+
+    const response = await GET(
+      makeRequest("ash", { altId: "1.5" }),
+      makeParams("ash")
+    );
+
+    expect(response.status).toBe(400);
+    expect(await getJson(response)).toEqual({ error: "Invalid altId parameter" });
+  });
+
+  it("returns 400 when altId is zero", async () => {
+    mockResolveApiAuth.mockResolvedValue(AUTHED_USER);
+
+    const response = await GET(
+      makeRequest("ash", { altId: "0" }),
+      makeParams("ash")
+    );
+
+    expect(response.status).toBe(400);
+    expect(await getJson(response)).toEqual({ error: "Invalid altId parameter" });
+  });
+
+  it("returns 400 when altId is negative", async () => {
+    mockResolveApiAuth.mockResolvedValue(AUTHED_USER);
+
+    const response = await GET(
+      makeRequest("ash", { altId: "-5" }),
+      makeParams("ash")
+    );
+
+    expect(response.status).toBe(400);
+    expect(await getJson(response)).toEqual({ error: "Invalid altId parameter" });
+  });
 });
 
 // =============================================================================
@@ -163,9 +199,7 @@ describe("success", () => {
 
     expect(response.status).toBe(200);
     expect(await getJson(response)).toEqual(RATING);
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=31536000, stale-while-revalidate=86400"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("passes altId and format to getCachedPlayerRating", async () => {

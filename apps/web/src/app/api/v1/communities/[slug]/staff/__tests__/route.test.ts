@@ -7,15 +7,15 @@
 // =============================================================================
 
 const mockGetCachedCommunityBySlug = jest.fn();
-const mockGetCachedCommunityStaff = jest.fn();
+const mockGetCommunityStaff = jest.fn();
 const mockResolveApiAuth = jest.fn();
 const mockEnforceRateLimit = jest.fn();
+const mockCanManageCommunity = jest.fn();
 
 jest.mock("@/lib/data/communities-endpoints", () => ({
   getCachedCommunityBySlug: (...args: unknown[]) =>
     mockGetCachedCommunityBySlug(...args),
-  getCachedCommunityStaff: (...args: unknown[]) =>
-    mockGetCachedCommunityStaff(...args),
+  getCommunityStaff: (...args: unknown[]) => mockGetCommunityStaff(...args),
 }));
 
 jest.mock("@/lib/api/auth", () => ({
@@ -24,6 +24,10 @@ jest.mock("@/lib/api/auth", () => ({
 
 jest.mock("@/lib/api/rate-limit", () => ({
   enforceRateLimit: (...args: unknown[]) => mockEnforceRateLimit(...args),
+}));
+
+jest.mock("@trainers/supabase", () => ({
+  canManageCommunity: (...args: unknown[]) => mockCanManageCommunity(...args),
 }));
 
 // =============================================================================
@@ -51,7 +55,14 @@ const STAFF = [
     user_id: "user-1",
     community_id: 1,
     created_at: "2026-01-01T00:00:00Z",
-    user: { id: "user-1", username: "ash", first_name: "Ash", last_name: "Ketchum", image: null, email: null },
+    user: {
+      id: "user-1",
+      username: "ash",
+      first_name: "Ash",
+      last_name: "Ketchum",
+      image: null,
+      email: "ash@example.com",
+    },
     group: null,
     role: null,
     isOwner: true,
@@ -61,14 +72,27 @@ const STAFF = [
     user_id: "user-2",
     community_id: 1,
     created_at: "2026-01-02T00:00:00Z",
-    user: { id: "user-2", username: "misty", first_name: "Misty", last_name: null, image: null, email: null },
+    user: {
+      id: "user-2",
+      username: "misty",
+      first_name: "Misty",
+      last_name: null,
+      image: null,
+      email: "misty@example.com",
+    },
     group: { id: 10, name: "Judges" },
     role: { id: 20, name: "org_judge", description: "Handles disputes" },
     isOwner: false,
   },
 ];
 
-const AUTHED_USER = { mode: "cookie" as const, userId: "user-1", supabase: {} };
+// A request-scoped, RLS-bound client stand-in (asserted as the staff query arg).
+const REQUEST_CLIENT = { __requestScoped: true };
+const AUTHED_USER = {
+  mode: "cookie" as const,
+  userId: "user-1",
+  supabase: REQUEST_CLIENT,
+};
 const RATE_LIMIT_OK = { allowed: true, remaining: 119, resetAt: new Date() };
 
 function makeRequest(): NextRequest {
@@ -92,9 +116,10 @@ async function getJson(response: Response) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetCachedCommunityBySlug.mockResolvedValue(COMMUNITY);
-  mockGetCachedCommunityStaff.mockResolvedValue(STAFF);
+  mockGetCommunityStaff.mockResolvedValue(STAFF);
   mockResolveApiAuth.mockResolvedValue(AUTHED_USER);
   mockEnforceRateLimit.mockResolvedValue(RATE_LIMIT_OK);
+  mockCanManageCommunity.mockResolvedValue(true);
 });
 
 // =============================================================================
@@ -109,7 +134,7 @@ describe("authentication", () => {
 
     expect(response.status).toBe(401);
     expect(await getJson(response)).toEqual({ error: "Not authenticated" });
-    expect(mockGetCachedCommunityStaff).not.toHaveBeenCalled();
+    expect(mockGetCommunityStaff).not.toHaveBeenCalled();
   });
 });
 
@@ -128,7 +153,23 @@ describe("rate limiting", () => {
     const response = await GET(makeRequest(), makeParams("pallet-town-vgc"));
 
     expect(response.status).toBe(429);
-    expect(mockGetCachedCommunityStaff).not.toHaveBeenCalled();
+    expect(mockGetCommunityStaff).not.toHaveBeenCalled();
+  });
+
+  it("clamps Retry-After to at least 1s when the reset time is in the past", async () => {
+    // Clock drift / an already-elapsed window would otherwise produce 0 or negative.
+    mockEnforceRateLimit.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      resetAt: new Date(Date.now() - 5_000),
+    });
+
+    const response = await GET(makeRequest(), makeParams("pallet-town-vgc"));
+
+    expect(response.status).toBe(429);
+    expect(Number(response.headers.get("retry-after"))).toBeGreaterThanOrEqual(
+      1
+    );
   });
 });
 
@@ -144,7 +185,35 @@ describe("community resolution", () => {
 
     expect(response.status).toBe(404);
     expect(await getJson(response)).toEqual({ error: "Community not found" });
-    expect(mockGetCachedCommunityStaff).not.toHaveBeenCalled();
+    expect(mockCanManageCommunity).not.toHaveBeenCalled();
+    expect(mockGetCommunityStaff).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// Authorization — staff roster includes member emails (PII)
+// =============================================================================
+
+describe("authorization", () => {
+  it("returns 403 when the caller does not manage the community", async () => {
+    mockCanManageCommunity.mockResolvedValue(false);
+
+    const response = await GET(makeRequest(), makeParams("pallet-town-vgc"));
+
+    expect(response.status).toBe(403);
+    expect(await getJson(response)).toEqual({ error: "Forbidden" });
+    // PII (staff emails) must NOT be fetched for an unauthorized caller.
+    expect(mockGetCommunityStaff).not.toHaveBeenCalled();
+  });
+
+  it("verifies management with the request-scoped client + caller id", async () => {
+    await GET(makeRequest(), makeParams("pallet-town-vgc"));
+
+    expect(mockCanManageCommunity).toHaveBeenCalledWith(
+      REQUEST_CLIENT,
+      COMMUNITY.id,
+      AUTHED_USER.userId
+    );
   });
 });
 
@@ -153,29 +222,28 @@ describe("community resolution", () => {
 // =============================================================================
 
 describe("success", () => {
-  it("returns 200 + staff array for a valid community slug", async () => {
+  it("returns 200 + staff array for an authorized caller", async () => {
     const response = await GET(makeRequest(), makeParams("pallet-town-vgc"));
 
     expect(response.status).toBe(200);
     expect(await getJson(response)).toEqual(STAFF);
     // Must resolve community first to get the numeric ID.
     expect(mockGetCachedCommunityBySlug).toHaveBeenCalledWith("pallet-town-vgc");
-    expect(mockGetCachedCommunityStaff).toHaveBeenCalledWith(
-      COMMUNITY.id,
-      "pallet-town-vgc"
+    // Staff is read with the caller's request-scoped client (NOT a shared cache).
+    expect(mockGetCommunityStaff).toHaveBeenCalledWith(
+      REQUEST_CLIENT,
+      COMMUNITY.id
     );
   });
 
-  it("sets the tag-invalidated Cache-Control header", async () => {
+  it("sets a private, no-store Cache-Control header (PII must not be cached)", async () => {
     const response = await GET(makeRequest(), makeParams("pallet-town-vgc"));
 
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=31536000, stale-while-revalidate=86400"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("returns an empty array when the community has no staff", async () => {
-    mockGetCachedCommunityStaff.mockResolvedValue([]);
+    mockGetCommunityStaff.mockResolvedValue([]);
 
     const response = await GET(makeRequest(), makeParams("pallet-town-vgc"));
 

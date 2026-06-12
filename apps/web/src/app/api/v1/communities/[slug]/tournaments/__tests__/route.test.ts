@@ -111,7 +111,22 @@ describe("rate limiting", () => {
     const response = await GET(makeRequest(), makeParams("pallet-town-vgc"));
 
     expect(response.status).toBe(429);
+    expect(Number(response.headers.get("retry-after"))).toBeGreaterThanOrEqual(1);
     expect(mockGetCachedCommunityTournaments).not.toHaveBeenCalled();
+  });
+
+  it("sets Retry-After to at least 1 to guard against clock drift producing 0", async () => {
+    // resetAt in the past (simulates extreme clock drift)
+    mockEnforceRateLimit.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      resetAt: new Date(Date.now() - 5_000),
+    });
+
+    const response = await GET(makeRequest(), makeParams("pallet-town-vgc"));
+
+    expect(response.status).toBe(429);
+    expect(Number(response.headers.get("retry-after"))).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -215,11 +230,9 @@ describe("success", () => {
     expect(await getJson(response)).toEqual(TOURNAMENTS_RESULT);
   });
 
-  it("sets the tag-invalidated Cache-Control header", async () => {
+  it("sets private, no-store Cache-Control to prevent CDN caching of auth-gated responses", async () => {
     const response = await GET(makeRequest(), makeParams("pallet-town-vgc"));
 
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=31536000, stale-while-revalidate=86400"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 });

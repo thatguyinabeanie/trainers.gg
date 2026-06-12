@@ -145,9 +145,7 @@ describe("success", () => {
 
     expect(response.status).toBe(200);
     expect(await getJson(response)).toEqual(FULL_PROFILE);
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=31536000, stale-while-revalidate=86400"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("passes the username to getCachedPlayerProfile", async () => {

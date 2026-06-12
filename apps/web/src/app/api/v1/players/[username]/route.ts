@@ -31,9 +31,12 @@ import {
 } from "@/lib/api/rate-limit";
 import { getCachedPlayerProfile } from "@/lib/data/players-endpoints";
 
-/** Cache-Control for tag-invalidated public player profile data. */
-const CACHE_CONTROL =
-  "public, s-maxage=31536000, stale-while-revalidate=86400";
+/**
+ * Cache-Control: private, no-store — auth-gated routes must not be cached by
+ * shared/CDN caches; a "public" cache-control would allow a CDN to serve an
+ * authed 200 response to an anonymous caller.
+ */
+const CACHE_CONTROL = "private, no-store";
 
 export async function GET(
   request: NextRequest,
@@ -57,7 +60,11 @@ export async function GET(
       { error: "Too many requests" },
       {
         status: 429,
-        headers: { "Retry-After": rl.resetAt.toUTCString() },
+        headers: {
+          "Retry-After": String(
+            Math.max(1, Math.ceil((rl.resetAt.getTime() - Date.now()) / 1000))
+          ),
+        },
       }
     );
   }
