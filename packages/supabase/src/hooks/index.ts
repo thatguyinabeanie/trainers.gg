@@ -14,5 +14,8 @@ export { useSupabaseQuery } from "./use-supabase-query";
 export type { MutationResult } from "./use-supabase-mutation";
 export { useSupabaseMutation } from "./use-supabase-mutation";
 
+// API Query Factory — shared TanStack Query factory for ActionResult<T> endpoints
+export { useApiQuery, useApiMutation } from "./query-factory";
+
 // JWT utilities — cross-platform base64url decoder
 export { decodeBase64Url } from "./jwt-utils";

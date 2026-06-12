@@ -22,9 +22,13 @@ type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
  * ```
  */
 export function useTournament(id: string) {
-  return useApiQuery<Tournament>(["tournament", id], `api-tournaments/${id}`, {
-    staleTime: 60_000, // 1 minute
-  });
+  return useApiQuery<Tournament>(
+    ["tournament", id],
+    () => apiCall<Tournament>(`api-tournaments/${id}`),
+    {
+      staleTime: 60_000, // 1 minute
+    }
+  );
 }
 
 /**
@@ -41,9 +45,18 @@ export function useTournaments() {
     active: Tournament[];
     upcoming: Tournament[];
     completed: Tournament[];
-  }>(["tournaments"], "api-tournaments", {
-    staleTime: 30_000, // 30 seconds
-  });
+  }>(
+    ["tournaments"],
+    () =>
+      apiCall<{
+        active: Tournament[];
+        upcoming: Tournament[];
+        completed: Tournament[];
+      }>("api-tournaments"),
+    {
+      staleTime: 30_000, // 30 seconds
+    }
+  );
 }
 
 /**
