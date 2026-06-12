@@ -6,20 +6,25 @@ import type { Json } from "@trainers/supabase";
 // ---------------------------------------------------------------------------
 
 jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(),
+  createServiceRoleClient: jest.fn(),
 }));
 
 jest.mock("@trainers/supabase", () => ({
   getFeatureFlag: jest.fn(),
 }));
 
-import { checkFeatureAccess, checkCommunityFeatureAccess } from "../check-flag";
-import { createClient } from "@/lib/supabase/server";
+import {
+  checkFeatureAccess,
+  checkCommunityFeatureAccess,
+  isCoachingPublic,
+} from "../check-flag";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getFeatureFlag } from "@trainers/supabase";
 
-const mockCreateClient = createClient as jest.MockedFunction<
-  typeof createClient
->;
+const mockCreateServiceRoleClient =
+  createServiceRoleClient as jest.MockedFunction<
+    typeof createServiceRoleClient
+  >;
 const mockGetFeatureFlag = getFeatureFlag as jest.MockedFunction<
   typeof getFeatureFlag
 >;
@@ -48,8 +53,8 @@ function buildFlag(overrides: { enabled: boolean; metadata: Json }) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockCreateClient.mockResolvedValue(
-    {} as Awaited<ReturnType<typeof createClient>>
+  mockCreateServiceRoleClient.mockReturnValue(
+    {} as ReturnType<typeof createServiceRoleClient>
   );
 });
 
@@ -95,6 +100,38 @@ describe("checkFeatureAccess", () => {
       buildFlag({ enabled: false, metadata: {} })
     );
     expect(await checkFeatureAccess("some_flag", "user-1")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isCoachingPublic — reads the "coaching" flag via the service-role client
+// (RLS audit #6) and reports only the global enabled state.
+// ---------------------------------------------------------------------------
+
+describe("isCoachingPublic", () => {
+  it("uses the service-role client (not the session client) to read the flag", async () => {
+    mockGetFeatureFlag.mockResolvedValue(null);
+    await isCoachingPublic();
+    expect(mockCreateServiceRoleClient).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns false when the coaching flag does not exist", async () => {
+    mockGetFeatureFlag.mockResolvedValue(null);
+    expect(await isCoachingPublic()).toBe(false);
+  });
+
+  it("returns true when the coaching flag is globally enabled", async () => {
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({ enabled: true, metadata: {} })
+    );
+    expect(await isCoachingPublic()).toBe(true);
+  });
+
+  it("returns false when the coaching flag is globally disabled", async () => {
+    mockGetFeatureFlag.mockResolvedValue(
+      buildFlag({ enabled: false, metadata: { allowed_users: ["user-1"] } })
+    );
+    expect(await isCoachingPublic()).toBe(false);
   });
 });
 

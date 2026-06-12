@@ -1,6 +1,6 @@
 import type { Adapter } from "flags";
 import { dedupe } from "flags/next";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getFeatureFlag } from "@trainers/supabase";
 
 /**
@@ -8,9 +8,15 @@ import { getFeatureFlag } from "@trainers/supabase";
  *
  * Uses the Flags SDK's `dedupe` helper so that multiple flags
  * evaluated in the same request only trigger one DB call per key.
+ *
+ * RLS audit #6: the `feature_flags` table SELECT is locked to site admins,
+ * so flag evaluation reads via the service-role client (RLS bypass). This is
+ * safe because the adapter only ever reads the flags table — no user-scoped
+ * data — and runs server-side only (RSC / route handlers, never edge
+ * middleware). Only the flag read bypasses RLS.
  */
 const getFlag = dedupe(async (key: string) => {
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   return getFeatureFlag(supabase, key);
 });
 

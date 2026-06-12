@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { verifyAccess, type ApiData } from "flags";
 import { getProviderData } from "flags/next";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { listFeatureFlags } from "@trainers/supabase";
 import * as flags from "@/flags";
 
@@ -59,7 +59,11 @@ async function getDatabaseFlagDefinitions(): Promise<
   >
 > {
   try {
-    const supabase = await createClient();
+    // RLS audit #6: feature_flags SELECT is locked to site admins. This
+    // discovery endpoint is FLAGS_SECRET-protected admin tooling (Vercel
+    // Toolbar) running in the Node server runtime, so it reads flag rows via
+    // the service-role client to enumerate definitions regardless of viewer.
+    const supabase = createServiceRoleClient();
     const dbFlags = await listFeatureFlags(supabase);
 
     const definitions: Record<

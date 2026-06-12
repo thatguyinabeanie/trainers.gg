@@ -1,5 +1,15 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getFeatureFlag } from "@trainers/supabase";
+
+/**
+ * RLS audit #6: the `feature_flags` table SELECT is locked to site admins, so
+ * these helpers read flag rows via the service-role client (RLS bypass). This
+ * is safe because they only read the flags table — never user-scoped data —
+ * and run server-side only (RSC / route handlers, never edge middleware). The
+ * per-user / per-community allowlist checks below operate purely on the flag's
+ * `metadata` JSON and the caller-supplied id, so the RLS bypass is scoped to
+ * flag evaluation alone.
+ */
 
 /**
  * Check if a user has access to a feature flag.
@@ -16,7 +26,7 @@ export async function checkFeatureAccess(
   flagKey: string,
   userId: string
 ): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   const flag = await getFeatureFlag(supabase, flagKey);
 
   // Flag doesn't exist = disabled
@@ -36,7 +46,7 @@ export async function checkFeatureAccess(
  * Returns true only when the coaching flag is globally enabled.
  */
 export async function isCoachingPublic(): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   const flag = await getFeatureFlag(supabase, "coaching");
   return flag?.enabled ?? false;
 }
@@ -57,7 +67,7 @@ export async function checkCommunityFeatureAccess(
   communityId: number
 ): Promise<boolean> {
   try {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
     const flag = await getFeatureFlag(supabase, flagKey);
 
     // Flag doesn't exist = disabled
