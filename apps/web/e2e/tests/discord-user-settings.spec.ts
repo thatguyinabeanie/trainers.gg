@@ -47,7 +47,10 @@ test.describe("Discord user settings", () => {
     // The #discord-dms section renders inside a Suspense boundary. Use the
     // web-first toBeVisible assertion (auto-retries through hydration/detach)
     // rather than scrollIntoViewIfNeeded, which throws if the subtree swaps.
-    const discordSection = page.locator("#discord-dms");
+    // `:visible` scopes to the shown layout — the section id appears in both
+    // the desktop and mobile renders (one hidden), so a bare id match is a
+    // strict-mode violation.
+    const discordSection = page.locator("#discord-dms:visible");
     await expect(discordSection).toBeVisible({ timeout: 10000 });
   });
 
