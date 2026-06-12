@@ -2,6 +2,7 @@ import { cacheTag, cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import {
   createStaticClient,
+  createServiceRoleClient,
   createClientReadOnly,
   getUserId,
 } from "@/lib/supabase/server";
@@ -63,13 +64,19 @@ const phaseTypeLabels: Record<string, string> = {
 /**
  * Cached tournament fetcher — keyed by slug.
  * Uses slug-specific cache tag for granular invalidation.
+ *
+ * §0.2 (Phase 2 Task 9 — Part B mechanical swap): `createStaticClient()` uses
+ * the anon key; after `REVOKE SELECT ... FROM anon` it would silently return
+ * zero rows. `createServiceRoleClient()` bypasses grants and keeps working.
+ * The data is public S-bucket (same for all viewers), so service-role inside
+ * `'use cache'` is safe — it does not vary per user.
  */
 async function getCachedTournament(slug: string) {
   "use cache";
   cacheTag(CacheTags.tournament(slug), CacheTags.TOURNAMENTS_LIST);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getTournamentBySlug(supabase, slug);
 }
 
@@ -87,20 +94,34 @@ async function getMyTeam(tournamentId: number) {
 /**
  * Cached public team list for open teamsheet tournaments.
  * Keyed by tournament ID and slug for granular invalidation.
+ *
+ * §0.2 (Phase 2 Task 9 — Part B mechanical swap): reads of `alts`, `teams`,
+ * `team_pokemon`, and `pokemon` use `createServiceRoleClient()` so they survive
+ * `REVOKE SELECT ... FROM anon, authenticated` on S-bucket base tables.
+ * The `public_tournament_registrations` VIEW read intentionally stays on the
+ * anon/static client — it is excluded from the revoke set (safe-column view,
+ * public path, not a base-table grant revoke target).
+ * All data is public S-bucket (open team sheets, same for all viewers).
  */
 async function getCachedTournamentTeams(tournamentId: number, slug: string) {
   "use cache";
   cacheTag(CacheTags.tournamentTeams(slug), CacheTags.tournament(slug));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  // Anon/static client: only for the public_tournament_registrations VIEW,
+  // which is excluded from the revoke set and intentionally left unchanged.
+  const anonSupabase = createStaticClient();
+
+  // Service-role client: for alts, teams, team_pokemon, pokemon base tables
+  // that will have anon/authenticated SELECT revoked in Step 4.
+  const srSupabase = createServiceRoleClient();
 
   // Two-step lookup (RLS audit #3): the base tournament_registrations SELECT is
   // locked to own + staff, so the public path reads the safe-column VIEW first,
   // then fetches teams/pokemon separately. We avoid relying on PostgREST view
   // embedding — teams are resolved by team_id in a second query (the teams /
   // team_pokemon tables already carry their own public open-team-sheet RLS).
-  const { data: registrations } = await supabase
+  const { data: registrations } = await anonSupabase
     .from("public_tournament_registrations")
     .select("alt_id, team_id, registered_at")
     .eq("tournament_id", tournamentId)
@@ -117,11 +138,11 @@ async function getCachedTournamentTeams(tournamentId: number, slug: string) {
     .filter((id): id is number => id != null);
 
   const [altsResult, teamsResult] = await Promise.all([
-    supabase
+    srSupabase
       .from("alts")
       .select("id, username")
       .in("id", altIds),
-    supabase
+    srSupabase
       .from("teams")
       .select(
         `

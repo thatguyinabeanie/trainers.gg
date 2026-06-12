@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cacheTag, cacheLife } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { createStaticClient, getUserId } from "@/lib/supabase/server";
+import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import {
   getPlayerProfileByHandle,
   getFollowerCount,
@@ -41,12 +41,19 @@ interface PlayerPageProps {
  * Cached player profile fetcher.
  * Uses handle-specific cache tag for granular invalidation.
  * handle is the explicit parameter — it becomes part of the cache key.
+ *
+ * Uses createServiceRoleClient() inside the 'use cache' scope (§0.2 of the
+ * Phase 2 Task 9 plan): service-role bypasses RLS/grants, so this read survives
+ * the upcoming REVOKE SELECT … FROM anon, authenticated on the alts base table.
+ * Service-role is a constant identity (not per-user), so it does NOT poison the
+ * shared cache the way a cookie-based client would. The data is S-bucket public —
+ * identical for all viewers — so sharing the cached result is correct.
  */
 async function getCachedPlayerProfile(handle: string) {
   "use cache";
   cacheTag(CacheTags.player(handle));
   cacheLife("max");
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getPlayerProfileByHandle(supabase, handle);
 }
 
@@ -54,12 +61,18 @@ async function getCachedPlayerProfile(handle: string) {
  * Cached follow counts fetcher.
  * Uses handle-specific cache tag for granular invalidation.
  * userId and handle are explicit parameters — both become part of the cache key.
+ *
+ * Uses createServiceRoleClient() inside the 'use cache' scope (§0.2 of the
+ * Phase 2 Task 9 plan): service-role bypasses RLS/grants so this read survives
+ * the REVOKE SELECT on the follows base table (Step 1 zero-reader tables).
+ * Service-role is a constant identity — no cache poisoning risk for this
+ * S-bucket public data.
  */
 async function getCachedFollowCounts(userId: string, handle: string) {
   "use cache";
   cacheTag(CacheTags.player(handle));
   cacheLife("max");
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   const [followers, following] = await Promise.all([
     getFollowerCount(supabase, userId),
     getFollowingCount(supabase, userId),
@@ -74,12 +87,17 @@ async function getCachedFollowCounts(userId: string, handle: string) {
  * Uses the same cache tag as the profile so toggling the setting invalidates both.
  * userId and handle are explicit parameters — both become part of the cache key.
  * The handle ensures a handle-change creates a fresh entry matching the new tag.
+ *
+ * Uses createServiceRoleClient() inside the 'use cache' scope (§0.2 of the
+ * Phase 2 Task 9 plan): service-role bypasses RLS/grants entirely — constant
+ * identity, no per-user cache variance. The data exposed here is public S-bucket
+ * (only the user-opted-in Discord handle, a boolean-gated public display value).
  */
 async function getCachedDiscordHandle(userId: string, handle: string) {
   "use cache";
   cacheTag(CacheTags.player(handle));
   cacheLife("max");
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   // Check whether this user has opted in to showing their Discord publicly
   const { data: userRow } = await supabase
     .from("users")
@@ -384,7 +402,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
     getCachedFollowCounts(profile.userId, handle),
     getCachedDiscordHandle(profile.userId, handle),
     mainAltId != null
-      ? getCoachBadges(createStaticClient(), [mainAltId])
+      ? getCoachBadges(createServiceRoleClient(), [mainAltId])
       : Promise.resolve(null),
   ]);
 

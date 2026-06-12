@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { type Metadata } from "next";
 
-import { getUser, createClientReadOnly } from "@/lib/supabase/server";
+import { getUser, createServiceRoleClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
@@ -26,7 +26,11 @@ export default async function CoachingDashboardPage() {
     redirect("/sign-in");
   }
 
-  const supabase = await createClientReadOnly();
+  // createServiceRoleClient() — bypasses RLS/grants for the coach_profiles and
+  // users base-table reads, which survive the upcoming REVOKE SELECT … FROM anon,
+  // authenticated (Phase 2 Task 9, §0.2). Auth is already verified above via
+  // getUser(); the queries are scoped to user.id so no cross-user data leaks.
+  const supabase = createServiceRoleClient();
 
   // Fetch user's is_coach flag and their coach profile in parallel
   const [userRow, profileRow] = await Promise.all([

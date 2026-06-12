@@ -4,7 +4,7 @@ import { GraduationCap, Settings } from "lucide-react";
 
 import { getCoachProfileByHandle } from "@trainers/supabase";
 
-import { createClientReadOnly, getUserId } from "@/lib/supabase/server";
+import { createServiceRoleClient, getUserId } from "@/lib/supabase/server";
 import {
   checkFeatureAccess,
   isCoachingPublic,
@@ -33,7 +33,12 @@ export default async function CoachProfilePage({ params }: Props) {
     : await isCoachingPublic();
   if (!allowed) notFound();
 
-  const supabase = await createClientReadOnly();
+  // createServiceRoleClient() — bypasses RLS/grants for the coach_profiles base
+  // table read, which survives the upcoming REVOKE SELECT … FROM anon, authenticated
+  // (Phase 2 Task 9, §0.2). Service-role is a constant identity with no per-user
+  // variance; coach profile data is S-bucket public (same for all viewers). The
+  // feature-flag + ownership checks are done outside the client selection.
+  const supabase = createServiceRoleClient();
   const profile = await getCoachProfileByHandle(supabase, handle);
   if (!profile) notFound();
 

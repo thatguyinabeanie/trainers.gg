@@ -1,8 +1,10 @@
 /**
  * Cached data-fetching functions for player/ratings/public-profile endpoints.
  *
- * Phase 2 Task 7: mirrors `standings-endpoint.ts` (the spike pattern) for the
- * player S-bucket family.
+ * Phase 2 Task 9 (mechanical server swap): all `'use cache'` fetchers and
+ * `withCoachBadges` now use `createServiceRoleClient()` instead of the former
+ * `createStaticClient()`. See
+ * `docs/decisions/architecture-phase2-task9-revoke-plan.md` §0.2.
  *
  * Every function:
  *   - declares `'use cache'` so Next.js Cache Components memoizes across requests
@@ -11,9 +13,17 @@
  *     / `invalidatePlayerRankingCaches` busts the right entries
  *   - calls `cacheLife("max")` — all player data is tag-invalidated and does not
  *     need time-based revalidation
- *   - uses `createStaticClient()` (anonymous, cookie-less) so a per-viewer session
- *     can never pollute the shared cache key — auth happens OUTSIDE these functions,
- *     in the route handlers that call them
+ *   - uses `createServiceRoleClient()` (service-role key, cookie-less) which:
+ *     a) is a constant identity (not per-user), so it does NOT vary the cache key
+ *        and cannot poison the shared cache the way an authenticated/cookie client
+ *        would, and
+ *     b) bypasses RLS/grants entirely, making these reads survive the upcoming
+ *        `REVOKE SELECT ... FROM anon, authenticated` on S-bucket base tables.
+ *        Do NOT revert to `createStaticClient()` — that uses the anon key and
+ *        would silently return zero rows after the grant revoke lands.
+ *
+ * Auth checks (cookie/Bearer) happen OUTSIDE these functions, in the callers
+ * (route handlers, SSR pages) — never inside a `'use cache'` scope.
  *
  * None of these functions cache PII — they surface the same public data that
  * the SSR player pages already expose.
@@ -38,7 +48,7 @@ import {
   type PlayerSortOption,
 } from "@trainers/supabase";
 
-import { createStaticClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 
 // =============================================================================
@@ -86,7 +96,7 @@ export async function getCachedPlayerDirectory(
   cacheTag(CacheTags.PLAYERS_DIRECTORY);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return searchPlayers(supabase, filters, page);
 }
 
@@ -102,7 +112,7 @@ export async function getCachedPlayerDirectory(
 export async function withCoachBadges(
   result: SearchPlayersResult
 ): Promise<SearchPlayersResult> {
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return {
     ...result,
     players: await attachCoachBadges(supabase, result.players),
@@ -128,7 +138,7 @@ export async function getCachedLeaderboard(
   cacheTag(CacheTags.PLAYERS_LEADERBOARD);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getLeaderboard(supabase, limit);
 }
 
@@ -150,7 +160,7 @@ export async function getCachedRecentlyActivePlayers(
   cacheTag(CacheTags.PLAYERS_RECENT);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getRecentlyActivePlayers(supabase, limit);
 }
 
@@ -170,7 +180,7 @@ export async function getCachedNewMembers(limit = 5): Promise<NewMemberEntry[]> 
   cacheTag(CacheTags.PLAYERS_NEW);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getNewMembers(supabase, limit);
 }
 
@@ -197,7 +207,7 @@ export async function getCachedPlayerProfile(
   cacheTag(CacheTags.player(username));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getPlayerProfileByHandle(supabase, username);
 }
 
@@ -225,6 +235,6 @@ export async function getCachedPlayerRating(
   cacheTag(CacheTags.PLAYERS_LEADERBOARD);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getPlayerRating(supabase, altId, format);
 }

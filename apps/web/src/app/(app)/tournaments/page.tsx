@@ -1,6 +1,6 @@
 import { cacheTag, cacheLife } from "next/cache";
 import {
-  createStaticClient,
+  createServiceRoleClient,
   createClientReadOnly,
 } from "@/lib/supabase/server";
 import {
@@ -27,13 +27,19 @@ import {
 /**
  * Cached data fetcher for tournaments list.
  * Revalidated when CacheTags.TOURNAMENTS_LIST is invalidated.
+ *
+ * Uses createServiceRoleClient() (not createStaticClient()) so this fetch
+ * survives the Phase 2 Task 9 revoke of anon SELECT on S-bucket base tables
+ * (tournaments, communities, etc.). Service-role is a constant identity —
+ * it does not vary per user and is safe inside 'use cache' for public S-bucket
+ * data. See docs/decisions/architecture-phase2-task9-revoke-plan.md §0.2.
  */
 async function getCachedTournaments() {
   "use cache";
   cacheTag(CacheTags.TOURNAMENTS_LIST);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return listTournamentsGrouped(supabase, { completedLimit: 20 });
 }
 

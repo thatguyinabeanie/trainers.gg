@@ -5,7 +5,7 @@ import { ArrowLeft, Trophy, Swords, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { createStaticClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 import { StandingsTable } from "@/components/limitless/limitless-standings";
 import { MatchesTable } from "@/components/limitless/limitless-matches";
@@ -13,13 +13,26 @@ import { MatchesTable } from "@/components/limitless/limitless-matches";
 // ---------------------------------------------------------------------------
 // Cached data fetchers
 // Historical data — never changes after import. Cache aggressively with "max".
+//
+// All fetchers use createServiceRoleClient() (not createStaticClient()) so reads
+// survive the Phase 2 Task 9 Step-4 revoke of anon/authenticated SELECT on S-bucket
+// base tables. Service-role is safe inside 'use cache' — it is a constant identity,
+// so the shared cache key (tournamentId) is unaffected. See §0.2 of
+// architecture-phase2-task9-revoke-plan.md.
+//
+// Audit note (correcting plan §3.5 B16): the plan listed "tournaments, alts" as the
+// tables read here. In fact this page reads ONLY from the `limitless` schema
+// (limitless.tournaments, limitless.phases, limitless.standings, limitless.match_results,
+// limitless.players via join). No public-schema tables are read directly. The service-role
+// swap is still correct — it ensures reads work across schemas — but the plan's
+// public-schema table list was inaccurate for this file.
 // ---------------------------------------------------------------------------
 
 async function getCachedTournament(tournamentId: string) {
   "use cache";
   cacheTag(CacheTags.limitlessTournament(tournamentId));
   cacheLife("max");
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   const { data, error } = await supabase
     .schema("limitless")
     .from("tournaments")
@@ -34,7 +47,7 @@ async function getCachedPhases(tournamentId: string) {
   "use cache";
   cacheTag(CacheTags.limitlessTournament(tournamentId));
   cacheLife("max");
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   const { data } = await supabase
     .schema("limitless")
     .from("phases")
@@ -48,7 +61,7 @@ async function getCachedStandings(tournamentId: string) {
   "use cache";
   cacheTag(CacheTags.limitlessTournament(tournamentId));
   cacheLife("max");
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   const { data } = await supabase
     .schema("limitless")
     .from("standings")
@@ -85,7 +98,7 @@ async function getCachedMatches(tournamentId: string) {
   "use cache";
   cacheTag(CacheTags.limitlessTournament(tournamentId));
   cacheLife("max");
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   const { data } = await supabase
     .schema("limitless")
     .from("match_results")

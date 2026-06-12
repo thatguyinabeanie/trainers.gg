@@ -11,9 +11,14 @@
  * - `cacheTag(CacheTags.COMMUNITIES_LIST)` is added on the list endpoint so that
  *   any community mutation (new community, status change) busts the list.
  * - `cacheLife("max")` — community data is tag-invalidated; no time-based TTL.
- * - `createStaticClient()` (cookie-less, anonymous) inside cache scope — community
- *   pages are public S-bucket data, identical for every viewer. Auth check happens
- *   OUTSIDE in the route handler (no cookie must pollute the cache key).
+ * - `createServiceRoleClient()` inside cache scope (Phase 2 Task 9 mechanical swap
+ *   — see `docs/decisions/architecture-phase2-task9-revoke-plan.md` §0.2).
+ *   Community pages are public S-bucket data — identical for every viewer — so
+ *   service-role is safe here: it is a constant identity (not per-user) and does
+ *   not vary the cache key. Using service-role makes these fetches survive the
+ *   upcoming `REVOKE SELECT ... FROM anon, authenticated` on S-bucket base tables.
+ *   Auth happens OUTSIDE in the route handler. Do NOT revert to `createStaticClient()`
+ *   — that would silently return zero rows once the grant revoke lands.
  *
  * Cache invalidation is handled by the existing `invalidateCommunityPageCaches`
  * helper in `@/lib/cache-invalidation` — no new tags are needed.
@@ -27,7 +32,7 @@ import {
   listCommunityTournaments,
 } from "@trainers/supabase";
 
-import { createStaticClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 
 // =============================================================================
@@ -56,6 +61,11 @@ export type CommunityTournamentsResult = Awaited<
  *
  * Returns `null` when the community does not exist (no 404 — caller decides).
  *
+ * Uses `createServiceRoleClient()` inside the `'use cache'` scope so reads of
+ * S-bucket base tables (`communities`, `community_staff`, etc.) survive the
+ * Phase 2 Task 9 `REVOKE SELECT ... FROM anon, authenticated`. Service-role is
+ * a constant identity — it does not vary the cache key. Data is public S-bucket.
+ *
  * @param slug - Community URL slug (validated by the route handler).
  */
 export async function getCachedCommunityBySlug(
@@ -65,7 +75,7 @@ export async function getCachedCommunityBySlug(
   cacheTag(CacheTags.COMMUNITIES_LIST, CacheTags.community(slug));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getCommunityBySlug(supabase, slug);
 }
 
@@ -75,6 +85,11 @@ export async function getCachedCommunityBySlug(
 
 /**
  * Cached fetch of community staff with their group/role assignments.
+ *
+ * Uses `createServiceRoleClient()` inside the `'use cache'` scope so reads of
+ * S-bucket base tables (`community_staff`, `groups`, `roles`, etc.) survive the
+ * Phase 2 Task 9 `REVOKE SELECT ... FROM anon, authenticated`. Service-role is
+ * a constant identity — it does not vary the cache key. Data is public S-bucket.
  *
  * @param communityId - Numeric community ID.
  * @param communitySlug - Community slug (added to cache tags so slug-based
@@ -91,7 +106,7 @@ export async function getCachedCommunityStaff(
   );
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return listCommunityStaffWithRoles(supabase, communityId);
 }
 
@@ -112,6 +127,11 @@ export type CommunityTournamentStatus =
 
 /**
  * Cached fetch of a community's tournament list with optional status filter.
+ *
+ * Uses `createServiceRoleClient()` inside the `'use cache'` scope so reads of
+ * S-bucket base tables (`tournaments`, `communities`, `alts`, etc.) survive the
+ * Phase 2 Task 9 `REVOKE SELECT ... FROM anon, authenticated`. Service-role is
+ * a constant identity — it does not vary the cache key. Data is public S-bucket.
  *
  * @param communityId - Numeric community ID.
  * @param communitySlug - Community slug (for cache tag coverage).
@@ -136,7 +156,7 @@ export async function getCachedCommunityTournaments(
   );
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return listCommunityTournaments(supabase, communityId, {
     status,
     limit,

@@ -13,10 +13,15 @@
  * - `cacheLife("max")` because standings are a tag-invalidated entity — they
  *   never need time-based revalidation; an explicit tag bust is the only thing
  *   that should refresh them.
- * - `createStaticClient()` (anonymous, cookie-less) is required INSIDE the cache
- *   scope. Standings are public S-bucket data — identical for every viewer — so
- *   per-viewer auth must never leak into the cache key. The authenticated check
- *   (cookie or Bearer) happens OUTSIDE this scope, in the route handler.
+ * - `createServiceRoleClient()` is used INSIDE the cache scope (Phase 2 Task 9
+ *   mechanical swap — see `docs/decisions/architecture-phase2-task9-revoke-plan.md`
+ *   §0.2). Standings are public S-bucket data — identical for every viewer — so
+ *   this is safe: service-role is a constant identity (not per-user), so it does
+ *   not vary the cache key. Using it here makes the fetch survive the upcoming
+ *   `REVOKE SELECT ... FROM anon, authenticated` on S-bucket base tables.
+ *   The authenticated check (cookie or Bearer) happens OUTSIDE this scope, in
+ *   the route handler. Do NOT revert this to `createStaticClient()` — that would
+ *   silently return zero rows once the grant revoke lands.
  *
  * Standings rows are public (rank, record, joined alt) — no PII is cached.
  */
@@ -25,7 +30,7 @@ import { cacheTag, cacheLife } from "next/cache";
 
 import { getTournamentStandings } from "@trainers/supabase";
 
-import { createStaticClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 
 /** A single standings row with its joined alt — the shape `getTournamentStandings` returns. */
@@ -47,6 +52,6 @@ export async function getCachedTournamentStandings(
   cacheTag(CacheTags.tournament(tournamentId));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getTournamentStandings(supabase, tournamentId);
 }

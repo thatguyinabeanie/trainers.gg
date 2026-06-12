@@ -5,15 +5,24 @@
  * it extends the same pattern to every tournament-family S-bucket read that a
  * web client component currently makes via `useSupabaseQuery`.
  *
- * All fetchers follow the Wave A/B canonical pattern:
+ * All fetchers follow the canonical pattern:
  *  - `'use cache'` + `cacheTag(CacheTags.tournament(id))` + `cacheLife("max")`
- *  - `createStaticClient()` (cookie-less, anonymous) inside the cache scope
+ *  - `createServiceRoleClient()` inside the cache scope (see rationale below)
  *  - Function arguments are the cache key — every distinguishing value is a param
  *
+ * **Why `createServiceRoleClient()` inside `'use cache'`** (Phase 2 Task 9 mechanical
+ * swap — `docs/decisions/architecture-phase2-task9-revoke-plan.md` §0.2):
+ * S-bucket base tables (`tournament_phases`, `tournament_player_stats`, `alts`, etc.)
+ * are having `REVOKE SELECT ... FROM anon, authenticated` applied. After the revoke,
+ * an anon-keyed client (`createStaticClient`) returns zero rows silently. Service-role
+ * bypasses grants entirely and always reads. It is safe inside `'use cache'` here
+ * because service-role is a constant identity (not per-user) — it does not introduce
+ * any cache-key variance. The data cached is genuinely public S-bucket data, identical
+ * for every viewer. Do NOT revert these calls to `createStaticClient()`.
+ *
  * The route handlers in `apps/web/src/app/api/v1/tournaments/…` call these
- * fetchers. The public S-bucket data they return is the same for every viewer,
- * so `createStaticClient()` is correct. Per-user auth is checked outside the
- * cache scope in the route handler (`resolveApiAuth`).
+ * fetchers. Per-user auth is checked outside the cache scope in the route handler
+ * (`resolveApiAuth`).
  */
 
 import { cacheTag, cacheLife } from "next/cache";
@@ -31,7 +40,7 @@ import {
 import { getTournamentAuditLog } from "@trainers/supabase";
 import { listCommunityTournaments } from "@trainers/supabase";
 
-import { createStaticClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 
 // =============================================================================
@@ -99,7 +108,7 @@ export async function getCachedTournamentPhases(
   cacheTag(CacheTags.tournament(tournamentId));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getTournamentPhases(supabase, tournamentId);
 }
 
@@ -122,7 +131,7 @@ export async function getCachedPhaseRoundsWithStats(
   cacheTag(CacheTags.tournament(tournamentId));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getPhaseRoundsWithStats(supabase, phaseId);
 }
 
@@ -145,7 +154,7 @@ export async function getCachedPhaseRoundsWithMatches(
   cacheTag(CacheTags.tournament(tournamentId));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getPhaseRoundsWithMatches(supabase, phaseId, tournamentId);
 }
 
@@ -167,7 +176,7 @@ export async function getCachedRoundMatches(
   cacheTag(CacheTags.tournament(tournamentId));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getRoundMatches(supabase, roundId);
 }
 
@@ -188,7 +197,7 @@ export async function getCachedTournamentPlayerStats(
   cacheTag(CacheTags.tournament(tournamentId));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getTournamentPlayerStats(supabase, tournamentId, {
     includeDropped: true,
   });
@@ -214,7 +223,7 @@ export async function getCachedTournamentRegistrations(
   cacheTag(CacheTags.tournament(tournamentId));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getTournamentRegistrations(supabase, tournamentId);
 }
 
@@ -234,7 +243,7 @@ export async function getCachedTournamentInvitationsSent(
   cacheTag(CacheTags.tournament(tournamentId));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getTournamentInvitationsSent(supabase, tournamentId);
 }
 
@@ -260,7 +269,7 @@ export async function getCachedTournamentAuditLog(
   cacheTag(CacheTags.tournament(tournamentId));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
 
   // The `actions` option filters by category name prefix — pass null to get all.
   // Category filtering is done in the component after fetching.
@@ -292,7 +301,7 @@ export async function getCachedUnpairedCheckedInPlayers(
   cacheTag(CacheTags.tournament(tournamentId));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getUnpairedCheckedInPlayers(supabase, tournamentId, roundId);
 }
 
@@ -320,7 +329,7 @@ export async function getCachedCommunityTournaments(
   cacheTag(CacheTags.TOURNAMENTS_LIST);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return listCommunityTournaments(supabase, communityId, {
     status: status as
       | "draft"

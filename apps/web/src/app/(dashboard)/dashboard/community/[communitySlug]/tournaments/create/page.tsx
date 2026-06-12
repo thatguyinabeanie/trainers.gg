@@ -6,7 +6,7 @@ import {
   getDiscordServerByCommunityId,
 } from "@trainers/supabase";
 
-import { createClientReadOnly } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { CreateTournamentClient } from "./create-tournament-client";
@@ -22,7 +22,14 @@ export default async function DashboardCreateTournamentPage({
 }: PageProps) {
   const { communitySlug } = await params;
 
-  const supabase = await createClientReadOnly();
+  // Service-role bypasses anon/authenticated grants (§0.2 of architecture-phase2-task9-revoke-plan.md).
+  // getCommunityBySlug reads `communities`, `community_staff`, and `tournaments` — all in the
+  // Phase 2 Task 9 Step-4 revoke set. getDiscordServerByCommunityId reads `discord_servers` (not
+  // in the revoke set, but service-role is fine for it too). Both reads are community-level public
+  // S-bucket data (same for all staff viewing this page), not user-specific — safe to use
+  // service-role. No 'use cache' here: the page is auth-gated (dashboard layout) and renders
+  // a client component island (CreateTournamentClient) that drives the form interactivity.
+  const supabase = createServiceRoleClient();
   const community = await getCommunityBySlug(supabase, communitySlug);
   const discordInstalled = community
     ? !!(await getDiscordServerByCommunityId(supabase, community.id))

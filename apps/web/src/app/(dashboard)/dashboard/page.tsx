@@ -17,7 +17,7 @@ import {
 
 import {
   getUser,
-  createStaticClient,
+  createServiceRoleClient,
   createClientReadOnly,
 } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
@@ -34,10 +34,21 @@ import { CommunityHighlights } from "./components/community-highlights";
 import { computeStats } from "./compute-stats";
 
 // =============================================================================
-// Cached Fetchers (public data — anonymous client, no cookies)
+// Cached Fetchers (public S-bucket data — service-role client, no cookies)
+//
+// Phase 2 Task 9 (§0.2): `createStaticClient()` (anon key) swapped to
+// `createServiceRoleClient()` so these reads survive the upcoming REVOKE of
+// anon/authenticated SELECT on S-bucket base tables. Service-role bypasses
+// RLS/GRANTs and does NOT vary per user, so using it inside `'use cache'` is
+// safe — the data is public S-bucket (same for all viewers) and the cache key
+// is formed from function arguments only (not from the client identity).
 // =============================================================================
 
 /**
+ * Returns bulk tournament/match stats for the given alt IDs.
+ * Reads public S-bucket tables (tournament_player_stats, alts) via
+ * service-role so the read survives the Phase 2 Task 9 anon REVOKE.
+ *
  * _userId scopes the cache key to the requesting user so alt-ID reuse or
  * ownership changes can never cause cross-user cache collisions. It is not
  * used inside the function body — its presence as a parameter is what
@@ -50,11 +61,17 @@ async function getCachedBulkStats(_userId: string, sortedAltIds: number[]) {
   "use cache";
   cacheTag(CacheTags.DASHBOARD_STATS);
   cacheLife("max");
-  const supabase = createStaticClient();
+  // Service-role: bypasses anon/authenticated GRANT; safe inside 'use cache'
+  // because this is public S-bucket data identical for all viewers (§0.2).
+  const supabase = createServiceRoleClient();
   return getAltsBulkStats(supabase, sortedAltIds);
 }
 
 /**
+ * Returns bulk player ratings for the given alt IDs.
+ * Reads public S-bucket tables (player_ratings) via service-role so the read
+ * survives the Phase 2 Task 9 anon REVOKE.
+ *
  * _userId scopes the cache key to the requesting user so alt-ID reuse or
  * ownership changes can never cause cross-user cache collisions. It is not
  * used inside the function body — its presence as a parameter is what
@@ -67,7 +84,9 @@ async function getCachedBulkRatings(_userId: string, sortedAltIds: number[]) {
   "use cache";
   cacheTag(CacheTags.DASHBOARD_RATINGS);
   cacheLife("max");
-  const supabase = createStaticClient();
+  // Service-role: bypasses anon/authenticated GRANT; safe inside 'use cache'
+  // because this is public S-bucket data identical for all viewers (§0.2).
+  const supabase = createServiceRoleClient();
   return getPlayerRatingsBulk(supabase, sortedAltIds, "overall");
 }
 
