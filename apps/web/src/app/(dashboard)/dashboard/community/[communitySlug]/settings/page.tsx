@@ -3,13 +3,13 @@
 import { useState, useTransition, useRef, use } from "react";
 import Link from "next/link";
 import { Camera, Loader2, X, Plus, ImageIcon, ExternalLink } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 import { toast } from "sonner";
 
 import { getDiscordServerByCommunityId } from "@trainers/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
-import { type TypedSupabaseClient } from "@trainers/supabase";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@trainers/validators";
 import {
   SOCIAL_LINK_PLATFORMS,
@@ -19,7 +19,9 @@ import {
 } from "@trainers/validators";
 import { socialPlatformLabels } from "@trainers/utils";
 
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import { useSupabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { updateOrganization } from "@/actions/communities";
@@ -197,11 +199,11 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
     parseSocialLinks(org.social_links)
   );
 
-  const { data: discordServer } = useSupabaseQuery(
-    (client: TypedSupabaseClient) =>
-      getDiscordServerByCommunityId(client, org.id),
-    [org.id]
-  );
+  const { data: discordServer } = useQuery({
+    queryKey: queryKeys.community.discordServer(org.id),
+    queryFn: () => getDiscordServerByCommunityId(createClient(), org.id),
+    staleTime: 30_000,
+  });
   const discordInstalled = discordServer != null;
 
   /** Fire-and-forget PDS profile sync (only if community has active PDS). */

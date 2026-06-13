@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,8 +11,10 @@ import {
   type SocialLinkPlatform,
 } from "@trainers/validators";
 import { generateSlug } from "@trainers/utils";
-import { useSupabaseQuery } from "@/lib/supabase";
 import { getMyOrganizationRequest } from "@trainers/supabase";
+
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -108,10 +111,11 @@ function getCooldownEndDate(reviewedAt: string): string {
 // ---------------------------------------------------------------------------
 
 export default function DashboardCommunityRequestPage() {
-  const { data: request, isLoading } = useSupabaseQuery(
-    (client) => getMyOrganizationRequest(client),
-    []
-  );
+  const { data: request, isLoading } = useQuery({
+    queryKey: queryKeys.me.organizationRequest(),
+    queryFn: () => getMyOrganizationRequest(createClient()),
+    staleTime: 30_000,
+  });
 
   const showForm =
     !request ||
