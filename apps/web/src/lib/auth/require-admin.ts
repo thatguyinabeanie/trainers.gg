@@ -43,6 +43,37 @@ export async function requireSiteAdmin() {
 }
 
 /**
+ * Verify the current user is authenticated and has the site_admin role.
+ * No sudo step-up is required — use this for read-only admin server actions.
+ *
+ * Returns `{ userId }` on success, or `{ success: false, error }` on failure.
+ */
+export async function requireAdmin(): Promise<
+  { userId: string } | { success: false; error: string }
+> {
+  // Check authentication
+  const user = await getUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  // Check site_admin role via service role client (bypasses RLS)
+  const supabase = createServiceRoleClient();
+  const { data: adminRole } = await supabase
+    .from("user_roles")
+    .select("role_id, roles!inner(name)")
+    .eq("user_id", user.id)
+    .eq("roles.name", "site_admin")
+    .maybeSingle();
+
+  if (!adminRole) {
+    return { success: false, error: "Admin access required" };
+  }
+
+  return { userId: user.id };
+}
+
+/**
  * Verify the current user is authenticated, has the site_admin role, and
  * has an active sudo session. Use in server actions that perform admin mutations.
  *
