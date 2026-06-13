@@ -1,9 +1,6 @@
 "use client";
 
 import { type KeyboardEvent, useState, useEffect, useRef } from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { getMatchMessages } from "@trainers/supabase";
-import type { TypedSupabaseClient } from "@trainers/supabase";
 import {
   sendMatchMessageAction,
   requestJudgeAction,
@@ -24,6 +21,7 @@ import {
   ShieldAlert,
   User,
 } from "lucide-react";
+import { type getMatchMessages } from "@trainers/supabase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -41,6 +39,16 @@ import {
 // Types
 // ============================================================================
 
+/**
+ * Single `match_messages` row (with joined alt), derived from the
+ * `getMatchMessages` query so the shape stays in sync. The messages list is
+ * owned by `MatchPageClient` (a single keyed TanStack query that the realtime
+ * match_messages channel updates via setQueryData) and passed in as a prop.
+ */
+type MessageRow = NonNullable<
+  Awaited<ReturnType<typeof getMatchMessages>>
+>[number];
+
 interface MatchChatProps {
   matchId: number;
   userAltId: number | null;
@@ -49,7 +57,12 @@ interface MatchChatProps {
   matchStatus: string;
   staffRequested: boolean;
   tournamentId: number;
-  messagesRefreshKey: number;
+  /** Live chat messages, owned and cached by the parent. */
+  messages: MessageRow[] | null;
+  /** Whether the parent's messages query is still loading. */
+  messagesLoading: boolean;
+  /** Called after the user successfully sends a message (parent revalidates). */
+  onMessageSent: () => void;
   onStaffRequestChange?: (requested: boolean) => void;
   // Presence
   viewers: ReturnType<typeof useMatchPresence>["viewers"];
@@ -71,7 +84,9 @@ export function MatchChat({
   matchStatus,
   staffRequested,
   tournamentId,
-  messagesRefreshKey,
+  messages,
+  messagesLoading,
+  onMessageSent,
   onStaffRequestChange,
   viewers,
   typingUsers,
@@ -85,15 +100,6 @@ export function MatchChat({
   const [isClearingJudge, setIsClearingJudge] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const messagesQueryFn = (client: TypedSupabaseClient) =>
-    getMatchMessages(client, matchId);
-
-  const {
-    data: messages,
-    isLoading: messagesLoading,
-    refetch: refetchMessages,
-  } = useSupabaseQuery(messagesQueryFn, [matchId, messagesRefreshKey]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -142,7 +148,7 @@ export function MatchChat({
 
     if (result.success) {
       setMessage("");
-      refetchMessages();
+      onMessageSent();
     } else {
       toast.error(result.error);
     }
