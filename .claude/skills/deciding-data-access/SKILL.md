@@ -33,9 +33,23 @@ What are you fetching?
         │
         └── Anon-reachable (data is genuinely public, same for all)
             └── resolveApiAuth still required (no open Data API)
-                + 'use cache' + createStaticClient() inside fetcher
                 Cache-Control: public, s-maxage=…, stale-while-revalidate=…
                 Rate-limit: key by IP when anon, userId when authed
+                │
+                ├── Reads anon-granted tables/views (anon SELECT retained)
+                │   └── createStaticClient() inside 'use cache' fetcher
+                │       (anon key, respects grants, safe in shared cache)
+                │
+                └── Reads revoke-set base tables (anon SELECT revoked in Phase 2)
+                    └── createServiceRoleClient() inside 'use cache' fetcher
+                        (bypasses grants + RLS — apply ALL of these guards):
+                        · select an explicit column allowlist — NEVER select('*')
+                        · resolveApiAuth still gates the caller (service-role
+                          does NOT authenticate the HTTP request)
+                        · enforceRateLimit (service-role bypasses DB throttling)
+                        · Cache-Control: public, s-maxage=… only when the route
+                          is genuinely public + cacheable; auth-gated routes
+                          use private, no-store even with service-role reads
 ```
 
 **Direct DB access (no route):** authenticated role + RLS only. Never `anon` role. Use only when a Server Component or Server Action has a clear auth context. Mobile hits `/api/v1` with a Bearer token — not the DB directly.
