@@ -1,8 +1,12 @@
 "use client";
 
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+
 import { getCoachBadges } from "@trainers/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
+
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import { type ActionResult } from "@trainers/validators";
 import {
   Card,
@@ -86,10 +90,12 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
     .map((player) => player.alt?.id)
     .filter((id): id is number => id != null);
 
-  const { data: coachBadges } = useSupabaseQuery(
-    (supabase) => getCoachBadges(supabase, altIds),
-    [JSON.stringify(altIds)]
-  );
+  const { data: coachBadges } = useQuery({
+    queryKey: queryKeys.tournament.coachBadges(altIds),
+    queryFn: () => getCoachBadges(createClient(), altIds),
+    enabled: altIds.length > 0,
+    staleTime: 30_000,
+  });
 
   const getRankIcon = (rank: number) => {
     switch (rank) {

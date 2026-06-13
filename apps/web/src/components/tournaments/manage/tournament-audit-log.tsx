@@ -1,10 +1,12 @@
 "use client";
 
 import { type ReactNode, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { formatTimeAgo } from "@trainers/utils";
-import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentAuditLog } from "@trainers/supabase";
-import type { TypedSupabaseClient, Database } from "@trainers/supabase";
+import type { Database } from "@trainers/supabase";
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import {
   Card,
   CardContent,
@@ -130,21 +132,23 @@ export function TournamentAuditLog({ tournament }: TournamentAuditLogProps) {
   const actionsForFilter: AuditAction[] | undefined =
     categoryActions[categoryFilter];
 
-  const queryFn = (client: TypedSupabaseClient) =>
-    getTournamentAuditLog(client, tournament.id, {
-      limit: 100,
-      actions: actionsForFilter,
-    });
+  const { data: entries, isLoading } = useQuery({
+    queryKey: queryKeys.tournament.auditLog(
+      tournament.id,
+      categoryFilter,
+      refreshKey
+    ),
+    queryFn: () =>
+      getTournamentAuditLog(createClient(), tournament.id, {
+        limit: 100,
+        actions: actionsForFilter,
+      }),
+    staleTime: 30_000,
+  });
 
-  const {
-    data: entries,
-    isLoading,
-    refetch,
-  } = useSupabaseQuery(queryFn, [tournament.id, categoryFilter, refreshKey]);
-
+  // Bumping refreshKey changes the query key, which triggers a fresh fetch.
   const handleRefresh = () => {
     setRefreshKey((k) => k + 1);
-    refetch();
   };
 
   if (isLoading) {
