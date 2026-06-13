@@ -108,7 +108,7 @@
     "jest-environment-jsdom": "catalog:testing",
     "jest-junit": "catalog:testing",
     "jose": "catalog:",
-    "postcss": "^8.5.13",
+    "postcss": "^8.5.14",
     "postgres": "^3.4.9",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "catalog:",
