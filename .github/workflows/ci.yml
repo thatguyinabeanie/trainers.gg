@@ -205,14 +205,14 @@ jobs:
           JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
           JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
 
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+      - name: Upload JUnit results
+        uses: actions/upload-artifact@v7
         if: always()
         with:
-          files: "**/test-results/**/*.xml"
-          check_name: "Test Results / web (shard ${{ matrix.shard }})"
-          comment_title: "Test Results / web (shard ${{ matrix.shard }})"
-          comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
+          name: junit-web-${{ matrix.shard }}
+          path: "**/test-results/**/*.xml"
+          retention-days: 1
+          if-no-files-found: ignore
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7
@@ -260,14 +260,14 @@ jobs:
           JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
           JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
 
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+      - name: Upload JUnit results
+        uses: actions/upload-artifact@v7
         if: always()
         with:
-          files: "**/test-results/**/*.xml"
-          check_name: "Test Results / mobile"
-          comment_title: "Test Results / mobile"
-          comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
+          name: junit-mobile
+          path: "**/test-results/**/*.xml"
+          retention-days: 1
+          if-no-files-found: ignore
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7
@@ -322,14 +322,14 @@ jobs:
           JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
           JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
 
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+      - name: Upload JUnit results
+        uses: actions/upload-artifact@v7
         if: always()
         with:
-          files: "**/test-results/**/*.xml"
-          check_name: "Test Results / packages"
-          comment_title: "Test Results / packages"
-          comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
+          name: junit-packages
+          path: "**/test-results/**/*.xml"
+          retention-days: 1
+          if-no-files-found: ignore
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7
@@ -339,6 +339,36 @@ jobs:
           path: "**/coverage/lcov.info"
           retention-days: 1
           if-no-files-found: ignore
+
+  # ── Consolidated test-result publishing (one check, correct attribution) ──
+  # Single EnricoMi invocation reading all jobs' JUnit XML from artifacts.
+  # Running it per-job creates multiple check runs from the same app in one
+  # run, which GitHub mis-attributes to the wrong sibling job. One job = one
+  # correctly-named "Test Results" check. See EnricoMi action issue #181.
+  test-results:
+    name: Test Results
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [test-web, test-mobile, test-packages, e2e-tests]
+    if: always() # publish even when a test job failed or e2e was skipped
+    permissions:
+      checks: write
+      pull-requests: write
+    steps:
+      - name: Download all JUnit artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: junit-*
+          path: junit
+
+      - name: Publish consolidated test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: "junit/**/*.xml"
+          check_name: "Test Results"
+          comment_title: "Test Results"
+          comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
+          report_individual_runs: true
 
   # ── Coverage reporting (single aggregated upload) ──────────
   coverage:
@@ -692,7 +722,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: junit-report
+          name: junit-e2e
           path: apps/web/test-results/junit.xml
           retention-days: 7
 
@@ -703,18 +733,6 @@ jobs:
           name: playwright-traces
           path: apps/web/test-results/
           retention-days: 7
-
-      - name: Publish E2E test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: apps/web/test-results/junit.xml
-          check_name: E2E Test Results
-          comment_title: E2E Test Results
-          comment_mode: always
-          compare_to_earlier_commit: true
-          report_individual_runs: true
-          deduplicate_classes_by_file_name: false
 
   # ── Lighthouse CI (performance audit against preview) ──────
   lighthouse:
