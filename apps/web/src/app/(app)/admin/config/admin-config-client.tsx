@@ -548,6 +548,7 @@ export function AdminConfigPageClient({
                         variant="ghost"
                         size="icon-xs"
                         title="Edit allowlist"
+                        aria-label="Edit allowlist"
                         onClick={() => {
                           setEditingFlag(flag);
                           setFlagDialogOpen(true);

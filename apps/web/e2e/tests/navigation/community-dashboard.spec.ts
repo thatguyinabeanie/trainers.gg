@@ -78,11 +78,10 @@ test.describe("Community dashboard", () => {
         page.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
-      // filter({ visible: true }) scopes to the rendered layout — the card
-      // title appears in both the desktop and mobile renders (one hidden), so
-      // an unscoped match is a strict-mode violation.
+      // Scope to main + exact match to avoid colliding with the empty-state
+      // text "No upcoming tournaments" which contains the same substring.
       await expect(
-        page.getByText("Upcoming Tournaments").filter({ visible: true })
+        page.getByRole("main").getByText("Upcoming Tournaments", { exact: true })
       ).toBeVisible({
         timeout: 10000,
       });
