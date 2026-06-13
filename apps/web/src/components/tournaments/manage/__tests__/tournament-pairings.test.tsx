@@ -34,40 +34,16 @@ jest.mock("@/lib/tournament-utils", () => ({
   transformPhaseData: jest.fn(() => ({})),
 }));
 
-// Query data per key pattern
-let phasesData: unknown = null;
-let roundsData: unknown = null;
-let matchesData: unknown = null;
-let bracketData: unknown = null;
-let unpairedData: unknown = null;
-let phasesLoading = false;
+// ── useApiQuery mock ─────────────────────────────────────────────────────────
+//
+// The component fetches the entire pairings data set (`TournamentPairingsData`)
+// in a single `useApiQuery` call against `/api/v1/tournaments/[id]/pairings`.
+// We hand back a pre-built data object via `mockUseApiQuery`.
 
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn((_fn: unknown, keys: unknown[]) => {
-    const keyStr = String(keys);
-    if (keyStr.includes("bracket-rounds")) {
-      return { data: bracketData, isLoading: false };
-    }
-    if (keyStr.includes("unpaired-players")) {
-      return { data: unpairedData, isLoading: false };
-    }
-    if (keyStr.includes("matches")) {
-      return {
-        data: matchesData,
-        isLoading: false,
-        refetch: jest.fn(),
-      };
-    }
-    if (keyStr.includes("rounds")) {
-      return {
-        data: roundsData,
-        isLoading: false,
-        refetch: jest.fn(),
-      };
-    }
-    // phases
-    return { data: phasesData, isLoading: phasesLoading };
-  }),
+const mockUseApiQuery = jest.fn();
+
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
 }));
 
 jest.mock("@/components/ui/card", () => ({
@@ -237,13 +213,71 @@ function buildMatch(overrides: Record<string, unknown> = {}) {
     alt1_id: 1,
     alt2_id: 2,
     status: "active",
-    player1: { username: "ash", display_name: "Ash Ketchum" },
-    player2: { username: "brock", display_name: "Brock" },
+    winner_alt_id: null,
+    player1: { id: 1, username: "ash", display_name: "Ash Ketchum" },
+    player2: { id: 2, username: "brock", display_name: "Brock" },
     player1Stats: { wins: 2, losses: 0 },
     player2Stats: { wins: 1, losses: 1 },
-    winner: null,
     game_wins1: null,
     game_wins2: null,
+    ...overrides,
+  };
+}
+
+/**
+ * Build the single `TournamentPairingsData` object the component reads.
+ *
+ * The component derives the first-phase round list from `roundsWithStats` and
+ * the matches for a round from `allPhaseRounds[phaseIndex]`. To keep tests
+ * declarative, callers pass `rounds` (round metadata) and `matches` (matches for
+ * those rounds) and we wire both `roundsWithStats` and `allPhaseRounds[0]`.
+ */
+function buildPairingsData(opts: {
+  phases?: Array<Record<string, unknown>>;
+  rounds?: Array<Record<string, unknown>>;
+  matches?: Array<Record<string, unknown>>;
+  unpairedPlayers?: Array<Record<string, unknown>>;
+}) {
+  const phases = opts.phases ?? [];
+  const rounds = opts.rounds ?? [];
+  const matches = opts.matches ?? [];
+
+  // Each first-phase round carries the same `matches` array; the component only
+  // ever renders matches for the selected round, which defaults to the first.
+  const firstPhaseRounds = rounds.map((round) => ({
+    ...round,
+    matches,
+  }));
+
+  // allPhaseRounds is index-aligned to phases. Only the first phase is populated
+  // for these tests (multi-phase tests still only exercise the first phase).
+  const allPhaseRounds =
+    phases.length > 0
+      ? [firstPhaseRounds, ...phases.slice(1).map(() => [])]
+      : [];
+
+  return {
+    phases,
+    allPhaseRounds,
+    roundsWithStats: rounds,
+    unpairedPlayers: opts.unpairedPlayers ?? [],
+  };
+}
+
+function apiResult(
+  data: unknown,
+  overrides: Partial<{
+    isLoading: boolean;
+    isError: boolean;
+    error: unknown;
+  }> = {}
+) {
+  return {
+    data,
+    isLoading: false,
+    isError: false,
+    error: null,
+    refetch: jest.fn(),
     ...overrides,
   };
 }
@@ -259,31 +293,38 @@ function renderPairings(tournament = defaultTournament) {
   return render(<TournamentPairings tournament={tournament} />);
 }
 
-function resetMockData() {
-  phasesData = null;
-  roundsData = null;
-  matchesData = null;
-  bracketData = null;
-  unpairedData = null;
-  phasesLoading = false;
-}
-
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 describe("TournamentPairings", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    resetMockData();
+    // Default: not loading, empty data set.
+    mockUseApiQuery.mockReturnValue(apiResult(buildPairingsData({})));
   });
 
   it("shows loading spinner when phases are loading", () => {
-    phasesLoading = true;
+    mockUseApiQuery.mockReturnValue(
+      apiResult(undefined, { isLoading: true })
+    );
     renderPairings();
     expect(screen.queryByText("Pairings & Matches")).not.toBeInTheDocument();
   });
 
+  it("shows error state when the query fails", () => {
+    mockUseApiQuery.mockReturnValue(
+      apiResult(undefined, {
+        isError: true,
+        error: new Error("Boom"),
+      })
+    );
+    renderPairings();
+    expect(screen.getByText("Boom")).toBeInTheDocument();
+  });
+
   it("shows empty state when no phases exist", () => {
-    phasesData = [];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(buildPairingsData({ phases: [] }))
+    );
     renderPairings();
     expect(screen.getByText("No phases configured")).toBeInTheDocument();
     expect(
@@ -294,8 +335,9 @@ describe("TournamentPairings", () => {
   });
 
   it("shows header with title", () => {
-    phasesData = [buildPhase()];
-    roundsData = [];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(buildPairingsData({ phases: [buildPhase()], rounds: [] }))
+    );
     renderPairings();
     expect(screen.getByText("Pairings & Matches")).toBeInTheDocument();
     expect(
@@ -304,8 +346,9 @@ describe("TournamentPairings", () => {
   });
 
   it("shows no-rounds state when phases exist but no rounds", () => {
-    phasesData = [buildPhase()];
-    roundsData = [];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(buildPairingsData({ phases: [buildPhase()], rounds: [] }))
+    );
     renderPairings();
     expect(screen.getByText("No rounds yet")).toBeInTheDocument();
     expect(
@@ -314,18 +357,30 @@ describe("TournamentPairings", () => {
   });
 
   it("renders Table and Bracket view toggle buttons", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [],
+        })
+      )
+    );
     renderPairings();
     expect(screen.getByText("Table")).toBeInTheDocument();
     expect(screen.getByText("Bracket")).toBeInTheDocument();
   });
 
   it("renders match table with column headers", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [buildMatch()];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [buildMatch()],
+        })
+      )
+    );
     renderPairings();
 
     expect(screen.getByText("Player 1")).toBeInTheDocument();
@@ -336,24 +391,36 @@ describe("TournamentPairings", () => {
   });
 
   it("renders match with player names and table number", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [buildMatch()];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [buildMatch()],
+        })
+      )
+    );
     renderPairings();
 
     expect(screen.getByText("Table 1")).toBeInTheDocument();
   });
 
   it("renders BYE match correctly", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [
-      buildMatch({
-        alt2_id: null,
-        player2: null,
-        player2Stats: null,
-      }),
-    ];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [
+            buildMatch({
+              alt2_id: null,
+              player2: null,
+              player2Stats: null,
+            }),
+          ],
+        })
+      )
+    );
     renderPairings();
 
     // BYE label appears for table and player2
@@ -363,44 +430,68 @@ describe("TournamentPairings", () => {
   });
 
   it("renders no-pairings state when round has no matches", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [],
+        })
+      )
+    );
     renderPairings();
     expect(screen.getByText("No pairings yet")).toBeInTheDocument();
   });
 
   it("shows Report button for active matches", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [buildMatch({ status: "active" })];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [buildMatch({ status: "active" })],
+        })
+      )
+    );
     renderPairings();
     expect(screen.getByText("Report")).toBeInTheDocument();
   });
 
   it("does not show Report button for completed matches", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [
-      buildMatch({
-        status: "completed",
-        winner: { username: "ash", display_name: "Ash Ketchum" },
-        game_wins1: 2,
-        game_wins2: 1,
-      }),
-    ];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [
+            buildMatch({
+              status: "completed",
+              winner_alt_id: 1,
+              game_wins1: 2,
+              game_wins2: 1,
+            }),
+          ],
+        })
+      )
+    );
     renderPairings();
     expect(screen.queryByText("Report")).not.toBeInTheDocument();
   });
 
   it("renders unpaired players banner when present", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [];
-    unpairedData = [
-      { altId: 1, username: "late_player", displayName: "Late Player" },
-      { altId: 2, username: "another_late", displayName: null },
-    ];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [],
+          unpairedPlayers: [
+            { altId: 1, username: "late_player", displayName: "Late Player" },
+            { altId: 2, username: "another_late", displayName: null },
+          ],
+        })
+      )
+    );
     renderPairings();
 
     expect(
@@ -409,10 +500,18 @@ describe("TournamentPairings", () => {
   });
 
   it("uses singular 'player' for 1 unpaired player", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [];
-    unpairedData = [{ altId: 1, username: "solo", displayName: "Solo Player" }];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [],
+          unpairedPlayers: [
+            { altId: 1, username: "solo", displayName: "Solo Player" },
+          ],
+        })
+      )
+    );
     renderPairings();
 
     expect(
@@ -422,10 +521,15 @@ describe("TournamentPairings", () => {
 
   it("switches to bracket view when Bracket button is clicked", async () => {
     const user = userEvent.setup();
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [buildMatch()];
-    bracketData = [];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [buildMatch()],
+        })
+      )
+    );
     renderPairings();
 
     await user.click(screen.getByText("Bracket"));
@@ -433,9 +537,15 @@ describe("TournamentPairings", () => {
   });
 
   it("renders round info in card header", () => {
-    phasesData = [buildPhase({ name: "Swiss Rounds" })];
-    roundsData = [buildRound({ round_number: 3, matchCount: 8 })];
-    matchesData = [buildMatch()];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase({ name: "Swiss Rounds" })],
+          rounds: [buildRound({ round_number: 3, matchCount: 8 })],
+          matches: [buildMatch()],
+        })
+      )
+    );
     renderPairings();
 
     expect(screen.getByText(/Swiss Rounds - Round/)).toBeInTheDocument();
@@ -443,9 +553,15 @@ describe("TournamentPairings", () => {
 
   it("renders row click navigates to match detail", async () => {
     const user = userEvent.setup();
-    phasesData = [buildPhase()];
-    roundsData = [buildRound({ round_number: 2 })];
-    matchesData = [buildMatch({ id: 55, table_number: 4 })];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound({ round_number: 2 })],
+          matches: [buildMatch({ id: 55, table_number: 4 })],
+        })
+      )
+    );
     renderPairings();
 
     const tableRow = screen.getByText("Table 4").closest("tr");
@@ -459,9 +575,15 @@ describe("TournamentPairings", () => {
 
   it("opens report dialog when Report button is clicked", async () => {
     const user = userEvent.setup();
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [buildMatch({ status: "active" })];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [buildMatch({ status: "active" })],
+        })
+      )
+    );
     renderPairings();
 
     const reportBtn = screen.getByText("Report").closest("button");
@@ -473,16 +595,24 @@ describe("TournamentPairings", () => {
 
   it("shows player names in report dialog", async () => {
     const user = userEvent.setup();
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [buildMatch({ status: "active" })];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [buildMatch({ status: "active" })],
+        })
+      )
+    );
     renderPairings();
 
     const reportBtn = screen.getByText("Report").closest("button");
     await user.click(reportBtn!);
 
-    // Player names appear as labels in the dialog
-    expect(screen.getByLabelText(/Ash Ketchum Games Won/i)).toBeInTheDocument();
+    // Player names appear as labels in the dialog. The dialog uses the alt's
+    // username (`ash`), not the display name, since the API match shape exposes
+    // username on the joined player object.
+    expect(screen.getByLabelText(/ash Games Won/i)).toBeInTheDocument();
   });
 
   it("shows tied score error when scores are equal on submit", async () => {
@@ -490,9 +620,15 @@ describe("TournamentPairings", () => {
       toast: { success: jest.Mock; error: jest.Mock };
     };
     const user = userEvent.setup();
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [buildMatch({ status: "active" })];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [buildMatch({ status: "active" })],
+        })
+      )
+    );
     renderPairings();
 
     // Open dialog
@@ -513,31 +649,44 @@ describe("TournamentPairings", () => {
   });
 
   it("shows phase selector when multiple phases exist", () => {
-    phasesData = [
-      buildPhase({ id: 1, name: "Swiss" }),
-      buildPhase({ id: 2, name: "Top Cut", phase_order: 2 }),
-    ];
-    roundsData = [];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [
+            buildPhase({ id: 1, name: "Swiss" }),
+            buildPhase({ id: 2, name: "Top Cut", phase_order: 2 }),
+          ],
+          rounds: [],
+        })
+      )
+    );
     renderPairings();
     expect(screen.getByText("Select phase")).toBeInTheDocument();
   });
 
   it("does not show phase selector for a single phase", () => {
-    phasesData = [buildPhase()];
-    roundsData = [];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(buildPairingsData({ phases: [buildPhase()], rounds: [] }))
+    );
     renderPairings();
     expect(screen.queryByText("Select phase")).not.toBeInTheDocument();
   });
 
   it("renders player stats (wins-losses) in match rows", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [
-      buildMatch({
-        player1Stats: { wins: 3, losses: 0 },
-        player2Stats: { wins: 1, losses: 2 },
-      }),
-    ];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [
+            buildMatch({
+              player1Stats: { wins: 3, losses: 0 },
+              player2Stats: { wins: 1, losses: 2 },
+            }),
+          ],
+        })
+      )
+    );
     renderPairings();
 
     expect(screen.getByText("3-0")).toBeInTheDocument();
@@ -545,47 +694,73 @@ describe("TournamentPairings", () => {
   });
 
   it("renders completed match winner and game score", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [
-      buildMatch({
-        status: "completed",
-        winner: { username: "ash", display_name: "Ash Ketchum" },
-        game_wins1: 2,
-        game_wins2: 1,
-      }),
-    ];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [
+            buildMatch({
+              status: "completed",
+              winner_alt_id: 1,
+              game_wins1: 2,
+              game_wins2: 1,
+            }),
+          ],
+        })
+      )
+    );
     renderPairings();
 
     expect(screen.getByText("2-1")).toBeInTheDocument();
   });
 
   it("renders pending match result as dash", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [buildMatch({ status: "pending" })];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [buildMatch({ status: "pending" })],
+        })
+      )
+    );
     renderPairings();
 
     expect(screen.getByText("-")).toBeInTheDocument();
   });
 
   it("renders unpaired player username when displayName is null", () => {
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [];
-    unpairedData = [{ altId: 10, username: "late_joiner", displayName: null }];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [],
+          unpairedPlayers: [
+            { altId: 10, username: "late_joiner", displayName: null },
+          ],
+        })
+      )
+    );
     renderPairings();
 
     expect(screen.getByText("late_joiner")).toBeInTheDocument();
   });
 
   it("renders round number in round selector", () => {
-    phasesData = [buildPhase()];
-    roundsData = [
-      buildRound({ id: 10, round_number: 1 }),
-      buildRound({ id: 11, round_number: 2 }),
-    ];
-    matchesData = [];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [
+            buildRound({ id: 10, round_number: 1 }),
+            buildRound({ id: 11, round_number: 2 }),
+          ],
+          matches: [],
+        })
+      )
+    );
     renderPairings();
     // Both round options appear
     expect(screen.getByText("Round 1")).toBeInTheDocument();
@@ -594,9 +769,15 @@ describe("TournamentPairings", () => {
 
   it("report dialog has Cancel button that closes it", async () => {
     const user = userEvent.setup();
-    phasesData = [buildPhase()];
-    roundsData = [buildRound()];
-    matchesData = [buildMatch({ status: "active" })];
+    mockUseApiQuery.mockReturnValue(
+      apiResult(
+        buildPairingsData({
+          phases: [buildPhase()],
+          rounds: [buildRound()],
+          matches: [buildMatch({ status: "active" })],
+        })
+      )
+    );
     renderPairings();
 
     await user.click(screen.getByText("Report").closest("button")!);

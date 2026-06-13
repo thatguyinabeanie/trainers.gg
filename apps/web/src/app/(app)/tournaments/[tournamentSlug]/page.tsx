@@ -2,6 +2,7 @@ import { cacheTag, cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import {
   createStaticClient,
+  createServiceRoleClient,
   createClientReadOnly,
   getUserId,
 } from "@/lib/supabase/server";
@@ -26,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TournamentTabs, type PhaseData } from "./tournament-tabs";
+import { PublicPairings } from "./public-pairings";
 import { PageContainer } from "@/components/layout/page-container";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TournamentSidebarCard } from "@/components/tournament";
@@ -63,13 +65,19 @@ const phaseTypeLabels: Record<string, string> = {
 /**
  * Cached tournament fetcher — keyed by slug.
  * Uses slug-specific cache tag for granular invalidation.
+ *
+ * §0.2 (Phase 2 Task 9 — Part B mechanical swap): `createStaticClient()` uses
+ * the anon key; after `REVOKE SELECT ... FROM anon` it would silently return
+ * zero rows. `createServiceRoleClient()` bypasses grants and keeps working.
+ * The data is public S-bucket (same for all viewers), so service-role inside
+ * `'use cache'` is safe — it does not vary per user.
  */
 async function getCachedTournament(slug: string) {
   "use cache";
   cacheTag(CacheTags.tournament(slug), CacheTags.TOURNAMENTS_LIST);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getTournamentBySlug(supabase, slug);
 }
 
@@ -87,32 +95,80 @@ async function getMyTeam(tournamentId: number) {
 /**
  * Cached public team list for open teamsheet tournaments.
  * Keyed by tournament ID and slug for granular invalidation.
+ *
+ * §0.2 (Phase 2 Task 9 — Part B mechanical swap): reads of `alts`, `teams`,
+ * `team_pokemon`, and `pokemon` use `createServiceRoleClient()` so they survive
+ * `REVOKE SELECT ... FROM anon, authenticated` on S-bucket base tables.
+ * The `public_tournament_registrations` VIEW read intentionally stays on the
+ * anon/static client — it is excluded from the revoke set (safe-column view,
+ * public path, not a base-table grant revoke target).
+ * All data is public S-bucket (open team sheets, same for all viewers).
  */
 async function getCachedTournamentTeams(tournamentId: number, slug: string) {
   "use cache";
   cacheTag(CacheTags.tournamentTeams(slug), CacheTags.tournament(slug));
   cacheLife("max");
 
-  const supabase = createStaticClient();
-  const { data } = await supabase
-    .from("tournament_registrations")
-    .select(
-      `
-          alt_id,
-          alts:alts!tournament_registrations_alt_id_fkey(username, display_name),
-          team:teams(
-            id, name,
-            team_pokemon(
-              team_position,
-              pokemon:pokemon(species, nickname, held_item, ability, tera_type)
-            )
-          )
-        `
-    )
+  // Anon/static client: only for the public_tournament_registrations VIEW,
+  // which is excluded from the revoke set and intentionally left unchanged.
+  const anonSupabase = createStaticClient();
+
+  // Service-role client: for alts, teams, team_pokemon, pokemon base tables
+  // that will have anon/authenticated SELECT revoked in Step 4.
+  const srSupabase = createServiceRoleClient();
+
+  // Two-step lookup (RLS audit #3): the base tournament_registrations SELECT is
+  // locked to own + staff, so the public path reads the safe-column VIEW first,
+  // then fetches teams/pokemon separately. We avoid relying on PostgREST view
+  // embedding — teams are resolved by team_id in a second query (the teams /
+  // team_pokemon tables already carry their own public open-team-sheet RLS).
+  const { data: registrations } = await anonSupabase
+    .from("public_tournament_registrations")
+    .select("alt_id, team_id, registered_at")
     .eq("tournament_id", tournamentId)
     .not("team_id", "is", null)
     .order("registered_at");
-  return data ?? [];
+
+  if (!registrations || registrations.length === 0) return [];
+
+  const altIds = registrations
+    .map((r) => r.alt_id)
+    .filter((id): id is number => id != null);
+  const teamIds = registrations
+    .map((r) => r.team_id)
+    .filter((id): id is number => id != null);
+
+  const [altsResult, teamsResult] = await Promise.all([
+    srSupabase
+      .from("alts")
+      .select("id, username")
+      .in("id", altIds),
+    srSupabase
+      .from("teams")
+      .select(
+        `
+          id, name,
+          team_pokemon(
+            team_position,
+            pokemon:pokemon(species, nickname, held_item, ability, tera_type)
+          )
+        `
+      )
+      .in("id", teamIds),
+  ]);
+
+  const altsById = new Map(
+    (altsResult.data ?? []).map((alt) => [alt.id, alt])
+  );
+  const teamsById = new Map(
+    (teamsResult.data ?? []).map((team) => [team.id, team])
+  );
+
+  return registrations.map((r) => ({
+    alt_id: r.alt_id,
+    alts: r.alt_id != null ? (altsById.get(r.alt_id) ?? null) : null,
+    team: r.team_id != null ? (teamsById.get(r.team_id) ?? null) : null,
+  }));
 }
 
 // ============================================================================
@@ -527,7 +583,13 @@ export default async function TournamentPage({ params }: PageProps) {
         scheduleCard={<ScheduleCard tournament={tournament} />}
         formatCard={<FormatCard tournament={tournament} />}
         phases={phases}
-        canManage={canManage}
+        pairingsSlot={
+          <PublicPairings
+            tournamentId={tournament.id}
+            tournamentSlug={tournament.slug}
+            canManage={canManage}
+          />
+        }
         sidebarCard={
           <TournamentSidebarCard
             tournamentId={tournament.id}

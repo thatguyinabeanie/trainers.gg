@@ -9,3 +9,5 @@ export { tournamentMatchFactory, matchGameFactory } from "./match";
 export { speciesSearchEntryFactory } from "./species-search-entry";
 export { pipelineSpeciesFactory } from "./pipeline-species";
 export { rawSlotFactory } from "./raw-slot";
+export { publicStandingFactory } from "./standing";
+export type { PublicStandingRow } from "./standing";

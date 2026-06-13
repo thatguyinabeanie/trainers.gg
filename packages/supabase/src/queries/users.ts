@@ -6,8 +6,10 @@ import { escapeLike } from "@trainers/utils";
  * Get count of all users (for seeding check)
  */
 export async function getUserCount(supabase: TypedClient) {
+  // RLS audit #1: public.users SELECT is locked to own-row + admin. Count over
+  // the safe public_user_profiles view, which exposes every user row.
   const { count, error } = await supabase
-    .from("users")
+    .from("public_user_profiles")
     .select("*", { count: "exact", head: true });
 
   if (error) throw error;
@@ -276,9 +278,11 @@ export async function getPlayerProfileByHandle(
   supabase: TypedClient,
   handle: string
 ) {
-  // Try users.username first (exact match)
+  // Try users.username first (exact match). RLS audit #1: public.users SELECT
+  // is locked down, so read the safe public_user_profiles view (all selected
+  // columns are exposed by the view).
   const { data: user, error: userError } = await supabase
-    .from("users")
+    .from("public_user_profiles")
     .select("id, username, country, did, pds_handle, main_alt_id, created_at")
     .eq("username", handle)
     .maybeSingle();
@@ -322,8 +326,9 @@ export async function getPlayerProfileByHandle(
   const userData =
     user ??
     (await (async () => {
+      // RLS audit #1: read the safe public_user_profiles view, not users.
       const { data } = await supabase
-        .from("users")
+        .from("public_user_profiles")
         .select(
           "id, username, country, did, pds_handle, main_alt_id, created_at"
         )
@@ -362,26 +367,30 @@ export async function getEmailByUsername(
   supabase: TypedClient,
   username: string
 ): Promise<string | null> {
-  const escaped = escapeLike(username);
+  // RLS audit #1: the sign-in path runs under the anon client (no session yet),
+  // and public.users SELECT is now locked to own-row + admin. Email is also
+  // excluded from the public_user_profiles view. Resolve username -> email via
+  // the SECURITY DEFINER get_email_by_username RPC, which is granted to anon.
 
-  // First try users.username (case-insensitive match)
-  const { data: user, error: userError } = await supabase
-    .from("users")
-    .select("email")
-    .ilike("username", escaped)
-    .maybeSingle();
+  // First try users.username via the RPC (exact match on username).
+  const { data: emailFromUser, error: userError } = await supabase.rpc(
+    "get_email_by_username",
+    { p_username: username }
+  );
 
   if (userError) {
     console.error("Error looking up email by username in users:", userError);
     return null;
   }
 
-  if (user?.email) return user.email;
+  if (emailFromUser) return emailFromUser;
 
-  // Fallback: check alts.username and join to users (case-insensitive)
+  // Fallback: check alts.username (publicly readable) and resolve to the owning
+  // user's username via the safe view, then look that email up via the RPC.
+  const escaped = escapeLike(username);
   const { data: alt, error: altError } = await supabase
     .from("alts")
-    .select("user:users(email)")
+    .select("user_id")
     .ilike("username", escaped)
     .maybeSingle();
 
@@ -390,9 +399,35 @@ export async function getEmailByUsername(
     return null;
   }
 
-  // Type assertion since we know the structure
-  const altUser = alt?.user as { email: string | null } | null;
-  return altUser?.email ?? null;
+  if (!alt?.user_id) return null;
+
+  const { data: profile, error: profileError } = await supabase
+    .from("public_user_profiles")
+    .select("username")
+    .eq("id", alt.user_id)
+    .maybeSingle();
+
+  if (profileError || !profile?.username) {
+    if (profileError) {
+      console.error("Error resolving alt owner username:", profileError);
+    }
+    return null;
+  }
+
+  const { data: emailFromAlt, error: altEmailError } = await supabase.rpc(
+    "get_email_by_username",
+    { p_username: profile.username }
+  );
+
+  if (altEmailError) {
+    console.error(
+      "Error looking up email for alt owner via RPC:",
+      altEmailError
+    );
+    return null;
+  }
+
+  return emailFromAlt ?? null;
 }
 
 /**

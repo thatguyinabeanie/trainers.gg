@@ -122,6 +122,9 @@ export {
   updateCoachProfile,
 } from "./coach";
 
+// Audit log write helper (service-role only)
+export { writeAuditLog, type AuditLogInsert } from "./audit-log";
+
 // Discord bot mutations
 export {
   createDiscordServer,

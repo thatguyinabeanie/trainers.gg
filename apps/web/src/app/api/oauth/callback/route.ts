@@ -66,7 +66,8 @@ export async function GET(request: Request) {
 
   try {
     // Step 1: Exchange auth code for tokens, get DID
-    const { did, returnUrl, linkUserId } = await handleAtprotoCallback(searchParams);
+    const { did, returnUrl, linkUserId } =
+      await handleAtprotoCallback(searchParams);
 
     // Use service role client for auth operations
     const supabase = createServiceRoleClient();
@@ -128,7 +129,10 @@ async function handleLinkMode({
   baseUrl: string;
   supabaseAtproto: ReturnType<typeof createAtprotoServiceClient>;
 }) {
-  const redirectTarget = sanitizeReturnUrl(returnUrl, "/dashboard/settings/account");
+  const redirectTarget = sanitizeReturnUrl(
+    returnUrl,
+    "/dashboard/settings/account"
+  );
 
   // Check if the DID is already linked to another user
   const { data: existingHolder, error: lookupError } = await supabaseAtproto
@@ -140,14 +144,16 @@ async function handleLinkMode({
   if (lookupError) {
     console.error("Failed to check DID ownership:", lookupError);
     const errorUrl = new URL(redirectTarget, baseUrl);
-    errorUrl.hash = "error=link_failed&error_code=update_failed&error_description=Failed+to+verify+Bluesky+account+ownership";
+    errorUrl.hash =
+      "error=link_failed&error_code=update_failed&error_description=Failed+to+verify+Bluesky+account+ownership";
     return NextResponse.redirect(errorUrl.toString());
   }
 
   if (existingHolder && existingHolder.id !== linkUserId) {
     // DID belongs to a different user — redirect with error
     const errorUrl = new URL(redirectTarget, baseUrl);
-    errorUrl.hash = "error=link_failed&error_code=identity_already_exists&error_description=That+Bluesky+account+is+already+linked+to+another+user";
+    errorUrl.hash =
+      "error=link_failed&error_code=identity_already_exists&error_description=That+Bluesky+account+is+already+linked+to+another+user";
     return NextResponse.redirect(errorUrl.toString());
   }
 
@@ -162,7 +168,8 @@ async function handleLinkMode({
   if (updateError) {
     console.error("Failed to link Bluesky DID to user:", updateError);
     const errorUrl = new URL(redirectTarget, baseUrl);
-    errorUrl.hash = "error=link_failed&error_code=update_failed&error_description=Failed+to+link+Bluesky+account";
+    errorUrl.hash =
+      "error=link_failed&error_code=update_failed&error_description=Failed+to+link+Bluesky+account";
     return NextResponse.redirect(errorUrl.toString());
   }
 
@@ -239,10 +246,7 @@ async function handleSignInMode({
         .eq("id", existingUser.id);
 
       if (didUpdateError) {
-        console.error(
-          "Failed to update DID on existing user:",
-          didUpdateError
-        );
+        console.error("Failed to update DID on existing user:", didUpdateError);
       }
     }
   } else {
@@ -283,7 +287,7 @@ async function handleSignInMode({
         const { data: userByPlaceholderEmail } = await supabaseAtproto
           .from("users")
           .select("id")
-          .ilike("email", placeholderEmail)
+          .eq("email", placeholderEmail)
           .maybeSingle();
 
         if (userByPlaceholderEmail) {

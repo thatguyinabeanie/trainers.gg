@@ -52,6 +52,30 @@ Decisions from the cost/architecture planning session (Vercel vs Supabase edge f
    - Phase 4: `.claude/` docs (checklist below) + memory. **Note:** `.claude/` conventions update per-phase as each pattern becomes real — documenting an unimplemented architecture would mislead agents working on current code.
      Each phase = own branch/PR with migration/security review per repo auto-delegation rules.
 
+## Post-decision considerations (completeness pass — all resolved)
+
+0. **Realtime carve-out (fixes a Phase 2 contradiction).** The Phase 2 revoke of anon/authenticated on S-bucket base tables **excludes the six realtime tables** (`notifications`, `match_games`, `match_messages`, `tournament_matches`, `tournament_registrations`, `tournament_rounds`) — they keep `authenticated` SELECT with their post-fix scoped quals (realtime delivers only rows the subscriber passes RLS for). Consequences locked:
+   - The public tournament page's **registration-count realtime subscription is removed** (post-fix-#3 it would deliver nothing to non-staff — and realtime payloads carry whole rows incl. `drop_notes`, the exact leak being closed). The count becomes **tag-revalidated cached data** (no websocket, no timer); optional 30s refetch later if live-tick is ever wanted.
+   - **Standing rule:** a table may only be realtime-published for an audience if _every column_ is safe for that audience ("column-homogeneous sensitivity") — payloads cannot be column-filtered.
+1. **Mobile auth helper (Phase 2 work item).** Next.js API routes get one shared helper: Bearer-token check (mobile) first, cookie fallback (web). Built before any mobile endpoint migrates.
+2. **Caching spike (first task of Phase 2).** Docs deep-read (Next.js 16 route-handler caching, Vercel CDN/functions, Supabase SSR auth) + endpoint #1 (e.g. standings) built first and verified: cache hits skip the DB, tag invalidation refreshes it, both auth modes work. Mass migration only after the spike passes — docs lag this stack's bleeding edge (see reviewing-caching gotchas).
+3. **Rate limiting (Phase 2 work item).** Modest shared helper on API routes (max N req/user-or-IP/min) reusing existing machinery (`rate_limits` table / Upstash pattern), shipped before the routes. Full per-key quotas arrive with the public API product.
+4. **Codegen + tests baked in.** Every RLS-fix PR includes its test updates (tests asserting old permissive behavior fail correctly — fix tests, never weaken policy). The schema migration includes regenerating types for `api`/`internal` schemas.
+5. **Double-egress accepted.** Mobile-via-Vercel consciously pays Supabase→Vercel + Vercel→client egress on cache misses; cache hits pay once. The old mobile-direct cost rationale is **superseded** (update `.claude/CLAUDE.md`). Revisit only if egress becomes material in billing.
+6. **Marquee-event runbook (Phase 4 deliverable).** `docs/runbooks/marquee-events.md`: pre-event (raise realtime connection quota via support — 7k concurrent vs 10k default ceiling; watch 2,500 msg/s; bump DB compute tier days ahead), during-event monitoring, post-event scale-down. Written before the first 1,000+ player event.
+
+## Code-layer security findings (June 2026 follow-up)
+
+A code-layer review (complementary to the RLS audit above) surfaced findings the RLS audit could not see by construction — logic flaws in application code rather than missing database policies.
+
+- **F-2 — `logo_url` SSRF in community/organization update actions (FIXED this branch).** Server Actions accepted arbitrary `logo_url` values and passed them to a server-side fetch without allowlisting, allowing an attacker to make the server issue requests to internal network addresses. Fixed: URL origin is now validated against an allowlist before any server-side fetch.
+
+- **F-3 — Pipeline sudo gate missing (FIXED this branch).** The import pipeline's admin-only entry points lacked an explicit `is_site_admin()` gate and relied solely on RLS to block non-admin callers. Fixed: an explicit capability check was added at the action layer before any pipeline work begins.
+
+- **F-1 — `bluesky-auth` edge function trusts a public DID with no ownership proof (DEFERRED — mobile inactive).** Mobile sign-in sends only `{ did, handle }` strings; the function verifies via a public profile lookup with no proof of key ownership. Since DID+handle are public, anyone who knows a victim's DID could mint a Supabase session for that account. Web sign-in is not affected (it uses a full server-side code-exchange). Full details and fix options are documented in `apps/mobile/CLAUDE.md` — address when mobile work resumes.
+
+- **`atproto_sessions` RLS reconciliation (RESOLVED).** Fixed by migration `20260128000000_fix_performance_advisors.sql`, which applied the init-plan `(SELECT auth.uid())` pattern to the `atproto_sessions` SELECT policy, enabling users to read only their own sessions.
+
 ## Follow-through checklist (required once architecture decisions land)
 
 Update the agent-facing docs so future sessions inherit the decisions:

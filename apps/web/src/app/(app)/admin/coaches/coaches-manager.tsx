@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { GraduationCap, Search, UserPlus, X } from "lucide-react";
+import { GraduationCap, Search, UserPlus, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { listUsersAdmin } from "@trainers/supabase";
 import { type TypedSupabaseClient } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useSupabaseQuery } from "@/lib/supabase";
+import { type ActionResult } from "@trainers/validators";
 
 import { grantCoachStatusAction, revokeCoachStatusAction } from "./actions";
 
@@ -54,15 +57,50 @@ interface CoachRow {
 }
 
 interface CoachesManagerProps {
+  /** Server-rendered initial coach list (used as TanStack Query initialData). */
   coaches: CoachRow[];
+}
+
+// ---------------------------------------------------------------------------
+// Query key
+// ---------------------------------------------------------------------------
+
+/** Stable query key for the admin coaches list endpoint. */
+const COACHES_QUERY_KEY = ["admin", "coaches"] as const;
+
+// ---------------------------------------------------------------------------
+// Fetcher
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the coaches list from the admin API.
+ * Returns `ActionResult<CoachRow[]>` for consumption by `useApiQuery`.
+ */
+async function fetchCoaches(): Promise<ActionResult<CoachRow[]>> {
+  const res = await fetch("/api/v1/admin/coaches");
+  if (!res.ok) {
+    return { success: false, error: `HTTP ${res.status}` };
+  }
+  return res.json() as Promise<ActionResult<CoachRow[]>>;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function CoachesManager({ coaches }: CoachesManagerProps) {
-  const router = useRouter();
+export function CoachesManager({ coaches: initialCoaches }: CoachesManagerProps) {
+  const queryClient = useQueryClient();
+
+  // --- Coaches list via TanStack Query (repoints away from useSupabaseQuery) ---
+  const {
+    data: coaches = initialCoaches,
+    isError: isCoachesError,
+    error: coachesError,
+  } = useApiQuery<CoachRow[]>(COACHES_QUERY_KEY, fetchCoaches, {
+    // Server rendered prop is the initial value — no loading flash on mount.
+    initialData: initialCoaches,
+    staleTime: 30_000,
+  });
 
   // --- Revoke dialog state ---
   const [revokeTarget, setRevokeTarget] = useState<CoachRow | null>(null);
@@ -96,7 +134,8 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
     }, 300);
   }
 
-  // Search for users to grant coach status to
+  // Search for users to grant coach status to (remains useSupabaseQuery — there
+  // is no dedicated user-search admin API route; this is a direct Supabase read).
   const searchQuery = useSupabaseQuery(
     (supabase: TypedSupabaseClient) => {
       if (!debouncedGrantSearch) return Promise.resolve({ data: [], count: 0 });
@@ -129,7 +168,8 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
         toast.success(`Coach status revoked from ${coachLabel(revokeTarget)}`);
         setRevokeTarget(null);
         setRevokeReason("");
-        router.refresh();
+        // Invalidate the coaches query so the list refreshes without a full page reload.
+        await queryClient.invalidateQueries({ queryKey: COACHES_QUERY_KEY });
       } else {
         toast.error(result.error ?? "Failed to revoke coach status");
       }
@@ -149,7 +189,8 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
         setGrantSearch("");
         setDebouncedGrantSearch("");
         setGrantTarget(null);
-        router.refresh();
+        // Invalidate the coaches query so the list refreshes without a full page reload.
+        await queryClient.invalidateQueries({ queryKey: COACHES_QUERY_KEY });
       } else {
         toast.error(result.error ?? "Failed to grant coach status");
       }
@@ -160,6 +201,20 @@ export function CoachesManager({ coaches }: CoachesManagerProps) {
 
   return (
     <>
+      {/* ------------------------------------------------------------------ */}
+      {/* Coaches list error state                                            */}
+      {/* ------------------------------------------------------------------ */}
+      {isCoachesError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertDescription>
+            {coachesError instanceof Error
+              ? coachesError.message
+              : "Failed to load coaches"}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* ------------------------------------------------------------------ */}
       {/* Current coaches list                                                */}
       {/* ------------------------------------------------------------------ */}

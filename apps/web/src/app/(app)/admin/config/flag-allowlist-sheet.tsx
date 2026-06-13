@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
-import { getUsersByIds, listUsersAdmin } from "@trainers/supabase";
+import { getUsersByIds } from "@trainers/supabase";
 import {
   type TypedSupabaseClient,
   type FeatureFlag,
 } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +25,7 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { useSupabaseQuery } from "@/lib/supabase";
+import type { SearchPlayersResult } from "@/lib/data/players-search-endpoint";
 
 interface FlagAllowlistSheetProps {
   flag: FeatureFlag | null;
@@ -73,24 +76,43 @@ export function FlagAllowlistSheet({
     };
   }, []);
 
-  // Fetch current allowed users by their IDs
+  // Fetch current allowed users by their IDs (uses the browser anon client;
+  // will be replaced when a users-by-IDs API route is added in a later task).
   const currentAllowedQuery = useSupabaseQuery(
     (supabase: TypedSupabaseClient) => getUsersByIds(supabase, allowedIds),
     [allowedIds.join(",")]
   );
   const currentAllowedUsers: UserStub[] = currentAllowedQuery.data ?? [];
 
-  // Search for users to add
-  const searchQuery = useSupabaseQuery(
-    (supabase: TypedSupabaseClient) => {
-      if (!debouncedSearch) return Promise.resolve({ data: [], count: 0 });
-      return listUsersAdmin(supabase, { search: debouncedSearch, limit: 5 });
+  // Search for users via GET /api/v1/players/search — auth-gated, server-side
+  // service-role read that survives the Phase 2 Task 9 anon SELECT revoke on
+  // the alts table. useApiQuery unwraps ActionResult<T>.
+  const {
+    data: searchData,
+    isLoading: searchLoading,
+    isError: searchIsError,
+    error: searchError,
+  } = useApiQuery<SearchPlayersResult>(
+    ["players", "search", debouncedSearch],
+    async () => {
+      if (!debouncedSearch) {
+        return { success: true as const, data: { players: [], totalCount: 0, page: 1 } };
+      }
+      const params = new URLSearchParams({ q: debouncedSearch });
+      const res = await fetch(`/api/v1/players/search?${params.toString()}`);
+      if (!res.ok) {
+        return { success: false as const, error: `HTTP ${res.status}` };
+      }
+      const data = (await res.json()) as SearchPlayersResult;
+      return { success: true as const, data };
     },
-    [debouncedSearch]
+    { enabled: !!debouncedSearch }
   );
-  const searchResults: UserStub[] = (
-    (searchQuery.data?.data ?? []) as UserStub[]
-  ).filter((u) => !allowedIds.includes(u.id));
+
+  // Map PlayerDirectoryEntry shape → UserStub, filtering already-allowlisted users.
+  const searchResults: UserStub[] = (searchData?.players ?? [])
+    .filter((p) => !allowedIds.includes(p.userId))
+    .map((p) => ({ id: p.userId, username: p.username, image: p.avatarUrl }));
 
   // Initialize allowedIds when the sheet opens
   function handleOpenChange(nextOpen: boolean) {
@@ -218,7 +240,16 @@ export function FlagAllowlistSheet({
 
             {debouncedSearch && (
               <div className="rounded-lg border">
-                {searchQuery.isLoading ? (
+                {searchIsError ? (
+                  <Alert variant="destructive" className="border-0 rounded-lg">
+                    <AlertTriangle className="size-4" />
+                    <AlertDescription>
+                      {searchError instanceof Error
+                        ? searchError.message
+                        : "Failed to search users"}
+                    </AlertDescription>
+                  </Alert>
+                ) : searchLoading ? (
                   <p className="text-muted-foreground p-3 text-sm">
                     Searching...
                   </p>

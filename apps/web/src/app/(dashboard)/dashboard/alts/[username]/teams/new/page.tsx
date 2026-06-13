@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getActiveFormats } from "@trainers/pokemon";
 import { getAltByUsername, hasTeamBuilderAccess } from "@trainers/supabase";
 
-import { getUser, createClientReadOnly } from "@/lib/supabase/server";
+import { getUser, createServiceRoleClient } from "@/lib/supabase/server";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { PageHeader } from "@/components/dashboard/page-header";
 
@@ -43,7 +43,11 @@ export default async function NewTeamPage({
     redirect("/sign-in");
   }
 
-  const supabase = await createClientReadOnly();
+  // Service-role client: bypasses anon/authenticated GRANT restrictions on S-bucket tables
+  // (alts, feature_flags via hasTeamBuilderAccess) after the Phase 2 Task 9 revoke. The
+  // user identity check is done above via getUser(); userId is passed explicitly to every
+  // query. See docs/decisions/architecture-phase2-task9-revoke-plan.md §0.2 for rationale.
+  const supabase = createServiceRoleClient();
 
   // Gate on team builder feature flag (direct DB query — no stale JWT issues).
   const accessResult = await hasTeamBuilderAccess(supabase, user.id);

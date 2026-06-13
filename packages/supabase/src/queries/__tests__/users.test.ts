@@ -51,7 +51,8 @@ describe("getPlayerProfileByHandle", () => {
     let fromCallCount = 0;
     mockClient.from.mockImplementation((table: string) => {
       fromCallCount++;
-      if (table === "users" && fromCallCount === 1) {
+      // Call 1: public_user_profiles lookup by username
+      if (table === "public_user_profiles" && fromCallCount === 1) {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -124,8 +125,8 @@ describe("getPlayerProfileByHandle", () => {
     let fromCallCount = 0;
     mockClient.from.mockImplementation((table: string) => {
       fromCallCount++;
-      // First call: users.username lookup — no match
-      if (table === "users" && fromCallCount === 1) {
+      // First call: public_user_profiles.username lookup — no match
+      if (table === "public_user_profiles" && fromCallCount === 1) {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -161,8 +162,8 @@ describe("getPlayerProfileByHandle", () => {
           }),
         };
       }
-      // Fourth call: re-fetch user by ID
-      if (table === "users" && fromCallCount === 4) {
+      // Fourth call: re-fetch user by ID via public_user_profiles
+      if (table === "public_user_profiles" && fromCallCount === 4) {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({

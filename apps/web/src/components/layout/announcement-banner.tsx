@@ -4,7 +4,7 @@ import { getActiveAnnouncements } from "@trainers/supabase";
 import { getErrorMessage } from "@trainers/utils";
 
 import { CacheTags } from "@/lib/cache";
-import { createStaticClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, XCircle, CheckCircle2 } from "lucide-react";
 
@@ -36,7 +36,11 @@ async function getCachedAnnouncements() {
   cacheTag(CacheTags.ANNOUNCEMENTS);
   cacheLife("minutes");
 
-  const supabase = createStaticClient();
+  // Service-role bypasses anon/authenticated grants (§0.2 of architecture-phase2-task9-revoke-plan.md):
+  // `announcements` will have its anon+authenticated SELECT revoked in Phase 2 Task 9 Step 4.
+  // Service-role is safe inside 'use cache' because it is a constant identity (not per-user),
+  // so the shared cache key (function arguments) is unaffected.
+  const supabase = createServiceRoleClient();
   try {
     return await getActiveAnnouncements(supabase);
   } catch (err) {
@@ -58,6 +62,11 @@ async function getCachedAnnouncements() {
  *
  * Uses 'use cache' with cacheTag(CacheTags.ANNOUNCEMENTS) + cacheLife("minutes")
  * for on-demand invalidation via invalidateAnnouncementCaches().
+ *
+ * Uses createServiceRoleClient() (not createStaticClient()) inside the cache scope so
+ * that reads survive the Phase 2 Task 9 Step-4 revoke of anon/authenticated SELECT on
+ * `announcements`. Service-role is safe inside 'use cache' — it is a constant identity,
+ * so the shared cache key is unaffected. See §0.2 of architecture-phase2-task9-revoke-plan.md.
  */
 export async function AnnouncementBanner() {
   // getCachedAnnouncements never throws — failures are handled inside the

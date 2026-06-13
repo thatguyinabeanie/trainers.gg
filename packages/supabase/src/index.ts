@@ -12,6 +12,7 @@ export {
   createAdminSupabaseClient,
   type TypedSupabaseClient,
   type TypedClient,
+  type ServiceRoleClient,
 } from "./client";
 
 // Query exports
@@ -60,6 +61,7 @@ export {
   STORAGE_BUCKETS,
   getUploadPath,
   getPublicUrl,
+  createSignedUrl,
   uploadFile,
   deleteFile,
   extractPathFromUrl,
@@ -79,3 +81,9 @@ export type {
   UsersTableWithAtproto,
   PdsAccountStatus,
 } from "./types-atproto";
+
+// NOTE: The TanStack Query wrappers (useApiQuery / useApiMutation) are
+// intentionally NOT re-exported here — they live behind the dedicated
+// `@trainers/supabase/react-query` subpath so the root barrel stays
+// framework-agnostic and does not couple every consumer to
+// `@tanstack/react-query`. Import them from "@trainers/supabase/react-query".

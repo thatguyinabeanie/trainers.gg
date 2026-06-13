@@ -5,32 +5,16 @@ import {
   getPhaseRoundsWithStats,
 } from "@trainers/supabase";
 
-// Mock Supabase hooks
-const mockChannel = {
-  on: jest.fn().mockReturnThis(),
-  subscribe: jest.fn((callback) => {
-    if (typeof callback === "function") {
-      callback("SUBSCRIBED", null);
-    }
-    return mockChannel;
-  }),
-  unsubscribe: jest.fn(),
-};
-
-const mockSupabase = {
-  channel: jest.fn(() => mockChannel),
-};
-
+// tournament-overview no longer uses Supabase Realtime channels —
+// freshness comes from mutation-driven cache invalidation.
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: jest.fn(),
-  useSupabase: jest.fn(),
 }));
 
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import { useSupabaseQuery } from "@/lib/supabase";
 const mockUseSupabaseQuery = useSupabaseQuery as jest.MockedFunction<
   typeof useSupabaseQuery
 >;
-const mockUseSupabase = useSupabase as jest.MockedFunction<typeof useSupabase>;
 
 // Mock the queries
 jest.mock("@trainers/supabase", () => ({
@@ -138,9 +122,6 @@ describe("TournamentOverview", () => {
     jest.clearAllMocks();
     mockGetTournamentPhases.mockReturnValue([]);
     mockGetPhaseRoundsWithStats.mockReturnValue([]);
-    mockUseSupabase.mockReturnValue(
-      mockSupabase as ReturnType<typeof useSupabase>
-    );
   });
 
   describe("Registration Progress", () => {
@@ -976,32 +957,32 @@ describe("TournamentOverview", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Realtime subscription lifecycle
+  // No realtime subscriptions (removed in Phase 2 Task 9 T3n)
   // ---------------------------------------------------------------------------
 
   describe("realtime subscription", () => {
-    it("subscribes to the realtime channel on mount", () => {
+    it("does NOT use useSupabase() — no realtime channels (Phase 2 Task 9 T3n)", () => {
+      // tournament-overview was migrated off all three realtime channels
+      // (overview-registrations, overview-matches, overview-rounds). Freshness
+      // is now driven by mutation-triggered cache invalidation.
+      //
+      // The module mock only exports useSupabaseQuery. If useSupabase() were
+      // re-added to the component, Jest would throw "useSupabase is not a
+      // function" during the render — a clean render below proves it's removed.
       setupQueryMocks({ phases: mockPhases, rounds: [] });
-      render(<TournamentOverview tournament={baseTournament} />);
-      // channel() called for registrations + matches + rounds (activePhaseId present)
-      expect(mockSupabase.channel).toHaveBeenCalledWith(
-        `overview-registrations-${baseTournament.id}`
-      );
-      expect(mockSupabase.channel).toHaveBeenCalledWith(
-        `overview-matches-${baseTournament.id}`
-      );
-    });
 
-    it("does NOT subscribe to rounds channel when there is no active phase", () => {
-      setupQueryMocks({ phases: [], rounds: [] });
-      render(
-        <TournamentOverview
-          tournament={{ ...baseTournament, currentPhaseId: null }}
-        />
-      );
-      expect(mockSupabase.channel).not.toHaveBeenCalledWith(
-        expect.stringMatching(/overview-rounds/)
-      );
+      // Assertion 1: the mock does not export useSupabase
+      const useSupabaseModule = jest.requireMock("@/lib/supabase") as {
+        useSupabaseQuery: jest.Mock;
+        useSupabase?: jest.Mock;
+      };
+      expect(useSupabaseModule.useSupabase).toBeUndefined();
+
+      // Assertion 2: component renders without throwing (no useSupabase() call)
+      expect(() =>
+        render(<TournamentOverview tournament={baseTournament} />)
+      ).not.toThrow();
+      expect(screen.getByText("Ready to Start")).toBeInTheDocument();
     });
   });
 

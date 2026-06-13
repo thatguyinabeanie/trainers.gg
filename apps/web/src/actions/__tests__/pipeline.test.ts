@@ -7,6 +7,14 @@
  * All I/O is mocked: auth, supabase client, all query/mutation functions,
  * and cache invalidation. The intent is to verify the admin gate, happy-path
  * data flow, and error-path forwarding for each action.
+ *
+ * Architecture:
+ * - READ-ONLY actions use the local `requireAdmin()` helper (getUserId + isSiteAdmin)
+ * - MUTATION actions use `withAdminAction()` (requireAdminWithSudo + service-role client)
+ *
+ * Accordingly, the mocking strategy differs:
+ * - Read-only: mock `getUserId` + `isSiteAdmin` directly
+ * - Mutations: mock `@/lib/auth/with-admin-action` to control callback invocation
  */
 
 // =============================================================================
@@ -21,6 +29,12 @@ jest.mock("@/lib/supabase/server", () => ({
 
 jest.mock("@/lib/sudo/server", () => ({
   isSiteAdmin: jest.fn(async () => false),
+}));
+
+// withAdminAction is mocked so mutation tests can simulate sudo-success or
+// auth-failure without wiring up the full requireAdminWithSudo chain.
+jest.mock("@/lib/auth/with-admin-action", () => ({
+  withAdminAction: jest.fn(),
 }));
 
 jest.mock("@trainers/supabase/queries", () => ({
@@ -47,6 +61,7 @@ jest.mock("@/lib/cache-invalidation", () => ({
 
 import { isSiteAdmin } from "@/lib/sudo/server";
 import { createClient, getUserId } from "@/lib/supabase/server";
+import { withAdminAction } from "@/lib/auth/with-admin-action";
 import {
   getPipelineMonitor,
   getImportExclusions,
@@ -78,13 +93,16 @@ import {
 } from "../pipeline";
 
 // =============================================================================
-// Helpers
+// Typed mock references
 // =============================================================================
 
 const mockIsSiteAdmin = isSiteAdmin as jest.MockedFunction<typeof isSiteAdmin>;
 const mockGetUserId = getUserId as jest.MockedFunction<typeof getUserId>;
 const mockCreateClient = createClient as jest.MockedFunction<
   typeof createClient
+>;
+const mockWithAdminAction = withAdminAction as jest.MockedFunction<
+  typeof withAdminAction
 >;
 const mockGetPipelineMonitor = getPipelineMonitor as jest.MockedFunction<
   typeof getPipelineMonitor
@@ -115,7 +133,11 @@ const mockInvalidateUsageStatsCaches =
     typeof invalidateUsageStatsCaches
   >;
 
-/** Put the caller in the "admin" role. */
+// =============================================================================
+// Auth helpers
+// =============================================================================
+
+/** Put the caller in the "admin" role (for read-only requireAdmin() path). */
 function asAdmin() {
   mockGetUserId.mockResolvedValue("user-123");
   mockIsSiteAdmin.mockResolvedValue(true);
@@ -133,12 +155,46 @@ function asUnauthenticated() {
   mockIsSiteAdmin.mockResolvedValue(false);
 }
 
+/**
+ * Configure withAdminAction to invoke its callback with a service-role client
+ * stub and a fixed admin user ID — simulates a successful sudo session.
+ *
+ * Also replicates the real wrapper's error-catching: when the callback throws,
+ * the mock catches the error and returns `{ success: false, error: errorMessage }`
+ * (the label, not the thrown message) — matching `withAdminAction`'s behavior.
+ *
+ * The empty object is cast through `unknown` to satisfy the ServiceRoleClient
+ * brand without importing the full Supabase client type in test scope.
+ */
+function asAdminWithSudo(adminUserId = "user-123") {
+  mockWithAdminAction.mockImplementation(
+    async (action, errorMessage = "An unexpected error occurred") => {
+      try {
+        return await action(
+          {} as unknown as Parameters<typeof action>[0],
+          adminUserId
+        );
+      } catch {
+        return { success: false, error: errorMessage };
+      }
+    }
+  );
+}
+
+/**
+ * Configure withAdminAction to return an auth/sudo failure immediately,
+ * without invoking the callback.
+ */
+function asSudoFailed(error = "Sudo mode required") {
+  mockWithAdminAction.mockResolvedValue({ success: false, error });
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
 // =============================================================================
-// getPipelineMonitorAction
+// getPipelineMonitorAction (READ-ONLY — requireAdmin path)
 // =============================================================================
 
 describe("getPipelineMonitorAction", () => {
@@ -185,7 +241,7 @@ describe("getPipelineMonitorAction", () => {
 });
 
 // =============================================================================
-// getImportExclusionsAction
+// getImportExclusionsAction (READ-ONLY — requireAdmin path)
 // =============================================================================
 
 describe("getImportExclusionsAction", () => {
@@ -224,32 +280,34 @@ describe("getImportExclusionsAction", () => {
 });
 
 // =============================================================================
-// deleteEventAction
+// deleteEventAction (MUTATION — withAdminAction path)
 // =============================================================================
 
 describe("deleteEventAction", () => {
-  it("rejects non-admins", async () => {
-    asNonAdmin();
+  it("rejects when sudo check fails", async () => {
+    asSudoFailed("Sudo mode required");
     const result = await deleteEventAction({
       source: "rk9",
       sourceEventId: "evt-1",
     });
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toMatch(/admin/i);
+    if (!result.success) expect(result.error).toMatch(/sudo/i);
   });
 
-  it("rejects invalid input", async () => {
-    asAdmin();
+  it("rejects invalid input before the sudo check", async () => {
+    // Input validation runs before withAdminAction, so withAdminAction is
+    // never called for invalid input.
     const result = await deleteEventAction({
       source: "unknown",
       sourceEventId: "",
     });
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toMatch(/invalid/i);
+    expect(mockWithAdminAction).not.toHaveBeenCalled();
   });
 
   it("deletes and does not invalidate when no formats affected", async () => {
-    asAdmin();
+    asAdminWithSudo();
     mockDeleteSourceEvent.mockResolvedValue({ formats: [] });
 
     const result = await deleteEventAction({
@@ -262,7 +320,7 @@ describe("deleteEventAction", () => {
   });
 
   it("invalidates usage caches for affected formats", async () => {
-    asAdmin();
+    asAdminWithSudo();
     mockDeleteSourceEvent.mockResolvedValue({
       formats: ["VGC-2025", "VGC-2026"],
     });
@@ -278,8 +336,8 @@ describe("deleteEventAction", () => {
     ]);
   });
 
-  it("forwards delete errors as failure", async () => {
-    asAdmin();
+  it("forwards delete errors as failure (via withAdminAction label)", async () => {
+    asAdminWithSudo();
     mockDeleteSourceEvent.mockRejectedValue(new Error("cascade failed"));
 
     const result = await deleteEventAction({
@@ -287,37 +345,38 @@ describe("deleteEventAction", () => {
       sourceEventId: "evt-1",
     });
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("cascade failed");
+    // withAdminAction catches errors and returns the errorMessage label only;
+    // the thrown detail is logged to console, not surfaced in the return value.
+    if (!result.success) expect(result.error).toBe("Delete failed");
   });
 });
 
 // =============================================================================
-// excludeEventAction
+// excludeEventAction (MUTATION — withAdminAction path)
 // =============================================================================
 
 describe("excludeEventAction", () => {
-  it("rejects non-admins", async () => {
-    asNonAdmin();
+  it("rejects when sudo check fails", async () => {
+    asSudoFailed("Not authenticated");
     const result = await excludeEventAction({
       source: "rk9",
       sourceEventId: "evt-1",
     });
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toMatch(/admin/i);
+    if (!result.success) expect(result.error).toMatch(/authenticated/i);
   });
 
-  it("rejects invalid input", async () => {
-    asAdmin();
+  it("rejects invalid input before the sudo check", async () => {
     const result = await excludeEventAction({
       source: "bad",
       sourceEventId: "",
     });
     expect(result.success).toBe(false);
+    expect(mockWithAdminAction).not.toHaveBeenCalled();
   });
 
   it("excludes and passes userId + reason to mutation", async () => {
-    asAdmin();
-    mockGetUserId.mockResolvedValue("admin-user");
+    asAdminWithSudo("admin-user");
     mockExcludeSourceEvent.mockResolvedValue({ formats: ["VGC-2025"] });
 
     const result = await excludeEventAction({
@@ -337,7 +396,7 @@ describe("excludeEventAction", () => {
   });
 
   it("passes null reason when omitted", async () => {
-    asAdmin();
+    asAdminWithSudo("user-123");
     mockExcludeSourceEvent.mockResolvedValue({ formats: [] });
 
     await excludeEventAction({ source: "limitless", sourceEventId: "t-1" });
@@ -352,12 +411,12 @@ describe("excludeEventAction", () => {
 });
 
 // =============================================================================
-// clearExclusionAction
+// clearExclusionAction (MUTATION — withAdminAction path)
 // =============================================================================
 
 describe("clearExclusionAction", () => {
-  it("rejects non-admins", async () => {
-    asNonAdmin();
+  it("rejects when sudo check fails", async () => {
+    asSudoFailed("Admin access required");
     const result = await clearExclusionAction(99);
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toMatch(/admin/i);
@@ -371,16 +430,16 @@ describe("clearExclusionAction", () => {
   ])(
     "returns Invalid input and does not call clearExclusion for %p (%s)",
     async (badInput) => {
-      asAdmin();
       const result = await clearExclusionAction(badInput);
       expect(result.success).toBe(false);
       if (!result.success) expect(result.error).toBe("Invalid input");
       expect(mockClearExclusion).not.toHaveBeenCalled();
+      expect(mockWithAdminAction).not.toHaveBeenCalled();
     }
   );
 
   it("clears the exclusion by id for a valid positive integer", async () => {
-    asAdmin();
+    asAdminWithSudo();
     mockClearExclusion.mockResolvedValue(undefined);
 
     const result = await clearExclusionAction(42);
@@ -388,30 +447,31 @@ describe("clearExclusionAction", () => {
     expect(mockClearExclusion).toHaveBeenCalledWith({}, 42);
   });
 
-  it("forwards errors as failure", async () => {
-    asAdmin();
+  it("forwards errors as failure (via withAdminAction label)", async () => {
+    asAdminWithSudo();
     mockClearExclusion.mockRejectedValue(new Error("not found"));
 
     const result = await clearExclusionAction(5);
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("not found");
+    // withAdminAction catches errors and returns the errorMessage label only
+    if (!result.success) expect(result.error).toBe("Clear failed");
   });
 });
 
 // =============================================================================
-// resetStuckAction
+// resetStuckAction (MUTATION — withAdminAction path)
 // =============================================================================
 
 describe("resetStuckAction", () => {
-  it("rejects non-admins", async () => {
-    asNonAdmin();
+  it("rejects when sudo check fails", async () => {
+    asSudoFailed("Sudo mode required");
     const result = await resetStuckAction();
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toMatch(/admin/i);
+    if (!result.success) expect(result.error).toMatch(/sudo/i);
   });
 
   it("returns per-source reset counts", async () => {
-    asAdmin();
+    asAdminWithSudo();
     mockResetStuckEvents.mockResolvedValue({ rk9: 3, limitless: 1 });
 
     const result = await resetStuckAction();
@@ -422,8 +482,8 @@ describe("resetStuckAction", () => {
     }
   });
 
-  it("forwards errors as failure", async () => {
-    asAdmin();
+  it("forwards errors as failure (via withAdminAction label)", async () => {
+    asAdminWithSudo();
     mockResetStuckEvents.mockRejectedValue(new Error("reset failed"));
 
     const result = await resetStuckAction();
@@ -432,19 +492,19 @@ describe("resetStuckAction", () => {
 });
 
 // =============================================================================
-// requeueFailedAction
+// requeueFailedAction (MUTATION — withAdminAction path)
 // =============================================================================
 
 describe("requeueFailedAction", () => {
-  it("rejects non-admins", async () => {
-    asNonAdmin();
+  it("rejects when sudo check fails", async () => {
+    asSudoFailed("Sudo mode required");
     const result = await requeueFailedAction();
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toMatch(/admin/i);
+    if (!result.success) expect(result.error).toMatch(/sudo/i);
   });
 
   it("returns per-source requeued counts", async () => {
-    asAdmin();
+    asAdminWithSudo();
     mockRequeueFailedEvents.mockResolvedValue({ rk9: 5, limitless: 2 });
 
     const result = await requeueFailedAction();
@@ -455,8 +515,8 @@ describe("requeueFailedAction", () => {
     }
   });
 
-  it("forwards errors as failure", async () => {
-    asAdmin();
+  it("forwards errors as failure (via withAdminAction label)", async () => {
+    asAdminWithSudo();
     mockRequeueFailedEvents.mockRejectedValue(new Error("requeue failed"));
 
     const result = await requeueFailedAction();
@@ -465,32 +525,32 @@ describe("requeueFailedAction", () => {
 });
 
 // =============================================================================
-// forceImportAction
+// forceImportAction (MUTATION — withAdminAction path)
 // =============================================================================
 
 describe("forceImportAction", () => {
-  it("rejects non-admins", async () => {
-    asNonAdmin();
+  it("rejects when sudo check fails", async () => {
+    asSudoFailed("Sudo mode required");
     const result = await forceImportAction({
       source: "rk9",
       sourceEventId: "evt-1",
     });
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toMatch(/admin/i);
+    if (!result.success) expect(result.error).toMatch(/sudo/i);
   });
 
-  it("rejects invalid input", async () => {
-    asAdmin();
+  it("rejects invalid input before the sudo check", async () => {
     const result = await forceImportAction({
       source: "bogus",
       sourceEventId: "",
     });
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toMatch(/invalid/i);
+    expect(mockWithAdminAction).not.toHaveBeenCalled();
   });
 
   it("forces import for valid input", async () => {
-    asAdmin();
+    asAdminWithSudo();
     mockForceImportEvent.mockResolvedValue(undefined);
 
     const result = await forceImportAction({
@@ -501,8 +561,8 @@ describe("forceImportAction", () => {
     expect(mockForceImportEvent).toHaveBeenCalledWith({}, "limitless", "t-99");
   });
 
-  it("forwards errors as failure", async () => {
-    asAdmin();
+  it("forwards errors as failure (via withAdminAction label)", async () => {
+    asAdminWithSudo();
     mockForceImportEvent.mockRejectedValue(new Error("force failed"));
 
     const result = await forceImportAction({
@@ -510,12 +570,13 @@ describe("forceImportAction", () => {
       sourceEventId: "evt-1",
     });
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("force failed");
+    // withAdminAction catches errors and returns the errorMessage label only
+    if (!result.success) expect(result.error).toBe("Force import failed");
   });
 });
 
 // =============================================================================
-// getPipelineConfigAction
+// getPipelineConfigAction (READ-ONLY — requireAdmin path)
 // =============================================================================
 
 describe("getPipelineConfigAction", () => {
@@ -644,12 +705,12 @@ describe("getPipelineConfigAction", () => {
 });
 
 // =============================================================================
-// setPipelineEnabledAction
+// setPipelineEnabledAction (MUTATION — withAdminAction path)
 // =============================================================================
 
 describe("setPipelineEnabledAction", () => {
-  it("rejects non-admins", async () => {
-    asNonAdmin();
+  it("rejects when sudo check fails", async () => {
+    asSudoFailed("Admin access required");
     const result = await setPipelineEnabledAction(true);
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toMatch(/admin/i);
@@ -662,35 +723,27 @@ describe("setPipelineEnabledAction", () => {
     [undefined, "undefined"],
     [{}, "object"],
   ])(
-    "returns Invalid input and does not upsert for %p (%s)",
+    "returns Invalid input and does not call withAdminAction for %p (%s)",
     async (badInput) => {
-      asAdmin();
-      const mockUpsert = jest.fn();
-      const mockSupabase = {
-        from: jest.fn().mockReturnValue({ upsert: mockUpsert }),
-      };
-      const { createServiceRoleClient } = jest.requireMock(
-        "@/lib/supabase/server"
-      ) as { createServiceRoleClient: jest.Mock };
-      createServiceRoleClient.mockReturnValue(mockSupabase);
-
       const result = await setPipelineEnabledAction(badInput);
       expect(result.success).toBe(false);
       if (!result.success) expect(result.error).toBe("Invalid input");
-      expect(mockUpsert).not.toHaveBeenCalled();
+      expect(mockWithAdminAction).not.toHaveBeenCalled();
     }
   );
 
-  it("upserts enabled=true for admin", async () => {
-    asAdmin();
+  it("upserts enabled=true for admin with sudo", async () => {
     const mockUpsert = jest.fn().mockResolvedValue({ error: null });
     const mockSupabase = {
       from: jest.fn().mockReturnValue({ upsert: mockUpsert }),
     };
-    const { createServiceRoleClient } = jest.requireMock(
-      "@/lib/supabase/server"
-    ) as { createServiceRoleClient: jest.Mock };
-    createServiceRoleClient.mockReturnValue(mockSupabase);
+    // Make withAdminAction invoke callback with a real-ish client stub
+    mockWithAdminAction.mockImplementation(async (action) => {
+      return action(
+        mockSupabase as unknown as Parameters<typeof action>[0],
+        "user-123"
+      );
+    });
 
     const result = await setPipelineEnabledAction(true);
     expect(result.success).toBe(true);
@@ -700,8 +753,7 @@ describe("setPipelineEnabledAction", () => {
     );
   });
 
-  it("forwards DB errors as failure", async () => {
-    asAdmin();
+  it("forwards DB errors as failure (via withAdminAction label)", async () => {
     const mockSupabase = {
       from: jest.fn().mockReturnValue({
         upsert: jest
@@ -709,50 +761,60 @@ describe("setPipelineEnabledAction", () => {
           .mockResolvedValue({ error: { message: "write failed" } }),
       }),
     };
-    const { createServiceRoleClient } = jest.requireMock(
-      "@/lib/supabase/server"
-    ) as { createServiceRoleClient: jest.Mock };
-    createServiceRoleClient.mockReturnValue(mockSupabase);
+    mockWithAdminAction.mockImplementation(
+      async (action, errorMessage = "An unexpected error occurred") => {
+        try {
+          return await action(
+            mockSupabase as unknown as Parameters<typeof action>[0],
+            "user-123"
+          );
+        } catch {
+          return { success: false, error: errorMessage };
+        }
+      }
+    );
 
     const result = await setPipelineEnabledAction(false);
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("write failed");
+    // withAdminAction catches errors and returns the errorMessage label only
+    if (!result.success) expect(result.error).toBe("Update failed");
   });
 });
 
 // =============================================================================
-// setLimitlessBatchSizeAction
+// setLimitlessBatchSizeAction (MUTATION — withAdminAction path)
 // =============================================================================
 
 describe("setLimitlessBatchSizeAction", () => {
-  it("rejects non-admins", async () => {
-    asNonAdmin();
+  it("rejects when sudo check fails", async () => {
+    asSudoFailed("Sudo mode required");
     const result = await setLimitlessBatchSizeAction(10);
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toMatch(/admin/i);
+    if (!result.success) expect(result.error).toMatch(/sudo/i);
   });
 
   it.each([
     [0, "out-of-range (0)"],
     [101, "out-of-range (101)"],
     [1.5, "non-integer"],
-  ])("rejects batch size %i (%s)", async (size) => {
-    asAdmin();
+  ])("rejects batch size %i (%s) before sudo check", async (size) => {
     const result = await setLimitlessBatchSizeAction(size);
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toMatch(/batch size/i);
+    expect(mockWithAdminAction).not.toHaveBeenCalled();
   });
 
   it.each([1, 25, 100])("accepts valid batch size %i", async (size) => {
-    asAdmin();
     const mockUpsert = jest.fn().mockResolvedValue({ error: null });
     const mockSupabase = {
       from: jest.fn().mockReturnValue({ upsert: mockUpsert }),
     };
-    const { createServiceRoleClient } = jest.requireMock(
-      "@/lib/supabase/server"
-    ) as { createServiceRoleClient: jest.Mock };
-    createServiceRoleClient.mockReturnValue(mockSupabase);
+    mockWithAdminAction.mockImplementation(async (action) => {
+      return action(
+        mockSupabase as unknown as Parameters<typeof action>[0],
+        "user-123"
+      );
+    });
 
     const result = await setLimitlessBatchSizeAction(size);
     expect(result.success).toBe(true);
@@ -767,18 +829,18 @@ describe("setLimitlessBatchSizeAction", () => {
 });
 
 // =============================================================================
-// alterCronScheduleAction
+// alterCronScheduleAction (MUTATION — withAdminAction path, uses createClient)
 // =============================================================================
 
 describe("alterCronScheduleAction", () => {
-  it("rejects non-admins", async () => {
-    asNonAdmin();
+  it("rejects when sudo check fails", async () => {
+    asSudoFailed("Sudo mode required");
     const result = await alterCronScheduleAction({
       job: "import-tick-sync",
       schedule: "*/5 * * * *",
     });
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toMatch(/admin/i);
+    if (!result.success) expect(result.error).toMatch(/sudo/i);
   });
 
   it.each([
@@ -792,13 +854,16 @@ describe("alterCronScheduleAction", () => {
       "illegal characters",
     ],
   ])("rejects invalid input: %s", async (input) => {
-    asAdmin();
     const result = await alterCronScheduleAction(input);
     expect(result.success).toBe(false);
+    expect(mockWithAdminAction).not.toHaveBeenCalled();
   });
 
   it("calls admin_alter_cron_schedule RPC via authenticated client", async () => {
-    asAdmin();
+    // alterCronScheduleAction ignores the service-role supabase provided by
+    // withAdminAction and instead creates its own authenticated client via
+    // createClient(). The withAdminAction wrapper still enforces sudo.
+    asAdminWithSudo();
     const mockRpc = jest.fn().mockResolvedValue({ error: null });
     const mockAuthClient = { rpc: mockRpc };
     mockCreateClient.mockResolvedValue(mockAuthClient as never);
@@ -816,8 +881,8 @@ describe("alterCronScheduleAction", () => {
     expect(mockCreateClient).toHaveBeenCalled();
   });
 
-  it("forwards RPC errors as failure", async () => {
-    asAdmin();
+  it("forwards RPC errors as failure (via withAdminAction label)", async () => {
+    asAdminWithSudo();
     const mockAuthClient = {
       rpc: jest
         .fn()
@@ -830,12 +895,13 @@ describe("alterCronScheduleAction", () => {
       schedule: "* * * * *",
     });
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("not authorized");
+    // withAdminAction catches errors and returns the errorMessage label only
+    if (!result.success) expect(result.error).toBe("Schedule update failed");
   });
 });
 
 // =============================================================================
-// getCronSchedulesAction
+// getCronSchedulesAction (READ-ONLY — requireAdmin path)
 // =============================================================================
 
 describe("getCronSchedulesAction", () => {

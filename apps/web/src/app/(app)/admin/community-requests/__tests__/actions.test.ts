@@ -132,9 +132,11 @@ describe("grantCommunityRequestAction", () => {
 
     const result = await grantCommunityRequestAction(REQUEST_ID);
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to approve community request: Request not found",
+      error: "Failed to approve community request",
     });
   });
 
@@ -262,9 +264,11 @@ describe("rejectCommunityRequestAction", () => {
 
     const result = await rejectCommunityRequestAction(REQUEST_ID, "Reason");
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to reject organization request: DB failure",
+      error: "Failed to reject organization request",
     });
   });
 });

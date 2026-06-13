@@ -9,8 +9,15 @@ jest.mock("next/navigation", () => ({
 }));
 
 // --- @/lib/supabase ---
+// Kept to prevent import errors from other modules; staff-client no longer uses it.
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: jest.fn(),
+}));
+
+// --- @trainers/supabase/react-query — staff-client uses useApiQuery ---
+const mockUseApiQueryStaff = jest.fn();
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: (...args: unknown[]) => mockUseApiQueryStaff(...args),
 }));
 
 // --- @trainers/supabase ---
@@ -123,13 +130,8 @@ jest.mock("@/hooks/use-is-client", () => ({
 }));
 
 import React from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
 import { StaffClient } from "../staff-client";
 import type { StaffWithRole, CommunityGroup } from "@trainers/supabase";
-
-const mockUseSupabaseQuery = useSupabaseQuery as jest.MockedFunction<
-  typeof useSupabaseQuery
->;
 
 // =============================================================================
 // Helpers
@@ -179,13 +181,18 @@ const defaultProps = {
   currentUserRole: null,
 };
 
-function setupQuery(data: StaffWithRole[] | undefined, isLoading = false) {
-  mockUseSupabaseQuery.mockReturnValue({
+function setupQuery(
+  data: StaffWithRole[] | undefined,
+  isLoading = false,
+  error: Error | null = null
+) {
+  mockUseApiQueryStaff.mockReturnValue({
     data,
     isLoading,
-    error: null,
+    isError: error !== null,
+    error,
     refetch: jest.fn(),
-  } as ReturnType<typeof useSupabaseQuery>);
+  });
 }
 
 // =============================================================================
@@ -457,24 +464,14 @@ describe("StaffClient", () => {
 
   describe("query error handling", () => {
     it("does not crash when queryError is null", () => {
-      mockUseSupabaseQuery.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-        refetch: jest.fn(),
-      } as ReturnType<typeof useSupabaseQuery>);
+      setupQuery([], false, null);
       render(<StaffClient {...defaultProps} />);
       expect(screen.getByText("No staff members yet")).toBeInTheDocument();
     });
 
     it("shows error toast when query fails", async () => {
       const { toast } = await import("sonner");
-      mockUseSupabaseQuery.mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error: new Error("Network error"),
-        refetch: jest.fn(),
-      } as ReturnType<typeof useSupabaseQuery>);
+      setupQuery(undefined, false, new Error("Network error"));
       render(<StaffClient {...defaultProps} />);
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith(

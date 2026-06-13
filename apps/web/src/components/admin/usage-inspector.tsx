@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { TrendingUp, TrendingDown, BarChart2, ChevronDown } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  BarChart2,
+  ChevronDown,
+  AlertTriangle,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,15 +16,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { getActiveFormats, VGC_FORMATS } from "@trainers/pokemon";
 import {
-  getSpeciesUsage,
-  getSpeciesUsageDetail,
   type FormatUsageRow,
   type SpeciesUsagePeriod,
 } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
+import { getActiveFormats, VGC_FORMATS } from "@trainers/pokemon";
 
 // =============================================================================
 // Constants
@@ -39,6 +44,56 @@ const PERIOD_LABELS: Record<string, string> = {
 
 type SourceKey = "all" | "rk9" | "limitless" | "trainers.gg";
 type PeriodType = "day" | "week" | "month";
+
+// =============================================================================
+// Fetcher helpers — wrap fetch() responses into ActionResult<T> for useApiQuery
+// =============================================================================
+
+/**
+ * Fetch the species ranking for a format from the /api/v1/usage/species endpoint.
+ * Returns ActionResult<FormatUsageRow[]> for consumption by useApiQuery.
+ */
+async function fetchSpeciesUsage(
+  format: string,
+  source: string,
+  periodType: string
+) {
+  const params = new URLSearchParams({ format, source, periodType });
+  const res = await fetch(`/api/v1/usage/species?${params.toString()}`);
+  if (!res.ok) {
+    return { success: false as const, error: `HTTP ${res.status}` };
+  }
+  const data = (await res.json()) as FormatUsageRow[];
+  return { success: true as const, data };
+}
+
+/**
+ * Fetch trailing detail periods for one species from the /api/v1/usage/species/[species]/detail endpoint.
+ * Returns ActionResult<SpeciesUsagePeriod[]> for consumption by useApiQuery.
+ */
+async function fetchSpeciesDetail(
+  format: string,
+  species: string,
+  source: string,
+  periodType: string,
+  limit: number
+) {
+  const params = new URLSearchParams({
+    format,
+    source,
+    periodType,
+    limit: String(limit),
+  });
+  const encodedSpecies = encodeURIComponent(species);
+  const res = await fetch(
+    `/api/v1/usage/species/${encodedSpecies}/detail?${params.toString()}`
+  );
+  if (!res.ok) {
+    return { success: false as const, error: `HTTP ${res.status}` };
+  }
+  const data = (await res.json()) as SpeciesUsagePeriod[];
+  return { success: true as const, data };
+}
 
 // =============================================================================
 // Sub-components
@@ -115,45 +170,65 @@ export function UsageInspector() {
   // ---------------------------------------------------------------------------
   // Query 1 — species ranking (also drives the stat strip via first-row detail)
   // ---------------------------------------------------------------------------
-  const { data: usageRows, isLoading: usageLoading } = useSupabaseQuery(
-    async (sb) => getSpeciesUsage(sb, { format, source, periodType }),
-    [format, source, periodType]
+  const {
+    data: usageRows,
+    isLoading: usageLoading,
+    isError: usageIsError,
+    error: usageError,
+  } = useApiQuery<FormatUsageRow[]>(
+    ["usage", "species", format, source, periodType],
+    () => fetchSpeciesUsage(format, source, periodType),
+    { staleTime: 5 * 60 * 1000 } // 5 min — matches the "hours" cache profile
   );
 
   // ---------------------------------------------------------------------------
   // Query 2 — period/sample meta from the top species (drives the stat strip)
   // ---------------------------------------------------------------------------
   const topSpecies = usageRows?.[0]?.species ?? null;
-  const { data: topDetail, isLoading: metaLoading } = useSupabaseQuery(
-    async (sb): Promise<SpeciesUsagePeriod[]> => {
-      if (!topSpecies) return [];
-      return getSpeciesUsageDetail(sb, {
-        format,
-        species: topSpecies,
-        source,
-        periodType,
-        limit: 1,
-      });
-    },
-    [format, source, periodType, topSpecies]
+  const {
+    data: topDetail,
+    isLoading: metaLoading,
+    isError: metaIsError,
+    error: metaError,
+  } = useApiQuery<SpeciesUsagePeriod[]>(
+    ["usage", "species-detail", format, source, periodType, topSpecies, 1],
+    () =>
+      topSpecies
+        ? fetchSpeciesDetail(format, topSpecies, source, periodType, 1)
+        : Promise.resolve({ success: true as const, data: [] }),
+    {
+      enabled: topSpecies !== null,
+      staleTime: 5 * 60 * 1000,
+    }
   );
   const metaBucket = topDetail?.[0] ?? null;
 
   // ---------------------------------------------------------------------------
   // Query 3 — species detail drill-down (only when a row is expanded)
   // ---------------------------------------------------------------------------
-  const { data: detailPeriods, isLoading: detailLoading } = useSupabaseQuery(
-    async (sb): Promise<SpeciesUsagePeriod[]> => {
-      if (!expandedSpecies) return [];
-      return getSpeciesUsageDetail(sb, {
-        format,
-        species: expandedSpecies,
-        source,
-        periodType,
-        limit: 1,
-      });
-    },
-    [format, source, periodType, expandedSpecies]
+  const {
+    data: detailPeriods,
+    isLoading: detailLoading,
+    isError: detailIsError,
+    error: detailError,
+  } = useApiQuery<SpeciesUsagePeriod[]>(
+    [
+      "usage",
+      "species-detail",
+      format,
+      source,
+      periodType,
+      expandedSpecies,
+      1,
+    ],
+    () =>
+      expandedSpecies
+        ? fetchSpeciesDetail(format, expandedSpecies, source, periodType, 1)
+        : Promise.resolve({ success: true as const, data: [] }),
+    {
+      enabled: expandedSpecies !== null,
+      staleTime: 5 * 60 * 1000,
+    }
   );
 
   const latestDetail: SpeciesUsagePeriod | undefined = detailPeriods?.[0];
@@ -234,6 +309,16 @@ export function UsageInspector() {
             <Skeleton key={i} className="h-14 rounded-lg" />
           ))}
         </div>
+      ) : metaIsError ? (
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertDescription>
+            Failed to load usage stats:{" "}
+            {metaError instanceof Error
+              ? metaError.message
+              : "Unexpected error"}
+          </AlertDescription>
+        </Alert>
       ) : metaBucket === null || metaBucket === undefined ? (
         <div className="bg-muted/30 rounded-lg border p-6 text-center">
           <BarChart2 className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
@@ -289,6 +374,18 @@ export function UsageInspector() {
               <Skeleton key={i} className="mx-3 my-2 h-8 rounded" />
             ))}
           </div>
+        ) : usageIsError ? (
+          <div className="p-4">
+            <Alert variant="destructive">
+              <AlertTriangle className="size-4" />
+              <AlertDescription>
+                Failed to load species rankings:{" "}
+                {usageError instanceof Error
+                  ? usageError.message
+                  : "Unexpected error"}
+              </AlertDescription>
+            </Alert>
+          </div>
         ) : rows.length === 0 ? (
           <div className="p-6 text-center">
             <p className="text-muted-foreground text-sm">
@@ -340,6 +437,16 @@ export function UsageInspector() {
                             <Skeleton key={i} className="h-24 rounded-lg" />
                           ))}
                         </div>
+                      ) : detailIsError ? (
+                        <Alert variant="destructive">
+                          <AlertTriangle className="size-4" />
+                          <AlertDescription>
+                            Failed to load species detail:{" "}
+                            {detailError instanceof Error
+                              ? detailError.message
+                              : "Unexpected error"}
+                          </AlertDescription>
+                        </Alert>
                       ) : !latestDetail ? (
                         <p className="text-muted-foreground text-xs">
                           No detail data available for this period.

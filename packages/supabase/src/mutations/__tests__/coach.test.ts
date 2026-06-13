@@ -4,7 +4,7 @@ import {
   createMockClient,
   type MockSupabaseClient,
 } from "@trainers/test-utils/mocks";
-import { type TypedClient } from "../../client";
+import { type ServiceRoleClient } from "../../client";
 
 describe("grantCoachStatus", () => {
   let mockClient: MockSupabaseClient;
@@ -28,7 +28,7 @@ describe("grantCoachStatus", () => {
     });
 
     await grantCoachStatus(
-      mockClient as unknown as TypedClient,
+      mockClient as unknown as ServiceRoleClient,
       "user-1",
       "admin-9"
     );
@@ -54,7 +54,7 @@ describe("grantCoachStatus", () => {
     });
 
     await expect(
-      grantCoachStatus(mockClient as unknown as TypedClient, "user-1", "admin-9")
+      grantCoachStatus(mockClient as unknown as ServiceRoleClient, "user-1", "admin-9")
     ).rejects.toThrow("db error");
   });
 
@@ -71,8 +71,28 @@ describe("grantCoachStatus", () => {
     });
 
     await expect(
-      grantCoachStatus(mockClient as unknown as TypedClient, "user-1", "admin-9")
+      grantCoachStatus(mockClient as unknown as ServiceRoleClient, "user-1", "admin-9")
     ).rejects.toThrow("upsert error");
+  });
+
+  it("throws when the audit_log insert fails (no silent swallow)", async () => {
+    const auditInsert = jest
+      .fn()
+      .mockResolvedValue({ error: { message: "RLS violation" } });
+    const usersUpdateEq = jest.fn().mockResolvedValue({ error: null });
+    const coachUpsert = jest.fn().mockResolvedValue({ error: null });
+
+    mockClient.from.mockImplementation((table: string) => {
+      if (table === "users")
+        return { update: jest.fn().mockReturnValue({ eq: usersUpdateEq }) };
+      if (table === "coach_profiles") return { upsert: coachUpsert };
+      if (table === "audit_log") return { insert: auditInsert };
+      return {};
+    });
+
+    await expect(
+      grantCoachStatus(mockClient as unknown as ServiceRoleClient, "user-1", "admin-9")
+    ).rejects.toThrow("audit_log insert failed");
   });
 });
 
@@ -96,7 +116,7 @@ describe("revokeCoachStatus", () => {
     });
 
     await revokeCoachStatus(
-      mockClient as unknown as TypedClient,
+      mockClient as unknown as ServiceRoleClient,
       "user-1",
       "admin-9"
     );
@@ -122,7 +142,7 @@ describe("revokeCoachStatus", () => {
     });
 
     await revokeCoachStatus(
-      mockClient as unknown as TypedClient,
+      mockClient as unknown as ServiceRoleClient,
       "user-1",
       "admin-9",
       "violates conduct policy"
@@ -145,11 +165,33 @@ describe("revokeCoachStatus", () => {
 
     await expect(
       revokeCoachStatus(
-        mockClient as unknown as TypedClient,
+        mockClient as unknown as ServiceRoleClient,
         "user-1",
         "admin-9"
       )
     ).rejects.toThrow("update error");
+  });
+
+  it("throws when the audit_log insert fails (no silent swallow)", async () => {
+    const auditInsert = jest
+      .fn()
+      .mockResolvedValue({ error: { message: "RLS violation" } });
+    const usersUpdateEq = jest.fn().mockResolvedValue({ error: null });
+
+    mockClient.from.mockImplementation((table: string) => {
+      if (table === "users")
+        return { update: jest.fn().mockReturnValue({ eq: usersUpdateEq }) };
+      if (table === "audit_log") return { insert: auditInsert };
+      return {};
+    });
+
+    await expect(
+      revokeCoachStatus(
+        mockClient as unknown as ServiceRoleClient,
+        "user-1",
+        "admin-9"
+      )
+    ).rejects.toThrow("audit_log insert failed");
   });
 });
 
@@ -169,7 +211,7 @@ describe("updateCoachProfile", () => {
       return {};
     });
 
-    await updateCoachProfile(mockClient as unknown as TypedClient, "user-1", {
+    await updateCoachProfile(mockClient as unknown as ServiceRoleClient, "user-1", {
       headline: "VGC Champion",
       bio: "10 years of competitive battling",
       formats: ["VGC 2024"],
@@ -193,7 +235,7 @@ describe("updateCoachProfile", () => {
     });
 
     await expect(
-      updateCoachProfile(mockClient as unknown as TypedClient, "user-1", {
+      updateCoachProfile(mockClient as unknown as ServiceRoleClient, "user-1", {
         headline: "",
         bio: "",
         formats: [],

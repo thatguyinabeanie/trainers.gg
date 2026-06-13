@@ -381,12 +381,12 @@ describe("GET /api/oauth/callback", () => {
       // Email lookup: not found
       const mockMaybeSingleEmail = jest.fn().mockResolvedValue({ data: null, error: null });
 
-      // After "already registered" error - lookup by email (ilike)
-      const mockMaybeSingleIlike = jest.fn().mockResolvedValue({
+      // After "already registered" error - lookup by email (.eq — source changed from .ilike)
+      const mockMaybeSingleEq = jest.fn().mockResolvedValue({
         data: { id: "existing-auth-user" },
         error: null,
       });
-      const mockIlike = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleIlike });
+      const mockEqRecovery = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEq });
 
       // Update call
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
@@ -400,7 +400,8 @@ describe("GET /api/oauth/callback", () => {
         } else if (fromCallCount === 2) {
           return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEmail }) }) };
         } else if (fromCallCount === 3) {
-          return { select: jest.fn().mockReturnValue({ ilike: mockIlike }) };
+          // Source uses .eq("email", placeholderEmail) — not .ilike
+          return { select: jest.fn().mockReturnValue({ eq: mockEqRecovery }) };
         } else {
           return { update: mockUpdate };
         }

@@ -9,6 +9,7 @@ import {
 } from "@trainers/validators";
 import {
   withAdminAction,
+  withAdminReadAction,
   type ActionResult,
 } from "@/lib/auth/with-admin-action";
 import { invalidateAnnouncementCaches } from "@/lib/cache-invalidation";
@@ -19,8 +20,48 @@ import {
   createAnnouncement,
   updateAnnouncement,
   deleteAnnouncement,
+  listFeatureFlags,
+  listAnnouncements,
+  type FeatureFlag,
 } from "@trainers/supabase";
-import type { Json } from "@trainers/supabase/types";
+import type { Json, Tables } from "@trainers/supabase/types";
+
+// --- Read Actions ---
+//
+// These reads require admin ROLE only — no sudo step-up. The proxy already
+// gates the entire /admin surface to site admins; sudo is reserved for
+// destructive mutations (create/update/delete below). Using withAdminReadAction
+// here means the E2E admin helper's cookie-based auth satisfies the gate and
+// the feature-flags/announcements list renders correctly.
+//
+// Note: service-role client is used so these reads survive any future
+// Phase 2 Task 9 REVOKE on S-bucket base tables.
+
+/**
+ * Read all feature flags (admin-only, role check — no sudo required).
+ * Returns `{ success: true, data }` with flags ordered by key, or an error.
+ */
+export async function getFeatureFlagsAction(): Promise<
+  ActionResult & { data?: FeatureFlag[] }
+> {
+  return withAdminReadAction(async (supabase) => {
+    const flags = await listFeatureFlags(supabase);
+    return { success: true, data: flags };
+  }, "Error loading feature flags");
+}
+
+/**
+ * Read all announcements (admin-only, role check — no sudo required).
+ * Returns `{ success: true, data }` ordered by created_at desc, or an error.
+ */
+export async function getAnnouncementsAction(): Promise<
+  ActionResult & { data?: Tables<"announcements">[] }
+> {
+  return withAdminReadAction(async (supabase) => {
+    const announcements = await listAnnouncements(supabase);
+    return { success: true, data: announcements };
+  }, "Error loading announcements");
+}
 
 // --- Feature Flag Actions ---
 

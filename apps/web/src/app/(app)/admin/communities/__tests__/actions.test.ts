@@ -128,16 +128,18 @@ describe("approveCommunityAction", () => {
     expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
-  it("returns a specific error when the query throws", async () => {
+  it("returns the errorMessage label when the query throws", async () => {
     mockApproveOrganization.mockRejectedValue(
       new Error("Organization not found")
     );
 
     const result = await approveCommunityAction(ORG_ID);
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to approve organization: Organization not found",
+      error: "Failed to approve organization",
     });
   });
 });
@@ -196,14 +198,15 @@ describe("rejectCommunityAction", () => {
     expect(mockRejectOrganization).not.toHaveBeenCalled();
   });
 
-  it("returns a specific error when the query throws", async () => {
+  it("returns the errorMessage label when the query throws", async () => {
     mockRejectOrganization.mockRejectedValue(new Error("DB failure"));
 
     const result = await rejectCommunityAction(ORG_ID, "Spam");
 
+    // withAdminAction catches errors and returns the errorMessage label only
     expect(result).toEqual({
       success: false,
-      error: "Failed to reject organization: DB failure",
+      error: "Failed to reject organization",
     });
   });
 });
@@ -262,14 +265,16 @@ describe("suspendCommunityAction", () => {
     expect(mockSuspendOrganization).not.toHaveBeenCalled();
   });
 
-  it("returns a specific error when the query throws", async () => {
+  it("returns the errorMessage label when the query throws", async () => {
     mockSuspendOrganization.mockRejectedValue(new Error("DB failure"));
 
     const result = await suspendCommunityAction(ORG_ID, "Reason");
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to suspend organization: DB failure",
+      error: "Failed to suspend organization",
     });
   });
 });
@@ -304,14 +309,16 @@ describe("unsuspendCommunityAction", () => {
     expect(mockUnsuspendOrganization).not.toHaveBeenCalled();
   });
 
-  it("returns a specific error when the query throws", async () => {
+  it("returns the errorMessage label when the query throws", async () => {
     mockUnsuspendOrganization.mockRejectedValue(new Error("DB failure"));
 
     const result = await unsuspendCommunityAction(ORG_ID);
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to unsuspend organization: DB failure",
+      error: "Failed to unsuspend organization",
     });
   });
 });
@@ -370,14 +377,16 @@ describe("transferOwnershipAction", () => {
     expect(mockTransferCommunityOwnership).not.toHaveBeenCalled();
   });
 
-  it("returns a specific error when the query throws", async () => {
+  it("returns the errorMessage label when the query throws", async () => {
     mockTransferCommunityOwnership.mockRejectedValue(new Error("DB failure"));
 
     const result = await transferOwnershipAction(ORG_ID, NEW_OWNER_ID);
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to transfer ownership: DB failure",
+      error: "Failed to transfer ownership",
     });
   });
 });
@@ -606,9 +615,11 @@ describe("togglePartnerAction", () => {
 
     const result = await togglePartnerAction(ORG_ID, true);
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to toggle partner status: DB failure",
+      error: "Failed to toggle partner status",
     });
   });
 });
@@ -677,9 +688,11 @@ describe("updateFeaturedOrderAction", () => {
 
     const result = await updateFeaturedOrderAction([10, 20]);
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to update featured order: Constraint violation",
+      error: "Failed to update featured order",
     });
   });
 });
@@ -771,9 +784,11 @@ describe("toggleDiscordAction", () => {
 
     const result = await toggleDiscordAction(ORG_ID, true);
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to toggle Discord integration: discord_integration feature flag not found",
+      error: "Failed to toggle Discord integration",
     });
   });
 
@@ -782,9 +797,11 @@ describe("toggleDiscordAction", () => {
 
     const result = await toggleDiscordAction(ORG_ID, true);
 
+    // withAdminAction catches errors and returns the errorMessage label only
+    // (detail is logged to console, not surfaced in the return value)
     expect(result).toEqual({
       success: false,
-      error: "Failed to toggle Discord integration: DB failure",
+      error: "Failed to toggle Discord integration",
     });
   });
 });

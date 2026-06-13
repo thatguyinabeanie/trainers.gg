@@ -113,7 +113,7 @@ function chunk<T>(items: T[], size: number): T[][] {
  * partial/empty set (the bug this guards against stripped every altId and all
  * coach badges from the directory).
  */
-async function fetchInChunks<Id extends string | number, Row>(
+export async function fetchInChunks<Id extends string | number, Row>(
   ids: Id[],
   fetcher: (
     idChunk: Id[]
@@ -155,9 +155,10 @@ export async function searchPlayers(
     const escaped = escapeLike(query.trim());
     const pattern = `%${escaped}%`;
 
-    // Search users.username
+    // Search users.username via the safe public_user_profiles view (RLS audit
+    // #1 locked public.users SELECT to own-row + admin).
     const { data: userMatches } = await supabase
-      .from("users")
+      .from("public_user_profiles")
       .select("id")
       .ilike("username", pattern);
 
@@ -169,7 +170,8 @@ export async function searchPlayers(
 
     const idSet = new Set<string>();
     for (const u of userMatches ?? []) {
-      idSet.add(u.id);
+      // public_user_profiles.id is nullable in generated types — skip nulls.
+      if (u.id !== null) idSet.add(u.id);
     }
     for (const a of altMatches ?? []) {
       idSet.add(a.user_id);
@@ -185,8 +187,9 @@ export async function searchPlayers(
 
   // Step 2: Build the main query for users with their primary alt
   // We need to get users with at least one alt (so they have a displayable username)
+  // RLS audit #1: read the safe public_user_profiles view, not public.users.
   let usersQuery = supabase
-    .from("users")
+    .from("public_user_profiles")
     .select("id, username, country, created_at", { count: "exact" });
 
   // Apply search filter
@@ -288,7 +291,12 @@ export async function searchPlayers(
 
   if (error) throw error;
 
-  const userList = users ?? [];
+  // public_user_profiles.id is nullable in generated types; a profile without
+  // an id can't be a real user, so narrow to non-null ids for the rest of the
+  // pipeline (the IN-list lookups and entry mapping require a concrete user id).
+  const userList = (users ?? []).filter(
+    (u): u is typeof u & { id: string } => u.id !== null
+  );
   const totalCount = count ?? 0;
 
   if (userList.length === 0) {
@@ -540,9 +548,10 @@ export async function getNewMembers(
   supabase: TypedClient,
   limit = 5
 ): Promise<NewMemberEntry[]> {
-  // Get newest users that have a username (completed onboarding)
+  // Get newest users that have a username (completed onboarding). RLS audit #1:
+  // read the safe public_user_profiles view, not public.users.
   const { data: users, error } = await supabase
-    .from("users")
+    .from("public_user_profiles")
     .select("id, username, created_at")
     .not("username", "is", null)
     .order("created_at", { ascending: false, nullsFirst: false })
@@ -552,8 +561,14 @@ export async function getNewMembers(
 
   if (!users || users.length === 0) return [];
 
+  // public_user_profiles.id is nullable in generated types — narrow to non-null
+  // ids (a profile without an id can't be a real member).
+  const memberRows = users.filter(
+    (u): u is typeof u & { id: string } => u.id !== null
+  );
+
   // Get avatars from alts
-  const userIds = users.map((u) => u.id);
+  const userIds = memberRows.map((u) => u.id);
   const { data: alts } = await supabase
     .from("alts")
     .select("user_id, username, avatar_url")
@@ -572,7 +587,7 @@ export async function getNewMembers(
     }
   }
 
-  return users.map((user) => {
+  return memberRows.map((user) => {
     const alt = altMap.get(user.id);
     return {
       userId: user.id,

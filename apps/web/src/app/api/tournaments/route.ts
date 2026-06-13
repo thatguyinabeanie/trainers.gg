@@ -16,6 +16,8 @@ import {
   type ActionResult,
 } from "@trainers/validators";
 
+import { createClient } from "@/lib/supabase/server";
+
 /**
  * GET /api/tournaments
  * List all tournaments grouped by status (active, upcoming, completed)
@@ -83,6 +85,22 @@ export async function POST(request: NextRequest) {
           "Please use the dedicated Edge Function endpoint: /functions/v1/api-tournaments",
       };
 
+      return NextResponse.json(result, { status: 401 });
+    }
+
+    // Defense-in-depth: verify the session cookie contains an authenticated user
+    // before invoking the mutation. The authoritative access control is the RLS
+    // policy on the tournaments table, but this early return avoids unnecessary
+    // DB calls and produces a clear 401 for unauthenticated requests.
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      const result: ActionResult<void> = {
+        success: false,
+        error: "Not authenticated.",
+      };
       return NextResponse.json(result, { status: 401 });
     }
 

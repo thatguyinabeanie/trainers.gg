@@ -7,7 +7,6 @@ import { Plus, Users } from "lucide-react";
 
 import { type AltStats, type PlayerRating } from "@trainers/supabase";
 
-import { useSupabase } from "@/lib/supabase";
 import { useIsClient } from "@/hooks/use-is-client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -52,7 +51,6 @@ export function HomeClient({
   username,
 }: DashboardHomeClientProps) {
   const router = useRouter();
-  const supabase = useSupabase();
   const isClient = useIsClient();
   const isMobile = useIsMobile();
   const toastShown = useRef(false);
@@ -72,65 +70,30 @@ export function HomeClient({
     setSelectedAlt(selectedAltUsername);
   }
 
-  // ── Realtime subscription for active match changes ──────────────────────
+  // ── visibilitychange refetch (replaces the removed realtime subscription) ─
+  // When the user tabs back in, trigger a server component refresh so the
+  // parent server component re-fetches the active match from the DB. This is
+  // the same pattern used by current-match-banner.tsx with TanStack Query's
+  // refetchOnWindowFocus; here we trigger it manually because the data
+  // lives in the server component tree (router.refresh() re-runs the RSC).
   useEffect(() => {
     if (!mainAltId) return;
 
-    // router.refresh() re-runs the server component, which re-fetches the active match
-    // (uncached). Cached stats/ratings update only after a server action calls
-    // invalidateDashboardCaches().
-    function triggerRefresh() {
-      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
-      refreshTimeoutRef.current = setTimeout(() => {
-        router.refresh();
-      }, 500);
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+        refreshTimeoutRef.current = setTimeout(() => {
+          router.refresh();
+        }, 500);
+      }
     }
 
-    const channel = supabase
-      .channel(`dashboard-matches-${mainAltId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `alt1_id=eq.${mainAltId}`,
-        },
-        triggerRefresh
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `alt2_id=eq.${mainAltId}`,
-        },
-        triggerRefresh
-      )
-      .subscribe((status, err) => {
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          if (err) {
-            console.error("Dashboard realtime failed:", status, err);
-          } else {
-            console.warn(
-              "Dashboard realtime:",
-              status,
-              "(no error — likely a local dev WebSocket issue)"
-            );
-          }
-          toast.warning(
-            "Live updates disconnected. Refresh the page to see the latest data.",
-            { duration: 10000 }
-          );
-        }
-      });
-
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
-      channel.unsubscribe();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [supabase, mainAltId, router]);
+  }, [mainAltId, router]);
 
   // ── Welcome toast for temp usernames ────────────────────────────────────
   useEffect(() => {

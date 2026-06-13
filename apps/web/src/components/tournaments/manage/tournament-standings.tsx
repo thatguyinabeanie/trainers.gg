@@ -1,7 +1,9 @@
 "use client";
 
 import { useSupabaseQuery } from "@/lib/supabase";
-import { getCoachBadges, getTournamentPlayerStats } from "@trainers/supabase";
+import { getCoachBadges } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
+import { type ActionResult } from "@trainers/validators";
 import {
   Card,
   CardContent,
@@ -20,7 +22,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Trophy, Medal, Award, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Trophy, Medal, Award, Loader2, AlertTriangle } from "lucide-react";
+import { type TournamentPlayerStatsRow } from "@/lib/data/tournament-player-stats-endpoint";
 
 interface TournamentStandingsProps {
   tournament: {
@@ -29,16 +33,50 @@ interface TournamentStandingsProps {
   };
 }
 
-export function TournamentStandings({ tournament }: TournamentStandingsProps) {
-  // Fetch player stats for standings
-  const queryFn = (supabase: Parameters<typeof getTournamentPlayerStats>[0]) =>
-    getTournamentPlayerStats(supabase, tournament.id, {
-      includeDropped: true,
-    });
+/**
+ * Fetch the tournament's player stats from the auth-gated public API
+ * (`GET /api/v1/tournaments/[id]/player-stats`). Phase 2 Task 9 (T3o) repoints
+ * this read off the browser anon client (`useSupabaseQuery`) so it survives the
+ * Step-4 `REVOKE SELECT … FROM anon, authenticated` on `tournament_player_stats`
+ * + `alts`. The route reads via service-role server-side. `includeDropped=true`
+ * is requested so dropped players still appear (sorted to the end with a badge).
+ *
+ * The route returns the raw array, so we wrap it in `ActionResult` for the
+ * `useApiQuery` contract and surface a non-2xx as a failed result.
+ */
+async function fetchTournamentPlayerStats(
+  tournamentId: number
+): Promise<ActionResult<TournamentPlayerStatsRow[]>> {
+  try {
+    const response = await fetch(
+      `/api/v1/tournaments/${tournamentId}/player-stats?includeDropped=true`,
+      { credentials: "same-origin" }
+    );
+    if (!response.ok) {
+      return { success: false, error: "Failed to load standings." };
+    }
+    const data = (await response.json()) as TournamentPlayerStatsRow[];
+    return { success: true, data };
+  } catch {
+    return {
+      success: false,
+      error: "Network error — please check your connection.",
+    };
+  }
+}
 
-  const { data: playerStats, isLoading } = useSupabaseQuery(queryFn, [
-    tournament.id,
-  ]);
+export function TournamentStandings({ tournament }: TournamentStandingsProps) {
+  // Fetch player stats for standings via the auth-gated public API.
+  const {
+    data: playerStats,
+    isLoading,
+    isError,
+    error,
+  } = useApiQuery<TournamentPlayerStatsRow[]>(
+    ["tournament", tournament.id, "player-stats", "standings"],
+    () => fetchTournamentPlayerStats(tournament.id),
+    { staleTime: 30_000 }
+  );
 
   // Resolve coach-badge visibility for the players in the standings. This runs
   // a second query keyed on the alt ids once stats have loaded. The query is
@@ -86,9 +124,23 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center">
+      <div className="flex min-h-52 items-center justify-center">
         <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
       </div>
+    );
+  }
+
+  // Surface query failures explicitly so a 401/500 doesn't render as "no standings".
+  if (isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="size-4" />
+        <AlertDescription>
+          {error instanceof Error
+            ? error.message
+            : "Failed to load standings."}
+        </AlertDescription>
+      </Alert>
     );
   }
 

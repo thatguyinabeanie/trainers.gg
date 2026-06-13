@@ -3,7 +3,7 @@ import {
   grantCommunityRequest,
   rejectCommunityRequest,
 } from "../organization-requests";
-import type { TypedClient } from "../../client";
+import type { ServiceRoleClient } from "../../client";
 import { createMockClient } from "@trainers/test-utils/mocks";
 import { organizationRequestFactory } from "@trainers/test-utils/factories";
 
@@ -25,12 +25,12 @@ type MockAuthResponse = {
 };
 
 describe("Organization Request Mutations", () => {
-  let mockClient: TypedClient;
+  let mockClient: ServiceRoleClient;
   const mockUser = { id: "user-123", email: "test@example.com" };
   const ADMIN_USER_ID = "admin-456";
 
   beforeEach(() => {
-    mockClient = createMockClient() as unknown as TypedClient;
+    mockClient = createMockClient() as unknown as ServiceRoleClient;
     jest.clearAllMocks();
   });
 
@@ -43,6 +43,7 @@ describe("Organization Request Mutations", () => {
       name: "Pallet Town League",
       slug: "pallet-town-league",
       description: "A competitive league",
+      discord_invite_url: "https://discord.gg/pallettown",
     };
 
     function mockSuccessfulSubmit(fromSpy: jest.SpyInstance) {
@@ -761,8 +762,7 @@ describe("Organization Request Mutations", () => {
       expect(auditCalls.length).toBeGreaterThanOrEqual(2);
     });
 
-    it("logs error when duplicate lookup query fails", async () => {
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    it("throws when duplicate lookup query fails (no silent swallow)", async () => {
       const request = organizationRequestFactory.build({
         status: "rejected",
         user_id: "requester-789",
@@ -771,8 +771,7 @@ describe("Organization Request Mutations", () => {
       const updatedRequest = { ...request, status: "approved" };
 
       let requestCallCount = 0;
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockImplementation((table: string) => {
+      jest.spyOn(mockClient, "from").mockImplementation((table: string) => {
         const builder: MockQueryBuilder = {
           select: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
@@ -822,22 +821,12 @@ describe("Organization Request Mutations", () => {
         return builder;
       });
 
-      const result = await grantCommunityRequest(
-        mockClient,
-        request.id,
-        ADMIN_USER_ID
-      );
-
-      expect(result.organization).toEqual(org);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Failed to lookup duplicate pending requests",
-        expect.objectContaining({ requestId: request.id })
-      );
-      consoleSpy.mockRestore();
+      await expect(
+        grantCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
+      ).rejects.toThrow("Failed to lookup duplicate pending requests");
     });
 
-    it("logs error when duplicate cancellation update fails but still succeeds", async () => {
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    it("throws when duplicate cancellation update fails (no silent swallow)", async () => {
       const request = organizationRequestFactory.build({
         status: "rejected",
         user_id: "requester-789",
@@ -846,8 +835,7 @@ describe("Organization Request Mutations", () => {
       const updatedRequest = { ...request, status: "approved" };
 
       let requestCallCount = 0;
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockImplementation((table: string) => {
+      jest.spyOn(mockClient, "from").mockImplementation((table: string) => {
         const builder: MockQueryBuilder = {
           select: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
@@ -902,22 +890,9 @@ describe("Organization Request Mutations", () => {
         return builder;
       });
 
-      const result = await grantCommunityRequest(
-        mockClient,
-        request.id,
-        ADMIN_USER_ID
-      );
-
-      // Grant still succeeds despite cancellation failure
-      expect(result.organization).toEqual(org);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Failed to cancel duplicate pending request",
-        expect.objectContaining({ duplicateId: 999 })
-      );
-      // Audit log should NOT have been called for the failed cancellation
-      const auditCalls = fromSpy.mock.calls.filter(([t]) => t === "audit_log");
-      expect(auditCalls.length).toBe(1); // Only the main approval audit entry
-      consoleSpy.mockRestore();
+      await expect(
+        grantCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
+      ).rejects.toThrow("Failed to cancel duplicate pending request 999");
     });
   });
 

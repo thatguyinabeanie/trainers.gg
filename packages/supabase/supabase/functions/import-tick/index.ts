@@ -11,6 +11,7 @@ import {
   runImportStage,
   runCompileStage,
 } from "@trainers/supabase/pipeline";
+import { safeCompare } from "../_shared/timing-safe.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -28,7 +29,7 @@ function isValidStage(value: string | null): value is Stage {
 Deno.serve(async (req) => {
   // 1. Auth: bearer must equal the service-role key passed by pg_net.
   const bearer = req.headers.get("authorization")?.replace("Bearer ", "") ?? "";
-  if (!bearer || bearer !== SERVICE_ROLE_KEY) {
+  if (!bearer || !safeCompare(bearer, SERVICE_ROLE_KEY)) {
     return new Response(
       JSON.stringify({ error: "Unauthorized", code: "UNAUTHORIZED" }),
       {

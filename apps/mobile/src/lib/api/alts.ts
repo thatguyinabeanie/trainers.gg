@@ -17,7 +17,7 @@ type Alt = Database["public"]["Tables"]["alts"]["Row"];
  * ```
  */
 export function useAlts() {
-  return useApiQuery<Alt[]>(["alts"], "api-alts", {
+  return useApiQuery<Alt[]>(["alts"], () => apiCall<Alt[]>("api-alts"), {
     staleTime: 300_000, // 5 minutes - alts change infrequently
   });
 }
@@ -31,7 +31,7 @@ export function useAlts() {
  * ```
  */
 export function useAlt(id: string) {
-  return useApiQuery<Alt>(["alt", id], `api-alts/${id}`, {
+  return useApiQuery<Alt>(["alt", id], () => apiCall<Alt>(`api-alts/${id}`), {
     staleTime: 300_000, // 5 minutes
   });
 }

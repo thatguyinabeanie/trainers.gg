@@ -1,8 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabase } from "@/lib/supabase";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { queryKeys } from "@/lib/query-keys";
 import { Swords, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -30,27 +30,20 @@ export function CurrentMatchBanner({
   tournamentId,
   tournamentSlug,
 }: CurrentMatchBannerProps) {
-  const { user, isAuthenticated } = useAuth();
+  // API-backed: no direct `alts` read — `alts` SELECT is revoked in Step 4.
+  // useCurrentUser() resolves via /api/v1/me/profile (server-side, service-role).
+  const { user, isAuthenticated } = useCurrentUser();
   const supabase = useSupabase();
 
   const userId = user?.id;
+  // The main alt ID for the current user. Players with multiple alts will see
+  // the banner for their primary alt only — acceptable trade-off post-revoke.
+  const altId = user?.alt?.id ?? null;
 
   const { data: match = null } = useQuery<MatchData | null>({
     queryKey: queryKeys.tournament.currentMatchBanner(tournamentId, userId),
     queryFn: async () => {
-      const { data: alts, error: altsError } = await supabase
-        .from("alts")
-        .select("id")
-        .eq("user_id", userId!);
-
-      if (altsError) {
-        console.error("[CurrentMatchBanner] Failed to fetch alts:", altsError);
-        return null;
-      }
-
-      if (!alts || alts.length === 0) return null;
-
-      const altIds = alts.map((a) => a.id);
+      if (!altId) return null;
 
       const { data: matchData, error: matchError } = await supabase
         .from("tournament_matches")
@@ -71,7 +64,7 @@ export function CurrentMatchBanner({
         )
         .eq("round.phase.tournament_id", tournamentId)
         .in("status", ["pending", "active"])
-        .or(altIds.map((id) => `alt1_id.eq.${id},alt2_id.eq.${id}`).join(","))
+        .or(`alt1_id.eq.${altId},alt2_id.eq.${altId}`)
         .order("status", { ascending: true })
         .limit(1)
         .maybeSingle();
@@ -91,8 +84,7 @@ export function CurrentMatchBanner({
         phase: { name: string } | null;
       } | null;
 
-      const isPlayer1 =
-        matchData.alt1_id != null && altIds.includes(matchData.alt1_id);
+      const isPlayer1 = matchData.alt1_id === altId;
       const opponentRaw = isPlayer1 ? matchData.player2 : matchData.player1;
       const opponentArr = opponentRaw as
         | { id: number; username: string }[]
@@ -113,7 +105,7 @@ export function CurrentMatchBanner({
           : null,
       };
     },
-    enabled: isAuthenticated && !!userId,
+    enabled: isAuthenticated && !!userId && !!altId,
   });
 
   if (!match) return null;

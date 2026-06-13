@@ -95,6 +95,39 @@ If you find an existing cycle in someone else's module, extract a `*-shared` fir
 
 The full rule with the heuristic and concrete examples lives in `.claude/rules/nextjs-conventions.md` ("Component Placement" + "Sibling components must not import from each other"). It auto-loads when editing `apps/web/**/*`.
 
+## Error States in `useApiQuery` / `useQuery` Consumers
+
+**Every component that calls `useApiQuery` or `useQuery` must render an explicit error state.** Reading only `data` and `isLoading` and falling through to an empty-state on query failure makes a 401 or 500 look like "no data" — silently hiding outages from the user.
+
+Destructure `error` and `isError`, and render an error UI **before** the empty-state branch:
+
+```tsx
+// ✅ Explicit error state — outages are visible, not silent
+// Reference: apps/web/src/components/admin/usage-inspector.tsx
+const { data, isLoading, isError, error } = useApiQuery<MyData[]>(
+  ["my-key"],
+  fetchMyData,
+);
+
+if (isLoading) return <Spinner />;
+if (isError) return (
+  <Alert variant="destructive">
+    <AlertTriangle className="size-4" />
+    <AlertDescription>
+      {error instanceof Error ? error.message : "Unexpected error"}
+    </AlertDescription>
+  </Alert>
+);
+if (!data?.length) return <EmptyState />;
+return <MyDataList data={data} />;
+
+// ❌ Silent failure — a 401/500 renders as if there's simply no data
+const { data, isLoading } = useApiQuery<MyData[]>(["my-key"], fetchMyData);
+if (isLoading) return <Spinner />;
+if (!data?.length) return <EmptyState />; // hides errors
+return <MyDataList data={data} />;
+```
+
 ## Component & Helper Awareness
 
 When editing web app files, path-scoped rules automatically load:
@@ -102,4 +135,4 @@ When editing web app files, path-scoped rules automatically load:
 - **`web-ui-catalog.md`** — categorized index of all UI components in `components/ui/`
 - **`web-hooks-and-helpers.md`** — index of available hooks, lib helpers, and `@trainers/utils` exports
 
-Check these catalogs before creating new components or utilities. See `creating-components` skill for component creation patterns.
+Check these catalogs before creating new components or utilities. Always render an explicit error state (see above) — `Alert` (destructive variant) is in the UI catalog. See `creating-components` skill for component creation patterns.

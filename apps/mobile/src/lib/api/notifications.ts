@@ -1,4 +1,4 @@
-import type { Database } from "@trainers/supabase/types";
+import { type Database } from "@trainers/supabase/types";
 import { useApiQuery, useApiMutation } from "./query-factory";
 import { apiCall } from "./client";
 
@@ -17,10 +17,14 @@ type Notification = Database["public"]["Tables"]["notifications"]["Row"];
  * ```
  */
 export function useNotifications() {
-  return useApiQuery<Notification[]>(["notifications"], "api-notifications", {
-    staleTime: 10_000, // 10 seconds - notifications should be near real-time
-    refetchInterval: 30_000, // Poll every 30 seconds
-  });
+  return useApiQuery<Notification[]>(
+    ["notifications"],
+    () => apiCall<Notification[]>("api-notifications"),
+    {
+      staleTime: 10_000, // 10 seconds - notifications should be near real-time
+      refetchInterval: 30_000, // Poll every 30 seconds
+    }
+  );
 }
 
 /**

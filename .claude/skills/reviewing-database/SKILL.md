@@ -104,3 +104,60 @@ const unique = new Set(data.map(r => r.user_id)).size;
 // GOOD: SQL aggregation via RPC
 const { data } = await supabase.rpc("count_unique_players", { ... });
 ```
+
+## Public API / Cached Query Checks
+
+### No `select('*')` in Versioned or Cached Public APIs
+
+**Never use `select('*')` or `select('*, rel(*)')` in a query exposed through a versioned API route or a `'use cache'` fetcher that external callers depend on.** Future columns added to the table silently expand the response shape, leaking data or breaking consumer contracts.
+
+Use an explicit column allowlist instead. Maintain a separate public-facing query function when needed:
+
+```typescript
+// ✅ Explicit columns — safe to add columns to the table without leaking them
+// Reference: getPublicTournamentStandings in packages/supabase/src/queries/tournaments.ts
+export async function getPublicTournamentStandings(supabase, id) {
+  return supabase
+    .from("standings")
+    .select("rank, player_id, wins, losses, resistance_pct"); // allowlist
+}
+
+// ❌ select('*') — new columns silently leak through cached/versioned responses
+export async function getStandings(supabase, id) {
+  return supabase.from("standings").select("*");
+}
+```
+
+### RLS Functions Called by Anon Need EXECUTE Grant
+
+**An RLS policy `FOR SELECT TO anon` (or any anon-reachable policy) that calls a SQL function requires `GRANT EXECUTE ON FUNCTION ... TO anon`.** Without it, an anon read that exercises the function-calling branch raises `permission denied for function <name>` (SQLSTATE 42501) instead of cleanly returning zero rows.
+
+When adding a default-deny `REVOKE EXECUTE ... FROM PUBLIC` migration, cross-check every function named in an anon-reachable RLS predicate — each one needs its own grant back.
+
+```sql
+-- ✅ Grant EXECUTE to anon for functions used in anon-reachable RLS policies
+-- Reference: packages/supabase/supabase/migrations/20260612203747_grant_has_community_permission_execute_to_anon.sql
+GRANT EXECUTE ON FUNCTION public.has_community_permission(bigint, text) TO anon;
+
+-- ❌ Revoking PUBLIC without re-granting to anon breaks anon reads that hit
+--    an RLS predicate calling this function (silent 42501 error at query time)
+REVOKE EXECUTE ON FUNCTION public.has_community_permission(bigint, text) FROM PUBLIC;
+-- (no corresponding GRANT TO anon) ← missing
+```
+
+### Case-Insensitive Identifier Matching
+
+**Username / identifier lookups must be case-insensitive and consistent across all code paths.** Mixing `=` in one place and `.ilike()` in another silently fails lookups (e.g., sign-in-by-username) when casing differs.
+
+Use `lower(col) = lower(p_arg)` in SQL — it is index-friendly (a functional index on `lower(username)` satisfies it) and avoids the implicit pattern-escape issues of `ILIKE`.
+
+```sql
+-- ✅ Case-insensitive, index-friendly
+-- Reference: packages/supabase/supabase/migrations/20260612203733_fix_get_email_by_username_case_insensitive.sql
+SELECT email FROM public.users WHERE lower(username) = lower(p_username);
+
+-- ❌ Case-sensitive — silently returns no rows when casing differs
+SELECT email FROM public.users WHERE username = p_username;
+
+-- ❌ Inconsistent — .ilike() in TypeScript but = in SQL causes split-brain matching
+```

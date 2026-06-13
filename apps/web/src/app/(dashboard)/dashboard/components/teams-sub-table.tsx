@@ -9,15 +9,22 @@ import {
   Swords,
   ChevronRight,
   History,
+  AlertTriangle,
 } from "lucide-react";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
-import { getTeamsForAlt, getPlayerTournamentHistory } from "@trainers/supabase";
+import {
+  type AltTeam,
+  getPlayerTournamentHistory,
+} from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
+import { type ActionResult } from "@trainers/validators";
 import { formatShortDate } from "@trainers/utils";
 
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSupabaseQuery } from "@/lib/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -201,6 +208,14 @@ interface TeamsSubTableProps {
 }
 
 // ---------------------------------------------------------------------------
+// Fetcher for the teams API route
+// ---------------------------------------------------------------------------
+
+function fetchAltTeams(altId: number): Promise<ActionResult<AltTeam[]>> {
+  return fetch(`/api/v1/me/teams?altId=${altId}`).then((r) => r.json());
+}
+
+// ---------------------------------------------------------------------------
 // TeamsSubTable (redesigned expanded panel)
 // ---------------------------------------------------------------------------
 
@@ -212,13 +227,19 @@ export function TeamsSubTable({
   isDeletePending,
   refreshKey,
 }: TeamsSubTableProps) {
-  const teamsQueryFn = (client: TypedSupabaseClient) =>
-    getTeamsForAlt(client, altId);
   const {
     data: teams,
     isLoading,
+    isError,
     error: teamsError,
-  } = useSupabaseQuery(teamsQueryFn, ["altTeams", altId, refreshKey]);
+  } = useApiQuery<AltTeam[]>(
+    // refreshKey in the query key ensures a new fetch when the parent
+    // increments it after a delete (preserving the previous refetch-after-delete
+    // behavior that was provided by useSupabaseQuery).
+    ["altTeams", altId, refreshKey],
+    () => fetchAltTeams(altId),
+    { staleTime: 30_000 }
+  );
 
   return (
     <div className="rounded-lg">
@@ -229,10 +250,15 @@ export function TeamsSubTable({
           <p className="text-muted-foreground mb-2 text-[11px] font-medium tracking-wide uppercase">
             Teams
           </p>
-          {teamsError ? (
-            <p className="text-destructive py-4 text-center text-xs">
-              Failed to load teams
-            </p>
+          {isError ? (
+            <Alert variant="destructive" className="py-2">
+              <AlertTriangle className="size-4" />
+              <AlertDescription className="text-xs">
+                {teamsError instanceof Error
+                  ? teamsError.message
+                  : "Failed to load teams"}
+              </AlertDescription>
+            </Alert>
           ) : isLoading ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="text-muted-foreground size-4 animate-spin" />

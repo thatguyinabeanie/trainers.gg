@@ -10,38 +10,48 @@ import { TournamentStandings } from "../tournament-standings";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
+// Player-stats query result. The component now reads this via `useApiQuery`
+// (auth-gated `/api/v1/tournaments/[id]/player-stats`), so we drive that hook.
 let mockQueryReturn: {
   data: unknown;
   isLoading: boolean;
+  isError?: boolean;
+  error?: unknown;
 } = {
   data: null,
   isLoading: false,
 };
 
-// Coach-badge lookup result, keyed by alt id. The component runs a second
+// Coach-badge lookup result, keyed by alt id. The component runs a
 // useSupabaseQuery for getCoachBadges after stats load — we hand it this Map.
 let mockCoachBadges: Map<
   number,
   { showCoachBadge: boolean; coachHandle: string | null }
 > = new Map();
 
-// The component calls useSupabaseQuery twice: first for player stats, then for
-// coach badges. We discriminate by inspecting the deps array — the badge query
-// is keyed on a JSON-stringified alt-id array (starts with "[").
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(
-    (_queryFn: unknown, deps: unknown[] = []) => {
-      const firstDep = deps[0];
-      if (typeof firstDep === "string" && firstDep.startsWith("[")) {
-        return { data: mockCoachBadges, isLoading: false };
-      }
-      return mockQueryReturn;
-    }
-  ),
+// Player stats now come from `useApiQuery` (single auth-gated route). The mock
+// returns whatever `mockQueryReturn` holds, plus the fields the component reads.
+const mockUseApiQuery = jest.fn(() => ({
+  isError: false,
+  error: null,
+  ...mockQueryReturn,
 }));
 
-// getCoachBadges is imported alongside getTournamentPlayerStats. The query fn
-// itself is never invoked here (useSupabaseQuery is mocked), but the import
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: () => mockUseApiQuery(),
+}));
+
+// Coach badges are still fetched client-side via useSupabaseQuery (privacy-safe
+// booleans + public handles). Hand it the badge Map.
+jest.mock("@/lib/supabase", () => ({
+  useSupabaseQuery: jest.fn(() => ({
+    data: mockCoachBadges,
+    isLoading: false,
+  })),
+}));
+
+// getCoachBadges is imported alongside the player-stats endpoint type. The query
+// fn itself is never invoked here (useSupabaseQuery is mocked), but the import
 // must resolve, so stub it.
 jest.mock("@trainers/supabase", () => ({
   getCoachBadges: jest.fn(),
@@ -185,6 +195,19 @@ describe("TournamentStandings", () => {
     renderStandings();
     // When loading, no heading is rendered
     expect(screen.queryByText("Standings")).not.toBeInTheDocument();
+  });
+
+  it("surfaces an error state when the query fails", () => {
+    // A 401/500 must render an explicit error, not the "no standings" empty state.
+    mockQueryReturn = {
+      data: null,
+      isLoading: false,
+      isError: true,
+      error: new Error("Failed to load standings."),
+    };
+    renderStandings();
+    expect(screen.getByText("Failed to load standings.")).toBeInTheDocument();
+    expect(screen.queryByText("No standings yet")).not.toBeInTheDocument();
   });
 
   it("shows empty state when no player stats exist", () => {

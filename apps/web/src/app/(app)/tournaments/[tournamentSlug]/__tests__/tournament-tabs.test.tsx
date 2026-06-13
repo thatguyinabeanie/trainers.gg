@@ -17,12 +17,9 @@ jest.mock("@/components/ui/markdown-content", () => ({
   ),
 }));
 
-// Mock child components
-jest.mock("../public-pairings", () => ({
-  PublicPairings: () => (
-    <div data-testid="public-pairings">Public Pairings</div>
-  ),
-}));
+// PublicPairings is now passed in as the `pairingsSlot` prop (slot pattern), so
+// the parent (page.tsx) — not this component — imports it. The test supplies a
+// stand-in slot via defaultProps.
 
 jest.mock("@/components/tournaments/manage/tournament-standings", () => ({
   TournamentStandings: () => (
@@ -45,11 +42,11 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
     scheduleCard: <div data-testid="schedule-card">Schedule</div>,
     formatCard: <div data-testid="format-card">Format</div>,
     sidebarCard: <div data-testid="sidebar-card">Sidebar</div>,
+    pairingsSlot: <div data-testid="public-pairings">Public Pairings</div>,
     phases: [],
     tournamentId: 1,
     tournamentSlug: "test-tournament",
     tournamentStatus: "active",
-    canManage: false,
   };
 
   beforeEach(() => {
@@ -413,19 +410,43 @@ describe("TournamentTabs - Deep Linkable Tabs", () => {
     });
   });
 
-  describe("CanManage Prop", () => {
-    it("should pass canManage prop to PublicPairings component", () => {
+  describe("Pairings Slot", () => {
+    it("should render the provided pairingsSlot on the pairings tab", () => {
       (useSearchParams as jest.Mock).mockReturnValue(
         new URLSearchParams("tab=pairings")
       );
 
-      const { rerender } = render(
-        <TournamentTabs {...defaultProps} canManage={false} />
+      render(
+        <TournamentTabs
+          {...defaultProps}
+          pairingsSlot={<div data-testid="custom-pairings-slot">Slot</div>}
+        />
       );
-      expect(screen.getByTestId("public-pairings")).toBeInTheDocument();
 
-      rerender(<TournamentTabs {...defaultProps} canManage={true} />);
-      expect(screen.getByTestId("public-pairings")).toBeInTheDocument();
+      expect(screen.getByTestId("custom-pairings-slot")).toBeInTheDocument();
+    });
+
+    it("should not render the pairingsSlot when the tournament is pre-tournament", () => {
+      (useSearchParams as jest.Mock).mockReturnValue(
+        new URLSearchParams("tab=pairings")
+      );
+
+      render(
+        <TournamentTabs
+          {...defaultProps}
+          tournamentStatus="draft"
+          pairingsSlot={<div data-testid="custom-pairings-slot">Slot</div>}
+        />
+      );
+
+      expect(
+        screen.queryByTestId("custom-pairings-slot")
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByText(
+          /pairings will be available once the tournament begins/i
+        )
+      ).toBeInTheDocument();
     });
   });
 });

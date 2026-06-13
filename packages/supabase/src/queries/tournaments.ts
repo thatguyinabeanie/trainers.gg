@@ -335,10 +335,13 @@ export async function getTournamentByOrgAndSlug(
 
   if (error || !tournament) return null;
 
-  // Get additional details
+  // Get additional details.
+  // Registrations read the public_tournament_registrations VIEW (RLS audit #3):
+  // the base table SELECT is now locked to own + staff, but this public path
+  // (anon static client) only needs the safe, non-staff-internal columns.
   const [registrations, phases, currentPhase] = await Promise.all([
     supabase
-      .from("tournament_registrations")
+      .from("public_tournament_registrations")
       .select("*")
       .eq("tournament_id", tournament.id),
     supabase
@@ -404,10 +407,13 @@ export async function getTournamentBySlug(
 
   if (error || !tournament) return null;
 
-  // Get additional details including tournament rounds for schedule calculation
+  // Get additional details including tournament rounds for schedule calculation.
+  // Registrations read the public_tournament_registrations VIEW (RLS audit #3):
+  // the base table SELECT is now locked to own + staff, but this public path
+  // (anon static client) only needs the safe, non-staff-internal columns.
   const [registrations, phases, currentPhase] = await Promise.all([
     supabase
-      .from("tournament_registrations")
+      .from("public_tournament_registrations")
       .select("*")
       .eq("tournament_id", tournament.id),
     supabase
@@ -478,6 +484,17 @@ export async function getTournamentRegistrations(
   if (error) throw error;
   return data ?? [];
 }
+
+/**
+ * A single tournament registration row with its joined alt and team — the
+ * staff-facing shape returned by `getTournamentRegistrations`. Includes
+ * staff-internal columns (drop category, check-in state), so consumers must be
+ * authenticated + tournament-manage-authorized (Phase 2 Task 9: the base
+ * `tournament_registrations` SELECT is revoked from anon/authenticated).
+ */
+export type TournamentRegistrationRow = Awaited<
+  ReturnType<typeof getTournamentRegistrations>
+>[number];
 
 /**
  * Check if alt is registered for tournament
@@ -641,6 +658,59 @@ export async function getTournamentStandings(
   if (error) throw error;
   return data ?? [];
 }
+
+/**
+ * Get standings for a tournament — public API variant with an explicit column
+ * allowlist.
+ *
+ * Use this function instead of `getTournamentStandings` whenever the result is
+ * served through a versioned public endpoint (e.g. `GET /api/v1/tournaments/[id]/standings`).
+ * An explicit select list prevents new columns added to `tournament_standings`
+ * or `alts` from silently leaking through the cached, versioned API.
+ *
+ * Included columns:
+ *   tournament_standings — all public statistical fields (rank, record, tiebreakers)
+ *   alts — public identity only (id, username, avatar_url); PII/internal fields omitted
+ */
+export async function getPublicTournamentStandings(
+  supabase: TypedClient,
+  tournamentId: number
+) {
+  const { data, error } = await supabase
+    .from("tournament_standings")
+    .select(
+      `
+      id,
+      tournament_id,
+      alt_id,
+      rank,
+      round_number,
+      match_points,
+      match_win_percentage,
+      game_wins,
+      game_losses,
+      game_win_percentage,
+      opponent_match_win_percentage,
+      opponent_game_win_percentage,
+      created_at,
+      alt:alts(
+        id,
+        username,
+        avatar_url
+      )
+    `
+    )
+    .eq("tournament_id", tournamentId)
+    .order("rank", { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** A single public standings row with its joined alt. */
+export type PublicTournamentStandingRow = NonNullable<
+  Awaited<ReturnType<typeof getPublicTournamentStandings>>
+>[number];
 
 /**
  * Get player stats for a tournament
@@ -1126,6 +1196,17 @@ export async function getMatchDetails(supabase: TypedClient, matchId: number) {
     tournament: phase?.tournament,
   };
 }
+
+/**
+ * Full match-detail shape returned by `getMatchDetails` — match row plus joined
+ * players (`alts`), round, phase, and tournament. Reads several Phase 2 Task 9
+ * revoke-set tables (`alts`, `tournament_phases`, `tournaments`), so client
+ * consumers (the match-report dialog) must read it through an auth-gated
+ * `/api/v1` route backed by `auth.supabase`, not the browser anon key.
+ */
+export type MatchDetails = NonNullable<
+  Awaited<ReturnType<typeof getMatchDetails>>
+>;
 
 /**
  * Get match details by tournament slug, round number, and table number.
@@ -1771,6 +1852,16 @@ export async function getTournamentInvitationsSent(
       : null,
   }));
 }
+
+/**
+ * A single sent-invitation row with its (normalised) invited player — the shape
+ * returned by `getTournamentInvitationsSent`. Reads `tournament_invitations`
+ * (kept SELECTable) plus an `alts` join; served through the auth-gated staff
+ * registrations route after the Phase 2 Task 9 `alts` revoke.
+ */
+export type TournamentInvitationSentRow = Awaited<
+  ReturnType<typeof getTournamentInvitationsSent>
+>[number];
 
 /**
  * Get tournament invitations received by current user

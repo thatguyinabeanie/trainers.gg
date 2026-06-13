@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "@trainers/validators";
-import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
-import { getMatchDetails, reportMatchResult } from "@trainers/supabase";
+import { z, type ActionResult } from "@trainers/validators";
+import { useSupabaseMutation } from "@/lib/supabase";
+import { reportMatchResult, type MatchDetails } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,38 @@ interface MatchReportDialogProps {
   onReportSubmitted?: () => void;
 }
 
+/**
+ * Fetch a single match's details from the auth-gated public API
+ * (`GET /api/v1/matches/[matchId]`). Phase 2 Task 9 (T3o) repoints this read off
+ * the browser anon client (`useSupabaseQuery(getMatchDetails)`) so it survives
+ * the Step-4 `REVOKE SELECT … FROM anon, authenticated` on the `alts`,
+ * `tournament_phases`, and `tournaments` tables that `getMatchDetails` joins.
+ * The route reads via service-role server-side.
+ *
+ * The route returns the raw `MatchDetails` object (or a 404), so we wrap it in
+ * `ActionResult` for the `useApiQuery` contract and surface a non-2xx as a
+ * failed result.
+ */
+async function fetchMatchDetails(
+  matchId: number
+): Promise<ActionResult<MatchDetails>> {
+  try {
+    const response = await fetch(`/api/v1/matches/${matchId}`, {
+      credentials: "same-origin",
+    });
+    if (!response.ok) {
+      return { success: false, error: "Failed to load match." };
+    }
+    const data = (await response.json()) as MatchDetails;
+    return { success: true, data };
+  } catch {
+    return {
+      success: false,
+      error: "Network error — please check your connection.",
+    };
+  }
+}
+
 const matchReportSchema = z
   .object({
     winnerId: z.string().min(1, "Please select a winner"),
@@ -78,12 +111,12 @@ export function MatchReportDialog({
   const player1Score = form.watch("player1Score");
   const player2Score = form.watch("player2Score");
 
-  const { data: matchDetails } = useSupabaseQuery(
-    async (supabase) => {
-      if (!matchId) return null;
-      return getMatchDetails(supabase, matchId);
-    },
-    [matchId]
+  // Fetch match details via the auth-gated public API. `enabled` gates the
+  // query on a non-null matchId so closing/opening with no match never fires it.
+  const { data: matchDetails } = useApiQuery<MatchDetails>(
+    ["match", matchId, "details"],
+    () => fetchMatchDetails(matchId as number),
+    { enabled: matchId != null, staleTime: 30_000 }
   );
 
   const { mutateAsync: reportResultMutation } = useSupabaseMutation(

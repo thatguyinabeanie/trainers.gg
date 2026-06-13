@@ -1,6 +1,7 @@
 import type { CommunitySocialLink } from "@trainers/validators";
 import type { Json } from "../types";
-import type { TypedClient } from "../client";
+import type { ServiceRoleClient, TypedClient } from "../client";
+import { writeAuditLog } from "./audit-log";
 
 const COOLDOWN_DAYS = 7;
 
@@ -107,10 +108,12 @@ export async function submitCommunityRequest(
  * Grant a community request (admin action).
  * Accepts both pending and previously rejected requests.
  * Creates the community, sets requester as owner/staff, creates notification.
- * Uses service role client (bypasses RLS).
+ *
+ * Requires `ServiceRoleClient` — the `audit_log` table is deny-by-default for
+ * authenticated users; a non-service-role client would silently drop the insert.
  */
 export async function grantCommunityRequest(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   requestId: number,
   adminUserId: string,
   reason?: string
@@ -211,7 +214,7 @@ export async function grantCommunityRequest(
   }
 
   // Audit log
-  const { error: auditError } = await supabase.from("audit_log").insert({
+  await writeAuditLog(supabase, {
     action: "admin.org_request_approved" as const,
     actor_user_id: adminUserId,
     community_id: community.id,
@@ -224,13 +227,6 @@ export async function grantCommunityRequest(
     },
   });
 
-  if (auditError) {
-    console.error("Failed to create org_request_approved audit log", {
-      requestId,
-      error: auditError,
-    });
-  }
-
   // Cancel any other pending requests from the same user
   if (request.status === "rejected") {
     const { data: duplicates, error: duplicatesError } = await supabase
@@ -241,12 +237,12 @@ export async function grantCommunityRequest(
       .neq("id", requestId);
 
     if (duplicatesError) {
-      console.error("Failed to lookup duplicate pending requests", {
-        requestId,
-        userId: request.user_id,
-        error: duplicatesError,
-      });
-    } else if (duplicates && duplicates.length > 0) {
+      throw new Error(
+        `Failed to lookup duplicate pending requests: ${duplicatesError.message}`
+      );
+    }
+
+    if (duplicates && duplicates.length > 0) {
       for (const dup of duplicates) {
         const { error: cancelError } = await supabase
           .from("community_requests")
@@ -259,31 +255,21 @@ export async function grantCommunityRequest(
           .eq("id", dup.id);
 
         if (cancelError) {
-          console.error("Failed to cancel duplicate pending request", {
-            duplicateId: dup.id,
-            error: cancelError,
-          });
-        } else {
-          const { error: auditCancelError } = await supabase
-            .from("audit_log")
-            .insert({
-              action: "admin.org_request_cancelled" as const,
-              actor_user_id: adminUserId,
-              metadata: {
-                request_id: dup.id,
-                requester_user_id: request.user_id,
-                reason: `Automatically closed — community granted via request #${requestId}`,
-                auto_cancelled: true,
-              },
-            });
-
-          if (auditCancelError) {
-            console.error("Failed to create org_request_cancelled audit log", {
-              duplicateId: dup.id,
-              error: auditCancelError,
-            });
-          }
+          throw new Error(
+            `Failed to cancel duplicate pending request ${dup.id}: ${cancelError.message}`
+          );
         }
+
+        await writeAuditLog(supabase, {
+          action: "admin.org_request_cancelled" as const,
+          actor_user_id: adminUserId,
+          metadata: {
+            request_id: dup.id,
+            requester_user_id: request.user_id,
+            reason: `Automatically closed — community granted via request #${requestId}`,
+            auto_cancelled: true,
+          },
+        });
       }
     }
   }
@@ -294,9 +280,12 @@ export async function grantCommunityRequest(
 /**
  * Reject an organization request (admin action).
  * Stores reason, creates notification.
+ *
+ * Requires `ServiceRoleClient` — the `audit_log` table is deny-by-default for
+ * authenticated users; a non-service-role client would silently drop the insert.
  */
 export async function rejectCommunityRequest(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   requestId: number,
   adminUserId: string,
   reason: string
@@ -346,7 +335,7 @@ export async function rejectCommunityRequest(
   }
 
   // Audit log
-  await supabase.from("audit_log").insert({
+  await writeAuditLog(supabase, {
     action: "admin.org_request_rejected" as const,
     actor_user_id: adminUserId,
     metadata: {

@@ -1,33 +1,28 @@
-import { render, screen } from "@testing-library/react";
+/**
+ * Tests for dashboard/home-client.tsx
+ *
+ * The component manages alt selection state and delegates to AltsTable /
+ * AltsCards. D2: the `tournament_matches` realtime subscription was removed.
+ * Active-match freshness is now handled via a visibilitychange event listener
+ * that calls router.refresh() when the user tabs back in.
+ */
+
+// =============================================================================
+// Mocks — declared before imports so Jest hoisting works correctly
+// =============================================================================
 
 // --- next/navigation ---
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({ push: jest.fn(), refresh: jest.fn() })),
 }));
 
-// --- @/lib/supabase ---
-jest.mock("@/lib/supabase", () => ({
-  useSupabase: jest.fn(() => ({
-    channel: jest.fn(() => ({
-      on: jest.fn().mockReturnThis(),
-      subscribe: jest.fn().mockReturnThis(),
-      unsubscribe: jest.fn(),
-    })),
-  })),
-}));
-
 // --- @/hooks/use-mobile ---
-// Default to desktop (false) so AltsTable renders; tests that want the
-// mobile view can override via mockUseIsMobile.mockReturnValue(true).
 const mockUseIsMobile = jest.fn(() => false);
 jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => mockUseIsMobile(),
 }));
 
 // --- @/hooks/use-is-client ---
-// Default to true (post-hydration) so the real layout renders in tests.
-// The production code renders a skeleton until hydration; tests skip that
-// path by asserting directly against the hydrated output.
 const mockUseIsClient = jest.fn(() => true);
 jest.mock("@/hooks/use-is-client", () => ({
   useIsClient: () => mockUseIsClient(),
@@ -40,7 +35,6 @@ jest.mock("@/components/dashboard/sidebar-helpers", () => ({
 }));
 
 // --- Mock child components to avoid deep dependency chains ---
-// (alts-table -> sprite-picker -> cache-invalidation -> next/cache fails in test env)
 jest.mock("../components/alts-table", () => ({
   AltsTable: (props: { alts: unknown[] }) => (
     <div data-testid="alts-table" data-count={props.alts?.length ?? 0} />
@@ -50,36 +44,6 @@ jest.mock("../components/alts-table", () => ({
 jest.mock("../components/alts-cards", () => ({
   AltsCards: (props: { alts: unknown[] }) => (
     <div data-testid="alts-cards" data-count={props.alts?.length ?? 0} />
-  ),
-}));
-
-jest.mock("../components/live-match-bar", () => ({
-  LiveMatchBar: (props: { match: { tournamentName: string } }) => (
-    <div data-testid="live-match-bar">{props.match.tournamentName}</div>
-  ),
-}));
-
-jest.mock("../components/dashboard-stats", () => ({
-  DashboardStats: (props: {
-    winRate: string;
-    rating: string;
-    record: string;
-    tournaments: string;
-    winRateSub: string;
-    ratingSub: string;
-    recordSub: string;
-    tournamentsSub: string;
-  }) => (
-    <div data-testid="dashboard-stats">
-      <span data-testid="stat-winrate">{props.winRate}</span>
-      <span data-testid="stat-winrate-sub">{props.winRateSub}</span>
-      <span data-testid="stat-rating">{props.rating}</span>
-      <span data-testid="stat-rating-sub">{props.ratingSub}</span>
-      <span data-testid="stat-record">{props.record}</span>
-      <span data-testid="stat-record-sub">{props.recordSub}</span>
-      <span data-testid="stat-tournaments">{props.tournaments}</span>
-      <span data-testid="stat-tournaments-sub">{props.tournamentsSub}</span>
-    </div>
   ),
 }));
 
@@ -141,11 +105,13 @@ jest.mock("sonner", () => ({
   },
 }));
 
-import React from "react";
-import { useSupabase } from "@/lib/supabase";
-import { HomeClient } from "../home-client";
+// =============================================================================
+// Imports (after mocks)
+// =============================================================================
 
-const mockUseSupabase = useSupabase as jest.MockedFunction<typeof useSupabase>;
+import React from "react";
+import { render, screen } from "@testing-library/react";
+import { HomeClient } from "../home-client";
 
 // =============================================================================
 // Helpers
@@ -155,10 +121,6 @@ const defaultAlts = [
   { id: 5, username: "ash_alt", avatar_url: null, is_public: true },
 ];
 
-/**
- * Default props matching the DashboardHomeClientProps interface.
- * Override individual fields as needed per test.
- */
 function getDefaultProps(
   overrides: Partial<React.ComponentProps<typeof HomeClient>> = {}
 ): React.ComponentProps<typeof HomeClient> {
@@ -173,123 +135,144 @@ function getDefaultProps(
   };
 }
 
-function setupMockSupabase() {
-  const mockChannel = {
-    on: jest.fn().mockReturnThis(),
-    subscribe: jest.fn().mockReturnThis(),
-    unsubscribe: jest.fn(),
-  };
-  mockUseSupabase.mockReturnValue({
-    channel: jest.fn(() => mockChannel),
-  } as ReturnType<typeof useSupabase>);
-}
-
 // =============================================================================
-// Tests
+// Setup
 // =============================================================================
 
-describe("HomeClient", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    // clearAllMocks only wipes call history — re-apply defaults so each
-    // test starts from a known return value.
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockUseIsMobile.mockReturnValue(false);
+  mockUseIsClient.mockReturnValue(true);
+});
+
+// =============================================================================
+// Alts table
+// =============================================================================
+
+describe("alts table", () => {
+  it("renders AltsTable component on desktop", () => {
     mockUseIsMobile.mockReturnValue(false);
-    mockUseIsClient.mockReturnValue(true);
-    setupMockSupabase();
+    render(<HomeClient {...getDefaultProps()} />);
+    expect(screen.getByTestId("alts-table")).toBeInTheDocument();
+    expect(screen.queryByTestId("alts-cards")).not.toBeInTheDocument();
   });
 
-  // ---------------------------------------------------------------------------
-  // Alts table
-  // ---------------------------------------------------------------------------
-
-  describe("alts table", () => {
-    it("renders AltsTable component on desktop", () => {
-      mockUseIsMobile.mockReturnValue(false);
-      render(<HomeClient {...getDefaultProps()} />);
-      expect(screen.getByTestId("alts-table")).toBeInTheDocument();
-      expect(screen.queryByTestId("alts-cards")).not.toBeInTheDocument();
-    });
-
-    it("renders AltsCards (not AltsTable) on mobile", () => {
-      mockUseIsMobile.mockReturnValue(true);
-      render(<HomeClient {...getDefaultProps()} />);
-      expect(screen.getByTestId("alts-cards")).toBeInTheDocument();
-      expect(screen.queryByTestId("alts-table")).not.toBeInTheDocument();
-    });
-
-    it("renders 'Your Alts' heading", () => {
-      render(<HomeClient {...getDefaultProps()} />);
-      expect(screen.getByText("Your Alts")).toBeInTheDocument();
-    });
-
-    it("renders empty state when no alts", () => {
-      render(<HomeClient {...getDefaultProps({ alts: [] })} />);
-      expect(screen.getByText("No alts yet")).toBeInTheDocument();
-    });
-
-    it("renders skeleton (neither AltsTable nor AltsCards) during SSR", () => {
-      mockUseIsClient.mockReturnValue(false);
-      render(<HomeClient {...getDefaultProps()} />);
-      expect(screen.queryByTestId("alts-table")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("alts-cards")).not.toBeInTheDocument();
-    });
+  it("renders AltsCards (not AltsTable) on mobile", () => {
+    mockUseIsMobile.mockReturnValue(true);
+    render(<HomeClient {...getDefaultProps()} />);
+    expect(screen.getByTestId("alts-cards")).toBeInTheDocument();
+    expect(screen.queryByTestId("alts-table")).not.toBeInTheDocument();
   });
 
-  // ---------------------------------------------------------------------------
-  // Temp username welcome toast
-  // ---------------------------------------------------------------------------
-
-  describe("temp username toast", () => {
-    it("shows info toast for users with temp_ username", async () => {
-      const { toast } = await import("sonner");
-      render(<HomeClient {...getDefaultProps({ username: "temp_abc123" })} />);
-      expect(toast.info).toHaveBeenCalledWith(
-        expect.stringContaining("Welcome to trainers.gg"),
-        expect.any(Object)
-      );
-    });
-
-    it("shows info toast for users with user_ username", async () => {
-      const { toast } = await import("sonner");
-      render(<HomeClient {...getDefaultProps({ username: "user_xyz789" })} />);
-      expect(toast.info).toHaveBeenCalledWith(
-        expect.stringContaining("Welcome to trainers.gg"),
-        expect.any(Object)
-      );
-    });
-
-    it("does not show toast for users with regular usernames", async () => {
-      const { toast } = await import("sonner");
-      render(<HomeClient {...getDefaultProps()} />);
-      expect(toast.info).not.toHaveBeenCalled();
-    });
+  it("renders 'Your Alts' heading", () => {
+    render(<HomeClient {...getDefaultProps()} />);
+    expect(screen.getByText("Your Alts")).toBeInTheDocument();
   });
 
-  // ---------------------------------------------------------------------------
-  // Realtime subscription
-  // ---------------------------------------------------------------------------
+  it("renders empty state when no alts", () => {
+    render(<HomeClient {...getDefaultProps({ alts: [] })} />);
+    expect(screen.getByText("No alts yet")).toBeInTheDocument();
+  });
 
-  describe("realtime subscription", () => {
-    it("subscribes to realtime channel when mainAltId is provided", () => {
-      render(<HomeClient {...getDefaultProps({ mainAltId: 5 })} />);
-      const supabase = mockUseSupabase();
-      expect(supabase.channel).toHaveBeenCalled();
-    });
+  it("renders skeleton (neither AltsTable nor AltsCards) during SSR", () => {
+    mockUseIsClient.mockReturnValue(false);
+    render(<HomeClient {...getDefaultProps()} />);
+    expect(screen.queryByTestId("alts-table")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("alts-cards")).not.toBeInTheDocument();
+  });
+});
 
-    it("does not subscribe when mainAltId is null", () => {
-      const mockChannel = {
-        on: jest.fn().mockReturnThis(),
-        subscribe: jest.fn().mockReturnThis(),
-        unsubscribe: jest.fn(),
-      };
-      const channelFn = jest.fn(() => mockChannel);
-      mockUseSupabase.mockReturnValue({
-        channel: channelFn,
-      } as ReturnType<typeof useSupabase>);
+// =============================================================================
+// Temp username welcome toast
+// =============================================================================
 
-      render(<HomeClient {...getDefaultProps({ mainAltId: null })} />);
-      // Channel should not be created when there's no main alt
-      expect(channelFn).not.toHaveBeenCalled();
-    });
+describe("temp username toast", () => {
+  it("shows info toast for users with temp_ username", async () => {
+    const { toast } = await import("sonner");
+    render(<HomeClient {...getDefaultProps({ username: "temp_abc123" })} />);
+    expect(toast.info).toHaveBeenCalledWith(
+      expect.stringContaining("Welcome to trainers.gg"),
+      expect.any(Object)
+    );
+  });
+
+  it("shows info toast for users with user_ username", async () => {
+    const { toast } = await import("sonner");
+    render(<HomeClient {...getDefaultProps({ username: "user_xyz789" })} />);
+    expect(toast.info).toHaveBeenCalledWith(
+      expect.stringContaining("Welcome to trainers.gg"),
+      expect.any(Object)
+    );
+  });
+
+  it("does not show toast for users with regular usernames", async () => {
+    const { toast } = await import("sonner");
+    render(<HomeClient {...getDefaultProps()} />);
+    expect(toast.info).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// No realtime subscription (D2)
+//
+// The `dashboard-matches-${profileId}` channel and its `tournament_matches`
+// Postgres Changes subscription were removed. Active-match freshness is now
+// handled via a visibilitychange listener that calls router.refresh().
+// =============================================================================
+
+describe("no realtime subscription (D2)", () => {
+  it("renders without any Supabase channel mock", () => {
+    // If the component still tried to call supabase.channel() the test would
+    // throw because no mock for useSupabase / @/lib/supabase is registered.
+    // Rendering cleanly here confirms the realtime subscription was removed.
+    expect(() =>
+      render(<HomeClient {...getDefaultProps({ mainAltId: 5 })} />)
+    ).not.toThrow();
+  });
+
+  it("renders when mainAltId is null without attempting channel subscription", () => {
+    expect(() =>
+      render(<HomeClient {...getDefaultProps({ mainAltId: null })} />)
+    ).not.toThrow();
+  });
+});
+
+// =============================================================================
+// visibilitychange refetch (replaces realtime)
+// =============================================================================
+
+describe("visibilitychange refetch", () => {
+  it("attaches a visibilitychange listener when mainAltId is provided", () => {
+    const addEventListenerSpy = jest.spyOn(document, "addEventListener");
+    render(<HomeClient {...getDefaultProps({ mainAltId: 5 })} />);
+    expect(addEventListenerSpy).toHaveBeenCalledWith(
+      "visibilitychange",
+      expect.any(Function)
+    );
+    addEventListenerSpy.mockRestore();
+  });
+
+  it("does not attach a visibilitychange listener when mainAltId is null", () => {
+    const addEventListenerSpy = jest.spyOn(document, "addEventListener");
+    render(<HomeClient {...getDefaultProps({ mainAltId: null })} />);
+    // With no mainAltId the effect returns early — no listener attached
+    const visibilityCalls = addEventListenerSpy.mock.calls.filter(
+      (call) => call[0] === "visibilitychange"
+    );
+    expect(visibilityCalls).toHaveLength(0);
+    addEventListenerSpy.mockRestore();
+  });
+
+  it("removes the visibilitychange listener on unmount", () => {
+    const removeEventListenerSpy = jest.spyOn(document, "removeEventListener");
+    const { unmount } = render(
+      <HomeClient {...getDefaultProps({ mainAltId: 5 })} />
+    );
+    unmount();
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      "visibilitychange",
+      expect.any(Function)
+    );
+    removeEventListenerSpy.mockRestore();
   });
 });

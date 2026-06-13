@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { getTournamentInvitationsSent } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
+import { type getTournamentInvitationsSent } from "@trainers/supabase";
+import { type ActionResult } from "@trainers/validators";
 import {
   Card,
   CardContent,
@@ -41,7 +42,9 @@ import {
   Loader2,
   Send,
   UserX,
+  AlertTriangle,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -107,12 +110,26 @@ export function InvitationList({
   >(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Use the getTournamentInvitationsSent query filtered by tournamentId
-  const { data: invitations, isLoading: isLoadingInvitations } =
-    useSupabaseQuery(
-      (supabase) => getTournamentInvitationsSent(supabase, tournamentId),
-      [tournamentId]
-    );
+  // Fetch sent invitations for this tournament via the auth-gated API route.
+  // The read moved off the browser anon client because Phase 2 Task 9 revokes
+  // `authenticated` SELECT on `alts` — the browser-keyed read would silently
+  // return zero rows. The route runs the read server-side as the caller's identity.
+  type SentInvitationsResult = Awaited<
+    ReturnType<typeof getTournamentInvitationsSent>
+  >;
+  const {
+    data: invitations,
+    isLoading: isLoadingInvitations,
+    isError: isInvitationsError,
+    error: invitationsError,
+  } = useApiQuery<SentInvitationsResult>(
+    ["me", "invitations", "sent", tournamentId],
+    (): Promise<ActionResult<SentInvitationsResult>> =>
+      fetch(
+        `/api/v1/me/invitations?tournamentId=${tournamentId}`
+      ).then((r) => r.json()),
+    { staleTime: 30_000 }
+  );
 
   const handleRevoke = async () => {
     if (!selectedInvitationId) return;
@@ -159,6 +176,19 @@ export function InvitationList({
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (isInvitationsError) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="size-4" />
+        <AlertDescription>
+          {invitationsError instanceof Error
+            ? invitationsError.message
+            : "Failed to load invitations"}
+        </AlertDescription>
+      </Alert>
     );
   }
 

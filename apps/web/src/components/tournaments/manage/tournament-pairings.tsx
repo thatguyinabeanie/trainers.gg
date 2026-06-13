@@ -3,14 +3,11 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { getPlayerName, type PlayerRef } from "@trainers/utils";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import {
-  getTournamentPhases,
-  getPhaseRoundsWithStats,
-  getPhaseRoundsWithMatches,
-  getRoundMatchesWithStats,
-  getUnpairedCheckedInPlayers,
-} from "@trainers/supabase";
+  type TournamentPairingsData,
+  type PhaseRoundsWithMatchesRow,
+} from "@/lib/data/tournament-pairings-endpoint";
 import { reportMatchResult } from "@/actions/tournaments";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,7 +51,9 @@ import {
   LayoutGrid,
   Table as TableIcon,
   AlertCircle,
+  AlertTriangle,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { BracketVisualization } from "@/components/tournament/bracket-visualization";
 import { transformPhaseData } from "@/lib/tournament-utils";
@@ -76,6 +75,29 @@ interface MatchForReport {
   player2: { id: number; name: string } | null;
 }
 
+/** A single match row from allPhaseRounds[n].matches */
+type PhaseMatch = PhaseRoundsWithMatchesRow["matches"][number];
+
+/**
+ * Derive a winner player object from the flat match data.
+ *
+ * `getPhaseRoundsWithMatches` returns `winner_alt_id` via `select("*")` but
+ * does not join the winner alt row. We reconstruct it from the available
+ * player1/player2 objects so `getPlayerName` continues to work.
+ */
+function deriveWinner(match: PhaseMatch): PlayerRef | null {
+  if (!match.winner_alt_id) return null;
+  const p1 = match.player1 as { id: number; username: string } | null;
+  const p2 = match.player2 as { id: number; username: string } | null;
+  if (p1 && p1.id === match.winner_alt_id) {
+    return { username: p1.username, display_name: undefined };
+  }
+  if (p2 && p2.id === match.winner_alt_id) {
+    return { username: p2.username, display_name: undefined };
+  }
+  return null;
+}
+
 export function TournamentPairings({ tournament }: TournamentPairingsProps) {
   const router = useRouter();
   const [selectedPhaseId, setSelectedPhaseId] = useState<number | null>(
@@ -91,13 +113,52 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
   const [player1Score, setPlayer1Score] = useState("0");
   const [player2Score, setPlayer2Score] = useState("0");
 
-  // Fetch phases
-  const phasesQueryFn = (supabase: Parameters<typeof getTournamentPhases>[0]) =>
-    getTournamentPhases(supabase, tournament.id);
+  // Fetch all pairings data from the API in a single request.
+  const {
+    data: pairings,
+    isLoading: pairingsLoading,
+    isError,
+    error,
+  } = useApiQuery<TournamentPairingsData>(
+    ["tournament", tournament.id, "pairings"],
+    () =>
+      fetch(`/api/v1/tournaments/${tournament.id}/pairings`).then((r) =>
+        r.json()
+      ),
+    { staleTime: 30_000 }
+  );
 
-  const { data: phases, isLoading: phasesLoading } = useSupabaseQuery(
-    phasesQueryFn,
-    [tournament.id, "phases"]
+  const phases = pairings?.phases ?? null;
+
+  // Derive the selected phase index for allPhaseRounds lookups.
+  const selectedPhaseIndex =
+    phases && selectedPhaseId != null
+      ? phases.findIndex((p) => p.id === selectedPhaseId)
+      : -1;
+
+  // roundsWithStats is only for the first phase from the API shape.
+  // For other phases use allPhaseRounds[phaseIndex] rounds (without stats).
+  const roundsForSelectedPhase: Array<{
+    id: number;
+    round_number: number;
+    status: string | null;
+    matchCount?: number;
+  }> =
+    selectedPhaseIndex === 0
+      ? (pairings?.roundsWithStats ?? [])
+      : selectedPhaseIndex > 0
+        ? (pairings?.allPhaseRounds[selectedPhaseIndex] ?? []).map((r) => ({
+            id: r.id,
+            round_number: r.round_number,
+            status: r.status,
+            matchCount: r.matches.length,
+          }))
+        : [];
+
+  // Tracks the pairings object reference so round auto-selection re-runs when a
+  // refetch returns a new data set (the reference changes), not on every render.
+  const [prevPairings, setPrevPairings] = useState<typeof pairings | symbol>(
+    UNINITIALIZED
   );
 
   // Initialize selectedPhaseId from phases — render-time adjustment
@@ -111,97 +172,57 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
     }
   }
 
-  // Fetch rounds for selected phase
-  const roundsQueryFn = (
-    supabase: Parameters<typeof getPhaseRoundsWithStats>[0]
-  ) =>
-    selectedPhaseId
-      ? getPhaseRoundsWithStats(supabase, selectedPhaseId)
-      : Promise.resolve([]);
-
-  const {
-    data: rounds,
-    isLoading: roundsLoading,
-    refetch: refetchRounds,
-  } = useSupabaseQuery(roundsQueryFn, [selectedPhaseId, "rounds"]);
-
-  // Initialize selectedRoundId from rounds, or reset when rounds change —
-  // render-time adjustment
-  const [prevRounds, setPrevRounds] = useState<typeof rounds | symbol>(
-    UNINITIALIZED
-  );
-  if (rounds !== prevRounds) {
-    setPrevRounds(rounds);
-    // Only auto-select when current selection is invalid or absent
+  // Initialize selectedRoundId from rounds — render-time adjustment.
+  // Compare on a STABLE signature (pairings reference + selected phase), not the
+  // derived `roundsForSelectedPhase` array, which is rebuilt on every render and
+  // would otherwise trigger an infinite setState loop (new array !== prev array).
+  const roundsSignature = `${selectedPhaseId ?? ""}:${selectedPhaseIndex}`;
+  const [prevRoundsSignature, setPrevRoundsSignature] = useState<
+    string | symbol
+  >(UNINITIALIZED);
+  if (pairings !== prevPairings || roundsSignature !== prevRoundsSignature) {
+    setPrevPairings(pairings);
+    setPrevRoundsSignature(roundsSignature);
     if (
       selectedRoundId == null ||
-      !rounds?.some((r) => r.id === selectedRoundId)
+      !roundsForSelectedPhase.some((r) => r.id === selectedRoundId)
     ) {
-      if (rounds && rounds.length > 0 && rounds[0]) {
-        setSelectedRoundId(rounds[0].id);
+      if (roundsForSelectedPhase.length > 0 && roundsForSelectedPhase[0]) {
+        setSelectedRoundId(roundsForSelectedPhase[0].id);
       } else {
         setSelectedRoundId(null);
       }
     }
   }
 
-  // Fetch matches for selected round
-  const matchesQueryFn = (
-    supabase: Parameters<typeof getRoundMatchesWithStats>[0]
-  ) =>
-    selectedRoundId
-      ? getRoundMatchesWithStats(supabase, selectedRoundId, tournament.id)
-      : Promise.resolve([]);
+  // Matches for the selected round — from allPhaseRounds.
+  const matchesForSelectedRound: PhaseMatch[] =
+    selectedPhaseIndex >= 0 && selectedRoundId != null
+      ? ((pairings?.allPhaseRounds[selectedPhaseIndex] ?? []).find(
+          (r) => r.id === selectedRoundId
+        )?.matches ?? [])
+      : [];
 
-  const {
-    data: matches,
-    isLoading: matchesLoading,
-    refetch: refetchMatches,
-  } = useSupabaseQuery(matchesQueryFn, [selectedRoundId, "matches"]);
+  // Bracket rounds for the selected phase.
+  const bracketRounds =
+    viewMode === "bracket" && selectedPhaseIndex >= 0
+      ? (pairings?.allPhaseRounds[selectedPhaseIndex] ?? [])
+      : [];
 
-  // Fetch all rounds with matches for bracket view (only when bracket mode is active)
-  const bracketQueryFn = (
-    supabase: Parameters<typeof getPhaseRoundsWithMatches>[0]
-  ) =>
-    selectedPhaseId && viewMode === "bracket"
-      ? getPhaseRoundsWithMatches(supabase, selectedPhaseId, tournament.id)
-      : Promise.resolve([]);
+  const unpairedPlayers = pairings?.unpairedPlayers ?? [];
 
-  const { data: bracketRounds } = useSupabaseQuery(bracketQueryFn, [
-    selectedPhaseId,
-    viewMode,
-    "bracket-rounds",
-  ]);
-
-  // Fetch unpaired checked-in players for the selected round
-  const unpairedQueryFn = (
-    supabase: Parameters<typeof getUnpairedCheckedInPlayers>[0]
-  ) =>
-    selectedRoundId
-      ? getUnpairedCheckedInPlayers(supabase, tournament.id, selectedRoundId)
-      : Promise.resolve([]);
-
-  const { data: unpairedPlayers } = useSupabaseQuery(unpairedQueryFn, [
-    selectedRoundId,
-    "unpaired-players",
-  ]);
-
-  const currentRound = rounds?.find((r) => r.id === selectedRoundId);
+  const currentRound = roundsForSelectedPhase.find(
+    (r) => r.id === selectedRoundId
+  );
   const currentPhase = phases?.find((p) => p.id === selectedPhaseId);
 
-  const openReportDialog = (match: {
-    id: number;
-    player1: unknown;
-    player2: unknown;
-    alt1_id: number | null;
-    alt2_id: number | null;
-  }) => {
-    const p1 = match.player1 as (PlayerRef & { id: number }) | null;
-    const p2 = match.player2 as (PlayerRef & { id: number }) | null;
+  const openReportDialog = (match: PhaseMatch) => {
+    const p1 = match.player1 as { id: number; username: string } | null;
+    const p2 = match.player2 as { id: number; username: string } | null;
     setMatchToReport({
       id: match.id,
-      player1: p1 ? { id: p1.id, name: getPlayerName(p1, "Player 1") } : null,
-      player2: p2 ? { id: p2.id, name: getPlayerName(p2, "Player 2") } : null,
+      player1: p1 ? { id: p1.id, name: p1.username } : null,
+      player2: p2 ? { id: p2.id, name: p2.username } : null,
     });
     setPlayer1Score("0");
     setPlayer2Score("0");
@@ -238,19 +259,30 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
         toast.success("Match result reported");
         setReportDialogOpen(false);
         setMatchToReport(null);
-        await refetchMatches();
-        await refetchRounds();
+        // Freshness is driven by mutation-triggered cache invalidation
+        // (invalidateTournamentCaches in the server action).
       } else {
         toast.error(result.error);
       }
     });
   };
 
-  if (phasesLoading) {
+  if (pairingsLoading) {
     return (
       <div className="flex min-h-[200px] items-center justify-center">
         <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="size-4" />
+        <AlertDescription>
+          {error instanceof Error ? error.message : "Failed to load pairings"}
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -331,7 +363,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
               </SelectContent>
             </Select>
           )}
-          {!roundsLoading && rounds && rounds.length > 0 && (
+          {roundsForSelectedPhase.length > 0 && (
             <Select
               value={selectedRoundId?.toString() ?? ""}
               onValueChange={(value) =>
@@ -342,7 +374,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                 <SelectValue placeholder="Round" />
               </SelectTrigger>
               <SelectContent>
-                {rounds.map((round) => (
+                {roundsForSelectedPhase.map((round) => (
                   <SelectItem key={round.id} value={round.id.toString()}>
                     Round {round.round_number}
                   </SelectItem>
@@ -354,14 +386,13 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
       </div>
 
       {/* Bracket View */}
-      {viewMode === "bracket" && phases && bracketRounds ? (
+      {viewMode === "bracket" && phases && bracketRounds.length >= 0 ? (
         <BracketVisualization
           phases={phases
             .filter((phase) => phase.id === selectedPhaseId)
             .map((phase) => transformPhaseData(phase, bracketRounds))}
           canManage={true}
           onMatchClick={(matchId) => {
-            // Find match across all bracket rounds
             for (const round of bracketRounds) {
               const match = round.matches.find((m) => String(m.id) === matchId);
               if (match) {
@@ -375,13 +406,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
 
       {/* Table View */}
       {viewMode === "table" &&
-        (roundsLoading ? (
-          <Card>
-            <CardContent className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </CardContent>
-          </Card>
-        ) : !rounds || rounds.length === 0 ? (
+        (roundsForSelectedPhase.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Trophy className="text-muted-foreground mb-4 h-12 w-12 opacity-50" />
@@ -399,7 +424,8 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                 {currentRound?.round_number ?? "?"}
               </CardTitle>
               <CardDescription>
-                {currentRound?.matchCount ?? 0} matches
+                {currentRound?.matchCount ?? matchesForSelectedRound.length}{" "}
+                matches
                 {currentRound?.status && (
                   <>
                     {" "}
@@ -410,11 +436,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {matchesLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : !matches || matches.length === 0 ? (
+              {matchesForSelectedRound.length === 0 ? (
                 <div className="py-8 text-center">
                   <Trophy className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
                   <h3 className="mb-2 text-lg font-semibold">
@@ -438,8 +460,9 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {matches.map((match) => {
+                    {matchesForSelectedRound.map((match) => {
                       const isBye = !match.alt2_id;
+                      const winner = deriveWinner(match);
 
                       return (
                         <TableRow
@@ -497,10 +520,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                             {match.status === "completed" ? (
                               <div>
                                 <div className="font-medium">
-                                  {getPlayerName(
-                                    match.winner as PlayerRef,
-                                    "Unknown"
-                                  )}
+                                  {getPlayerName(winner, "Unknown")}
                                 </div>
                                 <div className="text-muted-foreground text-sm">
                                   {match.game_wins1 ?? 0}-
@@ -541,7 +561,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
         ))}
 
       {/* Unpaired Players Banner */}
-      {unpairedPlayers && unpairedPlayers.length > 0 && (
+      {unpairedPlayers.length > 0 && (
         <Card className="border-amber-500/50 bg-amber-500/5">
           <CardContent className="py-4">
             <div className="flex items-start gap-3">

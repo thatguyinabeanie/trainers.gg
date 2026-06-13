@@ -1,10 +1,13 @@
 "use client";
 
-import { useSupabaseQuery } from "@/lib/supabase";
-import { listMyCommunities } from "@trainers/supabase";
+import { type ActionResult } from "@trainers/validators";
+import type { TournamentFormData } from "@trainers/tournaments/types";
+import { useApiQuery } from "@trainers/supabase/react-query";
+import { generateSlug } from "@trainers/utils";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,21 +15,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { generateSlug } from "@trainers/utils";
-import type { TournamentFormData } from "@trainers/tournaments/types";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertTriangle } from "lucide-react";
+
+/** Minimal community shape needed to populate the community picker. */
+interface MyCommunity {
+  id: number;
+  name: string;
+}
 
 interface TournamentBasicInfoProps {
   formData: TournamentFormData;
   updateFormData: (updates: Partial<TournamentFormData>) => void;
 }
 
+async function fetchMyCommunities(): Promise<ActionResult<MyCommunity[]>> {
+  const res = await fetch("/api/v1/me/communities");
+  if (!res.ok) {
+    return { success: false, error: `HTTP ${res.status}` };
+  }
+  const data = (await res.json()) as MyCommunity[];
+  return { success: true, data };
+}
+
 export function TournamentBasicInfo({
   formData,
   updateFormData,
 }: TournamentBasicInfoProps) {
-  const { data: organizations } = useSupabaseQuery(
-    (supabase) => listMyCommunities(supabase),
-    []
+  const {
+    data: organizations,
+    isError,
+    error,
+  } = useApiQuery<MyCommunity[]>(
+    ["me", "communities"],
+    fetchMyCommunities,
+    { staleTime: 30_000 }
   );
 
   const handleNameChange = (name: string) => {
@@ -40,25 +63,36 @@ export function TournamentBasicInfo({
     <div className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="organization">Community *</Label>
-        <Select
-          value={formData.communityId?.toString()}
-          onValueChange={(value) =>
-            updateFormData({
-              communityId: value ? Number(value) : undefined,
-            })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {organizations?.map((community) => (
-              <SelectItem key={community.id} value={String(community.id)}>
-                {community.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {isError ? (
+          <Alert variant="destructive">
+            <AlertTriangle className="size-4" />
+            <AlertDescription>
+              {error instanceof Error
+                ? error.message
+                : "Failed to load communities"}
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Select
+            value={formData.communityId?.toString()}
+            onValueChange={(value) =>
+              updateFormData({
+                communityId: value ? Number(value) : undefined,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {organizations?.map((community) => (
+                <SelectItem key={community.id} value={String(community.id)}>
+                  {community.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <p className="text-muted-foreground text-sm">
           Choose the community that will host this tournament
         </p>

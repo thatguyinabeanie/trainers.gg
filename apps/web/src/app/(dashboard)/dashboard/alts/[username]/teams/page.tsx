@@ -7,7 +7,7 @@ import {
   hasTeamBuilderAccess,
 } from "@trainers/supabase";
 
-import { getUser, createClientReadOnly } from "@/lib/supabase/server";
+import { getUser, createServiceRoleClient } from "@/lib/supabase/server";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { TeamsListClient } from "@/components/team-builder/teams-list-client";
@@ -37,7 +37,12 @@ export default async function TeamsPage({ params }: TeamsPageProps) {
     redirect("/sign-in");
   }
 
-  const supabase = await createClientReadOnly();
+  // Service-role client: bypasses anon/authenticated GRANT restrictions on S-bucket tables
+  // (teams, alts) after the Phase 2 Task 9 revoke. Safe inside this auth-gated page because
+  // the data read (teams for a specific alt) is S-bucket public data — identical for all
+  // viewers — and the user identity check is done above via getUser() before this call.
+  // See docs/decisions/architecture-phase2-task9-revoke-plan.md §0.2 for the full rationale.
+  const supabase = createServiceRoleClient();
 
   const activeFormats = getActiveFormats();
 

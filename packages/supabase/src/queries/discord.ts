@@ -1,6 +1,67 @@
+import { type SupabaseClient } from "@supabase/supabase-js";
+
+import { escapeLike } from "@trainers/utils";
+
 import type { TypedClient } from "../client";
 import type { Enums, Tables } from "../types";
-import { escapeLike } from "@trainers/utils";
+import { fetchInChunks } from "./players";
+
+// =============================================================================
+// auth.identities typed accessor
+// =============================================================================
+
+/**
+ * Row shape for `auth.identities` (the GoTrue identities table).
+ *
+ * This table lives in the `auth` schema and is therefore absent from the
+ * generated `public` `Database` types. We model just the columns the Discord
+ * queries read so the query builder is fully typed without `any` — and so it
+ * does NOT accidentally resolve against a `public` relation (e.g. the
+ * `public_user_profiles` view) when `.from()` is given an out-of-schema name.
+ */
+interface AuthIdentityRow {
+  identity_id: string;
+  user_id: string;
+  provider: string;
+  identity_data: Record<string, unknown>;
+}
+
+/**
+ * Minimal `auth`-schema Database type exposing only `auth.identities`.
+ * Used to type a service-role client narrowly for identity lookups.
+ */
+interface AuthIdentitiesDatabase {
+  auth: {
+    Tables: {
+      identities: {
+        Row: AuthIdentityRow;
+        Insert: AuthIdentityRow;
+        Update: Partial<AuthIdentityRow>;
+        Relationships: [];
+      };
+    };
+    Views: Record<never, never>;
+    Functions: Record<never, never>;
+    Enums: Record<never, never>;
+    CompositeTypes: Record<never, never>;
+  };
+}
+
+/**
+ * Return a query builder over `auth.identities` with the correct column types.
+ *
+ * `auth.identities` is not part of the generated `public` `Database`, so we
+ * reinterpret the service-role client as one scoped to a tiny `auth`-schema
+ * Database. Reads require a service-role client — the `auth` schema is not
+ * reachable by authenticated/anon clients.
+ */
+function authIdentities(supabase: TypedClient) {
+  return (
+    supabase as unknown as SupabaseClient<AuthIdentitiesDatabase, "auth">
+  )
+    .schema("auth")
+    .from("identities");
+}
 
 // =============================================================================
 // Types
@@ -526,22 +587,19 @@ export async function getDiscordIdsByUserIds(
 ): Promise<string[]> {
   if (userIds.length === 0) return [];
 
-  const { data, error } = await (
-    supabase as TypedClient & {
-      from: (table: "auth.identities") => ReturnType<TypedClient["from"]>;
-    }
-  )
-    .from("auth.identities" as never)
-    .select("identity_id")
-    .eq("provider", "discord")
-    .in("user_id", userIds);
+  // auth.identities can span large communities (hundreds of members). Chunking
+  // the user_id IN-list keeps each PostgREST request well under the URI length
+  // limit; a single oversized list returns "URI too long" which, if unchecked,
+  // silently drops every Discord identity — breaking role-sync for the whole
+  // community. fetchInChunks throws on any chunk error so failures are visible.
+  const rows = await fetchInChunks(userIds, (idChunk) =>
+    authIdentities(supabase)
+      .select("identity_id")
+      .eq("provider", "discord")
+      .in("user_id", idChunk)
+  );
 
-  if (error)
-    throw new Error(
-      `Failed to resolve user IDs to Discord IDs: ${error.message}`
-    );
-
-  return (data as Array<{ identity_id: string }>).map((r) => r.identity_id);
+  return rows.map((r) => r.identity_id);
 }
 
 /**
@@ -710,12 +768,7 @@ export async function getUserByDiscordId(
   supabase: TypedClient,
   discordUserId: string
 ): Promise<{ user_id: string } | null> {
-  const { data, error } = await (
-    supabase as TypedClient & {
-      from: (table: "auth.identities") => ReturnType<TypedClient["from"]>;
-    }
-  )
-    .from("auth.identities" as never)
+  const { data, error } = await authIdentities(supabase)
     .select("user_id")
     .eq("provider", "discord")
     .eq("identity_id", discordUserId)
@@ -727,7 +780,7 @@ export async function getUserByDiscordId(
     );
 
   if (!data) return null;
-  return { user_id: (data as { user_id: string }).user_id };
+  return { user_id: data.user_id };
 }
 
 // =============================================================================
@@ -1595,12 +1648,7 @@ export async function getPublicDiscordHandle(
   supabase: TypedClient,
   userId: string
 ): Promise<string | null> {
-  const { data, error } = await (
-    supabase as TypedClient & {
-      from: (table: "auth.identities") => ReturnType<TypedClient["from"]>;
-    }
-  )
-    .from("auth.identities" as never)
+  const { data, error } = await authIdentities(supabase)
     .select("identity_data")
     .eq("provider", "discord")
     .eq("user_id", userId)
@@ -1611,8 +1659,7 @@ export async function getPublicDiscordHandle(
 
   if (!data) return null;
 
-  const identityData = (data as { identity_data: Record<string, unknown> })
-    .identity_data;
+  const identityData = data.identity_data;
 
   // Discord identity_data contains global_name (display name) or username
   const handle =

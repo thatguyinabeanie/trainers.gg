@@ -4,13 +4,16 @@ import type { ReactNode } from "react";
 import { useApiQuery, useApiMutation } from "../query-factory";
 import type { ActionResult } from "@trainers/validators";
 
-// Mock the client apiCall function
-jest.mock("../client", () => ({
-  apiCall: jest.fn(),
-}));
-
-import { apiCall } from "../client";
-const mockApiCall = apiCall as jest.MockedFunction<typeof apiCall>;
+/**
+ * These tests exercise the generalized factory imported via the back-compat shim
+ * (`apps/mobile/src/lib/api/query-factory.ts` → `@trainers/supabase/react-query`).
+ *
+ * The new API takes a **fetcher function** instead of a string endpoint, so
+ * tests construct an inline fetcher rather than calling `apiCall` directly.
+ * Mobile callers bind `apiCall` inside their own fetcher before passing it in:
+ *
+ *   useApiQuery(['tournament', id], () => apiCall<Tournament>(`api-tournaments/${id}`))
+ */
 
 describe("useApiQuery", () => {
   let queryClient: QueryClient;
@@ -31,17 +34,14 @@ describe("useApiQuery", () => {
 
   it("should fetch data successfully", async () => {
     const mockData = { id: "1", name: "Test Tournament" };
-    mockApiCall.mockResolvedValueOnce({
-      success: true,
-      data: mockData,
-    });
+    const fetcher = jest
+      .fn()
+      .mockResolvedValue({ success: true, data: mockData } as ActionResult<
+        typeof mockData
+      >);
 
     const useTestQuery = () =>
-      useApiQuery<typeof mockData>(
-        ["tournament", "1"],
-        "api-tournaments/1",
-        {}
-      );
+      useApiQuery<typeof mockData>(["tournament", "1"], fetcher);
 
     const { result } = renderHook(() => useTestQuery(), { wrapper });
 
@@ -50,22 +50,20 @@ describe("useApiQuery", () => {
     });
 
     expect(result.current.data).toEqual(mockData);
-    expect(mockApiCall).toHaveBeenCalledWith("api-tournaments/1");
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
   it("should handle API errors", async () => {
     const errorMessage = "Tournament not found";
-    mockApiCall.mockResolvedValueOnce({
-      success: false,
-      error: errorMessage,
-    });
+    const fetcher = jest
+      .fn()
+      .mockResolvedValue({
+        success: false,
+        error: errorMessage,
+      } as ActionResult<{ id: string }>);
 
     const useTestQuery = () =>
-      useApiQuery<{ id: string }>(
-        ["tournament", "999"],
-        "api-tournaments/999",
-        {}
-      );
+      useApiQuery<{ id: string }>(["tournament", "999"], fetcher);
 
     const { result } = renderHook(() => useTestQuery(), { wrapper });
 
@@ -77,26 +75,31 @@ describe("useApiQuery", () => {
   });
 
   it("should respect enabled option", () => {
+    const fetcher = jest
+      .fn()
+      .mockResolvedValue({ success: true, data: { id: "1" } } as ActionResult<{
+        id: string;
+      }>);
+
     const useTestQuery = (enabled: boolean) =>
-      useApiQuery<{ id: string }>(["tournament", "1"], "api-tournaments/1", {
-        enabled,
-      });
+      useApiQuery<{ id: string }>(["tournament", "1"], fetcher, { enabled });
 
     const { result } = renderHook(() => useTestQuery(false), { wrapper });
 
     expect(result.current.isFetching).toBe(false);
-    expect(mockApiCall).not.toHaveBeenCalled();
+    expect(fetcher).not.toHaveBeenCalled();
   });
 
   it("should pass custom query options", async () => {
     const mockData = { id: "1", name: "Test" };
-    mockApiCall.mockResolvedValueOnce({
-      success: true,
-      data: mockData,
-    });
+    const fetcher = jest
+      .fn()
+      .mockResolvedValue({ success: true, data: mockData } as ActionResult<
+        typeof mockData
+      >);
 
     const useTestQuery = () =>
-      useApiQuery<typeof mockData>(["tournament", "1"], "api-tournaments/1", {
+      useApiQuery<typeof mockData>(["tournament", "1"], fetcher, {
         staleTime: 60000,
       });
 
@@ -245,10 +248,15 @@ describe("useApiMutation", () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
+    // TanStack Query v5 onSuccess forwards four args:
+    // (data, variables, onMutateResult, context)
+    // The 4th arg (context) is a MutationFunctionContext object managed by
+    // TanStack internally — assert only that the first three are correct.
     expect(onSuccessSpy).toHaveBeenCalledWith(
       mockResponse,
       { id: "1" },
-      undefined
+      undefined,
+      expect.anything()
     );
   });
 });

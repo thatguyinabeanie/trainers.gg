@@ -8,7 +8,7 @@ import {
   type CommunityWithCounts,
 } from "@trainers/supabase";
 
-import { createStaticClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 import { PageContainer } from "@/components/layout/page-container";
 import { FeaturedStrip } from "@/components/communities/featured-strip";
@@ -18,26 +18,36 @@ import { CommunitySearch } from "./community-search";
 /**
  * Cached data fetcher for all public communities.
  * Revalidated when CacheTags.COMMUNITIES_LIST is invalidated.
+ *
+ * Uses createServiceRoleClient() (not createStaticClient()) so this fetch
+ * survives the Phase 2 Task 9 revoke of anon SELECT on S-bucket base tables
+ * (communities). Service-role is a constant identity — it does not vary per
+ * user and is safe inside 'use cache' for public S-bucket data.
+ * See docs/decisions/architecture-phase2-task9-revoke-plan.md §0.2.
  */
 async function getCachedCommunities() {
   "use cache";
   cacheTag(CacheTags.COMMUNITIES_LIST);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return listPublicCommunities(supabase);
 }
 
 /**
  * Cached data fetcher for featured communities (ordered by featured_order).
  * Revalidated when CacheTags.COMMUNITIES_LIST is invalidated.
+ *
+ * Uses createServiceRoleClient() for the same reason as getCachedCommunities()
+ * above — survives the Phase 2 Task 9 anon SELECT revoke on the communities
+ * base table. See docs/decisions/architecture-phase2-task9-revoke-plan.md §0.2.
  */
 async function getCachedFeaturedCommunities() {
   "use cache";
   cacheTag(CacheTags.COMMUNITIES_LIST);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return listFeaturedCommunities(supabase);
 }
 

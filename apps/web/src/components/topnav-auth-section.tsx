@@ -1,50 +1,64 @@
 "use client";
 
-import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ThemeSwitcher } from "@/components/theme-switcher";
+import { useEffect, useState } from "react";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuLabel,
-  DropdownMenuGroup,
-} from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  LogOut,
-  Settings,
-  LayoutDashboard,
   Building2,
   ChevronRight,
+  LayoutDashboard,
+  LogOut,
+  Settings,
   Shield,
   ShieldAlert,
   User,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+
+import { type listMyCommunities } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
+import { type ActionResult } from "@trainers/validators";
+
+import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
 import { NotificationBell } from "@/components/notification-bell";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { listMyCommunities } from "@trainers/supabase";
-import type { TypedSupabaseClient } from "@trainers/supabase";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toggleSudoMode, checkSudoStatus } from "@/lib/sudo/actions";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function TopNavAuthSection() {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
 
-  const userId = user?.id;
+  /** Shape of a single community from `listMyCommunities`. */
+  type MyCommunity = Awaited<ReturnType<typeof listMyCommunities>>[number];
 
-  const myOrganizationsQueryFn = (client: TypedSupabaseClient) =>
-    userId ? listMyCommunities(client, userId) : Promise.resolve([]);
+  /**
+   * Fetch the caller's community list from the auth-gated `/api/v1/me/communities`
+   * route (built in T3j). Replaces the browser `useSupabaseQuery(listMyCommunities)`
+   * read that would break once S-bucket SELECT grants are revoked.
+   */
+  async function fetchMyCommunities(): Promise<ActionResult<MyCommunity[]>> {
+    return fetch("/api/v1/me/communities").then((r) => r.json());
+  }
 
-  const { data: myOrganizations } = useSupabaseQuery(myOrganizationsQueryFn, [
-    userId,
-  ]);
+  // Only query when the user is authenticated so we don't issue an immediate
+  // 401 on first render before the session resolves.
+  const { data: myOrganizations } = useApiQuery<MyCommunity[]>(
+    ["me", "communities"],
+    fetchMyCommunities,
+    { staleTime: 30_000, enabled: !!user }
+  );
 
   // Sudo mode state
   const [sudoStatus, setSudoStatus] = useState<{

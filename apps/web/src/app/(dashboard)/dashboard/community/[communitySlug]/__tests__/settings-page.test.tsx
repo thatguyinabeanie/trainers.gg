@@ -15,6 +15,15 @@ import { MAX_IMAGE_SIZE } from "@trainers/validators";
 
 const mockUseSupabaseQuery = jest.fn();
 
+// The community fetch moved to the auth-gated /api/v1/communities/[slug] route
+// (Phase 2 S-bucket migration). The page now reads it via `useApiQuery` from
+// `@trainers/supabase/react-query`; only the Discord-server lookup still uses
+// `useSupabaseQuery`.
+const mockUseApiQuery = jest.fn();
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
+}));
+
 const mockSupabaseClient = {
   functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
   auth: { getSession: jest.fn().mockResolvedValue({ data: { session: { access_token: "test-token" } }, error: null }) },
@@ -121,19 +130,17 @@ async function renderPage(
   org: ReturnType<typeof buildOrg> | null = null,
   { discordServer = null }: RenderOptions = {}
 ) {
-  // The page calls useSupabaseQuery twice when `org` is loaded:
-  //   - getCommunityBySlug keyed by [communitySlug] (string)
-  //   - getDiscordServerByCommunityId keyed by [org.id] (number)
-  //
-  // Dispatch on the deps array shape rather than call order — call-order
-  // dispatch breaks on re-renders (the counter keeps incrementing past 2
-  // and starts returning `discordServer` as the community row on pass 3+).
-  mockUseSupabaseQuery.mockImplementation((_queryFn, deps) => {
-    const firstDep = (deps as unknown[])[0];
-    if (typeof firstDep === "number") {
-      return { data: discordServer, isLoading: false };
-    }
-    return { data: org, isLoading: false, refetch: jest.fn() };
+  // The community row comes from useApiQuery, keyed by ["community", slug].
+  mockUseApiQuery.mockReturnValue({
+    data: org,
+    isLoading: false,
+    refetch: jest.fn(),
+  });
+
+  // The Discord-server lookup still uses useSupabaseQuery, keyed by [org.id].
+  mockUseSupabaseQuery.mockReturnValue({
+    data: discordServer,
+    isLoading: false,
   });
 
   const params = Promise.resolve({ communitySlug: org?.slug ?? "test-org" });
@@ -159,7 +166,8 @@ describe("DashboardSettingsPage", () => {
 
   describe("loading and empty states", () => {
     it("shows skeleton when loading", async () => {
-      mockUseSupabaseQuery.mockReturnValue({
+      // Loading is now driven by the useApiQuery community fetch.
+      mockUseApiQuery.mockReturnValue({
         data: undefined,
         isLoading: true,
         refetch: jest.fn(),

@@ -1,5 +1,15 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getFeatureFlag } from "@trainers/supabase";
+
+/**
+ * RLS audit #6: the `feature_flags` table SELECT is locked to site admins, so
+ * these helpers read flag rows via the service-role client (RLS bypass). This
+ * is safe because they only read the flags table — never user-scoped data —
+ * and run server-side only (RSC / route handlers, never edge middleware). The
+ * per-user / per-community allowlist checks below operate purely on the flag's
+ * `metadata` JSON and the caller-supplied id, so the RLS bypass is scoped to
+ * flag evaluation alone.
+ */
 
 /**
  * Check if a user has access to a feature flag.
@@ -16,19 +26,30 @@ export async function checkFeatureAccess(
   flagKey: string,
   userId: string
 ): Promise<boolean> {
-  const supabase = await createClient();
-  const flag = await getFeatureFlag(supabase, flagKey);
+  try {
+    const supabase = createServiceRoleClient();
+    const flag = await getFeatureFlag(supabase, flagKey);
 
-  // Flag doesn't exist = disabled
-  if (!flag) return false;
+    // Flag doesn't exist = disabled
+    if (!flag) return false;
 
-  // Globally enabled = everyone has access
-  if (flag.enabled) return true;
+    // Globally enabled = everyone has access
+    if (flag.enabled) return true;
 
-  // Globally disabled = check allowlist
-  const allowedUsers =
-    (flag.metadata as { allowed_users?: string[] })?.allowed_users || [];
-  return allowedUsers.includes(userId);
+    // Globally disabled = check allowlist
+    const rawAllowed = (flag.metadata as { allowed_users?: unknown })
+      ?.allowed_users;
+    const allowedUsers = Array.isArray(rawAllowed) ? rawAllowed : [];
+    return allowedUsers.includes(userId);
+  } catch (error) {
+    // Fail closed — if we can't read the flag, deny access
+    console.error(
+      "[feature-flags] Failed to check flag for user:",
+      { flagKey, userId },
+      error
+    );
+    return false;
+  }
 }
 
 /**
@@ -36,9 +57,15 @@ export async function checkFeatureAccess(
  * Returns true only when the coaching flag is globally enabled.
  */
 export async function isCoachingPublic(): Promise<boolean> {
-  const supabase = await createClient();
-  const flag = await getFeatureFlag(supabase, "coaching");
-  return flag?.enabled ?? false;
+  try {
+    const supabase = createServiceRoleClient();
+    const flag = await getFeatureFlag(supabase, "coaching");
+    return flag?.enabled ?? false;
+  } catch (error) {
+    // Fail closed — if we can't read the flag, deny access
+    console.error("[feature-flags] Failed to check coaching flag:", error);
+    return false;
+  }
 }
 
 /**
@@ -57,7 +84,7 @@ export async function checkCommunityFeatureAccess(
   communityId: number
 ): Promise<boolean> {
   try {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
     const flag = await getFeatureFlag(supabase, flagKey);
 
     // Flag doesn't exist = disabled
@@ -67,9 +94,9 @@ export async function checkCommunityFeatureAccess(
     if (flag.enabled) return true;
 
     // Globally disabled = check allowlist
-    const allowed =
-      (flag.metadata as { allowed_communities?: number[] })
-        ?.allowed_communities || [];
+    const rawAllowed = (flag.metadata as { allowed_communities?: unknown })
+      ?.allowed_communities;
+    const allowed = Array.isArray(rawAllowed) ? rawAllowed : [];
     return allowed.includes(communityId);
   } catch (error) {
     // Fail closed — if we can't read the flag, deny access

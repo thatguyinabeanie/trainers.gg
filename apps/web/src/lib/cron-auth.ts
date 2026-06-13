@@ -1,3 +1,5 @@
+import { safeCompare } from "@/lib/timing-safe";
+
 /**
  * Cron authorization helper.
  *
@@ -6,6 +8,9 @@
  * 500 rather than accepting the literal string `"Bearer undefined"` that an
  * inline `` `Bearer ${process.env.CRON_SECRET}` `` comparison would otherwise
  * allow through.
+ *
+ * The bearer token comparison uses `safeCompare` (constant-time) to prevent
+ * timing attacks.
  *
  * Returns `null` when the request is authorized; otherwise returns a Response
  * the caller should return directly.
@@ -19,8 +24,9 @@ export function requireCronAuth(request: Request): Response | null {
     });
   }
 
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${cronSecret}`) {
+  const auth = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${cronSecret}`;
+  if (!safeCompare(auth, expected)) {
     return new Response("Unauthorized", { status: 401 });
   }
 

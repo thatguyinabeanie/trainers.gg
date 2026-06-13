@@ -259,6 +259,51 @@ const mutation = useMutation({
 - [ ] Optimistic updates for immediate UI feedback (toggles, drag-drop, inline edits)
 - [ ] `staleTime > 0` for data that doesn't change frequently
 
+## Auth-Gated API Routes: `Cache-Control: private, no-store`
+
+**Any `/api/v1` route that calls `resolveApiAuth` and returns 401 for anon callers MUST use `Cache-Control: private, no-store` — never `public` or `s-maxage`.**
+
+The server-side `'use cache'` + `cacheTag`/`cacheLife` layer is the real caching mechanism and stays. The CDN-facing `Cache-Control` header is a separate, independent concern:
+
+- `public, s-maxage=…` lets a shared CDN/proxy store an authenticated 200 and replay it to anonymous callers — bypassing the "no anonymous open Data API" decision and potentially serving PII.
+- This applies even when the underlying data is "public aggregate" — the auth gate is what matters, not the data sensitivity.
+
+```ts
+// ✅ Auth-gated route — CDN must not cache this
+const CACHE_CONTROL = "private, no-store";
+// Reference: apps/web/src/app/api/v1/me/profile/route.ts
+//            apps/web/src/app/api/v1/players/search/route.ts
+
+// ❌ Auth-gated route using public CDN caching — never do this
+const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400";
+```
+
+**Also: never read PII inside a shared `'use cache'` scope.** A `'use cache'` fetcher is shared across all viewers with no auth scope. Caching per-user or PII-bearing data inside it leaks that data to every viewer who gets the same cache entry. Such reads must use a request-scoped client (cookie/RLS-bound) outside any `'use cache'` boundary, and the route must be `private, no-store` + authorization-gated.
+
+```ts
+// ❌ PII inside shared cache — data leak (community staff roster with emails)
+async function getCachedCommunityStaff(slug: string) {
+  "use cache";
+  cacheTag(CacheTags.community(slug));
+  cacheLife("max");
+  const supabase = createServiceRoleClient(); // service-role bypasses RLS
+  return supabase.from("community_staff").select("*, users(email)"); // email is PII — cached for ALL viewers
+}
+
+// ✅ Auth-gated, not cached — reads PII from a request-scoped client
+// route.ts: check canManageCommunity → 403 for non-staff; respond with private, no-store
+async function getStaffRoster(slug: string) {
+  const supabase = await createClient(); // request-scoped, RLS-bound
+  return supabase.from("community_staff").select("*, users(email)");
+  // route sets: headers().set("Cache-Control", "private, no-store")
+}
+```
+
+### Caching Review Checklist for API Routes
+
+- [ ] Does the route call `resolveApiAuth` (or equivalent auth check)?  If yes → `Cache-Control: private, no-store` is **required**
+- [ ] Does any `'use cache'` fetcher touch user emails, phone numbers, or other PII? If yes → move those reads outside the cache scope, use a request-scoped client, and gate the route with authorization + `private, no-store`
+
 ## Caching Requirements (Must Be Done at Implementation Time)
 
 Caching is not optional polish — it is a required part of implementing any feature that fetches or mutates data. Every new page or feature must address both layers before the work is considered complete.

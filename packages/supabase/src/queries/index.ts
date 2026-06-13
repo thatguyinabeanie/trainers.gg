@@ -81,6 +81,7 @@ export {
   getTournamentRounds,
   getRoundMatches,
   getTournamentStandings,
+  getPublicTournamentStandings,
   getPlayerTournamentStats,
   getTournamentPlayerStats,
   getPhaseRoundsWithStats,
@@ -115,6 +116,10 @@ export type {
   PlayerLifetimeStats,
   AltStats,
   AltTeam,
+  PublicTournamentStandingRow,
+  TournamentRegistrationRow,
+  TournamentInvitationSentRow,
+  MatchDetails,
 } from "./tournaments";
 // CommunityWithCounts already exported above
 

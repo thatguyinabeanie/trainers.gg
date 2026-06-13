@@ -1,42 +1,42 @@
 import { render, screen } from "@testing-library/react";
-import { TournamentSidebarCard } from "../tournament-sidebar-card";
+import {
+  TournamentSidebarCardClient,
+  type SidebarRegistrationStatus,
+} from "../tournament-sidebar-card-client";
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
+//
+// Phase 2 Task 9 (T3e): the card is now a server component that fetches via
+// service-role and passes registration/check-in data to this presentational
+// client child as props. There is no browser `useSupabaseQuery` read and no
+// realtime subscription anymore — these tests drive the child directly with
+// props. The `useSupabase` hook is still mocked because the mutation hooks
+// (`useSupabaseMutation`) consume the same provider.
 
 // Mock @tanstack/react-query useQuery (used for user teams)
 jest.mock("@tanstack/react-query", () => ({
   useQuery: jest.fn(() => ({ data: [], isLoading: false })),
 }));
 
-const mockChannel = {
-  on: jest.fn().mockReturnThis(),
-  subscribe: jest.fn((cb) => {
-    if (typeof cb === "function") cb("SUBSCRIBED", null);
-    return mockChannel;
-  }),
-  unsubscribe: jest.fn(),
-};
-
-const mockRemoveChannel = jest.fn();
+const mockRefresh = jest.fn();
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(() => ({ refresh: mockRefresh })),
+}));
 
 const mockSupabase = {
-  channel: jest.fn(() => mockChannel),
-  removeChannel: mockRemoveChannel,
+  channel: jest.fn(),
+  removeChannel: jest.fn(),
 };
 
 jest.mock("@/lib/supabase", () => ({
   useSupabase: jest.fn(() => mockSupabase),
-  useSupabaseQuery: jest.fn(),
   useSupabaseMutation: jest.fn(),
 }));
 
-import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
+import { useSupabaseMutation } from "@/lib/supabase";
 
-const mockUseSupabaseQuery = useSupabaseQuery as jest.MockedFunction<
-  typeof useSupabaseQuery
->;
 const mockUseSupabaseMutation = useSupabaseMutation as jest.MockedFunction<
   typeof useSupabaseMutation
 >;
@@ -110,51 +110,55 @@ function buildRegistrationStatus(overrides?: object) {
   };
 }
 
+// Props the server wrapper would have passed to the client child, derived from
+// the previous (query-based) test inputs.
+let pendingRegistration: ReturnType<typeof buildRegistrationStatus> | null =
+  null;
+let pendingCheckInStatus: unknown = null;
+let pendingCheckInStats: unknown = null;
+
 function setupQueryMocks({
   registrationStatus = buildRegistrationStatus(),
-  registrationLoading = false,
-  registrationError = null,
   checkInStatus = null,
   checkInStats = null,
 }: {
   registrationStatus?: ReturnType<typeof buildRegistrationStatus> | null;
-  registrationLoading?: boolean;
-  registrationError?: unknown;
   checkInStatus?: unknown;
   checkInStats?: unknown;
 } = {}) {
-  let callCount = 0;
-  mockUseSupabaseQuery.mockImplementation(() => {
-    callCount++;
-    if (callCount === 1) {
-      return {
-        data: registrationStatus,
-        error: registrationError,
-        isLoading: registrationLoading,
-        refetch: jest.fn(),
-      };
-    }
-    if (callCount === 2) {
-      return {
-        data: checkInStatus,
-        error: null,
-        isLoading: false,
-        refetch: jest.fn(),
-      };
-    }
-    // checkInStats
-    return {
-      data: checkInStats,
-      error: null,
-      isLoading: false,
-      refetch: jest.fn(),
-    };
-  });
+  pendingRegistration = registrationStatus;
+  pendingCheckInStatus = checkInStatus;
+  pendingCheckInStats = checkInStats;
 
   mockUseSupabaseMutation.mockReturnValue({
     mutateAsync: jest.fn(),
     isPending: false,
   });
+}
+
+/**
+ * Render the client child with the props the server wrapper would supply,
+ * sourced from the most recent `setupQueryMocks(...)` call.
+ */
+function renderCard(props: typeof defaultProps = defaultProps) {
+  return render(
+    <TournamentSidebarCardClient
+      {...props}
+      initialRegistration={
+        pendingRegistration as unknown as SidebarRegistrationStatus
+      }
+      initialCheckIn={
+        pendingCheckInStatus as React.ComponentProps<
+          typeof TournamentSidebarCardClient
+        >["initialCheckIn"]
+      }
+      initialCheckInStats={
+        pendingCheckInStats as React.ComponentProps<
+          typeof TournamentSidebarCardClient
+        >["initialCheckInStats"]
+      }
+    />
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -167,42 +171,55 @@ describe("TournamentSidebarCard", () => {
   });
 
   // =========================================================================
-  // Loading state
+  // SSR data handoff — count rendered from props (no browser read)
   // =========================================================================
+  //
+  // The card is a server component (`TournamentSidebarCard`) that fetches via
+  // service-role and passes the data to the presentational client child
+  // (`TournamentSidebarCardClient`) as `initial*` props. These tests drive the
+  // child with props to prove the registration count comes from props, and that
+  // no realtime subscription is wired up anywhere in the client module.
 
-  describe("loading state", () => {
-    it("shows a spinner while registration data loads", () => {
-      setupQueryMocks({ registrationLoading: true });
-      render(<TournamentSidebarCard {...defaultProps} />);
-      // Card renders but no registration content yet
-      expect(screen.queryByText("Registration")).not.toBeInTheDocument();
+  describe("server-fetched data handoff", () => {
+    it("renders the registration count from props (no browser query)", () => {
+      setupQueryMocks({
+        registrationStatus: buildRegistrationStatus({
+          registrationStats: { registered: 17 },
+          tournament: {
+            id: 1,
+            status: "upcoming",
+            maxParticipants: 32,
+            lateCheckInMaxRound: null,
+          },
+        }),
+      });
+      renderCard();
+      expect(screen.getByText(/17 \/ 32/)).toBeInTheDocument();
+    });
+
+    it("never opens a realtime channel (registration sub removed per D1)", () => {
+      setupQueryMocks();
+      renderCard();
+      // The previous `registrations-${id}` postgres_changes subscription was
+      // removed; the count is server-fetched + tag/refresh-revalidated instead.
+      expect(mockSupabase.channel).not.toHaveBeenCalled();
+      expect(mockSupabase.removeChannel).not.toHaveBeenCalled();
     });
   });
 
   // =========================================================================
-  // Error state
+  // Error / no-data state
   // =========================================================================
 
   describe("error state", () => {
-    it("shows error message and retry button when registration fails", () => {
-      setupQueryMocks({
-        registrationStatus: null,
-        registrationError: new Error("fetch failed"),
-      });
-      render(<TournamentSidebarCard {...defaultProps} />);
+    it("shows error message and retry button when registration is null", () => {
+      setupQueryMocks({ registrationStatus: null });
+      renderCard();
       expect(
         screen.getByText(/unable to load registration status/i)
       ).toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: /try again/i })
-      ).toBeInTheDocument();
-    });
-
-    it("shows error state when registrationStatus is null without an error", () => {
-      setupQueryMocks({ registrationStatus: null });
-      render(<TournamentSidebarCard {...defaultProps} />);
-      expect(
-        screen.getByText(/unable to load registration status/i)
       ).toBeInTheDocument();
     });
   });
@@ -225,9 +242,7 @@ describe("TournamentSidebarCard", () => {
             },
           }),
         });
-        const { container } = render(
-          <TournamentSidebarCard {...defaultProps} />
-        );
+        const { container } = renderCard();
         expect(container.firstChild).toBeNull();
       }
     );
@@ -244,7 +259,7 @@ describe("TournamentSidebarCard", () => {
           userStatus: { status: "dropped", hasTeam: false },
         }),
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText("Dropped")).toBeInTheDocument();
       expect(
         screen.getByText(/you have dropped from this tournament/i)
@@ -268,7 +283,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText("Registered")).toBeInTheDocument();
     });
   });
@@ -280,7 +295,7 @@ describe("TournamentSidebarCard", () => {
   describe("open registration (not registered)", () => {
     it("shows registration open badge and register button", () => {
       setupQueryMocks();
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       // Registration badge should be "Open"
       expect(screen.getByText("Open")).toBeInTheDocument();
     });
@@ -297,7 +312,7 @@ describe("TournamentSidebarCard", () => {
           },
         }),
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText(/8 \/ 32/)).toBeInTheDocument();
     });
 
@@ -313,7 +328,7 @@ describe("TournamentSidebarCard", () => {
           registrationStats: { registered: 4 },
         }),
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText("4 registered")).toBeInTheDocument();
     });
   });
@@ -330,7 +345,7 @@ describe("TournamentSidebarCard", () => {
           userStatus: null,
         }),
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText("Late Reg")).toBeInTheDocument();
     });
   });
@@ -348,7 +363,7 @@ describe("TournamentSidebarCard", () => {
           isRegistrationOpen: true,
         }),
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText("Waitlist Open")).toBeInTheDocument();
     });
   });
@@ -369,7 +384,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText("Registered")).toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: /withdraw/i })
@@ -387,7 +402,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(
         screen.getByRole("button", { name: /check in/i })
       ).toBeInTheDocument();
@@ -410,7 +425,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(
         screen.getByRole("button", { name: /paste team/i })
       ).toBeInTheDocument();
@@ -453,7 +468,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...teamProps} />);
+      renderCard(teamProps);
       expect(screen.getByText("Team Submitted")).toBeInTheDocument();
     });
   });
@@ -484,7 +499,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...lockedTeamProps} />);
+      renderCard(lockedTeamProps);
       expect(screen.getByText("Team Locked")).toBeInTheDocument();
     });
   });
@@ -503,7 +518,7 @@ describe("TournamentSidebarCard", () => {
           isLateRegistration: false,
         }),
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText("Closed")).toBeInTheDocument();
     });
 
@@ -515,7 +530,7 @@ describe("TournamentSidebarCard", () => {
           userStatus: null,
         }),
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText(/registration is closed/i)).toBeInTheDocument();
     });
   });
@@ -544,7 +559,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: 3,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText(/tournament in progress/i)).toBeInTheDocument();
       expect(
         screen.getByText(/registration.*check-in open until round 3/i)
@@ -572,7 +587,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText(/waitlisted.*#2/i)).toBeInTheDocument();
     });
   });
@@ -599,7 +614,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(
         screen.getByRole("button", { name: /drop from tournament/i })
       ).toBeInTheDocument();
@@ -622,7 +637,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(
         screen.getByRole("button", { name: /undo check-in/i })
       ).toBeInTheDocument();
@@ -640,7 +655,7 @@ describe("TournamentSidebarCard", () => {
         },
         checkInStats: { checkedIn: 12, total: 32, checkedInPercentage: 37.5 },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText("12 / 32 checked in")).toBeInTheDocument();
     });
   });
@@ -667,7 +682,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: 2,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText(/late check-in open/i)).toBeInTheDocument();
       expect(screen.getByText(/closes after round 2/i)).toBeInTheDocument();
     });
@@ -689,7 +704,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText(/check in now/i)).toBeInTheDocument();
     });
 
@@ -704,7 +719,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(
         screen.getByRole("button", { name: /submit a team to check in/i })
       ).toBeDisabled();
@@ -722,7 +737,7 @@ describe("TournamentSidebarCard", () => {
         },
         checkInStats: { checkedIn: 5, total: 20, checkedInPercentage: 25 },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText(/5 \/ 20 checked in/)).toBeInTheDocument();
     });
   });
@@ -743,7 +758,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(
         screen.getByText(/check-in opens when tournament starts/i)
       ).toBeInTheDocument();
@@ -760,7 +775,7 @@ describe("TournamentSidebarCard", () => {
           lateMaxRound: null,
         },
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(
         screen.getByRole("button", { name: /submit a team to check in/i })
       ).toBeDisabled();
@@ -786,7 +801,7 @@ describe("TournamentSidebarCard", () => {
           },
         }),
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(screen.getByText(/\+5 on waitlist/i)).toBeInTheDocument();
     });
 
@@ -798,7 +813,7 @@ describe("TournamentSidebarCard", () => {
           userStatus: null,
         }),
       });
-      render(<TournamentSidebarCard {...defaultProps} />);
+      renderCard();
       expect(
         screen.getByRole("button", { name: /join waitlist/i })
       ).toBeInTheDocument();

@@ -7,6 +7,7 @@ import {
   ChevronRight,
   RefreshCw,
   Users,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +20,9 @@ import {
 } from "@/components/ui/select";
 import { DataTable } from "@/components/ui/data-table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { listUsersAdmin } from "@trainers/supabase";
-import type { TypedSupabaseClient } from "@trainers/supabase";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useApiQuery } from "@trainers/supabase/react-query";
+import { type ActionResult } from "@trainers/validators";
 import { columns, type AdminUserRow } from "./columns";
 import { UserDetailSheet } from "./user-detail-sheet";
 
@@ -41,6 +42,42 @@ const statusFilterLabels: Record<StatusFilter, string> = {
   active: "Active",
   suspended: "Suspended",
 };
+
+// ----------------------------------------------------------------
+// Fetcher
+// ----------------------------------------------------------------
+
+interface AdminUsersResult {
+  data: AdminUserRow[];
+  count: number;
+}
+
+/**
+ * Fetch paginated user list from the auth-gated `/api/v1/admin/users` route.
+ *
+ * The read moved off the browser anon client (`useSupabaseQuery(listUsersAdmin)`)
+ * because Phase 2 Task 9 revokes `anon`/`authenticated` SELECT on the `users` base
+ * table — a browser-keyed read would silently return zero rows. This route runs the
+ * read server-side via service-role behind the `isSiteAdmin()` gate.
+ */
+async function fetchAdminUsers(
+  search: string | undefined,
+  status: StatusFilter,
+  page: number
+): Promise<ActionResult<AdminUsersResult>> {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (status !== "all") params.set("status", status);
+  params.set("page", String(page));
+  params.set("limit", String(PAGE_SIZE));
+
+  const res = await fetch(`/api/v1/admin/users?${params.toString()}`);
+  if (!res.ok) {
+    return { success: false, error: `HTTP ${res.status}` };
+  }
+  const result = (await res.json()) as AdminUsersResult;
+  return { success: true, data: result };
+}
 
 // ----------------------------------------------------------------
 // Users Tab Content
@@ -78,28 +115,12 @@ function UsersTabContent() {
     setPage(0);
   }
 
-  const queryFn = (supabase: TypedSupabaseClient) => {
-    const isLocked =
-      statusFilter === "active"
-        ? false
-        : statusFilter === "suspended"
-          ? true
-          : undefined;
-
-    return listUsersAdmin(supabase, {
-      search: debouncedSearch || undefined,
-      isLocked,
-      limit: PAGE_SIZE,
-      offset: page * PAGE_SIZE,
-    });
-  };
-
-  const { data, isLoading, error, refetch } = useSupabaseQuery(queryFn, [
-    debouncedSearch,
-    statusFilter,
-    page,
-    refreshKey,
-  ]);
+  const { data, isLoading, isError, error, refetch } =
+    useApiQuery<AdminUsersResult>(
+      ["admin", "users", debouncedSearch, statusFilter, page, refreshKey],
+      () => fetchAdminUsers(debouncedSearch || undefined, statusFilter, page),
+      { staleTime: 30_000 }
+    );
 
   const users = (data?.data ?? []) as AdminUserRow[];
   const totalCount = data?.count ?? 0;
@@ -173,10 +194,15 @@ function UsersTabContent() {
       </div>
 
       {/* Error state */}
-      {error && (
-        <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
-          Failed to load users: {error.message}
-        </div>
+      {isError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertDescription>
+            {error instanceof Error
+              ? error.message
+              : "Failed to load users. Please try again."}
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Loading skeleton */}
@@ -190,7 +216,7 @@ function UsersTabContent() {
       )}
 
       {/* Data table */}
-      {(!isLoading || users.length > 0) && (
+      {(!isLoading || users.length > 0) && !isError && (
         <DataTable
           columns={columns}
           data={users}

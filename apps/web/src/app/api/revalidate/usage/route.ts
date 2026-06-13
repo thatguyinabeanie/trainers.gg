@@ -22,6 +22,7 @@
 import { z, ZodError } from "@trainers/validators";
 
 import { revalidateUsageStatsCaches } from "@/lib/cache-invalidation";
+import { safeCompare } from "@/lib/timing-safe";
 
 // =============================================================================
 // Schema
@@ -47,8 +48,8 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${secret}`) {
+  const auth = request.headers.get("authorization") ?? "";
+  if (!safeCompare(auth, `Bearer ${secret}`)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

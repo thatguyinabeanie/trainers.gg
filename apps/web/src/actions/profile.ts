@@ -129,9 +129,13 @@ export async function checkUsernameAvailability(
 
     const escaped = escapeLike(username);
 
-    // Check users + alts tables in parallel (case-insensitive, excluding self)
+    // Check users + alts tables in parallel (case-insensitive, excluding self).
+    // RLS audit #1: public.users SELECT is locked to own-row + admin, which
+    // would hide every other user's row and make taken usernames look free.
+    // Read the safe public_user_profiles view, which exposes every row's id +
+    // username (both are non-sensitive and required for this uniqueness check).
     const usersQuery = supabase
-      .from("users")
+      .from("public_user_profiles")
       .select("id")
       .ilike("username", escaped);
 

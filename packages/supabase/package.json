@@ -9,6 +9,7 @@
     "./client": "./src/clients/client.ts",
     "./mobile": "./src/clients/mobile.ts",
     "./hooks": "./src/hooks/index.ts",
+    "./react-query": "./src/react-query.ts",
     "./queries": "./src/queries/index.ts",
     "./mutations": "./src/mutations/index.ts",
     "./pipeline": "./src/mutations/pipeline.ts",
@@ -51,6 +52,7 @@
   },
   "peerDependencies": {
     "@supabase/ssr": "catalog:supabase",
+    "@tanstack/react-query": "catalog:tanstack",
     "expo-secure-store": "catalog:expo",
     "next": "catalog:",
     "react": "catalog:react",
@@ -58,6 +60,9 @@
   },
   "peerDependenciesMeta": {
     "@supabase/ssr": {
+      "optional": true
+    },
+    "@tanstack/react-query": {
       "optional": true
     },
     "expo-secure-store": {
@@ -76,6 +81,7 @@
   "devDependencies": {
     "@faker-js/faker": "catalog:",
     "@jest/globals": "catalog:testing",
+    "@tanstack/react-query": "catalog:tanstack",
     "@testing-library/react": "catalog:testing",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",

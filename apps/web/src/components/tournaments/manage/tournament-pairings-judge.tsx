@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
+import { useSupabase } from "@/lib/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import {
-  getTournamentPhases,
-  getPhaseRoundsWithStats,
-  getRoundMatches,
-} from "@trainers/supabase";
+  type TournamentPairingsData,
+  type PhaseRoundsWithMatchesRow,
+} from "@/lib/data/tournament-pairings-endpoint";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Card,
@@ -62,7 +62,11 @@ type MatchPlayer = {
   display_name: string | null;
 } | null;
 
-type MatchData = Awaited<ReturnType<typeof getRoundMatches>>[number];
+/**
+ * Match shape from `allPhaseRounds` in the pairings API response.
+ * Includes all `tournament_matches.*` fields plus limited alt joins.
+ */
+type MatchData = PhaseRoundsWithMatchesRow["matches"][number];
 
 function getPlayerName(player: MatchPlayer, fallback: string): string {
   if (!player) return fallback;
@@ -72,7 +76,7 @@ function getPlayerName(player: MatchPlayer, fallback: string): string {
 function MatchStatusDisplay({ match }: { match: MatchData }) {
   const p1 = match.player1 as MatchPlayer;
   const p2 = match.player2 as MatchPlayer;
-  const winner = match.winner as MatchPlayer;
+  // allPhaseRounds matches do not include a `winner` join — fall back to game wins
   const status = match.status ?? "pending";
 
   if (match.is_bye) {
@@ -83,11 +87,8 @@ function MatchStatusDisplay({ match }: { match: MatchData }) {
     const g1 = match.game_wins1 ?? 0;
     const g2 = match.game_wins2 ?? 0;
     const score = `${g1}-${g2}`;
-    const winnerName = winner
-      ? getPlayerName(winner, "Winner")
-      : g1 > g2
-        ? getPlayerName(p1, "P1")
-        : getPlayerName(p2, "P2");
+    const winnerName =
+      g1 > g2 ? getPlayerName(p1, "P1") : getPlayerName(p2, "P2");
     return (
       <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
         <CheckCircle2 className="size-3.5 shrink-0" />
@@ -267,7 +268,6 @@ export function TournamentPairingsJudge({
   const router = useRouter();
   const supabase = useSupabase();
   const [activeTab, setActiveTab] = useState<"pairings" | "judge">("pairings");
-  const [refreshKey, setRefreshKey] = useState(0);
   const [realtimeStatus, setRealtimeStatus] =
     useState<RealtimeStatus>("connected");
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -277,12 +277,29 @@ export function TournamentPairingsJudge({
   );
   const [selectedRoundId, setSelectedRoundId] = useState<number | null>(null);
 
+  // Fetch all pairings data via the auth-gated API route (S-bucket safe).
+  // `staleTime: 0` so realtime-triggered refetches always get fresh data.
+  const {
+    data: pairings,
+    refetch: refetchPairings,
+  } = useApiQuery<TournamentPairingsData>(
+    ["tournament", tournament.id, "pairings-judge"],
+    () =>
+      fetch(`/api/v1/tournaments/${tournament.id}/pairings`).then((r) =>
+        r.json()
+      ),
+    { staleTime: 0 }
+  );
+
+  // Stable debounced refresh ref — avoids tearing down realtime channels
+  // when the component re-renders. Calls refetchPairings after a short delay
+  // so rapid realtime events coalesce into a single fetch.
   const triggerRefreshRef = useRef(() => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
-      setRefreshKey((k) => k + 1);
+      void refetchPairings();
     }, 500);
   });
 
@@ -292,10 +309,40 @@ export function TournamentPairingsJudge({
     );
   };
 
-  // Fetch phases
-  const { data: phases } = useSupabaseQuery(
-    (supabase) => getTournamentPhases(supabase, tournament.id),
-    [tournament.id]
+  // Derive data from pairings API response.
+  const phases = pairings?.phases ?? null;
+
+  // Find the index for the selected phase.
+  const selectedPhaseIndex =
+    phases && selectedPhaseId != null
+      ? phases.findIndex((p) => p.id === selectedPhaseId)
+      : -1;
+
+  // Rounds for selected phase — from roundsWithStats (first phase) or allPhaseRounds.
+  // roundsWithStats includes match-count stats; allPhaseRounds only has round metadata.
+  const roundsForSelectedPhase =
+    selectedPhaseIndex === 0
+      ? (pairings?.roundsWithStats ?? [])
+      : selectedPhaseIndex > 0
+        ? (pairings?.allPhaseRounds[selectedPhaseIndex] ?? []).map((r) => ({
+            id: r.id,
+            round_number: r.round_number,
+            status: r.status,
+          }))
+        : [];
+
+  // Matches for selected round — from allPhaseRounds (includes all tournament_matches.* fields).
+  const matchesForSelectedRound: MatchData[] =
+    selectedPhaseIndex >= 0 && selectedRoundId != null
+      ? ((pairings?.allPhaseRounds[selectedPhaseIndex] ?? []).find(
+          (r) => r.id === selectedRoundId
+        )?.matches ?? [])
+      : [];
+
+  // Tracks the pairings object reference so round auto-selection re-runs when a
+  // refetch returns a new data set (the reference changes), not on every render.
+  const [prevPairings, setPrevPairings] = useState<typeof pairings | symbol>(
+    UNINITIALIZED
   );
 
   // Initialize selectedPhaseId from phases — render-time adjustment
@@ -309,51 +356,45 @@ export function TournamentPairingsJudge({
     }
   }
 
-  // Fetch rounds for selected phase
-  const { data: rounds } = useSupabaseQuery(
-    (supabase) =>
-      selectedPhaseId
-        ? getPhaseRoundsWithStats(supabase, selectedPhaseId)
-        : Promise.resolve([]),
-    [selectedPhaseId, refreshKey]
-  );
-
-  // Auto-select active round, or latest round (preserve manual selection if still valid)
-  // — render-time adjustment keyed on rounds data
-  const [prevRounds, setPrevRounds] = useState<typeof rounds | symbol>(
-    UNINITIALIZED
-  );
-  if (rounds !== prevRounds) {
-    setPrevRounds(rounds);
-    if (!rounds || rounds.length === 0) {
+  // Auto-select active round, or latest round — render-time adjustment.
+  // Compare on a STABLE signature (pairings reference + selected phase), not the
+  // derived `roundsForSelectedPhase` array, which is rebuilt on every render and
+  // would otherwise trigger an infinite setState loop (new array !== prev array).
+  const roundsSignature = `${selectedPhaseId ?? ""}:${selectedPhaseIndex}`;
+  const [prevRoundsSignature, setPrevRoundsSignature] = useState<
+    string | symbol
+  >(UNINITIALIZED);
+  if (
+    pairings !== prevPairings ||
+    roundsSignature !== prevRoundsSignature
+  ) {
+    setPrevPairings(pairings);
+    setPrevRoundsSignature(roundsSignature);
+    if (!roundsForSelectedPhase || roundsForSelectedPhase.length === 0) {
       setSelectedRoundId(null);
     } else if (
       selectedRoundId == null ||
-      !rounds.some((r) => r.id === selectedRoundId)
+      !roundsForSelectedPhase.some((r) => r.id === selectedRoundId)
     ) {
-      const active = rounds.find((r) => r.status === "active");
+      const active = roundsForSelectedPhase.find((r) => r.status === "active");
       if (active) {
         setSelectedRoundId(active.id);
       } else {
-        setSelectedRoundId(rounds[rounds.length - 1]!.id);
+        setSelectedRoundId(
+          roundsForSelectedPhase[roundsForSelectedPhase.length - 1]!.id
+        );
       }
     }
   }
 
-  const activeRound = rounds?.find((r) => r.status === "active");
+  const activeRound = roundsForSelectedPhase?.find(
+    (r) => r.status === "active"
+  );
   const isViewingActiveRound =
     activeRound != null && selectedRoundId === activeRound.id;
 
-  // Fetch matches for selected round
-  const { data: matches = [] } = useSupabaseQuery(
-    (supabase) =>
-      selectedRoundId
-        ? getRoundMatches(supabase, selectedRoundId)
-        : Promise.resolve([]),
-    [selectedRoundId, refreshKey]
-  );
-
-  // Realtime: match updates for the selected round (only when viewing active round)
+  // Realtime: match updates for the selected round (only when viewing active round).
+  // tournament_matches is NOT in the revoke set — anon SELECT is retained.
   useEffect(() => {
     if (!selectedRoundId || !isViewingActiveRound) return;
 
@@ -390,7 +431,8 @@ export function TournamentPairingsJudge({
     };
   }, [supabase, selectedRoundId, isViewingActiveRound]);
 
-  // Realtime: new round detection (INSERT/UPDATE on tournament_rounds)
+  // Realtime: new round detection (INSERT/UPDATE on tournament_rounds).
+  // tournament_matches is used as the change signal; rounds data comes from the API.
   useEffect(() => {
     if (!selectedPhaseId) return;
 
@@ -416,18 +458,24 @@ export function TournamentPairingsJudge({
   }, [supabase, selectedPhaseId]);
 
   // Categorize matches into sections
-  const attentionMatches = matches.filter(
+  const attentionMatches = matchesForSelectedRound.filter(
     (m) => classifyMatch(m) === "attention"
   );
-  const activeMatches = matches.filter((m) => classifyMatch(m) === "active");
-  const completedMatches = matches.filter(
+  const activeMatches = matchesForSelectedRound.filter(
+    (m) => classifyMatch(m) === "active"
+  );
+  const completedMatches = matchesForSelectedRound.filter(
     (m) => classifyMatch(m) === "completed"
   );
 
   // Judge queue: staff_requested matches
-  const judgeQueue = matches.filter((m) => m.staff_requested === true);
+  const judgeQueue = matchesForSelectedRound.filter(
+    (m) => m.staff_requested === true
+  );
 
-  const currentRound = rounds?.find((r) => r.id === selectedRoundId);
+  const currentRound = roundsForSelectedPhase?.find(
+    (r) => r.id === selectedRoundId
+  );
 
   if (!phases || phases.length === 0) {
     return (
@@ -476,7 +524,7 @@ export function TournamentPairingsJudge({
               </SelectContent>
             </Select>
           )}
-          {rounds && rounds.length > 0 && (
+          {roundsForSelectedPhase && roundsForSelectedPhase.length > 0 && (
             <Select
               value={selectedRoundId?.toString() ?? ""}
               onValueChange={(value) =>
@@ -487,7 +535,7 @@ export function TournamentPairingsJudge({
                 <SelectValue placeholder="Round" />
               </SelectTrigger>
               <SelectContent>
-                {rounds.map((round) => (
+                {roundsForSelectedPhase.map((round) => (
                   <SelectItem key={round.id} value={round.id.toString()}>
                     <span className="flex items-center gap-2">
                       Round {round.round_number}
@@ -541,12 +589,12 @@ export function TournamentPairingsJudge({
               <CardHeader>
                 <CardTitle>Round {currentRound.round_number} Matches</CardTitle>
                 <CardDescription>
-                  {matches.length} matches &middot; {completedMatches.length}{" "}
-                  completed
+                  {matchesForSelectedRound.length} matches &middot;{" "}
+                  {completedMatches.length} completed
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {matches.length === 0 ? (
+                {matchesForSelectedRound.length === 0 ? (
                   <p className="text-muted-foreground py-8 text-center">
                     No matches found for this round.
                   </p>

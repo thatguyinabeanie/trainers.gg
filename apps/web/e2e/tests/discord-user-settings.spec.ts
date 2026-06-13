@@ -47,7 +47,10 @@ test.describe("Discord user settings", () => {
     // The #discord-dms section renders inside a Suspense boundary. Use the
     // web-first toBeVisible assertion (auto-retries through hydration/detach)
     // rather than scrollIntoViewIfNeeded, which throws if the subtree swaps.
-    const discordSection = page.locator("#discord-dms");
+    // `:visible` scopes to the shown layout — the section id appears in both
+    // the desktop and mobile renders (one hidden), so a bare id match is a
+    // strict-mode violation.
+    const discordSection = page.locator("#discord-dms:visible");
     await expect(discordSection).toBeVisible({ timeout: 10000 });
   });
 
@@ -60,7 +63,7 @@ test.describe("Discord user settings", () => {
     await page.goto("/dashboard/settings/notifications");
     await page.waitForLoadState("domcontentloaded");
 
-    const discordSection = page.locator("#discord-dms");
+    const discordSection = page.locator("#discord-dms:visible");
     await expect(discordSection).toBeVisible({ timeout: 10000 });
 
     // Should show the "Link Discord" prompt link, not a connected handle
@@ -83,7 +86,7 @@ test.describe("Discord user settings", () => {
     await page.goto("/dashboard/settings/notifications");
     await page.waitForLoadState("domcontentloaded");
 
-    const discordSection = page.locator("#discord-dms");
+    const discordSection = page.locator("#discord-dms:visible");
     await expect(discordSection).toBeVisible({ timeout: 10000 });
 
     // The master switch carries id="discord-dm-master"
@@ -100,7 +103,7 @@ test.describe("Discord user settings", () => {
     await page.goto("/dashboard/settings/notifications");
     await page.waitForLoadState("domcontentloaded");
 
-    const discordSection = page.locator("#discord-dms");
+    const discordSection = page.locator("#discord-dms:visible");
     await expect(discordSection).toBeVisible({ timeout: 10000 });
 
     // The three category group headings should all be present in the section
