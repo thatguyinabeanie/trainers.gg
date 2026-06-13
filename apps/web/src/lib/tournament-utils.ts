@@ -1,5 +1,5 @@
 import type { TournamentPhase } from "@trainers/tournaments/types";
-import type { getPhaseRoundsWithMatches } from "@trainers/supabase";
+import type { getPublicPhaseRoundsWithMatches } from "@trainers/supabase";
 
 // Row shape from tournament_phases table
 type PhaseRow = {
@@ -10,9 +10,12 @@ type PhaseRow = {
   status: string | null;
 };
 
-// Single round from getPhaseRoundsWithMatches result
+// Single round from the PUBLIC phase-rounds variant. transformPhaseData only
+// reads public fields (player names/ids, scores, winner, round/match status),
+// so typing to the public (column-allowlisted) shape lets BOTH the public SSR
+// path and staff callers (whose full rows are a superset) pass safely.
 type RoundWithMatches = Awaited<
-  ReturnType<typeof getPhaseRoundsWithMatches>
+  ReturnType<typeof getPublicPhaseRoundsWithMatches>
 >[number];
 
 /**
