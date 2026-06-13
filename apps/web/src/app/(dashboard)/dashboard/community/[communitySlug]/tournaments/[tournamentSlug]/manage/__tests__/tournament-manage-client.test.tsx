@@ -1,76 +1,76 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TournamentManageClient } from "../tournament-manage-client";
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import userEvent from "@testing-library/user-event";
 
-// Mock Next.js navigation hooks
+// ── Mocks ──────────────────────────────────────────────────────────────────
+
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useSearchParams: jest.fn(),
 }));
 
-// Mock Supabase hooks (still needed for tournament reads: getTournamentBySlug,
-// getTournamentPhases — those are tournament-context reads, not community reads,
-// and are migrated in a later wave).
-const mockChannel = {
-  on: jest.fn().mockReturnThis(),
-  subscribe: jest.fn((callback) => {
-    if (typeof callback === "function") {
-      callback("SUBSCRIBED", null);
-    }
-    return mockChannel;
-  }),
-  unsubscribe: jest.fn(),
-};
-
-const mockSupabase = {
-  channel: jest.fn(() => mockChannel),
-};
-
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(),
-  useSupabase: jest.fn(() => mockSupabase),
+// getTournamentBySlug + getTournamentPhases — called inside useQuery queryFns
+const mockGetTournamentBySlug = jest.fn();
+const mockGetTournamentPhases = jest.fn();
+jest.mock("@trainers/supabase", () => ({
+  getTournamentBySlug: (...args: unknown[]) =>
+    mockGetTournamentBySlug(...args),
+  getTournamentPhases: (...args: unknown[]) =>
+    mockGetTournamentPhases(...args),
 }));
 
-// Mock useApiQuery (used for community read via /api/v1/communities/[slug])
+// createClient — called inside queryFn closures; mock it away
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({}),
+  supabase: {},
+}));
+
+// useApiQuery — used for community read via /api/v1/communities/[slug]
 const mockUseApiQuery = jest.fn();
 jest.mock("@trainers/supabase/react-query", () => ({
   useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
 }));
 
-// Mock current user hook (API-backed; hook itself is tested separately)
+// useCurrentUser — API-backed; hook itself is tested separately
 jest.mock("@/hooks/use-current-user", () => ({
   useCurrentUser: jest.fn(),
 }));
 
-// Mock child components
+// Child components
 jest.mock("@/components/tournaments", () => ({
   TournamentOverview: () => <div data-testid="overview-tab">Overview</div>,
-  TournamentRegistrations: () => <div data-testid="players-tab">Players</div>,
+  TournamentRegistrations: () => (
+    <div data-testid="players-tab">Players</div>
+  ),
   TournamentStandings: () => (
     <div data-testid="standings-content">Standings</div>
   ),
-  TournamentAuditLog: () => <div data-testid="audit-content">Audit Log</div>,
-}));
-
-// Mock TournamentPairingsJudge separately (imported from different path)
-jest.mock("@/components/tournaments/manage/tournament-pairings-judge", () => ({
-  TournamentPairingsJudge: () => (
-    <div data-testid="pairings-content">Pairings</div>
+  TournamentAuditLog: () => (
+    <div data-testid="audit-content">Audit Log</div>
   ),
 }));
 
-// Mock server actions (next/cache not available in Jest)
+jest.mock(
+  "@/components/tournaments/manage/tournament-pairings-judge",
+  () => ({
+    TournamentPairingsJudge: () => (
+      <div data-testid="pairings-content">Pairings</div>
+    ),
+  })
+);
+
+// Server actions (next/cache not available in Jest)
 jest.mock("@/actions/tournaments", () => ({
   publishTournament: jest
     .fn()
     .mockResolvedValue({ success: true, data: { success: true } }),
 }));
 
-// Mock Sheet components (Base UI Dialog-based)
+// Sheet components
 jest.mock("@/components/ui/sheet", () => ({
   Sheet: ({
     children,
@@ -98,91 +98,92 @@ jest.mock("@/components/ui/sheet", () => ({
   ),
 }));
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
+
+const mockOrganization = {
+  id: "org-1",
+  name: "Test Org",
+  slug: "test-org",
+  owner_user_id: "user-1",
+};
+
+const mockTournament = {
+  id: 1,
+  name: "Test Tournament",
+  slug: "test-tournament",
+  status: "draft",
+  current_phase_id: null,
+  registrations: [
+    { status: "registered" },
+    { status: "checked_in" },
+    { status: "dropped" },
+  ],
+  max_participants: null,
+  start_date: null,
+  end_date: null,
+  tournament_format: "swiss_with_cut",
+  format: "VGC 2025",
+  current_round: null,
+  round_time_minutes: 50,
+  swiss_rounds: null,
+  top_cut_size: null,
+  rental_team_photos_enabled: false,
+  rental_team_photos_required: false,
+  description: null,
+  registration_type: "open",
+  check_in_required: false,
+  allow_late_registration: false,
+  late_check_in_max_round: null,
+};
+
+const mockPhases: Array<{ id: number; name: string; tournament_id: bigint }> =
+  [];
+
+const mockUser = { id: "user-1", email: "test@example.com" };
+
+/**
+ * Set up mocks for a successful render:
+ * - useApiQuery returns the community (for /api/v1/communities/[slug] fetch)
+ * - mockGetTournamentBySlug + mockGetTournamentPhases return tournament data
+ *   (used inside useQuery queryFns — migrated off useSupabaseQuery)
+ */
+function setupQueryMocks() {
+  // Community read — useApiQuery (migrated off useSupabaseQuery in T3p)
+  mockUseApiQuery.mockReturnValue({
+    data: mockOrganization,
+    isLoading: false,
+    isError: false,
+    error: null,
+  });
+
+  // Tournament reads — useQuery with @trainers/supabase fns (tournament-context)
+  mockGetTournamentBySlug.mockResolvedValue(mockTournament);
+  mockGetTournamentPhases.mockResolvedValue(mockPhases);
+}
+
+// ── Tests ──────────────────────────────────────────────────────────────────
+
 describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
   const mockRouter = {
     push: jest.fn(),
     replace: jest.fn(),
-  };
-
-  const mockOrganization = {
-    id: "org-1",
-    name: "Test Org",
-    slug: "test-org",
-    owner_user_id: "user-1",
-  };
-
-  const mockTournament = {
-    id: BigInt(1),
-    name: "Test Tournament",
-    slug: "test-tournament",
-    status: "draft",
-    current_phase_id: null,
-    registrations: [
-      { status: "registered" },
-      { status: "checked_in" },
-      { status: "dropped" },
-    ],
-    max_participants: null,
-    start_date: null,
-    end_date: null,
-    tournament_format: "swiss_with_cut",
-    format: "VGC 2025",
-    current_round: null,
-    round_time_minutes: 50,
-    swiss_rounds: null,
-    top_cut_size: null,
-    rental_team_photos_enabled: false,
-    rental_team_photos_required: false,
-    description: null,
-    registration_type: "open",
-    check_in_required: false,
-    allow_late_registration: false,
-    late_check_in_max_round: null,
-  };
-
-  const mockUser = {
-    id: "user-1",
-    email: "test@example.com",
-  };
-
-  const mockPhases: Array<{
-    id: number;
-    name: string;
-    tournament_id: bigint;
-  }> = [];
-
-  /**
-   * Set up mocks for a successful render:
-   * - useApiQuery returns the community (for /api/v1/communities/[slug] fetch)
-   * - useSupabaseQuery returns tournament then phases (still on S-bucket reads)
-   */
-  const setupQueryMocks = () => {
-    // Community read — useApiQuery (migrated off useSupabaseQuery in T3p)
-    mockUseApiQuery.mockReturnValue({
-      data: mockOrganization,
-      isLoading: false,
-      isError: false,
-      error: null,
-    });
-
-    // Tournament reads — useSupabaseQuery (tournament-context; migrated later)
-    const mockResponses = [mockTournament, mockPhases];
-    let callIndex = 0;
-    (useSupabaseQuery as jest.Mock).mockImplementation(() => {
-      const response = mockResponses[callIndex % mockResponses.length];
-      callIndex++;
-      return {
-        data: response,
-        isLoading: false,
-      };
-    });
+    refresh: jest.fn(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    // Re-setup persistent mocks after clearAllMocks
-    (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
 
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams());
@@ -200,7 +201,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -219,7 +221,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -237,7 +240,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -269,20 +273,18 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         (useSearchParams as jest.Mock).mockReturnValue(
           new URLSearchParams(`tab=${param}`)
         );
-
         (useCurrentUser as jest.Mock).mockReturnValue({
           user: mockUser,
           isLoading: false,
         });
-
-        (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
         setupQueryMocks();
 
         const { unmount } = render(
           <TournamentManageClient
             communitySlug="test-org"
             tournamentSlug="test-tournament"
-          />
+          />,
+          { wrapper: createWrapper() }
         );
 
         await waitFor(() => {
@@ -304,7 +306,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -321,7 +324,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -345,7 +349,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -378,7 +383,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -396,7 +402,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -418,7 +425,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -438,18 +446,14 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         user: mockUser,
         isLoading: false,
       });
-
-      // Re-setup useSupabase mock after clearAllMocks
-      (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
-
-      // Setup query mocks again for rerender
       setupQueryMocks();
 
       render(
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -471,7 +475,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       // Players tab should be immediately visible
@@ -482,7 +487,7 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
   });
 
   describe("auth state", () => {
-    it("renders empty DOM and does not push to /sign-in when currentUser is null", () => {
+    it("renders empty DOM and does not push to /sign-in when currentUser is null", async () => {
       // Auth is enforced server-side by the (dashboard) layout. The client
       // used to push("/sign-in") here, which raced with the loading state
       // and bounced authenticated users to /dashboard via proxy.ts.
@@ -496,14 +501,19 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
-      expect(container).toBeEmptyDOMElement();
+      // Wait for the tournament data to load — the component returns null only
+      // after all loading states resolve and currentUser is null.
+      await waitFor(() => {
+        expect(container).toBeEmptyDOMElement();
+      });
       expect(mockRouter.push).not.toHaveBeenCalled();
     });
 
-    it("renders an error card when useCurrentUser surfaces an error", () => {
+    it("renders an error card when useCurrentUser surfaces an error", async () => {
       (useCurrentUser as jest.Mock).mockReturnValue({
         user: undefined,
         isLoading: false,
@@ -515,13 +525,18 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
+      await waitFor(() => {
+        expect(
+          screen.getByText(/couldn['']t load your account/i)
+        ).toBeInTheDocument();
+      });
       expect(
-        screen.getByText(/couldn['']t load your account/i)
+        screen.getByRole("button", { name: /retry/i })
       ).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
     });
   });
 
@@ -533,7 +548,8 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       // useApiQuery should have been called for the community
@@ -542,12 +558,16 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
           Array.isArray(queryKey) && queryKey[0] === "community"
       );
       expect(call).toBeDefined();
-      const [queryKey, , options] = call as [string[], unknown, { staleTime: number }];
+      const [queryKey, , options] = call as [
+        string[],
+        unknown,
+        { staleTime: number },
+      ];
       expect(queryKey).toEqual(["community", "test-org"]);
       expect(options).toMatchObject({ staleTime: 30_000 });
     });
 
-    it("renders org-error card when useApiQuery isError is true", () => {
+    it("renders org-error card when useApiQuery isError is true", async () => {
       // Community fetch error
       mockUseApiQuery.mockReturnValue({
         data: undefined,
@@ -556,47 +576,51 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         error: new Error("HTTP 503"),
       });
       // Tournament reads still work
-      (useSupabaseQuery as jest.Mock).mockReturnValue({
-        data: mockTournament,
-        isLoading: false,
-      });
+      mockGetTournamentBySlug.mockResolvedValue(mockTournament);
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
 
       render(
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
+      await waitFor(() => {
+        expect(
+          screen.getByText(/couldn['']t load community/i)
+        ).toBeInTheDocument();
+      });
       expect(
-        screen.getByText(/couldn['']t load community/i)
+        screen.getByRole("button", { name: /retry/i })
       ).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
     });
 
-    it("renders 'Organization not found' card when useApiQuery data is null", () => {
+    it("renders 'Organization not found' card when useApiQuery data is null", async () => {
       mockUseApiQuery.mockReturnValue({
         data: null,
         isLoading: false,
         isError: false,
         error: null,
       });
-      (useSupabaseQuery as jest.Mock).mockReturnValue({
-        data: mockTournament,
-        isLoading: false,
-      });
+      mockGetTournamentBySlug.mockResolvedValue(mockTournament);
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
 
       render(
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
-      expect(screen.getByText(/organization not found/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/organization not found/i)).toBeInTheDocument();
+      });
     });
 
-    it("shows Access Denied when user is not the org owner", () => {
+    it("shows Access Denied when user is not the org owner", async () => {
       mockUseApiQuery.mockReturnValue({
         data: { ...mockOrganization, owner_user_id: "someone-else" },
         isLoading: false,
@@ -607,20 +631,20 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
         user: { id: "user-1" },
         isLoading: false,
       });
-      let callCount = 0;
-      (useSupabaseQuery as jest.Mock).mockImplementation(() => {
-        callCount++;
-        return { data: callCount === 1 ? mockTournament : mockPhases, isLoading: false };
-      });
+      mockGetTournamentBySlug.mockResolvedValue(mockTournament);
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
 
       render(
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
-      expect(screen.getByText(/access denied/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/access denied/i)).toBeInTheDocument();
+      });
     });
   });
 
@@ -644,14 +668,14 @@ describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
           user: mockUser,
           isLoading: false,
         });
-        (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
         setupQueryMocks();
 
         const { unmount } = render(
           <TournamentManageClient
             communitySlug="test-org"
             tournamentSlug="test-tournament"
-          />
+          />,
+          { wrapper: createWrapper() }
         );
 
         await waitFor(() => {
