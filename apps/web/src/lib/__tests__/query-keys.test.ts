@@ -6,19 +6,17 @@ describe("queryKeys", () => {
       expect(queryKeys.admin.all).toEqual(["admin"]);
     });
 
-    it("returns user detail key with userId", () => {
-      expect(queryKeys.admin.userDetail("user-123")).toEqual([
-        "admin-user-detail",
-        "user-123",
-      ]);
-    });
-
-    it("returns user detail key with null userId", () => {
-      expect(queryKeys.admin.userDetail(null)).toEqual([
-        "admin-user-detail",
-        null,
-      ]);
-    });
+    it.each([
+      ["user-123", ["admin-user-detail", "user-123"]],
+      [null, ["admin-user-detail", null]],
+    ])(
+      "returns user detail key for userId=%s",
+      (userId, expected) => {
+        expect(queryKeys.admin.userDetail(userId as string | null)).toEqual(
+          expected
+        );
+      }
+    );
   });
 
   describe("sudo", () => {
@@ -68,35 +66,24 @@ describe("queryKeys", () => {
     });
 
     it("handles undefined/null parameters", () => {
-      expect(queryKeys.match.postMatchSummary(undefined, undefined, null)).toEqual([
-        "post-match-summary",
-        undefined,
-        undefined,
-        null,
-      ]);
+      expect(
+        queryKeys.match.postMatchSummary(undefined, undefined, null)
+      ).toEqual(["post-match-summary", undefined, undefined, null]);
     });
 
-    it("returns messages key scoped to matchId", () => {
-      expect(queryKeys.match.messages(42)).toEqual(["match-messages", 42]);
-    });
-
-    it("returns messages key with undefined matchId", () => {
-      expect(queryKeys.match.messages(undefined)).toEqual([
-        "match-messages",
-        undefined,
-      ]);
-    });
-
-    it("returns games key scoped to matchId", () => {
-      expect(queryKeys.match.games(99)).toEqual(["match-games", 99]);
-    });
-
-    it("returns games key with undefined matchId", () => {
-      expect(queryKeys.match.games(undefined)).toEqual([
-        "match-games",
-        undefined,
-      ]);
-    });
+    it.each([
+      ["messages", 42, ["match-messages", 42]],
+      ["messages", undefined, ["match-messages", undefined]],
+      ["games", 99, ["match-games", 99]],
+      ["games", undefined, ["match-games", undefined]],
+    ] as const)(
+      "returns %s key for matchId=%s",
+      (kind, matchId, expected) => {
+        expect(queryKeys.match[kind](matchId as number | undefined)).toEqual(
+          expected
+        );
+      }
+    );
 
     it("messages and games keys for the same matchId are distinct", () => {
       const msgs = queryKeys.match.messages(5);
@@ -106,19 +93,17 @@ describe("queryKeys", () => {
   });
 
   describe("notifications", () => {
-    it("returns all notifications key scoped to userId", () => {
-      expect(queryKeys.notifications.all("user-abc")).toEqual([
-        "notifications",
-        "user-abc",
-      ]);
-    });
-
-    it("returns all notifications key with undefined userId", () => {
-      expect(queryKeys.notifications.all(undefined)).toEqual([
-        "notifications",
-        undefined,
-      ]);
-    });
+    it.each([
+      ["user-abc", ["notifications", "user-abc"]],
+      [undefined, ["notifications", undefined]],
+    ] as const)(
+      "returns all notifications key for userId=%s",
+      (userId, expected) => {
+        expect(
+          queryKeys.notifications.all(userId as string | undefined)
+        ).toEqual(expected);
+      }
+    );
 
     it("returns recent notifications key as a narrowing of all", () => {
       expect(queryKeys.notifications.recent("user-abc")).toEqual([
@@ -152,23 +137,17 @@ describe("queryKeys", () => {
       expect(queryKeys.me.invitations()).toEqual(["me", "invitations"]);
     });
 
-    it("returns invitationsSent key scoped to tournamentId", () => {
-      expect(queryKeys.me.invitationsSent(7)).toEqual([
-        "me",
-        "invitations",
-        "sent",
-        7,
-      ]);
-    });
-
-    it("returns invitationsSent key with undefined tournamentId", () => {
-      expect(queryKeys.me.invitationsSent(undefined)).toEqual([
-        "me",
-        "invitations",
-        "sent",
-        undefined,
-      ]);
-    });
+    it.each([
+      [7, ["me", "invitations", "sent", 7]],
+      [undefined, ["me", "invitations", "sent", undefined]],
+    ] as const)(
+      "returns invitationsSent key for tournamentId=%s",
+      (tournamentId, expected) => {
+        expect(
+          queryKeys.me.invitationsSent(tournamentId as number | undefined)
+        ).toEqual(expected);
+      }
+    );
 
     it("invitationsSent key is narrower than invitations key", () => {
       const inv = queryKeys.me.invitations();
@@ -183,74 +162,78 @@ describe("queryKeys", () => {
       ]);
     });
 
-    it("returns dashboard key scoped to profileId", () => {
-      expect(queryKeys.me.dashboard(3)).toEqual(["me", "dashboard", 3]);
-    });
-
-    it("returns dashboard key with undefined profileId", () => {
-      expect(queryKeys.me.dashboard(undefined)).toEqual([
-        "me",
-        "dashboard",
-        undefined,
-      ]);
-    });
-
-    it("returns activeMatch key scoped to profileId", () => {
-      expect(queryKeys.me.activeMatch(3)).toEqual(["me", "active-match", 3]);
-    });
-
-    it("returns activeMatch key with undefined profileId", () => {
-      expect(queryKeys.me.activeMatch(undefined)).toEqual([
-        "me",
-        "active-match",
-        undefined,
-      ]);
-    });
+    it.each([
+      ["dashboard", 3, ["me", "dashboard", 3]],
+      ["dashboard", undefined, ["me", "dashboard", undefined]],
+      ["activeMatch", 3, ["me", "active-match", 3]],
+      ["activeMatch", undefined, ["me", "active-match", undefined]],
+    ] as const)(
+      "returns %s key for profileId=%s",
+      (method, profileId, expected) => {
+        expect(
+          queryKeys.me[method](profileId as number | undefined)
+        ).toEqual(expected);
+      }
+    );
 
     it("dashboard and activeMatch keys for the same profileId are distinct", () => {
-      expect(queryKeys.me.dashboard(1)).not.toEqual(queryKeys.me.activeMatch(1));
+      expect(queryKeys.me.dashboard(1)).not.toEqual(
+        queryKeys.me.activeMatch(1)
+      );
     });
   });
 
   describe("user", () => {
+    const userId = "user-xyz";
+
     it("returns broadest user key scoped to userId", () => {
-      expect(queryKeys.user.all("user-xyz")).toEqual(["user", "user-xyz"]);
+      expect(queryKeys.user.all(userId)).toEqual(["user", userId]);
     });
 
-    it("returns blueskyStatus key scoped to userId", () => {
-      expect(queryKeys.user.blueskyStatus("user-xyz")).toEqual([
-        "bluesky-status",
-        "user-xyz",
-      ]);
-    });
+    // blueskyStatus — nests under ["user", userId, ...]
+    it.each([
+      [userId, ["user", userId, "bluesky-status"]],
+      [null, ["user", null, "bluesky-status"]],
+      [undefined, ["user", undefined, "bluesky-status"]],
+    ] as const)(
+      "returns blueskyStatus key for userId=%s",
+      (id, expected) => {
+        expect(
+          queryKeys.user.blueskyStatus(id as string | null | undefined)
+        ).toEqual(expected);
+      }
+    );
 
-    it("returns blueskyStatus key with null userId", () => {
-      expect(queryKeys.user.blueskyStatus(null)).toEqual([
-        "bluesky-status",
-        null,
-      ]);
-    });
+    // discordDmPreferencesCount — nests under ["user", userId, ...]
+    it.each([
+      [userId, ["user", userId, "discord-dm-preferences-count"]],
+      [null, ["user", null, "discord-dm-preferences-count"]],
+      [undefined, ["user", undefined, "discord-dm-preferences-count"]],
+    ] as const)(
+      "returns discordDmPreferencesCount key for userId=%s",
+      (id, expected) => {
+        expect(
+          queryKeys.user.discordDmPreferencesCount(
+            id as string | null | undefined
+          )
+        ).toEqual(expected);
+      }
+    );
 
-    it("returns blueskyStatus key with undefined userId", () => {
-      expect(queryKeys.user.blueskyStatus(undefined)).toEqual([
-        "bluesky-status",
-        undefined,
-      ]);
-    });
-
-    it("returns discordDmPreferencesCount key scoped to userId", () => {
-      expect(queryKeys.user.discordDmPreferencesCount("user-xyz")).toEqual([
-        "discord-dm-preferences-count",
-        "user-xyz",
-      ]);
-    });
-
-    it("returns discordDmPreferencesCount key with null userId", () => {
-      expect(queryKeys.user.discordDmPreferencesCount(null)).toEqual([
-        "discord-dm-preferences-count",
-        null,
-      ]);
-    });
+    // Hierarchy lock: both sub-keys must start with ["user", userId]
+    it.each([
+      ["blueskyStatus", queryKeys.user.blueskyStatus(userId)],
+      [
+        "discordDmPreferencesCount",
+        queryKeys.user.discordDmPreferencesCount(userId),
+      ],
+    ] as const)(
+      "%s key starts with user.all() prefix",
+      (_label, key) => {
+        const all = queryKeys.user.all(userId);
+        expect(key.slice(0, all.length)).toEqual([...all]);
+      }
+    );
 
     it("blueskyStatus and discordDmPreferencesCount keys for the same userId are distinct", () => {
       expect(queryKeys.user.blueskyStatus("u1")).not.toEqual(

@@ -109,13 +109,13 @@ export const queryKeys = {
      * Sourced from `atproto_sessions`; fetched in `linked-identities-section`.
      */
     blueskyStatus: (userId: string | null | undefined) =>
-      ["bluesky-status", userId] as const,
+      ["user", userId, "bluesky-status"] as const,
     /**
      * Count of enabled Discord DM event preferences for the user.
      * Sourced from `discord_dm_preferences`; fetched in
      * `linked-identities-section` to show the badge count.
      */
     discordDmPreferencesCount: (userId: string | null | undefined) =>
-      ["discord-dm-preferences-count", userId] as const,
+      ["user", userId, "discord-dm-preferences-count"] as const,
   },
 } as const;
