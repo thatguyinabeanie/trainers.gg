@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { createStaticClient } from "@/lib/supabase/server";
+// Service-role client: reads alts/player_ratings/coach_profiles (revoke-set tables).
+// Anon SELECT on these tables is revoked in the Phase 2 Step-4 migration;
+// service-role bypasses that grant so public-facing player search still works.
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { searchPlayers, attachCoachBadges } from "@trainers/supabase/queries";
 import { playerSearchParamsSchema } from "@trainers/validators";
 
@@ -40,7 +43,7 @@ export async function GET(request: Request) {
   const { q, country, format, sort, page } = parsed.data;
 
   try {
-    const supabase = createStaticClient();
+    const supabase = createServiceRoleClient();
     const result = await searchPlayers(
       supabase,
       { query: q, country, format, sort },

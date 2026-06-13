@@ -5,8 +5,10 @@
 import { GET } from "../route";
 
 // Mock dependencies
+// createServiceRoleClient is used (Phase 2 Step-4: anon SELECT on revoke-set
+// tables is revoked; service-role bypasses that grant).
 jest.mock("@/lib/supabase/server", () => ({
-  createStaticClient: jest.fn(() => ({})),
+  createServiceRoleClient: jest.fn(() => ({})),
 }));
 
 const mockSearchPlayers = jest.fn();
