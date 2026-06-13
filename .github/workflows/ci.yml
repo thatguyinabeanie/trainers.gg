@@ -212,7 +212,7 @@ jobs:
           name: junit-web-${{ matrix.shard }}
           path: "**/test-results/**/*.xml"
           retention-days: 1
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7
