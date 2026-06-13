@@ -98,8 +98,8 @@ describe("upsertMatchInPairings", () => {
     const data = makeData([[makeMatch(5)]]);
     const next = upsertMatchInPairings(data, {
       id: 5,
-      // A malformed payload should not be able to change the match identity.
-      ...({ id: 5 } as Record<string, unknown>),
+      // A malformed payload should not be able to change the match identity to 999.
+      ...({ id: 999 } as Record<string, unknown>),
     })!;
     expect(next.allPhaseRounds[0]![0]!.matches[0]!.id).toBe(5);
   });
