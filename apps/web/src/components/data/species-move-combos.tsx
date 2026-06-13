@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { type MoveComboRow } from "@trainers/supabase";
+import { type MoveComboRow, type SpeciesUsagePeriod } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 import { DataChartCard } from "./data-chart-card";
 import { MoveChip } from "./move-chip";
+import { BuildThisButton } from "./build-this-button";
 
 // =============================================================================
 // Constants
@@ -92,6 +93,14 @@ function deriveCoreAndFlex(shownCombos: MoveComboRow[]): {
 interface SpeciesMoveCombosProps {
   /** Ranked true 4-move combos from get_species_move_combos. */
   combos: MoveComboRow[];
+  /** Species slug — forwarded to `BuildThisButton`. */
+  species: string;
+  /**
+   * Latest period detail — forwarded to `BuildThisButton` so it can
+   * build a set using the top combo's moves combined with the modal
+   * item/ability/tera from the fingerprint data.
+   */
+  latestDetail: SpeciesUsagePeriod | null;
 }
 
 /**
@@ -109,7 +118,11 @@ interface SpeciesMoveCombosProps {
  * - Shows top 12 on wide viewports, top 8 on narrow.
  * - "+N more" line when there are additional combos beyond the cap.
  */
-export function SpeciesMoveCombos({ combos }: SpeciesMoveCombosProps) {
+export function SpeciesMoveCombos({
+  combos,
+  species,
+  latestDetail,
+}: SpeciesMoveCombosProps) {
   // Toggle between narrow (8) and wide (12) — controlled by Tailwind grid
   // breakpoints. We use a single state that tracks whether the user has
   // explicitly expanded to show more on narrow viewports.
@@ -150,6 +163,19 @@ export function SpeciesMoveCombos({ combos }: SpeciesMoveCombosProps) {
   // Max pct for bar width scaling — use the first combo's pct as the anchor.
   const maxPct = combos[0]?.comboPct ?? 100;
 
+  // Build a detail variant using the top combo's 4 specific moves for the
+  // "Build this" button so the user gets a set that matches the top combo,
+  // not just the individually most-used moves (which can differ from the
+  // top joint distribution).
+  const topComboMoves = combos[0]?.moves ?? [];
+  const detailWithTopComboMoves: SpeciesUsagePeriod | null =
+    latestDetail !== null && topComboMoves.length === 4
+      ? {
+          ...latestDetail,
+          moves: topComboMoves.map((m, i) => ({ value: m, count: i, pct: 0 })),
+        }
+      : latestDetail;
+
   return (
     <DataChartCard
       title="Move combos"
@@ -160,6 +186,12 @@ export function SpeciesMoveCombos({ combos }: SpeciesMoveCombosProps) {
             set.
           </>
         ) : undefined
+      }
+      actions={
+        <BuildThisButton
+          species={species}
+          detail={detailWithTopComboMoves}
+        />
       }
     >
       <div className="flex flex-col gap-1 px-4 py-3">

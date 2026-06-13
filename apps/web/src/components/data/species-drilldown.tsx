@@ -389,11 +389,19 @@ export function SpeciesDrilldown({
       ) : (
         <div className="flex flex-col gap-3">
           {/* ── Feature 1: Build Fingerprint ─────────────────────────────── */}
-          <SpeciesFingerprint detail={latestDetail} isChampions={isChampions} />
+          <SpeciesFingerprint
+            detail={latestDetail}
+            isChampions={isChampions}
+            species={species}
+          />
 
           {/* ── Features 2 + 5: Move Combos + Timeline (2-up) ───────────── */}
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <SpeciesMoveCombos combos={combos} />
+            <SpeciesMoveCombos
+              combos={combos}
+              species={species}
+              latestDetail={latestDetail}
+            />
             <SpeciesTimeline
               detail={detail}
               species={species}

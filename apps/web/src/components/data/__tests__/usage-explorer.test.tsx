@@ -52,6 +52,7 @@ jest.mock("@trainers/pokemon", () => ({
   ],
   getFormatById: (id: string) =>
     ["gen9vgc2025regg", "gen9vgc2024regh"].includes(id) ? { id } : undefined,
+  getFormatLabel: (id: string) => `Label:${id}`,
 }));
 
 // =============================================================================
