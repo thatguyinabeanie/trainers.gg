@@ -30,7 +30,10 @@
  *      but the service-role client CAN query the same tables without
  *      grant restrictions. The authenticated grant check is done by
  *      querying `information_schema.role_table_grants` via the admin
- *      client, which has access to that catalog.
+ *      client, which has access to that catalog. If information_schema
+ *      is unavailable, a `check_table_privilege` RPC is tried as a
+ *      fallback. If BOTH are unavailable the helper throws — the test
+ *      fails loudly rather than greening vacuously.
  *
  * Requires: local Supabase running (`pnpm db:start`).
  * Auto-skips if `isSupabaseRunning()` returns false.
@@ -116,8 +119,12 @@ async function checkAnonSelect(
   const code = (error as { code?: string }).code ?? null;
   const message = error.message ?? null;
 
+  // Check the structured error code first (most reliable), then fall back to
+  // message-substring matching for older PostgREST versions that may omit the
+  // code field or surface the error only in the message body.
   const isPermissionDenied =
     code === "42501" ||
+    code === "PGRST301" ||
     (message !== null &&
       (message.toLowerCase().includes("permission denied") ||
         message.toLowerCase().includes("insufficient privilege") ||
@@ -162,6 +169,15 @@ async function checkAuthenticatedGrantExists(
 /**
  * Fallback: use a raw SQL RPC to check the authenticated grant when
  * information_schema is not accessible through PostgREST.
+ *
+ * Requires the `check_table_privilege` RPC to exist in the database.
+ * If the RPC is missing (data === null / undefined) OR the information_schema
+ * path already failed, both check mechanisms are unavailable and the helper
+ * throws — causing the test to fail loudly rather than greening vacuously.
+ *
+ * A vacuous true here would defeat the entire purpose of Assertion 4: the
+ * revoke migration must NOT touch authenticated, and we need REAL evidence of
+ * that, not a soft "couldn't check, assume fine".
  */
 async function checkAuthenticatedGrantViaRpc(
   tableName: string
@@ -169,22 +185,26 @@ async function checkAuthenticatedGrantViaRpc(
   const adminClient = createAdminSupabaseClient();
 
   // has_table_privilege is a built-in PostgreSQL function. We call it via
-  // a custom RPC wrapper if one exists; otherwise we accept the uncertainty
-  // and return true (conservative — avoids false negatives on the "keep
-  // authenticated" assertion when the check mechanism itself is unavailable).
-  //
-  // If the project has no `check_table_privilege` RPC, this returns true
-  // (the test will pass the "authenticated kept" assertion rather than
-  // failing spuriously). The revoke migration does NOT touch authenticated,
-  // so this is safe.
-  const { data } = await adminClient.rpc(
+  // a custom `check_table_privilege` RPC wrapper. If the wrapper does not
+  // exist, this returns null/undefined — see the guard below.
+  const { data, error } = await adminClient.rpc(
     "check_table_privilege" as Parameters<typeof adminClient.rpc>[0],
     { p_role: "authenticated", p_table: tableName, p_privilege: "SELECT" }
   );
 
-  // If the RPC does not exist, data is null and we conservatively return true.
+  // If the RPC does not exist or returned an error, BOTH verification paths
+  // are unavailable (information_schema failed upstream, RPC missing here).
+  // Throw so the test surfaces a clear failure rather than a false green.
   if (data === null || data === undefined) {
-    return true;
+    const rpcError = error
+      ? `: ${(error as { message?: string }).message ?? String(error)}`
+      : " (RPC returned null — function may not exist)";
+    throw new Error(
+      `Cannot verify authenticated grant for public.${tableName} — ` +
+        `check_table_privilege RPC unavailable${rpcError}. ` +
+        `Add the RPC or ensure information_schema.role_table_grants is ` +
+        `accessible via the service-role client.`
+    );
   }
 
   return Boolean(data);
