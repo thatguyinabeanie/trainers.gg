@@ -38,6 +38,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `reviewing-database`             | RLS, migrations, indexes, N+1, unbounded fetches, query perf                 |
 | `reviewing-caching`              | Next.js `'use cache'` (Cache Components), TanStack Query, cache invalidation |
 | `reviewing-pr-feedback`          | Fetch/group/resolve PR comments with user, no deferrals, re-review loop      |
+| `deciding-data-access`           | Deciding where a read/route should live — SSR vs /api/v1 vs direct; anon vs authed; caching + rate-limit requirements |
 | `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure    |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
@@ -275,6 +276,10 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 ### Scope Discipline
 
 **Only modify files explicitly in scope for the current task.** Do NOT run `pnpm format`, `pnpm lint --fix`, or other repo-wide formatters unless explicitly asked. When dispatching subagents, pass an explicit file allowlist and forbid edits outside it. If unrelated changes sneak in, revert them before committing.
+
+### Data Access
+
+**No anon browser DB access** — all reads go through SSR or an auth-gated/cached `/api/v1` route; direct DB access requires `authenticated` role + RLS. See `deciding-data-access` skill.
 
 ### Destructive Actions
 
