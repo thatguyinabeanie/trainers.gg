@@ -30,11 +30,9 @@ import {
 import { getCachedMatchDetails } from "@/lib/data/match-details-endpoint";
 
 /**
- * Cache-Control for tag-invalidated public data. Long shared-CDN TTL + SWR;
- * on-demand tag bust (on result report) is the real refresh trigger.
+ * Cache-Control for routes with private/PII columns pending allowlist fix.
  */
-const CACHE_CONTROL =
-  "public, s-maxage=31536000, stale-while-revalidate=86400";
+const CACHE_CONTROL = "private, no-store";
 
 export async function GET(
   request: NextRequest,
