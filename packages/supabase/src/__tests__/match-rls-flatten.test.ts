@@ -327,7 +327,15 @@ async function seedScenario(): Promise<Scenario> {
     // Migration-specific — RED pre-apply (columns absent), GREEN post-apply.
     // -----------------------------------------------------------------------
     describe("denormalized columns (red pre-migration, green post)", () => {
-      const admin = createAdminSupabaseClient();
+      // Lazily created in beforeAll — NOT at describe-body level. A top-level
+      // call runs during Jest collection even when this describe is skipped
+      // (no DB in the packages unit-test job), throwing "Missing Supabase admin
+      // env". beforeAll hooks don't run for skipped describes, so this stays
+      // safe in the no-DB CI path.
+      let admin: ReturnType<typeof createAdminSupabaseClient>;
+      beforeAll(() => {
+        admin = createAdminSupabaseClient();
+      });
 
       it.each(NEW_COLUMNS)(
         "match_games exposes column %s",
