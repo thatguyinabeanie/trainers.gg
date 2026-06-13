@@ -7,6 +7,7 @@
 import type React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MatchReportDialog } from "../match-report-dialog";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -15,21 +16,22 @@ jest.mock("sonner", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));
 
-const mockMutateAsync = jest.fn();
-let mockMatchDetails: unknown = null;
+const mockReportMatchResult = jest.fn();
 
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseMutation: jest.fn(() => ({ mutateAsync: mockMutateAsync })),
+jest.mock("@trainers/supabase", () => ({
+  reportMatchResult: (...args: unknown[]) => mockReportMatchResult(...args),
 }));
+
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({}),
+}));
+
+let mockMatchDetails: unknown = null;
 
 // The dialog reads match details from the auth-gated API via useApiQuery
 // (Phase 2 Task 9 T3o) — no more direct anon getMatchDetails read.
 jest.mock("@trainers/supabase/react-query", () => ({
   useApiQuery: jest.fn(() => ({ data: mockMatchDetails })),
-}));
-
-jest.mock("@trainers/supabase", () => ({
-  reportMatchResult: jest.fn(),
 }));
 
 jest.mock("@/components/ui/dialog", () => ({
@@ -137,6 +139,18 @@ jest.mock("@/components/ui/radio-group", () => ({
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
+
 function buildMatchDetails(overrides: Record<string, unknown> = {}) {
   return {
     match: {
@@ -172,7 +186,7 @@ const defaultProps = {
 };
 
 function renderDialog(props = defaultProps) {
-  return render(<MatchReportDialog {...props} />);
+  return render(<MatchReportDialog {...props} />, { wrapper: createWrapper() });
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -181,7 +195,8 @@ describe("MatchReportDialog", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockMatchDetails = null;
-    mockMutateAsync.mockResolvedValue(undefined);
+    // Default: mutation resolves successfully (returns void)
+    mockReportMatchResult.mockResolvedValue(undefined);
   });
 
   describe("closed state", () => {
@@ -420,7 +435,7 @@ describe("MatchReportDialog", () => {
       mockMatchDetails = buildMatchDetails();
     });
 
-    it("calls mutateAsync with correct args on submit", async () => {
+    it("calls reportMatchResult with correct args on submit", async () => {
       const user = userEvent.setup();
       const { toast } = await import("sonner");
 
@@ -428,19 +443,19 @@ describe("MatchReportDialog", () => {
 
       // Default values are player1Score=2, player2Score=0 → player1 wins
       // The form auto-selects winner from scores via useEffect
-      // Submit the form
       const submitButton = screen.getByRole("button", {
         name: /report result/i,
       });
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockMutateAsync).toHaveBeenCalledWith({
-          matchId: 1,
-          winnerId: expect.any(Number),
-          player1Score: 2,
-          player2Score: 0,
-        });
+        expect(mockReportMatchResult).toHaveBeenCalledWith(
+          expect.anything(), // supabase client
+          1, // matchId
+          expect.any(Number), // winnerId
+          2, // player1Score
+          0 // player2Score
+        );
       });
 
       await waitFor(() => {
@@ -484,7 +499,7 @@ describe("MatchReportDialog", () => {
     it("shows toast error when mutation throws", async () => {
       const user = userEvent.setup();
       const { toast } = await import("sonner");
-      mockMutateAsync.mockRejectedValue(new Error("Network failure"));
+      mockReportMatchResult.mockRejectedValue(new Error("Network failure"));
 
       renderDialog();
 
@@ -504,7 +519,7 @@ describe("MatchReportDialog", () => {
     it("shows unknown error message when mutation throws non-Error", async () => {
       const user = userEvent.setup();
       const { toast } = await import("sonner");
-      mockMutateAsync.mockRejectedValue("raw string error");
+      mockReportMatchResult.mockRejectedValue("raw string error");
 
       renderDialog();
 

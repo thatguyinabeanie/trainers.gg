@@ -45,9 +45,11 @@ jest.mock("@trainers/pokemon/sprites", () => ({
 }));
 
 // --- @trainers/supabase (barrel) — getPlayerTournamentHistory used by RecentResults ---
+const mockGetPlayerTournamentHistory = jest.fn();
 jest.mock("@trainers/supabase", () => ({
   getTeamsForAlt: jest.fn(),
-  getPlayerTournamentHistory: jest.fn(),
+  getPlayerTournamentHistory: (...args: unknown[]) =>
+    mockGetPlayerTournamentHistory(...args),
 }));
 
 // --- @trainers/supabase/react-query — useApiQuery used by TeamsSubTable ---
@@ -56,10 +58,10 @@ jest.mock("@trainers/supabase/react-query", () => ({
   useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
 }));
 
-// --- @/lib/supabase — useSupabaseQuery used by RecentResults ---
-const mockUseSupabaseQuery = jest.fn();
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: (...args: unknown[]) => mockUseSupabaseQuery(...args),
+// --- @/lib/supabase/client — createClient used inside queryFn ---
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({}),
+  supabase: {},
 }));
 
 // --- @/lib/utils ---
@@ -79,7 +81,11 @@ jest.mock("@/components/ui/alert", () => ({
   }: {
     children?: React.ReactNode;
     [key: string]: unknown;
-  }) => <div role="alert" {...props}>{children}</div>,
+  }) => (
+    <div role="alert" {...props}>
+      {children}
+    </div>
+  ),
   AlertDescription: ({
     children,
     ...props
@@ -125,6 +131,7 @@ jest.mock("@/components/ui/button", () => ({
 
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { TeamsSubTable } from "../teams-sub-table";
 
@@ -149,6 +156,18 @@ type TournamentResult = {
   startDate: string | null;
   teamPokemon: string[];
 };
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
 
 function getDefaultProps(
   overrides: Partial<React.ComponentProps<typeof TeamsSubTable>> = {}
@@ -186,12 +205,10 @@ function setupQueryMocks(
     error: teamsState.error ?? null,
   });
 
-  // RecentResults still uses useSupabaseQuery (queryKey[0] === "altRecentResults").
-  mockUseSupabaseQuery.mockReturnValue({
-    data: resultsState.data ?? [],
-    isLoading: resultsState.isLoading ?? false,
-    error: resultsState.error ?? null,
-  });
+  // RecentResults now uses useQuery → getPlayerTournamentHistory from @trainers/supabase.
+  mockGetPlayerTournamentHistory.mockResolvedValue(
+    resultsState.data ?? []
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -208,7 +225,10 @@ describe("TeamsSubTable", () => {
 
   describe("useApiQuery integration", () => {
     it("calls useApiQuery with the altTeams key including altId and refreshKey", () => {
-      render(<TeamsSubTable {...getDefaultProps({ altId: 42, refreshKey: 3 })} />);
+      render(
+        <TeamsSubTable {...getDefaultProps({ altId: 42, refreshKey: 3 })} />,
+        { wrapper: createWrapper() }
+      );
       expect(mockUseApiQuery).toHaveBeenCalledWith(
         ["altTeams", 42, 3],
         expect.any(Function),
@@ -218,7 +238,8 @@ describe("TeamsSubTable", () => {
 
     it("increments the query key cache when refreshKey changes", () => {
       const { rerender } = render(
-        <TeamsSubTable {...getDefaultProps({ refreshKey: 0 })} />
+        <TeamsSubTable {...getDefaultProps({ refreshKey: 0 })} />,
+        { wrapper: createWrapper() }
       );
       expect(mockUseApiQuery).toHaveBeenLastCalledWith(
         ["altTeams", 1, 0],
@@ -239,7 +260,9 @@ describe("TeamsSubTable", () => {
 
   it("renders loading spinner when teams are loading", () => {
     setupQueryMocks({ data: null, isLoading: true });
-    render(<TeamsSubTable {...getDefaultProps()} />);
+    render(<TeamsSubTable {...getDefaultProps()} />, {
+      wrapper: createWrapper(),
+    });
     // Should show at least one loader icon
     const loaders = screen.getAllByTestId("icon-loader");
     expect(loaders.length).toBeGreaterThanOrEqual(1);
@@ -253,7 +276,9 @@ describe("TeamsSubTable", () => {
       isError: true,
       error: new Error("Network error"),
     });
-    render(<TeamsSubTable {...getDefaultProps()} />);
+    render(<TeamsSubTable {...getDefaultProps()} />, {
+      wrapper: createWrapper(),
+    });
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByText("Network error")).toBeInTheDocument();
   });
@@ -264,7 +289,9 @@ describe("TeamsSubTable", () => {
       isError: true,
       error: null,
     });
-    render(<TeamsSubTable {...getDefaultProps()} />);
+    render(<TeamsSubTable {...getDefaultProps()} />, {
+      wrapper: createWrapper(),
+    });
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByText("Failed to load teams")).toBeInTheDocument();
   });
@@ -273,17 +300,22 @@ describe("TeamsSubTable", () => {
 
   it("renders 'No teams yet' when there are no teams", () => {
     setupQueryMocks({ data: [], isLoading: false });
-    render(<TeamsSubTable {...getDefaultProps()} />);
+    render(<TeamsSubTable {...getDefaultProps()} />, {
+      wrapper: createWrapper(),
+    });
     expect(screen.getByText("No teams yet")).toBeInTheDocument();
   });
 
-  it("renders 'No results yet' when there are no recent results", () => {
+  it("renders 'No results yet' when there are no recent results", async () => {
     setupQueryMocks(
       { data: [], isLoading: false },
       { data: [], isLoading: false }
     );
-    render(<TeamsSubTable {...getDefaultProps()} />);
-    expect(screen.getByText("No results yet")).toBeInTheDocument();
+    render(<TeamsSubTable {...getDefaultProps()} />, {
+      wrapper: createWrapper(),
+    });
+    // Wait for the async useQuery to resolve the empty results
+    expect(await screen.findByText("No results yet")).toBeInTheDocument();
   });
 
   // -- Teams display --
@@ -308,7 +340,9 @@ describe("TeamsSubTable", () => {
       },
     ];
     setupQueryMocks({ data: teams, isLoading: false });
-    render(<TeamsSubTable {...getDefaultProps()} />);
+    render(<TeamsSubTable {...getDefaultProps()} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByText("Rain Team")).toBeInTheDocument();
     expect(screen.getByText("Sun Team")).toBeInTheDocument();
@@ -331,14 +365,17 @@ describe("TeamsSubTable", () => {
       },
     ];
     setupQueryMocks({ data: teams, isLoading: false });
-    render(<TeamsSubTable {...getDefaultProps({ altUsername: "ash_main" })} />);
+    render(
+      <TeamsSubTable {...getDefaultProps({ altUsername: "ash_main" })} />,
+      { wrapper: createWrapper() }
+    );
     const link = screen.getByText("Trick Room").closest("a");
     expect(link).toHaveAttribute("href", "/dashboard/alts/ash_main/teams/7");
   });
 
   // -- Recent results display --
 
-  it("renders tournament results with placement", () => {
+  it("renders tournament results with placement", async () => {
     const results: TournamentResult[] = [
       {
         id: 10,
@@ -361,9 +398,11 @@ describe("TeamsSubTable", () => {
       { data: [], isLoading: false },
       { data: results, isLoading: false }
     );
-    render(<TeamsSubTable {...getDefaultProps()} />);
+    render(<TeamsSubTable {...getDefaultProps()} />, {
+      wrapper: createWrapper(),
+    });
 
-    expect(screen.getByText("Pallet Open")).toBeInTheDocument();
+    expect(await screen.findByText("Pallet Open")).toBeInTheDocument();
     expect(screen.getByText("Viridian Cup")).toBeInTheDocument();
     // First place shows trophy icon instead of #1 text
     expect(screen.getByTestId("icon-trophy")).toBeInTheDocument();
@@ -372,9 +411,11 @@ describe("TeamsSubTable", () => {
 
   // -- Footer buttons --
 
-  it("renders 'View alt' and 'History' links", () => {
+  it("renders 'View alt' and 'History' links", async () => {
     setupQueryMocks({ data: [], isLoading: false });
-    render(<TeamsSubTable {...getDefaultProps()} />);
+    render(<TeamsSubTable {...getDefaultProps()} />, {
+      wrapper: createWrapper(),
+    });
 
     const viewAltLink = screen.getByText("View alt");
     expect(viewAltLink.closest("a")).toHaveAttribute(
@@ -391,26 +432,35 @@ describe("TeamsSubTable", () => {
 
   it("renders Delete button for non-main alts", () => {
     setupQueryMocks({ data: [], isLoading: false });
-    render(<TeamsSubTable {...getDefaultProps({ isMain: false })} />);
+    render(
+      <TeamsSubTable {...getDefaultProps({ isMain: false })} />,
+      { wrapper: createWrapper() }
+    );
     expect(
       screen.getByRole("button", { name: /Delete/ })
     ).toBeInTheDocument();
   });
 
   it("does not render Delete button for main alt", () => {
-    render(<TeamsSubTable {...getDefaultProps({ isMain: true })} />);
+    render(
+      <TeamsSubTable {...getDefaultProps({ isMain: true })} />,
+      { wrapper: createWrapper() }
+    );
     expect(screen.queryByText("Delete")).not.toBeInTheDocument();
   });
 
   it("calls onDeleteAlt when delete button is clicked", () => {
     const props = getDefaultProps();
-    render(<TeamsSubTable {...props} />);
+    render(<TeamsSubTable {...props} />, { wrapper: createWrapper() });
     fireEvent.click(screen.getByText("Delete"));
     expect(props.onDeleteAlt).toHaveBeenCalled();
   });
 
   it("disables delete button when isDeletePending is true", () => {
-    render(<TeamsSubTable {...getDefaultProps({ isDeletePending: true })} />);
+    render(
+      <TeamsSubTable {...getDefaultProps({ isDeletePending: true })} />,
+      { wrapper: createWrapper() }
+    );
     const deleteBtn = screen.getByText("Delete");
     expect(deleteBtn).toBeDisabled();
   });
@@ -419,7 +469,9 @@ describe("TeamsSubTable", () => {
 
   it("renders Teams and Recent Results section headings", () => {
     setupQueryMocks({ data: [], isLoading: false });
-    render(<TeamsSubTable {...getDefaultProps()} />);
+    render(<TeamsSubTable {...getDefaultProps()} />, {
+      wrapper: createWrapper(),
+    });
     expect(screen.getByText("Teams")).toBeInTheDocument();
     expect(screen.getByText("Recent Results")).toBeInTheDocument();
   });
