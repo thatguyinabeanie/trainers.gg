@@ -15,11 +15,39 @@ export const queryKeys = {
     all: ["admin"] as const,
     userDetail: (userId: string | null | undefined) =>
       ["admin-user-detail", userId] as const,
+    /** Platform-wide audit statistics (total events, by-entity breakdown). */
+    auditStats: (refreshKey: number) =>
+      ["admin", "audit-stats", refreshKey] as const,
+    /** Paginated audit log filtered by action type, entity type, and page. */
+    auditLog: (
+      action: string,
+      entity: string,
+      page: number,
+      refreshKey: number
+    ) => ["admin", "audit-log", action, entity, page, refreshKey] as const,
+    /** Admin user search results for a given search string. */
+    userSearch: (search: string) => ["admin", "user-search", search] as const,
+    /** Discord access record for a community (admin view). */
+    communityDiscordAccess: (communityId: number | null | undefined) =>
+      ["admin", "community-discord-access", communityId] as const,
+    /** Batch user lookup by a pre-joined ID string (deduplication key). */
+    usersByIds: (joinedIds: string) =>
+      ["admin", "users-by-ids", joinedIds] as const,
   },
 
   sudo: {
     all: ["sudo-status"] as const,
     status: () => ["sudo-status"] as const,
+  },
+
+  /**
+   * "community" domain — community-level data fetched client-side.
+   */
+  community: {
+    all: ["community"] as const,
+    /** Discord server/guild data for a community org. */
+    discordServer: (orgId: number | undefined) =>
+      ["community", orgId, "discord-server"] as const,
   },
 
   tournament: {
@@ -30,6 +58,30 @@ export const queryKeys = {
     ) => ["current-match-banner", tournamentId, userId] as const,
     userTeams: (tournamentId: number | undefined, gameFormat?: string | null) =>
       ["user-teams-for-tournament", tournamentId, gameFormat ?? null] as const,
+    /** Tournament lookup by URL slug. */
+    bySlug: (slug: string) => ["tournament", "by-slug", slug] as const,
+    /** Phases belonging to a tournament. */
+    phases: (tournamentId: number | null | undefined) =>
+      ["tournament", "phases", tournamentId] as const,
+    /** Rounds belonging to a phase. */
+    phaseRounds: (phaseId: number | null) =>
+      ["tournament", "phase-rounds", phaseId] as const,
+    /** Paginated audit log for a tournament, filtered by category. */
+    auditLog: (
+      tournamentId: number,
+      category: string,
+      refreshKey: number
+    ) =>
+      ["tournament", "audit-log", tournamentId, category, refreshKey] as const,
+    /** All registrations for a tournament. */
+    registrations: (tournamentId: number) =>
+      ["tournament", "registrations", tournamentId] as const,
+    /** Invitations sent for a tournament (staff view). */
+    invitationsSent: (tournamentId: number) =>
+      ["tournament", "invitations-sent", tournamentId] as const,
+    /** Coach badge data for a set of alt IDs. */
+    coachBadges: (altIds: number[]) =>
+      ["tournament", "coach-badges", altIds] as const,
   },
 
   match: {
@@ -52,6 +104,9 @@ export const queryKeys = {
      * rows are inserted or updated.
      */
     games: (matchId: number | undefined) => ["match-games", matchId] as const,
+    /** Coach badge data for a set of alt IDs (match context). */
+    coachBadges: (altIds: number[]) =>
+      ["match", "coach-badges", altIds] as const,
   },
 
   /**
@@ -65,6 +120,15 @@ export const queryKeys = {
     all: (userId: string | undefined) => ["notifications", userId] as const,
     recent: (userId: string | undefined) =>
       ["notifications", userId, "recent"] as const,
+    /** Paginated notification list filtered by tab and page. */
+    list: (tab: string, page: number, refreshKey: number) =>
+      ["notifications", "list", tab, page, refreshKey] as const,
+    /** Total notification count for a tab. */
+    count: (tab: string, refreshKey: number) =>
+      ["notifications", "count", tab, refreshKey] as const,
+    /** Unread notification count (used for badge display). */
+    unreadCount: (refreshKey: number) =>
+      ["notifications", "unread-count", refreshKey] as const,
   },
 
   /**
@@ -93,6 +157,8 @@ export const queryKeys = {
     /** Active match banner data for a specific alt profile. */
     activeMatch: (profileId: number | undefined) =>
       ["me", "active-match", profileId] as const,
+    /** Pending organization/community membership request for the caller. */
+    organizationRequest: () => ["me", "organization-request"] as const,
   },
 
   /**
@@ -117,5 +183,23 @@ export const queryKeys = {
      */
     discordDmPreferencesCount: (userId: string | null | undefined) =>
       ["user", userId, "discord-dm-preferences-count"] as const,
+    /** Whether the user holds a specific named permission. */
+    permission: (
+      userId: string | null | undefined,
+      permission: string
+    ) => ["user", userId, "permission", permission] as const,
+    /** Full permission set for a user. */
+    permissions: (userId: string | null | undefined) =>
+      ["user", userId, "permissions"] as const,
+  },
+
+  /**
+   * "player" domain — public player/alt profile data fetched client-side.
+   */
+  player: {
+    all: ["player"] as const,
+    /** Recent tournament results for a player alt. */
+    recentResults: (altId: number) =>
+      ["player", altId, "recent-results"] as const,
   },
 } as const;
