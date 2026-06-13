@@ -16,9 +16,27 @@ import * as path from "path";
 const envPath = path.resolve(__dirname, ".env");
 
 if (fs.existsSync(envPath)) {
-  // dotenv is available as a transitive dependency via @supabase/supabase-js
-  // or the monorepo root. Load silently — missing vars are handled by
-  // isSupabaseRunning() inside each test that needs them.
-  const dotenv = require("dotenv") as { config: (opts: { path: string }) => void };
-  dotenv.config({ path: envPath });
+  // Parse the .env file directly rather than depending on `dotenv` — it keeps
+  // this setup self-contained (no extra dependency / lockfile entry) and avoids
+  // the forbidden `require()` import. Existing process.env values win, so an
+  // already-exported var (e.g. CI's workflow env) is never overwritten. Missing
+  // vars are handled by isSupabaseRunning() inside each test that needs them.
+  const contents = fs.readFileSync(envPath, "utf8");
+  for (const rawLine of contents.split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    // Strip a single pair of surrounding quotes, if present.
+    if (
+      value.length >= 2 &&
+      ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'")))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (!(key in process.env)) process.env[key] = value;
+  }
 }
