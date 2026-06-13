@@ -245,16 +245,26 @@ Never pass unvalidated external input directly to database queries — a `NaN` o
 
 ## API Route Cache-Control
 
-**Auth-gated `/api/v1` routes (any route calling `resolveApiAuth` that returns 401 for anon) must use `Cache-Control: private, no-store` — never `public` or `s-maxage`.**
+**Default for auth-gated `/api/v1` routes (any route calling `resolveApiAuth` that returns 401 for anon): `Cache-Control: private, no-store`.**
 
-`public, s-maxage=…` lets a shared CDN store an authenticated 200 and replay it to anonymous callers — even when the data itself is non-sensitive. The auth gate is what matters, not data sensitivity. The server-side `'use cache'` + `cacheTag`/`cacheLife` layer handles caching; the HTTP header is a separate guard.
+**Carve-out — `public, s-maxage=…` is allowed** when ALL of these hold (Architecture decision #2, `docs/decisions/2026-06-11-data-access-and-rls-decisions.md`):
+1. Every column in the response is public — no PII, no per-viewer/scoped fields (e.g. no `drop_notes`, no emails, nothing not already visible on SSR pages), AND
+2. The cache entry is tag-invalidated via `revalidateTag(CacheTags.x, 'max')` on every relevant mutation.
+
+If **any** column is private, PII-bearing, or viewer-scoped → `private, no-store`. No exception.
 
 ```ts
-// ✅ Auth-gated route
+// ✅ Per-user or PII-bearing route — CDN must not cache this
 const CACHE_CONTROL = "private, no-store";
+// e.g. /api/v1/me/profile — me-scoped data, emails
 
-// ❌ Auth-gated route — allows CDN to cache and serve to anon callers
+// ✅ Auth-gated S-bucket route, all-public-column data, tag-invalidated
+// e.g. /api/v1/tournaments/[id]/standings — rank, wins, losses, resistance_pct
 const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400";
+
+// ❌ Applying public CDN caching to a route with private/PII fields
+// e.g. a standings route that also returns drop_notes or email
+const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400"; // wrong — use private, no-store
 ```
 
 **Also: never read PII (e.g., `users(email)`) inside a shared `'use cache'` scope.** Move such reads outside the cache boundary, use a request-scoped client (`createClient()`), and gate the route with authorization + `private, no-store`.

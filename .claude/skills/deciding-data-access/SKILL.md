@@ -28,7 +28,11 @@ What are you fetching?
         │
         ├── Auth-gated (data is per-user or restricted)
         │   └── resolveApiAuth → 401 for anon
-        │       Cache-Control: private, no-store
+        │       Cache-Control: private, no-store   ← default
+        │         EXCEPTION (decision #2): public, s-maxage=… IS allowed when
+        │         (a) every response column is public (no PII / scoped fields) AND
+        │         (b) tag-invalidated via revalidateTag(CacheTags.x, 'max')
+        │         See reviewing-caching skill for the full carve-out rules.
         │       Rate-limit: key by userId
         │
         └── Anon-reachable (data is genuinely public, same for all)
@@ -48,8 +52,9 @@ What are you fetching?
                           does NOT authenticate the HTTP request)
                         · enforceRateLimit (service-role bypasses DB throttling)
                         · Cache-Control: public, s-maxage=… only when the route
-                          is genuinely public + cacheable; auth-gated routes
-                          use private, no-store even with service-role reads
+                          is genuinely public + cacheable AND all-public-column
+                          + tag-invalidated (see carve-out in reviewing-caching);
+                          routes with any private/PII/scoped field: private, no-store
 ```
 
 **Direct DB access (no route):** authenticated role + RLS only. Never `anon` role. Use only when a Server Component or Server Action has a clear auth context. Mobile hits `/api/v1` with a Bearer token — not the DB directly.
