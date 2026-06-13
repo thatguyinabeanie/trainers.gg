@@ -44,6 +44,8 @@ import {
   createPhase as createPhaseMutation,
   deletePhase as deletePhaseMutation,
   saveTournamentPhases,
+  // Invitation mutations
+  respondToTournamentInvitation as respondToTournamentInvitationMutation,
   // Queries (for prepareRound preview)
   getPhaseRoundsWithStats,
   getRoundMatchesWithStats,
@@ -1931,6 +1933,43 @@ export async function saveTournamentPhasesAction(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to save phases"),
+    };
+  }
+}
+
+// =============================================================================
+// Invitation Actions
+// =============================================================================
+
+/**
+ * Respond to a tournament invitation (accept or decline).
+ *
+ * Runs server-side so the Supabase client is created with the user's auth
+ * cookie (service-role is NOT used). This avoids creating a browser Supabase
+ * client inside a `useMutation` mutationFn, which bypassed RLS and prevented
+ * Phase 2 Task 9's `authenticated`-role SELECT revokes from taking effect.
+ *
+ * Cache: no tournament-level cache tag is busted here — invitation responses
+ * don't change public-facing tournament data (registration count, status, etc).
+ * If that changes, add `invalidateTournamentCaches(tournamentId)`.
+ */
+export async function respondToTournamentInvitationAction(
+  invitationId: number,
+  response: "accept" | "decline"
+): Promise<ActionResult<{ registration: { message: string } | null }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const result = await respondToTournamentInvitationMutation(
+      supabase,
+      invitationId,
+      response
+    );
+    return { success: true, data: { registration: result.registration } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to respond to invitation"),
     };
   }
 }
