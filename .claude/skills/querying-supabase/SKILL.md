@@ -11,13 +11,16 @@ Supabase client, queries, mutations, generated types, and edge functions.
 
 **This is the most important decision when touching Supabase.**
 
-| Client | Import                      | When                                              | RLS?                             |
-| ------ | --------------------------- | ------------------------------------------------- | -------------------------------- |
-| Server | `@trainers/supabase/server` | Server Components, Server Actions, edge functions | Bypassed (service role)          |
-| Client | `@trainers/supabase/client` | Client Components (browser)                       | Enforced via auth.uid()          |
-| Mobile | `@trainers/supabase/mobile` | Expo app                                          | Enforced, session in SecureStore |
+| Client                      | Import                      | When                                                                                                        | RLS?                               |
+| --------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `createStaticClient()`      | `@trainers/supabase/server` | Public `'use cache'` fetchers — only for tables where anon SELECT is still granted                         | Enforced (anon role)               |
+| `createClientReadOnly()`    | `@trainers/supabase/server` | Authenticated server reads (Server Components)                                                              | Enforced via auth.uid()            |
+| `createClient()`            | `@trainers/supabase/server` | Authenticated mutations (Server Actions)                                                                    | Enforced via auth.uid()            |
+| `createServiceRoleClient()` | `@trainers/supabase/server` | Admin ops; public routes reading Phase 2 revoke-set tables (requires column allowlist + resolveApiAuth + rate-limit) | Bypassed — use with guards  |
+| Client                      | `@trainers/supabase/client` | Client Components (browser) — authenticated only                                                            | Enforced via auth.uid()            |
+| Mobile                      | `@trainers/supabase/mobile` | Expo app (authenticated session only — anon SELECT revoked on S-bucket tables)                              | Enforced, session in SecureStore   |
 
-**Never use the server client in browser code.** It uses the service role key and bypasses all RLS.
+**Never use the server client in browser code.** `createServiceRoleClient()` bypasses all RLS — always pair it with an explicit column allowlist, `resolveApiAuth`, and `enforceRateLimit`. See `deciding-data-access` skill.
 
 ## Generated Types
 

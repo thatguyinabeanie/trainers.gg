@@ -96,12 +96,14 @@ Function arguments + closures are the cache key — no manual key arrays needed.
 
 ### Supabase Client Selection
 
-| Function                    | Use Case                                   |
-| --------------------------- | ------------------------------------------ |
-| `createStaticClient()`      | Public data, no cookies (ISR/static pages) |
-| `createClient()`            | Authenticated, read-write cookies          |
-| `createClientReadOnly()`    | Authenticated, read-only cookies           |
-| `createServiceRoleClient()` | Bypass RLS (admin operations only)         |
+| Function                    | Use Case                                                                                           |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| `createStaticClient()`      | Public data, no cookies — only for tables with anon SELECT still granted                          |
+| `createClient()`            | Authenticated, read-write cookies                                                                  |
+| `createClientReadOnly()`    | Authenticated, read-only cookies                                                                   |
+| `createServiceRoleClient()` | Bypass RLS: admin ops, and anon-reachable routes reading Phase 2 revoke-set tables (with guards)  |
+
+For anon-reachable routes that read revoke-set tables: use `createServiceRoleClient()` with an explicit column allowlist (never `select('*')`), `resolveApiAuth` on the request, and `enforceRateLimit`. See `deciding-data-access` skill for the full decision tree and guard requirements.
 
 ### Parallel Fetching
 

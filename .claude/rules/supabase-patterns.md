@@ -40,14 +40,14 @@ if (error) throw new Error(`Failed to fetch tournaments: ${error.message}`);
 
 ## Client Selection (Web)
 
-| Function                    | Use Case                          | Cookies            |
-| --------------------------- | --------------------------------- | ------------------ |
-| `createStaticClient()`      | Public/ISR data, `unstable_cache` | None               |
-| `createClient()`            | Authenticated mutations           | Read-write         |
-| `createClientReadOnly()`    | Authenticated reads               | Read-only          |
-| `createServiceRoleClient()` | Admin bypass of RLS               | None (service key) |
+| Function                    | Use Case                                                                          | Cookies            |
+| --------------------------- | --------------------------------------------------------------------------------- | ------------------ |
+| `createStaticClient()`      | Public/ISR data, `'use cache'` fetcher — only for tables with anon SELECT granted | None               |
+| `createClient()`            | Authenticated mutations                                                           | Read-write         |
+| `createClientReadOnly()`    | Authenticated reads                                                               | Read-only          |
+| `createServiceRoleClient()` | Admin bypass of RLS; anon-reachable routes that read revoke-set tables            | None (service key) |
 
-Choose the most restrictive client that satisfies the need. Prefer `createStaticClient()` for public data and `createClientReadOnly()` for authenticated reads.
+Choose the most restrictive client that satisfies the need. Prefer `createStaticClient()` for public data where anon SELECT is still granted. For public routes that read Phase 2 revoke-set tables, use `createServiceRoleClient()` with an explicit column allowlist, `resolveApiAuth`, and `enforceRateLimit` — see `deciding-data-access` skill.
 
 ## Row Level Security
 
