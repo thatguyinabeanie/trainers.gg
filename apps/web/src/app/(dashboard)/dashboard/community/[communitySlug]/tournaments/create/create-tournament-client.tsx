@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 
 import { z } from "@trainers/validators";
 import { generateSlug } from "@trainers/utils";
@@ -15,8 +17,7 @@ import {
 import { useApiQuery } from "@trainers/supabase/react-query";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { useSupabaseMutation } from "@/lib/supabase";
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -231,53 +232,50 @@ export function CreateTournamentClient({
     }
   }, [organization?.id, form]);
 
-  const { mutateAsync: createTournamentMutation } = useSupabaseMutation(
-    (
-      supabase,
-      args: {
-        communityId: number;
+  const { mutateAsync: createTournamentMutation } = useMutation({
+    mutationFn: (args: {
+      communityId: number;
+      name: string;
+      slug: string;
+      description?: string;
+      format?: string;
+      startDate?: string;
+      endDate?: string;
+      maxParticipants?: number;
+      topCutSize?: number;
+      swissRounds?: number;
+      tournamentFormat?:
+        | "swiss_only"
+        | "swiss_with_cut"
+        | "single_elimination"
+        | "double_elimination";
+      roundTimeMinutes?: number;
+      game?: string;
+      gameFormat?: string;
+      platform?: string;
+      battleFormat?: string;
+      registrationType?: string;
+      checkInRequired?: boolean;
+      allowLateRegistration?: boolean;
+      lateCheckInMaxRound?: number;
+      phases?: {
         name: string;
-        slug: string;
-        description?: string;
-        format?: string;
-        startDate?: string;
-        endDate?: string;
-        maxParticipants?: number;
-        topCutSize?: number;
-        swissRounds?: number;
-        tournamentFormat?:
-          | "swiss_only"
-          | "swiss_with_cut"
-          | "single_elimination"
-          | "double_elimination";
-        roundTimeMinutes?: number;
-        game?: string;
-        gameFormat?: string;
-        platform?: string;
-        battleFormat?: string;
-        registrationType?: string;
-        checkInRequired?: boolean;
-        allowLateRegistration?: boolean;
-        lateCheckInMaxRound?: number;
-        phases?: {
-          name: string;
-          phaseType: "swiss" | "single_elimination" | "double_elimination";
-          bestOf: 1 | 3 | 5;
-          roundTimeMinutes: number;
-          checkInTimeMinutes: number;
-          plannedRounds?: number;
-          cutRule?:
-            | "x-1"
-            | "x-2"
-            | "x-3"
-            | "top-4"
-            | "top-8"
-            | "top-16"
-            | "top-32";
-        }[];
-      }
-    ) => createTournament(supabase, args)
-  );
+        phaseType: "swiss" | "single_elimination" | "double_elimination";
+        bestOf: 1 | 3 | 5;
+        roundTimeMinutes: number;
+        checkInTimeMinutes: number;
+        plannedRounds?: number;
+        cutRule?:
+          | "x-1"
+          | "x-2"
+          | "x-3"
+          | "top-4"
+          | "top-8"
+          | "top-16"
+          | "top-32";
+      }[];
+    }) => createTournament(createClient(), args),
+  });
 
   const handleNameChange = (name: string) => {
     form.setValue("name", name);
