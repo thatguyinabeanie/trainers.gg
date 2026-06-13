@@ -186,42 +186,27 @@ test.describe("Admin panel — admin user with sudo mode", () => {
   });
 
   /**
-   * Helper: Log in as admin and activate sudo mode via the sudo-required page.
-   * This creates both the server-side DB sudo session AND the sudo_mode cookie,
-   * which is required for server actions guarded by requireAdminWithSudo().
-   *
-   * The proxy allows /admin/sudo-required without an existing sudo cookie, so
-   * we navigate there and click "Activate Sudo Mode" to go through the real
-   * activation flow instead of just injecting the cookie manually (which would
-   * pass the proxy check but fail the DB session check in server actions).
+   * Helper: Log in as admin and activate sudo mode by setting the
+   * sudo_mode cookie. This simulates the sudo activation flow
+   * without needing to go through the full password re-entry form.
    */
-  async function loginAsAdminWithSudo(page: Page, _baseURL: string) {
+  async function loginAsAdminWithSudo(page: Page, baseURL: string) {
     await loginViaUI(page, TEST_USERS.admin);
 
-    // Navigate to the sudo activation page. The proxy grants access here
-    // without a sudo cookie (to avoid an infinite redirect loop).
-    await page.goto("/admin/sudo-required?redirect=/admin");
-
-    // If the admin user was redirected away (e.g., to /forbidden or /sign-in),
-    // the JWT hook is not configured — bail out gracefully. The callers of
-    // loginAsAdminWithSudo all call waitForAdminOrForbidden / test.skip anyway.
-    if (!page.url().includes("sudo-required")) {
-      return;
-    }
-
-    // Click the "Activate Sudo Mode" button to create a real DB sudo session.
-    const activateButton = page.getByRole("button", {
-      name: /Activate Sudo Mode/i,
-    });
-    await activateButton.waitFor({ timeout: 10000 });
-    await activateButton.click();
-
-    // Wait for the redirect to /admin (or wherever the ?redirect param points).
-    // If the activation fails (e.g., JWT hook not configured), the redirect
-    // won't happen — callers handle this via waitForAdminOrForbidden/test.skip.
-    await page.waitForURL(/\/admin/, { timeout: 15000 }).catch(() => {
-      // Activation failed — callers will detect and skip the test
-    });
+    // Set the sudo_mode cookie to simulate an active sudo session.
+    // The proxy checks for the presence of this cookie to grant access.
+    const url = new URL(baseURL || "http://localhost:3000");
+    await page.context().addCookies([
+      {
+        name: "sudo_mode",
+        value: "active",
+        domain: url.hostname,
+        path: "/",
+        httpOnly: true,
+        secure: url.protocol === "https:",
+        sameSite: "Lax",
+      },
+    ]);
   }
 
   /**
