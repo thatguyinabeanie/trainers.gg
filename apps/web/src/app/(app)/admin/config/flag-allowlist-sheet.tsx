@@ -3,12 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 import { getUsersByIds } from "@trainers/supabase";
-import {
-  type TypedSupabaseClient,
-  type FeatureFlag,
-} from "@trainers/supabase";
+import { type FeatureFlag } from "@trainers/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -24,7 +22,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import type { SearchPlayersResult } from "@/lib/data/players-search-endpoint";
 
 interface FlagAllowlistSheetProps {
@@ -76,12 +75,14 @@ export function FlagAllowlistSheet({
     };
   }, []);
 
-  // Fetch current allowed users by their IDs (uses the browser anon client;
-  // will be replaced when a users-by-IDs API route is added in a later task).
-  const currentAllowedQuery = useSupabaseQuery(
-    (supabase: TypedSupabaseClient) => getUsersByIds(supabase, allowedIds),
-    [allowedIds.join(",")]
-  );
+  // Fetch current allowed users by their IDs via the authenticated browser
+  // client. Disabled when the list is empty to avoid an unnecessary round-trip.
+  const currentAllowedQuery = useQuery({
+    queryKey: queryKeys.admin.usersByIds(allowedIds.join(",")),
+    queryFn: () => getUsersByIds(createClient(), allowedIds),
+    enabled: allowedIds.length > 0,
+    staleTime: 30_000,
+  });
   const currentAllowedUsers: UserStub[] = currentAllowedQuery.data ?? [];
 
   // Search for users via GET /api/v1/players/search — auth-gated, server-side

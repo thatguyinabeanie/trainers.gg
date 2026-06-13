@@ -1,12 +1,24 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {
-  getTournamentRegistrations,
-  getTournamentInvitationsSent,
-} from "@trainers/supabase";
-import { type TypedClient } from "@trainers/supabase";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Mock sonner toast
+// ── Mocks ──────────────────────────────────────────────────────────────────
+
+const mockGetTournamentRegistrations = jest.fn();
+const mockGetTournamentInvitationsSent = jest.fn();
+
+jest.mock("@trainers/supabase", () => ({
+  getTournamentRegistrations: (...args: unknown[]) =>
+    mockGetTournamentRegistrations(...args),
+  getTournamentInvitationsSent: (...args: unknown[]) =>
+    mockGetTournamentInvitationsSent(...args),
+}));
+
+// Provide a stable no-op client so queryFn can call createClient()
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({}),
+}));
+
 jest.mock("sonner", () => ({
   toast: {
     success: jest.fn(),
@@ -14,7 +26,6 @@ jest.mock("sonner", () => ({
   },
 }));
 
-// Mock the Server Actions
 jest.mock("@/actions/tournaments", () => ({
   forceCheckInPlayer: jest.fn(),
   removePlayerFromTournament: jest.fn(),
@@ -27,591 +38,308 @@ jest.mock("@/components/tournaments/invite/invite-form", () => ({
   InviteForm: jest.fn(() => <div data-testid="invite-form" />),
 }));
 
-// Mock Supabase hooks
-const mockChannel = {
-  on: jest.fn().mockReturnThis(),
-  subscribe: jest.fn((callback) => {
-    if (typeof callback === "function") {
-      callback("SUBSCRIBED", null);
-    }
-    return mockChannel;
-  }),
-  unsubscribe: jest.fn(),
-};
-
-const mockSupabaseClient = {
-  channel: jest.fn(() => mockChannel),
-};
-
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn((queryFn) => {
-    // Call the query function with a mock supabase client
-    const mockSupabase = {} as TypedClient;
-    const result = queryFn(mockSupabase);
-    return { data: result, refetch: jest.fn() };
-  }),
-  useSupabaseMutation: jest.fn(() => ({
-    mutateAsync: jest.fn(),
-    isPending: false,
-  })),
-  useSupabase: jest.fn(() => mockSupabaseClient),
-}));
-
-// Mock the getTournamentRegistrations query
-// In tests, we make it return data synchronously instead of a Promise
-jest.mock("@trainers/supabase", () => ({
-  getTournamentRegistrations: jest.fn(),
-  getTournamentInvitationsSent: jest.fn(() => []),
-}));
-
-// Import the component AFTER setting up all mocks
+// Import component AFTER mocks
 import { TournamentRegistrations } from "../tournament-registrations";
 
-type SyncRegistrationsFn = () => Awaited<
-  ReturnType<typeof getTournamentRegistrations>
->;
-const mockGetTournamentRegistrations =
-  getTournamentRegistrations as unknown as jest.MockedFunction<SyncRegistrationsFn>;
+// ── Helpers ────────────────────────────────────────────────────────────────
 
-describe("TournamentRegistrations", () => {
-  const mockTournament = {
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
+
+function buildRegistration(overrides: Record<string, unknown> = {}) {
+  return {
     id: 1,
-    status: "active",
+    tournament_id: 1,
+    alt_id: 1,
+    status: "registered",
+    registered_at: new Date().toISOString(),
+    team_name: null,
+    drop_category: null,
+    alt: { id: 1, username: "player1", display_name: "Player 1", avatar_url: null },
+    ...overrides,
   };
+}
 
+function buildInvitation(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 10,
+    status: "pending",
+    expires_at: "2099-01-01T00:00:00Z",
+    invited_at: new Date().toISOString(),
+    invitedPlayer: { username: "invited_user" },
+    invitedByAlt: null,
+    ...overrides,
+  };
+}
+
+const defaultTournament = { id: 1, status: "active" };
+
+// ── Tests ──────────────────────────────────────────────────────────────────
+
+describe("TournamentRegistrations — Statistics Cards", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetTournamentInvitationsSent.mockResolvedValue([]);
   });
 
-  describe("Statistics Cards", () => {
-    it("should display correct Total Registered count", () => {
-      const mockRegistrations = [
-        {
-          id: 1,
-          tournament_id: 1,
-          alt_id: 1,
-          status: "checked_in",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 1,
-            username: "player1",
-            display_name: "Player 1",
-            avatar_url: null,
-          },
-        },
-        {
-          id: 2,
-          tournament_id: 1,
-          alt_id: 2,
-          status: "registered",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 2,
-            username: "player2",
-            display_name: "Player 2",
-            avatar_url: null,
-          },
-        },
-      ];
+  it("shows correct Total Registered count", async () => {
+    mockGetTournamentRegistrations.mockResolvedValue([
+      buildRegistration({ id: 1, status: "checked_in" }),
+      buildRegistration({ id: 2, status: "registered" }),
+    ]);
 
-      mockGetTournamentRegistrations.mockReturnValue(
-        mockRegistrations as unknown as Awaited<
-          ReturnType<typeof getTournamentRegistrations>
-        >
-      );
+    const { container } = render(
+      <TournamentRegistrations tournament={defaultTournament} />,
+      { wrapper: createWrapper() }
+    );
 
-      render(<TournamentRegistrations tournament={mockTournament} />);
+    // Wait for data to load — Total Registered card should show 2
+    const statsCards = container.querySelectorAll(
+      ".grid.gap-4.md\\:grid-cols-4 > div"
+    );
+    await waitFor(() => {
+      expect(statsCards[0]).toHaveTextContent("2");
+    });
+    expect(statsCards[0]).toHaveTextContent("Total Registered");
+  });
 
-      expect(screen.getByText("Total Registered")).toBeInTheDocument();
-      expect(screen.getByText("2")).toBeInTheDocument();
+  it("counts checked_in registrations correctly", async () => {
+    mockGetTournamentRegistrations.mockResolvedValue([
+      buildRegistration({ id: 1, status: "checked_in" }),
+      buildRegistration({ id: 2, status: "checked_in" }),
+      buildRegistration({ id: 3, status: "registered" }),
+    ]);
+
+    const { container } = render(
+      <TournamentRegistrations tournament={defaultTournament} />,
+      { wrapper: createWrapper() }
+    );
+
+    const statsCards = container.querySelectorAll(
+      ".grid.gap-4.md\\:grid-cols-4 > div"
+    );
+    expect(statsCards).toHaveLength(4);
+    // Wait for checked-in count to load
+    await waitFor(() => {
+      expect(statsCards[1]).toHaveTextContent("2");
+    });
+    expect(statsCards[1]).toHaveTextContent("Checked In");
+  });
+
+  it("counts not-checked-in registrations (registered, confirmed, pending, waitlist)", async () => {
+    mockGetTournamentRegistrations.mockResolvedValue([
+      buildRegistration({ id: 1, status: "checked_in" }),
+      buildRegistration({ id: 2, status: "registered" }),
+      buildRegistration({ id: 3, status: "confirmed" }),
+      buildRegistration({ id: 4, status: "pending" }),
+      buildRegistration({ id: 5, status: "waitlist" }),
+    ]);
+
+    const { container } = render(
+      <TournamentRegistrations tournament={defaultTournament} />,
+      { wrapper: createWrapper() }
+    );
+
+    const statsCards = container.querySelectorAll(
+      ".grid.gap-4.md\\:grid-cols-4 > div"
+    );
+    // Wait for not-checked-in count to populate
+    await waitFor(() => {
+      expect(statsCards[2]).toHaveTextContent("4");
+    });
+    expect(statsCards[2]).toHaveTextContent("Not Checked In");
+  });
+
+  it("counts dropped registrations correctly", async () => {
+    mockGetTournamentRegistrations.mockResolvedValue([
+      buildRegistration({ id: 1, status: "checked_in" }),
+      buildRegistration({ id: 2, status: "dropped" }),
+      buildRegistration({ id: 3, status: "dropped" }),
+    ]);
+
+    const { container } = render(
+      <TournamentRegistrations tournament={defaultTournament} />,
+      { wrapper: createWrapper() }
+    );
+
+    const statsCards = container.querySelectorAll(
+      ".grid.gap-4.md\\:grid-cols-4 > div"
+    );
+    await waitFor(() => {
+      expect(statsCards[3]).toHaveTextContent("2");
+    });
+    expect(statsCards[3]).toHaveTextContent("Dropped");
+  });
+
+  it("shows all zeros when there are no registrations", async () => {
+    mockGetTournamentRegistrations.mockResolvedValue([]);
+
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
     });
 
-    it("should count checked_in registrations correctly", () => {
-      const mockRegistrations = [
-        {
-          id: 1,
-          tournament_id: 1,
-          alt_id: 1,
-          status: "checked_in",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 1,
-            username: "player1",
-            display_name: "Player 1",
-            avatar_url: null,
-          },
-        },
-        {
-          id: 2,
-          tournament_id: 1,
-          alt_id: 2,
-          status: "checked_in",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 2,
-            username: "player2",
-            display_name: "Player 2",
-            avatar_url: null,
-          },
-        },
-        {
-          id: 3,
-          tournament_id: 1,
-          alt_id: 3,
-          status: "registered",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 3,
-            username: "player3",
-            display_name: "Player 3",
-            avatar_url: null,
-          },
-        },
-      ];
+    await waitFor(() =>
+      expect(screen.getByText("Total Registered")).toBeInTheDocument()
+    );
 
-      mockGetTournamentRegistrations.mockReturnValue(
-        mockRegistrations as unknown as Awaited<
-          ReturnType<typeof getTournamentRegistrations>
-        >
-      );
+    const zeroCells = screen.getAllByText("0");
+    expect(zeroCells).toHaveLength(4);
+  });
 
-      const { container } = render(
-        <TournamentRegistrations tournament={mockTournament} />
-      );
+  it("handles 63 checked_in players correctly", async () => {
+    const regs = Array.from({ length: 63 }, (_, i) =>
+      buildRegistration({ id: i + 1, alt_id: i + 1, status: "checked_in" })
+    );
+    mockGetTournamentRegistrations.mockResolvedValue(regs);
 
-      // Find all cards in the statistics section
-      const statsCards = container.querySelectorAll(
-        ".grid.gap-4.md\\:grid-cols-4 > div"
-      );
-      expect(statsCards).toHaveLength(4);
+    const { container } = render(
+      <TournamentRegistrations tournament={defaultTournament} />,
+      { wrapper: createWrapper() }
+    );
 
-      // Second card should be "Checked In" with count 2
-      const checkedInCard = statsCards[1];
-      expect(checkedInCard).toHaveTextContent("Checked In");
-      expect(checkedInCard).toHaveTextContent("2");
-    });
+    const statsCards = container.querySelectorAll(
+      ".grid.gap-4.md\\:grid-cols-4 > div"
+    );
 
-    it("should count not checked in registrations (registered, confirmed, pending, waitlist)", () => {
-      const mockRegistrations = [
-        {
-          id: 1,
-          tournament_id: 1,
-          alt_id: 1,
-          status: "checked_in",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 1,
-            username: "player1",
-            display_name: "Player 1",
-            avatar_url: null,
-          },
-        },
-        {
-          id: 2,
-          tournament_id: 1,
-          alt_id: 2,
-          status: "registered",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 2,
-            username: "player2",
-            display_name: "Player 2",
-            avatar_url: null,
-          },
-        },
-        {
-          id: 3,
-          tournament_id: 1,
-          alt_id: 3,
-          status: "confirmed",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 3,
-            username: "player3",
-            display_name: "Player 3",
-            avatar_url: null,
-          },
-        },
-        {
-          id: 4,
-          tournament_id: 1,
-          alt_id: 4,
-          status: "pending",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 4,
-            username: "player4",
-            display_name: "Player 4",
-            avatar_url: null,
-          },
-        },
-        {
-          id: 5,
-          tournament_id: 1,
-          alt_id: 5,
-          status: "waitlist",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 5,
-            username: "player5",
-            display_name: "Player 5",
-            avatar_url: null,
-          },
-        },
-      ];
-
-      mockGetTournamentRegistrations.mockReturnValue(
-        mockRegistrations as unknown as Awaited<
-          ReturnType<typeof getTournamentRegistrations>
-        >
-      );
-
-      render(<TournamentRegistrations tournament={mockTournament} />);
-
-      expect(screen.getByText("Not Checked In")).toBeInTheDocument();
-      const notCheckedInCard = screen.getByText("Not Checked In").closest("div")
-        ?.parentElement?.parentElement;
-      expect(notCheckedInCard).toHaveTextContent("4");
-    });
-
-    it("should count dropped registrations correctly", () => {
-      const mockRegistrations = [
-        {
-          id: 1,
-          tournament_id: 1,
-          alt_id: 1,
-          status: "checked_in",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 1,
-            username: "player1",
-            display_name: "Player 1",
-            avatar_url: null,
-          },
-        },
-        {
-          id: 2,
-          tournament_id: 1,
-          alt_id: 2,
-          status: "dropped",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 2,
-            username: "player2",
-            display_name: "Player 2",
-            avatar_url: null,
-          },
-        },
-        {
-          id: 3,
-          tournament_id: 1,
-          alt_id: 3,
-          status: "dropped",
-          registered_at: new Date().toISOString(),
-          alt: {
-            id: 3,
-            username: "player3",
-            display_name: "Player 3",
-            avatar_url: null,
-          },
-        },
-      ];
-
-      mockGetTournamentRegistrations.mockReturnValue(
-        mockRegistrations as unknown as Awaited<
-          ReturnType<typeof getTournamentRegistrations>
-        >
-      );
-
-      const { container } = render(
-        <TournamentRegistrations tournament={mockTournament} />
-      );
-
-      // Find all cards in the statistics section
-      const statsCards = container.querySelectorAll(
-        ".grid.gap-4.md\\:grid-cols-4 > div"
-      );
-      expect(statsCards).toHaveLength(4);
-
-      // Fourth card should be "Dropped" with count 2
-      const droppedCard = statsCards[3];
-      expect(droppedCard).toHaveTextContent("Dropped");
-      expect(droppedCard).toHaveTextContent("2");
-    });
-
-    it("should handle empty registrations correctly", () => {
-      mockGetTournamentRegistrations.mockReturnValue(
-        [] as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>
-      );
-
-      render(<TournamentRegistrations tournament={mockTournament} />);
-
-      expect(screen.getByText("Total Registered")).toBeInTheDocument();
-      expect(screen.getByText("Checked In")).toBeInTheDocument();
-      expect(screen.getByText("Not Checked In")).toBeInTheDocument();
-      expect(screen.getByText("Dropped")).toBeInTheDocument();
-
-      // All counts should be 0
-      const cards = screen.getAllByText("0");
-      expect(cards).toHaveLength(4);
-    });
-
-    it("should match the Linear ticket scenario: 63 checked_in players", () => {
-      // Create 63 registrations with checked_in status
-      const mockRegistrations = Array.from({ length: 63 }, (_, i) => ({
-        id: i + 1,
-        tournament_id: 1,
-        alt_id: i + 1,
-        status: "checked_in",
-        registered_at: new Date().toISOString(),
-        alt: {
-          id: i + 1,
-          username: `player${i + 1}`,
-          display_name: `Player ${i + 1}`,
-          avatar_url: null,
-        },
-      }));
-
-      mockGetTournamentRegistrations.mockReturnValue(
-        mockRegistrations as unknown as Awaited<
-          ReturnType<typeof getTournamentRegistrations>
-        >
-      );
-
-      const { container } = render(
-        <TournamentRegistrations tournament={mockTournament} />
-      );
-
-      // Find all cards in the statistics section
-      const statsCards = container.querySelectorAll(
-        ".grid.gap-4.md\\:grid-cols-4 > div"
-      );
-      expect(statsCards).toHaveLength(4);
-
-      // First card: Total Registered should be 63
-      expect(statsCards[0]).toHaveTextContent("Total Registered");
+    // Wait for the total-registered card to show 63
+    await waitFor(() => {
       expect(statsCards[0]).toHaveTextContent("63");
-
-      // Second card: Checked In should be 63
-      expect(statsCards[1]).toHaveTextContent("Checked In");
-      expect(statsCards[1]).toHaveTextContent("63");
-
-      // Third card: Not Checked In should be 0
-      expect(statsCards[2]).toHaveTextContent("Not Checked In");
-      expect(statsCards[2]).toHaveTextContent("0");
-
-      // Fourth card: Dropped should be 0
-      expect(statsCards[3]).toHaveTextContent("Dropped");
-      expect(statsCards[3]).toHaveTextContent("0");
     });
+
+    expect(statsCards[0]).toHaveTextContent("Total Registered");
+    expect(statsCards[1]).toHaveTextContent("Checked In");
+    expect(statsCards[1]).toHaveTextContent("63");
+    expect(statsCards[2]).toHaveTextContent("Not Checked In");
+    expect(statsCards[2]).toHaveTextContent("0");
+    expect(statsCards[3]).toHaveTextContent("Dropped");
+    expect(statsCards[3]).toHaveTextContent("0");
   });
 });
 
 describe("TournamentRegistrations — invitations sub-tab", () => {
   const tournament = { id: 1, status: "upcoming", maxParticipants: 10 };
 
+  const sixRegistered = Array.from({ length: 6 }, (_, i) =>
+    buildRegistration({ id: i + 1, alt_id: i + 1, status: "registered" })
+  );
+
   beforeEach(() => {
     jest.clearAllMocks();
-    // 6 registered players
-    mockGetTournamentRegistrations.mockReturnValue([
-      {
-        id: 1,
-        status: "registered",
-        alt: { username: "p1", avatar_url: null },
-        team_name: null,
-        registered_at: null,
-      },
-      {
-        id: 2,
-        status: "registered",
-        alt: { username: "p2", avatar_url: null },
-        team_name: null,
-        registered_at: null,
-      },
-      {
-        id: 3,
-        status: "registered",
-        alt: { username: "p3", avatar_url: null },
-        team_name: null,
-        registered_at: null,
-      },
-      {
-        id: 4,
-        status: "registered",
-        alt: { username: "p4", avatar_url: null },
-        team_name: null,
-        registered_at: null,
-      },
-      {
-        id: 5,
-        status: "registered",
-        alt: { username: "p5", avatar_url: null },
-        team_name: null,
-        registered_at: null,
-      },
-      {
-        id: 6,
-        status: "registered",
-        alt: { username: "p6", avatar_url: null },
-        team_name: null,
-        registered_at: null,
-      },
-    ] as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>);
+    mockGetTournamentRegistrations.mockResolvedValue(sixRegistered);
+    mockGetTournamentInvitationsSent.mockResolvedValue([]);
   });
 
-  it("shows available spots as maxParticipants minus registered minus pending non-expired", () => {
-    // 2 pending non-expired + 1 expired invitation
-    (
-      getTournamentInvitationsSent as jest.MockedFunction<() => unknown[]>
-    ).mockReturnValue([
-      {
-        id: 10,
-        status: "pending",
-        expires_at: "2099-01-01T00:00:00Z",
-        invited_at: null,
-        invitedPlayer: { username: "inv1" },
-        invitedByAlt: null,
-      },
-      {
-        id: 11,
-        status: "pending",
-        expires_at: "2099-01-01T00:00:00Z",
-        invited_at: null,
-        invitedPlayer: { username: "inv2" },
-        invitedByAlt: null,
-      },
-      {
-        id: 12,
-        status: "pending",
-        expires_at: "2024-01-01T00:00:00Z",
-        invited_at: null,
-        invitedPlayer: { username: "inv3_expired" },
-        invitedByAlt: null,
-      },
+  it("shows available spots as maxParticipants minus registered minus pending non-expired", async () => {
+    mockGetTournamentInvitationsSent.mockResolvedValue([
+      buildInvitation({ id: 10, expires_at: "2099-01-01T00:00:00Z" }),
+      buildInvitation({ id: 11, expires_at: "2099-01-01T00:00:00Z" }),
+      buildInvitation({ id: 12, expires_at: "2024-01-01T00:00:00Z" }), // expired
     ]);
 
-    render(<TournamentRegistrations tournament={tournament} />);
-    // 10 max - 6 registered - 2 pending non-expired = 2 available
-    expect(screen.getByText(/2 spots? available/i)).toBeInTheDocument();
-  });
+    render(<TournamentRegistrations tournament={tournament} />, {
+      wrapper: createWrapper(),
+    });
 
-  it("shows zero available spots when at capacity", () => {
-    // 8 registered + 2 pending = 10 = maxParticipants → 0 available
-    mockGetTournamentRegistrations.mockReturnValue(
-      Array.from({ length: 8 }, (_, i) => ({
-        id: i + 1,
-        status: "registered",
-        alt: { username: `p${i + 1}`, avatar_url: null },
-        team_name: null,
-        registered_at: null,
-      })) as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>
+    // 10 - 6 - 2 = 2 available
+    await waitFor(() =>
+      expect(screen.getByText(/2 spots? available/i)).toBeInTheDocument()
     );
-    (
-      getTournamentInvitationsSent as jest.MockedFunction<() => unknown[]>
-    ).mockReturnValue([
-      {
-        id: 10,
-        status: "pending",
-        expires_at: "2099-01-01T00:00:00Z",
-        invited_at: null,
-        invitedPlayer: { username: "inv1" },
-        invitedByAlt: null,
-      },
-      {
-        id: 11,
-        status: "pending",
-        expires_at: "2099-01-01T00:00:00Z",
-        invited_at: null,
-        invitedPlayer: { username: "inv2" },
-        invitedByAlt: null,
-      },
-    ]);
-
-    render(<TournamentRegistrations tournament={tournament} />);
-    expect(screen.getByText(/0 spots? available/i)).toBeInTheDocument();
   });
 
-  it("shows singular 'invitation' in capacity text for exactly 1 pending invite", () => {
-    (
-      getTournamentInvitationsSent as jest.MockedFunction<() => unknown[]>
-    ).mockReturnValue([
-      {
-        id: 20,
-        status: "pending",
-        expires_at: "2099-01-01T00:00:00Z",
-        invited_at: null,
-        invitedPlayer: { username: "singleInv" },
-        invitedByAlt: null,
-      },
+  it("shows zero available spots when at capacity", async () => {
+    mockGetTournamentRegistrations.mockResolvedValue(
+      Array.from({ length: 8 }, (_, i) =>
+        buildRegistration({ id: i + 1, alt_id: i + 1, status: "registered" })
+      )
+    );
+    mockGetTournamentInvitationsSent.mockResolvedValue([
+      buildInvitation({ id: 10, expires_at: "2099-01-01T00:00:00Z" }),
+      buildInvitation({ id: 11, expires_at: "2099-01-01T00:00:00Z" }),
     ]);
 
-    render(<TournamentRegistrations tournament={tournament} />);
-    // 10 - 6 - 1 = 3 available, 1 pending invitation (singular)
-    expect(screen.getByText(/1 pending invitation\b/i)).toBeInTheDocument();
+    render(<TournamentRegistrations tournament={tournament} />, {
+      wrapper: createWrapper(),
+    });
+
+    // 10 - 8 - 2 = 0 available
+    await waitFor(() =>
+      expect(screen.getByText(/0 spots? available/i)).toBeInTheDocument()
+    );
   });
 
-  it("shows plural 'invitations' in capacity text for >1 pending invite", () => {
-    (
-      getTournamentInvitationsSent as jest.MockedFunction<() => unknown[]>
-    ).mockReturnValue([
-      {
-        id: 30,
-        status: "pending",
-        expires_at: "2099-01-01T00:00:00Z",
-        invited_at: null,
-        invitedPlayer: { username: "inv_a" },
-        invitedByAlt: null,
-      },
-      {
-        id: 31,
-        status: "pending",
-        expires_at: "2099-01-01T00:00:00Z",
-        invited_at: null,
-        invitedPlayer: { username: "inv_b" },
-        invitedByAlt: null,
-      },
+  it("shows singular 'invitation' for exactly 1 pending invite", async () => {
+    mockGetTournamentInvitationsSent.mockResolvedValue([
+      buildInvitation({ id: 20, expires_at: "2099-01-01T00:00:00Z" }),
     ]);
 
-    render(<TournamentRegistrations tournament={tournament} />);
-    expect(screen.getByText(/2 pending invitations/i)).toBeInTheDocument();
+    render(<TournamentRegistrations tournament={tournament} />, {
+      wrapper: createWrapper(),
+    });
+
+    // 10 - 6 - 1 = 3 available
+    await waitFor(() =>
+      expect(screen.getByText(/1 pending invitation\b/i)).toBeInTheDocument()
+    );
+  });
+
+  it("shows plural 'invitations' for >1 pending invite", async () => {
+    mockGetTournamentInvitationsSent.mockResolvedValue([
+      buildInvitation({ id: 30, expires_at: "2099-01-01T00:00:00Z" }),
+      buildInvitation({ id: 31, expires_at: "2099-01-01T00:00:00Z" }),
+    ]);
+
+    render(<TournamentRegistrations tournament={tournament} />, {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText(/2 pending invitations/i)).toBeInTheDocument()
+    );
   });
 });
 
-// ---------------------------------------------------------------------------
-// Search / filter
-// ---------------------------------------------------------------------------
-
 describe("TournamentRegistrations — search", () => {
-  const mockTournament = { id: 1, status: "active" };
+  const twoPlayers = [
+    buildRegistration({
+      id: 1,
+      status: "registered",
+      alt: { username: "ash_ketchum", avatar_url: null },
+      team_name: "Pokémon Team",
+    }),
+    buildRegistration({
+      id: 2,
+      status: "registered",
+      alt: { username: "misty", avatar_url: null },
+      team_name: "Water Wonders",
+    }),
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetTournamentRegistrations.mockReturnValue([
-      {
-        id: 1,
-        status: "registered",
-        alt: { username: "ash_ketchum", avatar_url: null },
-        team_name: "Pokémon Team",
-        registered_at: null,
-        drop_category: null,
-      },
-      {
-        id: 2,
-        status: "registered",
-        alt: { username: "misty", avatar_url: null },
-        team_name: "Water Wonders",
-        registered_at: null,
-        drop_category: null,
-      },
-    ] as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>);
+    mockGetTournamentRegistrations.mockResolvedValue(twoPlayers);
+    mockGetTournamentInvitationsSent.mockResolvedValue([]);
   });
 
-  it("filters registrations by username search term", async () => {
+  it("filters registrations by username", async () => {
     const user = userEvent.setup();
-    render(<TournamentRegistrations tournament={mockTournament} />);
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
+    });
 
-    const searchInput = screen.getByPlaceholderText(/search players/i);
-    await user.type(searchInput, "ash");
+    await waitFor(() =>
+      expect(screen.getByText("ash_ketchum")).toBeInTheDocument()
+    );
+
+    await user.type(screen.getByPlaceholderText(/search players/i), "ash");
 
     expect(screen.getByText("ash_ketchum")).toBeInTheDocument();
     expect(screen.queryByText("misty")).not.toBeInTheDocument();
@@ -619,10 +347,15 @@ describe("TournamentRegistrations — search", () => {
 
   it("filters registrations by team name", async () => {
     const user = userEvent.setup();
-    render(<TournamentRegistrations tournament={mockTournament} />);
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
+    });
 
-    const searchInput = screen.getByPlaceholderText(/search players/i);
-    await user.type(searchInput, "Water");
+    await waitFor(() =>
+      expect(screen.getByText("Water Wonders")).toBeInTheDocument()
+    );
+
+    await user.type(screen.getByPlaceholderText(/search players/i), "Water");
 
     expect(screen.getByText("Water Wonders")).toBeInTheDocument();
     expect(screen.queryByText("Pokémon Team")).not.toBeInTheDocument();
@@ -630,51 +363,56 @@ describe("TournamentRegistrations — search", () => {
 
   it("shows empty state when search yields no results", async () => {
     const user = userEvent.setup();
-    render(<TournamentRegistrations tournament={mockTournament} />);
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
+    });
 
-    const searchInput = screen.getByPlaceholderText(/search players/i);
-    await user.type(searchInput, "zzznomatch");
+    await waitFor(() =>
+      expect(screen.getByText("ash_ketchum")).toBeInTheDocument()
+    );
+
+    await user.type(
+      screen.getByPlaceholderText(/search players/i),
+      "zzznomatch"
+    );
 
     expect(screen.getByText(/no registrations yet/i)).toBeInTheDocument();
   });
 
-  it("shows 'No team name' placeholder when team_name is null", () => {
-    // Set up a registration with no team name
-    mockGetTournamentRegistrations.mockReturnValue([
-      {
+  it("shows 'No team name' placeholder when team_name is null", async () => {
+    mockGetTournamentRegistrations.mockResolvedValue([
+      buildRegistration({
         id: 10,
         status: "registered",
         alt: { username: "gary_oak", avatar_url: null },
         team_name: null,
-        registered_at: null,
-        drop_category: null,
-      },
-    ] as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>);
-    render(<TournamentRegistrations tournament={mockTournament} />);
-    expect(screen.getByText("No team name")).toBeInTheDocument();
+      }),
+    ]);
+
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText("No team name")).toBeInTheDocument()
+    );
   });
 });
 
-// ---------------------------------------------------------------------------
-// forceCheckIn / remove handlers
-// ---------------------------------------------------------------------------
-
 describe("TournamentRegistrations — action handlers", () => {
-  const mockTournament = { id: 1, status: "active" };
   const singleRegistration = [
-    {
+    buildRegistration({
       id: 42,
       status: "registered",
       alt: { username: "brock", avatar_url: null },
       team_name: null,
-      registered_at: null,
-      drop_category: null,
-    },
-  ] as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>;
+    }),
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetTournamentRegistrations.mockReturnValue(singleRegistration);
+    mockGetTournamentRegistrations.mockResolvedValue(singleRegistration);
+    mockGetTournamentInvitationsSent.mockResolvedValue([]);
   });
 
   it("calls forceCheckInPlayer on Force Check-in dropdown action", async () => {
@@ -684,14 +422,15 @@ describe("TournamentRegistrations — action handlers", () => {
     forceCheckInPlayer.mockResolvedValue({ success: true });
 
     const user = userEvent.setup();
-    render(<TournamentRegistrations tournament={mockTournament} />);
-
-    // Open the dropdown
-    const moreBtn = screen.getByRole("button", {
-      name: "Registration actions",
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
     });
-    await user.click(moreBtn);
 
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Registration actions" })).toBeInTheDocument()
+    );
+
+    await user.click(screen.getByRole("button", { name: "Registration actions" }));
     const checkInItem = await screen.findByText("Force Check-in");
     await user.click(checkInItem);
 
@@ -711,13 +450,15 @@ describe("TournamentRegistrations — action handlers", () => {
     });
 
     const user = userEvent.setup();
-    render(<TournamentRegistrations tournament={mockTournament} />);
-
-    const moreBtn = screen.getByRole("button", {
-      name: "Registration actions",
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
     });
-    await user.click(moreBtn);
 
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Registration actions" })).toBeInTheDocument()
+    );
+
+    await user.click(screen.getByRole("button", { name: "Registration actions" }));
     const checkInItem = await screen.findByText("Force Check-in");
     await user.click(checkInItem);
 
@@ -728,72 +469,75 @@ describe("TournamentRegistrations — action handlers", () => {
 
   it("shows drop dialog when Drop Player is clicked", async () => {
     const user = userEvent.setup();
-    render(<TournamentRegistrations tournament={mockTournament} />);
-
-    const moreBtn = screen.getByRole("button", {
-      name: "Registration actions",
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
     });
-    await user.click(moreBtn);
 
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Registration actions" })).toBeInTheDocument()
+    );
+
+    await user.click(screen.getByRole("button", { name: "Registration actions" }));
     const dropItem = await screen.findByText("Drop Player");
     await user.click(dropItem);
 
-    // DropPlayerDialog should open — check that the dialog is in the DOM
-    // (brock appears in the table and also in the drop dialog title)
+    // DropPlayerDialog should open — player name visible in dialog context
     const brockOccurrences = screen.getAllByText(/brock/i);
     expect(brockOccurrences.length).toBeGreaterThan(0);
   });
 });
 
-// ---------------------------------------------------------------------------
-// Bulk actions
-// ---------------------------------------------------------------------------
-
 describe("TournamentRegistrations — bulk actions", () => {
-  const mockTournament = { id: 1, status: "active" };
-
   const twoRegistrations = [
-    {
+    buildRegistration({
       id: 1,
       status: "registered",
       alt: { username: "p1", avatar_url: null },
-      team_name: null,
-      registered_at: null,
-      drop_category: null,
-    },
-    {
+    }),
+    buildRegistration({
       id: 2,
       status: "registered",
       alt: { username: "p2", avatar_url: null },
-      team_name: null,
-      registered_at: null,
-      drop_category: null,
-    },
-  ] as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>;
+    }),
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetTournamentRegistrations.mockReturnValue(twoRegistrations);
+    mockGetTournamentRegistrations.mockResolvedValue(twoRegistrations);
+    mockGetTournamentInvitationsSent.mockResolvedValue([]);
   });
 
   it("shows bulk action buttons when a row is selected", async () => {
     const user = userEvent.setup();
-    render(<TournamentRegistrations tournament={mockTournament} />);
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
+    });
 
-    // Select first row checkbox
+    await waitFor(() =>
+      expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0)
+    );
+
+    // checkboxes[0] = select-all; checkboxes[1] = first row
     const checkboxes = screen.getAllByRole("checkbox");
-    // checkboxes[0] is select-all, checkboxes[1] is first row
     await user.click(checkboxes[1]);
 
     expect(
       screen.getByRole("button", { name: /force check-in/i })
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /remove/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /remove/i })
+    ).toBeInTheDocument();
   });
 
   it("toggleSelectAll selects all visible registrations", async () => {
     const user = userEvent.setup();
-    render(<TournamentRegistrations tournament={mockTournament} />);
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0)
+    );
 
     const selectAllCheckbox = screen.getAllByRole("checkbox")[0];
     await user.click(selectAllCheckbox);
@@ -813,21 +557,25 @@ describe("TournamentRegistrations — bulk actions", () => {
     });
 
     const user = userEvent.setup();
-    render(<TournamentRegistrations tournament={mockTournament} />);
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
+    });
 
-    // Select all
+    await waitFor(() =>
+      expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0)
+    );
+
     const selectAllCheckbox = screen.getAllByRole("checkbox")[0];
     await user.click(selectAllCheckbox);
 
-    const bulkCheckInBtn = screen.getByRole("button", {
-      name: /force check-in \(2\)/i,
-    });
-    await user.click(bulkCheckInBtn);
+    await user.click(
+      screen.getByRole("button", { name: /force check-in \(2\)/i })
+    );
 
     expect(bulkForceCheckIn).toHaveBeenCalledWith([1, 2]);
   });
 
-  it("shows error in toast when bulkForceCheckIn fails", async () => {
+  it("shows error toast when bulkForceCheckIn fails", async () => {
     const { bulkForceCheckIn } = jest.requireMock("@/actions/tournaments") as {
       bulkForceCheckIn: jest.Mock;
     };
@@ -840,7 +588,13 @@ describe("TournamentRegistrations — bulk actions", () => {
     });
 
     const user = userEvent.setup();
-    render(<TournamentRegistrations tournament={mockTournament} />);
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0)
+    );
 
     const selectAllCheckbox = screen.getAllByRole("checkbox")[0];
     await user.click(selectAllCheckbox);
@@ -851,6 +605,44 @@ describe("TournamentRegistrations — bulk actions", () => {
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Bulk check-in failed");
+    });
+  });
+});
+
+describe("TournamentRegistrations — error state", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("shows error banner when registrations query fails", async () => {
+    mockGetTournamentRegistrations.mockRejectedValue(new Error("Network error"));
+    mockGetTournamentInvitationsSent.mockResolvedValue([]);
+
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/failed to load data/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("shows error banner when invitations query fails", async () => {
+    mockGetTournamentRegistrations.mockResolvedValue([]);
+    mockGetTournamentInvitationsSent.mockRejectedValue(
+      new Error("Invitations fetch failed")
+    );
+
+    render(<TournamentRegistrations tournament={defaultTournament} />, {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/failed to load data/i)
+      ).toBeInTheDocument();
     });
   });
 });
