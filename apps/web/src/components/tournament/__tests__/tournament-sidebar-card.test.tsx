@@ -1,4 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   TournamentSidebarCardClient,
   type SidebarRegistrationStatus,
@@ -8,46 +10,48 @@ import {
 // Mocks
 // ---------------------------------------------------------------------------
 //
-// Phase 2 Task 9 (T3e): the card is now a server component that fetches via
-// service-role and passes registration/check-in data to this presentational
-// client child as props. There is no browser `useSupabaseQuery` read and no
-// realtime subscription anymore — these tests drive the child directly with
-// props. The `useSupabase` hook is still mocked because the mutation hooks
-// (`useSupabaseMutation`) consume the same provider.
+// Phase 3 migration: useSupabaseMutation replaced by useMutation from
+// @tanstack/react-query. Each mutation fn (withdrawFromTournament, checkIn,
+// undoCheckIn) is mocked at the @trainers/supabase level. The browser Supabase
+// client is mocked at @/lib/supabase/client so createClient() resolves without
+// real credentials.
 
-// Mock @tanstack/react-query useQuery (used for user teams)
-jest.mock("@tanstack/react-query", () => ({
-  useQuery: jest.fn(() => ({ data: [], isLoading: false })),
-}));
-
-const mockRefresh = jest.fn();
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(() => ({ refresh: mockRefresh })),
-}));
-
-const mockSupabase = {
-  channel: jest.fn(),
-  removeChannel: jest.fn(),
-};
-
-jest.mock("@/lib/supabase", () => ({
-  useSupabase: jest.fn(() => mockSupabase),
-  useSupabaseMutation: jest.fn(),
-}));
-
-import { useSupabaseMutation } from "@/lib/supabase";
-
-const mockUseSupabaseMutation = useSupabaseMutation as jest.MockedFunction<
-  typeof useSupabaseMutation
->;
+// Mock mutation functions from @trainers/supabase
+const mockWithdrawFromTournament = jest.fn();
+const mockCheckIn = jest.fn();
+const mockUndoCheckIn = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
   getRegistrationStatus: jest.fn(),
   getCheckInStatus: jest.fn(),
   getCheckInStats: jest.fn(),
-  checkIn: jest.fn(),
-  undoCheckIn: jest.fn(),
-  withdrawFromTournament: jest.fn(),
+  checkIn: (...args: unknown[]) => mockCheckIn(...args),
+  undoCheckIn: (...args: unknown[]) => mockUndoCheckIn(...args),
+  withdrawFromTournament: (...args: unknown[]) =>
+    mockWithdrawFromTournament(...args),
+}));
+
+// Mock browser Supabase client — createClient() returns an empty stub object.
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: jest.fn(() => ({})),
+  supabase: {},
+}));
+
+// Mock @tanstack/react-query useQuery (used for user teams) — keep it simple
+jest.mock("@tanstack/react-query", () => {
+  const actual = jest.requireActual("@tanstack/react-query") as Record<
+    string,
+    unknown
+  >;
+  return {
+    ...actual,
+    useQuery: jest.fn(() => ({ data: [], isLoading: false })),
+  };
+});
+
+const mockRefresh = jest.fn();
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(() => ({ refresh: mockRefresh })),
 }));
 
 jest.mock("@/actions/tournaments", () => ({
@@ -82,6 +86,22 @@ jest.mock("../register-modal", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// QueryClient wrapper
+// ---------------------------------------------------------------------------
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -110,8 +130,6 @@ function buildRegistrationStatus(overrides?: object) {
   };
 }
 
-// Props the server wrapper would have passed to the client child, derived from
-// the previous (query-based) test inputs.
 let pendingRegistration: ReturnType<typeof buildRegistrationStatus> | null =
   null;
 let pendingCheckInStatus: unknown = null;
@@ -129,11 +147,6 @@ function setupQueryMocks({
   pendingRegistration = registrationStatus;
   pendingCheckInStatus = checkInStatus;
   pendingCheckInStats = checkInStats;
-
-  mockUseSupabaseMutation.mockReturnValue({
-    mutateAsync: jest.fn(),
-    isPending: false,
-  });
 }
 
 /**
@@ -157,7 +170,8 @@ function renderCard(props: typeof defaultProps = defaultProps) {
           typeof TournamentSidebarCardClient
         >["initialCheckInStats"]
       }
-    />
+    />,
+    { wrapper: createWrapper() }
   );
 }
 
@@ -168,17 +182,16 @@ function renderCard(props: typeof defaultProps = defaultProps) {
 describe("TournamentSidebarCard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Default: mutations resolve successfully
+    mockWithdrawFromTournament.mockResolvedValue(undefined);
+    mockCheckIn.mockResolvedValue(undefined);
+    mockUndoCheckIn.mockResolvedValue(undefined);
   });
 
   // =========================================================================
   // SSR data handoff — count rendered from props (no browser read)
   // =========================================================================
-  //
-  // The card is a server component (`TournamentSidebarCard`) that fetches via
-  // service-role and passes the data to the presentational client child
-  // (`TournamentSidebarCardClient`) as `initial*` props. These tests drive the
-  // child with props to prove the registration count comes from props, and that
-  // no realtime subscription is wired up anywhere in the client module.
 
   describe("server-fetched data handoff", () => {
     it("renders the registration count from props (no browser query)", () => {
@@ -195,15 +208,6 @@ describe("TournamentSidebarCard", () => {
       });
       renderCard();
       expect(screen.getByText(/17 \/ 32/)).toBeInTheDocument();
-    });
-
-    it("never opens a realtime channel (registration sub removed per D1)", () => {
-      setupQueryMocks();
-      renderCard();
-      // The previous `registrations-${id}` postgres_changes subscription was
-      // removed; the count is server-fetched + tag/refresh-revalidated instead.
-      expect(mockSupabase.channel).not.toHaveBeenCalled();
-      expect(mockSupabase.removeChannel).not.toHaveBeenCalled();
     });
   });
 
@@ -296,7 +300,6 @@ describe("TournamentSidebarCard", () => {
     it("shows registration open badge and register button", () => {
       setupQueryMocks();
       renderCard();
-      // Registration badge should be "Open"
       expect(screen.getByText("Open")).toBeInTheDocument();
     });
 
@@ -817,6 +820,142 @@ describe("TournamentSidebarCard", () => {
       expect(
         screen.getByRole("button", { name: /join waitlist/i })
       ).toBeInTheDocument();
+    });
+  });
+
+  // =========================================================================
+  // Mutation: withdrawFromTournament
+  // =========================================================================
+
+  describe("withdrawFromTournament mutation", () => {
+    it("calls withdrawFromTournament with the tournamentId on withdraw", async () => {
+      const user = userEvent.setup();
+
+      setupQueryMocks({
+        registrationStatus: buildRegistrationStatus({
+          userStatus: { status: "registered", hasTeam: false },
+        }),
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: false,
+          lateMaxRound: null,
+        },
+      });
+
+      // Override window.confirm to return true for this test
+      const confirmSpy = jest
+        .spyOn(window, "confirm")
+        .mockReturnValue(true);
+
+      renderCard();
+
+      await user.click(screen.getByRole("button", { name: /withdraw/i }));
+
+      await waitFor(() => {
+        expect(mockWithdrawFromTournament).toHaveBeenCalledWith(
+          expect.anything(),
+          defaultProps.tournamentId
+        );
+      });
+
+      confirmSpy.mockRestore();
+    });
+
+    it("does not call withdrawFromTournament when confirm is cancelled", async () => {
+      const user = userEvent.setup();
+
+      setupQueryMocks({
+        registrationStatus: buildRegistrationStatus({
+          userStatus: { status: "registered", hasTeam: false },
+        }),
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: false,
+          lateMaxRound: null,
+        },
+      });
+
+      const confirmSpy = jest
+        .spyOn(window, "confirm")
+        .mockReturnValue(false);
+
+      renderCard();
+
+      await user.click(screen.getByRole("button", { name: /withdraw/i }));
+
+      expect(mockWithdrawFromTournament).not.toHaveBeenCalled();
+
+      confirmSpy.mockRestore();
+    });
+  });
+
+  // =========================================================================
+  // Mutation: checkIn
+  // =========================================================================
+
+  describe("checkIn mutation", () => {
+    it("calls checkIn with the tournamentId on check-in", async () => {
+      const user = userEvent.setup();
+
+      setupQueryMocks({
+        registrationStatus: buildRegistrationStatus({
+          userStatus: { status: "registered", hasTeam: true },
+        }),
+        checkInStatus: {
+          isCheckedIn: false,
+          checkInOpen: true,
+          lateMaxRound: null,
+        },
+      });
+
+      renderCard();
+
+      await user.click(screen.getByRole("button", { name: /^check in$/i }));
+
+      await waitFor(() => {
+        expect(mockCheckIn).toHaveBeenCalledWith(
+          expect.anything(),
+          defaultProps.tournamentId
+        );
+      });
+    });
+  });
+
+  // =========================================================================
+  // Mutation: undoCheckIn
+  // =========================================================================
+
+  describe("undoCheckIn mutation", () => {
+    it("calls undoCheckIn with the tournamentId on undo check-in", async () => {
+      const user = userEvent.setup();
+
+      setupQueryMocks({
+        registrationStatus: buildRegistrationStatus({
+          userStatus: { status: "checked_in", hasTeam: true },
+          tournament: {
+            id: 1,
+            status: "upcoming",
+            maxParticipants: null,
+            lateCheckInMaxRound: null,
+          },
+        }),
+        checkInStatus: {
+          isCheckedIn: true,
+          checkInOpen: true,
+          lateMaxRound: null,
+        },
+      });
+
+      renderCard();
+
+      await user.click(screen.getByRole("button", { name: /undo check-in/i }));
+
+      await waitFor(() => {
+        expect(mockUndoCheckIn).toHaveBeenCalledWith(
+          expect.anything(),
+          defaultProps.tournamentId
+        );
+      });
     });
   });
 });

@@ -2,9 +2,8 @@
 
 import { useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { useSupabase, useSupabaseMutation } from "@/lib/supabase";
 import {
   type getRegistrationStatus,
   type getCheckInStatus,
@@ -13,6 +12,7 @@ import {
   undoCheckIn,
   withdrawFromTournament,
 } from "@trainers/supabase";
+import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Collapsible,
@@ -319,22 +319,17 @@ export function TournamentSidebarCardClient({
 
   // ---- Mutations ----
 
-  const { mutateAsync: withdrawMutation } = useSupabaseMutation(
-    (supabase, _args: Record<string, never>) =>
-      withdrawFromTournament(supabase, tournamentId)
-  );
+  const { mutateAsync: withdrawMutation } = useMutation({
+    mutationFn: () => withdrawFromTournament(createClient(), tournamentId),
+  });
 
-  const { mutateAsync: checkInMutation } = useSupabaseMutation(
-    (supabase, _args: Record<string, never>) => checkIn(supabase, tournamentId)
-  );
+  const { mutateAsync: checkInMutation } = useMutation({
+    mutationFn: () => checkIn(createClient(), tournamentId),
+  });
 
-  const { mutateAsync: undoCheckInMutation } = useSupabaseMutation(
-    (supabase, _args: Record<string, never>) =>
-      undoCheckIn(supabase, tournamentId)
-  );
-
-  // `useSupabase` is retained for the mutation hooks above; no realtime channel.
-  useSupabase();
+  const { mutateAsync: undoCheckInMutation } = useMutation({
+    mutationFn: () => undoCheckIn(createClient(), tournamentId),
+  });
 
   // Check-in countdown timer removed — unified model has no time-based window
 
@@ -382,7 +377,7 @@ export function TournamentSidebarCardClient({
 
     setIsRegistering(true);
     try {
-      await withdrawMutation({});
+      await withdrawMutation();
       toast.success("Withdrawn successfully", {
         description: "You have been removed from the tournament",
       });
@@ -401,7 +396,7 @@ export function TournamentSidebarCardClient({
   const handleCheckIn = async () => {
     setIsChecking(true);
     try {
-      await checkInMutation({});
+      await checkInMutation();
       toast.success("Checked in successfully", {
         description: "You're all set for the tournament!",
       });
@@ -419,7 +414,7 @@ export function TournamentSidebarCardClient({
   const handleUndoCheckIn = async () => {
     setIsChecking(true);
     try {
-      await undoCheckInMutation({});
+      await undoCheckInMutation();
       toast.success("Check-in undone", {
         description: "You've been unchecked from the tournament",
       });
