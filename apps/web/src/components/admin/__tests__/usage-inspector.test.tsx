@@ -227,10 +227,14 @@ describe("UsageInspector", () => {
       });
       await user.click(rillaboomButton);
 
+      // Q3 ("species-detail" for expandedSpecies) shares the same cache key as
+      // Q2 ("species-detail" for topSpecies) when expandedSpecies === topSpecies.
+      // Both queries receive the error result, so the species detail error AND the
+      // stat-strip error both render "HTTP 403". Use getAllByText to handle both.
       expect(
         screen.getByText(/Failed to load species detail/i)
       ).toBeInTheDocument();
-      expect(screen.getByText(/HTTP 403/)).toBeInTheDocument();
+      expect(screen.getAllByText(/HTTP 403/).length).toBeGreaterThanOrEqual(1);
     });
 
     it("shows the raw error message when the error is not an Error instance", () => {

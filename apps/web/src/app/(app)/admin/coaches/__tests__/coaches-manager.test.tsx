@@ -7,6 +7,18 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: mockRefresh }),
 }));
 
+// Mock @trainers/supabase/react-query — coaches list uses useApiQuery
+const mockUseApiQueryCoaches = jest.fn();
+jest.mock("@trainers/supabase/react-query", () => ({
+  useApiQuery: (...args: unknown[]) => mockUseApiQueryCoaches(...args),
+}));
+
+// Mock @tanstack/react-query — useQueryClient used for cache invalidation
+const mockInvalidateQueries = jest.fn().mockResolvedValue(undefined);
+jest.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
+}));
+
 // Mock next/link
 jest.mock("next/link", () => ({
   __esModule: true,
@@ -185,6 +197,18 @@ function setSearchQuery(
   });
 }
 
+// Default coaches API query result — no data (component falls back to initialData prop)
+function setCoachesQuery(
+  data: CoachRow[] | undefined = undefined,
+  opts: { isError?: boolean; error?: Error | null } = {}
+) {
+  mockUseApiQueryCoaches.mockReturnValue({
+    data,
+    isError: opts.isError ?? false,
+    error: opts.error ?? null,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -193,6 +217,7 @@ describe("CoachesManager", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setSearchQuery(); // default: no results, not loading
+    setCoachesQuery(); // default: undefined data, component uses initialData prop
     mockRevokeCoachStatusAction.mockResolvedValue({ success: true });
     mockGrantCoachStatusAction.mockResolvedValue({ success: true });
   });
@@ -410,7 +435,7 @@ describe("CoachesManager", () => {
       });
     });
 
-    it("refreshes router on successful revoke", async () => {
+    it("invalidates coaches query on successful revoke", async () => {
       const user = userEvent.setup();
       render(<CoachesManager coaches={[buildCoach()]} />);
 
@@ -418,7 +443,9 @@ describe("CoachesManager", () => {
       await user.click(within(screen.getByTestId("alert-dialog")).getByRole("button", { name: /^revoke$/i }));
 
       await waitFor(() => {
-        expect(mockRefresh).toHaveBeenCalled();
+        expect(mockInvalidateQueries).toHaveBeenCalledWith(
+          expect.objectContaining({ queryKey: ["admin", "coaches"] })
+        );
       });
     });
   });

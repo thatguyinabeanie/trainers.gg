@@ -19,8 +19,46 @@ import {
   createAnnouncement,
   updateAnnouncement,
   deleteAnnouncement,
+  listFeatureFlags,
+  listAnnouncements,
+  type FeatureFlag,
 } from "@trainers/supabase";
-import type { Json } from "@trainers/supabase/types";
+import type { Json, Tables } from "@trainers/supabase/types";
+
+// --- Read Actions (Phase 2 Task 9, review #5) ---
+//
+// The admin config client previously read `feature_flags` and `announcements`
+// directly via the browser Supabase client. Once the Phase 2 Task 9 REVOKE
+// lands on S-bucket base tables, those browser-keyed reads return zero rows.
+// These server actions run the reads server-side via the service-role client
+// (after the admin + sudo check in `withAdminAction`), so they survive the
+// revoke safely — the admin gate already ensures only site admins reach here.
+
+/**
+ * Read all feature flags (admin-only).
+ * Returns `{ success: true, data }` with flags ordered by key, or an error.
+ */
+export async function getFeatureFlagsAction(): Promise<
+  ActionResult & { data?: FeatureFlag[] }
+> {
+  return withAdminAction(async (supabase) => {
+    const flags = await listFeatureFlags(supabase);
+    return { success: true, data: flags };
+  }, "Error loading feature flags");
+}
+
+/**
+ * Read all announcements (admin-only).
+ * Returns `{ success: true, data }` ordered by created_at desc, or an error.
+ */
+export async function getAnnouncementsAction(): Promise<
+  ActionResult & { data?: Tables<"announcements">[] }
+> {
+  return withAdminAction(async (supabase) => {
+    const announcements = await listAnnouncements(supabase);
+    return { success: true, data: announcements };
+  }, "Error loading announcements");
+}
 
 // --- Feature Flag Actions ---
 

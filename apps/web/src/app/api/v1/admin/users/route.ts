@@ -34,6 +34,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import {
   listUsersAdmin,
+  isSiteAdmin,
   type ListUsersAdminOptions,
 } from "@trainers/supabase";
 
@@ -44,7 +45,6 @@ import {
   DEFAULT_API_LIMIT,
   DEFAULT_WINDOW_MS,
 } from "@/lib/api/rate-limit";
-import { isSiteAdmin } from "@/lib/sudo/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
 /** Per-user/admin data: never cache in a shared CDN or the browser. */
@@ -67,7 +67,9 @@ export async function GET(
   }
 
   // Admin gate — read-only admin check (not sudo/mutation gate).
-  const isAdmin = await isSiteAdmin();
+  //    Use a service-role client so the user_roles lookup bypasses RLS.
+  const serviceRole = createServiceRoleClient();
+  const isAdmin = await isSiteAdmin(serviceRole, auth.userId);
   if (!isAdmin) {
     return NextResponse.json(
       { error: "Forbidden" },
@@ -118,10 +120,9 @@ export async function GET(
     offset: page * limit,
   };
 
-  // Service-role client — reads admin-only data (bypasses RLS safely behind
-  // the isSiteAdmin() gate checked above).
-  const supabase = createServiceRoleClient();
-  const result = await listUsersAdmin(supabase, options);
+  // Reuse the service-role client created for the admin gate above.
+  // Reads admin-only data safely behind the isSiteAdmin() check.
+  const result = await listUsersAdmin(serviceRole, options);
 
   return NextResponse.json(result, {
     headers: { "Cache-Control": CACHE_CONTROL },

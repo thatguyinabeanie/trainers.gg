@@ -144,17 +144,20 @@ describe("AdminConfigPage (server component)", () => {
   });
 
   it("passes siteRoles from getSiteRoles to AdminConfigPageClient", async () => {
-    await AdminConfigPage();
+    // AdminConfigPage returns a React element — it does NOT call the client
+    // component (JSX element creation stores the type + props without invoking
+    // the function). Assert on the returned element's props, not on the mock.
+    const element = await AdminConfigPage();
 
-    expect(mockAdminConfigPageClient).toHaveBeenCalledWith(
+    expect(element.props).toEqual(
       expect.objectContaining({ siteRoles: SITE_ROLES })
     );
   });
 
   it("passes siteAdmins from getSiteAdmins to AdminConfigPageClient", async () => {
-    await AdminConfigPage();
+    const element = await AdminConfigPage();
 
-    expect(mockAdminConfigPageClient).toHaveBeenCalledWith(
+    expect(element.props).toEqual(
       expect.objectContaining({ siteAdmins: SITE_ADMINS })
     );
   });
@@ -163,9 +166,9 @@ describe("AdminConfigPage (server component)", () => {
     mockGetSiteRoles.mockResolvedValue([]);
     mockGetSiteAdmins.mockResolvedValue([]);
 
-    await AdminConfigPage();
+    const element = await AdminConfigPage();
 
-    expect(mockAdminConfigPageClient).toHaveBeenCalledWith(
+    expect(element.props).toEqual(
       expect.objectContaining({ siteRoles: [], siteAdmins: [] })
     );
   });

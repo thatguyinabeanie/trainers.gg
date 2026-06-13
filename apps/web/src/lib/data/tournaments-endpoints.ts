@@ -398,7 +398,10 @@ export async function getCachedCommunityTournaments(
 
   const supabase = createServiceRoleClient();
   return listCommunityTournaments(supabase, communityId, {
-    status: status as
+    // Convert null → undefined: listCommunityTournaments expects no-filter as
+    // undefined, not null. A null passthrough results in the filter being sent
+    // to Supabase as a literal value, returning zero rows.
+    status: (status ?? undefined) as
       | "draft"
       | "upcoming"
       | "active"

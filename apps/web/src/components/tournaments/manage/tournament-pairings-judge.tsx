@@ -339,6 +339,12 @@ export function TournamentPairingsJudge({
         )?.matches ?? [])
       : [];
 
+  // Tracks the pairings object reference so round auto-selection re-runs when a
+  // refetch returns a new data set (the reference changes), not on every render.
+  const [prevPairings, setPrevPairings] = useState<typeof pairings | symbol>(
+    UNINITIALIZED
+  );
+
   // Initialize selectedPhaseId from phases — render-time adjustment
   const [prevPhases, setPrevPhases] = useState<typeof phases | symbol>(
     UNINITIALIZED
@@ -350,12 +356,20 @@ export function TournamentPairingsJudge({
     }
   }
 
-  // Auto-select active round, or latest round — render-time adjustment
-  const [prevRounds, setPrevRounds] = useState<
-    typeof roundsForSelectedPhase | symbol
+  // Auto-select active round, or latest round — render-time adjustment.
+  // Compare on a STABLE signature (pairings reference + selected phase), not the
+  // derived `roundsForSelectedPhase` array, which is rebuilt on every render and
+  // would otherwise trigger an infinite setState loop (new array !== prev array).
+  const roundsSignature = `${selectedPhaseId ?? ""}:${selectedPhaseIndex}`;
+  const [prevRoundsSignature, setPrevRoundsSignature] = useState<
+    string | symbol
   >(UNINITIALIZED);
-  if (roundsForSelectedPhase !== prevRounds) {
-    setPrevRounds(roundsForSelectedPhase);
+  if (
+    pairings !== prevPairings ||
+    roundsSignature !== prevRoundsSignature
+  ) {
+    setPrevPairings(pairings);
+    setPrevRoundsSignature(roundsSignature);
     if (!roundsForSelectedPhase || roundsForSelectedPhase.length === 0) {
       setSelectedRoundId(null);
     } else if (

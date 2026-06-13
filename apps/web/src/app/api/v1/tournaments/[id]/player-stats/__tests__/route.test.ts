@@ -265,11 +265,25 @@ describe("success", () => {
 // =============================================================================
 
 describe("getCachedTournamentPlayerStats (fetcher unit)", () => {
+  // jest.requireActual bypasses the top-level jest.mock() for the endpoint
+  // module so the real cached fetcher runs (while its transitive deps —
+  // createServiceRoleClient, getTournamentPlayerStats, next/cache, CacheTags —
+  // are still mocked by the top-level jest.mock() calls above).
+  //
+  // Cast via Record to avoid the `typeof import()` inline type annotation
+  // that @typescript-eslint/consistent-type-imports forbids.
+  const actual = jest.requireActual(
+    "@/lib/data/tournament-player-stats-endpoint"
+  ) as Record<string, (...args: unknown[]) => unknown>;
+  const realGetCachedTournamentPlayerStats = actual[
+    "getCachedTournamentPlayerStats"
+  ] as (
+    tournamentId: number,
+    options?: { includeDropped?: boolean }
+  ) => Promise<unknown>;
+
   it("calls getTournamentPlayerStats with the service-role client and tournamentId", async () => {
-    const { getCachedTournamentPlayerStats } = await import(
-      "@/lib/data/tournament-player-stats-endpoint"
-    );
-    await getCachedTournamentPlayerStats(42);
+    await realGetCachedTournamentPlayerStats(42);
 
     expect(mockGetTournamentPlayerStatsQuery).toHaveBeenCalledWith(
       mockFakeServiceRoleClient,
@@ -279,10 +293,7 @@ describe("getCachedTournamentPlayerStats (fetcher unit)", () => {
   });
 
   it("forwards includeDropped: true to the underlying query", async () => {
-    const { getCachedTournamentPlayerStats } = await import(
-      "@/lib/data/tournament-player-stats-endpoint"
-    );
-    await getCachedTournamentPlayerStats(42, { includeDropped: true });
+    await realGetCachedTournamentPlayerStats(42, { includeDropped: true });
 
     expect(mockGetTournamentPlayerStatsQuery).toHaveBeenCalledWith(
       mockFakeServiceRoleClient,
@@ -292,10 +303,7 @@ describe("getCachedTournamentPlayerStats (fetcher unit)", () => {
   });
 
   it("returns the rows from getTournamentPlayerStats", async () => {
-    const { getCachedTournamentPlayerStats } = await import(
-      "@/lib/data/tournament-player-stats-endpoint"
-    );
-    const result = await getCachedTournamentPlayerStats(42);
+    const result = await realGetCachedTournamentPlayerStats(42);
 
     expect(result).toEqual(PLAYER_STATS);
   });

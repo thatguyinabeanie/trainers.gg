@@ -14,7 +14,7 @@ const mockCreateServiceRoleClient = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
   listUsersAdmin: (...args: unknown[]) => mockListUsersAdmin(...args),
-  // Re-export the type only — no runtime value needed.
+  isSiteAdmin: (...args: unknown[]) => mockIsSiteAdmin(...args),
 }));
 
 jest.mock("@/lib/api/auth", () => ({
@@ -26,10 +26,6 @@ jest.mock("@/lib/api/rate-limit", () => ({
   extractRequestIp: jest.fn(() => "127.0.0.1"),
   DEFAULT_API_LIMIT: 120,
   DEFAULT_WINDOW_MS: 60_000,
-}));
-
-jest.mock("@/lib/sudo/server", () => ({
-  isSiteAdmin: (...args: unknown[]) => mockIsSiteAdmin(...args),
 }));
 
 jest.mock("@/lib/supabase/server", () => ({

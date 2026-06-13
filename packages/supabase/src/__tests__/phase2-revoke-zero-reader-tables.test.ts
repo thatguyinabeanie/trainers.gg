@@ -46,7 +46,7 @@ const MIGRATION_FILENAME =
 
 const MIGRATION_PATH = path.resolve(
   __dirname,
-  "../../../../supabase/migrations",
+  "../../supabase/migrations",
   MIGRATION_FILENAME
 );
 

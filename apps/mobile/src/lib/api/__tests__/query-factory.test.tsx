@@ -248,10 +248,15 @@ describe("useApiMutation", () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
+    // TanStack Query v5 onSuccess forwards four args:
+    // (data, variables, onMutateResult, context)
+    // The 4th arg (context) is a MutationFunctionContext object managed by
+    // TanStack internally — assert only that the first three are correct.
     expect(onSuccessSpy).toHaveBeenCalledWith(
       mockResponse,
       { id: "1" },
-      undefined
+      undefined,
+      expect.anything()
     );
   });
 });

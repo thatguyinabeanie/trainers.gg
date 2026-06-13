@@ -4,6 +4,10 @@
 
 const mockUseApiQuery = jest.fn();
 
+// We control fetch responses per-test (repo convention — see overview-tab.test).
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
+
 // The hook also imports getCurrentUser (for its return-type only) — provide a
 // no-op so the module loads under Jest.
 jest.mock("@trainers/supabase", () => ({
@@ -73,20 +77,20 @@ describe("query wiring", () => {
   it("fetches /api/v1/me/profile and returns the parsed JSON", async () => {
     mockUseApiQuery.mockReturnValue(queryResult({ data: USER_WITH_ALT }));
     const payload = { success: true, data: USER_WITH_ALT };
-    const fetchMock = jest
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(JSON.stringify(payload), { status: 200 })
-      );
+    // jsdom's Response lacks a usable .json(), so return a plain object whose
+    // .json() resolves to the payload — the repo convention for fetch mocks.
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue(payload),
+    });
 
     renderHook(() => useCurrentUser());
     const fetcher = mockUseApiQuery.mock.calls[0][1] as () => Promise<unknown>;
     const result = await fetcher();
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/v1/me/profile");
+    expect(mockFetch).toHaveBeenCalledWith("/api/v1/me/profile");
     expect(result).toEqual(payload);
-
-    fetchMock.mockRestore();
   });
 });
 

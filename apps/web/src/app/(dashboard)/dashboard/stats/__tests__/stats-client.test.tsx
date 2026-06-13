@@ -211,7 +211,10 @@ describe("with tournament history", () => {
   it("renders the alt selector when alts can be derived from history", () => {
     setupQuery([makeEntry({ altId: 10, altUsername: "ash_alt" })]);
     render(<StatsClient />);
-    expect(screen.getByText("All Alts")).toBeInTheDocument();
+    // The mocked Select renders "All Alts" both as the placeholder
+    // (SelectValue) and as the "all" option (SelectItem), so assert on its
+    // presence via getAllByText rather than a single match.
+    expect(screen.getAllByText("All Alts").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders unique alt usernames in the selector", () => {
@@ -260,10 +263,10 @@ describe("analytics components receive altId", () => {
   it("passes null altId to analytics when no alt is selected (default)", () => {
     setupQuery([makeEntry()]);
     render(<StatsClient />);
-    // Default selectedAltId is null — analytics components get null
-    expect(screen.getByTestId("win-rate-trend")).toHaveAttribute(
-      "data-alt-id",
-      ""
+    // Default selectedAltId is null. React omits an attribute whose value is
+    // null, so the rendered <div> has no data-alt-id attribute at all.
+    expect(screen.getByTestId("win-rate-trend")).not.toHaveAttribute(
+      "data-alt-id"
     );
   });
 

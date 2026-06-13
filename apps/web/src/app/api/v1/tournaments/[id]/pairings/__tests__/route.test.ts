@@ -311,6 +311,25 @@ jest.mock("@/lib/cache", () => ({
 describe("getCachedTournamentPairings (fetcher)", () => {
   const FAKE_SUPABASE = { _tag: "service-role" };
 
+  // jest.requireActual bypasses the top-level jest.mock() for the endpoint
+  // module so the real cached fetcher runs. Its transitive deps
+  // (@trainers/supabase, @/lib/supabase/server, next/cache, @/lib/cache) are
+  // still mocked by the top-level jest.mock() calls above.
+  //
+  // Cast via Record to avoid the `typeof import()` inline type annotation
+  // that @typescript-eslint/consistent-type-imports forbids.
+  const actual = jest.requireActual(
+    "@/lib/data/tournament-pairings-endpoint"
+  ) as Record<string, (...args: unknown[]) => unknown>;
+  const getCachedTournamentPairings = actual[
+    "getCachedTournamentPairings"
+  ] as (tournamentId: number) => Promise<{
+    phases: unknown[];
+    allPhaseRounds: unknown[][];
+    roundsWithStats: unknown[];
+    unpairedPlayers: unknown[];
+  }>;
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockCreateServiceRoleClient.mockReturnValue(FAKE_SUPABASE);
@@ -318,11 +337,6 @@ describe("getCachedTournamentPairings (fetcher)", () => {
 
   it("returns empty shape immediately when tournament has no phases", async () => {
     mockGetTournamentPhases.mockResolvedValue([]);
-
-    // Import directly so we bypass the route-level mock
-    const { getCachedTournamentPairings } = await import(
-      "@/lib/data/tournament-pairings-endpoint"
-    );
 
     const result = await getCachedTournamentPairings(42);
 
@@ -347,10 +361,6 @@ describe("getCachedTournamentPairings (fetcher)", () => {
     mockGetPhaseRoundsWithMatches.mockResolvedValue([]);
     mockGetPhaseRoundsWithStats.mockResolvedValue([]);
     mockGetUnpairedCheckedInPlayers.mockResolvedValue([]);
-
-    const { getCachedTournamentPairings } = await import(
-      "@/lib/data/tournament-pairings-endpoint"
-    );
 
     const result = await getCachedTournamentPairings(42);
 
@@ -380,10 +390,6 @@ describe("getCachedTournamentPairings (fetcher)", () => {
     mockGetPhaseRoundsWithStats.mockResolvedValue([]);
     mockGetUnpairedCheckedInPlayers.mockResolvedValue([]);
 
-    const { getCachedTournamentPairings } = await import(
-      "@/lib/data/tournament-pairings-endpoint"
-    );
-
     await getCachedTournamentPairings(42);
 
     expect(mockGetPhaseRoundsWithStats).toHaveBeenCalledTimes(1);
@@ -400,10 +406,6 @@ describe("getCachedTournamentPairings (fetcher)", () => {
     mockGetPhaseRoundsWithMatches.mockResolvedValue([]);
     mockGetPhaseRoundsWithStats.mockResolvedValue(roundsWithStats);
     mockGetUnpairedCheckedInPlayers.mockResolvedValue([]);
-
-    const { getCachedTournamentPairings } = await import(
-      "@/lib/data/tournament-pairings-endpoint"
-    );
 
     await getCachedTournamentPairings(42);
 
@@ -426,10 +428,6 @@ describe("getCachedTournamentPairings (fetcher)", () => {
     mockGetPhaseRoundsWithStats.mockResolvedValue(roundsWithStats);
     mockGetUnpairedCheckedInPlayers.mockResolvedValue([]);
 
-    const { getCachedTournamentPairings } = await import(
-      "@/lib/data/tournament-pairings-endpoint"
-    );
-
     await getCachedTournamentPairings(42);
 
     // No active round — falls back to last (id=6)
@@ -446,10 +444,6 @@ describe("getCachedTournamentPairings (fetcher)", () => {
     mockGetPhaseRoundsWithMatches.mockResolvedValue([]);
     mockGetPhaseRoundsWithStats.mockResolvedValue([]); // no rounds
     mockGetUnpairedCheckedInPlayers.mockResolvedValue([]);
-
-    const { getCachedTournamentPairings } = await import(
-      "@/lib/data/tournament-pairings-endpoint"
-    );
 
     const result = await getCachedTournamentPairings(42);
 
@@ -468,10 +462,6 @@ describe("getCachedTournamentPairings (fetcher)", () => {
       { id: 7, status: "active", round_number: 1 },
     ]);
     mockGetUnpairedCheckedInPlayers.mockResolvedValue(unpairedPlayers);
-
-    const { getCachedTournamentPairings } = await import(
-      "@/lib/data/tournament-pairings-endpoint"
-    );
 
     const result = await getCachedTournamentPairings(42);
 

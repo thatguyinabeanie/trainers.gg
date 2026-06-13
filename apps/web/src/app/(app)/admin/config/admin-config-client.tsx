@@ -37,12 +37,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase/client";
 import {
   updateFlagAction,
   createAnnouncementAction,
   updateAnnouncementAction,
   deleteAnnouncementAction,
+  getFeatureFlagsAction,
+  getAnnouncementsAction,
 } from "./actions";
 import { FlagAllowlistSheet } from "./flag-allowlist-sheet";
 import { AnnouncementDialog } from "./announcement-dialog";
@@ -313,17 +314,16 @@ export function AdminConfigPageClient({
   const fetchFlags = async () => {
     setFlagsLoading(true);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("feature_flags")
-        .select("*")
-        .order("key", { ascending: true });
-
-      if (fetchError) {
-        console.error("Error fetching feature flags:", fetchError);
-        setError("Failed to load feature flags");
+      // Server action: reads feature_flags via the service-role client behind an
+      // admin + sudo gate. Survives the Phase 2 Task 9 REVOKE on S-bucket base
+      // tables, where the browser anon client would return zero rows.
+      const result = await getFeatureFlagsAction();
+      if (!result.success) {
+        console.error("Error fetching feature flags:", result.error);
+        setError(result.error ?? "Failed to load feature flags");
         return;
       }
-      setFlags((data as FeatureFlag[]) ?? []);
+      setFlags((result.data as FeatureFlag[]) ?? []);
     } catch (err) {
       console.error("Error fetching feature flags:", err);
       setError("Failed to load feature flags");
@@ -335,17 +335,15 @@ export function AdminConfigPageClient({
   const fetchAnnouncements = async () => {
     setAnnouncementsLoading(true);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("announcements")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (fetchError) {
-        console.error("Error fetching announcements:", fetchError);
-        setError("Failed to load announcements");
+      // Server action: reads announcements via the service-role client behind an
+      // admin + sudo gate (see fetchFlags note re: Phase 2 Task 9 REVOKE).
+      const result = await getAnnouncementsAction();
+      if (!result.success) {
+        console.error("Error fetching announcements:", result.error);
+        setError(result.error ?? "Failed to load announcements");
         return;
       }
-      setAnnouncements((data as Announcement[]) ?? []);
+      setAnnouncements((result.data as Announcement[]) ?? []);
     } catch (err) {
       console.error("Error fetching announcements:", err);
       setError("Failed to load announcements");

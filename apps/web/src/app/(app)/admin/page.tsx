@@ -18,7 +18,8 @@
  * browser cache.
  */
 
-import { Label, Pie, PieChart } from "recharts";
+import { Suspense } from "react";
+import { connection } from "next/server";
 import {
   Users,
   Activity,
@@ -31,11 +32,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
@@ -56,16 +52,13 @@ import {
   getActionPrefix,
 } from "./activity/audit-action-badge";
 import { ActivityTab } from "./activity-tab";
+import { DonutBreakdownCard } from "./donut-breakdown-card";
 import {
-  CHART_COLORS,
   TOURNAMENT_STATUS_LABELS,
   ORG_STATUS_LABELS,
   ORG_TIER_LABELS,
-  DEFAULT_FILL,
   formatNumber,
   relativeTime,
-  humanLabel,
-  buildChartData,
 } from "./helpers";
 
 type AuditAction = Database["public"]["Enums"]["audit_action"];
@@ -138,121 +131,6 @@ function MetricCard({ title, value, icon: Icon, subtitle, theme }: MetricCardPro
             <Icon className={cn("size-5", theme.iconColor)} />
           </div>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ── Donut Breakdown Chart ───────────────────────────────────────────
-
-interface DonutBreakdownCardProps {
-  title: string;
-  data: Record<string, number> | undefined;
-  labels: Record<string, string>;
-}
-
-function DonutBreakdownCard({ title, data, labels }: DonutBreakdownCardProps) {
-  const { chartData, chartConfig, total } = buildChartData(data, labels);
-
-  return (
-    <Card>
-      <CardHeader className="pb-0">
-        <CardTitle className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {chartData.length > 0 ? (
-          <div className="flex flex-col items-center">
-            {/* Donut chart */}
-            <ChartContainer
-              config={chartConfig}
-              className="aspect-square h-36"
-            >
-              <PieChart>
-                <ChartTooltip
-                  cursor={false}
-                  content={
-                    <ChartTooltipContent
-                      hideLabel
-                      formatter={(value, name) => (
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="size-2.5 shrink-0 rounded-[2px]"
-                            style={{
-                              backgroundColor:
-                                CHART_COLORS[name as string] ?? DEFAULT_FILL,
-                            }}
-                          />
-                          <span className="text-muted-foreground">
-                            {humanLabel(name as string, labels)}
-                          </span>
-                          <span className="font-mono font-medium tabular-nums">
-                            {(value as number).toLocaleString()}
-                          </span>
-                        </div>
-                      )}
-                    />
-                  }
-                />
-                <Pie
-                  data={chartData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={40}
-                  outerRadius={60}
-                  strokeWidth={2}
-                  stroke="var(--color-card)"
-                >
-                  <Label
-                    content={({ viewBox }) => {
-                      if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                        return (
-                          <text
-                            x={viewBox.cx}
-                            y={viewBox.cy}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                          >
-                            <tspan
-                              x={viewBox.cx}
-                              y={viewBox.cy}
-                              className="fill-foreground text-2xl font-semibold"
-                            >
-                              {total.toLocaleString()}
-                            </tspan>
-                          </text>
-                        );
-                      }
-                    }}
-                  />
-                </Pie>
-              </PieChart>
-            </ChartContainer>
-
-            {/* Legend */}
-            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">
-              {chartData.map((item) => (
-                <div key={item.name} className="flex items-center gap-1.5">
-                  <div
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: item.fill }}
-                  />
-                  <span className="text-muted-foreground text-xs">
-                    {humanLabel(item.name, labels)}
-                  </span>
-                  <span className="text-xs font-medium tabular-nums">
-                    {item.value.toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <p className="text-muted-foreground py-8 text-center text-sm">
-            No data
-          </p>
-        )}
       </CardContent>
     </Card>
   );
@@ -486,14 +364,24 @@ function DashboardContent({
   );
 }
 
-// ── Main Page (Server Component) ────────────────────────────────────
+// ── Dashboard Data Loader (async, rendered under Suspense) ──────────
 
 /**
- * Admin dashboard page. Server component — fetches all 6 stat reads in parallel
- * via service-role (safe because the admin layout's `requireSiteAdmin()` gate
- * already ensures only site admins reach this page).
+ * Async loader for the dashboard stats. Wrapped in a Suspense boundary by the
+ * page so the admin shell stays prerenderable under `cacheComponents` — without
+ * the boundary, the uncached service-role reads here would block static
+ * prerendering of `/admin` and fail the build. The reads themselves use
+ * service-role (safe behind the admin layout's `requireSiteAdmin()` gate) and
+ * are intentionally NOT cached (per-admin-session, PII-bearing data).
  */
-export default async function AdminPage() {
+async function DashboardData() {
+  // Mark this subtree as dynamic (request-time). The admin stat queries read
+  // the current time via `new Date()` and hit uncached service-role data — under
+  // `cacheComponents`, both require a preceding dynamic signal, otherwise the
+  // prerender aborts and fails the build. `connection()` is that signal and
+  // also correctly reflects that this is per-request, never-cached admin data.
+  await connection();
+
   const supabase = createServiceRoleClient();
 
   // Fetch all 6 dashboard stats in parallel. `.catch(() => null)` lets the
@@ -523,6 +411,49 @@ export default async function AdminPage() {
     tournamentStats === null;
 
   return (
+    <DashboardContent
+      overview={overview}
+      activeUsers={activeUsers}
+      auditStats={auditStats}
+      recentLog={recentLog}
+      communityStats={communityStats}
+      tournamentStats={tournamentStats}
+      hasError={hasError}
+    />
+  );
+}
+
+// ── Dashboard Loading Skeleton ──────────────────────────────────────
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="bg-muted h-28 animate-pulse rounded-lg" />
+        ))}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="bg-muted h-80 animate-pulse rounded-lg lg:col-span-3" />
+        <div className="space-y-4 lg:col-span-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-muted h-48 animate-pulse rounded-lg" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page (Server Component) ────────────────────────────────────
+
+/**
+ * Admin dashboard page. The Tabs shell renders synchronously; the dashboard
+ * stat reads are deferred to an async `DashboardData` child under Suspense so
+ * the admin shell stays prerenderable under `cacheComponents`.
+ */
+export default function AdminPage() {
+  return (
     <Tabs defaultValue="dashboard">
       <TabsList>
         <TabsTrigger value="dashboard">
@@ -536,15 +467,9 @@ export default async function AdminPage() {
       </TabsList>
 
       <TabsContent value="dashboard">
-        <DashboardContent
-          overview={overview}
-          activeUsers={activeUsers}
-          auditStats={auditStats}
-          recentLog={recentLog}
-          communityStats={communityStats}
-          tournamentStats={tournamentStats}
-          hasError={hasError}
-        />
+        <Suspense fallback={<DashboardSkeleton />}>
+          <DashboardData />
+        </Suspense>
       </TabsContent>
 
       <TabsContent value="activity">
