@@ -1052,11 +1052,13 @@ export async function getPublicPhaseRoundsWithMatches(
     }
 
     if (altIds.size > 0) {
-      const { data: stats } = await supabase
+      const { data: stats, error: statsError } = await supabase
         .from("tournament_player_stats")
         .select("alt_id, match_wins, match_losses")
         .eq("tournament_id", tournamentId)
         .in("alt_id", Array.from(altIds));
+
+      if (statsError) throw statsError;
 
       for (const s of stats ?? []) {
         statsMap.set(s.alt_id, {
@@ -2533,11 +2535,13 @@ export async function getPlayerTournamentHistory(
     .filter((id) => id > 0);
 
   // Fetch team_id from registrations for team pokemon display
-  const { data: registrations } = await supabase
+  const { data: registrations, error: registrationsError } = await supabase
     .from("tournament_registrations")
     .select("tournament_id, alt_id, team_id")
     .in("alt_id", altIds)
     .in("tournament_id", completedTournamentIds);
+
+  if (registrationsError) throw registrationsError;
 
   const regTeamMap = new Map<string, number | null>();
   for (const r of registrations ?? []) {
@@ -2552,7 +2556,7 @@ export async function getPlayerTournamentHistory(
   const teamPokemonMap = new Map<number, string[]>();
 
   if (registrationTeamIds.length > 0) {
-    const { data: teamPokemon } = await supabase
+    const { data: teamPokemon, error: teamPokemonError } = await supabase
       .from("team_pokemon")
       .select(
         `
@@ -2563,6 +2567,8 @@ export async function getPlayerTournamentHistory(
       )
       .in("team_id", registrationTeamIds)
       .order("team_position", { ascending: true });
+
+    if (teamPokemonError) throw teamPokemonError;
 
     for (const tp of teamPokemon ?? []) {
       const existing = teamPokemonMap.get(tp.team_id) ?? [];
@@ -2865,10 +2871,7 @@ export async function getLiveTournamentCommunityIds(
     .eq("status", "active");
 
   if (error) {
-    console.error(
-      "[getLiveTournamentCommunityIds] Failed to fetch:",
-      error
-    );
+    console.error("[getLiveTournamentCommunityIds] Failed to fetch:", error);
     return new Set();
   }
 
