@@ -6,6 +6,20 @@ import {
 } from "../match-header";
 import type { GameData } from "../game-card";
 
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    order: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+  })),
+  supabase: {
+    from: jest.fn().mockReturnThis(),
+  },
+}));
+
 // Mock next/link to render a plain anchor
 jest.mock("next/link", () => {
   return function MockLink({

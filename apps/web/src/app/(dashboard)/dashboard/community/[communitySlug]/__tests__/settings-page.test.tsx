@@ -13,6 +13,20 @@ import { MAX_IMAGE_SIZE } from "@trainers/validators";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    order: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+  })),
+  supabase: {
+    from: jest.fn().mockReturnThis(),
+  },
+}));
+
 const mockUseSupabaseQuery = jest.fn();
 
 // The community fetch moved to the auth-gated /api/v1/communities/[slug] route
@@ -25,8 +39,17 @@ jest.mock("@trainers/supabase/react-query", () => ({
 }));
 
 const mockSupabaseClient = {
-  functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
-  auth: { getSession: jest.fn().mockResolvedValue({ data: { session: { access_token: "test-token" } }, error: null }) },
+  functions: {
+    invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
+  },
+  auth: {
+    getSession: jest
+      .fn()
+      .mockResolvedValue({
+        data: { session: { access_token: "test-token" } },
+        error: null,
+      }),
+  },
 };
 
 jest.mock("@/lib/supabase", () => ({
@@ -622,9 +645,7 @@ describe("DashboardSettingsPage", () => {
         })
       );
 
-      await user.click(
-        screen.getByRole("button", { name: /remove banner/i })
-      );
+      await user.click(screen.getByRole("button", { name: /remove banner/i }));
 
       await waitFor(() => {
         expect(removeCommunityBanner).toHaveBeenCalledWith(5);
