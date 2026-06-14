@@ -23,7 +23,18 @@ Supabase Realtime for live data push in Client Components. Get the client via `u
 
 ### postgres_changes — reactive DB row push (payload-driven mandate)
 
-**Handlers MUST be payload-driven.** Call `queryClient.setQueryData(queryKey, prev => upsertById(prev, payload.new))` — **never** `invalidateQueries` or `refetch` per event. Triggering a network round-trip on every event erases the cost savings at scale (~50k live reads/round at 7k concurrent players). The one allowed refetch is a single reconnect-resync on channel re-subscribe (i.e., after a disconnect).
+**Handlers MUST be payload-driven.** Prefer `queryClient.setQueryData(queryKey, prev => upsertById(prev, payload.new))` — this avoids a network round-trip per event, which matters at scale (~50k live reads/round at 7k concurrent players).
+
+**When to use `setQueryData` vs `invalidateQueries`:**
+
+| Case                                                                                          | Use                                                  |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Payload shape matches the cached shape (list items, row updates)                              | `setQueryData` — deterministic upsert                |
+| Aggregate/count derivable from the payload (e.g. `read_at === null` → increment unread)       | `setQueryData<number>(key, prev => (prev ?? 0) + 1)` |
+| Structural set change that can't be derived from a single row (e.g. tournament round rebuild) | `invalidateQueries` — narrowly targeted, OK          |
+| On channel re-subscribe after disconnect                                                      | `invalidateQueries` — one-time resync                |
+
+**Never** call `refetch()` or an untargeted `invalidateQueries()` per event. If you find yourself reaching for `invalidateQueries` in a handler, ask first: "can the payload drive this deterministically?" Usually it can.
 
 ```tsx
 const queryClient = useQueryClient();
@@ -54,7 +65,9 @@ useEffect(() => {
       if (err) console.error("[registrations-realtime] subscribe error:", err);
       if (status === "SUBSCRIBED") {
         // One-time reconnect-resync: the only allowed refetch
-        queryClient.invalidateQueries({ queryKey: ["registrations", entityId] });
+        queryClient.invalidateQueries({
+          queryKey: ["registrations", entityId],
+        });
       }
     });
 
@@ -74,14 +87,14 @@ A table may be realtime-published for an audience only if **every column** in th
 
 **The realtime six** — the only S-bucket tables published for authenticated users:
 
-| Table | Audience |
-| --- | --- |
-| `notifications` | per-user (filter `user_id=eq.{userId}`) |
-| `match_games` | match participants + staff |
-| `match_messages` | match participants + staff |
-| `tournament_matches` | tournament participants + staff |
-| `tournament_registrations` | tournament participants + staff |
-| `tournament_rounds` | tournament participants + staff |
+| Table                      | Audience                                |
+| -------------------------- | --------------------------------------- |
+| `notifications`            | per-user (filter `user_id=eq.{userId}`) |
+| `match_games`              | match participants + staff              |
+| `match_messages`           | match participants + staff              |
+| `tournament_matches`       | tournament participants + staff         |
+| `tournament_registrations` | tournament participants + staff         |
+| `tournament_rounds`        | tournament participants + staff         |
 
 `match_games` and `match_messages` carry flattened `tournament_id` / `community_id` columns (added in Phase 3), which simplifies subscription filters and RLS checks — use those columns in filters rather than joining.
 

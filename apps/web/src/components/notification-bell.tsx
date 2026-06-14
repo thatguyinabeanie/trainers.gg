@@ -128,9 +128,15 @@ export function NotificationBell({ userId }: NotificationBellProps) {
             }
           );
 
-          // The unread badge is a server-side count — bump it via invalidate
-          // rather than reconstruct it from a single row.
-          void queryClient.invalidateQueries({ queryKey: unreadCountKey });
+          // Deterministically increment the cached unread count when the
+          // new notification is unread (read_at null). Avoids a network
+          // round-trip per event; falls back to nothing if already read.
+          if (row.read_at === null) {
+            queryClient.setQueryData<number>(
+              unreadCountKey,
+              (prev) => (prev ?? 0) + 1
+            );
+          }
 
           // Browser push notification when tab is not focused
           if (
@@ -154,7 +160,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           }
         }
       )
-      .subscribe((status, err) => {
+      .subscribe((_status, err) => {
         // MVP: console.error is sufficient; a future iteration could show a toast or retry
         if (err) console.error("[notifications] subscribe error:", err);
       });
