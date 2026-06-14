@@ -2,7 +2,14 @@
 
 import { useState, useTransition, useRef, use } from "react";
 import Link from "next/link";
-import { Camera, Loader2, X, Plus, ImageIcon, ExternalLink } from "lucide-react";
+import {
+  Camera,
+  Loader2,
+  X,
+  Plus,
+  ImageIcon,
+  ExternalLink,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkdownContent } from "@/components/ui/markdown-content";
@@ -20,7 +27,6 @@ import {
 import { socialPlatformLabels } from "@trainers/utils";
 
 import { useSupabase } from "@/lib/supabase";
-import { createClient } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query-keys";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
@@ -140,9 +146,7 @@ export default function DashboardSettingsPage({ params }: PageProps) {
         {isLoading ? (
           <SettingsSkeleton />
         ) : !org ? (
-          <p className="text-muted-foreground text-sm">
-            Community not found.
-          </p>
+          <p className="text-muted-foreground text-sm">Community not found.</p>
         ) : (
           <SettingsForm
             org={org}
@@ -201,7 +205,7 @@ function SettingsForm({ org, communitySlug, onSaved }: SettingsFormProps) {
 
   const { data: discordServer } = useQuery({
     queryKey: queryKeys.community.discordServer(org.id),
-    queryFn: () => getDiscordServerByCommunityId(createClient(), org.id),
+    queryFn: () => getDiscordServerByCommunityId(supabase, org.id),
     staleTime: 30_000,
   });
   const discordInstalled = discordServer != null;

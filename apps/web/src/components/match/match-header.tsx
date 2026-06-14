@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCoachBadges, type CoachBadgeInfo } from "@trainers/supabase";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -1013,6 +1013,7 @@ export function MatchHeader({
   userAltId,
   onGameUpdated,
 }: MatchHeaderProps) {
+  const supabase = useSupabase();
   const winsNeeded = Math.ceil(bestOf / 2);
   const matchDecided = myWins >= winsNeeded || opponentWins >= winsNeeded;
 
@@ -1024,7 +1025,7 @@ export function MatchHeader({
   );
   const { data: coachBadges } = useQuery({
     queryKey: queryKeys.match.coachBadges(playerAltIds),
-    queryFn: () => getCoachBadges(createClient(), playerAltIds),
+    queryFn: () => getCoachBadges(supabase, playerAltIds),
     enabled: playerAltIds.length > 0,
     staleTime: 30_000,
   });

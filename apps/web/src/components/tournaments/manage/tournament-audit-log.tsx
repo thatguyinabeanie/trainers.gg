@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatTimeAgo } from "@trainers/utils";
 import { getTournamentAuditLog } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 import {
   Card,
@@ -126,6 +126,7 @@ const categoryActions: Record<string, AuditAction[]> = {
 };
 
 export function TournamentAuditLog({ tournament }: TournamentAuditLogProps) {
+  const supabase = useSupabase();
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -139,7 +140,7 @@ export function TournamentAuditLog({ tournament }: TournamentAuditLogProps) {
       refreshKey
     ),
     queryFn: () =>
-      getTournamentAuditLog(createClient(), tournament.id, {
+      getTournamentAuditLog(supabase, tournament.id, {
         limit: 100,
         actions: actionsForFilter,
       }),

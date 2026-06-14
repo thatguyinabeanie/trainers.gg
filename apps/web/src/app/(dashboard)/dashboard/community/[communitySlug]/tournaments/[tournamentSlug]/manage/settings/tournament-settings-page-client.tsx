@@ -12,7 +12,7 @@ import {
 import { useApiQuery } from "@trainers/supabase/react-query";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,6 +35,7 @@ export function TournamentSettingsPageClient({
   tournamentSlug,
 }: TournamentSettingsPageClientProps) {
   const router = useRouter();
+  const supabase = useSupabase();
   const {
     user: currentUser,
     isLoading: userLoading,
@@ -47,7 +48,9 @@ export function TournamentSettingsPageClient({
   // Fetch the community that owns this tournament via the auth-gated
   // `/api/v1/communities/[slug]` route (Phase 2 S-bucket migration).
   // The route returns the community object directly (not ActionResult-wrapped).
-  type CommunityDetail = NonNullable<Awaited<ReturnType<typeof getCommunityBySlug>>>;
+  type CommunityDetail = NonNullable<
+    Awaited<ReturnType<typeof getCommunityBySlug>>
+  >;
 
   const {
     data: organization,
@@ -70,7 +73,7 @@ export function TournamentSettingsPageClient({
 
   const { data: tournament, isLoading: tournamentLoading } = useQuery({
     queryKey: queryKeys.tournament.bySlug(tournamentSlug),
-    queryFn: () => getTournamentBySlug(createClient(), tournamentSlug),
+    queryFn: () => getTournamentBySlug(supabase, tournamentSlug),
     staleTime: 30_000,
   });
 

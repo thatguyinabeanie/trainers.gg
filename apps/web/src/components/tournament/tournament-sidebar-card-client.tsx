@@ -12,7 +12,7 @@ import {
   undoCheckIn,
   withdrawFromTournament,
 } from "@trainers/supabase";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Collapsible,
@@ -281,6 +281,7 @@ export function TournamentSidebarCardClient({
   initialCheckInStats,
 }: TournamentSidebarCardClientProps) {
   const router = useRouter();
+  const supabase = useSupabase();
 
   // ---- Registration / check-in state ----
   const [isRegistering, setIsRegistering] = useState(false);
@@ -320,15 +321,15 @@ export function TournamentSidebarCardClient({
   // ---- Mutations ----
 
   const { mutateAsync: withdrawMutation } = useMutation({
-    mutationFn: () => withdrawFromTournament(createClient(), tournamentId),
+    mutationFn: () => withdrawFromTournament(supabase, tournamentId),
   });
 
   const { mutateAsync: checkInMutation } = useMutation({
-    mutationFn: () => checkIn(createClient(), tournamentId),
+    mutationFn: () => checkIn(supabase, tournamentId),
   });
 
   const { mutateAsync: undoCheckInMutation } = useMutation({
-    mutationFn: () => undoCheckIn(createClient(), tournamentId),
+    mutationFn: () => undoCheckIn(supabase, tournamentId),
   });
 
   // Check-in countdown timer removed — unified model has no time-based window

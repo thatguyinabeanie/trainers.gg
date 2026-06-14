@@ -14,7 +14,7 @@ import {
   type AuditLogEntry,
   type Database,
 } from "@trainers/supabase";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -147,6 +147,8 @@ function StatCard({
 // --- Component ---
 
 export function ActivityTab() {
+  const supabase = useSupabase();
+
   // Filter state
   const [actionFilter, setActionFilter] = useState("all");
   const [entityFilter, setEntityFilter] = useState("all");
@@ -167,7 +169,7 @@ export function ActivityTab() {
     error: statsError,
   } = useQuery({
     queryKey: queryKeys.admin.auditStats(refreshKey),
-    queryFn: () => getAuditLogStats(createClient()),
+    queryFn: () => getAuditLogStats(supabase),
     staleTime: 30_000,
   });
 
@@ -184,7 +186,7 @@ export function ActivityTab() {
       refreshKey
     ),
     queryFn: () =>
-      getAuditLog(createClient(), {
+      getAuditLog(supabase, {
         actions: actionsForFilter,
         entityType,
         limit: PAGE_SIZE,

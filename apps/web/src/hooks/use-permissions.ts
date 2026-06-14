@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type PermissionKey } from "@trainers/utils";
 import { getUserPermissions, hasPermission } from "@trainers/supabase";
 
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 import { useCurrentUser } from "./use-current-user";
 
@@ -16,13 +16,14 @@ import { useCurrentUser } from "./use-current-user";
  * @returns Object with hasPermission boolean and loading state
  */
 export function usePermission(permission: PermissionKey, enabled = true) {
+  const supabase = useSupabase();
   // Use shared hook to get current user (prevents duplicate queries)
   const { user, isLoading: userLoading } = useCurrentUser();
 
   // Check permission if user is loaded
   const { data: permissionCheck, isLoading: permissionLoading } = useQuery({
     queryKey: queryKeys.user.permission(user?.id, permission),
-    queryFn: () => hasPermission(createClient(), user!.id, permission),
+    queryFn: () => hasPermission(supabase, user!.id, permission),
     enabled: !!user?.id && enabled,
     staleTime: 30_000,
   });
@@ -41,13 +42,14 @@ export function usePermission(permission: PermissionKey, enabled = true) {
  * @returns Object with permissions map and loading state
  */
 export function usePermissions(permissions: PermissionKey[], enabled = true) {
+  const supabase = useSupabase();
   // Use shared hook to get current user (prevents duplicate queries)
   const { user, isLoading: userLoading } = useCurrentUser();
 
   // Get all user permissions in a single query
   const { data: userPermissions, isLoading: permissionsLoading } = useQuery({
     queryKey: queryKeys.user.permissions(user?.id),
-    queryFn: () => getUserPermissions(createClient(), user!.id),
+    queryFn: () => getUserPermissions(supabase, user!.id),
     enabled: !!user?.id && enabled,
     staleTime: 30_000,
   });

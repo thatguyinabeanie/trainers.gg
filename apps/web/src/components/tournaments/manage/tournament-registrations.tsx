@@ -55,7 +55,7 @@ import {
   type DropCategory,
   DROP_CATEGORY_LABELS,
 } from "./drop-player-dialog";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 
 // Map invitation statuses to StatusBadge Status values + human-readable labels
@@ -88,6 +88,7 @@ export function TournamentRegistrations({
   tournament,
 }: TournamentRegistrationsProps) {
   const queryClient = useQueryClient();
+  const supabase = useSupabase();
   const tournamentId = tournament.id;
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -100,22 +101,16 @@ export function TournamentRegistrations({
     | null
   >(null);
 
-  const {
-    data: registrations,
-    error: registrationsError,
-  } = useQuery({
+  const { data: registrations, error: registrationsError } = useQuery({
     queryKey: queryKeys.tournament.registrations(tournamentId),
-    queryFn: () => getTournamentRegistrations(createClient(), tournamentId),
+    queryFn: () => getTournamentRegistrations(supabase, tournamentId),
     staleTime: 30_000,
     refetchInterval: 30_000,
   });
 
-  const {
-    data: invitationsSent,
-    error: invitationsError,
-  } = useQuery({
+  const { data: invitationsSent, error: invitationsError } = useQuery({
     queryKey: queryKeys.tournament.invitationsSent(tournamentId),
-    queryFn: () => getTournamentInvitationsSent(createClient(), tournamentId),
+    queryFn: () => getTournamentInvitationsSent(supabase, tournamentId),
     staleTime: 30_000,
     refetchInterval: 30_000,
   });

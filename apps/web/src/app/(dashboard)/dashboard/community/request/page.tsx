@@ -13,7 +13,7 @@ import {
 import { generateSlug } from "@trainers/utils";
 import { getMyOrganizationRequest } from "@trainers/supabase";
 
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
@@ -112,10 +112,11 @@ function getCooldownEndDate(reviewedAt: string): string {
 // ---------------------------------------------------------------------------
 
 export default function DashboardCommunityRequestPage() {
+  const supabase = useSupabase();
   const { user } = useAuth();
   const { data: request, isLoading } = useQuery({
     queryKey: queryKeys.me.organizationRequest(user?.id ?? ""),
-    queryFn: () => getMyOrganizationRequest(createClient()),
+    queryFn: () => getMyOrganizationRequest(supabase),
     staleTime: 30_000,
     enabled: Boolean(user?.id),
   });

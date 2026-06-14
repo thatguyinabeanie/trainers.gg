@@ -12,7 +12,7 @@ import {
 } from "@trainers/supabase";
 import type { Tables } from "@trainers/supabase";
 import type { NotificationType } from "@trainers/validators";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
 import {
@@ -68,6 +68,7 @@ export function NotificationCenter({
 }: NotificationCenterProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const supabase = useSupabase();
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [page, setPage] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -102,7 +103,7 @@ export function NotificationCenter({
       refreshKey
     ),
     queryFn: () =>
-      getNotifications(createClient(), {
+      getNotifications(supabase, {
         limit: PAGE_SIZE,
         offset: page * PAGE_SIZE,
         unreadOnly: isUnreadOnly,
@@ -124,7 +125,7 @@ export function NotificationCenter({
       refreshKey
     ),
     queryFn: () =>
-      getNotificationCount(createClient(), {
+      getNotificationCount(supabase, {
         unreadOnly: isUnreadOnly,
         types: typesFilter,
       }),
@@ -136,7 +137,7 @@ export function NotificationCenter({
   // Fetch unread count for the header badge
   const { data: unreadCount, refetch: refetchUnread } = useQuery({
     queryKey: queryKeys.notifications.unreadCount(user?.id ?? "", refreshKey),
-    queryFn: () => getUnreadNotificationCount(createClient()),
+    queryFn: () => getUnreadNotificationCount(supabase),
     staleTime: 30_000,
     enabled: Boolean(user?.id),
     initialData: initialUnreadCount,

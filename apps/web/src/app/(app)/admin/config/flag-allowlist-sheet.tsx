@@ -22,7 +22,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 import type { SearchPlayersResult } from "@/lib/data/players-search-endpoint";
 
@@ -45,6 +45,8 @@ export function FlagAllowlistSheet({
   onOpenChange,
   onSave,
 }: FlagAllowlistSheetProps) {
+  const supabase = useSupabase();
+
   // --- Allowlist state (local copy, committed on Save) ---
   const [allowedIds, setAllowedIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -79,7 +81,7 @@ export function FlagAllowlistSheet({
   // client. Disabled when the list is empty to avoid an unnecessary round-trip.
   const currentAllowedQuery = useQuery({
     queryKey: queryKeys.admin.usersByIds(allowedIds.join(",")),
-    queryFn: () => getUsersByIds(createClient(), allowedIds),
+    queryFn: () => getUsersByIds(supabase, allowedIds),
     enabled: allowedIds.length > 0,
     staleTime: 30_000,
   });
@@ -97,7 +99,10 @@ export function FlagAllowlistSheet({
     ["players", "search", debouncedSearch],
     async () => {
       if (!debouncedSearch) {
-        return { success: true as const, data: { players: [], totalCount: 0, page: 1 } };
+        return {
+          success: true as const,
+          data: { players: [], totalCount: 0, page: 1 },
+        };
       }
       const params = new URLSearchParams({ q: debouncedSearch });
       const res = await fetch(`/api/v1/players/search?${params.toString()}`);
@@ -142,7 +147,9 @@ export function FlagAllowlistSheet({
       await onSave(allowedIds);
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save allowlist");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save allowlist"
+      );
     } finally {
       setSaving(false);
     }
@@ -242,7 +249,7 @@ export function FlagAllowlistSheet({
             {debouncedSearch && (
               <div className="rounded-lg border">
                 {searchIsError ? (
-                  <Alert variant="destructive" className="border-0 rounded-lg">
+                  <Alert variant="destructive" className="rounded-lg border-0">
                     <AlertTriangle className="size-4" />
                     <AlertDescription>
                       {searchError instanceof Error
