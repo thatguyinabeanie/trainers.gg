@@ -78,7 +78,8 @@ export function TournamentInvitationsView({
         args.invitationId,
         args.response
       );
-      if (!result.success) throw new Error(result.error);
+      if (!result.success)
+        throw new Error(result.error ?? "Failed to respond to invitation");
       return result.data;
     },
     onSuccess: () => {

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 // Anon SELECT on these tables is revoked in the Phase 2 Step-4 migration;
 // service-role bypasses that grant so public-facing player stat pages still work.
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { enforceRateLimit, extractRequestIp } from "@/lib/api/rate-limit";
 import { getPlayerLifetimeStats } from "@trainers/supabase/queries";
 
 /**
@@ -12,6 +13,15 @@ import { getPlayerLifetimeStats } from "@trainers/supabase/queries";
  * Public endpoint — no auth required.
  */
 export async function GET(request: Request) {
+  const ip = extractRequestIp(request);
+  const { allowed, resetAt } = await enforceRateLimit({ identifier: ip });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too Many Requests" },
+      { status: 429, headers: { "Retry-After": resetAt.toUTCString() } }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const raw = searchParams.get("altIds");
 

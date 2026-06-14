@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 // Anon SELECT on these tables is revoked in the Phase 2 Step-4 migration;
 // service-role bypasses that grant so public-facing tournament-history pages still work.
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { enforceRateLimit, extractRequestIp } from "@/lib/api/rate-limit";
 import { getPlayerTournamentHistoryFull } from "@trainers/supabase/queries";
 import { playerTournamentHistoryParamsSchema } from "@trainers/validators";
 
@@ -20,6 +21,15 @@ import { playerTournamentHistoryParamsSchema } from "@trainers/validators";
  *   - page: page number, 1-indexed (optional, default 1)
  */
 export async function GET(request: Request) {
+  const ip = extractRequestIp(request);
+  const { allowed, resetAt } = await enforceRateLimit({ identifier: ip });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too Many Requests" },
+      { status: 429, headers: { "Retry-After": resetAt.toUTCString() } }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
 
   const rawParams = {

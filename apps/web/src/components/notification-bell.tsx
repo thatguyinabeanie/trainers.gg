@@ -124,7 +124,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
             (prev) => {
               const list = prev ?? [];
               if (list.some((n) => n.id === row.id)) return list;
-              return [row, ...list];
+              return [row, ...list].slice(0, 20);
             }
           );
 
