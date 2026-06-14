@@ -52,6 +52,11 @@ jest.mock("@/lib/supabase/client", () => ({
   createClient: () => ({}),
 }));
 
+// useSupabase() is called at the top of the component (singleton pattern).
+jest.mock("@/lib/supabase", () => ({
+  useSupabase: jest.fn(() => ({})),
+}));
+
 jest.mock("@/components/ui/coach-badge", () => ({
   CoachBadge: ({ handle }: { handle: string }) => (
     <span data-testid="coach-badge" data-handle={handle}>

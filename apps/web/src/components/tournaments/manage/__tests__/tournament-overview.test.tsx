@@ -18,6 +18,11 @@ jest.mock("@/lib/supabase/client", () => ({
   createClient: jest.fn(() => ({})),
 }));
 
+// useSupabase() is called at the top of the component (singleton pattern).
+jest.mock("@/lib/supabase", () => ({
+  useSupabase: jest.fn(() => ({})),
+}));
+
 // Mock server actions
 jest.mock("@/actions/tournaments", () => ({
   prepareRound: jest.fn(),

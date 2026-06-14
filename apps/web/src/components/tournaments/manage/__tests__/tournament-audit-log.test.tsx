@@ -22,6 +22,10 @@ jest.mock("@/lib/supabase/client", () => ({
   createClient: jest.fn(() => ({})),
 }));
 
+jest.mock("@/lib/supabase", () => ({
+  useSupabase: jest.fn(() => ({})),
+}));
+
 jest.mock("@trainers/utils", () => ({
   formatTimeAgo: jest.fn((date: string) => `time(${date})`),
 }));
