@@ -7,6 +7,7 @@
 import React, { Suspense } from "react";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { organizationFactory } from "@trainers/test-utils/factories";
 import { MAX_IMAGE_SIZE } from "@trainers/validators";
@@ -43,12 +44,10 @@ const mockSupabaseClient = {
     invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
   },
   auth: {
-    getSession: jest
-      .fn()
-      .mockResolvedValue({
-        data: { session: { access_token: "test-token" } },
-        error: null,
-      }),
+    getSession: jest.fn().mockResolvedValue({
+      data: { session: { access_token: "test-token" } },
+      error: null,
+    }),
   },
 };
 
@@ -127,6 +126,17 @@ jest.mock("@/components/dashboard/dashboard-card", () => ({
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
+}
+
 function buildOrg(overrides: Record<string, unknown> = {}) {
   const base = organizationFactory.build();
   return {
@@ -173,7 +183,8 @@ async function renderPage(
     result = render(
       <Suspense fallback={<div>Loading...</div>}>
         <DashboardSettingsPage params={params} />
-      </Suspense>
+      </Suspense>,
+      { wrapper: createWrapper() }
     );
   });
 
@@ -201,7 +212,8 @@ describe("DashboardSettingsPage", () => {
         render(
           <Suspense fallback={<div>Loading...</div>}>
             <DashboardSettingsPage params={params} />
-          </Suspense>
+          </Suspense>,
+          { wrapper: createWrapper() }
         );
       });
 
