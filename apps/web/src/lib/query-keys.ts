@@ -78,6 +78,9 @@ export const queryKeys = {
     /** Coach badge data for a set of alt IDs. */
     coachBadges: (altIds: number[]) =>
       ["tournament", "coach-badges", altIds] as const,
+    /** Judge-board pairings read for a tournament (auth-gated API + realtime). */
+    pairingsJudge: (tournamentId: number) =>
+      ["tournament", tournamentId, "pairings-judge"] as const,
   },
 
   match: {

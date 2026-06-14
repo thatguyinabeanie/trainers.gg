@@ -9,6 +9,7 @@ import {
   type TournamentPairingsData,
   type PhaseRoundsWithMatchesRow,
 } from "@/lib/data/tournament-pairings-endpoint";
+import { queryKeys } from "@/lib/query-keys";
 import { upsertMatchInPairings } from "./pairings-cache";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -282,11 +283,7 @@ export function TournamentPairingsJudge({
 
   // Canonical query key for the pairings read — shared by useApiQuery, the
   // realtime `setQueryData` merge (matches), and the rounds `invalidateQueries`.
-  const pairingsQueryKey = [
-    "tournament",
-    tournament.id,
-    "pairings-judge",
-  ] as const;
+  const pairingsQueryKey = queryKeys.tournament.pairingsJudge(tournament.id);
 
   // Fetch all pairings data via the auth-gated API route (S-bucket safe).
   // `staleTime: 0` so realtime-triggered refetches always get fresh data.
@@ -388,10 +385,7 @@ export function TournamentPairingsJudge({
   const [prevRoundsSignature, setPrevRoundsSignature] = useState<
     string | symbol
   >(UNINITIALIZED);
-  if (
-    pairings !== prevPairings ||
-    roundsSignature !== prevRoundsSignature
-  ) {
+  if (pairings !== prevPairings || roundsSignature !== prevRoundsSignature) {
     setPrevPairings(pairings);
     setPrevRoundsSignature(roundsSignature);
     if (!roundsForSelectedPhase || roundsForSelectedPhase.length === 0) {

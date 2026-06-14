@@ -99,8 +99,9 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   //
   // P3-5: payload-driven — on INSERT we prepend `payload.new` straight into the
   // notifications cache via `setQueryData` (no refetch). The unread-count cache
-  // is invalidated so the badge stays accurate (the count is a separate read we
-  // cannot derive from a single new row without double-counting).
+  // is also updated via `setQueryData` — incremented by one when the new row is
+  // unread (`read_at === null`), left untouched otherwise. No per-event refetch
+  // or invalidation: the count is derived deterministically from the payload.
   useEffect(() => {
     if (!userId) return;
 
@@ -173,7 +174,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, userId, queryClient, notificationsKey, unreadCountKey]);
+  }, [supabase, userId, queryClient]);
 
   const totalCount = (unreadCount ?? 0) + (invitations?.length ?? 0);
 

@@ -8,16 +8,17 @@
  */
 
 import { useEffect, useState } from "react";
-import { createClient } from "./client";
+import { supabase } from "./client";
 import type { User } from "@supabase/supabase-js";
 
 /**
  * Hook to get a Supabase client for client components.
- * Creates a stable client instance that persists across re-renders.
+ * Returns the module-level browser-client singleton from `./client`, so the
+ * reference is stable across re-renders — effects/subscriptions that depend on
+ * it don't tear down and re-create on every render.
  */
 export function useSupabase() {
-  const client = createClient();
-  return client;
+  return supabase;
 }
 
 /**
