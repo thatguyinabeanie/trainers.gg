@@ -1943,9 +1943,12 @@ export async function saveTournamentPhasesAction(
  * Respond to a tournament invitation (accept or decline).
  *
  * Runs server-side so the Supabase client is created with the user's auth
- * cookie (service-role is NOT used). This avoids creating a browser Supabase
- * client inside a `useMutation` mutationFn, which bypassed RLS and prevented
- * Phase 2 Task 9's `authenticated`-role SELECT revokes from taking effect.
+ * cookie (service-role is NOT used). Routing this through a Server Action
+ * rather than a browser client inside a `useMutation` mutationFn keeps the
+ * write on a request-scoped authenticated client with a reliable auth context
+ * (a browser client created during a mutation can run before the session is
+ * fully resolved). RLS still applies in both cases — the Server Action is
+ * about a correct, server-resolved auth context, not bypassing RLS.
  *
  * Cache: on accept, invalidates the tournament list and tournament detail caches
  * because a new registration has been created (registration count changes).
@@ -1978,11 +1981,14 @@ export async function respondToTournamentInvitationAction(
     // fetching upfront avoids branching the query.
     let tournamentId: number | null = null;
     if (response === "accept") {
-      const { data: invitation } = await supabase
+      const { data: invitation, error: invitationError } = await supabase
         .from("tournament_invitations")
         .select("tournament_id")
         .eq("id", invitationId)
         .maybeSingle();
+      // Surface the error rather than silently skipping cache invalidation —
+      // a swallowed failure here leaves stale registration counts in the UI.
+      if (invitationError) throw invitationError;
       tournamentId = invitation?.tournament_id ?? null;
     }
 

@@ -37,7 +37,10 @@ export function speciesDetailToShowdownPaste(
   detail: SpeciesUsagePeriod
 ): string {
   const modalItem = detail.items[0]?.value ?? undefined;
-  const modalAbility = detail.abilities[0]?.value ?? "No Ability";
+  // Empty (not "No Ability") when usage has no ability data: the builder's
+  // import legality check skips empty abilities but would reject the literal
+  // "No Ability" string as illegal for most species.
+  const modalAbility = detail.abilities[0]?.value ?? "";
   const modalTera = detail.tera[0]?.value ?? undefined;
   const modalNature = detail.natures[0]?.value ?? "Hardy";
 
@@ -54,7 +57,9 @@ export function speciesDetailToShowdownPaste(
     level: 50,
     isShiny: false,
     formatLegal: true,
-    move1: move1 ?? "Tackle",
+    // Empty (not "Tackle") when usage has no move data: a placeholder move can
+    // be illegal for the species/format and fail import; empty is skipped.
+    move1: move1 ?? "",
     move2,
     move3,
     move4,

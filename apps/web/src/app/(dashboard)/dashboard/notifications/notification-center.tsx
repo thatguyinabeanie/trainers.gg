@@ -109,6 +109,7 @@ export function NotificationCenter({
         types: typesFilter,
       }),
     staleTime: 30_000,
+    enabled: Boolean(user?.id),
     // Only pass initialData on the first page of the "all" tab — that's the
     // slice the server pre-fetched and forwarded via props.
     initialData:
@@ -128,6 +129,7 @@ export function NotificationCenter({
         types: typesFilter,
       }),
     staleTime: 30_000,
+    enabled: Boolean(user?.id),
     initialData: activeTab === "all" ? initialTotalCount : undefined,
   });
 
@@ -136,6 +138,7 @@ export function NotificationCenter({
     queryKey: queryKeys.notifications.unreadCount(user?.id ?? "", refreshKey),
     queryFn: () => getUnreadNotificationCount(createClient()),
     staleTime: 30_000,
+    enabled: Boolean(user?.id),
     initialData: initialUnreadCount,
   });
 

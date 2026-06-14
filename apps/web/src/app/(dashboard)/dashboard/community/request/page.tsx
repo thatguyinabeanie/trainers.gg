@@ -117,7 +117,14 @@ export default function DashboardCommunityRequestPage() {
     queryKey: queryKeys.me.organizationRequest(user?.id ?? ""),
     queryFn: () => getMyOrganizationRequest(createClient()),
     staleTime: 30_000,
+    enabled: Boolean(user?.id),
   });
+
+  // When the query is disabled (user?.id not yet resolved), TanStack v5 keeps
+  // status:'pending' so isLoading stays true. Gate the skeleton on user?.id
+  // being present so a brief auth-resolution delay doesn't leave a permanent
+  // spinner — the form renders immediately when there's no authenticated user.
+  const loading = isLoading && Boolean(user?.id);
 
   const showForm =
     !request ||
@@ -129,7 +136,7 @@ export default function DashboardCommunityRequestPage() {
       <PageHeader title="Request a Community" />
       <DashboardContent>
         <div className="w-full max-w-[520px]">
-          {isLoading ? (
+          {loading ? (
             <RequestPageSkeleton />
           ) : showStatus && request ? (
             <RequestStatus request={request} />
