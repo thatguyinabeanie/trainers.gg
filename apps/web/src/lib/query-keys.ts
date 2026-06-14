@@ -67,11 +67,7 @@ export const queryKeys = {
     phaseRounds: (phaseId: number | null) =>
       ["tournament", "phase-rounds", phaseId] as const,
     /** Paginated audit log for a tournament, filtered by category. */
-    auditLog: (
-      tournamentId: number,
-      category: string,
-      refreshKey: number
-    ) =>
+    auditLog: (tournamentId: number, category: string, refreshKey: number) =>
       ["tournament", "audit-log", tournamentId, category, refreshKey] as const,
     /** All registrations for a tournament. */
     registrations: (tournamentId: number) =>
@@ -121,14 +117,14 @@ export const queryKeys = {
     recent: (userId: string | undefined) =>
       ["notifications", userId, "recent"] as const,
     /** Paginated notification list filtered by tab and page. */
-    list: (tab: string, page: number, refreshKey: number) =>
-      ["notifications", "list", tab, page, refreshKey] as const,
+    list: (userId: string, tab: string, page: number, refreshKey: number) =>
+      ["notifications", userId, "list", tab, page, refreshKey] as const,
     /** Total notification count for a tab. */
-    count: (tab: string, refreshKey: number) =>
-      ["notifications", "count", tab, refreshKey] as const,
+    count: (userId: string, tab: string, refreshKey: number) =>
+      ["notifications", userId, "count", tab, refreshKey] as const,
     /** Unread notification count (used for badge display). */
-    unreadCount: (refreshKey: number) =>
-      ["notifications", "unread-count", refreshKey] as const,
+    unreadCount: (userId: string, refreshKey: number) =>
+      ["notifications", userId, "unread-count", refreshKey] as const,
   },
 
   /**
@@ -158,7 +154,8 @@ export const queryKeys = {
     activeMatch: (profileId: number | undefined) =>
       ["me", "active-match", profileId] as const,
     /** Pending organization/community membership request for the caller. */
-    organizationRequest: () => ["me", "organization-request"] as const,
+    organizationRequest: (userId: string) =>
+      ["me", userId, "organization-request"] as const,
   },
 
   /**
@@ -184,10 +181,8 @@ export const queryKeys = {
     discordDmPreferencesCount: (userId: string | null | undefined) =>
       ["user", userId, "discord-dm-preferences-count"] as const,
     /** Whether the user holds a specific named permission. */
-    permission: (
-      userId: string | null | undefined,
-      permission: string
-    ) => ["user", userId, "permission", permission] as const,
+    permission: (userId: string | null | undefined, permission: string) =>
+      ["user", userId, "permission", permission] as const,
     /** Full permission set for a user. */
     permissions: (userId: string | null | undefined) =>
       ["user", userId, "permissions"] as const,

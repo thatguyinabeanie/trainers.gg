@@ -9,14 +9,11 @@ describe("queryKeys", () => {
     it.each([
       ["user-123", ["admin-user-detail", "user-123"]],
       [null, ["admin-user-detail", null]],
-    ])(
-      "returns user detail key for userId=%s",
-      (userId, expected) => {
-        expect(queryKeys.admin.userDetail(userId as string | null)).toEqual(
-          expected
-        );
-      }
-    );
+    ])("returns user detail key for userId=%s", (userId, expected) => {
+      expect(queryKeys.admin.userDetail(userId as string | null)).toEqual(
+        expected
+      );
+    });
   });
 
   describe("sudo", () => {
@@ -76,14 +73,11 @@ describe("queryKeys", () => {
       ["messages", undefined, ["match-messages", undefined]],
       ["games", 99, ["match-games", 99]],
       ["games", undefined, ["match-games", undefined]],
-    ] as const)(
-      "returns %s key for matchId=%s",
-      (kind, matchId, expected) => {
-        expect(queryKeys.match[kind](matchId as number | undefined)).toEqual(
-          expected
-        );
-      }
-    );
+    ] as const)("returns %s key for matchId=%s", (kind, matchId, expected) => {
+      expect(queryKeys.match[kind](matchId as number | undefined)).toEqual(
+        expected
+      );
+    });
 
     it("messages and games keys for the same matchId are distinct", () => {
       const msgs = queryKeys.match.messages(5);
@@ -117,6 +111,52 @@ describe("queryKeys", () => {
       const all = queryKeys.notifications.all("user-abc");
       const recent = queryKeys.notifications.recent("user-abc");
       expect(recent.slice(0, all.length)).toEqual([...all]);
+    });
+
+    it("returns list key scoped to userId", () => {
+      expect(queryKeys.notifications.list("user-123", "all", 0, 0)).toEqual([
+        "notifications",
+        "user-123",
+        "list",
+        "all",
+        0,
+        0,
+      ]);
+    });
+
+    it("returns count key scoped to userId", () => {
+      expect(queryKeys.notifications.count("user-123", "unread", 1)).toEqual([
+        "notifications",
+        "user-123",
+        "count",
+        "unread",
+        1,
+      ]);
+    });
+
+    it("returns unreadCount key scoped to userId", () => {
+      expect(queryKeys.notifications.unreadCount("user-123", 2)).toEqual([
+        "notifications",
+        "user-123",
+        "unread-count",
+        2,
+      ]);
+    });
+
+    it("list/count/unreadCount keys for the same userId start with the all key prefix", () => {
+      const all = queryKeys.notifications.all("user-123");
+      const list = queryKeys.notifications.list("user-123", "all", 0, 0);
+      const count = queryKeys.notifications.count("user-123", "all", 0);
+      const unreadCount = queryKeys.notifications.unreadCount("user-123", 0);
+      expect(list.slice(0, all.length)).toEqual([...all]);
+      expect(count.slice(0, all.length)).toEqual([...all]);
+      expect(unreadCount.slice(0, all.length)).toEqual([...all]);
+    });
+
+    it("list and count keys for the same userId and tab are distinct", () => {
+      expect(queryKeys.notifications.list("user-123", "all", 0, 0)).not.toEqual(
+        queryKeys.notifications.count("user-123", "all", 0)
+      );
     });
   });
 
@@ -170,15 +210,29 @@ describe("queryKeys", () => {
     ] as const)(
       "returns %s key for profileId=%s",
       (method, profileId, expected) => {
-        expect(
-          queryKeys.me[method](profileId as number | undefined)
-        ).toEqual(expected);
+        expect(queryKeys.me[method](profileId as number | undefined)).toEqual(
+          expected
+        );
       }
     );
 
     it("dashboard and activeMatch keys for the same profileId are distinct", () => {
       expect(queryKeys.me.dashboard(1)).not.toEqual(
         queryKeys.me.activeMatch(1)
+      );
+    });
+
+    it("returns organizationRequest key scoped to userId", () => {
+      expect(queryKeys.me.organizationRequest("user-123")).toEqual([
+        "me",
+        "user-123",
+        "organization-request",
+      ]);
+    });
+
+    it("organizationRequest keys for different userIds are distinct", () => {
+      expect(queryKeys.me.organizationRequest("user-1")).not.toEqual(
+        queryKeys.me.organizationRequest("user-2")
       );
     });
   });
@@ -195,14 +249,11 @@ describe("queryKeys", () => {
       [userId, ["user", userId, "bluesky-status"]],
       [null, ["user", null, "bluesky-status"]],
       [undefined, ["user", undefined, "bluesky-status"]],
-    ] as const)(
-      "returns blueskyStatus key for userId=%s",
-      (id, expected) => {
-        expect(
-          queryKeys.user.blueskyStatus(id as string | null | undefined)
-        ).toEqual(expected);
-      }
-    );
+    ] as const)("returns blueskyStatus key for userId=%s", (id, expected) => {
+      expect(
+        queryKeys.user.blueskyStatus(id as string | null | undefined)
+      ).toEqual(expected);
+    });
 
     // discordDmPreferencesCount — nests under ["user", userId, ...]
     it.each([
@@ -227,13 +278,10 @@ describe("queryKeys", () => {
         "discordDmPreferencesCount",
         queryKeys.user.discordDmPreferencesCount(userId),
       ],
-    ] as const)(
-      "%s key starts with user.all() prefix",
-      (_label, key) => {
-        const all = queryKeys.user.all(userId);
-        expect(key.slice(0, all.length)).toEqual([...all]);
-      }
-    );
+    ] as const)("%s key starts with user.all() prefix", (_label, key) => {
+      const all = queryKeys.user.all(userId);
+      expect(key.slice(0, all.length)).toEqual([...all]);
+    });
 
     it("blueskyStatus and discordDmPreferencesCount keys for the same userId are distinct", () => {
       expect(queryKeys.user.blueskyStatus("u1")).not.toEqual(

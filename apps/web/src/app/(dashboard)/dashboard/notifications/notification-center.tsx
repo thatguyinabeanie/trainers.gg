@@ -13,6 +13,7 @@ import {
 import type { Tables } from "@trainers/supabase";
 import type { NotificationType } from "@trainers/validators";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
 import {
   markNotificationReadAction,
@@ -66,6 +67,7 @@ export function NotificationCenter({
   initialUnreadCount,
 }: NotificationCenterProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [page, setPage] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -93,7 +95,12 @@ export function NotificationCenter({
     refetch: refetchNotifications,
     isLoading,
   } = useQuery({
-    queryKey: queryKeys.notifications.list(activeTab, page, refreshKey),
+    queryKey: queryKeys.notifications.list(
+      user?.id ?? "",
+      activeTab,
+      page,
+      refreshKey
+    ),
     queryFn: () =>
       getNotifications(createClient(), {
         limit: PAGE_SIZE,
@@ -104,12 +111,17 @@ export function NotificationCenter({
     staleTime: 30_000,
     // Only pass initialData on the first page of the "all" tab — that's the
     // slice the server pre-fetched and forwarded via props.
-    initialData: page === 0 && activeTab === "all" ? initialNotifications : undefined,
+    initialData:
+      page === 0 && activeTab === "all" ? initialNotifications : undefined,
   });
 
   // Fetch total count for pagination
   const { data: totalCount, refetch: refetchCount } = useQuery({
-    queryKey: queryKeys.notifications.count(activeTab, refreshKey),
+    queryKey: queryKeys.notifications.count(
+      user?.id ?? "",
+      activeTab,
+      refreshKey
+    ),
     queryFn: () =>
       getNotificationCount(createClient(), {
         unreadOnly: isUnreadOnly,
@@ -121,7 +133,7 @@ export function NotificationCenter({
 
   // Fetch unread count for the header badge
   const { data: unreadCount, refetch: refetchUnread } = useQuery({
-    queryKey: queryKeys.notifications.unreadCount(refreshKey),
+    queryKey: queryKeys.notifications.unreadCount(user?.id ?? "", refreshKey),
     queryFn: () => getUnreadNotificationCount(createClient()),
     staleTime: 30_000,
     initialData: initialUnreadCount,
