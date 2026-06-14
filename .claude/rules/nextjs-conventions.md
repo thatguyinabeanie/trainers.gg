@@ -105,6 +105,36 @@ Function arguments + closures are the cache key — no manual key arrays needed.
 
 For anon-reachable routes that read revoke-set tables: use `createServiceRoleClient()` with an explicit column allowlist (never `select('*')`), `resolveApiAuth` on the request, and `enforceRateLimit`. See `deciding-data-access` skill for the full decision tree and guard requirements.
 
+### `/api/v1` Route Handler Convention
+
+Route handlers under `apps/web/src/app/api/v1/` are the canonical read surface for S-bucket data (shared-public tables whose anon/authenticated SELECT has been revoked). Every handler follows this sequence:
+
+1. **Auth** — `resolveApiAuth(request)` from `apps/web/src/lib/api/auth.ts`. Supports Bearer (mobile) and cookie (web). Returns `null` → respond `401`.
+2. **Rate limit** — `enforceRateLimit(…)` from `apps/web/src/lib/api/rate-limit.ts`. Returns `allowed: false` → respond `429`.
+3. **Cached fetch** — call the `'use cache'`-wrapped fetcher from `apps/web/src/lib/data/*-endpoint.ts`, passing only plain scalar values (no Request/session objects leak into the cache scope).
+4. **Cache-Control** — see the "API Route Cache-Control" section below for the `private, no-store` vs `public, s-maxage` rules.
+5. **Tag invalidation** — `revalidateTag(CacheTags.x, 'max')` on write paths; route handlers use `revalidateTag`, not `updateTag` (Server Actions only).
+
+```ts
+// apps/web/src/app/api/v1/tournaments/[id]/standings/route.ts (abridged)
+import { resolveApiAuth } from "@/lib/api/auth";
+import { enforceRateLimit, extractRequestIp, DEFAULT_API_LIMIT, DEFAULT_WINDOW_MS } from "@/lib/api/rate-limit";
+import { getCachedTournamentStandings } from "@/lib/data/standings-endpoint";
+
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await resolveApiAuth(request);
+  if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { allowed, resetAt } = await enforceRateLimit({ ... });
+  if (!allowed) return Response.json({ error: "Too Many Requests" }, { status: 429, headers: { "Retry-After": ... } });
+
+  const standings = await getCachedTournamentStandings(tournamentId);
+  return Response.json({ data: standings }, { headers: { "Cache-Control": CACHE_CONTROL } });
+}
+```
+
+**Mobile auth** — the `resolveApiAuth` helper in `apps/web/src/lib/api/auth.ts` resolves Bearer-first, cookie-fallback. Mobile sends `Authorization: Bearer <supabase access JWT>`; web sends the Supabase cookie session. No separate mobile-only route or middleware is needed.
+
 ### Parallel Fetching
 
 Use `Promise.all` for independent data requests:

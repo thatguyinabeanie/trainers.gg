@@ -40,14 +40,30 @@ if (error) throw new Error(`Failed to fetch tournaments: ${error.message}`);
 
 ## Client Selection (Web)
 
-| Function                    | Use Case                                                                          | Cookies            |
-| --------------------------- | --------------------------------------------------------------------------------- | ------------------ |
-| `createStaticClient()`      | Public/ISR data, `'use cache'` fetcher — only for tables with anon SELECT granted | None               |
-| `createClient()`            | Authenticated mutations                                                           | Read-write         |
-| `createClientReadOnly()`    | Authenticated reads                                                               | Read-only          |
-| `createServiceRoleClient()` | Admin bypass of RLS; anon-reachable routes that read revoke-set tables            | None (service key) |
+| Function                    | Use Case                                                                                          | Cookies            |
+| --------------------------- | ------------------------------------------------------------------------------------------------- | ------------------ |
+| `createStaticClient()`      | Public/ISR data, `'use cache'` fetcher — only for anon-granted views; **not** S-bucket base tables | None               |
+| `createClient()`            | Authenticated mutations                                                                           | Read-write         |
+| `createClientReadOnly()`    | Authenticated reads                                                                               | Read-only          |
+| `createServiceRoleClient()` | Admin bypass of RLS; `/api/v1` routes reading Phase 2 revoke-set base tables                     | None (service key) |
 
-Choose the most restrictive client that satisfies the need. Prefer `createStaticClient()` for public data where anon SELECT is still granted. For public routes that read Phase 2 revoke-set tables, use `createServiceRoleClient()` with an explicit column allowlist, `resolveApiAuth`, and `enforceRateLimit` — see `deciding-data-access` skill.
+Choose the most restrictive client that satisfies the need. For `/api/v1` routes reading Phase 2 revoke-set tables, use `createServiceRoleClient()` with an explicit column allowlist, `resolveApiAuth` (`apps/web/src/lib/api/auth.ts`), and `enforceRateLimit` — see `deciding-data-access` skill.
+
+## Read Path by Data Bucket
+
+**Rule: every Supabase read belongs to one of four buckets. Apply the path for that bucket — do not mix them.**
+
+**S-bucket base tables are not client-readable for anon** (SELECT revoked on 19 tables). Read S data via `/api/v1`. The realtime six retain authenticated SELECT for live subscriptions; everything else is route-handler-only.
+
+| Data class | Read path | Client / mechanism |
+| --- | --- | --- |
+| **S-bucket** (shared-public) client read | `/api/v1` Next.js route handler | `useApiQuery` (`@trainers/supabase/react-query`) → `'use cache'` fetcher → `createStaticClient()` (anon-granted views) or `createServiceRoleClient()` (revoke-set base tables, guarded) |
+| **S-bucket** SSR read | Direct DB in Server Component | `createStaticClient()` / `createServiceRoleClient()` inside `'use cache'` |
+| **P-bucket** (per-user) client read | Direct PostgREST + RLS | Authenticated browser client + plain `useQuery` with keys from `apps/web/src/lib/query-keys.ts` |
+| **Realtime six** | Direct subscription, payload-driven | Browser client, `postgres_changes`, `setQueryData(payload.new)` |
+| **X-bucket** (system) | Service role only | `createServiceRoleClient()` |
+
+**Realtime six** (authenticated SELECT kept): `notifications`, `match_games`, `match_messages`, `tournament_matches`, `tournament_registrations`, `tournament_rounds`.
 
 ## Row Level Security
 

@@ -329,6 +329,62 @@ async function getStaffRoster(slug: string) {
 - [ ] Is the response all-public-column data (no PII, no scoped/private fields) AND tag-invalidated? If both → `public, s-maxage=…` is allowed (carve-out above)
 - [ ] Does any `'use cache'` fetcher touch user emails, phone numbers, or other PII? If yes → move those reads outside the cache scope, use a request-scoped client, and gate the route with authorization + `private, no-store`
 
+## S-bucket API Route Caching
+
+A `/api/v1` GET handler for S-bucket data follows a two-layer caching design: the route handler owns auth + `Cache-Control`; a `'use cache'`-wrapped fetcher in `apps/web/src/lib/data/*-endpoint.ts` owns the server-side cache entry.
+
+### Pattern
+
+```
+GET /api/v1/…
+  1. resolveApiAuth(request)   ← OUTSIDE the cache scope
+  2. enforceRateLimit(…)
+  3. getCachedXxx(plainId)     ← calls the 'use cache' fetcher
+  4. NextResponse.json(data, { headers: { "Cache-Control": … } })
+```
+
+The fetcher:
+
+```ts
+// apps/web/src/lib/data/standings-endpoint.ts
+import { cacheTag, cacheLife } from "next/cache";
+import { CacheTags } from "@/lib/cache";
+
+export async function getCachedTournamentStandings(
+  tournamentId: number
+): Promise<TournamentStandingRow[]> {
+  "use cache";
+  cacheTag(CacheTags.tournament(tournamentId));
+  cacheLife("max"); // tag-invalidated entity — no time-based expiry needed
+
+  const supabase = createServiceRoleClient(); // S-bucket SELECT is revoked for anon/authed
+  return getPublicTournamentStandings(supabase, tournamentId);
+}
+```
+
+Key rules:
+
+- **Auth outside cache scope** — `resolveApiAuth` runs in the route handler, not inside the `'use cache'` function. Only plain scalar values (IDs, filter params) are passed into the cached fetcher. Never pass `Request`, session objects, or cookies in.
+- **`createServiceRoleClient()` inside the cache** — S-bucket base tables have `anon`/`authenticated` SELECT revoked (Phase 2 Task 9). Service-role is a constant identity (not per-user) and does not vary the cache key; it is safe inside a shared cache scope for all-public-column data.
+- **Reuse existing `CacheTags`** — no new tag per endpoint. Standings reuse `CacheTags.tournament(id)`, so the existing `invalidateTournamentListCaches(id)` / `revalidateTag(CacheTags.tournament(id), 'max')` busts them automatically.
+- **`revalidateTag(tag, 'max')` for on-demand busting** — route-handler surface always uses the two-arg `revalidateTag`; single-arg is deprecated. Server Actions use `updateTag` via the helpers in `@/lib/cache-invalidation`. Do not cross these surfaces.
+- **`Cache-Control` follows the carve-out above** — all-public-column + tag-invalidated → `public, s-maxage=31536000, stale-while-revalidate=86400`; any private/PII column → `private, no-store`.
+
+### Dynamic-hole gotcha for route handlers
+
+A `'use cache'` function is only a cache entry if it actually gets stored. If a `revalidate: 0` or very short `expire` sneaks in (e.g. via a misused `cacheLife` profile), the fetcher becomes a dynamic hole — every request re-runs the DB query and the CDN never stores a shared entry. Always use `cacheLife("max")` for tag-invalidated S-bucket fetchers; confirm the profile table above if unsure.
+
+### Route-handler review checklist (S-bucket)
+
+- [ ] `resolveApiAuth` called in the route handler, result checked, null → `401`
+- [ ] No auth/session objects passed into the `'use cache'` fetcher — plain values only
+- [ ] `createServiceRoleClient()` (not `createStaticClient()`) inside the fetcher — S-bucket SELECT is revoked
+- [ ] `cacheTag(CacheTags.x)` reuses an existing tag — no ad hoc string literals
+- [ ] `cacheLife("max")` declared explicitly in the fetcher
+- [ ] `Cache-Control` header set per the carve-out rules (public all-columns → `public, s-maxage`; else `private, no-store`)
+- [ ] Write paths use `revalidateTag(tag, 'max')` — two-arg form, not `updateTag`
+- [ ] No PII columns in the response shape for routes using `public, s-maxage`
+
 ## Caching Requirements (Must Be Done at Implementation Time)
 
 Caching is not optional polish — it is a required part of implementing any feature that fetches or mutates data. Every new page or feature must address both layers before the work is considered complete.

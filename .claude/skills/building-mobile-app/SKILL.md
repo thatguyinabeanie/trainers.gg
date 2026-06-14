@@ -11,9 +11,23 @@ Use `createQuery` and `createMutation` from `src/lib/api/query-factory.ts` — d
 
 TanStack Query client configured in `src/lib/query-client.ts`.
 
-## Supabase
+## Supabase (Hybrid Data Access)
 
-Import from `@trainers/supabase/mobile`. Session stored in SecureStore (not localStorage).
+Mobile uses a **hybrid** read model — the split depends on whether the user is authenticated and which data bucket is being read:
+
+| Read type | Path | Client |
+| --- | --- | --- |
+| **Authenticated reads** (any bucket) | Direct Supabase — RLS enforced via the SecureStore session | `@trainers/supabase/mobile` browser client with Bearer token |
+| **Public/logged-out reads of S-bucket tables** | `/api/v1` Next.js route handlers (Bearer/anon) | `useApiQuery` from `@trainers/supabase/react-query`, same factory web uses |
+| Auth / session management | Always direct Supabase | `@trainers/supabase/mobile` |
+
+**Rationale:** Supabase API requests are unlimited on Pro — authenticated direct reads stay cheap. The Phase 2 anon-SELECT revoke broke logged-out direct reads of S-bucket base tables (communities, tournaments, etc.), so those unauthenticated reads move to the cached `/api/v1` layer instead.
+
+**Cutover status (deferred):** The `api-*` edge-function retirement and the full public-read cutover to `/api/v1` are deferred until mobile dev resumes. The mobile `apiCall` helper already sends a Bearer token that `resolveApiAuth` on the web side accepts.
+
+Do NOT reference `@supabase-cache-helpers` — that package was dropped from the mobile app.
+
+Session is stored in SecureStore (not localStorage). Import from `@trainers/supabase/mobile`.
 
 ## UI
 
