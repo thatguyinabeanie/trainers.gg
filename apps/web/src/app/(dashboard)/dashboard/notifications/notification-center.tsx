@@ -3,15 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Loader2, CheckCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import {
   getNotifications,
   getUnreadNotificationCount,
   getNotificationCount,
 } from "@trainers/supabase";
-import type { TypedSupabaseClient, Tables } from "@trainers/supabase";
+import type { Tables } from "@trainers/supabase";
 import type { NotificationType } from "@trainers/validators";
+import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { queryKeys } from "@/lib/query-keys";
 import {
   markNotificationReadAction,
   markAllNotificationsReadAction,
@@ -63,8 +66,8 @@ export function NotificationCenter({
   initialTotalCount,
   initialUnreadCount,
 }: NotificationCenterProps) {
-  const _supabase = useSupabase();
   const router = useRouter();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [page, setPage] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -87,48 +90,59 @@ export function NotificationCenter({
       : undefined;
 
   // Fetch notifications for current tab + page
-  const notificationsQueryFn = (client: TypedSupabaseClient) =>
-    getNotifications(client, {
-      limit: PAGE_SIZE,
-      offset: page * PAGE_SIZE,
-      unreadOnly: isUnreadOnly,
-      types: typesFilter,
-    });
-
   const {
     data: notifications,
     refetch: refetchNotifications,
     isLoading,
-  } = useSupabaseQuery(notificationsQueryFn, [activeTab, page, refreshKey]);
+  } = useQuery({
+    queryKey: queryKeys.notifications.list(
+      user?.id ?? "",
+      activeTab,
+      page,
+      refreshKey
+    ),
+    queryFn: () =>
+      getNotifications(createClient(), {
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
+        unreadOnly: isUnreadOnly,
+        types: typesFilter,
+      }),
+    staleTime: 30_000,
+    // Only pass initialData on the first page of the "all" tab — that's the
+    // slice the server pre-fetched and forwarded via props.
+    initialData:
+      page === 0 && activeTab === "all" ? initialNotifications : undefined,
+  });
 
   // Fetch total count for pagination
-  const countQueryFn = (client: TypedSupabaseClient) =>
-    getNotificationCount(client, {
-      unreadOnly: isUnreadOnly,
-      types: typesFilter,
-    });
-
-  const { data: totalCount, refetch: refetchCount } = useSupabaseQuery(
-    countQueryFn,
-    [activeTab, refreshKey]
-  );
+  const { data: totalCount, refetch: refetchCount } = useQuery({
+    queryKey: queryKeys.notifications.count(
+      user?.id ?? "",
+      activeTab,
+      refreshKey
+    ),
+    queryFn: () =>
+      getNotificationCount(createClient(), {
+        unreadOnly: isUnreadOnly,
+        types: typesFilter,
+      }),
+    staleTime: 30_000,
+    initialData: activeTab === "all" ? initialTotalCount : undefined,
+  });
 
   // Fetch unread count for the header badge
-  const unreadCountQueryFn = (client: TypedSupabaseClient) =>
-    getUnreadNotificationCount(client);
+  const { data: unreadCount, refetch: refetchUnread } = useQuery({
+    queryKey: queryKeys.notifications.unreadCount(user?.id ?? "", refreshKey),
+    queryFn: () => getUnreadNotificationCount(createClient()),
+    staleTime: 30_000,
+    initialData: initialUnreadCount,
+  });
 
-  const { data: unreadCount, refetch: refetchUnread } = useSupabaseQuery(
-    unreadCountQueryFn,
-    [refreshKey]
-  );
-
-  // Use initial data on first render, then query data after
-  const displayNotifications =
-    notifications ??
-    (page === 0 && activeTab === "all" ? initialNotifications : []);
-  const displayTotalCount =
-    totalCount ?? (activeTab === "all" ? initialTotalCount : 0);
-  const displayUnreadCount = unreadCount ?? initialUnreadCount;
+  // Derive display values (initialData guarantees these are always defined)
+  const displayNotifications = notifications ?? [];
+  const displayTotalCount = totalCount ?? 0;
+  const displayUnreadCount = unreadCount ?? 0;
 
   const totalPages = Math.max(1, Math.ceil(displayTotalCount / PAGE_SIZE));
 

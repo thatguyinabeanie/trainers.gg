@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { z } from "@trainers/validators";
-import { useSupabaseMutation } from "@/lib/supabase";
 import { sendTournamentInvitations } from "@trainers/supabase";
+import { createClient } from "@/lib/supabase/client";
 import type { SelectedPlayer } from "@trainers/tournaments/types";
 import {
   Card,
@@ -72,15 +73,15 @@ export function InviteForm({
   const { isSubmitting } = form.formState;
   const message = form.watch("message") ?? "";
 
-  const { mutateAsync: sendInvitations } = useSupabaseMutation(
-    (supabase, args: SendInvitationsArgs) =>
+  const { mutateAsync: sendInvitations } = useMutation({
+    mutationFn: (args: SendInvitationsArgs) =>
       sendTournamentInvitations(
-        supabase,
+        createClient(),
         args.tournamentId,
         args.profileIds,
         args.message
-      )
-  );
+      ),
+  });
 
   const handleSelectPlayer = (player: SelectedPlayer) => {
     setSelectedPlayers((prev) => [...prev, player]);

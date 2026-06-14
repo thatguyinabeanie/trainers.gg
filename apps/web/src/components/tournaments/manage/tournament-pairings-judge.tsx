@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSupabase } from "@/lib/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
 import {
   type TournamentPairingsData,
   type PhaseRoundsWithMatchesRow,
 } from "@/lib/data/tournament-pairings-endpoint";
+import { upsertMatchInPairings } from "./pairings-cache";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Card,
@@ -267,6 +269,7 @@ export function TournamentPairingsJudge({
 }: TournamentPairingsJudgeProps) {
   const router = useRouter();
   const supabase = useSupabase();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"pairings" | "judge">("pairings");
   const [realtimeStatus, setRealtimeStatus] =
     useState<RealtimeStatus>("connected");
@@ -277,13 +280,18 @@ export function TournamentPairingsJudge({
   );
   const [selectedRoundId, setSelectedRoundId] = useState<number | null>(null);
 
+  // Canonical query key for the pairings read — shared by useApiQuery, the
+  // realtime `setQueryData` merge (matches), and the rounds `invalidateQueries`.
+  const pairingsQueryKey = [
+    "tournament",
+    tournament.id,
+    "pairings-judge",
+  ] as const;
+
   // Fetch all pairings data via the auth-gated API route (S-bucket safe).
   // `staleTime: 0` so realtime-triggered refetches always get fresh data.
-  const {
-    data: pairings,
-    refetch: refetchPairings,
-  } = useApiQuery<TournamentPairingsData>(
-    ["tournament", tournament.id, "pairings-judge"],
+  const { data: pairings } = useApiQuery<TournamentPairingsData>(
+    pairingsQueryKey,
     () =>
       fetch(`/api/v1/tournaments/${tournament.id}/pairings`).then((r) =>
         r.json()
@@ -291,17 +299,33 @@ export function TournamentPairingsJudge({
     { staleTime: 0 }
   );
 
-  // Stable debounced refresh ref — avoids tearing down realtime channels
-  // when the component re-renders. Calls refetchPairings after a short delay
-  // so rapid realtime events coalesce into a single fetch.
-  const triggerRefreshRef = useRef(() => {
+  // Stable callback ref for the ROUNDS channel only. Round add/remove changes
+  // the set of rounds (and the nested allPhaseRounds/roundsWithStats stats),
+  // which is not a clean single-row `setQueryData` merge — so the rounds
+  // channel uses a targeted, debounced `invalidateQueries` to refetch just the
+  // pairings query. Debounced so rapid round events coalesce into one fetch.
+  // The matches channel, by contrast, does a payload-driven `setQueryData`
+  // (see its effect below) with NO refetch.
+  const invalidatePairingsRef = useRef(() => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
-      void refetchPairings();
+      void queryClient.invalidateQueries({ queryKey: pairingsQueryKey });
     }, 500);
   });
+
+  // Stable callback ref for the MATCHES channel — merges the changed match row
+  // straight into the cache via `setQueryData`. No refetch, no debounce: the
+  // merge is a cheap pure reducer keyed by match id.
+  const applyMatchUpdateRef = useRef(
+    (payload: { id?: number | string | null } & Record<string, unknown>) => {
+      queryClient.setQueryData<TournamentPairingsData>(
+        pairingsQueryKey,
+        (prev) => upsertMatchInPairings(prev, payload)
+      );
+    }
+  );
 
   const navigateToMatch = (roundNumber: number, tableNumber: number) => {
     router.push(
@@ -395,6 +419,9 @@ export function TournamentPairingsJudge({
 
   // Realtime: match updates for the selected round (only when viewing active round).
   // tournament_matches is NOT in the revoke set — anon SELECT is retained.
+  //
+  // P3-5: payload-driven — the changed match row is merged straight into the
+  // TanStack cache via `setQueryData`. NO refetch is issued.
   useEffect(() => {
     if (!selectedRoundId || !isViewingActiveRound) return;
 
@@ -408,8 +435,13 @@ export function TournamentPairingsJudge({
           table: "tournament_matches",
           filter: `round_id=eq.${selectedRoundId}`,
         },
-        () => {
-          triggerRefreshRef.current();
+        (payload) => {
+          applyMatchUpdateRef.current(
+            payload.new as { id?: number | string | null } & Record<
+              string,
+              unknown
+            >
+          );
         }
       )
       .subscribe((status, err) => {
@@ -431,8 +463,14 @@ export function TournamentPairingsJudge({
     };
   }, [supabase, selectedRoundId, isViewingActiveRound]);
 
-  // Realtime: new round detection (INSERT/UPDATE on tournament_rounds).
-  // tournament_matches is used as the change signal; rounds data comes from the API.
+  // Realtime: new round detection (INSERT/UPDATE/DELETE on tournament_rounds).
+  //
+  // P3-5 decision — rounds keep a targeted `invalidateQueries` (NOT setQueryData):
+  // a round add/remove changes the SET of rounds and the nested
+  // allPhaseRounds/roundsWithStats stats, so there is no clean single-row merge.
+  // The round metadata itself (and its match list) comes from the API, so the
+  // honest path is to refetch just the pairings query. This is intentionally
+  // narrower than a global refetch and only fires for the affected phase.
   useEffect(() => {
     if (!selectedPhaseId) return;
 
@@ -447,7 +485,7 @@ export function TournamentPairingsJudge({
           filter: `phase_id=eq.${selectedPhaseId}`,
         },
         () => {
-          triggerRefreshRef.current();
+          invalidatePairingsRef.current();
         }
       )
       .subscribe();

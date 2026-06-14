@@ -11,20 +11,21 @@ import {
   History,
   AlertTriangle,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import {
   type AltTeam,
   getPlayerTournamentHistory,
 } from "@trainers/supabase";
-import type { TypedSupabaseClient } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import { type ActionResult } from "@trainers/validators";
 import { formatShortDate } from "@trainers/utils";
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { useApiQuery } from "@trainers/supabase/react-query";
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -86,13 +87,17 @@ function RecentResults({
   altId: number;
   refreshKey?: number;
 }) {
-  const queryFn = (client: TypedSupabaseClient) =>
-    getPlayerTournamentHistory(client, [altId]);
   const {
     data: results,
     isLoading,
     error: resultsError,
-  } = useSupabaseQuery(queryFn, ["altRecentResults", altId, refreshKey]);
+  } = useQuery({
+    // refreshKey is appended to bust the cache when the parent increments it
+    // (e.g. after a team delete), matching the previous useSupabaseQuery behavior.
+    queryKey: [...queryKeys.player.recentResults(altId), refreshKey],
+    queryFn: () => getPlayerTournamentHistory(createClient(), [altId]),
+    staleTime: 30_000,
+  });
 
   // Show at most 3 recent results
   const recentResults = (results ?? []).slice(0, 3);

@@ -1,10 +1,26 @@
+import { type ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   MatchHeader,
   type PlayerInfo,
   type PlayerStats,
 } from "../match-header";
 import type { GameData } from "../game-card";
+
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    order: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+  })),
+  supabase: {
+    from: jest.fn().mockReturnThis(),
+  },
+}));
 
 // Mock next/link to render a plain anchor
 jest.mock("next/link", () => {
@@ -18,13 +34,6 @@ jest.mock("next/link", () => {
     return <a href={href}>{children}</a>;
   };
 });
-
-// MatchHeader fetches coach badges via useSupabaseQuery (which calls the
-// browser Supabase client). Stub the hook so the badge query is a no-op and
-// no real client is created — the badge simply doesn't render.
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn().mockReturnValue({ data: undefined }),
-}));
 
 // Mock server actions
 jest.mock("@/actions/matches", () => ({
@@ -61,6 +70,21 @@ const mockPlayer2: PlayerInfo = {
 };
 
 const defaultStats: PlayerStats = { wins: 0, losses: 0 };
+
+// ============================================================================
+// Test wrapper
+// ============================================================================
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
+}
 
 // ============================================================================
 // Helper: build default MatchHeader props
@@ -124,7 +148,9 @@ describe("No-show indicator", () => {
         },
       ];
 
-      render(<MatchHeader {...buildProps({ games })} />);
+      render(<MatchHeader {...buildProps({ games })} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(
         screen.getByText(/Game 1 was awarded due to opponent no-show/i)
@@ -156,7 +182,9 @@ describe("No-show indicator", () => {
         },
       ];
 
-      render(<MatchHeader {...buildProps({ games })} />);
+      render(<MatchHeader {...buildProps({ games })} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(
         screen.getByText(/Games 1, 2 were awarded due to opponent no-show/i)
@@ -180,7 +208,9 @@ describe("No-show indicator", () => {
         },
       ];
 
-      render(<MatchHeader {...buildProps({ games })} />);
+      render(<MatchHeader {...buildProps({ games })} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(
         screen.queryByText(/awarded due to opponent no-show/i)
@@ -188,7 +218,9 @@ describe("No-show indicator", () => {
     });
 
     it("does not show alert when games list is empty", () => {
-      render(<MatchHeader {...buildProps({ games: [] })} />);
+      render(<MatchHeader {...buildProps({ games: [] })} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(
         screen.queryByText(/awarded due to opponent no-show/i)
@@ -214,7 +246,9 @@ describe("No-show indicator", () => {
         },
       ];
 
-      render(<MatchHeader {...buildProps({ games, isParticipant: true })} />);
+      render(<MatchHeader {...buildProps({ games, isParticipant: true })} />, {
+        wrapper: createWrapper(),
+      });
 
       // The no-show game node should have a title indicating it was a no-show
       const noShowButton = screen.getByTitle(
@@ -243,7 +277,8 @@ describe("No-show indicator", () => {
       render(
         <MatchHeader
           {...buildProps({ games, isStaff: true, isParticipant: false })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       // Staff view: the no-show game node should have a no-show title

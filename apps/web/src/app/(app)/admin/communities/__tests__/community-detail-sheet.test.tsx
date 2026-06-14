@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -126,24 +127,22 @@ jest.mock("@trainers/utils", () => ({
   formatDateTime: (date: string) => `formatted(${date})`,
 }));
 
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: () => ({
-    data: null,
-    isLoading: false,
-    refetch: jest.fn(),
-  }),
-  useSupabase: () => ({ supabase: {} }),
-  useUser: () => null,
-  createClient: jest.fn(),
-  supabase: {},
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: jest.fn(() => ({})),
 }));
 
+const mockHasCommunityFeatureAccess = jest.fn();
 jest.mock("@trainers/supabase", () => ({
-  hasCommunityFeatureAccess: jest.fn().mockResolvedValue({ access: false }),
+  hasCommunityFeatureAccess: (...args: unknown[]) =>
+    mockHasCommunityFeatureAccess(...args),
 }));
 
 jest.mock("@/components/ui/switch", () => ({
-  Switch: (props: React.InputHTMLAttributes<HTMLInputElement> & { onCheckedChange?: (v: boolean) => void }) => (
+  Switch: (
+    props: React.InputHTMLAttributes<HTMLInputElement> & {
+      onCheckedChange?: (v: boolean) => void;
+    }
+  ) => (
     <input
       type="checkbox"
       role="switch"
@@ -174,12 +173,25 @@ jest.mock("../actions", () => ({
     mockTransferOwnershipAction(...args),
   toggleFeaturedAction: jest.fn().mockResolvedValue({ success: true }),
   togglePartnerAction: jest.fn().mockResolvedValue({ success: true }),
+  toggleDiscordAction: jest.fn().mockResolvedValue({ success: true }),
 }));
 
 import { CommunityDetailSheet } from "../community-detail-sheet";
 import type { CommunityRow } from "../columns";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
 
 function buildCommunity(overrides: Partial<CommunityRow> = {}): CommunityRow {
   return {
@@ -214,6 +226,7 @@ const defaultProps = {
 describe("CommunityDetailSheet", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockHasCommunityFeatureAccess.mockResolvedValue({ access: false });
     mockApproveCommunityAction.mockResolvedValue({ success: true });
     mockRejectCommunityAction.mockResolvedValue({ success: true });
     mockSuspendCommunityAction.mockResolvedValue({ success: true });
@@ -223,7 +236,9 @@ describe("CommunityDetailSheet", () => {
 
   describe("when community is null", () => {
     it("renders nothing", () => {
-      render(<CommunityDetailSheet {...defaultProps} community={null} />);
+      render(<CommunityDetailSheet {...defaultProps} community={null} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.queryByTestId("sheet")).not.toBeInTheDocument();
     });
   });
@@ -231,14 +246,16 @@ describe("CommunityDetailSheet", () => {
   describe("basic rendering", () => {
     it("shows community name as sheet title", () => {
       render(
-        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />
+        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText("Pallet Town League")).toBeInTheDocument();
     });
 
     it("shows community slug as sheet description", () => {
       render(
-        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />
+        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText("pallet-town-league")).toBeInTheDocument();
     });
@@ -248,7 +265,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "active" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText("Active")).toBeInTheDocument();
     });
@@ -258,7 +276,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ tier: "partner" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // The badge is rendered with the tier-specific class
       const badges = screen.getAllByText("Partner");
@@ -270,14 +289,16 @@ describe("CommunityDetailSheet", () => {
 
     it("shows community description when present", () => {
       render(
-        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />
+        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText("A great community")).toBeInTheDocument();
     });
 
     it("shows owner username", () => {
       render(
-        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />
+        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText("@ash_ketchum")).toBeInTheDocument();
     });
@@ -287,14 +308,16 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ owner: null })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText("--")).toBeInTheDocument();
     });
 
     it("shows formatted created_at date", () => {
       render(
-        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />
+        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.getByText("formatted(2026-01-01T00:00:00.000Z)")
@@ -314,7 +337,8 @@ describe("CommunityDetailSheet", () => {
               },
             ],
           })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText("Reviewed and approved.")).toBeInTheDocument();
     });
@@ -324,7 +348,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ community_admin_notes: null })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.getByText("No admin notes for this community.")
@@ -338,7 +363,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.getByRole("button", { name: "Approve Community" })
@@ -353,7 +379,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.getByRole("button", { name: "Reject Community" })
@@ -366,7 +393,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.type(screen.getByLabelText(/rejection reason/i), "Not ready");
@@ -382,7 +410,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "active" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.getByRole("button", { name: "Suspend Community" })
@@ -403,7 +432,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "active" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.getByRole("button", { name: "Suspend Community" })
@@ -417,7 +447,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "suspended" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.getByRole("button", { name: "Unsuspend Community" })
@@ -434,7 +465,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.getByRole("button", { name: "Transfer Ownership" })
@@ -443,7 +475,8 @@ describe("CommunityDetailSheet", () => {
 
     it("disables Transfer Ownership when owner ID is empty", () => {
       render(
-        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />
+        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.getByRole("button", { name: "Transfer Ownership" })
@@ -453,7 +486,8 @@ describe("CommunityDetailSheet", () => {
     it("enables Transfer Ownership when owner ID is provided", async () => {
       const user = userEvent.setup();
       render(
-        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />
+        <CommunityDetailSheet {...defaultProps} community={buildCommunity()} />,
+        { wrapper: createWrapper() }
       );
 
       await user.type(
@@ -473,7 +507,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.click(
@@ -491,7 +526,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.click(
@@ -508,7 +544,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ id: 7, status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.click(
@@ -527,7 +564,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.click(
@@ -546,7 +584,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.click(
@@ -570,7 +609,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.click(
@@ -589,7 +629,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ id: 3, status: "suspended" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.click(
@@ -608,7 +649,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ id: 5, status: "pending" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.type(
@@ -634,7 +676,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ id: 9, status: "active" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.type(
@@ -660,7 +703,8 @@ describe("CommunityDetailSheet", () => {
         <CommunityDetailSheet
           {...defaultProps}
           community={buildCommunity({ status: "active" })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.type(

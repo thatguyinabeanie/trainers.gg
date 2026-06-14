@@ -1,25 +1,21 @@
 import { render, screen, act, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TournamentOverview } from "../tournament-overview";
-import {
-  getTournamentPhases,
-  getPhaseRoundsWithStats,
-} from "@trainers/supabase";
 
-// tournament-overview no longer uses Supabase Realtime channels —
-// freshness comes from mutation-driven cache invalidation.
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(),
+// ── Mocks ──────────────────────────────────────────────────────────────────
+
+const mockGetTournamentPhases = jest.fn();
+const mockGetPhaseRoundsWithStats = jest.fn();
+
+jest.mock("@trainers/supabase", () => ({
+  getTournamentPhases: (...args: unknown[]) =>
+    mockGetTournamentPhases(...args),
+  getPhaseRoundsWithStats: (...args: unknown[]) =>
+    mockGetPhaseRoundsWithStats(...args),
 }));
 
-import { useSupabaseQuery } from "@/lib/supabase";
-const mockUseSupabaseQuery = useSupabaseQuery as jest.MockedFunction<
-  typeof useSupabaseQuery
->;
-
-// Mock the queries
-jest.mock("@trainers/supabase", () => ({
-  getTournamentPhases: jest.fn(),
-  getPhaseRoundsWithStats: jest.fn(),
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: jest.fn(() => ({})),
 }));
 
 // Mock server actions
@@ -38,47 +34,21 @@ jest.mock("sonner", () => ({
   },
 }));
 
-type SyncPhasesFn = () => Awaited<ReturnType<typeof getTournamentPhases>>;
-type SyncRoundsFn = () => Awaited<ReturnType<typeof getPhaseRoundsWithStats>>;
+// ── Helpers ────────────────────────────────────────────────────────────────
 
-const mockGetTournamentPhases =
-  getTournamentPhases as unknown as jest.MockedFunction<SyncPhasesFn>;
-const mockGetPhaseRoundsWithStats =
-  getPhaseRoundsWithStats as unknown as jest.MockedFunction<SyncRoundsFn>;
-
-// Helper to set up consistent query mocks for phases + rounds.
-// Uses mockImplementation with alternating results so extra re-renders
-// (from render-time state adjustments) don't exhaust the mock queue.
-function setupQueryMocks({
-  phases = [] as Parameters<
-    (typeof mockGetTournamentPhases)["mockReturnValue"]
-  >[0],
-  rounds = [] as Parameters<
-    (typeof mockGetPhaseRoundsWithStats)["mockReturnValue"]
-  >[0],
-  roundsLoading = false,
-} = {}) {
-  const refetchRounds = jest.fn().mockResolvedValue(undefined);
-  const phasesResult = {
-    data: phases,
-    error: null,
-    isLoading: false,
-    refetch: jest.fn(),
-  };
-  const roundsResult = {
-    data: rounds,
-    error: null,
-    isLoading: roundsLoading,
-    refetch: refetchRounds,
-  };
-  let callIdx = 0;
-  mockUseSupabaseQuery.mockImplementation(() => {
-    const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-    callIdx++;
-    return result;
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
-  return { refetchRounds };
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
 }
+
+// ── Fixtures ───────────────────────────────────────────────────────────────
 
 const baseTournament = {
   id: 1,
@@ -117,36 +87,19 @@ const _makePendingRound = (overrides = {}) => ({
   ...overrides,
 });
 
+// ── Tests ──────────────────────────────────────────────────────────────────
+
 describe("TournamentOverview", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetTournamentPhases.mockReturnValue([]);
-    mockGetPhaseRoundsWithStats.mockReturnValue([]);
+    mockGetTournamentPhases.mockResolvedValue([]);
+    mockGetPhaseRoundsWithStats.mockResolvedValue([]);
   });
 
   describe("Registration Progress", () => {
-    it("should display correct registration counts for draft tournament", () => {
-      // Setup default mocks for non-active tournament
-      {
-        const phasesResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+    it("should display correct registration counts for draft tournament", async () => {
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
       const mockTournament = {
         id: 1,
@@ -162,35 +115,18 @@ describe("TournamentOverview", () => {
         format: "VGC 2025",
       };
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
       // Should show 3 registered (registered + confirmed counts)
       expect(screen.getByText("3")).toBeInTheDocument();
       expect(screen.getByText("of 32 spots")).toBeInTheDocument();
     });
 
-    it("should display checked-in count for active tournament", () => {
-      // Setup default mocks
-      {
-        const phasesResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+    it("should display checked-in count for active tournament", async () => {
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
       const mockTournament = {
         id: 1,
@@ -206,35 +142,18 @@ describe("TournamentOverview", () => {
         format: "VGC 2025",
       };
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
       // Should show 2 checked in out of 3 registered
       expect(screen.getByText("2")).toBeInTheDocument();
       expect(screen.getByText("checked in")).toBeInTheDocument();
     });
 
-    it("should show dropped count for active tournament", () => {
-      // Setup default mocks
-      {
-        const phasesResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+    it("should show dropped count for active tournament", async () => {
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
       const mockTournament = {
         id: 1,
@@ -250,33 +169,16 @@ describe("TournamentOverview", () => {
         format: "VGC 2025",
       };
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByText("2 dropped")).toBeInTheDocument();
     });
 
-    it("should handle tournament without max participants", () => {
-      // Setup default mocks
-      {
-        const phasesResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+    it("should handle tournament without max participants", async () => {
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
       const mockTournament = {
         id: 1,
@@ -287,7 +189,9 @@ describe("TournamentOverview", () => {
         format: "VGC 2025",
       };
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByText("2")).toBeInTheDocument();
       expect(screen.getByText("registered")).toBeInTheDocument();
@@ -295,28 +199,9 @@ describe("TournamentOverview", () => {
       expect(screen.queryByText(/capacity/)).not.toBeInTheDocument();
     });
 
-    it("should calculate registration progress correctly", () => {
-      // Setup default mocks
-      {
-        const phasesResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+    it("should calculate registration progress correctly", async () => {
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
       const mockTournament = {
         id: 1,
@@ -333,7 +218,9 @@ describe("TournamentOverview", () => {
         format: "VGC 2025",
       };
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
       // 3 checked in out of 4 registered = 75%
       // 4 registered out of 8 max = 50%
@@ -346,7 +233,7 @@ describe("TournamentOverview", () => {
   });
 
   describe("Round Progress", () => {
-    it("should display current round number", () => {
+    it("should display current round number", async () => {
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -358,7 +245,7 @@ describe("TournamentOverview", () => {
         swissRounds: 5,
       };
 
-      const mockPhases = [
+      const localPhases = [
         { id: 1, name: "Swiss", tournament_id: BigInt(1), planned_rounds: 5 },
       ];
 
@@ -374,39 +261,24 @@ describe("TournamentOverview", () => {
         },
       ];
 
-      // Setup mocks for this test
-      {
-        const phasesResult = {
-          data: mockPhases,
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: mockRounds,
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+      mockGetTournamentPhases.mockResolvedValue(localPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue(mockRounds);
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
-      // Check for round number in the Round Progress card
-      const roundProgressSection = screen
-        .getByText("Round Progress")
-        .closest('[data-slot="card"]');
-      expect(roundProgressSection).toHaveTextContent("3");
-      expect(roundProgressSection).toHaveTextContent("of 5 rounds");
+      // Wait for queries to resolve and component to update
+      await waitFor(() => {
+        const roundProgressSection = screen
+          .getByText("Round Progress")
+          .closest('[data-slot="card"]');
+        expect(roundProgressSection).toHaveTextContent("3");
+        expect(roundProgressSection).toHaveTextContent("of 5 rounds");
+      });
     });
 
-    it("should show active round match progress", () => {
+    it("should show active round match progress", async () => {
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -417,7 +289,7 @@ describe("TournamentOverview", () => {
         format: "VGC 2025",
       };
 
-      const mockPhases = [
+      const localPhases = [
         { id: 1, name: "Swiss", tournament_id: BigInt(1), planned_rounds: 5 },
       ];
 
@@ -433,44 +305,28 @@ describe("TournamentOverview", () => {
         },
       ];
 
-      // Setup mocks for this test (use mockImplementation for potential re-renders)
-      let callCount = 0;
-      mockUseSupabaseQuery.mockImplementation(() => {
-        callCount++;
-        if (callCount % 2 === 1) {
-          // Odd calls are for phases
-          return {
-            data: mockPhases,
-            error: null,
-            isLoading: false,
-            refetch: jest.fn(),
-          };
-        } else {
-          // Even calls are for rounds
-          return {
-            data: mockRounds,
-            error: null,
-            isLoading: false,
-            refetch: jest.fn(),
-          };
-        }
+      mockGetTournamentPhases.mockResolvedValue(localPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue(mockRounds);
+
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
       });
 
-      render(<TournamentOverview tournament={mockTournament} />);
-
-      // Should show match stats in the Round Progress card
-      const roundProgressSection = screen
-        .getByText("Round Progress")
-        .closest('[data-slot="card"]');
-      expect(roundProgressSection).toHaveTextContent("3"); // in progress
-      expect(roundProgressSection).toHaveTextContent("6"); // completed
-      expect(roundProgressSection).toHaveTextContent("1"); // pending
-      expect(roundProgressSection).toHaveTextContent("active");
-      expect(roundProgressSection).toHaveTextContent("done");
-      expect(roundProgressSection).toHaveTextContent("pending");
+      // Should show match stats in the Round Progress card after data loads
+      await waitFor(() => {
+        const roundProgressSection = screen
+          .getByText("Round Progress")
+          .closest('[data-slot="card"]');
+        expect(roundProgressSection).toHaveTextContent("3"); // in progress
+        expect(roundProgressSection).toHaveTextContent("6"); // completed
+        expect(roundProgressSection).toHaveTextContent("1"); // pending
+        expect(roundProgressSection).toHaveTextContent("active");
+        expect(roundProgressSection).toHaveTextContent("done");
+        expect(roundProgressSection).toHaveTextContent("pending");
+      });
     });
 
-    it("should calculate round progress percentage correctly", () => {
+    it("should calculate round progress percentage correctly", async () => {
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -482,7 +338,7 @@ describe("TournamentOverview", () => {
         swissRounds: 4,
       };
 
-      const mockPhases = [
+      const localPhases = [
         { id: 1, name: "Swiss", tournament_id: BigInt(1), planned_rounds: 4 },
       ];
 
@@ -498,61 +354,27 @@ describe("TournamentOverview", () => {
         },
       ];
 
-      // Setup mocks for this test
-      {
-        const phasesResult = {
-          data: mockPhases,
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: mockRounds,
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+      mockGetTournamentPhases.mockResolvedValue(localPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue(mockRounds);
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
-      // 2 out of 4 rounds = 50% - should appear in the Round Progress card
-      const roundProgressSection = screen
-        .getByText("Round Progress")
-        .closest('[data-slot="card"]');
-      expect(roundProgressSection).toHaveTextContent("50%");
+      // 2 out of 4 rounds = 50%
+      await waitFor(() => {
+        const roundProgressSection = screen
+          .getByText("Round Progress")
+          .closest('[data-slot="card"]');
+        expect(roundProgressSection).toHaveTextContent("50%");
+      });
     });
   });
 
   describe("Tournament Details Cards", () => {
     it("should display tournament format information", () => {
-      // Setup default mocks
-      {
-        const phasesResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
       const mockTournament = {
         id: 1,
@@ -565,7 +387,9 @@ describe("TournamentOverview", () => {
         topCutSize: 8,
       };
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByText("VGC 2025")).toBeInTheDocument();
       expect(screen.getByText("Swiss With Cut")).toBeInTheDocument();
@@ -574,27 +398,8 @@ describe("TournamentOverview", () => {
     });
 
     it("should display schedule information", () => {
-      // Setup default mocks
-      {
-        const phasesResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
       const startDate = new Date("2025-03-15T10:00:00Z").getTime();
       const endDate = new Date("2025-03-15T18:00:00Z").getTime();
@@ -610,7 +415,9 @@ describe("TournamentOverview", () => {
         endDate,
       };
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByText("Schedule")).toBeInTheDocument();
       expect(screen.getByText("Start Time")).toBeInTheDocument();
@@ -618,27 +425,8 @@ describe("TournamentOverview", () => {
     });
 
     it("should handle missing optional tournament data", () => {
-      // Setup default mocks
-      {
-        const phasesResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
       const mockTournament = {
         id: 1,
@@ -649,7 +437,9 @@ describe("TournamentOverview", () => {
         format: "VGC 2025",
       };
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
       // Should show default round time
       expect(screen.getByText("50m")).toBeInTheDocument();
@@ -659,7 +449,7 @@ describe("TournamentOverview", () => {
   });
 
   describe("Tournament States", () => {
-    it("should show round command center for active tournaments", () => {
+    it("should show round command center for active tournaments", async () => {
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -670,60 +460,26 @@ describe("TournamentOverview", () => {
         format: "VGC 2025",
       };
 
-      const mockPhases = [
+      const localPhases = [
         { id: 1, name: "Swiss", tournament_id: BigInt(1), planned_rounds: 5 },
       ];
 
-      // Setup mocks for this test
-      {
-        const phasesResult = {
-          data: mockPhases,
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+      mockGetTournamentPhases.mockResolvedValue(localPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
       // Should show "Ready to Start" for active tournament with no rounds
-      expect(screen.getByText("Ready to Start")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText("Ready to Start")).toBeInTheDocument();
+      });
     });
 
     it("should not show round command center for draft tournaments", () => {
-      // Setup default mocks
-      {
-        const phasesResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        const roundsResult = {
-          data: [],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-        let callIdx = 0;
-        mockUseSupabaseQuery.mockImplementation(() => {
-          const result = callIdx % 2 === 0 ? phasesResult : roundsResult;
-          callIdx++;
-          return result;
-        });
-      }
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
       const mockTournament = {
         id: 1,
@@ -734,7 +490,9 @@ describe("TournamentOverview", () => {
         format: "VGC 2025",
       };
 
-      render(<TournamentOverview tournament={mockTournament} />);
+      render(<TournamentOverview tournament={mockTournament} />, {
+        wrapper: createWrapper(),
+      });
 
       // Should not show round command center
       expect(screen.queryByText("Ready to Start")).not.toBeInTheDocument();
@@ -747,122 +505,165 @@ describe("TournamentOverview", () => {
   // ---------------------------------------------------------------------------
 
   describe("RoundCommandCenter states", () => {
-    it("shows loading spinner when rounds are loading", () => {
-      setupQueryMocks({ phases: mockPhases, rounds: [], roundsLoading: true });
-      render(<TournamentOverview tournament={baseTournament} />);
-      // Loader2 SVG — no text to assert, but command center content absent
+    it("shows loading spinner when rounds are loading", async () => {
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      // Keep rounds in loading state (never resolves)
+      mockGetPhaseRoundsWithStats.mockReturnValue(new Promise(() => {}));
+
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
+      });
+
+      // While loading, neither "Ready to Start" nor "Generating pairings..." appear
+      await waitFor(() => {
+        // Phases resolved, now rounds loading — loader spins inside card
+        expect(
+          screen.queryByText("Generating pairings...")
+        ).not.toBeInTheDocument();
+      });
       expect(screen.queryByText("Ready to Start")).not.toBeInTheDocument();
-      expect(
-        screen.queryByText("Generating pairings...")
-      ).not.toBeInTheDocument();
     });
 
-    it("shows 'no phases configured' when tournament has no phase", () => {
-      setupQueryMocks({ phases: [], rounds: [] });
+    it("shows 'no phases configured' when tournament has no phase", async () => {
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
       render(
         <TournamentOverview
           tournament={{ ...baseTournament, currentPhaseId: null }}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
-      expect(screen.getByText(/no phases configured/i)).toBeInTheDocument();
-    });
 
-    it("shows idle state with round 1 label when no rounds exist", () => {
-      setupQueryMocks({ phases: mockPhases, rounds: [] });
-      render(<TournamentOverview tournament={baseTournament} />);
-      expect(screen.getByText("Ready to Start")).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /start round 1/i })
-      ).toBeInTheDocument();
-    });
-
-    it("shows 'all swiss rounds completed' message when nextRound exceeds plannedRounds", () => {
-      setupQueryMocks({
-        phases: mockPhases,
-        rounds: [
-          {
-            id: 1,
-            round_number: 5,
-            status: "completed",
-            matchCount: 8,
-            completedCount: 8,
-            inProgressCount: 0,
-            pendingCount: 0,
-          },
-        ],
+      await waitFor(() => {
+        expect(screen.getByText(/no phases configured/i)).toBeInTheDocument();
       });
-      render(<TournamentOverview tournament={baseTournament} />);
-      expect(
-        screen.getByText(/all swiss rounds completed/i)
-      ).toBeInTheDocument();
-      // No Start Round button should appear
-      expect(
-        screen.queryByRole("button", { name: /start round/i })
-      ).not.toBeInTheDocument();
     });
 
-    it("shows intermediate idle state label after completing a round", () => {
-      setupQueryMocks({
-        phases: mockPhases,
-        rounds: [
-          {
-            id: 1,
-            round_number: 2,
-            status: "completed",
-            matchCount: 8,
-            completedCount: 8,
-            inProgressCount: 0,
-            pendingCount: 0,
-          },
-        ],
+    it("shows idle state with round 1 label when no rounds exist", async () => {
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
       });
-      render(<TournamentOverview tournament={baseTournament} />);
-      expect(screen.getByText(/round 2 complete/i)).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /start round 3/i })
-      ).toBeInTheDocument();
-    });
 
-    it("shows active round progress in command center", () => {
-      setupQueryMocks({
-        phases: mockPhases,
-        rounds: [makeActiveRound()],
+      await waitFor(() => {
+        expect(screen.getByText("Ready to Start")).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /start round 1/i })
+        ).toBeInTheDocument();
       });
-      render(<TournamentOverview tournament={baseTournament} />);
-      expect(screen.getByText(/round 2 in progress/i)).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /complete round/i })
-      ).toBeInTheDocument();
     });
 
-    it("Complete Round button is disabled when not all matches are done", () => {
-      setupQueryMocks({
-        phases: mockPhases,
-        rounds: [makeActiveRound({ completedCount: 4, matchCount: 8 })],
+    it("shows 'all swiss rounds completed' message when nextRound exceeds plannedRounds", async () => {
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([
+        {
+          id: 1,
+          round_number: 5,
+          status: "completed",
+          matchCount: 8,
+          completedCount: 8,
+          inProgressCount: 0,
+          pendingCount: 0,
+        },
+      ]);
+
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
       });
-      render(<TournamentOverview tournament={baseTournament} />);
-      expect(
-        screen.getByRole("button", { name: /complete round/i })
-      ).toBeDisabled();
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/all swiss rounds completed/i)
+        ).toBeInTheDocument();
+        // No Start Round button should appear
+        expect(
+          screen.queryByRole("button", { name: /start round/i })
+        ).not.toBeInTheDocument();
+      });
     });
 
-    it("uses phases[0].planned_rounds when currentPhaseId is null", () => {
+    it("shows intermediate idle state label after completing a round", async () => {
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([
+        {
+          id: 1,
+          round_number: 2,
+          status: "completed",
+          matchCount: 8,
+          completedCount: 8,
+          inProgressCount: 0,
+          pendingCount: 0,
+        },
+      ]);
+
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/round 2 complete/i)).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /start round 3/i })
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("shows active round progress in command center", async () => {
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([makeActiveRound()]);
+
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/round 2 in progress/i)).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /complete round/i })
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("Complete Round button is disabled when not all matches are done", async () => {
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([
+        makeActiveRound({ completedCount: 4, matchCount: 8 }),
+      ]);
+
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /complete round/i })
+        ).toBeDisabled();
+      });
+    });
+
+    it("uses phases[0].planned_rounds when currentPhaseId is null", async () => {
       // No explicit currentPhaseId — should fall back to phases[0]
-      setupQueryMocks({
-        phases: [
-          { id: 2, name: "Swiss", tournament_id: BigInt(1), planned_rounds: 3 },
-        ],
-        rounds: [],
-      });
+      mockGetTournamentPhases.mockResolvedValue([
+        { id: 2, name: "Swiss", tournament_id: BigInt(1), planned_rounds: 3 },
+      ]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
       render(
         <TournamentOverview
           tournament={{ ...baseTournament, currentPhaseId: null }}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
-      const roundCard = screen
-        .getByText("Round Progress")
-        .closest('[data-slot="card"]');
-      expect(roundCard).toHaveTextContent("of 3 rounds");
+
+      await waitFor(() => {
+        const roundCard = screen
+          .getByText("Round Progress")
+          .closest('[data-slot="card"]');
+        expect(roundCard).toHaveTextContent("of 3 rounds");
+      });
     });
   });
 
@@ -872,7 +673,9 @@ describe("TournamentOverview", () => {
 
   describe("formatDate", () => {
     it("shows em-dash when no start date is provided", () => {
-      setupQueryMocks({ phases: mockPhases, rounds: [] });
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
       render(
         <TournamentOverview
           tournament={{
@@ -880,8 +683,10 @@ describe("TournamentOverview", () => {
             status: "upcoming",
             startDate: undefined,
           }}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
+
       const scheduleCard = screen
         .getByText("Schedule")
         .closest('[data-slot="card"]');
@@ -889,13 +694,18 @@ describe("TournamentOverview", () => {
     });
 
     it("formats a valid timestamp into a readable date string", () => {
-      setupQueryMocks({ phases: mockPhases, rounds: [] });
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
       const ts = new Date("2025-06-15T14:00:00Z").getTime();
+
       render(
         <TournamentOverview
           tournament={{ ...baseTournament, status: "upcoming", startDate: ts }}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
+
       const scheduleCard = screen
         .getByText("Schedule")
         .closest('[data-slot="card"]');
@@ -911,7 +721,9 @@ describe("TournamentOverview", () => {
 
   describe("Registration card edge cases", () => {
     it("shows 'registered' label when no maxParticipants (draft)", () => {
-      setupQueryMocks({ phases: [], rounds: [] });
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
       render(
         <TournamentOverview
           tournament={{
@@ -919,70 +731,112 @@ describe("TournamentOverview", () => {
             status: "draft",
             registrations: [{ status: "registered" }],
           }}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
+
       expect(screen.getByText("registered")).toBeInTheDocument();
     });
 
     it("does not show dropped count when none have dropped", () => {
-      setupQueryMocks({ phases: [], rounds: [] });
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
       render(
         <TournamentOverview
           tournament={{
             ...baseTournament,
             registrations: [{ status: "checked_in" }],
           }}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
+
       expect(screen.queryByText(/dropped/)).not.toBeInTheDocument();
     });
 
     it("shows format as 'Custom' when format field is empty", () => {
-      setupQueryMocks({ phases: [], rounds: [] });
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
       render(
-        <TournamentOverview tournament={{ ...baseTournament, format: "" }} />
+        <TournamentOverview tournament={{ ...baseTournament, format: "" }} />,
+        { wrapper: createWrapper() }
       );
+
       expect(screen.getByText("Custom")).toBeInTheDocument();
     });
 
     it("shows default 50m round time when roundTimeMinutes is 0", () => {
-      setupQueryMocks({ phases: [], rounds: [] });
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
       render(
         <TournamentOverview
           tournament={{ ...baseTournament, roundTimeMinutes: 0 }}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
+
       expect(screen.getByText("50m")).toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // No realtime subscriptions (removed in Phase 2 Task 9 T3n)
+  // Phase 3 migration — no useSupabaseQuery (uses TanStack useQuery directly)
   // ---------------------------------------------------------------------------
 
-  describe("realtime subscription", () => {
-    it("does NOT use useSupabase() — no realtime channels (Phase 2 Task 9 T3n)", () => {
-      // tournament-overview was migrated off all three realtime channels
-      // (overview-registrations, overview-matches, overview-rounds). Freshness
-      // is now driven by mutation-triggered cache invalidation.
-      //
-      // The module mock only exports useSupabaseQuery. If useSupabase() were
-      // re-added to the component, Jest would throw "useSupabase is not a
-      // function" during the render — a clean render below proves it's removed.
-      setupQueryMocks({ phases: mockPhases, rounds: [] });
+  describe("Phase 3 migration: useQuery replaces useSupabaseQuery", () => {
+    it("calls getTournamentPhases with a supabase client and the tournament id", async () => {
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
 
-      // Assertion 1: the mock does not export useSupabase
-      const useSupabaseModule = jest.requireMock("@/lib/supabase") as {
-        useSupabaseQuery: jest.Mock;
-        useSupabase?: jest.Mock;
-      };
-      expect(useSupabaseModule.useSupabase).toBeUndefined();
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
+      });
 
-      // Assertion 2: component renders without throwing (no useSupabase() call)
-      expect(() =>
-        render(<TournamentOverview tournament={baseTournament} />)
-      ).not.toThrow();
-      expect(screen.getByText("Ready to Start")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(mockGetTournamentPhases).toHaveBeenCalledWith(
+          expect.anything(),
+          baseTournament.id
+        );
+      });
+    });
+
+    it("calls getPhaseRoundsWithStats with the active phase id", async () => {
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(mockGetPhaseRoundsWithStats).toHaveBeenCalledWith(
+          expect.anything(),
+          baseTournament.currentPhaseId
+        );
+      });
+    });
+
+    it("does NOT call getPhaseRoundsWithStats when activePhaseId is null", async () => {
+      mockGetTournamentPhases.mockResolvedValue([]);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([]);
+
+      render(
+        <TournamentOverview
+          tournament={{ ...baseTournament, currentPhaseId: null }}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Give queries time to settle
+      await waitFor(() => {
+        expect(mockGetTournamentPhases).toHaveBeenCalled();
+      });
+
+      // phases returned empty, so activePhaseId = null, rounds query disabled
+      expect(mockGetPhaseRoundsWithStats).not.toHaveBeenCalled();
     });
   });
 
@@ -1010,25 +864,27 @@ describe("TournamentOverview", () => {
       };
       prepareRound.mockResolvedValue({ success: true, data: previewPayload });
 
-      setupQueryMocks({
-        phases: mockPhases,
-        rounds: [
-          {
-            id: 9,
-            round_number: 2,
-            status: "completed",
-            matchCount: 4,
-            completedCount: 4,
-            inProgressCount: 0,
-            pendingCount: 0,
-          },
-        ],
-      });
-      render(<TournamentOverview tournament={baseTournament} />);
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([
+        {
+          id: 9,
+          round_number: 2,
+          status: "completed",
+          matchCount: 4,
+          completedCount: 4,
+          inProgressCount: 0,
+          pendingCount: 0,
+        },
+      ]);
 
-      const startBtn = screen.getByRole("button", {
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
+      });
+
+      const startBtn = await screen.findByRole("button", {
         name: /start round 3/i,
       });
+
       await act(async () => {
         startBtn.click();
       });
@@ -1053,25 +909,27 @@ describe("TournamentOverview", () => {
         error: "Not enough players",
       });
 
-      setupQueryMocks({
-        phases: mockPhases,
-        rounds: [
-          {
-            id: 9,
-            round_number: 2,
-            status: "completed",
-            matchCount: 4,
-            completedCount: 4,
-            inProgressCount: 0,
-            pendingCount: 0,
-          },
-        ],
-      });
-      render(<TournamentOverview tournament={baseTournament} />);
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([
+        {
+          id: 9,
+          round_number: 2,
+          status: "completed",
+          matchCount: 4,
+          completedCount: 4,
+          inProgressCount: 0,
+          pendingCount: 0,
+        },
+      ]);
 
-      const startBtn = screen.getByRole("button", {
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
+      });
+
+      const startBtn = await screen.findByRole("button", {
         name: /start round 3/i,
       });
+
       await act(async () => {
         startBtn.click();
       });
@@ -1081,37 +939,44 @@ describe("TournamentOverview", () => {
       });
     });
 
-    it("renders Complete Round button for active round with all matches done", () => {
-      setupQueryMocks({
-        phases: mockPhases,
-        rounds: [makeActiveRound({ completedCount: 8, matchCount: 8 })],
-      });
-      render(<TournamentOverview tournament={baseTournament} />);
+    it("renders Complete Round button for active round with all matches done", async () => {
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([
+        makeActiveRound({ completedCount: 8, matchCount: 8 }),
+      ]);
 
-      // The active round view shows progress and complete button
-      expect(screen.getByText(/Round 2 in Progress/)).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /complete round/i })
-      ).toBeInTheDocument();
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Round 2 in Progress/)).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /complete round/i })
+        ).toBeInTheDocument();
+      });
     });
 
-    it("renders active round stats grid with in-progress, completed, remaining", () => {
-      setupQueryMocks({
-        phases: mockPhases,
-        rounds: [
-          makeActiveRound({
-            matchCount: 8,
-            completedCount: 3,
-            inProgressCount: 2,
-            pendingCount: 3,
-          }),
-        ],
-      });
-      render(<TournamentOverview tournament={baseTournament} />);
+    it("renders active round stats grid with in-progress, completed, remaining", async () => {
+      mockGetTournamentPhases.mockResolvedValue(mockPhases);
+      mockGetPhaseRoundsWithStats.mockResolvedValue([
+        makeActiveRound({
+          matchCount: 8,
+          completedCount: 3,
+          inProgressCount: 2,
+          pendingCount: 3,
+        }),
+      ]);
 
-      expect(screen.getByText("In Progress")).toBeInTheDocument();
-      expect(screen.getByText("Completed")).toBeInTheDocument();
-      expect(screen.getByText("Remaining")).toBeInTheDocument();
+      render(<TournamentOverview tournament={baseTournament} />, {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("In Progress")).toBeInTheDocument();
+        expect(screen.getByText("Completed")).toBeInTheDocument();
+        expect(screen.getByText("Remaining")).toBeInTheDocument();
+      });
     });
   });
 });

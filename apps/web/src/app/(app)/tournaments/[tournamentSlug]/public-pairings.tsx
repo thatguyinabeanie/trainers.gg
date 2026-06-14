@@ -1,4 +1,4 @@
-import { getCachedTournamentPairings } from "@/lib/data/tournament-pairings-endpoint";
+import { getCachedPublicTournamentPairings } from "@/lib/data/tournament-pairings-endpoint";
 
 import { PublicPairingsView } from "./public-pairings-view";
 
@@ -31,7 +31,7 @@ export async function PublicPairings({
   tournamentSlug,
   canManage = false,
 }: PublicPairingsProps) {
-  const data = await getCachedTournamentPairings(tournamentId);
+  const data = await getCachedPublicTournamentPairings(tournamentId);
 
   return (
     <PublicPairingsView

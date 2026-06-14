@@ -4,10 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { GraduationCap, Search, UserPlus, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { listUsersAdmin } from "@trainers/supabase";
-import { type TypedSupabaseClient } from "@trainers/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -27,7 +26,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import { type ActionResult } from "@trainers/validators";
 
 import { grantCoachStatusAction, revokeCoachStatusAction } from "./actions";
@@ -134,18 +134,18 @@ export function CoachesManager({ coaches: initialCoaches }: CoachesManagerProps)
     }, 300);
   }
 
-  // Search for users to grant coach status to (remains useSupabaseQuery — there
-  // is no dedicated user-search admin API route; this is a direct Supabase read).
-  const searchQuery = useSupabaseQuery(
-    (supabase: TypedSupabaseClient) => {
-      if (!debouncedGrantSearch) return Promise.resolve({ data: [], count: 0 });
-      return listUsersAdmin(supabase, {
+  // Search for users to grant coach status to — direct Supabase read (no
+  // dedicated admin API route for user search).
+  const searchQuery = useQuery({
+    queryKey: queryKeys.admin.userSearch(debouncedGrantSearch),
+    queryFn: () =>
+      listUsersAdmin(createClient(), {
         search: debouncedGrantSearch,
         limit: 5,
-      });
-    },
-    [debouncedGrantSearch]
-  );
+      }),
+    enabled: Boolean(debouncedGrantSearch),
+    staleTime: 30_000,
+  });
 
   const searchResults = (
     (searchQuery.data?.data ?? []) as {

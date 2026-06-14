@@ -99,6 +99,28 @@ Then re-export from the barrel (`queries/index.ts` and `src/index.ts`).
 
 For simple table row types, use `Tables<"table_name">` from `@trainers/supabase` instead of defining an interface.
 
+## Query Routing by Bucket
+
+All Supabase reads are classified into one of four buckets. The bucket determines where the read lives and which client to use.
+
+| Bucket | Description | Client read path | Client / mechanism |
+| ------ | ----------- | ---------------- | ------------------ |
+| **S** (shared-public) | Data identical for every viewer — tournaments, standings, players, communities | `/api/v1/…` Next.js route handler → `'use cache'` fetcher in `apps/web/src/lib/data/*-endpoint.ts` | `createServiceRoleClient()` inside cache; `useApiQuery` on the client |
+| **P** (per-user) | Per-viewer data with RLS — dashboard, alts, teams, invitations | Direct authenticated browser client + plain `useQuery` + `queryKeys.ts` | `createClient()` / `createClientReadOnly()` |
+| **R** (realtime six) | Hot tables with live subscriptions — `notifications`, `match_games`, `match_messages`, `tournament_matches`, `tournament_registrations`, `tournament_rounds` | Direct subscription + `setQueryData(payload.new)` | Browser client, `postgres_changes` |
+| **X** (system) | Internal / admin tables — `rate_limits`, `audit_log` | Never from client | `createServiceRoleClient()` only |
+
+### Where the pieces live
+
+- **Route handlers** — `apps/web/src/app/api/v1/…` — one file per resource; thin layer: auth → rate-limit → cached fetcher → JSON response.
+- **Cached fetchers** — `apps/web/src/lib/data/*-endpoint.ts` — `'use cache'` functions with `cacheTag()` + `cacheLife()`; take only plain scalar params; use `createServiceRoleClient()` so the fetch survives the S-bucket anon/authenticated SELECT revoke.
+- **P-bucket direct reads** — authenticated browser client + plain `useQuery` with keys from `apps/web/src/lib/query-keys.ts`; no route handler needed.
+- **`useApiQuery`** — `@trainers/supabase/react-query` — TanStack Query wrapper for `/api/v1` fetches; used on both web and mobile.
+
+### DI note
+
+Queries in `packages/supabase/src/queries/` still accept `supabase: TypedClient` as the first parameter regardless of which caller uses them — a `createServiceRoleClient()` inside a cached fetcher, a `createClientReadOnly()` inside a route handler, or a mock in tests. The bucket classification is a routing concern, not a query-signature concern.
+
 ## Code Reuse
 
 Extract abstractions after 2-3 repetitions. Always check existing patterns before creating new ones.

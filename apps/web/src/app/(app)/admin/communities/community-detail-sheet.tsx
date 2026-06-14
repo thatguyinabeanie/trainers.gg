@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
 import { hasCommunityFeatureAccess } from "@trainers/supabase";
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import {
   Sheet,
   SheetContent,
@@ -102,17 +104,17 @@ export function CommunityDetailSheet({
   );
 
   // Discord integration feature flag state
-  const discordQuery = useSupabaseQuery(
-    async (supabase) => {
-      if (!community) return { access: false };
-      return await hasCommunityFeatureAccess(
-        supabase,
+  const discordQuery = useQuery({
+    queryKey: queryKeys.admin.communityDiscordAccess(community?.id),
+    queryFn: () =>
+      hasCommunityFeatureAccess(
+        createClient(),
         "discord_integration",
-        community.id
-      );
-    },
-    [community?.id]
-  );
+        community!.id
+      ),
+    enabled: Boolean(community),
+    staleTime: 30_000,
+  });
   const discordEnabled = discordQuery.data?.access === true;
 
   // Reset form state when the sheet opens/closes or community changes

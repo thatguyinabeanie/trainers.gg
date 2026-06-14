@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TournamentSettingsPageClient } from "../tournament-settings-page-client";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -25,11 +26,16 @@ jest.mock("@trainers/supabase/react-query", () => ({
   useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
 }));
 
-// useSupabaseQuery — tournament read (tournament-context; migrated in a later wave)
-const mockUseSupabaseQuery = jest.fn();
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: (queryFn: unknown, deps: unknown[]) =>
-    mockUseSupabaseQuery(queryFn, deps),
+// Tournament read — getTournamentBySlug from @trainers/supabase
+const mockGetTournamentBySlug = jest.fn();
+jest.mock("@trainers/supabase", () => ({
+  getTournamentBySlug: (...args: unknown[]) =>
+    mockGetTournamentBySlug(...args),
+}));
+
+// createClient — browser Supabase client used by useQuery queryFn
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({}),
 }));
 
 // Avoid pulling in the full TournamentSettings tree.
@@ -44,6 +50,22 @@ jest.mock("@/components/tournaments", () => ({
     </div>
   ),
 }));
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
 
 // =============================================================================
 // Fixtures
@@ -78,7 +100,7 @@ const mockTournament = {
 /**
  * Set up mocks for a render:
  * - useApiQuery returns the community (for /api/v1/communities/[slug])
- * - useSupabaseQuery returns the tournament (still on S-bucket read)
+ * - mockGetTournamentBySlug returns the tournament (via useQuery queryFn)
  */
 function setupQueries({
   organization,
@@ -94,11 +116,7 @@ function setupQueries({
     error: null,
   });
 
-  // Tournament read — still via useSupabaseQuery
-  mockUseSupabaseQuery.mockReturnValue({
-    data: tournament,
-    isLoading: false,
-  });
+  mockGetTournamentBySlug.mockResolvedValue(tournament);
 }
 
 // =============================================================================
@@ -118,19 +136,22 @@ describe("TournamentSettingsPageClient", () => {
     });
   });
 
-  it("renders the TournamentSettings UI when user is owner and data is loaded", () => {
+  it("renders the TournamentSettings UI when user is owner and data is loaded", async () => {
     render(
       <TournamentSettingsPageClient
         communitySlug="test-org"
         tournamentSlug="test-tournament"
-      />
+      />,
+      { wrapper: createWrapper() }
     );
 
-    expect(screen.getByTestId("tournament-settings")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("tournament-settings")).toBeInTheDocument();
+    });
     expect(screen.getByText(/Settings for Test Tournament/)).toBeInTheDocument();
   });
 
-  it("renders empty DOM and does not push to /sign-in when currentUser is null", () => {
+  it("renders empty DOM and does not push to /sign-in when currentUser is null", async () => {
     // Auth is enforced server-side by the (dashboard) layout. Pushing
     // here used to race with loading state and bounce real users to
     // /dashboard via proxy.ts.
@@ -143,14 +164,17 @@ describe("TournamentSettingsPageClient", () => {
       <TournamentSettingsPageClient
         communitySlug="test-org"
         tournamentSlug="test-tournament"
-      />
+      />,
+      { wrapper: createWrapper() }
     );
 
-    expect(container).toBeEmptyDOMElement();
+    await waitFor(() => {
+      expect(container).toBeEmptyDOMElement();
+    });
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it("renders an error card when useCurrentUser surfaces an error", () => {
+  it("renders an error card when useCurrentUser surfaces an error", async () => {
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
       isLoading: false,
@@ -161,16 +185,19 @@ describe("TournamentSettingsPageClient", () => {
       <TournamentSettingsPageClient
         communitySlug="test-org"
         tournamentSlug="test-tournament"
-      />
+      />,
+      { wrapper: createWrapper() }
     );
 
-    expect(
-      screen.getByText(/couldn['']t load your account/i)
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(/couldn['']t load your account/i)
+      ).toBeInTheDocument();
+    });
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
 
-  it("shows the Access Denied card when user is not the owner", () => {
+  it("shows the Access Denied card when user is not the owner", async () => {
     mockUseCurrentUser.mockReturnValue({
       user: { id: "different-user" },
       isLoading: false,
@@ -180,34 +207,80 @@ describe("TournamentSettingsPageClient", () => {
       <TournamentSettingsPageClient
         communitySlug="test-org"
         tournamentSlug="test-tournament"
-      />
+      />,
+      { wrapper: createWrapper() }
     );
 
-    expect(screen.getByText(/access denied/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/access denied/i)).toBeInTheDocument();
+    });
   });
 
-  it("shows 'Tournament not found' when the tournament query returns null", () => {
+  it("shows 'Tournament not found' when the tournament query returns null", async () => {
     setupQueries({ organization: mockOrganization, tournament: null });
 
     render(
       <TournamentSettingsPageClient
         communitySlug="test-org"
         tournamentSlug="missing-tournament"
-      />
+      />,
+      { wrapper: createWrapper() }
     );
 
-    expect(screen.getByText(/tournament not found/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/tournament not found/i)).toBeInTheDocument();
+    });
+  });
+
+  // ── Tournament read — useQuery wiring ──────────────────────────────────────
+
+  describe("tournament read — useQuery wiring", () => {
+    it("calls getTournamentBySlug with the correct slug", async () => {
+      render(
+        <TournamentSettingsPageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => {
+        expect(mockGetTournamentBySlug).toHaveBeenCalledWith(
+          expect.anything(),
+          "test-tournament"
+        );
+      });
+    });
+
+    it("shows loading spinner while tournament is fetching", () => {
+      // Keep it in loading state by never resolving
+      mockGetTournamentBySlug.mockReturnValue(new Promise(() => {}));
+
+      render(
+        <TournamentSettingsPageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      // Spinner rendered while any of the three loading flags are true
+      expect(
+        document.querySelector(".animate-spin")
+      ).toBeInTheDocument();
+    });
   });
 
   // ── Community read — useApiQuery wiring ────────────────────────────────────
 
   describe("community read — useApiQuery wiring", () => {
-    it("queries /api/v1/communities/[slug] via useApiQuery with staleTime:30s", () => {
+    it("queries /api/v1/communities/[slug] via useApiQuery with staleTime:30s", async () => {
       render(
         <TournamentSettingsPageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       const call = mockUseApiQuery.mock.calls.find(
@@ -215,12 +288,16 @@ describe("TournamentSettingsPageClient", () => {
           Array.isArray(queryKey) && queryKey[0] === "community"
       );
       expect(call).toBeDefined();
-      const [queryKey, , options] = call as [string[], unknown, { staleTime: number }];
+      const [queryKey, , options] = call as [
+        string[],
+        unknown,
+        { staleTime: number },
+      ];
       expect(queryKey).toEqual(["community", "test-org"]);
       expect(options).toMatchObject({ staleTime: 30_000 });
     });
 
-    it("shows 'Couldn't load community' card when useApiQuery isError is true", () => {
+    it("shows 'Couldn't load community' card when useApiQuery isError is true", async () => {
       mockUseApiQuery.mockReturnValue({
         data: undefined,
         isLoading: false,
@@ -232,16 +309,19 @@ describe("TournamentSettingsPageClient", () => {
         <TournamentSettingsPageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
-      expect(
-        screen.getByText(/couldn['']t load community/i)
-      ).toBeInTheDocument();
+      await waitFor(() => {
+        expect(
+          screen.getByText(/couldn['']t load community/i)
+        ).toBeInTheDocument();
+      });
       expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
     });
 
-    it("shows 'Organization not found' card when useApiQuery data is null", () => {
+    it("shows 'Organization not found' card when useApiQuery data is null", async () => {
       mockUseApiQuery.mockReturnValue({
         data: null,
         isLoading: false,
@@ -253,10 +333,13 @@ describe("TournamentSettingsPageClient", () => {
         <TournamentSettingsPageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
-      expect(screen.getByText(/organization not found/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/organization not found/i)).toBeInTheDocument();
+      });
     });
   });
 });

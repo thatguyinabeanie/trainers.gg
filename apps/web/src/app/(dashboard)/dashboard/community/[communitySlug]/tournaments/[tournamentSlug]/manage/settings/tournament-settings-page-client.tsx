@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+import { useQuery } from "@tanstack/react-query";
 
 import {
   getTournamentBySlug,
@@ -9,8 +12,8 @@ import {
 import { useApiQuery } from "@trainers/supabase/react-query";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { useSupabaseQuery } from "@/lib/supabase";
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TournamentSettings } from "@/components/tournaments";
@@ -65,14 +68,11 @@ export function TournamentSettingsPageClient({
     { staleTime: 30_000 }
   );
 
-  const tournamentQueryFn = (
-    supabase: Parameters<typeof getTournamentBySlug>[0]
-  ) => getTournamentBySlug(supabase, tournamentSlug);
-
-  const { data: tournament, isLoading: tournamentLoading } = useSupabaseQuery(
-    tournamentQueryFn,
-    [tournamentSlug]
-  );
+  const { data: tournament, isLoading: tournamentLoading } = useQuery({
+    queryKey: queryKeys.tournament.bySlug(tournamentSlug),
+    queryFn: () => getTournamentBySlug(createClient(), tournamentSlug),
+    staleTime: 30_000,
+  });
 
   const phases = tournament?.phases ?? [];
 

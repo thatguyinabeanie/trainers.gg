@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
   Loader2,
@@ -16,13 +17,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
+import { useSupabase } from "@/lib/supabase";
 import {
   getNotifications,
   getUnreadNotificationCount,
   getMyCommunityInvitations,
 } from "@trainers/supabase";
-import type { TypedSupabaseClient } from "@trainers/supabase";
 import {
   markNotificationReadAction,
   markAllNotificationsReadAction,
@@ -38,6 +38,12 @@ import {
   acceptCommunityInvitation,
   declineCommunityInvitation,
 } from "@trainers/supabase";
+import { queryKeys } from "@/lib/query-keys";
+
+/** Row shape returned by `getNotifications`. */
+type NotificationRow = NonNullable<
+  Awaited<ReturnType<typeof getNotifications>>
+>[number];
 
 interface NotificationBellProps {
   userId?: string;
@@ -46,45 +52,55 @@ interface NotificationBellProps {
 export function NotificationBell({ userId }: NotificationBellProps) {
   const supabase = useSupabase();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [loadingInvitationId, setLoadingInvitationId] = useState<number | null>(
     null
   );
 
-  const notificationsQueryFn = (client: TypedSupabaseClient) => {
-    if (!userId) return Promise.resolve([]);
-    return getNotifications(client, { limit: 20 });
-  };
+  // Canonical query keys (shared with the realtime INSERT `setQueryData` path).
+  const notificationsKey = queryKeys.notifications.recent(userId);
+  const unreadCountKey = [
+    ...queryKeys.notifications.all(userId),
+    "unread-count",
+  ] as const;
+  const invitationsKey = [
+    ...queryKeys.notifications.all(userId),
+    "invitations",
+  ] as const;
 
   const {
     data: notifications,
     refetch: refetchNotifications,
     isLoading: notificationsLoading,
     error: notificationsError,
-  } = useSupabaseQuery(notificationsQueryFn, [userId, refreshKey]);
+  } = useQuery({
+    queryKey: notificationsKey,
+    queryFn: () => getNotifications(supabase, { limit: 20 }),
+    enabled: !!userId,
+    staleTime: 10_000,
+  });
 
-  const unreadCountQueryFn = (client: TypedSupabaseClient) => {
-    if (!userId) return Promise.resolve(0);
-    return getUnreadNotificationCount(client);
-  };
+  const { data: unreadCount, refetch: refetchUnread } = useQuery({
+    queryKey: unreadCountKey,
+    queryFn: () => getUnreadNotificationCount(supabase),
+    enabled: !!userId,
+    staleTime: 10_000,
+  });
 
-  const { data: unreadCount, refetch: refetchUnread } = useSupabaseQuery(
-    unreadCountQueryFn,
-    [userId, refreshKey]
-  );
+  const { data: invitations, refetch: refetchInvitations } = useQuery({
+    queryKey: invitationsKey,
+    queryFn: () => getMyCommunityInvitations(supabase, userId!),
+    enabled: !!userId,
+    staleTime: 10_000,
+  });
 
-  const invitationsQueryFn = (client: TypedSupabaseClient) => {
-    if (!userId) return Promise.resolve([]);
-    return getMyCommunityInvitations(client, userId);
-  };
-
-  const { data: invitations, refetch: refetchInvitations } = useSupabaseQuery(
-    invitationsQueryFn,
-    [userId, refreshKey]
-  );
-
-  // Realtime: subscribe to new notifications for this user
+  // Realtime: subscribe to new notifications for this user.
+  //
+  // P3-5: payload-driven — on INSERT we prepend `payload.new` straight into the
+  // notifications cache via `setQueryData` (no refetch). The unread-count cache
+  // is invalidated so the badge stays accurate (the count is a separate read we
+  // cannot derive from a single new row without double-counting).
   useEffect(() => {
     if (!userId) return;
 
@@ -99,7 +115,28 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          setRefreshKey((k) => k + 1);
+          const row = payload.new as NotificationRow;
+
+          // Prepend the new row into the cached list (newest first), guarding
+          // against a duplicate id (e.g. realtime + an in-flight refetch).
+          queryClient.setQueryData<NotificationRow[]>(
+            notificationsKey,
+            (prev) => {
+              const list = prev ?? [];
+              if (list.some((n) => n.id === row.id)) return list;
+              return [row, ...list].slice(0, 20);
+            }
+          );
+
+          // Deterministically increment the cached unread count when the
+          // new notification is unread (read_at null). Avoids a network
+          // round-trip per event; falls back to nothing if already read.
+          if (row.read_at === null) {
+            queryClient.setQueryData<number>(
+              unreadCountKey,
+              (prev) => (prev ?? 0) + 1
+            );
+          }
 
           // Browser push notification when tab is not focused
           if (
@@ -107,11 +144,6 @@ export function NotificationBell({ userId }: NotificationBellProps) {
             "Notification" in window &&
             Notification.permission === "granted"
           ) {
-            const row = payload.new as {
-              title?: string;
-              body?: string;
-              action_url?: string;
-            };
             const n = new Notification(row.title ?? "New notification", {
               body: row.body ?? undefined,
               icon: "/icon-192.png",
@@ -128,7 +160,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           }
         }
       )
-      .subscribe((status, err) => {
+      .subscribe((_status, err) => {
         // MVP: console.error is sufficient; a future iteration could show a toast or retry
         if (err) console.error("[notifications] subscribe error:", err);
       });
@@ -141,7 +173,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, userId]);
+  }, [supabase, userId, queryClient, notificationsKey, unreadCountKey]);
 
   const totalCount = (unreadCount ?? 0) + (invitations?.length ?? 0);
 
@@ -179,7 +211,6 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     try {
       await acceptCommunityInvitation(supabase, invitationId);
       toast.success(`You are now staff of ${orgName}`);
-      setRefreshKey((k) => k + 1);
       refetchInvitations();
     } catch (error) {
       toast.error(
@@ -198,7 +229,6 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     try {
       await declineCommunityInvitation(supabase, invitationId);
       toast.success(`Declined invitation from ${orgName}`);
-      setRefreshKey((k) => k + 1);
       refetchInvitations();
     } catch (error) {
       toast.error(

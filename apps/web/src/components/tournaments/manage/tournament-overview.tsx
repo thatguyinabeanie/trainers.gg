@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+
 import {
   getTournamentPhases,
   getPhaseRoundsWithStats,
 } from "@trainers/supabase";
+
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import {
   prepareRound,
   confirmAndStartRound,
@@ -77,13 +81,11 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
 
   const isActive = tournament.status === "active";
 
-  const phasesQueryFn = (supabase: Parameters<typeof getTournamentPhases>[0]) =>
-    getTournamentPhases(supabase, tournament.id);
-
-  const { data: phases } = useSupabaseQuery(phasesQueryFn, [
-    tournament.id,
-    "overview-phases",
-  ]);
+  const { data: phases } = useQuery({
+    queryKey: queryKeys.tournament.phases(tournament.id),
+    queryFn: () => getTournamentPhases(createClient(), tournament.id),
+    staleTime: 30_000,
+  });
 
   // Determine active phase ID
   const activePhaseId =
@@ -91,18 +93,16 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
     (phases && phases.length > 0 ? phases[0]?.id : null) ??
     null;
 
-  const roundsQueryFn = (
-    supabase: Parameters<typeof getPhaseRoundsWithStats>[0]
-  ) =>
-    activePhaseId
-      ? getPhaseRoundsWithStats(supabase, activePhaseId)
-      : Promise.resolve([]);
-
   const {
     data: rounds,
     isLoading: roundsLoading,
     refetch: refetchRounds,
-  } = useSupabaseQuery(roundsQueryFn, [activePhaseId, "overview-rounds"]);
+  } = useQuery({
+    queryKey: queryKeys.tournament.phaseRounds(activePhaseId),
+    queryFn: () => getPhaseRoundsWithStats(createClient(), activePhaseId!),
+    enabled: activePhaseId != null,
+    staleTime: 30_000,
+  });
 
   // Derive current round state from data
   const lastRound =

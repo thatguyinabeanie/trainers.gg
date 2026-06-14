@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react";
 
 // --- cached server fetcher (revoke-set reads happen here, service-role) ---
-const mockGetCachedTournamentPairings = jest.fn();
+const mockGetCachedPublicTournamentPairings = jest.fn();
 jest.mock("@/lib/data/tournament-pairings-endpoint", () => ({
-  getCachedTournamentPairings: (...args: unknown[]) =>
-    mockGetCachedTournamentPairings(...args),
+  getCachedPublicTournamentPairings: (...args: unknown[]) =>
+    mockGetCachedPublicTournamentPairings(...args),
 }));
 
 // --- presentational child — stub so we only assert the server wrapper wiring ---
@@ -41,7 +41,7 @@ describe("PublicPairings (server component)", () => {
       roundsWithStats: [],
       unpairedPlayers: [],
     };
-    mockGetCachedTournamentPairings.mockResolvedValue(data);
+    mockGetCachedPublicTournamentPairings.mockResolvedValue(data);
 
     // Server components return a promise of JSX — await before rendering.
     const ui = await PublicPairings({
@@ -51,7 +51,7 @@ describe("PublicPairings (server component)", () => {
     });
     render(ui);
 
-    expect(mockGetCachedTournamentPairings).toHaveBeenCalledWith(42);
+    expect(mockGetCachedPublicTournamentPairings).toHaveBeenCalledWith(42);
 
     const view = screen.getByTestId("pairings-view");
     expect(view).toHaveAttribute("data-slug", "kanto-cup");
@@ -60,7 +60,7 @@ describe("PublicPairings (server component)", () => {
   });
 
   it("defaults canManage to false when not provided", async () => {
-    mockGetCachedTournamentPairings.mockResolvedValue({
+    mockGetCachedPublicTournamentPairings.mockResolvedValue({
       phases: [],
       allPhaseRounds: [],
       roundsWithStats: [],

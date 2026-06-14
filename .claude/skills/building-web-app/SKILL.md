@@ -25,9 +25,81 @@ export async function myAction(data: FormData) {
 
 ## Data Fetching
 
-**Server Components** — fetch directly via `src/lib/supabase/server.ts`. No TanStack Query needed.
+Pick the path based on **where** the read happens and **which data bucket** it touches.
 
-**Client Components** — use TanStack Query for all server state. Query key factories are the target convention. See `apps/mobile/src/lib/api/query-factory.ts` as the reference pattern.
+### Decision tree
+
+```
+New web read — which path?
+
+1. SSR / Server Component?
+   └── Call a 'use cache'-wrapped fetcher directly.
+       Use createServiceRoleClient() inside the fetcher (S-bucket SELECT is revoked).
+       Tag with CacheTags.*, profile with cacheLife("max").
+       Reference: apps/web/src/lib/data/standings-endpoint.ts
+
+2. Client read of S-bucket data (shared-public, anon SELECT revoked)?
+   └── useApiQuery against /api/v1.
+       Import from: @trainers/supabase/react-query
+       Define query key in: apps/web/src/lib/query-keys.ts
+       Reference: apps/web/src/hooks/use-current-user.ts
+
+3. Client read of P-bucket / authed data (per-user, RLS-bound)?
+   └── useQuery + createClient() (browser, authenticated, RLS applies).
+       Define query key in: apps/web/src/lib/query-keys.ts
+       No /api/v1 route needed — direct PostgREST, RLS enforces access.
+
+4. Realtime?
+   └── postgres_changes subscription → setQueryData(payload.new).
+       Never invalidateQueries / refetch per event — defeats the cost savings.
+       See using-realtime skill.
+```
+
+### useApiQuery (S-bucket client reads)
+
+`useApiQuery` from `@trainers/supabase/react-query` wraps `useQuery` for `/api/v1` fetches. It handles Bearer-or-cookie auth automatically. Always render an explicit error state — see the "Error States" section below.
+
+```tsx
+"use client";
+
+import { useApiQuery } from "@trainers/supabase/react-query";
+import { queryKeys } from "@/lib/query-keys";
+
+async function fetchStandings(tournamentId: number) {
+  const res = await fetch(`/api/v1/tournaments/${tournamentId}/standings`);
+  if (!res.ok) throw new Error("Failed to fetch standings");
+  return res.json();
+}
+
+function StandingsPanel({ tournamentId }: { tournamentId: number }) {
+  const { data, isLoading, isError, error } = useApiQuery(
+    queryKeys.tournament.standings(tournamentId), // define in query-keys.ts
+    () => fetchStandings(tournamentId),
+    { staleTime: 30_000 }
+  );
+
+  if (isLoading) return <Spinner />;
+  if (isError) return <Alert variant="destructive">…</Alert>;
+  return <StandingsList rows={data} />;
+}
+```
+
+### Query key conventions
+
+All query keys live in `apps/web/src/lib/query-keys.ts` — the `queryKeys` factory object. Add a new factory key for each new `/api/v1` endpoint rather than inlining string literals. This keeps `invalidateQueries` targets consistent across the codebase.
+
+### Server Component pattern (S-bucket SSR)
+
+```tsx
+import { getCachedTournamentStandings } from "@/lib/data/standings-endpoint";
+
+export default async function StandingsPage({ params }) {
+  const standings = await getCachedTournamentStandings(Number(params.id));
+  return <StandingsList rows={standings} />;
+}
+```
+
+No TanStack Query needed in Server Components — the `'use cache'` fetcher is the caching layer.
 
 ## Status Display
 

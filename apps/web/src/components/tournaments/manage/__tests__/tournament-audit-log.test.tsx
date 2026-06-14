@@ -4,26 +4,22 @@
  */
 
 import type React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TournamentAuditLog } from "../tournament-audit-log";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
-const mockRefetch = jest.fn();
+const mockGetTournamentAuditLog = jest.fn();
 
-let mockQueryReturn: {
-  data: unknown;
-  isLoading: boolean;
-  refetch: jest.Mock;
-} = {
-  data: null,
-  isLoading: false,
-  refetch: mockRefetch,
-};
+jest.mock("@trainers/supabase", () => ({
+  getTournamentAuditLog: (...args: unknown[]) =>
+    mockGetTournamentAuditLog(...args),
+}));
 
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(() => mockQueryReturn),
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: jest.fn(() => ({})),
 }));
 
 jest.mock("@trainers/utils", () => ({
@@ -93,6 +89,19 @@ jest.mock("@/components/ui/select", () => ({
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  });
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
+}
+
 function buildEntry(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
@@ -109,7 +118,9 @@ function buildEntry(overrides: Record<string, unknown> = {}) {
 }
 
 function renderAuditLog() {
-  return render(<TournamentAuditLog tournament={{ id: 1 }} />);
+  return render(<TournamentAuditLog tournament={{ id: 1 }} />, {
+    wrapper: createWrapper(),
+  });
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -117,20 +128,22 @@ function renderAuditLog() {
 describe("TournamentAuditLog", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockQueryReturn = { data: null, isLoading: false, refetch: mockRefetch };
   });
 
-  it("shows loading spinner when data is loading", () => {
-    mockQueryReturn = { data: null, isLoading: true, refetch: mockRefetch };
+  it("shows loading spinner when query is pending", () => {
+    // Never resolve so the component stays in loading state
+    mockGetTournamentAuditLog.mockReturnValue(new Promise(() => {}));
     renderAuditLog();
-    // Loader2 renders as an svg; check for the spinner container
+    // Header should not be visible while loading
     expect(screen.queryByText("Audit Log")).not.toBeInTheDocument();
   });
 
-  it("shows empty state when no entries exist", () => {
-    mockQueryReturn = { data: [], isLoading: false, refetch: mockRefetch };
+  it("shows empty state when no entries exist", async () => {
+    mockGetTournamentAuditLog.mockResolvedValue([]);
     renderAuditLog();
-    expect(screen.getByText("No events yet")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("No events yet")).toBeInTheDocument();
+    });
     expect(
       screen.getByText(
         "Events will appear here as actions are taken in the tournament."
@@ -138,16 +151,18 @@ describe("TournamentAuditLog", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows header with title and description", () => {
-    mockQueryReturn = { data: [], isLoading: false, refetch: mockRefetch };
+  it("shows header with title and description", async () => {
+    mockGetTournamentAuditLog.mockResolvedValue([]);
     renderAuditLog();
-    expect(screen.getByText("Audit Log")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Audit Log")).toBeInTheDocument();
+    });
     expect(
       screen.getByText("Chronological record of tournament events and actions")
     ).toBeInTheDocument();
   });
 
-  it("renders log entries with labels and metadata", () => {
+  it("renders log entries with labels and metadata", async () => {
     const entries = [
       buildEntry({
         id: 1,
@@ -161,12 +176,15 @@ describe("TournamentAuditLog", () => {
         },
       }),
     ];
-    mockQueryReturn = { data: entries, isLoading: false, refetch: mockRefetch };
+    mockGetTournamentAuditLog.mockResolvedValue(entries);
     renderAuditLog();
 
-    // Action label
-    const badges = screen.getAllByTestId("badge");
-    expect(badges.some((b) => b.textContent === "Score Submitted")).toBe(true);
+    await waitFor(() => {
+      const badges = screen.getAllByTestId("badge");
+      expect(badges.some((b) => b.textContent === "Score Submitted")).toBe(
+        true
+      );
+    });
 
     // Match ID
     expect(screen.getByText("Match #42")).toBeInTheDocument();
@@ -179,24 +197,28 @@ describe("TournamentAuditLog", () => {
     expect(screen.getByText("time(2026-01-15T10:00:00Z)")).toBeInTheDocument();
   });
 
-  it("shows event count in card description", () => {
+  it("shows event count in card description", async () => {
     const entries = [buildEntry({ id: 1 }), buildEntry({ id: 2 })];
-    mockQueryReturn = { data: entries, isLoading: false, refetch: mockRefetch };
+    mockGetTournamentAuditLog.mockResolvedValue(entries);
     renderAuditLog();
 
-    const description = screen.getByTestId("card-description");
-    expect(description.textContent).toContain("2 events");
+    await waitFor(() => {
+      const description = screen.getByTestId("card-description");
+      expect(description.textContent).toContain("2 events");
+    });
   });
 
-  it("shows 0 events when data is null", () => {
-    mockQueryReturn = { data: null, isLoading: false, refetch: mockRefetch };
+  it("shows 0 events when query returns null", async () => {
+    mockGetTournamentAuditLog.mockResolvedValue(null);
     renderAuditLog();
 
-    const description = screen.getByTestId("card-description");
-    expect(description.textContent).toContain("0 events");
+    await waitFor(() => {
+      const description = screen.getByTestId("card-description");
+      expect(description.textContent).toContain("0 events");
+    });
   });
 
-  it("falls back to raw action name for unknown actions", () => {
+  it("falls back to raw action name for unknown actions", async () => {
     const entries = [
       buildEntry({
         id: 1,
@@ -205,32 +227,42 @@ describe("TournamentAuditLog", () => {
         metadata: null,
       }),
     ];
-    mockQueryReturn = { data: entries, isLoading: false, refetch: mockRefetch };
+    mockGetTournamentAuditLog.mockResolvedValue(entries);
     renderAuditLog();
 
-    const badges = screen.getAllByTestId("badge");
-    expect(badges.some((b) => b.textContent === "custom.unknown_action")).toBe(
-      true
-    );
+    await waitFor(() => {
+      const badges = screen.getAllByTestId("badge");
+      expect(
+        badges.some((b) => b.textContent === "custom.unknown_action")
+      ).toBe(true);
+    });
   });
 
-  it("calls refetch when refresh button is clicked", async () => {
+  it("triggers a new fetch when the refresh button is clicked", async () => {
     const user = userEvent.setup();
-    mockQueryReturn = { data: [], isLoading: false, refetch: mockRefetch };
+    mockGetTournamentAuditLog.mockResolvedValue([]);
     renderAuditLog();
 
-    // The refresh button is a Button with RefreshCw icon
+    await waitFor(() => {
+      expect(screen.getByText("No events yet")).toBeInTheDocument();
+    });
+
+    // The refresh button is the Button component with RefreshCw icon
     const buttons = screen.getAllByRole("button");
-    // Find the refresh button (not filter buttons from mock)
     const refreshBtn = buttons.find(
       (b) => !b.getAttribute("data-testid")?.startsWith("filter")
     );
     expect(refreshBtn).toBeDefined();
+
     await user.click(refreshBtn!);
-    expect(mockRefetch).toHaveBeenCalled();
+
+    // A second call is made because the refreshKey changed the query key
+    await waitFor(() => {
+      expect(mockGetTournamentAuditLog).toHaveBeenCalledTimes(2);
+    });
   });
 
-  it("renders description with actor and winner name highlights", () => {
+  it("renders description with actor and winner name highlights", async () => {
     const entries = [
       buildEntry({
         id: 1,
@@ -242,19 +274,21 @@ describe("TournamentAuditLog", () => {
         },
       }),
     ];
-    mockQueryReturn = { data: entries, isLoading: false, refetch: mockRefetch };
+    mockGetTournamentAuditLog.mockResolvedValue(entries);
     renderAuditLog();
 
-    // renderDescription splits text around names into separate spans,
-    // so we use a custom matcher to find the full text across elements
-    expect(
-      screen.getByText((_content, element) => {
-        return element?.textContent === "Ash defeated Brock in game 1";
-      })
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      // renderDescription splits text around names into separate spans,
+      // so we use a custom matcher to find the full text across elements
+      expect(
+        screen.getByText((_content, element) => {
+          return element?.textContent === "Ash defeated Brock in game 1";
+        })
+      ).toBeInTheDocument();
+    });
   });
 
-  it("renders multiple entries in sequence", () => {
+  it("renders multiple entries in sequence", async () => {
     const entries = [
       buildEntry({
         id: 1,
@@ -275,13 +309,48 @@ describe("TournamentAuditLog", () => {
         metadata: null,
       }),
     ];
-    mockQueryReturn = { data: entries, isLoading: false, refetch: mockRefetch };
+    mockGetTournamentAuditLog.mockResolvedValue(entries);
     renderAuditLog();
 
-    const badges = screen.getAllByTestId("badge");
-    const labels = badges.map((b) => b.textContent);
-    expect(labels).toContain("Tournament Started");
-    expect(labels).toContain("Round Created");
-    expect(labels).toContain("Score Submitted");
+    await waitFor(() => {
+      const badges = screen.getAllByTestId("badge");
+      const labels = badges.map((b) => b.textContent);
+      expect(labels).toContain("Tournament Started");
+      expect(labels).toContain("Round Created");
+      expect(labels).toContain("Score Submitted");
+    });
+  });
+
+  it("passes the tournament id to getTournamentAuditLog", async () => {
+    mockGetTournamentAuditLog.mockResolvedValue([]);
+    renderAuditLog();
+
+    await waitFor(() => {
+      expect(mockGetTournamentAuditLog).toHaveBeenCalledWith(
+        expect.anything(),
+        1,
+        expect.objectContaining({ limit: 100 })
+      );
+    });
+  });
+
+  it("passes filtered actions when a category filter is active", async () => {
+    const user = userEvent.setup();
+    mockGetTournamentAuditLog.mockResolvedValue([]);
+    renderAuditLog();
+
+    await waitFor(() => {
+      expect(screen.getByText("No events yet")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("filter-match"));
+
+    await waitFor(() => {
+      const calls = mockGetTournamentAuditLog.mock.calls;
+      const lastCall = calls[calls.length - 1];
+      // The last call should include actions array for "match" category
+      expect(lastCall[2]).toHaveProperty("actions");
+      expect(Array.isArray(lastCall[2].actions)).toBe(true);
+    });
   });
 });

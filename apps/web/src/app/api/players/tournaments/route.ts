@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { createStaticClient } from "@/lib/supabase/server";
+// Service-role client: reads tournaments/tournament_standings/alts (revoke-set tables).
+// Anon SELECT on these tables is revoked in the Phase 2 Step-4 migration;
+// service-role bypasses that grant so public-facing player tournament endpoints still work.
+import { createServiceRoleClient } from "@/lib/supabase/server";
+import { enforceRateLimit, extractRequestIp } from "@/lib/api/rate-limit";
 import { getPlayerTournamentHistory } from "@trainers/supabase/queries";
 
 /**
@@ -10,6 +14,15 @@ import { getPlayerTournamentHistory } from "@trainers/supabase/queries";
  * Public endpoint — no auth required.
  */
 export async function GET(request: Request) {
+  const ip = extractRequestIp(request);
+  const { allowed, resetAt } = await enforceRateLimit({ identifier: ip });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too Many Requests" },
+      { status: 429, headers: { "Retry-After": resetAt.toUTCString() } }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const raw = searchParams.get("altIds");
 
@@ -30,7 +43,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const supabase = createStaticClient();
+    const supabase = createServiceRoleClient();
     const history = await getPlayerTournamentHistory(supabase, altIds);
     return NextResponse.json(history);
   } catch (error) {

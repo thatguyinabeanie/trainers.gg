@@ -1709,6 +1709,7 @@ export type Database = {
           alt1_submitted_at: string | null
           alt2_selection: number | null
           alt2_submitted_at: string | null
+          community_id: number | null
           created_at: string
           game_number: number
           id: number
@@ -1718,6 +1719,7 @@ export type Database = {
           resolved_at: string | null
           resolved_by: number | null
           status: Database["public"]["Enums"]["match_game_status"]
+          tournament_id: number | null
           updated_at: string
           winner_alt_id: number | null
         }
@@ -1726,6 +1728,7 @@ export type Database = {
           alt1_submitted_at?: string | null
           alt2_selection?: number | null
           alt2_submitted_at?: string | null
+          community_id?: number | null
           created_at?: string
           game_number: number
           id?: never
@@ -1735,6 +1738,7 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: number | null
           status?: Database["public"]["Enums"]["match_game_status"]
+          tournament_id?: number | null
           updated_at?: string
           winner_alt_id?: number | null
         }
@@ -1743,6 +1747,7 @@ export type Database = {
           alt1_submitted_at?: string | null
           alt2_selection?: number | null
           alt2_submitted_at?: string | null
+          community_id?: number | null
           created_at?: string
           game_number?: number
           id?: never
@@ -1752,6 +1757,7 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: number | null
           status?: Database["public"]["Enums"]["match_game_status"]
+          tournament_id?: number | null
           updated_at?: string
           winner_alt_id?: number | null
         }
@@ -1771,6 +1777,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "match_games_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "match_games_match_id_fkey"
             columns: ["match_id"]
             isOneToOne: false
@@ -1785,6 +1798,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "match_games_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "match_games_winner_alt_id_fkey"
             columns: ["winner_alt_id"]
             isOneToOne: false
@@ -1796,27 +1816,33 @@ export type Database = {
       match_messages: {
         Row: {
           alt_id: number | null
+          community_id: number | null
           content: string
           created_at: string
           id: number
           match_id: number
           message_type: Database["public"]["Enums"]["match_message_type"]
+          tournament_id: number | null
         }
         Insert: {
           alt_id?: number | null
+          community_id?: number | null
           content: string
           created_at?: string
           id?: never
           match_id: number
           message_type?: Database["public"]["Enums"]["match_message_type"]
+          tournament_id?: number | null
         }
         Update: {
           alt_id?: number | null
+          community_id?: number | null
           content?: string
           created_at?: string
           id?: never
           match_id?: number
           message_type?: Database["public"]["Enums"]["match_message_type"]
+          tournament_id?: number | null
         }
         Relationships: [
           {
@@ -1827,10 +1853,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "match_messages_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "match_messages_match_id_fkey"
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "tournament_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_messages_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
             referencedColumns: ["id"]
           },
         ]

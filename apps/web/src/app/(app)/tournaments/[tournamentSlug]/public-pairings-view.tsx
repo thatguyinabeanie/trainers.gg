@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { BracketVisualization } from "@/components/tournament/bracket-visualization";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { transformPhaseData } from "@/lib/tournament-utils";
-import { type TournamentPairingsData } from "@/lib/data/tournament-pairings-endpoint";
+import { type PublicTournamentPairingsData } from "@/lib/data/tournament-pairings-endpoint";
 import type { TournamentMatch } from "@trainers/tournaments/types";
 
 interface PublicPairingsViewProps {
@@ -17,7 +17,7 @@ interface PublicPairingsViewProps {
    * Pairings data fetched server-side (service-role, cached) by the parent
    * server component. The presentational child does NOT fetch — it only renders.
    */
-  data: TournamentPairingsData;
+  data: PublicTournamentPairingsData;
   /** Whether the current viewer can manage the tournament (organizer/staff). */
   canManage?: boolean;
 }

@@ -28,17 +28,18 @@
 
 import { cacheTag, cacheLife } from "next/cache";
 
-import { getTournamentPlayerStats } from "@trainers/supabase";
+import { getPublicTournamentPlayerStats } from "@trainers/supabase";
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 
 /**
  * A single player-stats row with its joined alt — the shape
- * `getTournamentPlayerStats` returns.
+ * `getPublicTournamentPlayerStats` returns (public-allowlist variant, omitting
+ * `standings_need_recalc`, `opponent_history`, and `last_tiebreaker_update`).
  */
 export type TournamentPlayerStatsRow = Awaited<
-  ReturnType<typeof getTournamentPlayerStats>
+  ReturnType<typeof getPublicTournamentPlayerStats>
 >[number];
 
 /**
@@ -71,6 +72,8 @@ export async function getCachedTournamentPlayerStats(
 
   // Service-role: bypasses anon/authenticated GRANT revoke while keeping cache
   // shared and correct (service-role is a constant, not per-user). See §0.2.
+  // Public-allowlist variant: omits standings_need_recalc, opponent_history,
+  // last_tiebreaker_update — internal recalculation state not needed for display.
   const supabase = createServiceRoleClient();
-  return getTournamentPlayerStats(supabase, tournamentId, options);
+  return getPublicTournamentPlayerStats(supabase, tournamentId, options);
 }

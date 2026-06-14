@@ -1,7 +1,11 @@
 import { cacheTag, cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createStaticClient } from "@/lib/supabase/server";
+// Service-role client: reads tournaments/tournament_phases/tournament_rounds/
+// tournament_matches — all revoke-set tables. Anon SELECT on these is revoked
+// in the Phase 2 Step-4 migration; service-role is a constant identity — safe
+// inside 'use cache' scopes.
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
   getTournamentBySlug,
   getTournamentPhases,
@@ -34,7 +38,7 @@ async function getCachedTournament(slug: string) {
   cacheTag(CacheTags.tournament(slug), CacheTags.TOURNAMENTS_LIST);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getTournamentBySlug(supabase, slug);
 }
 
@@ -46,7 +50,7 @@ async function getCachedMatchesByPhase(tournamentId: number, slug: string) {
   cacheTag(CacheTags.tournament(slug));
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   const phases = await getTournamentPhases(supabase, tournamentId);
 
   // Fetch rounds with matches for each phase

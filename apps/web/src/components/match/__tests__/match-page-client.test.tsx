@@ -1,9 +1,15 @@
 import { type ReactNode } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import {
+  QueryClient,
+  QueryClientProvider,
+  type QueryKey,
+} from "@tanstack/react-query";
 import {
   MatchPageClient,
   type MatchPageClientProps,
 } from "../match-page-client";
+import { queryKeys } from "@/lib/query-keys";
 
 // ===========================================================================
 // Mocks
@@ -30,34 +36,46 @@ jest.mock("next/link", () => {
   return MockLink;
 });
 
-const mockGetMatchGames = jest.fn();
-const mockGetMatchGamesForPlayer = jest.fn();
+const mockGetMatchGames = jest.fn().mockResolvedValue([]);
+const mockGetMatchGamesForPlayer = jest.fn().mockResolvedValue([]);
+const mockGetMatchMessages = jest.fn().mockResolvedValue([]);
 
 jest.mock("@trainers/supabase", () => ({
   getMatchGames: (...args: unknown[]) => mockGetMatchGames(...args),
   getMatchGamesForPlayer: (...args: unknown[]) =>
     mockGetMatchGamesForPlayer(...args),
-  getMatchMessages: jest.fn().mockResolvedValue([]),
+  getMatchMessages: (...args: unknown[]) => mockGetMatchMessages(...args),
 }));
 
-// Supabase realtime channel mock
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: jest.fn(() => ({})),
+}));
+
+// Supabase realtime channel mock — captures each channel's registered
+// postgres_changes handler so tests can simulate a pushed payload.
+type RealtimeHandler = (payload: Record<string, unknown>) => void;
+const realtimeHandlers: Record<string, RealtimeHandler> = {};
+let lastChannelName = "";
+
 const mockChannel = {
-  on: jest.fn().mockReturnThis(),
+  on: jest.fn((_event: string, config: { table: string }, cb: RealtimeHandler) => {
+    // Key handlers by channel name so the cache test can target the right one.
+    realtimeHandlers[lastChannelName] = cb;
+    return mockChannel;
+  }),
   subscribe: jest.fn().mockReturnThis(),
 };
 const mockRemoveChannel = jest.fn();
 const mockSupabaseInstance = {
-  channel: jest.fn().mockReturnValue(mockChannel),
+  channel: jest.fn((name: string) => {
+    lastChannelName = name;
+    return mockChannel;
+  }),
   removeChannel: mockRemoveChannel,
 };
 
 jest.mock("@/lib/supabase", () => ({
   useSupabase: () => mockSupabaseInstance,
-  useSupabaseQuery: jest.fn().mockReturnValue({
-    data: [],
-    isLoading: false,
-    refetch: jest.fn(),
-  }),
 }));
 
 // Mock heavy sub-components to keep tests fast & focused on page-level logic
@@ -173,7 +191,22 @@ function setup(overrides: Partial<MatchPageClientProps> = {}) {
     setTyping: jest.fn(),
     broadcastJudgeRequest: jest.fn(),
   });
-  return render(<MatchPageClient {...baseProps} {...overrides} />);
+
+  // Real QueryClient so the realtime handlers' setQueryData calls are observable.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const invalidateSpy = jest.spyOn(queryClient, "invalidateQueries");
+
+  const result = render(
+    <QueryClientProvider client={queryClient}>
+      <MatchPageClient {...baseProps} {...overrides} />
+    </QueryClientProvider>
+  );
+
+  const getCache = (key: QueryKey) => queryClient.getQueryData(key);
+
+  return { ...result, queryClient, invalidateSpy, getCache };
 }
 
 // ===========================================================================
@@ -183,6 +216,9 @@ function setup(overrides: Partial<MatchPageClientProps> = {}) {
 describe("MatchPageClient", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    for (const key of Object.keys(realtimeHandlers)) {
+      delete realtimeHandlers[key];
+    }
   });
 
   // =========================================================================
@@ -348,6 +384,94 @@ describe("MatchPageClient", () => {
       expect(mockSupabaseInstance.channel).toHaveBeenCalledWith(
         expect.stringContaining("match-games-1")
       );
+    });
+  });
+
+  // =========================================================================
+  // Realtime → cache (setQueryData, no refetch)
+  // =========================================================================
+
+  describe("realtime cache updates", () => {
+    it("appends an inserted match_messages row to the messages cache", async () => {
+      const { getCache, invalidateSpy } = setup();
+
+      // Let the initial useQuery settle (seeds [] into the cache).
+      await waitFor(() =>
+        expect(getCache(queryKeys.match.messages(1))).toEqual([])
+      );
+
+      const row = { id: 42, content: "gg", message_type: "player", alt: null };
+      realtimeHandlers["match-messages-1"]?.({ new: row, eventType: "INSERT" });
+
+      expect(getCache(queryKeys.match.messages(1))).toEqual([row]);
+      // No refetch / invalidate path was taken — the payload went straight in.
+      expect(invalidateSpy).not.toHaveBeenCalled();
+    });
+
+    it("upserts an inserted match_games row into the games cache", async () => {
+      const { getCache, invalidateSpy } = setup();
+
+      await waitFor(() =>
+        expect(getCache(queryKeys.match.games(1))).toEqual([])
+      );
+
+      const game = { id: 7, game_number: 1, status: "pending" };
+      realtimeHandlers["match-games-1"]?.({ new: game, eventType: "INSERT" });
+
+      expect(getCache(queryKeys.match.games(1))).toEqual([game]);
+      expect(invalidateSpy).not.toHaveBeenCalled();
+    });
+
+    it("replaces a match_games row in the cache on UPDATE (keyed by id)", async () => {
+      const { getCache } = setup();
+
+      await waitFor(() =>
+        expect(getCache(queryKeys.match.games(1))).toEqual([])
+      );
+
+      realtimeHandlers["match-games-1"]?.({
+        new: { id: 7, status: "pending" },
+        eventType: "INSERT",
+      });
+      realtimeHandlers["match-games-1"]?.({
+        new: { id: 7, status: "resolved", winner_alt_id: 100 },
+        eventType: "UPDATE",
+      });
+
+      expect(getCache(queryKeys.match.games(1))).toEqual([
+        { id: 7, status: "resolved", winner_alt_id: 100 },
+      ]);
+    });
+
+    it("removes a match_games row from the cache on DELETE", async () => {
+      const { getCache } = setup();
+
+      await waitFor(() =>
+        expect(getCache(queryKeys.match.games(1))).toEqual([])
+      );
+
+      realtimeHandlers["match-games-1"]?.({
+        new: { id: 7, status: "pending" },
+        eventType: "INSERT",
+      });
+      realtimeHandlers["match-games-1"]?.({
+        old: { id: 7 },
+        eventType: "DELETE",
+      });
+
+      expect(getCache(queryKeys.match.games(1))).toEqual([]);
+    });
+
+    it("does not invalidate the games cache on a tournament_matches status update", async () => {
+      const { invalidateSpy } = setup();
+
+      realtimeHandlers["match-status-1"]?.({
+        new: { status: "active" },
+        eventType: "UPDATE",
+      });
+
+      // Status changes update local state only — no games refetch.
+      expect(invalidateSpy).not.toHaveBeenCalled();
     });
   });
 

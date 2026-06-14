@@ -1,8 +1,12 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+
 import { type PermissionKey } from "@trainers/utils";
 import { getUserPermissions, hasPermission } from "@trainers/supabase";
-import { useSupabaseQuery } from "@/lib/supabase";
+
+import { createClient } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import { useCurrentUser } from "./use-current-user";
 
 /**
@@ -16,14 +20,12 @@ export function usePermission(permission: PermissionKey, enabled = true) {
   const { user, isLoading: userLoading } = useCurrentUser();
 
   // Check permission if user is loaded
-  const { data: permissionCheck, isLoading: permissionLoading } =
-    useSupabaseQuery(
-      async (supabase) => {
-        if (!user?.id || !enabled) return false;
-        return hasPermission(supabase, user.id, permission);
-      },
-      [user?.id, enabled, permission]
-    );
+  const { data: permissionCheck, isLoading: permissionLoading } = useQuery({
+    queryKey: queryKeys.user.permission(user?.id, permission),
+    queryFn: () => hasPermission(createClient(), user!.id, permission),
+    enabled: !!user?.id && enabled,
+    staleTime: 30_000,
+  });
 
   return {
     hasPermission: permissionCheck === true,
@@ -43,14 +45,12 @@ export function usePermissions(permissions: PermissionKey[], enabled = true) {
   const { user, isLoading: userLoading } = useCurrentUser();
 
   // Get all user permissions in a single query
-  const { data: userPermissions, isLoading: permissionsLoading } =
-    useSupabaseQuery(
-      async (supabase) => {
-        if (!user?.id || !enabled) return [];
-        return getUserPermissions(supabase, user.id);
-      },
-      [user?.id, enabled]
-    );
+  const { data: userPermissions, isLoading: permissionsLoading } = useQuery({
+    queryKey: queryKeys.user.permissions(user?.id),
+    queryFn: () => getUserPermissions(createClient(), user!.id),
+    enabled: !!user?.id && enabled,
+    staleTime: 30_000,
+  });
 
   // Create permissions map by checking if each requested permission is in the user's permissions
   const permissionsMap = {} as Record<PermissionKey, boolean>;

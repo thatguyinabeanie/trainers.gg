@@ -7,13 +7,26 @@
 import React, { Suspense } from "react";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { organizationFactory } from "@trainers/test-utils/factories";
 import { MAX_IMAGE_SIZE } from "@trainers/validators";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
-const mockUseSupabaseQuery = jest.fn();
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    order: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+  })),
+  supabase: {
+    from: jest.fn().mockReturnThis(),
+  },
+}));
 
 // The community fetch moved to the auth-gated /api/v1/communities/[slug] route
 // (Phase 2 S-bucket migration). The page now reads it via `useApiQuery` from
@@ -24,13 +37,25 @@ jest.mock("@trainers/supabase/react-query", () => ({
   useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
 }));
 
+const mockGetDiscordServerByCommunityId = jest.fn();
+jest.mock("@trainers/supabase", () => ({
+  getDiscordServerByCommunityId: (...args: unknown[]) =>
+    mockGetDiscordServerByCommunityId(...args),
+}));
+
 const mockSupabaseClient = {
-  functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
-  auth: { getSession: jest.fn().mockResolvedValue({ data: { session: { access_token: "test-token" } }, error: null }) },
+  functions: {
+    invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
+  },
+  auth: {
+    getSession: jest.fn().mockResolvedValue({
+      data: { session: { access_token: "test-token" } },
+      error: null,
+    }),
+  },
 };
 
 jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: (...args: unknown[]) => mockUseSupabaseQuery(...args),
   useSupabase: () => mockSupabaseClient,
 }));
 
@@ -104,6 +129,17 @@ jest.mock("@/components/dashboard/dashboard-card", () => ({
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
+}
+
 function buildOrg(overrides: Record<string, unknown> = {}) {
   const base = organizationFactory.build();
   return {
@@ -137,11 +173,9 @@ async function renderPage(
     refetch: jest.fn(),
   });
 
-  // The Discord-server lookup still uses useSupabaseQuery, keyed by [org.id].
-  mockUseSupabaseQuery.mockReturnValue({
-    data: discordServer,
-    isLoading: false,
-  });
+  // The Discord-server lookup now uses real useQuery; the queryFn calls
+  // getDiscordServerByCommunityId, which we mock to resolve to discordServer.
+  mockGetDiscordServerByCommunityId.mockResolvedValue(discordServer);
 
   const params = Promise.resolve({ communitySlug: org?.slug ?? "test-org" });
 
@@ -150,7 +184,8 @@ async function renderPage(
     result = render(
       <Suspense fallback={<div>Loading...</div>}>
         <DashboardSettingsPage params={params} />
-      </Suspense>
+      </Suspense>,
+      { wrapper: createWrapper() }
     );
   });
 
@@ -178,7 +213,8 @@ describe("DashboardSettingsPage", () => {
         render(
           <Suspense fallback={<div>Loading...</div>}>
             <DashboardSettingsPage params={params} />
-          </Suspense>
+          </Suspense>,
+          { wrapper: createWrapper() }
         );
       });
 
@@ -622,9 +658,7 @@ describe("DashboardSettingsPage", () => {
         })
       );
 
-      await user.click(
-        screen.getByRole("button", { name: /remove banner/i })
-      );
+      await user.click(screen.getByRole("button", { name: /remove banner/i }));
 
       await waitFor(() => {
         expect(removeCommunityBanner).toHaveBeenCalledWith(5);
@@ -663,7 +697,7 @@ describe("DashboardSettingsPage", () => {
         discordServer: { id: 1, community_id: org.id, guild_id: "123" },
       });
 
-      const chip = screen.getByTestId("discord-bot-chip");
+      const chip = await screen.findByTestId("discord-bot-chip");
       expect(chip).toBeInTheDocument();
       expect(chip).toHaveTextContent("Bot installed — configure");
       expect(chip).toHaveAttribute(

@@ -36,7 +36,7 @@ const mockGetTournamentPlayerStatsQuery = jest.fn();
 const mockFakeServiceRoleClient = { from: jest.fn() };
 
 jest.mock("@trainers/supabase", () => ({
-  getTournamentPlayerStats: (...args: unknown[]) =>
+  getPublicTournamentPlayerStats: (...args: unknown[]) =>
     mockGetTournamentPlayerStatsQuery(...args),
 }));
 
@@ -234,14 +234,12 @@ describe("success", () => {
     expect(mockGetCachedTournamentPlayerStats).toHaveBeenCalledWith(42);
   });
 
-  it("sets the tag-invalidated Cache-Control header on success", async () => {
+  it("sets private, no-store Cache-Control header on success", async () => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
 
     const response = await GET(makeRequest(), makeParams("42"));
 
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=31536000, stale-while-revalidate=86400"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("returns an empty array when no player stats exist for the tournament", async () => {
