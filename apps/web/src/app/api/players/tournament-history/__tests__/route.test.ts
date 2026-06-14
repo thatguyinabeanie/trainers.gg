@@ -11,6 +11,14 @@ jest.mock("@/lib/supabase/server", () => ({
   createServiceRoleClient: jest.fn(() => ({})),
 }));
 
+const mockEnforceRateLimit = jest.fn();
+jest.mock("@/lib/api/rate-limit", () => ({
+  enforceRateLimit: (...args: unknown[]) => mockEnforceRateLimit(...args),
+  extractRequestIp: jest.fn(() => "127.0.0.1"),
+  DEFAULT_API_LIMIT: 120,
+  DEFAULT_WINDOW_MS: 60_000,
+}));
+
 const mockGetPlayerTournamentHistoryFull = jest.fn();
 jest.mock("@trainers/supabase/queries", () => ({
   getPlayerTournamentHistoryFull: (...args: unknown[]) =>
@@ -42,6 +50,11 @@ async function getJsonResponse(request: Request) {
 describe("GET /api/players/tournament-history", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockEnforceRateLimit.mockResolvedValue({
+      allowed: true,
+      remaining: 119,
+      resetAt: new Date(),
+    });
   });
 
   it("returns 200 with tournament history for valid altIds", async () => {

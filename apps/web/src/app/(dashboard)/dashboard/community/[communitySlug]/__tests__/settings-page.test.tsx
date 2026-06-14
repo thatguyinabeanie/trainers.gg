@@ -28,8 +28,6 @@ jest.mock("@/lib/supabase/client", () => ({
   },
 }));
 
-const mockUseSupabaseQuery = jest.fn();
-
 // The community fetch moved to the auth-gated /api/v1/communities/[slug] route
 // (Phase 2 S-bucket migration). The page now reads it via `useApiQuery` from
 // `@trainers/supabase/react-query`; only the Discord-server lookup still uses
@@ -37,6 +35,12 @@ const mockUseSupabaseQuery = jest.fn();
 const mockUseApiQuery = jest.fn();
 jest.mock("@trainers/supabase/react-query", () => ({
   useApiQuery: (...args: unknown[]) => mockUseApiQuery(...args),
+}));
+
+const mockGetDiscordServerByCommunityId = jest.fn();
+jest.mock("@trainers/supabase", () => ({
+  getDiscordServerByCommunityId: (...args: unknown[]) =>
+    mockGetDiscordServerByCommunityId(...args),
 }));
 
 const mockSupabaseClient = {
@@ -52,7 +56,6 @@ const mockSupabaseClient = {
 };
 
 jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: (...args: unknown[]) => mockUseSupabaseQuery(...args),
   useSupabase: () => mockSupabaseClient,
 }));
 
@@ -170,11 +173,9 @@ async function renderPage(
     refetch: jest.fn(),
   });
 
-  // The Discord-server lookup still uses useSupabaseQuery, keyed by [org.id].
-  mockUseSupabaseQuery.mockReturnValue({
-    data: discordServer,
-    isLoading: false,
-  });
+  // The Discord-server lookup now uses real useQuery; the queryFn calls
+  // getDiscordServerByCommunityId, which we mock to resolve to discordServer.
+  mockGetDiscordServerByCommunityId.mockResolvedValue(discordServer);
 
   const params = Promise.resolve({ communitySlug: org?.slug ?? "test-org" });
 
@@ -696,7 +697,7 @@ describe("DashboardSettingsPage", () => {
         discordServer: { id: 1, community_id: org.id, guild_id: "123" },
       });
 
-      const chip = screen.getByTestId("discord-bot-chip");
+      const chip = await screen.findByTestId("discord-bot-chip");
       expect(chip).toBeInTheDocument();
       expect(chip).toHaveTextContent("Bot installed — configure");
       expect(chip).toHaveAttribute(

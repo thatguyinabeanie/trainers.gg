@@ -11,6 +11,14 @@ jest.mock("@/lib/supabase/server", () => ({
   createServiceRoleClient: jest.fn(() => ({})),
 }));
 
+const mockEnforceRateLimit = jest.fn();
+jest.mock("@/lib/api/rate-limit", () => ({
+  enforceRateLimit: (...args: unknown[]) => mockEnforceRateLimit(...args),
+  extractRequestIp: jest.fn(() => "127.0.0.1"),
+  DEFAULT_API_LIMIT: 120,
+  DEFAULT_WINDOW_MS: 60_000,
+}));
+
 const mockSearchPlayers = jest.fn();
 jest.mock("@trainers/supabase/queries", () => ({
   searchPlayers: (...args: unknown[]) => mockSearchPlayers(...args),
@@ -44,6 +52,11 @@ async function getJsonResponse(request: Request) {
 describe("GET /api/players/search", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockEnforceRateLimit.mockResolvedValue({
+      allowed: true,
+      remaining: 119,
+      resetAt: new Date(),
+    });
   });
 
   it("returns search results for valid params", async () => {

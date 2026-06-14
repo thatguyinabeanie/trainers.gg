@@ -25,7 +25,16 @@ jest.mock("@trainers/supabase", () => ({
 }));
 
 jest.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({}),
+  createClient: () => ({
+    auth: {
+      getSession: jest
+        .fn()
+        .mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: jest.fn(() => ({
+        data: { subscription: { unsubscribe: jest.fn() } },
+      })),
+    },
+  }),
 }));
 
 const mockMarkNotificationReadAction = jest.fn();
@@ -321,9 +330,7 @@ describe("NotificationCenter", () => {
       fireEvent.click(screen.getByText("Unread"));
 
       await waitFor(() => {
-        expect(
-          screen.getByText("No unread notifications")
-        ).toBeInTheDocument();
+        expect(screen.getByText("No unread notifications")).toBeInTheDocument();
       });
     });
   });

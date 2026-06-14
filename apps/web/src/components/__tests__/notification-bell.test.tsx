@@ -510,14 +510,14 @@ describe("NotificationBell", () => {
         expect(insertHandler).toBeDefined();
         insertHandler!({ new: makeNotification({ id: 99 }) });
 
-        // setQueryData targets the notifications key; no refetch on INSERT.
-        expect(mockSetQueryData).toHaveBeenCalledTimes(1);
-        const [key, updater] = mockSetQueryData.mock.calls[0] as [
-          unknown[],
-          (prev: unknown[] | undefined) => unknown[],
-        ];
-        expect(key[key.length - 1]).toBe("recent");
-        expect(typeof updater).toBe("function");
+        // The new row is prepended into the notifications list via setQueryData;
+        // no refetch on INSERT.
+        const recentCall = mockSetQueryData.mock.calls.find(
+          ([key]) =>
+            (key as unknown[])[(key as unknown[]).length - 1] === "recent"
+        );
+        expect(recentCall).toBeDefined();
+        expect(typeof recentCall![1]).toBe("function");
         expect(refetch).not.toHaveBeenCalled();
       });
 
@@ -530,7 +530,9 @@ describe("NotificationBell", () => {
 
         const [, updater] = mockSetQueryData.mock.calls[0] as [
           unknown,
-          (prev: ReturnType<typeof makeNotification>[] | undefined) => unknown[],
+          (
+            prev: ReturnType<typeof makeNotification>[] | undefined
+          ) => unknown[],
         ];
         const existing = makeNotification({ id: 1 });
         const next = updater([existing]) as ReturnType<
@@ -548,24 +550,45 @@ describe("NotificationBell", () => {
 
         const [, updater] = mockSetQueryData.mock.calls[0] as [
           unknown,
-          (prev: ReturnType<typeof makeNotification>[] | undefined) => unknown[],
+          (
+            prev: ReturnType<typeof makeNotification>[] | undefined
+          ) => unknown[],
         ];
         const existing = makeNotification({ id: 1 });
         const next = updater([existing]);
         expect(next).toHaveLength(1);
       });
 
-      it("invalidates the unread-count query so the badge stays accurate", () => {
+      it("increments the unread-count cache when the new row is unread", () => {
         setupQueryMocks();
         render(<NotificationBell userId="u1" />);
 
-        insertHandler!({ new: makeNotification({ id: 99 }) });
+        insertHandler!({ new: makeNotification({ id: 99, read_at: null }) });
 
-        expect(mockInvalidateQueries).toHaveBeenCalledTimes(1);
-        const [arg] = mockInvalidateQueries.mock.calls[0] as [
-          { queryKey: unknown[] },
-        ];
-        expect(arg.queryKey[arg.queryKey.length - 1]).toBe("unread-count");
+        const unreadCall = mockSetQueryData.mock.calls.find(
+          ([key]) =>
+            (key as unknown[])[(key as unknown[]).length - 1] === "unread-count"
+        );
+        expect(unreadCall).toBeDefined();
+        const updater = unreadCall![1] as (prev: number | undefined) => number;
+        expect(updater(2)).toBe(3);
+        expect(updater(undefined)).toBe(1);
+        expect(mockInvalidateQueries).not.toHaveBeenCalled();
+      });
+
+      it("does not touch the unread-count cache when the new row is already read", () => {
+        setupQueryMocks();
+        render(<NotificationBell userId="u1" />);
+
+        insertHandler!({
+          new: makeNotification({ id: 99, read_at: "2026-01-01T00:00:00Z" }),
+        });
+
+        const unreadCall = mockSetQueryData.mock.calls.find(
+          ([key]) =>
+            (key as unknown[])[(key as unknown[]).length - 1] === "unread-count"
+        );
+        expect(unreadCall).toBeUndefined();
       });
     });
   });

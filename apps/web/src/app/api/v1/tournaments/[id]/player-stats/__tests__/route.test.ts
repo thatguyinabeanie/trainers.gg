@@ -36,7 +36,7 @@ const mockGetTournamentPlayerStatsQuery = jest.fn();
 const mockFakeServiceRoleClient = { from: jest.fn() };
 
 jest.mock("@trainers/supabase", () => ({
-  getTournamentPlayerStats: (...args: unknown[]) =>
+  getPublicTournamentPlayerStats: (...args: unknown[]) =>
     mockGetTournamentPlayerStatsQuery(...args),
 }));
 
