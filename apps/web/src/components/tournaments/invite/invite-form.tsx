@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "@trainers/validators";
 import { sendTournamentInvitations } from "@trainers/supabase";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import type { SelectedPlayer } from "@trainers/tournaments/types";
 import {
   Card,
@@ -58,6 +58,8 @@ export function InviteForm({
   onSuccess,
   maxInvitations = 50,
 }: InviteFormProps) {
+  const supabase = useSupabase();
+
   // Player selection managed separately since it involves complex search/select UI
   const [selectedPlayers, setSelectedPlayers] = useState<SelectedPlayer[]>([]);
   const [successCount, setSuccessCount] = useState<number | null>(null);
@@ -76,7 +78,7 @@ export function InviteForm({
   const { mutateAsync: sendInvitations } = useMutation({
     mutationFn: (args: SendInvitationsArgs) =>
       sendTournamentInvitations(
-        createClient(),
+        supabase,
         args.tournamentId,
         args.profileIds,
         args.message

@@ -6,16 +6,17 @@ import { ensureAlt } from "@trainers/supabase";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 function CreateProfileForm() {
   const router = useRouter();
+  const supabase = useSupabase();
   const { user, loading, refetchUser } = useAuth();
   const { mutateAsync: ensureAltMutation, isPending: isSubmitting } =
     useMutation({
-      mutationFn: () => ensureAlt(createClient()),
+      mutationFn: () => ensureAlt(supabase),
     });
 
   const [error, setError] = useState<string | null>(null);

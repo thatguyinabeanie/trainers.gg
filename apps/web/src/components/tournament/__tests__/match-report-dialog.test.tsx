@@ -24,6 +24,9 @@ jest.mock("@trainers/supabase", () => ({
 
 jest.mock("@/lib/supabase/client", () => ({
   createClient: () => ({}),
+  // MatchReportDialog now reads the client via useSupabase(), which returns
+  // this module-level singleton — provide it so the hook isn't undefined.
+  supabase: {},
 }));
 
 let mockMatchDetails: unknown = null;

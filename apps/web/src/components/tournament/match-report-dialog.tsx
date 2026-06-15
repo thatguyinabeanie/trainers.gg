@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { z, type ActionResult } from "@trainers/validators";
 import { reportMatchResult, type MatchDetails } from "@trainers/supabase";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
 import {
   Dialog,
@@ -99,6 +99,8 @@ export function MatchReportDialog({
   onOpenChange,
   onReportSubmitted,
 }: MatchReportDialogProps) {
+  const supabase = useSupabase();
+
   const form = useForm<MatchReportFormData>({
     resolver: zodResolver(matchReportSchema),
     defaultValues: {
@@ -128,7 +130,7 @@ export function MatchReportDialog({
       player2Score: number;
     }) =>
       reportMatchResult(
-        createClient(),
+        supabase,
         args.matchId,
         args.winnerId,
         args.player1Score,

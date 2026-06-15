@@ -10,14 +10,11 @@ import { useMutation } from "@tanstack/react-query";
 
 import { z } from "@trainers/validators";
 import { generateSlug } from "@trainers/utils";
-import {
-  createTournament,
-  type getCommunityBySlug,
-} from "@trainers/supabase";
+import { createTournament, type getCommunityBySlug } from "@trainers/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -142,6 +139,7 @@ export function CreateTournamentClient({
   discordInstalled = false,
 }: CreateTournamentClientProps) {
   const router = useRouter();
+  const supabase = useSupabase();
   const {
     user: currentUser,
     isLoading: userLoading,
@@ -204,7 +202,9 @@ export function CreateTournamentClient({
   // Fetch the community via the auth-gated `/api/v1/communities/[slug]` route
   // (Phase 2 S-bucket migration). The route returns the community object directly
   // (not ActionResult-wrapped), so we wrap it here.
-  type CommunityDetail = NonNullable<Awaited<ReturnType<typeof getCommunityBySlug>>>;
+  type CommunityDetail = NonNullable<
+    Awaited<ReturnType<typeof getCommunityBySlug>>
+  >;
 
   const {
     data: organization,
@@ -274,7 +274,7 @@ export function CreateTournamentClient({
           | "top-16"
           | "top-32";
       }[];
-    }) => createTournament(createClient(), args),
+    }) => createTournament(supabase, args),
   });
 
   const handleNameChange = (name: string) => {

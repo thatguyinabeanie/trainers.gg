@@ -25,22 +25,28 @@ describe("SampleBadge — threshold behavior", () => {
   it("renders a 'Low sample' badge when n is between VERY_LOW and LOW", () => {
     const n = VERY_LOW_SAMPLE_THRESHOLD; // exactly at very-low boundary
     render(<SampleBadge n={n} />);
-    expect(screen.getByText(`Low sample (n=${n.toLocaleString()})`)).toBeInTheDocument();
+    expect(
+      screen.getByText(`Low sample (n=${n.toLocaleString()})`)
+    ).toBeInTheDocument();
   });
 
   it("renders a 'Very low' badge when n < VERY_LOW_SAMPLE_THRESHOLD", () => {
     const n = VERY_LOW_SAMPLE_THRESHOLD - 1;
     render(<SampleBadge n={n} />);
-    expect(screen.getByText(`Very low sample (n=${n.toLocaleString()})`)).toBeInTheDocument();
+    expect(
+      screen.getByText(`Very low sample (n=${n.toLocaleString()})`)
+    ).toBeInTheDocument();
   });
 
   it("renders a 'Low sample' badge at n = LOW_SAMPLE_THRESHOLD - 1", () => {
     const n = LOW_SAMPLE_THRESHOLD - 1;
     render(<SampleBadge n={n} />);
-    expect(screen.getByText(`Low sample (n=${n.toLocaleString()})`)).toBeInTheDocument();
+    expect(
+      screen.getByText(`Low sample (n=${n.toLocaleString()})`)
+    ).toBeInTheDocument();
   });
 
-  it("renders nothing at exactly n = 0 threshold boundary (very low)", () => {
+  it("renders 'Very low sample' at the n = 0 threshold boundary", () => {
     // n=0 < VERY_LOW_SAMPLE_THRESHOLD → renders "Very low sample"
     render(<SampleBadge n={0} />);
     expect(screen.getByText("Very low sample (n=0)")).toBeInTheDocument();
@@ -53,7 +59,9 @@ describe("SampleBadge — threshold behavior", () => {
     [99, "Low"],
   ])("renders correct label for n=%i", (n, expectedLabel) => {
     render(<SampleBadge n={n} />);
-    expect(screen.getByText(new RegExp(expectedLabel, "i"))).toBeInTheDocument();
+    expect(
+      screen.getByText(new RegExp(expectedLabel, "i"))
+    ).toBeInTheDocument();
   });
 });
 
@@ -76,7 +84,9 @@ describe("SampleBadge — accessibility", () => {
 describe("SampleBadge — className passthrough", () => {
   it("applies the supplied className to the rendered span", () => {
     const n = 50;
-    const { container } = render(<SampleBadge n={n} className="my-test-class" />);
+    const { container } = render(
+      <SampleBadge n={n} className="my-test-class" />
+    );
     const span = container.querySelector("span");
     expect(span?.className).toContain("my-test-class");
   });
