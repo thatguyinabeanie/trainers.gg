@@ -157,18 +157,20 @@ export async function searchPlayers(
 
     // Search users.username via the safe public_user_profiles view (RLS audit
     // #1 locked public.users SELECT to own-row + admin).
-    const { data: userMatches } = await supabase
+    const { data: userMatches, error: userMatchesError } = await supabase
       .from("public_user_profiles")
       .select("id")
       .ilike("username", pattern);
+    if (userMatchesError) throw userMatchesError;
 
     // Search alts.username and resolve to user_id
     // Public-directory safety: only public alts can surface a user — service-role bypasses RLS.
-    const { data: altMatches } = await supabase
+    const { data: altMatches, error: altMatchesError } = await supabase
       .from("alts")
       .select("user_id")
       .ilike("username", pattern)
       .eq("is_public", true);
+    if (altMatchesError) throw altMatchesError;
 
     const idSet = new Set<string>();
     for (const u of userMatches ?? []) {
@@ -210,10 +212,9 @@ export async function searchPlayers(
   // Step 3: If filtering by format, get user IDs that have played that format
   if (format) {
     // First get tournament IDs for this format (server-side filter)
-    const { data: formatTournaments } = await supabase
-      .from("tournaments")
-      .select("id")
-      .ilike("format", format);
+    const { data: formatTournaments, error: formatTournamentsError } =
+      await supabase.from("tournaments").select("id").ilike("format", format);
+    if (formatTournamentsError) throw formatTournamentsError;
 
     const tournamentIds = (formatTournaments ?? []).map((t) => t.id);
 
@@ -222,10 +223,11 @@ export async function searchPlayers(
     }
 
     // Then get alt IDs that have stats in those tournaments
-    const { data: formatStats } = await supabase
+    const { data: formatStats, error: formatStatsError } = await supabase
       .from("tournament_player_stats")
       .select("alt_id")
       .in("tournament_id", tournamentIds);
+    if (formatStatsError) throw formatStatsError;
 
     const altIds = [...new Set((formatStats ?? []).map((s) => s.alt_id))];
 
@@ -233,17 +235,17 @@ export async function searchPlayers(
       return { players: [], totalCount: 0, page };
     }
 
-    // Resolve alt IDs to user IDs
+    // Resolve alt IDs to user IDs — chunk the IN-list to avoid URI overflow.
     // Public-directory safety: only public alts drive the format filter — service-role bypasses RLS.
-    const { data: altUsers } = await supabase
-      .from("alts")
-      .select("user_id")
-      .in("id", altIds)
-      .eq("is_public", true);
+    const altUsers = await fetchInChunks(altIds, (idChunk) =>
+      supabase
+        .from("alts")
+        .select("user_id")
+        .in("id", idChunk)
+        .eq("is_public", true)
+    );
 
-    const resolvedUserIds = [
-      ...new Set((altUsers ?? []).map((a) => a.user_id)),
-    ];
+    const resolvedUserIds = [...new Set(altUsers.map((a) => a.user_id))];
 
     if (resolvedUserIds.length === 0) {
       return { players: [], totalCount: 0, page };

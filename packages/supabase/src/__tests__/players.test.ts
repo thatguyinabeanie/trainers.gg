@@ -287,6 +287,160 @@ describe("searchPlayers", () => {
 });
 
 // ============================================================================
+// searchPlayers — private-alt exclusion security tests
+//
+// These tests guard the invariant that users whose alts are all private must
+// never surface in public directory results. The service-role client bypasses
+// RLS, so the `.eq("is_public", true)` filter on alts is the SOLE enforcement
+// point. If that filter is removed, private users leak silently.
+// ============================================================================
+
+describe("searchPlayers — private-alt exclusion", () => {
+  it("excludes a user whose only alt is private from the result set", async () => {
+    // The user appears in the users query (they have a username), but their
+    // single alt has is_public=false, so the alts query returns nothing for
+    // them. searchPlayers must exclude them entirely.
+    const supabase = mockSupabaseSequential([
+      // public_user_profiles — user exists
+      {
+        data: [
+          {
+            id: "private-user-1",
+            username: "shadow_trainer",
+            country: null,
+            created_at: "2025-01-01T00:00:00Z",
+          },
+        ],
+        count: 1,
+      },
+      // alts query — is_public=true filter returns nothing (only private alt)
+      { data: [] },
+      // tournament_player_stats — empty (no alts to look up)
+      { data: [] },
+    ]);
+
+    const result = await searchPlayers(supabase, {}, 1);
+
+    // The user has no public alt → must not appear in results.
+    expect(result.players).toEqual([]);
+  });
+
+  it("excludes a user surfaced by a private-alt username match from search results", async () => {
+    // When searching for a specific username that belongs to a private alt,
+    // the alt username search MUST have is_public=true so the user is never
+    // added to the candidate id set.
+    // We simulate this: alts search returns empty (private alt filtered out),
+    // user profile search also returns empty → userIds = [] → empty result.
+    const supabase = mockSupabaseSequential([
+      // public_user_profiles search — no direct username match
+      { data: [] },
+      // alts search with is_public=true — returns nothing (alt is private)
+      { data: [] },
+    ]);
+
+    const result = await searchPlayers(
+      supabase,
+      { query: "shadow_trainer" },
+      1
+    );
+
+    expect(result.players).toEqual([]);
+    expect(result.totalCount).toBe(0);
+  });
+
+  it("shows only the public alt as the primary alt when user has both public and private alts", async () => {
+    // User has two alts: alt id=10 is private, alt id=11 is public.
+    // The alts query with is_public=true must return only the public alt.
+    // The primary alt shown must be the public one (id=11, username "ash_public").
+    const supabase = mockSupabaseSequential([
+      // public_user_profiles — user found
+      {
+        data: [
+          {
+            id: "user-mixed",
+            username: "ash_ketchum",
+            country: "US",
+            created_at: "2025-01-01T00:00:00Z",
+          },
+        ],
+        count: 1,
+      },
+      // alts query with is_public=true — only the public alt comes back
+      {
+        data: [
+          {
+            id: 11,
+            user_id: "user-mixed",
+            username: "ash_public",
+            avatar_url: "https://example.com/ash-public.png",
+          },
+        ],
+      },
+      // tournament_player_stats — empty for simplicity
+      { data: [] },
+    ]);
+
+    const result = await searchPlayers(supabase, {}, 1);
+
+    expect(result.players).toHaveLength(1);
+    const player = result.players[0]!;
+    // Must show the public alt's identity.
+    expect(player.altId).toBe(11);
+    expect(player.username).toBe("ash_public");
+    expect(player.avatarUrl).toBe("https://example.com/ash-public.png");
+    // Must NOT show any reference to the private alt (id=10).
+    expect(player.altId).not.toBe(10);
+  });
+
+  it("returns only users that have at least one public alt when no search query is supplied", async () => {
+    // Three users in the profile query; only two have public alts.
+    // The third (id="private-only") should be absent from results.
+    const supabase = mockSupabaseSequential([
+      {
+        data: [
+          {
+            id: "user-a",
+            username: "alice",
+            country: null,
+            created_at: "2025-01-01T00:00:00Z",
+          },
+          {
+            id: "user-b",
+            username: "bob",
+            country: null,
+            created_at: "2025-01-01T00:00:00Z",
+          },
+          {
+            id: "private-only",
+            username: "ghost",
+            country: null,
+            created_at: "2025-01-01T00:00:00Z",
+          },
+        ],
+        count: 3,
+      },
+      // alts — only alice and bob have public alts; ghost has none
+      {
+        data: [
+          { id: 1, user_id: "user-a", username: "alice", avatar_url: null },
+          { id: 2, user_id: "user-b", username: "bob", avatar_url: null },
+        ],
+      },
+      // stats — empty
+      { data: [] },
+    ]);
+
+    const result = await searchPlayers(supabase, {}, 1);
+
+    expect(result.players).toHaveLength(2);
+    const userIds = result.players.map((p) => p.userId);
+    expect(userIds).toContain("user-a");
+    expect(userIds).toContain("user-b");
+    expect(userIds).not.toContain("private-only");
+  });
+});
+
+// ============================================================================
 // getLeaderboard
 // ============================================================================
 

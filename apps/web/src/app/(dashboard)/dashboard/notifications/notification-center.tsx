@@ -182,7 +182,11 @@ export function NotificationCenter({
     isRead: boolean
   ) => {
     if (!isRead) {
-      await markNotificationReadAction(notificationId);
+      const result = await markNotificationReadAction(notificationId);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
       setRefreshKey((k) => k + 1);
     }
     if (isSafeRelativeUrl(actionUrl)) {

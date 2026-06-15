@@ -497,7 +497,9 @@ export function TournamentPairingsJudge({
           invalidatePairingsRef.current();
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) console.error("[Realtime] pairings rounds error:", err);
+      });
 
     return () => {
       channel.unsubscribe();

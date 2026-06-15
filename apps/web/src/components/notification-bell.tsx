@@ -194,7 +194,11 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     isRead: boolean
   ) => {
     if (!isRead) {
-      await markNotificationReadAction(notificationId);
+      const result = await markNotificationReadAction(notificationId);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
       refetchNotifications();
       refetchUnread();
     }

@@ -590,6 +590,151 @@ describe("TournamentPairingsJudge", () => {
   });
 
   // -------------------------------------------------------------------------
+  // Fetcher ActionResult wrapping — fetch-level contract
+  //
+  // The inline fetcher passed to useApiQuery wraps the raw fetch response into
+  // ActionResult<TournamentPairingsData>. useApiQuery relies on result.success
+  // to decide whether to surface the data or throw an error. If the wrapping
+  // were removed (e.g. returning the raw Response), the query would silently
+  // lose data or always throw.
+  //
+  // Because the fetcher is not exported, we test it by:
+  //  1. Capturing it from the mockUseApiQuery call arguments.
+  //  2. Calling it directly with mocked global fetch.
+  //  3. Asserting the ActionResult shape.
+  // -------------------------------------------------------------------------
+
+  describe("fetcher ActionResult wrapping", () => {
+    const savedFetch = globalThis.fetch;
+
+    afterEach(() => {
+      globalThis.fetch = savedFetch;
+    });
+
+    it("resolves { success: false, error: ... } when fetch returns a non-OK response", async () => {
+      // Render the component so mockUseApiQuery captures the fetcher arg.
+      mockUseApiQuery.mockImplementation(
+        (_key: unknown, fetcher: () => Promise<unknown>, _opts?: unknown) => {
+          // Capture the fetcher, return loading so the component is idle.
+          capturedFetcher = fetcher;
+          return {
+            data: undefined,
+            isLoading: true,
+            isError: false,
+            error: null,
+            refetch: jest.fn(),
+          };
+        }
+      );
+
+      let capturedFetcher: (() => Promise<unknown>) | undefined;
+
+      // Re-render after assigning the capture variable above.
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      expect(capturedFetcher).toBeDefined();
+
+      // Now mock fetch to return a 500 error response.
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: jest.fn().mockResolvedValue({}),
+      }) as typeof fetch;
+
+      const result = (await capturedFetcher!()) as {
+        success: boolean;
+        error?: string;
+      };
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("500");
+    });
+
+    it("resolves { success: true, data: ... } when fetch returns an OK response", async () => {
+      let capturedFetcher: (() => Promise<unknown>) | undefined;
+
+      mockUseApiQuery.mockImplementation(
+        (_key: unknown, fetcher: () => Promise<unknown>, _opts?: unknown) => {
+          capturedFetcher = fetcher;
+          return {
+            data: undefined,
+            isLoading: true,
+            isError: false,
+            error: null,
+            refetch: jest.fn(),
+          };
+        }
+      );
+
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      expect(capturedFetcher).toBeDefined();
+
+      const fakeData = {
+        phases: [],
+        allPhaseRounds: [],
+        roundsWithStats: [],
+        unpairedPlayers: [],
+      };
+
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue(fakeData),
+      }) as typeof fetch;
+
+      const result = (await capturedFetcher!()) as {
+        success: boolean;
+        data?: unknown;
+      };
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(fakeData);
+    });
+
+    it.each([
+      [401, "401"],
+      [403, "403"],
+      [404, "404"],
+      [503, "503"],
+    ])(
+      "HTTP %i response resolves { success: false } with status in error message",
+      async (statusCode, statusStr) => {
+        let capturedFetcher: (() => Promise<unknown>) | undefined;
+
+        mockUseApiQuery.mockImplementation(
+          (_key: unknown, fetcher: () => Promise<unknown>, _opts?: unknown) => {
+            capturedFetcher = fetcher;
+            return {
+              data: undefined,
+              isLoading: true,
+              isError: false,
+              error: null,
+              refetch: jest.fn(),
+            };
+          }
+        );
+
+        render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+        globalThis.fetch = jest.fn().mockResolvedValue({
+          ok: false,
+          status: statusCode,
+          json: jest.fn().mockResolvedValue({}),
+        }) as typeof fetch;
+
+        const result = (await capturedFetcher!()) as {
+          success: boolean;
+          error?: string;
+        };
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain(statusStr);
+      }
+    );
+  });
+
+  // -------------------------------------------------------------------------
   // Empty States
   // -------------------------------------------------------------------------
 
