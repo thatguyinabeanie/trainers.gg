@@ -16,9 +16,15 @@ jest.mock("@/lib/supabase/client", () => ({
     single: jest.fn().mockResolvedValue({ data: null, error: null }),
     order: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
+    // MatchHeader fetches coach badges via supabase.rpc("get_coach_badges").
+    // Stub it so the queryFn resolves cleanly instead of throwing.
+    rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
   })),
+  // MatchHeader reads the client via useSupabase(), which returns this
+  // module-level singleton — stub rpc here too (coach-badges query).
   supabase: {
     from: jest.fn().mockReturnThis(),
+    rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
   },
 }));
 

@@ -111,10 +111,14 @@ export function NotificationCenter({
       }),
     staleTime: 30_000,
     enabled: Boolean(user?.id),
-    // Only pass initialData on the first page of the "all" tab — that's the
-    // slice the server pre-fetched and forwarded via props.
+    // Only seed initialData once a real user?.id exists AND on the first page
+    // of the "all" tab. Gating on user?.id prevents seeding the cache under the
+    // empty-string key while the query is disabled (auth still resolving) —
+    // otherwise that "" entry could be reused across sessions (cross-user leak).
     initialData:
-      page === 0 && activeTab === "all" ? initialNotifications : undefined,
+      user?.id && page === 0 && activeTab === "all"
+        ? initialNotifications
+        : undefined,
   });
 
   // Fetch total count for pagination
@@ -131,7 +135,9 @@ export function NotificationCenter({
       }),
     staleTime: 30_000,
     enabled: Boolean(user?.id),
-    initialData: activeTab === "all" ? initialTotalCount : undefined,
+    // Gate on user?.id — see the notifications-list query above.
+    initialData:
+      user?.id && activeTab === "all" ? initialTotalCount : undefined,
   });
 
   // Fetch unread count for the header badge
@@ -140,13 +146,18 @@ export function NotificationCenter({
     queryFn: () => getUnreadNotificationCount(supabase),
     staleTime: 30_000,
     enabled: Boolean(user?.id),
-    initialData: initialUnreadCount,
+    // Gate on user?.id — see the notifications-list query above.
+    initialData: user?.id ? initialUnreadCount : undefined,
   });
 
-  // Derive display values (initialData guarantees these are always defined)
-  const displayNotifications = notifications ?? [];
-  const displayTotalCount = totalCount ?? 0;
-  const displayUnreadCount = unreadCount ?? 0;
+  // Derive display values. While auth is still resolving (no user?.id yet) the
+  // queries are disabled and their caches are unseeded, so fall back to the SSR
+  // `initial*` props directly — this preserves the server-rendered values without
+  // seeding the React Query cache under the empty-string userId key.
+  const displayNotifications =
+    notifications ?? (user?.id ? [] : initialNotifications);
+  const displayTotalCount = totalCount ?? (user?.id ? 0 : initialTotalCount);
+  const displayUnreadCount = unreadCount ?? (user?.id ? 0 : initialUnreadCount);
 
   const totalPages = Math.max(1, Math.ceil(displayTotalCount / PAGE_SIZE));
 
