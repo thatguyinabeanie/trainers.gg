@@ -1,6 +1,6 @@
 ---
 name: reviewing-pr-feedback
-description: Use after pushing to a PR — fetches review comments, groups them, walks through each group with the user, fixes everything (no deferrals), commits, pushes, replies, resolves threads, requests re-review, and waits for completion
+description: Use after pushing to a PR — waits for BOTH the Copilot review and all CI checks to finish, then fetches review comments + CI failures, groups them, walks through each group with the user, fixes everything (no deferrals), re-checks for new comments before pushing, commits, pushes, replies, resolves threads, requests re-review, and loops until comments are zero and CI is green
 ---
 
 # Reviewing PR Feedback
@@ -10,21 +10,51 @@ Fetch review comments, group them, resolve every issue with the user, then close
 ## The Loop
 
 ```
-Fetch comments → Group by theme → Walk through groups with user →
-Implement ALL fixes → Lint/typecheck/test → Commit + push →
+Wait for BOTH: Copilot review posted AND all CI checks terminal →
+Fetch comments + CI failures → Group by theme → Walk through groups with user →
+Implement ALL fixes (review comments AND CI failures) → Lint/typecheck/test →
+Re-check for new comments → Commit + push →
 Reply to every comment → Resolve every thread →
-Request Copilot re-review → Wait for review → Loop if new comments
+Request Copilot re-review → Wait for review + CI again → Loop if new comments or red CI
 ```
 
-This loop repeats until a review cycle produces zero actionable comments.
+This loop repeats until a review cycle produces zero actionable comments **and** CI is green.
+
+## Phase 0: Wait for review AND CI to settle
+
+**Before acting on a round, wait until BOTH are true: (a) a new Copilot review has been posted since the last push, AND (b) every CI check has reached a terminal state (pass or fail).** Acting on comments while CI is still running means you miss CI failures that need fixing in the same pass; acting before the review posts means you loop prematurely.
+
+Poll for both in one background loop. Capture the last-seen Copilot review timestamp as the baseline (so you detect the _new_ review, not a stale one), and treat `pending` / `queued` / `in_progress` as not-yet-terminal:
+
+```bash
+BASELINE="<last copilot review submitted_at, or the time of your last push>"
+review_done=""; ci_done=""
+for i in $(seq 1 60); do
+  if [[ -z "$review_done" ]]; then
+    latest=$(gh api repos/{owner}/{repo}/pulls/{pr}/reviews --paginate \
+      | jq -r '[.[] | select(.user.login == "copilot-pull-request-reviewer[bot]")] | sort_by(.submitted_at) | last | .submitted_at')
+    [[ -n "$latest" && "$latest" > "$BASELINE" ]] && review_done="$latest"
+  fi
+  if [[ -z "$ci_done" ]]; then
+    pend=$(gh pr checks {pr} 2>&1 | grep -cE "	pending	|	queued	|	in_progress	")
+    [[ "$pend" -eq 0 ]] && ci_done="yes"
+  fi
+  [[ -n "$review_done" && -n "$ci_done" ]] && break
+  sleep 40
+done
+```
+
+Run this as a background command so the session isn't blocked. When it returns, you have the new review's comments AND the final CI status together — fix both in the same round. (`copilot-pull-request-reviewer[bot]` is the review author login; review _comments_ show as `Copilot` — match on either.)
 
 ## Phase 1: CI Check
+
+Phase 0 already waited for CI to reach a terminal state — now enumerate the final result.
 
 ```bash
 gh pr checks <pr-number>
 ```
 
-**Enumerate every check by name with pass/fail/pending — do not say "CI is running" or "CI looks good".** Report in a table so a missed failure (e.g., codecov patch coverage) cannot hide inside "running":
+**Enumerate every check by name with pass/fail — do not say "CI is running" or "CI looks good".** Report in a table so a missed failure (e.g., codecov patch coverage) cannot hide inside "running":
 
 | Check           | Status       | Notes                     |
 | --------------- | ------------ | ------------------------- |
@@ -37,14 +67,14 @@ gh pr checks <pr-number>
 | Vercel preview  | PASS/FAIL/⏳ | —                         |
 | (any other)     | PASS/FAIL/⏳ | —                         |
 
-If any check is FAIL, fix it locally before touching review comments:
+If any check is FAIL, it is part of **this round's work** — fix it in the same pass as the review comments (don't push a comments-only fix and leave CI red). For a failing check, fetch the failing logs to find the real cause before guessing:
 
 - Lint: `pnpm lint`
 - Types: `pnpm typecheck`
-- Tests: `pnpm test`
+- Tests: `pnpm test` — for a specific shard/file, `gh run view <run-id> --log-failed` (or `gh api repos/{owner}/{repo}/actions/jobs/<job-id>/logs`) to see the exact failing test, then reproduce locally with a scoped `jest <path>`
 - Codecov failures: often fixed by adding tests for uncovered lines on the changed patch
 
-Push fixes. CI re-runs automatically. Re-enumerate after each push — never assume a previous failure is fixed without confirming status has turned to PASS.
+Combine CI fixes and review-comment fixes into the round's commit(s). After pushing, **Phase 0 runs again** — re-enumerate CI and never assume a previous failure is fixed without confirming the status turned to PASS.
 
 ## Phase 2: Fetch Review Comments
 
@@ -139,7 +169,7 @@ Wait for the user's decision on each group before presenting the next.
 
 After all groups are reviewed with the user:
 
-1. Implement all approved fixes
+1. Implement all approved fixes — **review comments AND any CI failures from Phase 1**, in the same round.
 2. Use parallel subagents for independent fix groups when possible
 3. Run verification:
 
@@ -149,7 +179,14 @@ pnpm lint && pnpm typecheck && pnpm test
 
 4. Fix any test/type failures caused by the changes
 5. Commit with a descriptive message referencing the review round
-6. Push to the PR branch
+6. **Re-check for new comments before pushing.** Between when the round's comments were fetched and now, the reviewer (or a human) may have posted more. Re-run the Copilot-review check from Phase 0; if a newer review exists, fetch and fold its comments into this round before pushing rather than pushing and looping again:
+
+```bash
+gh api repos/{owner}/{repo}/pulls/{pr}/reviews --paginate \
+  | jq -r '[.[] | select(.user.login == "copilot-pull-request-reviewer[bot]")] | sort_by(.submitted_at) | last | .submitted_at'
+```
+
+7. Push to the PR branch. (Phase 0's wait then runs again for the next round.)
 
 ## Phase 5: Reply to Every Comment
 
@@ -237,26 +274,23 @@ gh api repos/{owner}/{repo}/pulls/{pr}/reviews \
 
 If the PR has other configured reviewers (Vercel Agent, humans), note their status but don't block on them — only Copilot is waited on.
 
-## Phase 8: Wait for Review
+## Phase 8: Wait for Review AND CI
 
-Poll for the Copilot review to complete:
+This is **Phase 0 again** for the next round — after requesting re-review, wait until BOTH a new Copilot review is posted AND CI re-runs to a terminal state (the push in Phase 4 re-triggers CI). Use the same combined background poll from Phase 0, with the baseline set to the previous Copilot review timestamp.
 
-```bash
-# Check every 60 seconds for up to 10 minutes
-gh api repos/{owner}/{repo}/pulls/{pr}/reviews \
-  | jq '[.[] | select(.user.login == "copilot-pull-request-reviewer[bot]")] | sort_by(.submitted_at) | last | {state: .state, submitted: .submitted_at}'
-```
+- New review state `COMMENTED` or `APPROVED` **and** CI terminal — round is ready to evaluate
+- New review has actionable comments **or** CI is red — **loop back to Phase 1** (fix CI failures and comments together)
+- New review has zero actionable comments **and** CI is green — **Done** (see below)
+- No new review after the poll horizon — timeout, notify the user
 
-- If review state is `COMMENTED` or `APPROVED` — review is done
-- If no new review appears after 10 minutes — timeout, notify the user
-- If review has new comments — **loop back to Phase 2**
+Run the poll as a background command so the session isn't blocked while waiting.
 
 ## Done When
 
 All of these must be true simultaneously:
 
-- [ ] All CI checks green
+- [ ] All CI checks green (every check enumerated by name, terminal, PASS)
 - [ ] Zero unreplied reviewer comments
 - [ ] Zero unresolved review threads
-- [ ] Latest Copilot review has no new actionable comments
+- [ ] Latest Copilot review (waited for in Phase 8) has no new actionable comments
 - [ ] `pnpm lint && pnpm typecheck && pnpm test` all pass locally
