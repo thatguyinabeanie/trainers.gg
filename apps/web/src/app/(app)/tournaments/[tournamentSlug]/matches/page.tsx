@@ -1,10 +1,12 @@
 import { cacheTag, cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-// Service-role client: reads tournaments/tournament_phases/tournament_rounds/
-// tournament_matches — all revoke-set tables. Anon SELECT on these is revoked
-// in the Phase 2 Step-4 migration; service-role is a constant identity — safe
-// inside 'use cache' scopes.
+// Service-role client. `tournaments`/`tournament_phases` had anon+authenticated
+// SELECT revoked in the Phase 2 Step-4 migration; `tournament_rounds` and
+// `tournament_matches` are in the realtime-six carve-out (authenticated SELECT
+// retained for live subscriptions) but their ANON SELECT is still revoked. This
+// is an anon-reachable SSR/cached read, so anon has no SELECT on any of them —
+// service-role is a constant identity, safe inside 'use cache' scopes.
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
   getTournamentBySlug,

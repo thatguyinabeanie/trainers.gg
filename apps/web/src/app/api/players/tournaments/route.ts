@@ -44,7 +44,12 @@ export async function GET(request: Request) {
 
   try {
     const supabase = createServiceRoleClient();
-    const history = await getPlayerTournamentHistory(supabase, altIds);
+    // publicOnly: true — this route uses service-role (RLS bypassed), so we
+    // explicitly restrict team_pokemon reads to public teams to prevent species
+    // leaks for teams the player has marked private.
+    const history = await getPlayerTournamentHistory(supabase, altIds, {
+      publicOnly: true,
+    });
     return NextResponse.json(history);
   } catch (error) {
     console.error("Failed to fetch tournament history:", error);

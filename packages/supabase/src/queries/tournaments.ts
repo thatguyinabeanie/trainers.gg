@@ -2477,7 +2477,11 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
  */
 export async function getPlayerTournamentHistory(
   supabase: TypedClient,
-  altIds: number[]
+  altIds: number[],
+  // publicOnly: true for service-role public callers (RLS bypassed) — restricts
+  // team_pokemon reads to teams where is_public = true to prevent species leaks.
+  // Authed browser callers leave this false and rely on RLS for own-team access.
+  options: { publicOnly?: boolean } = {}
 ) {
   if (altIds.length === 0) return [];
 
@@ -2556,30 +2560,48 @@ export async function getPlayerTournamentHistory(
   const teamPokemonMap = new Map<number, string[]>();
 
   if (registrationTeamIds.length > 0) {
-    const { data: teamPokemon, error: teamPokemonError } = await supabase
-      .from("team_pokemon")
-      .select(
+    // When publicOnly is set (service-role callers with RLS bypassed), restrict
+    // team_pokemon reads to public teams only to prevent species leaks for
+    // private teams. Authed browser callers pass publicOnly=false and rely on RLS.
+    let allowedTeamIds = registrationTeamIds;
+    if (options.publicOnly) {
+      const { data: publicTeams, error: publicTeamsError } = await supabase
+        .from("teams")
+        .select("id")
+        .in("id", registrationTeamIds)
+        .eq("is_public", true);
+      if (publicTeamsError) throw publicTeamsError;
+      allowedTeamIds = (publicTeams ?? []).map((t) => t.id);
+    }
+
+    if (allowedTeamIds.length > 0) {
+      const { data: teamPokemon, error: teamPokemonError } = await supabase
+        .from("team_pokemon")
+        .select(
+          `
+          team_id,
+          team_position,
+          pokemon:pokemon!team_pokemon_pokemon_id_fkey(species)
         `
-        team_id,
-        team_position,
-        pokemon:pokemon!team_pokemon_pokemon_id_fkey(species)
-      `
-      )
-      .in("team_id", registrationTeamIds)
-      .order("team_position", { ascending: true });
+        )
+        .in("team_id", allowedTeamIds)
+        .order("team_position", { ascending: true });
 
-    if (teamPokemonError) throw teamPokemonError;
+      if (teamPokemonError) throw teamPokemonError;
 
-    for (const tp of teamPokemon ?? []) {
-      const existing = teamPokemonMap.get(tp.team_id) ?? [];
-      const species =
-        tp.pokemon && typeof tp.pokemon === "object" && "species" in tp.pokemon
-          ? (tp.pokemon.species as string)
-          : "";
-      if (species) {
-        existing.push(species);
+      for (const tp of teamPokemon ?? []) {
+        const existing = teamPokemonMap.get(tp.team_id) ?? [];
+        const species =
+          tp.pokemon &&
+          typeof tp.pokemon === "object" &&
+          "species" in tp.pokemon
+            ? (tp.pokemon.species as string)
+            : "";
+        if (species) {
+          existing.push(species);
+        }
+        teamPokemonMap.set(tp.team_id, existing);
       }
-      teamPokemonMap.set(tp.team_id, existing);
     }
   }
 
