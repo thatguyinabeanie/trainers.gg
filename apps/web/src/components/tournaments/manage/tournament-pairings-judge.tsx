@@ -44,6 +44,7 @@ import {
   AlertCircle,
   Clock,
   Circle,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -287,12 +288,26 @@ export function TournamentPairingsJudge({
 
   // Fetch all pairings data via the auth-gated API route (S-bucket safe).
   // `staleTime: 0` so realtime-triggered refetches always get fresh data.
-  const { data: pairings } = useApiQuery<TournamentPairingsData>(
+  // useApiQuery unwraps ActionResult<T>, so the fetcher must wrap the raw JSON
+  // response (the route returns the plain pairings object) into ActionResult —
+  // otherwise `result.success` is undefined and the query always throws.
+  const {
+    data: pairings,
+    isLoading: pairingsLoading,
+    error: pairingsError,
+  } = useApiQuery<TournamentPairingsData>(
     pairingsQueryKey,
-    () =>
-      fetch(`/api/v1/tournaments/${tournament.id}/pairings`).then((r) =>
-        r.json()
-      ),
+    async () => {
+      const res = await fetch(`/api/v1/tournaments/${tournament.id}/pairings`);
+      if (!res.ok) {
+        return {
+          success: false as const,
+          error: `Failed to load pairings (HTTP ${res.status})`,
+        };
+      }
+      const data = (await res.json()) as TournamentPairingsData;
+      return { success: true as const, data };
+    },
     { staleTime: 0 }
   );
 
@@ -508,6 +523,37 @@ export function TournamentPairingsJudge({
   const currentRound = roundsForSelectedPhase?.find(
     (r) => r.id === selectedRoundId
   );
+
+  // While the pairings query is loading or errored, show those states instead
+  // of the "No phases configured" empty state — otherwise a pending/failed
+  // fetch is indistinguishable from a tournament that genuinely has no phases.
+  if (pairingsLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Pairings</CardTitle>
+          <CardDescription className="flex items-center gap-2">
+            <Loader2 className="size-4 animate-spin" />
+            Loading pairings…
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  if (pairingsError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Pairings</CardTitle>
+          <CardDescription className="flex items-center gap-2">
+            <AlertCircle className="text-destructive size-4" />
+            Failed to load pairings. Try refreshing the page.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   if (!phases || phases.length === 0) {
     return (

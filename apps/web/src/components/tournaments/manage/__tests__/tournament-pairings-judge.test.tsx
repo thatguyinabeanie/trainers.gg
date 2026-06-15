@@ -14,10 +14,8 @@ jest.mock("next/navigation", () => ({
 
 // Captures the postgres_changes handlers registered per channel so tests can
 // fire realtime payloads and assert the cache effect. Keyed by channel name.
-const channelHandlers: Record<
-  string,
-  (payload: { new?: unknown }) => void
-> = {};
+const channelHandlers: Record<string, (payload: { new?: unknown }) => void> =
+  {};
 let currentChannelName = "";
 
 const mockChannel = {
@@ -224,6 +222,48 @@ describe("TournamentPairingsJudge", () => {
 
       expect(screen.getByText("Pairings")).toBeInTheDocument();
       expect(screen.getByText(/No phases configured/)).toBeInTheDocument();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Loading and Error states — must NOT show "No phases configured" while the
+  // pairings query is pending or errored (otherwise a slow/failed fetch is
+  // indistinguishable from a tournament that genuinely has no phases).
+  // -------------------------------------------------------------------------
+
+  describe("Loading and Error States", () => {
+    it("shows a loading state while the pairings query is pending", () => {
+      mockUseApiQuery.mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isError: false,
+        error: null,
+        refetch: jest.fn(),
+      });
+
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      expect(screen.getByText(/Loading pairings/)).toBeInTheDocument();
+      expect(
+        screen.queryByText(/No phases configured/)
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows an error state when the pairings query fails", () => {
+      mockUseApiQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: new Error("Failed to load pairings (HTTP 500)"),
+        refetch: jest.fn(),
+      });
+
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      expect(screen.getByText(/Failed to load pairings/)).toBeInTheDocument();
+      expect(
+        screen.queryByText(/No phases configured/)
+      ).not.toBeInTheDocument();
     });
   });
 
