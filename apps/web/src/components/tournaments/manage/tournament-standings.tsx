@@ -1,8 +1,12 @@
 "use client";
 
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+
 import { getCoachBadges } from "@trainers/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
+
+import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import { type ActionResult } from "@trainers/validators";
 import {
   Card,
@@ -66,6 +70,8 @@ async function fetchTournamentPlayerStats(
 }
 
 export function TournamentStandings({ tournament }: TournamentStandingsProps) {
+  const supabase = useSupabase();
+
   // Fetch player stats for standings via the auth-gated public API.
   const {
     data: playerStats,
@@ -86,10 +92,12 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
     .map((player) => player.alt?.id)
     .filter((id): id is number => id != null);
 
-  const { data: coachBadges } = useSupabaseQuery(
-    (supabase) => getCoachBadges(supabase, altIds),
-    [JSON.stringify(altIds)]
-  );
+  const { data: coachBadges } = useQuery({
+    queryKey: queryKeys.tournament.coachBadges(altIds),
+    queryFn: () => getCoachBadges(supabase, altIds),
+    enabled: altIds.length > 0,
+    staleTime: 30_000,
+  });
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -136,9 +144,7 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
       <Alert variant="destructive">
         <AlertTriangle className="size-4" />
         <AlertDescription>
-          {error instanceof Error
-            ? error.message
-            : "Failed to load standings."}
+          {error instanceof Error ? error.message : "Failed to load standings."}
         </AlertDescription>
       </Alert>
     );

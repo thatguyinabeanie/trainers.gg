@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,8 +11,11 @@ import {
   type SocialLinkPlatform,
 } from "@trainers/validators";
 import { generateSlug } from "@trainers/utils";
-import { useSupabaseQuery } from "@/lib/supabase";
 import { getMyOrganizationRequest } from "@trainers/supabase";
+
+import { useSupabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -108,10 +112,20 @@ function getCooldownEndDate(reviewedAt: string): string {
 // ---------------------------------------------------------------------------
 
 export default function DashboardCommunityRequestPage() {
-  const { data: request, isLoading } = useSupabaseQuery(
-    (client) => getMyOrganizationRequest(client),
-    []
-  );
+  const supabase = useSupabase();
+  const { user } = useAuth();
+  const { data: request, isLoading } = useQuery({
+    queryKey: queryKeys.me.organizationRequest(user?.id ?? ""),
+    queryFn: () => getMyOrganizationRequest(supabase),
+    staleTime: 30_000,
+    enabled: Boolean(user?.id),
+  });
+
+  // When the query is disabled (user?.id not yet resolved), TanStack v5 keeps
+  // status:'pending' so isLoading stays true. Gate the skeleton on user?.id
+  // being present so a brief auth-resolution delay doesn't leave a permanent
+  // spinner — the form renders immediately when there's no authenticated user.
+  const loading = isLoading && Boolean(user?.id);
 
   const showForm =
     !request ||
@@ -123,7 +137,7 @@ export default function DashboardCommunityRequestPage() {
       <PageHeader title="Request a Community" />
       <DashboardContent>
         <div className="w-full max-w-[520px]">
-          {isLoading ? (
+          {loading ? (
             <RequestPageSkeleton />
           ) : showStatus && request ? (
             <RequestStatus request={request} />

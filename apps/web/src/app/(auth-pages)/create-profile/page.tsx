@@ -1,19 +1,23 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
+
+import { ensureAlt } from "@trainers/supabase";
+
 import { useAuth } from "@/components/auth/auth-provider";
 import { Button } from "@/components/ui/button";
-import { ensureAlt } from "@trainers/supabase";
-import { useSupabaseMutation } from "@/lib/supabase";
+import { useSupabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 function CreateProfileForm() {
   const router = useRouter();
+  const supabase = useSupabase();
   const { user, loading, refetchUser } = useAuth();
-  const { mutateAsync: ensureAltMutation, isLoading: isSubmitting } =
-    useSupabaseMutation((supabase, _args: Record<string, never>) =>
-      ensureAlt(supabase)
-    );
+  const { mutateAsync: ensureAltMutation, isPending: isSubmitting } =
+    useMutation({
+      mutationFn: () => ensureAlt(supabase),
+    });
 
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +36,7 @@ function CreateProfileForm() {
     setError(null);
 
     try {
-      await ensureAltMutation({});
+      await ensureAltMutation();
       await refetchUser();
       router.push("/");
     } catch (err) {

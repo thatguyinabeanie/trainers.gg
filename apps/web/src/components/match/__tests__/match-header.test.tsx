@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   MatchHeader,
   type PlayerInfo,
@@ -23,11 +24,16 @@ jest.mock("next/link", () => {
   return MockLink;
 });
 
-// MatchHeader fetches coach badges via useSupabaseQuery (which calls the
-// browser Supabase client). Stub the hook so the badge query is a no-op and
-// no real client is created — the badge simply doesn't render.
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn().mockReturnValue({ data: undefined }),
+// MatchHeader fetches coach badges via useQuery (which calls the browser
+// Supabase client). Stub getCoachBadges so no real client is created.
+const mockGetCoachBadges = jest.fn();
+
+jest.mock("@trainers/supabase", () => ({
+  getCoachBadges: (...args: unknown[]) => mockGetCoachBadges(...args),
+}));
+
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({}),
 }));
 
 const mockSubmitGameSelection = jest.fn();
@@ -52,6 +58,22 @@ jest.mock("sonner", () => ({
     error: (...args: unknown[]) => mockToastError(...args),
   },
 }));
+
+// ===========================================================================
+// Helpers
+// ===========================================================================
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
 
 // ===========================================================================
 // Fixtures
@@ -109,6 +131,8 @@ const defaultProps = {
 describe("MatchHeader", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Return an empty Map so the badge query succeeds without errors
+    mockGetCoachBadges.mockResolvedValue(new Map());
   });
 
   // =========================================================================
@@ -117,48 +141,61 @@ describe("MatchHeader", () => {
 
   describe("metadata row", () => {
     it("shows round number when provided", () => {
-      render(<MatchHeader {...defaultProps} />);
+      render(<MatchHeader {...defaultProps} />, { wrapper: createWrapper() });
       expect(screen.getByText("Round 2")).toBeInTheDocument();
     });
 
     it("does not show round number when null", () => {
-      render(<MatchHeader {...defaultProps} roundNumber={null} />);
+      render(<MatchHeader {...defaultProps} roundNumber={null} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.queryByText(/Round/)).not.toBeInTheDocument();
     });
 
     it("shows table number when provided", () => {
-      render(<MatchHeader {...defaultProps} />);
+      render(<MatchHeader {...defaultProps} />, { wrapper: createWrapper() });
       expect(screen.getByText("Table 5")).toBeInTheDocument();
     });
 
     it("does not show table number when null", () => {
-      render(<MatchHeader {...defaultProps} tableNumber={null} />);
+      render(<MatchHeader {...defaultProps} tableNumber={null} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.queryByText(/Table/)).not.toBeInTheDocument();
     });
 
     it("shows Judge Requested badge when staffRequested is true", () => {
-      render(<MatchHeader {...defaultProps} staffRequested={true} />);
+      render(<MatchHeader {...defaultProps} staffRequested={true} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.getByText("Judge Requested")).toBeInTheDocument();
     });
 
     it("does not show Judge Requested badge when false", () => {
-      render(<MatchHeader {...defaultProps} staffRequested={false} />);
+      render(<MatchHeader {...defaultProps} staffRequested={false} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.queryByText("Judge Requested")).not.toBeInTheDocument();
     });
 
     it("shows Judge badge when isStaff is true", () => {
-      render(<MatchHeader {...defaultProps} isStaff={true} />);
+      render(<MatchHeader {...defaultProps} isStaff={true} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.getByText("Judge")).toBeInTheDocument();
     });
 
     it("does not show Judge badge for non-staff", () => {
-      render(<MatchHeader {...defaultProps} isStaff={false} />);
+      render(<MatchHeader {...defaultProps} isStaff={false} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.queryByText("Judge")).not.toBeInTheDocument();
     });
 
     it("shows Reset Match button for staff when match is active", () => {
       render(
-        <MatchHeader {...defaultProps} isStaff={true} matchStatus="active" />
+        <MatchHeader {...defaultProps} isStaff={true} matchStatus="active" />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.getByRole("button", { name: /Reset Match/i })
@@ -166,7 +203,9 @@ describe("MatchHeader", () => {
     });
 
     it("does not show Reset Match button for non-staff", () => {
-      render(<MatchHeader {...defaultProps} isStaff={false} />);
+      render(<MatchHeader {...defaultProps} isStaff={false} />, {
+        wrapper: createWrapper(),
+      });
       expect(
         screen.queryByRole("button", { name: /Reset Match/i })
       ).not.toBeInTheDocument();
@@ -174,7 +213,8 @@ describe("MatchHeader", () => {
 
     it("does not show Reset Match button when match is not active", () => {
       render(
-        <MatchHeader {...defaultProps} isStaff={true} matchStatus="pending" />
+        <MatchHeader {...defaultProps} isStaff={true} matchStatus="pending" />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.queryByRole("button", { name: /Reset Match/i })
@@ -188,13 +228,13 @@ describe("MatchHeader", () => {
 
   describe("player cards", () => {
     it("renders both player usernames", () => {
-      render(<MatchHeader {...defaultProps} />);
+      render(<MatchHeader {...defaultProps} />, { wrapper: createWrapper() });
       expect(screen.getByText("ash_ketchum")).toBeInTheDocument();
       expect(screen.getByText("misty")).toBeInTheDocument();
     });
 
     it("renders W-L stats as badges", () => {
-      render(<MatchHeader {...defaultProps} />);
+      render(<MatchHeader {...defaultProps} />, { wrapper: createWrapper() });
       // opponent: 3W-1L, my: 2W-2L
       expect(screen.getByText("3W-1L")).toBeInTheDocument();
       expect(screen.getByText("2W-2L")).toBeInTheDocument();
@@ -209,19 +249,20 @@ describe("MatchHeader", () => {
             username: "misty",
             in_game_name: "MISTY_IGN",
           })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText("MISTY_IGN")).toBeInTheDocument();
     });
 
     it("does not render in_game_name for my player (right side, showIGN=false)", () => {
-      render(<MatchHeader {...defaultProps} />);
+      render(<MatchHeader {...defaultProps} />, { wrapper: createWrapper() });
       // myPlayer has in_game_name "ASH123" but showIGN=false for right side
       expect(screen.queryByText("ASH123")).not.toBeInTheDocument();
     });
 
     it("renders profile link for player with handle", () => {
-      render(<MatchHeader {...defaultProps} />);
+      render(<MatchHeader {...defaultProps} />, { wrapper: createWrapper() });
       const ashLink = screen.getByRole("link", { name: "ash_ketchum" });
       expect(ashLink).toHaveAttribute("href", "/profile/ash");
     });
@@ -231,7 +272,8 @@ describe("MatchHeader", () => {
         <MatchHeader
           {...defaultProps}
           opponent={makePlayer({ id: 2, username: "nohandle", handle: null })}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText("nohandle")).toBeInTheDocument();
       expect(
@@ -240,8 +282,10 @@ describe("MatchHeader", () => {
     });
 
     it("renders nothing for null player (bye slot)", () => {
-      render(<MatchHeader {...defaultProps} opponent={null} />);
-      // opponent is null, should not crash and no misty text
+      render(<MatchHeader {...defaultProps} opponent={null} />, {
+        wrapper: createWrapper(),
+      });
+      // opponent is null — no misty text
       expect(screen.queryByText("misty")).not.toBeInTheDocument();
     });
   });
@@ -252,17 +296,23 @@ describe("MatchHeader", () => {
 
   describe("score display", () => {
     it("shows Bo3 label", () => {
-      render(<MatchHeader {...defaultProps} bestOf={3} />);
+      render(<MatchHeader {...defaultProps} bestOf={3} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.getByText("Bo3")).toBeInTheDocument();
     });
 
     it("shows Bo5 label", () => {
-      render(<MatchHeader {...defaultProps} bestOf={5} />);
+      render(<MatchHeader {...defaultProps} bestOf={5} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.getByText("Bo5")).toBeInTheDocument();
     });
 
     it("renders current score numbers", () => {
-      render(<MatchHeader {...defaultProps} myWins={2} opponentWins={1} />);
+      render(<MatchHeader {...defaultProps} myWins={2} opponentWins={1} />, {
+        wrapper: createWrapper(),
+      });
       // ScoreDisplay renders opponentWins on left, myWins on right
       expect(screen.getByText("1")).toBeInTheDocument();
       expect(screen.getByText("2")).toBeInTheDocument();
@@ -275,14 +325,17 @@ describe("MatchHeader", () => {
 
   describe("match winner trophy", () => {
     it("does not show trophy when no one has won", () => {
-      render(<MatchHeader {...defaultProps} myWins={0} opponentWins={0} />);
+      render(<MatchHeader {...defaultProps} myWins={0} opponentWins={0} />, {
+        wrapper: createWrapper(),
+      });
       expect(document.querySelector(".lucide-trophy")).not.toBeInTheDocument();
     });
 
     it("shows trophy on winner side when match is decided", () => {
       // 2 wins needed in Bo3; opponent has 2 wins → opponent wins
-      render(<MatchHeader {...defaultProps} myWins={0} opponentWins={2} />);
-      // Trophy badge appears for the winner's card
+      render(<MatchHeader {...defaultProps} myWins={0} opponentWins={2} />, {
+        wrapper: createWrapper(),
+      });
       expect(document.querySelector(".lucide-trophy")).toBeInTheDocument();
     });
   });
@@ -311,7 +364,9 @@ describe("MatchHeader", () => {
     };
 
     it("does not render game strip when games is null", () => {
-      render(<MatchHeader {...defaultProps} games={null} />);
+      render(<MatchHeader {...defaultProps} games={null} />, {
+        wrapper: createWrapper(),
+      });
       // No game number labels rendered
       expect(screen.queryByText(/^1$/)).not.toBeInTheDocument();
     });
@@ -322,7 +377,8 @@ describe("MatchHeader", () => {
           {...defaultProps}
           games={[pendingGame]}
           gamesLoading={true}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(document.querySelector(".animate-spin")).toBeInTheDocument();
     });
@@ -333,7 +389,8 @@ describe("MatchHeader", () => {
           {...defaultProps}
           games={[pendingGame, { ...pendingGame, id: 2, game_number: 2 }]}
           gamesLoading={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Game numbers are shown on nodes
       expect(screen.getByText("1")).toBeInTheDocument();
@@ -348,7 +405,8 @@ describe("MatchHeader", () => {
           isParticipant={true}
           games={[pendingGame]}
           gamesLoading={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByRole("button", { name: /Won/i })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Lost/i })).toBeInTheDocument();
@@ -363,7 +421,8 @@ describe("MatchHeader", () => {
           isStaff={true}
           games={[pendingGame]}
           gamesLoading={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.queryByRole("button", { name: /Won/i })
@@ -381,7 +440,8 @@ describe("MatchHeader", () => {
           isParticipant={true}
           games={[pendingGame]}
           gamesLoading={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.click(screen.getByRole("button", { name: /Won/i }));
@@ -406,7 +466,8 @@ describe("MatchHeader", () => {
           isParticipant={true}
           games={[pendingGame]}
           gamesLoading={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.click(screen.getByRole("button", { name: /Lost/i }));
@@ -434,7 +495,8 @@ describe("MatchHeader", () => {
           isParticipant={true}
           games={[pendingGame]}
           gamesLoading={false}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       await user.click(screen.getByRole("button", { name: /Won/i }));
@@ -458,7 +520,9 @@ describe("MatchHeader", () => {
         winner_alt_id: 10,
         is_no_show: true,
       };
-      render(<MatchHeader {...defaultProps} games={[noShowGame]} />);
+      render(<MatchHeader {...defaultProps} games={[noShowGame]} />, {
+        wrapper: createWrapper(),
+      });
       expect(
         screen.getByText(/awarded due to opponent no-show/i)
       ).toBeInTheDocument();
@@ -472,7 +536,9 @@ describe("MatchHeader", () => {
         winner_alt_id: 10,
         is_no_show: true,
       };
-      render(<MatchHeader {...defaultProps} games={[noShowGame]} />);
+      render(<MatchHeader {...defaultProps} games={[noShowGame]} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.getByText(/Game 2 was awarded/i)).toBeInTheDocument();
     });
 
@@ -484,7 +550,9 @@ describe("MatchHeader", () => {
         winner_alt_id: 10,
         is_no_show: false,
       };
-      render(<MatchHeader {...defaultProps} games={[normalGame]} />);
+      render(<MatchHeader {...defaultProps} games={[normalGame]} />, {
+        wrapper: createWrapper(),
+      });
       expect(
         screen.queryByText(/awarded due to opponent no-show/i)
       ).not.toBeInTheDocument();
@@ -506,7 +574,9 @@ describe("MatchHeader", () => {
     };
 
     it("shows dispute alert when a game is disputed", () => {
-      render(<MatchHeader {...defaultProps} games={[disputedGame]} />);
+      render(<MatchHeader {...defaultProps} games={[disputedGame]} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.getByText(/Game 1 disputed/i)).toBeInTheDocument();
     });
 
@@ -517,13 +587,16 @@ describe("MatchHeader", () => {
         status: "agreed",
         winner_alt_id: 10,
       };
-      render(<MatchHeader {...defaultProps} games={[normalGame]} />);
+      render(<MatchHeader {...defaultProps} games={[normalGame]} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.queryByText(/disputed/i)).not.toBeInTheDocument();
     });
 
     it("shows staff resolution controls for disputed games when isStaff=true", () => {
       render(
-        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />
+        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />,
+        { wrapper: createWrapper() }
       );
       // The Set button should appear for staff
       expect(
@@ -533,7 +606,12 @@ describe("MatchHeader", () => {
 
     it("does not show staff resolution controls for non-staff", () => {
       render(
-        <MatchHeader {...defaultProps} isStaff={false} games={[disputedGame]} />
+        <MatchHeader
+          {...defaultProps}
+          isStaff={false}
+          games={[disputedGame]}
+        />,
+        { wrapper: createWrapper() }
       );
       expect(
         screen.queryByRole("button", { name: /^Set$/i })
@@ -542,13 +620,15 @@ describe("MatchHeader", () => {
   });
 
   // =========================================================================
-  // Reset Match button
+  // Reset Match button (two-click confirmation)
   // =========================================================================
 
   describe("Reset Match button (two-click confirmation)", () => {
     it("shows 'Confirm Reset' on second click", async () => {
       const user = userEvent.setup();
-      render(<MatchHeader {...defaultProps} isStaff={true} />);
+      render(<MatchHeader {...defaultProps} isStaff={true} />, {
+        wrapper: createWrapper(),
+      });
 
       await user.click(screen.getByRole("button", { name: /Reset Match/i }));
 
@@ -567,7 +647,8 @@ describe("MatchHeader", () => {
           {...defaultProps}
           isStaff={true}
           onGameUpdated={onGameUpdated}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
 
       // First click: enters confirming state
@@ -589,7 +670,9 @@ describe("MatchHeader", () => {
         error: "Reset failed",
       });
 
-      render(<MatchHeader {...defaultProps} isStaff={true} />);
+      render(<MatchHeader {...defaultProps} isStaff={true} />, {
+        wrapper: createWrapper(),
+      });
 
       await user.click(screen.getByRole("button", { name: /Reset Match/i }));
       await user.click(screen.getByRole("button", { name: /Confirm Reset/i }));
@@ -616,14 +699,16 @@ describe("MatchHeader", () => {
 
     it("shows disputed alert with game number for staff", () => {
       render(
-        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />
+        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />,
+        { wrapper: createWrapper() }
       );
       expect(screen.getByText(/Game 1 disputed/)).toBeInTheDocument();
     });
 
     it("shows winner select dropdown and Set/Reset buttons for staff", () => {
       render(
-        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />
+        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />,
+        { wrapper: createWrapper() }
       );
       // Winner dropdown option
       expect(screen.getByText("Winner...")).toBeInTheDocument();
@@ -637,7 +722,12 @@ describe("MatchHeader", () => {
 
     it("does not show disputed section for non-staff", () => {
       render(
-        <MatchHeader {...defaultProps} isStaff={false} games={[disputedGame]} />
+        <MatchHeader
+          {...defaultProps}
+          isStaff={false}
+          games={[disputedGame]}
+        />,
+        { wrapper: createWrapper() }
       );
       // Disputed alert is visible to all but override controls are staff-only
       expect(screen.getByText(/Game 1 disputed/)).toBeInTheDocument();
@@ -646,7 +736,8 @@ describe("MatchHeader", () => {
 
     it("shows player names as override options for staff", () => {
       render(
-        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />
+        <MatchHeader {...defaultProps} isStaff={true} games={[disputedGame]} />,
+        { wrapper: createWrapper() }
       );
       // Player names appear in the winner select options
       const options = screen.getAllByRole("option");
@@ -671,7 +762,9 @@ describe("MatchHeader", () => {
     };
 
     it("renders resolved icon for self-correct game (not editing)", () => {
-      render(<MatchHeader {...defaultProps} games={[selfCorrectGame]} />);
+      render(<MatchHeader {...defaultProps} games={[selfCorrectGame]} />, {
+        wrapper: createWrapper(),
+      });
       // Self-correct renders as a resolved game with click-to-edit
       // The game number should appear
       expect(screen.getByText("2")).toBeInTheDocument();

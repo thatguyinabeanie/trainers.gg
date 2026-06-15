@@ -1,12 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
-import { getMatchGames, getMatchGamesForPlayer } from "@trainers/supabase";
-import type { TypedSupabaseClient } from "@trainers/supabase";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSupabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
+import {
+  getMatchGames,
+  getMatchGamesForPlayer,
+  getMatchMessages,
+} from "@trainers/supabase";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Users, MessageSquare } from "lucide-react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+
+import { queryKeys } from "@/lib/query-keys";
+import { upsertById, removeById } from "./realtime-helpers";
 
 import {
   MatchHeader,
@@ -24,6 +32,22 @@ import { resolveHeaderPerspective } from "./match-perspective";
 // =============================================================================
 // Types
 // =============================================================================
+
+/**
+ * Raw `match_games` row as returned by `getMatchGames` /
+ * `getMatchGamesForPlayer`. Kept as an open record (the normalizer below picks
+ * the fields it needs) but always carries a numeric `id` so realtime cache
+ * merges can key on it.
+ */
+type GameRow = Record<string, unknown> & { id: number };
+
+/**
+ * Single `match_messages` row (with joined alt) as returned by
+ * `getMatchMessages`. Derived from the query so the shape stays in sync.
+ */
+export type MessageRow = NonNullable<
+  Awaited<ReturnType<typeof getMatchMessages>>
+>[number];
 
 export interface MatchPageClientProps {
   matchId: number;
@@ -85,6 +109,7 @@ export function MatchPageClient({
   currentUserDisplayName,
 }: MatchPageClientProps) {
   const supabase = useSupabase();
+  const queryClient = useQueryClient();
   const [matchStatus, setMatchStatus] = useState(initialStatus);
   const [staffRequested, setStaffRequested] = useState(initialStaffRequested);
   const [player1CheckedIn, setPlayer1CheckedIn] = useState(
@@ -93,8 +118,6 @@ export function MatchPageClient({
   const [player2CheckedIn, setPlayer2CheckedIn] = useState(
     initialPlayer2CheckedIn
   );
-  const [gamesRefreshKey, setGamesRefreshKey] = useState(0);
-  const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
   // Perspective: participants see themselves on the right, staff see player2 on the right.
   // "swapped" means the current user is player2 (so we flip data to get myPlayer/opponent right).
@@ -159,22 +182,38 @@ export function MatchPageClient({
   };
 
   // ==========================================================================
-  // Fetch games
+  // Fetch games + messages (TanStack Query — realtime feeds these caches
+  // directly via setQueryData, so no refetch is needed on every event)
   // ==========================================================================
-  const gamesQueryFn = async (
-    client: TypedSupabaseClient
-  ): Promise<Record<string, unknown>[]> => {
-    if (isStaff) {
-      return getMatchGames(client, matchId);
-    }
-    return getMatchGamesForPlayer(client, matchId);
-  };
+  // Raw game rows are stored in the cache; realtime payloads are merged into
+  // this same shape and normalized to GameData below.
+  const { data: gamesRaw, isLoading: gamesLoading } = useQuery<
+    GameRow[],
+    Error
+  >({
+    queryKey: queryKeys.match.games(matchId),
+    queryFn: async () => {
+      const client = createClient();
+      const rows = isStaff
+        ? await getMatchGames(client, matchId)
+        : await getMatchGamesForPlayer(client, matchId);
+      return (rows ?? []) as GameRow[];
+    },
+  });
 
-  const {
-    data: gamesRaw,
-    isLoading: gamesLoading,
-    refetch: refetchGames,
-  } = useSupabaseQuery(gamesQueryFn, [matchId, gamesRefreshKey, isStaff]);
+  // Live chat messages. Lifted here (from MatchChat) so the realtime
+  // match_messages channel can push the inserted row straight into this cache.
+  const { data: messages, isLoading: messagesLoading } = useQuery<
+    MessageRow[],
+    Error
+  >({
+    queryKey: queryKeys.match.messages(matchId),
+    queryFn: async () => {
+      const client = createClient();
+      const rows = await getMatchMessages(client, matchId);
+      return (rows ?? []) as MessageRow[];
+    },
+  });
 
   // Normalize raw game data to GameData shape
   const games: GameData[] | null = gamesRaw
@@ -194,11 +233,15 @@ export function MatchPageClient({
 
   // ==========================================================================
   // Realtime subscriptions
+  //
+  // Each channel writes the pushed row straight into the TanStack cache via
+  // setQueryData (no refetch). The cache keys match the useQuery reads above
+  // (queryKeys.match.messages / .games), so the UI updates from the payload.
   // ==========================================================================
   useEffect(() => {
     const channels: RealtimeChannel[] = [];
 
-    // Match messages for live chat
+    // Match messages for live chat — append the inserted row to the cache.
     const msgChannel = supabase
       .channel(`match-messages-${matchId}`)
       .on(
@@ -209,8 +252,12 @@ export function MatchPageClient({
           table: "match_messages",
           filter: `match_id=eq.${matchId}`,
         },
-        () => {
-          setMessagesRefreshKey((k) => k + 1);
+        (payload) => {
+          const row = payload.new as MessageRow;
+          queryClient.setQueryData<MessageRow[]>(
+            queryKeys.match.messages(matchId),
+            (prev) => upsertById(prev, row)
+          );
         }
       )
       .subscribe((status, err) => {
@@ -219,7 +266,9 @@ export function MatchPageClient({
       });
     channels.push(msgChannel);
 
-    // Match status changes
+    // Match status changes — read payload.new straight into local state.
+    // Game rows are not part of this payload, so no games refetch is needed;
+    // game changes arrive on the match-games channel below.
     const matchChannel = supabase
       .channel(`match-status-${matchId}`)
       .on(
@@ -247,7 +296,6 @@ export function MatchPageClient({
           if (typeof newRow.player2_match_confirmed === "boolean") {
             setPlayer2CheckedIn(newRow.player2_match_confirmed);
           }
-          setGamesRefreshKey((k) => k + 1);
         }
       )
       .subscribe((status, err) => {
@@ -256,7 +304,8 @@ export function MatchPageClient({
       });
     channels.push(matchChannel);
 
-    // Game updates for live score changes
+    // Game updates for live score changes — merge the changed row into the
+    // games cache. INSERT/UPDATE upsert payload.new; DELETE removes payload.old.
     const gamesChannel = supabase
       .channel(`match-games-${matchId}`)
       .on(
@@ -267,8 +316,17 @@ export function MatchPageClient({
           table: "match_games",
           filter: `match_id=eq.${matchId}`,
         },
-        () => {
-          setGamesRefreshKey((k) => k + 1);
+        (payload) => {
+          queryClient.setQueryData<GameRow[]>(
+            queryKeys.match.games(matchId),
+            (prev) => {
+              if (payload.eventType === "DELETE") {
+                const oldId = (payload.old as { id?: number } | null)?.id;
+                return oldId == null ? (prev ?? []) : removeById(prev, oldId);
+              }
+              return upsertById(prev, payload.new as GameRow);
+            }
+          );
         }
       )
       .subscribe((status, err) => {
@@ -280,7 +338,7 @@ export function MatchPageClient({
     return () => {
       channels.forEach((ch) => supabase.removeChannel(ch));
     };
-  }, [supabase, matchId]);
+  }, [supabase, matchId, queryClient]);
 
   // ==========================================================================
   // Game score calculation
@@ -312,7 +370,12 @@ export function MatchPageClient({
     matchStatus,
     staffRequested,
     tournamentId,
-    messagesRefreshKey,
+    messages: messages ?? null,
+    messagesLoading,
+    onMessageSent: () =>
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.match.messages(matchId),
+      }),
     onStaffRequestChange: (requested: boolean) => {
       setStaffRequested(requested);
       broadcastJudgeRequest(requested);
@@ -438,7 +501,11 @@ export function MatchPageClient({
           isPlayer1={isPlayer1}
           tournamentId={tournamentId}
           userAltId={userAltId}
-          onGameUpdated={() => refetchGames()}
+          onGameUpdated={() =>
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.match.games(matchId),
+            })
+          }
         />
       </div>
 

@@ -21,11 +21,8 @@
  *   shared cache entry.
  *
  * CACHE-CONTROL header:
- *   `public, s-maxage=31536000, stale-while-revalidate=86400`
- *   Pairings are tag-invalidated by `CacheTags.tournament(id)` when rounds or
- *   matches change, so a CDN entry never needs a short time-based TTL. A long
- *   `s-maxage` (1y) lets Vercel's CDN serve cached responses indefinitely until
- *   a tag bust purges them.
+ *   `private, no-store`
+ *   Response includes staff_notes and private columns; pending column-allowlist fix.
  */
 
 import { NextResponse, type NextRequest } from "next/server";
@@ -40,11 +37,9 @@ import {
 import { getCachedTournamentPairings } from "@/lib/data/tournament-pairings-endpoint";
 
 /**
- * Cache-Control for tag-invalidated public data. Long shared-CDN TTL + SWR;
- * on-demand tag bust (via `invalidateTournamentCaches`) is the real refresh.
+ * Cache-Control for routes with private/PII columns pending allowlist fix.
  */
-const CACHE_CONTROL =
-  "public, s-maxage=31536000, stale-while-revalidate=86400";
+const CACHE_CONTROL = "private, no-store";
 
 export async function GET(
   request: NextRequest,

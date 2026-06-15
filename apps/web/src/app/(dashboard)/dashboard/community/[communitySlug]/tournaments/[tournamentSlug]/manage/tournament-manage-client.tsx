@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   getTournamentBySlug,
@@ -12,8 +14,8 @@ import {
 import { useApiQuery } from "@trainers/supabase/react-query";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { useSupabaseQuery } from "@/lib/supabase";
-import Link from "next/link";
+import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -69,6 +71,7 @@ export function TournamentManageClient({
 }: TournamentManageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const supabase = useSupabase();
   const [auditSheetOpen, setAuditSheetOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -84,7 +87,9 @@ export function TournamentManageClient({
   // Fetch the community that owns this tournament via the auth-gated
   // `/api/v1/communities/[slug]` route (Phase 2 S-bucket migration).
   // The route returns the community object directly (not ActionResult-wrapped).
-  type CommunityDetail = NonNullable<Awaited<ReturnType<typeof getCommunityBySlug>>>;
+  type CommunityDetail = NonNullable<
+    Awaited<ReturnType<typeof getCommunityBySlug>>
+  >;
 
   const {
     data: organization,
@@ -106,26 +111,19 @@ export function TournamentManageClient({
   );
 
   // Fetch tournament by slug
-  const tournamentQueryFn = (
-    supabase: Parameters<typeof getTournamentBySlug>[0]
-  ) => getTournamentBySlug(supabase, tournamentSlug);
-
-  const { data: tournament, isLoading: tournamentLoading } = useSupabaseQuery(
-    tournamentQueryFn,
-    [tournamentSlug]
-  );
+  const { data: tournament, isLoading: tournamentLoading } = useQuery({
+    queryKey: queryKeys.tournament.bySlug(tournamentSlug),
+    queryFn: () => getTournamentBySlug(supabase, tournamentSlug),
+    staleTime: 30_000,
+  });
 
   // Fetch tournament phases (depends on tournament being loaded)
-  const phasesQueryFn = (
-    supabase: Parameters<typeof getTournamentPhases>[0]
-  ) =>
-    tournament
-      ? getTournamentPhases(supabase, tournament.id)
-      : Promise.resolve([]);
-
-  const { data: phases = [] } = useSupabaseQuery(phasesQueryFn, [
-    tournament?.id,
-  ]);
+  const { data: phases = [] } = useQuery({
+    queryKey: queryKeys.tournament.phases(tournament?.id),
+    queryFn: () => getTournamentPhases(supabase, tournament!.id),
+    enabled: !!tournament?.id,
+    staleTime: 30_000,
+  });
 
   // Get active tab from URL or default to overview
   const tabParam = searchParams.get("tab");

@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { cacheTag, cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createStaticClient } from "@/lib/supabase/server";
+// Service-role client: reads alts (revoke-set table).
+// Anon SELECT on alts is revoked in the Phase 2 Step-4 migration;
+// service-role is a constant identity — safe inside a 'use cache' scope.
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getAltByHandle } from "@trainers/supabase/queries";
 import { CacheTags } from "@/lib/cache";
 import { PageContainer } from "@/components/layout/page-container";
@@ -26,7 +29,7 @@ async function getCachedAlt(altHandle: string) {
   "use cache";
   cacheTag(CacheTags.player(altHandle));
   cacheLife("max");
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getAltByHandle(supabase, altHandle);
 }
 

@@ -41,7 +41,13 @@ import { GET } from "../route";
 /** Minimal pairings fixture that mirrors the TournamentPairingsData shape. */
 const PAIRINGS_DATA = {
   phases: [
-    { id: 1, tournament_id: 42, phase_order: 1, format: "swiss", name: "Swiss" },
+    {
+      id: 1,
+      tournament_id: 42,
+      phase_order: 1,
+      format: "swiss",
+      name: "Swiss",
+    },
   ],
   allPhaseRounds: [
     [
@@ -136,7 +142,10 @@ beforeEach(() => {
 
 describe("param validation", () => {
   it("returns 404 when the id is non-numeric", async () => {
-    const response = await GET(makeRequest({ token: "valid" }), makeParams("abc"));
+    const response = await GET(
+      makeRequest({ token: "valid" }),
+      makeParams("abc")
+    );
 
     expect(response.status).toBe(404);
     expect(await getJson(response)).toEqual({ error: "Tournament not found" });
@@ -152,7 +161,10 @@ describe("param validation", () => {
   });
 
   it("returns 404 for a float id", async () => {
-    const response = await GET(makeRequest({ token: "valid" }), makeParams("1.5"));
+    const response = await GET(
+      makeRequest({ token: "valid" }),
+      makeParams("1.5")
+    );
 
     // Number("1.5") === 1.5, not NaN — Number.isNaN(1.5) is false.
     // So the route would proceed. The int guard is NaN-only.
@@ -236,14 +248,12 @@ describe("success", () => {
     expect(mockGetCachedTournamentPairings).toHaveBeenCalledWith(99);
   });
 
-  it("sets the tag-invalidated Cache-Control header on success", async () => {
+  it("sets private, no-store Cache-Control header on success", async () => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
 
     const response = await GET(makeRequest(), makeParams("42"));
 
-    expect(response.headers.get("cache-control")).toBe(
-      "public, s-maxage=31536000, stale-while-revalidate=86400"
-    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("returns empty phases/rounds when tournament has no phases yet", async () => {
@@ -282,8 +292,7 @@ const mockGetUnpairedCheckedInPlayers = jest.fn();
 const mockCreateServiceRoleClient = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
-  getTournamentPhases: (...args: unknown[]) =>
-    mockGetTournamentPhases(...args),
+  getTournamentPhases: (...args: unknown[]) => mockGetTournamentPhases(...args),
   getPhaseRoundsWithMatches: (...args: unknown[]) =>
     mockGetPhaseRoundsWithMatches(...args),
   getPhaseRoundsWithStats: (...args: unknown[]) =>
@@ -321,9 +330,9 @@ describe("getCachedTournamentPairings (fetcher)", () => {
   const actual = jest.requireActual(
     "@/lib/data/tournament-pairings-endpoint"
   ) as Record<string, (...args: unknown[]) => unknown>;
-  const getCachedTournamentPairings = actual[
-    "getCachedTournamentPairings"
-  ] as (tournamentId: number) => Promise<{
+  const getCachedTournamentPairings = actual["getCachedTournamentPairings"] as (
+    tournamentId: number
+  ) => Promise<{
     phases: unknown[];
     allPhaseRounds: unknown[][];
     roundsWithStats: unknown[];

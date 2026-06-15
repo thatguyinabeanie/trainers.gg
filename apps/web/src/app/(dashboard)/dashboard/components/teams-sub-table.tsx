@@ -11,20 +11,18 @@ import {
   History,
   AlertTriangle,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
-import {
-  type AltTeam,
-  getPlayerTournamentHistory,
-} from "@trainers/supabase";
-import type { TypedSupabaseClient } from "@trainers/supabase";
+import { type AltTeam, getPlayerTournamentHistory } from "@trainers/supabase";
+import { useApiQuery } from "@trainers/supabase/react-query";
 import { type ActionResult } from "@trainers/validators";
 import { formatShortDate } from "@trainers/utils";
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { useApiQuery } from "@trainers/supabase/react-query";
+import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -41,7 +39,7 @@ function TeamCard({
   return (
     <Link
       href={`/dashboard/alts/${altUsername}/teams/${team.id}`}
-      className="group flex items-center gap-3 rounded-lg bg-background/60 px-3 py-2 transition-colors hover:bg-background"
+      className="group bg-background/60 hover:bg-background flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
     >
       {/* Team name */}
       <span className="min-w-0 flex-1 truncate text-xs font-medium">
@@ -86,13 +84,18 @@ function RecentResults({
   altId: number;
   refreshKey?: number;
 }) {
-  const queryFn = (client: TypedSupabaseClient) =>
-    getPlayerTournamentHistory(client, [altId]);
+  const supabase = useSupabase();
   const {
     data: results,
     isLoading,
     error: resultsError,
-  } = useSupabaseQuery(queryFn, ["altRecentResults", altId, refreshKey]);
+  } = useQuery({
+    // refreshKey is appended to bust the cache when the parent increments it
+    // (e.g. after a team delete), matching the previous useSupabaseQuery behavior.
+    queryKey: [...queryKeys.player.recentResults(altId), refreshKey],
+    queryFn: () => getPlayerTournamentHistory(supabase, [altId]),
+    staleTime: 30_000,
+  });
 
   // Show at most 3 recent results
   const recentResults = (results ?? []).slice(0, 3);
@@ -135,7 +138,7 @@ function RecentResults({
           <Link
             key={item.id}
             href={`/tournaments/${item.tournamentSlug}`}
-            className="group flex items-center gap-2.5 rounded-lg bg-background/60 px-3 py-2 transition-colors hover:bg-background"
+            className="group bg-background/60 hover:bg-background flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors"
           >
             {/* Placement badge */}
             <span
@@ -146,11 +149,7 @@ function RecentResults({
                   : "bg-muted text-muted-foreground"
               )}
             >
-              {isFirst ? (
-                <Trophy className="size-3.5" />
-              ) : (
-                placementText
-              )}
+              {isFirst ? <Trophy className="size-3.5" /> : placementText}
             </span>
 
             {/* Tournament name + date */}
@@ -266,18 +265,12 @@ export function TeamsSubTable({
           ) : !teams || teams.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-6">
               <Swords className="text-muted-foreground size-5" />
-              <p className="text-muted-foreground mt-2 text-xs">
-                No teams yet
-              </p>
+              <p className="text-muted-foreground mt-2 text-xs">No teams yet</p>
             </div>
           ) : (
             <div className="space-y-1">
               {teams.map((team) => (
-                <TeamCard
-                  key={team.id}
-                  team={team}
-                  altUsername={altUsername}
-                />
+                <TeamCard key={team.id} team={team} altUsername={altUsername} />
               ))}
             </div>
           )}
@@ -293,7 +286,7 @@ export function TeamsSubTable({
       </div>
 
       {/* Footer — softened buttons */}
-      <div className="flex items-center justify-between bg-muted/50 px-3 py-2.5">
+      <div className="bg-muted/50 flex items-center justify-between px-3 py-2.5">
         <div className="flex gap-2">
           <Button
             nativeButton={false}
@@ -321,7 +314,7 @@ export function TeamsSubTable({
         {/* TODO: Replace deleteAltAction with archiveAltAction when archive system is built */}
         {!isMain && (
           <button
-            className="text-muted-foreground cursor-pointer text-[11px] hover:text-destructive hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-muted-foreground hover:text-destructive cursor-pointer text-[11px] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onDeleteAlt}
             disabled={isDeletePending}
           >

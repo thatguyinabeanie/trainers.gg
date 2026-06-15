@@ -6,14 +6,16 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
 import { Activity, RefreshCw } from "lucide-react";
 import {
   getAuditLog,
   getAuditLogStats,
   type AuditLogEntry,
+  type Database,
 } from "@trainers/supabase";
-import type { TypedSupabaseClient, Database } from "@trainers/supabase";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -145,6 +147,8 @@ function StatCard({
 // --- Component ---
 
 export function ActivityTab() {
+  const supabase = useSupabase();
+
   // Filter state
   const [actionFilter, setActionFilter] = useState("all");
   const [entityFilter, setEntityFilter] = useState("all");
@@ -159,32 +163,37 @@ export function ActivityTab() {
       ? undefined
       : (entityFilter as "tournament" | "match" | "community");
 
-  const statsQueryFn = (client: TypedSupabaseClient) =>
-    getAuditLogStats(client);
   const {
     data: stats,
     isLoading: statsLoading,
     error: statsError,
-  } = useSupabaseQuery(statsQueryFn, [refreshKey]);
+  } = useQuery({
+    queryKey: queryKeys.admin.auditStats(refreshKey),
+    queryFn: () => getAuditLogStats(supabase),
+    staleTime: 30_000,
+  });
 
-  const logQueryFn = (client: TypedSupabaseClient) =>
-    getAuditLog(client, {
-      actions: actionsForFilter,
-      entityType,
-      limit: PAGE_SIZE,
-      offset: page * PAGE_SIZE,
-    });
   const {
     data: logResult,
     isLoading: logLoading,
     error: logError,
     refetch,
-  } = useSupabaseQuery(logQueryFn, [
-    actionFilter,
-    entityFilter,
-    page,
-    refreshKey,
-  ]);
+  } = useQuery({
+    queryKey: queryKeys.admin.auditLog(
+      actionFilter,
+      entityFilter,
+      page,
+      refreshKey
+    ),
+    queryFn: () =>
+      getAuditLog(supabase, {
+        actions: actionsForFilter,
+        entityType,
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
+      }),
+    staleTime: 30_000,
+  });
 
   const entries = (logResult?.data ?? []) as AuditLogEntry[];
   const totalCount = logResult?.count ?? 0;

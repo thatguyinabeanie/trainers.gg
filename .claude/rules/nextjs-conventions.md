@@ -96,12 +96,44 @@ Function arguments + closures are the cache key — no manual key arrays needed.
 
 ### Supabase Client Selection
 
-| Function                    | Use Case                                   |
-| --------------------------- | ------------------------------------------ |
-| `createStaticClient()`      | Public data, no cookies (ISR/static pages) |
-| `createClient()`            | Authenticated, read-write cookies          |
-| `createClientReadOnly()`    | Authenticated, read-only cookies           |
-| `createServiceRoleClient()` | Bypass RLS (admin operations only)         |
+| Function                    | Use Case                                                                                           |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| `createStaticClient()`      | Public data, no cookies — only for tables with anon SELECT still granted                          |
+| `createClient()`            | Authenticated, read-write cookies                                                                  |
+| `createClientReadOnly()`    | Authenticated, read-only cookies                                                                   |
+| `createServiceRoleClient()` | Bypass RLS: admin ops, and anon-reachable routes reading Phase 2 revoke-set tables (with guards)  |
+
+For anon-reachable routes that read revoke-set tables: use `createServiceRoleClient()` with an explicit column allowlist (never `select('*')`), `resolveApiAuth` on the request, and `enforceRateLimit`. See `deciding-data-access` skill for the full decision tree and guard requirements.
+
+### `/api/v1` Route Handler Convention
+
+Route handlers under `apps/web/src/app/api/v1/` are the canonical read surface for S-bucket data (shared-public tables whose anon/authenticated SELECT has been revoked). Every handler follows this sequence:
+
+1. **Auth** — `resolveApiAuth(request)` from `apps/web/src/lib/api/auth.ts`. Supports Bearer (mobile) and cookie (web). Returns `null` → respond `401`.
+2. **Rate limit** — `enforceRateLimit(…)` from `apps/web/src/lib/api/rate-limit.ts`. Returns `allowed: false` → respond `429`.
+3. **Cached fetch** — call the `'use cache'`-wrapped fetcher from `apps/web/src/lib/data/*-endpoint.ts`, passing only plain scalar values (no Request/session objects leak into the cache scope).
+4. **Cache-Control** — see the "API Route Cache-Control" section below for the `private, no-store` vs `public, s-maxage` rules.
+5. **Tag invalidation** — `revalidateTag(CacheTags.x, 'max')` on write paths; route handlers use `revalidateTag`, not `updateTag` (Server Actions only).
+
+```ts
+// apps/web/src/app/api/v1/tournaments/[id]/standings/route.ts (abridged)
+import { resolveApiAuth } from "@/lib/api/auth";
+import { enforceRateLimit, extractRequestIp, DEFAULT_API_LIMIT, DEFAULT_WINDOW_MS } from "@/lib/api/rate-limit";
+import { getCachedTournamentStandings } from "@/lib/data/standings-endpoint";
+
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await resolveApiAuth(request);
+  if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { allowed, resetAt } = await enforceRateLimit({ ... });
+  if (!allowed) return Response.json({ error: "Too Many Requests" }, { status: 429, headers: { "Retry-After": ... } });
+
+  const standings = await getCachedTournamentStandings(tournamentId);
+  return Response.json({ data: standings }, { headers: { "Cache-Control": CACHE_CONTROL } });
+}
+```
+
+**Mobile auth** — the `resolveApiAuth` helper in `apps/web/src/lib/api/auth.ts` resolves Bearer-first, cookie-fallback. Mobile sends `Authorization: Bearer <supabase access JWT>`; web sends the Supabase cookie session. No separate mobile-only route or middleware is needed.
 
 ### Parallel Fetching
 
@@ -243,16 +275,26 @@ Never pass unvalidated external input directly to database queries — a `NaN` o
 
 ## API Route Cache-Control
 
-**Auth-gated `/api/v1` routes (any route calling `resolveApiAuth` that returns 401 for anon) must use `Cache-Control: private, no-store` — never `public` or `s-maxage`.**
+**Default for auth-gated `/api/v1` routes (any route calling `resolveApiAuth` that returns 401 for anon): `Cache-Control: private, no-store`.**
 
-`public, s-maxage=…` lets a shared CDN store an authenticated 200 and replay it to anonymous callers — even when the data itself is non-sensitive. The auth gate is what matters, not data sensitivity. The server-side `'use cache'` + `cacheTag`/`cacheLife` layer handles caching; the HTTP header is a separate guard.
+**Carve-out — `public, s-maxage=…` is allowed** when ALL of these hold (Architecture decision #2, `docs/decisions/2026-06-11-data-access-and-rls-decisions.md`):
+1. Every column in the response is public — no PII, no per-viewer/scoped fields (e.g. no `drop_notes`, no emails, nothing not already visible on SSR pages), AND
+2. The cache entry is tag-invalidated via `revalidateTag(CacheTags.x, 'max')` on every relevant mutation.
+
+If **any** column is private, PII-bearing, or viewer-scoped → `private, no-store`. No exception.
 
 ```ts
-// ✅ Auth-gated route
+// ✅ Per-user or PII-bearing route — CDN must not cache this
 const CACHE_CONTROL = "private, no-store";
+// e.g. /api/v1/me/profile — me-scoped data, emails
 
-// ❌ Auth-gated route — allows CDN to cache and serve to anon callers
+// ✅ Auth-gated S-bucket route, all-public-column data, tag-invalidated
+// e.g. /api/v1/tournaments/[id]/standings — rank, wins, losses, resistance_pct
 const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400";
+
+// ❌ Applying public CDN caching to a route with private/PII fields
+// e.g. a standings route that also returns drop_notes or email
+const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400"; // wrong — use private, no-store
 ```
 
 **Also: never read PII (e.g., `users(email)`) inside a shared `'use cache'` scope.** Move such reads outside the cache boundary, use a request-scoped client (`createClient()`), and gate the route with authorization + `private, no-store`.

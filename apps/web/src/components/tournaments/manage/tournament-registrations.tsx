@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTournamentRegistrations,
   getTournamentInvitationsSent,
@@ -51,14 +51,12 @@ import {
   bulkRemovePlayers,
 } from "@/actions/tournaments";
 import {
-  RealtimeStatusBadge,
-  type RealtimeStatus,
-} from "./realtime-status-badge";
-import {
   DropPlayerDialog,
   type DropCategory,
   DROP_CATEGORY_LABELS,
 } from "./drop-player-dialog";
+import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 
 // Map invitation statuses to StatusBadge Status values + human-readable labels
 const defaultInvitationBadge = {
@@ -89,7 +87,10 @@ interface TournamentRegistrationsProps {
 export function TournamentRegistrations({
   tournament,
 }: TournamentRegistrationsProps) {
+  const queryClient = useQueryClient();
   const supabase = useSupabase();
+  const tournamentId = tournament.id;
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
@@ -99,116 +100,20 @@ export function TournamentRegistrations({
     | { type: "bulk" }
     | null
   >(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [invitationsRefreshKey, setInvitationsRefreshKey] = useState(0);
-  const [realtimeStatus, setRealtimeStatus] =
-    useState<RealtimeStatus>("connected");
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  const invRefreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  // Debounced refresh trigger (500ms delay to batch bulk operations)
-  const triggerRefresh = () => {
-    if (refreshTimeoutRef.current) {
-      clearTimeout(refreshTimeoutRef.current);
-    }
-    refreshTimeoutRef.current = setTimeout(() => {
-      setRefreshKey((k) => k + 1);
-    }, 500);
-  };
+  const { data: registrations, error: registrationsError } = useQuery({
+    queryKey: queryKeys.tournament.registrations(tournamentId),
+    queryFn: () => getTournamentRegistrations(supabase, tournamentId),
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  });
 
-  const triggerInvitationsRefresh = () => {
-    if (invRefreshTimeoutRef.current) {
-      clearTimeout(invRefreshTimeoutRef.current);
-    }
-    invRefreshTimeoutRef.current = setTimeout(() => {
-      setInvitationsRefreshKey((k) => k + 1);
-    }, 500);
-  };
-
-  // Realtime: registrations
-  useEffect(() => {
-    const channel = supabase
-      .channel(`registrations-${tournament.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tournament_registrations",
-          filter: `tournament_id=eq.${tournament.id}`,
-        },
-        () => {
-          triggerRefresh();
-        }
-      )
-      .subscribe((status, err) => {
-        if (status === "SUBSCRIBED") {
-          setRealtimeStatus("connected");
-        } else if (status === "CLOSED") {
-          setRealtimeStatus("disconnected");
-        } else if (err) {
-          console.error("[Realtime] registrations error:", err);
-          setRealtimeStatus("error");
-        }
-      });
-
-    return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-      channel.unsubscribe();
-    };
-  }, [supabase, tournament.id]);
-
-  // Realtime: invitations (triggers both refreshes so capacity recalculates)
-  useEffect(() => {
-    const channel = supabase
-      .channel(`invitations-${tournament.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tournament_invitations",
-          filter: `tournament_id=eq.${tournament.id}`,
-        },
-        () => {
-          triggerRefresh();
-          triggerInvitationsRefresh();
-        }
-      )
-      .subscribe((status, err) => {
-        if (err) {
-          console.error("[Realtime] invitations error:", err);
-          setRealtimeStatus("error");
-        }
-      });
-
-    return () => {
-      if (invRefreshTimeoutRef.current) {
-        clearTimeout(invRefreshTimeoutRef.current);
-      }
-      channel.unsubscribe();
-    };
-  }, [supabase, tournament.id]);
-
-  const {
-    data: registrations,
-    error: registrationsError,
-    refetch,
-  } = useSupabaseQuery(
-    (supabase) => getTournamentRegistrations(supabase, tournament.id),
-    [tournament.id, refreshKey]
-  );
-
-  const {
-    data: invitationsSent,
-    error: invitationsError,
-    refetch: refetchInvitations,
-  } = useSupabaseQuery(
-    (supabase) => getTournamentInvitationsSent(supabase, tournament.id),
-    [tournament.id, invitationsRefreshKey]
-  );
+  const { data: invitationsSent, error: invitationsError } = useQuery({
+    queryKey: queryKeys.tournament.invitationsSent(tournamentId),
+    queryFn: () => getTournamentInvitationsSent(supabase, tournamentId),
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  });
 
   const now = new Date();
   const registeredCount =
@@ -262,13 +167,25 @@ export function TournamentRegistrations({
     }
   };
 
+  const invalidateRegistrations = () => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.tournament.registrations(tournamentId),
+    });
+  };
+
+  const invalidateInvitationsSent = () => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.tournament.invitationsSent(tournamentId),
+    });
+  };
+
   const handleForceCheckIn = async (registrationId: number) => {
     setIsProcessing(true);
     try {
       const result = await forceCheckInPlayer(registrationId);
       if (result.success) {
         toast.success("Player checked in successfully");
-        refetch();
+        invalidateRegistrations();
       } else {
         toast.error(result.error || "Failed to check in player");
       }
@@ -295,7 +212,7 @@ export function TournamentRegistrations({
           `${result.data.checkedIn} player(s) checked in${result.data.failed > 0 ? `, ${result.data.failed} failed` : ""}`
         );
         setSelectedIds(new Set());
-        refetch();
+        invalidateRegistrations();
       } else {
         toast.error(result.error || "Failed to check in players");
       }
@@ -325,7 +242,7 @@ export function TournamentRegistrations({
         );
         if (result.success) {
           toast.success("Player dropped successfully");
-          refetch();
+          invalidateRegistrations();
         } else {
           toast.error(result.error || "Failed to drop player");
         }
@@ -340,7 +257,7 @@ export function TournamentRegistrations({
             `${result.data.removed} player(s) dropped${result.data.failed > 0 ? `, ${result.data.failed} failed` : ""}`
           );
           setSelectedIds(new Set());
-          refetch();
+          invalidateRegistrations();
         } else {
           toast.error(result.error || "Failed to drop players");
         }
@@ -370,7 +287,6 @@ export function TournamentRegistrations({
             Manage player registrations and invitations
           </p>
         </div>
-        <RealtimeStatusBadge status={realtimeStatus} />
       </div>
 
       {/* Stats Cards */}
@@ -662,8 +578,8 @@ export function TournamentRegistrations({
             tournamentName="this tournament"
             maxInvitations={availableSpots ?? undefined}
             onSuccess={() => {
-              refetchInvitations();
-              triggerRefresh();
+              invalidateInvitationsSent();
+              invalidateRegistrations();
             }}
           />
 

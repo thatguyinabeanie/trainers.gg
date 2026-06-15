@@ -11,9 +11,4 @@ export {
 } from "./auth";
 
 // Hook exports for client components
-export {
-  useSupabase,
-  useUser,
-  useSupabaseQuery,
-  useSupabaseMutation,
-} from "./hooks";
+export { useSupabase, useUser } from "./hooks";

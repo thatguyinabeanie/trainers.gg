@@ -3,13 +3,10 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApiQuery } from "@trainers/supabase/react-query";
-import {
-  type getTournamentInvitationsReceived,
-  respondToTournamentInvitation,
-} from "@trainers/supabase";
+import { type getTournamentInvitationsReceived } from "@trainers/supabase";
 import { getErrorMessage } from "@trainers/utils";
 import { type ActionResult } from "@trainers/validators";
-import { createClient } from "@/lib/supabase/client";
+import { respondToTournamentInvitationAction } from "@/actions/tournaments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -76,12 +73,15 @@ export function TournamentInvitationsView({
   );
 
   const { mutateAsync: respondToInvitation } = useMutation({
-    mutationFn: (args: RespondArgs) =>
-      respondToTournamentInvitation(
-        createClient(),
+    mutationFn: async (args: RespondArgs) => {
+      const result = await respondToTournamentInvitationAction(
         args.invitationId,
         args.response
-      ),
+      );
+      if (!result.success)
+        throw new Error(result.error ?? "Failed to respond to invitation");
+      return result.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["me", "invitations"] });
     },

@@ -19,8 +19,7 @@ import {
 } from "@/lib/api/rate-limit";
 import { getCachedPhaseRoundsWithMatches } from "@/lib/data/tournaments-endpoints";
 
-const CACHE_CONTROL =
-  "public, s-maxage=31536000, stale-while-revalidate=86400";
+const CACHE_CONTROL = "private, no-store";
 
 export async function GET(
   request: NextRequest,

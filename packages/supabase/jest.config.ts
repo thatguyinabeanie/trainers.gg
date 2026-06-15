@@ -3,6 +3,10 @@ import { createConfig } from "@trainers/test-utils/jest-config";
 
 const config: Config = createConfig({
   displayName: "supabase",
+  // Load .env (symlinked to ../../.env.local) so integration tests that need
+  // NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY can auto-skip rather
+  // than error when local Supabase is not running.
+  setupFiles: ["<rootDir>/jest.setup.ts"],
   testMatch: [
     "<rootDir>/src/**/__tests__/**/*.test.ts",
     // Edge function tests that use Jest-compatible mocking (no Deno-specific imports)

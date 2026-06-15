@@ -108,6 +108,8 @@ export {
   getAltsBulkStats,
   getTeamsForAlt,
   getLiveTournamentCommunityIds,
+  getPublicPhaseRoundsWithMatches,
+  getPublicTournamentPlayerStats,
 } from "./tournaments";
 
 export type {
@@ -120,6 +122,8 @@ export type {
   TournamentRegistrationRow,
   TournamentInvitationSentRow,
   MatchDetails,
+  PublicPhaseRoundWithMatchesRow,
+  PublicTournamentPlayerStatsRow,
 } from "./tournaments";
 // CommunityWithCounts already exported above
 

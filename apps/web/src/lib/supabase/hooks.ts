@@ -8,24 +8,17 @@
  */
 
 import { useEffect, useState } from "react";
-import { createClient } from "./client";
-import type { TypedSupabaseClient } from "@trainers/supabase";
+import { supabase } from "./client";
 import type { User } from "@supabase/supabase-js";
-import {
-  useSupabaseQuery as useSupabaseQueryBase,
-  useSupabaseMutation as useSupabaseMutationBase,
-} from "@trainers/supabase/hooks";
-
-// Re-export types
-export type { QueryResult, MutationResult } from "@trainers/supabase/hooks";
 
 /**
  * Hook to get a Supabase client for client components.
- * Creates a stable client instance that persists across re-renders.
+ * Returns the module-level browser-client singleton from `./client`, so the
+ * reference is stable across re-renders — effects/subscriptions that depend on
+ * it don't tear down and re-create on every render.
  */
 export function useSupabase() {
-  const client = createClient();
-  return client;
+  return supabase;
 }
 
 /**
@@ -59,25 +52,4 @@ export function useUser() {
   }, [supabase]);
 
   return { user, isLoading };
-}
-
-/**
- * Hook for executing Supabase queries with auto-refetch.
- * Web-specific wrapper that injects Next.js browser client.
- */
-export function useSupabaseQuery<T>(
-  queryFn: (supabase: TypedSupabaseClient) => Promise<T>,
-  deps: unknown[] = []
-) {
-  return useSupabaseQueryBase(queryFn, createClient, deps);
-}
-
-/**
- * Hook for executing Supabase mutations.
- * Web-specific wrapper that injects Next.js browser client.
- */
-export function useSupabaseMutation<TArgs, TResult>(
-  mutationFn: (supabase: TypedSupabaseClient, args: TArgs) => Promise<TResult>
-) {
-  return useSupabaseMutationBase(mutationFn, createClient);
 }

@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { DataSidebar } from "./data-sidebar";
 import { DataTabs } from "./data-tabs";
+import { DataSummaryHeader } from "./data-summary-header";
 import { UsageLineChart } from "./usage-line-chart";
 import { UsageTreemap } from "./usage-treemap";
 import { UsageConversionScatter } from "./usage-conversion-scatter";
@@ -528,6 +529,13 @@ export function UsageExplorer({
             Pokémon usage across tournaments
           </span>
         </div>
+
+        {/* Meta snapshot summary — species count, estimated players, date range */}
+        <DataSummaryHeader
+          format={format}
+          pipelineResult={pipelineResult}
+          conversionRows={conversionRows}
+        />
 
         {isTimeseriesError && (
           <div className="px-5 pb-2">

@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { z, type ActionResult } from "@trainers/validators";
-import { useSupabaseMutation } from "@/lib/supabase";
 import { reportMatchResult, type MatchDetails } from "@trainers/supabase";
+import { useSupabase } from "@/lib/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
 import {
   Dialog,
@@ -98,6 +99,8 @@ export function MatchReportDialog({
   onOpenChange,
   onReportSubmitted,
 }: MatchReportDialogProps) {
+  const supabase = useSupabase();
+
   const form = useForm<MatchReportFormData>({
     resolver: zodResolver(matchReportSchema),
     defaultValues: {
@@ -119,24 +122,21 @@ export function MatchReportDialog({
     { enabled: matchId != null, staleTime: 30_000 }
   );
 
-  const { mutateAsync: reportResultMutation } = useSupabaseMutation(
-    (
-      supabase,
-      args: {
-        matchId: number;
-        winnerId: number;
-        player1Score: number;
-        player2Score: number;
-      }
-    ) =>
+  const { mutateAsync: reportResultMutation } = useMutation({
+    mutationFn: (args: {
+      matchId: number;
+      winnerId: number;
+      player1Score: number;
+      player2Score: number;
+    }) =>
       reportMatchResult(
         supabase,
         args.matchId,
         args.winnerId,
         args.player1Score,
         args.player2Score
-      )
-  );
+      ),
+  });
 
   // Extract player data
   const player1 = matchDetails?.player1;

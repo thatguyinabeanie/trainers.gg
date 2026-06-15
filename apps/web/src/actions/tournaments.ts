@@ -44,6 +44,8 @@ import {
   createPhase as createPhaseMutation,
   deletePhase as deletePhaseMutation,
   saveTournamentPhases,
+  // Invitation mutations
+  respondToTournamentInvitation as respondToTournamentInvitationMutation,
   // Queries (for prepareRound preview)
   getPhaseRoundsWithStats,
   getRoundMatchesWithStats,
@@ -520,9 +522,7 @@ const registerForTournamentInputSchema = z
     altId: z.number().int().positive().optional(),
     teamName: z.string().max(80).optional(),
     inGameName: z.string().min(1).max(24).optional(),
-    displayNameOption: z
-      .enum(["username", "in_game_name"])
-      .optional(),
+    displayNameOption: z.enum(["username", "in_game_name"]).optional(),
     showCountryFlag: z.boolean().optional(),
   })
   .strict();
@@ -545,7 +545,9 @@ export async function registerForTournament(
     if (!Number.isInteger(tournamentId) || tournamentId <= 0) {
       return { success: false, error: "Invalid tournament ID." };
     }
-    let validatedData: z.infer<typeof registerForTournamentInputSchema> | undefined;
+    let validatedData:
+      | z.infer<typeof registerForTournamentInputSchema>
+      | undefined;
     if (data !== undefined) {
       const parsed = registerForTournamentInputSchema.safeParse(data);
       if (!parsed.success) {
@@ -975,9 +977,7 @@ export async function getCurrentUserAltsAction(): Promise<
  * Get current user's teams for registration selection.
  * Pass gameFormat to filter teams matching the tournament's format.
  */
-export async function getUserTeamsAction(
-  gameFormat?: string | null
-): Promise<
+export async function getUserTeamsAction(gameFormat?: string | null): Promise<
   ActionResult<
     Array<{
       id: number;
@@ -1931,6 +1931,85 @@ export async function saveTournamentPhasesAction(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to save phases"),
+    };
+  }
+}
+
+// =============================================================================
+// Invitation Actions
+// =============================================================================
+
+/**
+ * Respond to a tournament invitation (accept or decline).
+ *
+ * Runs server-side so the Supabase client is created with the user's auth
+ * cookie (service-role is NOT used). Routing this through a Server Action
+ * rather than a browser client inside a `useMutation` mutationFn keeps the
+ * write on a request-scoped authenticated client with a reliable auth context
+ * (a browser client created during a mutation can run before the session is
+ * fully resolved). RLS still applies in both cases — the Server Action is
+ * about a correct, server-resolved auth context, not bypassing RLS.
+ *
+ * Cache: on accept, invalidates the tournament list and tournament detail caches
+ * because a new registration has been created (registration count changes).
+ * Decline leaves caches untouched — no public-facing data changes.
+ */
+export async function respondToTournamentInvitationAction(
+  invitationId: number,
+  response: "accept" | "decline"
+): Promise<ActionResult<{ registration: { message: string } | null }>> {
+  try {
+    await rejectBots();
+
+    // Validate inputs — Server Actions are callable directly, so we can't
+    // trust the caller to enforce these constraints at the UI layer.
+    const invitationIdSchema = z.number().int().positive();
+    const responseSchema = z.enum(["accept", "decline"]);
+
+    const parsedInvitationId = invitationIdSchema.safeParse(invitationId);
+    const parsedResponse = responseSchema.safeParse(response);
+
+    if (!parsedInvitationId.success || !parsedResponse.success) {
+      return { success: false, error: "Invalid input" };
+    }
+
+    const supabase = await createClient();
+
+    // Fetch tournament_id before the mutation so we can invalidate caches on
+    // accept. The accept path's RPC does not return tournament_id, and we need
+    // it before the row may be mutated. The decline path doesn't need it, but
+    // fetching upfront avoids branching the query.
+    let tournamentId: number | null = null;
+    if (response === "accept") {
+      const { data: invitation, error: invitationError } = await supabase
+        .from("tournament_invitations")
+        .select("tournament_id")
+        .eq("id", invitationId)
+        .maybeSingle();
+      // Surface the error rather than silently skipping cache invalidation —
+      // a swallowed failure here leaves stale registration counts in the UI.
+      if (invitationError) throw invitationError;
+      tournamentId = invitation?.tournament_id ?? null;
+    }
+
+    const result = await respondToTournamentInvitationMutation(
+      supabase,
+      invitationId,
+      response
+    );
+
+    // Accepting creates a new registration — invalidate list (count changes)
+    // and tournament detail (participant list / registration panel changes).
+    if (response === "accept" && tournamentId !== null) {
+      invalidateTournamentListCaches(tournamentId);
+      invalidateTournamentCaches(tournamentId);
+    }
+
+    return { success: true, data: { registration: result.registration } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to respond to invitation"),
     };
   }
 }

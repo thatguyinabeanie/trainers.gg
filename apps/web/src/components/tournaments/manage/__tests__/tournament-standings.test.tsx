@@ -1,17 +1,23 @@
 /**
  * Tests for TournamentStandings component
  * Covers: loading state, empty/no-results state, standings rendering,
- * sorting (dropped last), top 3 highlight, full table display.
+ * sorting (dropped last), top 3 highlight, full table display,
+ * coach badge rendering.
+ *
+ * Phase 3 migration: getCoachBadges now runs via useQuery + createClient()
+ * (not useSupabaseQuery). Tests use QueryClientProvider and mock
+ * getCoachBadges from @trainers/supabase + createClient from
+ * @/lib/supabase/client.
  */
 
 import type React from "react";
-import { render, screen } from "@testing-library/react";
-import { TournamentStandings } from "../tournament-standings";
+import { render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
-// Player-stats query result. The component now reads this via `useApiQuery`
-// (auth-gated `/api/v1/tournaments/[id]/player-stats`), so we drive that hook.
+// Player-stats query result. The component reads this via `useApiQuery`
+// (auth-gated `/api/v1/tournaments/[id]/player-stats`).
 let mockQueryReturn: {
   data: unknown;
   isLoading: boolean;
@@ -22,15 +28,6 @@ let mockQueryReturn: {
   isLoading: false,
 };
 
-// Coach-badge lookup result, keyed by alt id. The component runs a
-// useSupabaseQuery for getCoachBadges after stats load — we hand it this Map.
-let mockCoachBadges: Map<
-  number,
-  { showCoachBadge: boolean; coachHandle: string | null }
-> = new Map();
-
-// Player stats now come from `useApiQuery` (single auth-gated route). The mock
-// returns whatever `mockQueryReturn` holds, plus the fields the component reads.
 const mockUseApiQuery = jest.fn(() => ({
   isError: false,
   error: null,
@@ -41,21 +38,23 @@ jest.mock("@trainers/supabase/react-query", () => ({
   useApiQuery: () => mockUseApiQuery(),
 }));
 
-// Coach badges are still fetched client-side via useSupabaseQuery (privacy-safe
-// booleans + public handles). Hand it the badge Map.
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(() => ({
-    data: mockCoachBadges,
-    isLoading: false,
-  })),
+// getCoachBadges is called in the useQuery queryFn. Return a Map by default;
+// individual tests can override mockGetCoachBadges.
+const mockGetCoachBadges = jest.fn();
+
+jest.mock("@trainers/supabase", () => ({
+  getCoachBadges: (...args: unknown[]) => mockGetCoachBadges(...args),
 }));
 
-// getCoachBadges is imported alongside the player-stats endpoint type. The query
-// fn itself is never invoked here (useSupabaseQuery is mocked), but the import
-// must resolve, so stub it.
-jest.mock("@trainers/supabase", () => ({
-  getCoachBadges: jest.fn(),
-  getTournamentPlayerStats: jest.fn(),
+// createClient() is called inside the queryFn — return a stable stub so the
+// mock fn can be passed through without error.
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({}),
+}));
+
+// useSupabase() is called at the top of the component (singleton pattern).
+jest.mock("@/lib/supabase", () => ({
+  useSupabase: jest.fn(() => ({})),
 }));
 
 jest.mock("@/components/ui/coach-badge", () => ({
@@ -155,7 +154,21 @@ jest.mock("@/components/ui/table", () => ({
   }) => <tr className={className}>{children}</tr>,
 }));
 
+import { TournamentStandings } from "../tournament-standings";
+
 // ── Helpers ────────────────────────────────────────────────────────────────
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
 
 function buildPlayerStat(overrides: Record<string, unknown> = {}) {
   return {
@@ -178,7 +191,9 @@ function buildPlayerStat(overrides: Record<string, unknown> = {}) {
 const defaultTournament = { id: 1, status: "active" };
 
 function renderStandings(tournament = defaultTournament) {
-  return render(<TournamentStandings tournament={tournament} />);
+  return render(<TournamentStandings tournament={tournament} />, {
+    wrapper: createWrapper(),
+  });
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -187,7 +202,8 @@ describe("TournamentStandings", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockQueryReturn = { data: null, isLoading: false };
-    mockCoachBadges = new Map();
+    // Default: getCoachBadges returns an empty Map (no badges)
+    mockGetCoachBadges.mockResolvedValue(new Map());
   });
 
   it("shows loading spinner when data is loading", () => {
@@ -240,7 +256,7 @@ describe("TournamentStandings", () => {
   it("renders player name and username", () => {
     const stats = [
       buildPlayerStat({
-        alt: { username: "cynthia", avatar_url: null },
+        alt: { id: 1, username: "cynthia", avatar_url: null },
         match_wins: 2,
         match_losses: 1,
       }),
@@ -292,14 +308,14 @@ describe("TournamentStandings", () => {
     const stats = [
       buildPlayerStat({
         current_standing: 1,
-        alt: { username: "active_player", avatar_url: null },
+        alt: { id: 1, username: "active_player", avatar_url: null },
         match_wins: 3,
         match_losses: 0,
         is_dropped: false,
       }),
       buildPlayerStat({
         current_standing: 2,
-        alt: { username: "dropped_player", avatar_url: null },
+        alt: { id: 2, username: "dropped_player", avatar_url: null },
         match_wins: 2,
         match_losses: 1,
         is_dropped: true,
@@ -345,7 +361,6 @@ describe("TournamentStandings", () => {
     expect(screen.getByText("Player")).toBeInTheDocument();
     expect(screen.getByText("Record")).toBeInTheDocument();
     expect(screen.getByText("Match Points")).toBeInTheDocument();
-    // "Game Win %" and "Opp. Win %" - may appear in headers
     expect(screen.getByText("Game Win %")).toBeInTheDocument();
     expect(screen.getByText("Opp. Win %")).toBeInTheDocument();
   });
@@ -354,19 +369,19 @@ describe("TournamentStandings", () => {
     const stats = [
       buildPlayerStat({
         current_standing: 1,
-        alt: { username: "first", avatar_url: null },
+        alt: { id: 1, username: "first", avatar_url: null },
         match_wins: 5,
         match_losses: 0,
       }),
       buildPlayerStat({
         current_standing: 2,
-        alt: { username: "second", avatar_url: null },
+        alt: { id: 2, username: "second", avatar_url: null },
         match_wins: 4,
         match_losses: 1,
       }),
       buildPlayerStat({
         current_standing: 3,
-        alt: { username: "third", avatar_url: null },
+        alt: { id: 3, username: "third", avatar_url: null },
         match_wins: 3,
         match_losses: 2,
       }),
@@ -384,7 +399,7 @@ describe("TournamentStandings", () => {
     const stats = [
       buildPlayerStat({
         current_standing: null,
-        alt: { username: "mystery", avatar_url: null },
+        alt: { id: 1, username: "mystery", avatar_url: null },
         match_wins: null,
         match_losses: null,
         match_points: null,
@@ -398,5 +413,74 @@ describe("TournamentStandings", () => {
     // The important thing is it doesn't throw
     renderStandings();
     expect(screen.getByText("No standings yet")).toBeInTheDocument();
+  });
+
+  describe("coach badge display", () => {
+    it("does not call getCoachBadges when altIds is empty (no stats)", async () => {
+      mockQueryReturn = { data: [], isLoading: false };
+      renderStandings();
+      // enabled: altIds.length > 0 — query should not fire
+      await waitFor(() => {
+        expect(mockGetCoachBadges).not.toHaveBeenCalled();
+      });
+    });
+
+    it("calls getCoachBadges with alt IDs once stats load", async () => {
+      const stats = [
+        buildPlayerStat({
+          alt: { id: 42, username: "misty", avatar_url: null },
+          match_wins: 1,
+          match_losses: 0,
+        }),
+      ];
+      mockQueryReturn = { data: stats, isLoading: false };
+      mockGetCoachBadges.mockResolvedValue(new Map());
+      renderStandings();
+
+      await waitFor(() => {
+        expect(mockGetCoachBadges).toHaveBeenCalledWith(
+          expect.anything(),
+          [42]
+        );
+      });
+    });
+
+    it("renders coach badge when showCoachBadge is true", async () => {
+      const stats = [
+        buildPlayerStat({
+          alt: { id: 7, username: "brock", avatar_url: null },
+          match_wins: 2,
+          match_losses: 1,
+        }),
+      ];
+      mockQueryReturn = { data: stats, isLoading: false };
+      mockGetCoachBadges.mockResolvedValue(
+        new Map([[7, { showCoachBadge: true, coachHandle: "coach_brock" }]])
+      );
+      renderStandings();
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("coach-badge").length).toBeGreaterThan(0);
+      });
+    });
+
+    it("does not render coach badge when showCoachBadge is false", async () => {
+      const stats = [
+        buildPlayerStat({
+          alt: { id: 8, username: "gary", avatar_url: null },
+          match_wins: 3,
+          match_losses: 0,
+        }),
+      ];
+      mockQueryReturn = { data: stats, isLoading: false };
+      mockGetCoachBadges.mockResolvedValue(
+        new Map([[8, { showCoachBadge: false, coachHandle: null }]])
+      );
+      renderStandings();
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("coach-badge")).not.toBeInTheDocument();
+      });
+    });
   });
 });

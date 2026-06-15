@@ -21,9 +21,24 @@ Supabase Realtime for live data push in Client Components. Get the client via `u
 
 ## Subscription Types
 
-### postgres_changes — reactive DB row push
+### postgres_changes — reactive DB row push (payload-driven mandate)
+
+**Handlers MUST be payload-driven.** Prefer `queryClient.setQueryData(queryKey, prev => upsertById(prev, payload.new))` — this avoids a network round-trip per event, which matters at scale (~50k live reads/round at 7k concurrent players).
+
+**When to use `setQueryData` vs `invalidateQueries`:**
+
+| Case                                                                                          | Use                                                  |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Payload shape matches the cached shape (list items, row updates)                              | `setQueryData` — deterministic upsert                |
+| Aggregate/count derivable from the payload (e.g. `read_at === null` → increment unread)       | `setQueryData<number>(key, prev => (prev ?? 0) + 1)` |
+| Structural set change that can't be derived from a single row (e.g. tournament round rebuild) | `invalidateQueries` — narrowly targeted, OK          |
+| On channel re-subscribe after disconnect                                                      | `invalidateQueries` — one-time resync                |
+
+**Never** call `refetch()` or an untargeted `invalidateQueries()` per event. If you find yourself reaching for `invalidateQueries` in a handler, ask first: "can the payload drive this deterministically?" Usually it can.
 
 ```tsx
+const queryClient = useQueryClient();
+
 useEffect(() => {
   if (!entityId) return;
 
@@ -37,19 +52,53 @@ useEffect(() => {
         table: "tournament_registrations",
         filter: `tournament_id=eq.${entityId}`,
       },
-      () => refetch() // payload available but refetching is simpler
+      (payload) => {
+        // Payload-driven: update the cache directly, no refetch
+        queryClient.setQueryData(
+          ["registrations", entityId],
+          (prev: Registration[] | undefined) =>
+            upsertById(prev ?? [], payload.new as Registration)
+        );
+      }
     )
     .subscribe((status, err) => {
       if (err) console.error("[registrations-realtime] subscribe error:", err);
+      if (status === "SUBSCRIBED") {
+        // One-time reconnect-resync: the only allowed refetch
+        queryClient.invalidateQueries({
+          queryKey: ["registrations", entityId],
+        });
+      }
     });
 
   return () => {
     supabase.removeChannel(channel);
   };
-}, [supabase, entityId, refetch]);
+}, [supabase, entityId, queryClient]);
 ```
 
 `event` is `"*" | "INSERT" | "UPDATE" | "DELETE"`. Use the narrowest event type possible.
+
+**Keep `postgres_changes`** — no migration to Broadcast. Broadcast would only be considered in future if the Supabase connection ceiling forces it; for now `postgres_changes` is the standard.
+
+#### Publication rules
+
+A table may be realtime-published for an audience only if **every column** in the table is safe for that audience — payloads cannot be column-filtered, so any sensitive column on the row makes the whole row unsafe to broadcast (column-homogeneous-sensitivity rule).
+
+**The realtime six** — the only S-bucket tables published for authenticated users:
+
+| Table                      | Audience                                |
+| -------------------------- | --------------------------------------- |
+| `notifications`            | per-user (filter `user_id=eq.{userId}`) |
+| `match_games`              | match participants + staff              |
+| `match_messages`           | match participants + staff              |
+| `tournament_matches`       | tournament participants + staff         |
+| `tournament_registrations` | tournament participants + staff         |
+| `tournament_rounds`        | tournament participants + staff         |
+
+`match_games` and `match_messages` carry flattened `tournament_id` / `community_id` columns (added in Phase 3), which simplifies subscription filters and RLS checks — use those columns in filters rather than joining.
+
+**Spectators and logged-out users get no realtime.** Public-facing pages (spectator views, tournament listings, community pages) use SSR/ISR with tag revalidation only. No websocket connections for unauthenticated readers.
 
 ### presence — who is in the room
 
@@ -124,18 +173,23 @@ Real example: `apps/web/src/components/match/match-page-client.tsx` (3 channels)
 
 `postgres_changes` respects RLS — users only receive events for rows they can SELECT. The `filter` parameter is a secondary guard. Presence and broadcast bypass RLS (no DB rows).
 
-## Invalidating TanStack Query on an Event
+## Updating TanStack Query Cache on an Event
 
-When client state lives in TanStack Query, call `queryClient.invalidateQueries()` in the callback instead of local state:
+When client state lives in TanStack Query, use **`queryClient.setQueryData`** to apply the payload directly — do NOT call `queryClient.invalidateQueries()` or `refetch()` per event:
 
 ```tsx
 const queryClient = useQueryClient();
-channel.on("postgres_changes", { ... }, () => {
-  queryClient.invalidateQueries({ queryKey: ["registrations", id] });
+channel.on("postgres_changes", { event: "*", ... }, (payload) => {
+  // Direct cache write — no network round-trip
+  queryClient.setQueryData(
+    ["registrations", id],
+    (prev: Registration[] | undefined) =>
+      upsertById(prev ?? [], payload.new as Registration)
+  );
 });
 ```
 
-Use `refetch()` from `useSupabaseQuery` when that hook already owns the data (simpler).
+`invalidateQueries` is allowed only once on channel re-subscribe (reconnect-resync), never per event.
 
 ## Stable Callback Pattern
 
@@ -180,4 +234,4 @@ See `writing-tests` for factory patterns and full Jest config.
 
 ## Mobile Parity
 
-Mobile (Expo) hits Supabase directly via `@trainers/supabase/mobile` — same channel naming convention applies. See `building-mobile-app` for mobile client setup.
+Mobile (Expo) realtime subscriptions use `@trainers/supabase/mobile` — same channel naming convention and payload-driven mandate apply. Realtime on mobile is only valid for authenticated users (the channel uses the SecureStore session). See `building-mobile-app` for the hybrid data-access model and mobile client setup.

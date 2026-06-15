@@ -13,7 +13,7 @@ Expo 55 (React Native 0.83) with Tamagui UI and Expo Router.
 
 ## Notes
 
-- Mobile hits Supabase directly — no Next.js API routes
+- **Mobile uses a hybrid data-access model** — authenticated reads stay direct Supabase (RLS via SecureStore session); unauthenticated/public reads of S-bucket tables go through cached `/api/v1` Next.js routes instead (the Phase 2 anon-SELECT revoke broke logged-out direct reads). Auth and session management always use the direct Supabase client. The `api-*` edge-function retirement and full public-read cutover are deferred until mobile dev resumes.
 - Query key factories: `src/lib/api/query-factory.ts` is the reference pattern
 - Supabase client: `@trainers/supabase/mobile` (session stored in SecureStore)
 - Styling: Tamagui tokens from `@trainers/theme` — no Tailwind
@@ -64,6 +64,24 @@ Expo 55 (React Native 0.83) with Tamagui UI and Expo Router.
 
 - **Preferred:** Complete the migration off these functions onto Next.js routes (sanitized error handling is already the convention there).
 - **If migration is not ready:** Sanitize 500 bodies to a generic `{ error: "Internal server error" }` message and log full detail server-side only.
+
+### Phase 2 Task 9 Step 4 — Anon SELECT revoke (partial impact on mobile)
+
+**Decision:** June 12, 2026. Web app revoked `SELECT` from the Postgres `anon` role on 19 S-bucket tables (tournaments, tournament_phases, communities, community_staff, tournament_registrations, alts, etc.). The `authenticated` role is retained. See `docs/decisions/architecture-phase2-task9-step4-anon-revoke.md`.
+
+**Impact on mobile:**
+
+- **Authenticated users (signed in):** reads use the `authenticated` role via the SecureStore session — **unaffected** by the anon revoke.
+- **Logged-out / unauthenticated reads:** direct Supabase reads of S-bucket tables via the anon key return ZERO ROWS after the revoke.
+
+**Confirmed affected logged-out reads:**
+- `apps/mobile/src/lib/supabase/use-communities.ts` — `listPublicCommunities()`, `getCommunityBySlug()`
+- `apps/mobile/src/lib/supabase/use-tournament.ts` — `getTournamentBySlug()`
+- Reads of `users` table are **unaffected** (excluded from revoke)
+
+**Migration path (deferred until mobile resumes):** Point logged-out reads of S-bucket tables at the web `/api/v1` routes instead of direct Supabase. The existing query factory already supports Bearer/anon auth, and routes exist for communities and tournaments.
+
+**Does NOT block** the web revoke migration — mobile is unpublished/deferred.
 
 ### Token handling reminder
 

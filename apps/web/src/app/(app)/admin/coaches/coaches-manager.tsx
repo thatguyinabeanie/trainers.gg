@@ -2,12 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { GraduationCap, Search, UserPlus, X, AlertTriangle } from "lucide-react";
+import {
+  GraduationCap,
+  Search,
+  UserPlus,
+  X,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { listUsersAdmin } from "@trainers/supabase";
-import { type TypedSupabaseClient } from "@trainers/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -27,7 +32,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import { type ActionResult } from "@trainers/validators";
 
 import { grantCoachStatusAction, revokeCoachStatusAction } from "./actions";
@@ -88,8 +94,11 @@ async function fetchCoaches(): Promise<ActionResult<CoachRow[]>> {
 // Component
 // ---------------------------------------------------------------------------
 
-export function CoachesManager({ coaches: initialCoaches }: CoachesManagerProps) {
+export function CoachesManager({
+  coaches: initialCoaches,
+}: CoachesManagerProps) {
   const queryClient = useQueryClient();
+  const supabase = useSupabase();
 
   // --- Coaches list via TanStack Query (repoints away from useSupabaseQuery) ---
   const {
@@ -119,7 +128,12 @@ export function CoachesManager({ coaches: initialCoaches }: CoachesManagerProps)
 
   // Ref-based debounce for the grant search input — avoids stale closure issues
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); }, []);
+  useEffect(
+    () => () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    },
+    []
+  );
 
   function handleGrantSearchChange(value: string) {
     setGrantSearch(value);
@@ -134,18 +148,18 @@ export function CoachesManager({ coaches: initialCoaches }: CoachesManagerProps)
     }, 300);
   }
 
-  // Search for users to grant coach status to (remains useSupabaseQuery — there
-  // is no dedicated user-search admin API route; this is a direct Supabase read).
-  const searchQuery = useSupabaseQuery(
-    (supabase: TypedSupabaseClient) => {
-      if (!debouncedGrantSearch) return Promise.resolve({ data: [], count: 0 });
-      return listUsersAdmin(supabase, {
+  // Search for users to grant coach status to — direct Supabase read (no
+  // dedicated admin API route for user search).
+  const searchQuery = useQuery({
+    queryKey: queryKeys.admin.userSearch(debouncedGrantSearch),
+    queryFn: () =>
+      listUsersAdmin(supabase, {
         search: debouncedGrantSearch,
         limit: 5,
-      });
-    },
-    [debouncedGrantSearch]
-  );
+      }),
+    enabled: Boolean(debouncedGrantSearch),
+    staleTime: 30_000,
+  });
 
   const searchResults = (
     (searchQuery.data?.data ?? []) as {
@@ -231,11 +245,7 @@ export function CoachesManager({ coaches: initialCoaches }: CoachesManagerProps)
         ) : (
           <ul className="divide-y rounded-lg border">
             {coaches.map((coach) => {
-              const initials = (
-                coach.username ??
-                coach.name ??
-                "?"
-              )
+              const initials = (coach.username ?? coach.name ?? "?")
                 .charAt(0)
                 .toUpperCase();
 
@@ -271,7 +281,7 @@ export function CoachesManager({ coaches: initialCoaches }: CoachesManagerProps)
                   <Button
                     variant="outline"
                     size="sm"
-                    className="shrink-0 text-destructive hover:text-destructive"
+                    className="text-destructive hover:text-destructive shrink-0"
                     onClick={() => {
                       setRevokeTarget(coach);
                       setRevokeReason("");
@@ -320,9 +330,7 @@ export function CoachesManager({ coaches: initialCoaches }: CoachesManagerProps)
             ) : searchResults.length === 0 ? (
               <p className="text-muted-foreground p-3 text-sm">
                 No users found
-                {coaches.length > 0 &&
-                  " (already-coached users are excluded)"}
-                .
+                {coaches.length > 0 && " (already-coached users are excluded)"}.
               </p>
             ) : (
               <ul className="divide-y">
@@ -416,8 +424,7 @@ export function CoachesManager({ coaches: initialCoaches }: CoachesManagerProps)
               <strong>
                 {revokeTarget ? coachLabel(revokeTarget) : "this coach"}
               </strong>
-              . Their coach profile
-              will be hidden but not deleted.
+              . Their coach profile will be hidden but not deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
 

@@ -6,39 +6,41 @@ All-in-one integrated platform for Pokemon fans. Current focus: competitive batt
 
 Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill before working in an area.
 
-| Skill                            | When to Use                                                                  |
-| -------------------------------- | ---------------------------------------------------------------------------- |
-| `building-web-app`               | Web routes, components, Server Actions, data fetching, proxy.ts              |
-| `building-mobile-app`            | Mobile screens, Tamagui UI, Expo Router, SecureStore                         |
-| `querying-supabase`              | DB queries/mutations, client selection, Edge Functions                       |
-| `using-realtime`                 | Supabase Realtime — presence, broadcast, postgres_changes subscriptions      |
-| `validating-input`               | Zod schemas, Server Action return types, profanity filter                    |
-| `creating-components`            | UI components, design tokens, design principles                              |
-| `checking-mobile-parity`         | After developing web features, check for mobile parity tickets               |
-| `implementing-tournaments`       | Swiss pairings, standings, brackets, adapters                                |
-| `parsing-pokemon`                | Team parsing, legality validation, type effectiveness                        |
-| `using-utils`                    | `getLabel()`, `getErrorMessage()`, permissions, formatting                   |
-| `working-with-usage-data`        | team_slots, usage RPCs, per-source tournament data, /data page               |
-| `building-charts`                | recharts charts, d3-sankey flows, usage-over-time lines (/data, dashboards)  |
-| `tracking-analytics`             | PostHog event constants, adding new events                                   |
-| `integrating-bluesky`            | Bluesky/AT Protocol, DID resolution, public agent                            |
-| `writing-tests`                  | Fishery factories, Supabase/AT Protocol mocks, Jest config                   |
-| `writing-e2e-tests`              | Playwright E2E — fixtures, auth setup, tournament-runner in apps/web/e2e/    |
-| `managing-infrastructure`        | PDS on Fly.io, ngrok tunnel for local dev                                    |
-| `troubleshooting-local-env`      | Local dev breakage — Supabase, stale types, env symlinks, calc submodule     |
-| `creating-edge-functions`        | Creating/updating Supabase edge functions                                    |
-| `managing-edge-imports`          | Deno import maps, `deno.json` management                                     |
-| `auditing-code`                  | Codebase audits for type safety, architecture, maintainability               |
-| `auditing-mobile-responsiveness` | Mobile-viewport audit — overflow probes, tap targets, table→cards punch list |
-| `writing-skills`                 | Creating/editing skills, agents, maintaining the architecture                |
-| `design-system`                  | Elevation, typography hierarchy, transitions, layout conventions             |
-| `product-vision`                 | Product vision, feature roadmap, differentiators, user types                 |
-| `competitive-landscape`          | Competitive landscape, positioning, alternatives by category                 |
-| `reviewing-pr`                   | PR review orchestrator: dispatches domain-specific checks                    |
-| `reviewing-database`             | RLS, migrations, indexes, N+1, unbounded fetches, query perf                 |
-| `reviewing-caching`              | Next.js `'use cache'` (Cache Components), TanStack Query, cache invalidation |
-| `reviewing-pr-feedback`          | Fetch/group/resolve PR comments with user, no deferrals, re-review loop      |
-| `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure    |
+| Skill                            | When to Use                                                                                                                 |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `building-web-app`               | Web routes, components, Server Actions, data fetching, proxy.ts                                                             |
+| `building-mobile-app`            | Mobile screens, Tamagui UI, Expo Router, SecureStore                                                                        |
+| `querying-supabase`              | DB queries/mutations, client selection, Edge Functions                                                                      |
+| `using-realtime`                 | Supabase Realtime — presence, broadcast, postgres_changes subscriptions                                                     |
+| `validating-input`               | Zod schemas, Server Action return types, profanity filter                                                                   |
+| `creating-components`            | UI components, design tokens, design principles                                                                             |
+| `checking-mobile-parity`         | After developing web features, check for mobile parity tickets                                                              |
+| `implementing-tournaments`       | Swiss pairings, standings, brackets, adapters                                                                               |
+| `parsing-pokemon`                | Team parsing, legality validation, type effectiveness                                                                       |
+| `using-utils`                    | `getLabel()`, `getErrorMessage()`, permissions, formatting                                                                  |
+| `working-with-usage-data`        | team_slots, usage RPCs, per-source tournament data, /data page                                                              |
+| `building-charts`                | recharts charts, d3-sankey flows, usage-over-time lines (/data, dashboards)                                                 |
+| `tracking-analytics`             | PostHog event constants, adding new events                                                                                  |
+| `integrating-bluesky`            | Bluesky/AT Protocol, DID resolution, public agent                                                                           |
+| `writing-tests`                  | Fishery factories, Supabase/AT Protocol mocks, Jest config                                                                  |
+| `writing-e2e-tests`              | Playwright E2E — fixtures, auth setup, tournament-runner in apps/web/e2e/                                                   |
+| `managing-infrastructure`        | PDS on Fly.io, ngrok tunnel for local dev                                                                                   |
+| `troubleshooting-local-env`      | Local dev breakage — Supabase, stale types, env symlinks, calc submodule                                                    |
+| `creating-edge-functions`        | Creating/updating Supabase edge functions                                                                                   |
+| `managing-edge-imports`          | Deno import maps, `deno.json` management                                                                                    |
+| `auditing-code`                  | Codebase audits for type safety, architecture, maintainability                                                              |
+| `auditing-mobile-responsiveness` | Mobile-viewport audit — overflow probes, tap targets, table→cards punch list                                                |
+| `writing-skills`                 | Creating/editing skills, agents, maintaining the architecture                                                               |
+| `design-system`                  | Elevation, typography hierarchy, transitions, layout conventions                                                            |
+| `product-vision`                 | Product vision, feature roadmap, differentiators, user types                                                                |
+| `competitive-landscape`          | Competitive landscape, positioning, alternatives by category                                                                |
+| `reviewing-pr`                   | PR review orchestrator: dispatches domain-specific checks                                                                   |
+| `reviewing-database`             | RLS, migrations, indexes, N+1, unbounded fetches, query perf                                                                |
+| `reviewing-caching`              | Next.js `'use cache'` (Cache Components), TanStack Query, cache invalidation                                                |
+| `reviewing-pr-feedback`          | Fetch/group/resolve PR comments with user, no deferrals, re-review loop                                                     |
+| `deciding-data-access`           | Deciding where a read/route should live — SSR vs /api/v1 vs direct; anon vs authed; caching + rate-limit requirements       |
+| `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure                                                   |
+| `tracking-deferred-work`         | Log/update/complete an agreed-but-parked improvement in `docs/deferred-improvements.md` ("small fix now, bigger one later") |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
 
@@ -223,6 +225,7 @@ The file contains ANSI color codes; grep still works fine.
 - **`@smogon/calc` is a git submodule — do NOT re-pin it to a git tarball** — `apps/web` depends on `@smogon/calc` via `file:../../vendor/damage-calc/calc`, a git submodule of the fork `thatguyinabeanie/damage-calc` (`vendor/damage-calc`, pinned to a commit that **commits the built `calc/dist/`**). Never change it back to `github:thatguyinabeanie/damage-calc#<sha>&path:/calc`. That git-tarball form **cannot be resolved by pnpm 11 under `--frozen-lockfile`** in CI/Vercel: it lands with no `dist/` (`Cannot find module '@smogon/calc'`) or as the fork's private monorepo root (`undefined@0.0.0` store mismatch). It only works in non-frozen local installs that build it, which masks the failure. The submodule + `file:` makes pnpm **symlink** the committed `dist/` deterministically. Requirements: all GitHub Actions `actions/checkout` steps use `submodules: recursive`; keep the Vercel project's "Git submodules" setting enabled; a root `preinstall` runs `git submodule update --init --recursive`; `@smogon/calc` is **absent** from `allowBuilds` in `pnpm-workspace.yaml`. To update calc: bump the submodule pointer (keep `dist/` committed in the fork).
 - **pnpm config lives in `pnpm-workspace.yaml`, not `package.json`** — pnpm 11 **does not read** the `pnpm` field in `package.json` (prints `[WARN]` and silently ignores `overrides`, `packageExtensions`, `onlyBuiltDependencies`, `ignoredBuiltDependencies`). Never add a `pnpm` field back to `package.json`. Put `overrides:`, `packageExtensions:`, and `allowBuilds:` directly in `pnpm-workspace.yaml`.
 - **Chunk unbounded Supabase `.in()` filters** — A `.in("col", ids)` with hundreds of ids builds a PostgREST URL that overflows the server URI limit and returns `{ error: "URI too long" }`. If that error is ignored, `data` is null and downstream logic silently drops every row. Use `fetchInChunks()` in `packages/supabase/src/queries/players.ts` as the reference: split into ≤100-id chunks, merge, and **throw** on chunk error. Always `.error`-check `.in()` queries that fan out over an unbounded id list. **The bug only reproduces at scale** — a few-row seed hides it.
+- **Anon SELECT revoked on 19 S-bucket base tables — with a realtime-six carve-out** — Phase 2 revoked anon (and public) SELECT on 19 core tables. Six tables kept authenticated SELECT to allow Supabase Realtime subscriptions for logged-in users: `notifications`, `match_games`, `match_messages`, `tournament_matches`, `tournament_registrations`, `tournament_rounds`. Spectators and logged-out users get SSR/ISR snapshots — no realtime. Any new table that needs realtime must go through the same carve-out process (migration + RLS policy). Using `createStaticClient()` (anon key) on a revoked table returns an empty result set, not an error — silent data loss. Use `createServiceRoleClient()` with `resolveApiAuth` + `enforceRateLimit` for anon-reachable `/api/v1` routes that read from revoked tables.
 
 ## Critical Rules
 
@@ -275,6 +278,17 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 ### Scope Discipline
 
 **Only modify files explicitly in scope for the current task.** Do NOT run `pnpm format`, `pnpm lint --fix`, or other repo-wide formatters unless explicitly asked. When dispatching subagents, pass an explicit file allowlist and forbid edits outside it. If unrelated changes sneak in, revert them before committing.
+
+### Data Access
+
+**Split model — no open anon Data API.** Phase 2 revoked anon SELECT on 19 S-bucket base tables; authenticated SELECT was kept.
+
+- **S-bucket client reads** → cached `/api/v1` routes (`createServiceRoleClient` + column allowlist + `resolveApiAuth` + `enforceRateLimit`).
+- **Authenticated direct reads** → browser Supabase client + RLS (`createClient`, `authenticated` role).
+- **SSR pages** → query DB directly server-side (no round-trip through `/api/v1`).
+- **Mobile (hybrid)** → authed reads stay direct Supabase (RLS via SecureStore session); public/unauth reads use cached `/api/v1`. Full cutover deferred until mobile dev resumes.
+
+See `deciding-data-access`, `querying-supabase`, and `reviewing-caching` skills for routing decisions and client selection.
 
 ### Destructive Actions
 

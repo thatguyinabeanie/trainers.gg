@@ -157,16 +157,20 @@ export async function searchPlayers(
 
     // Search users.username via the safe public_user_profiles view (RLS audit
     // #1 locked public.users SELECT to own-row + admin).
-    const { data: userMatches } = await supabase
+    const { data: userMatches, error: userMatchesError } = await supabase
       .from("public_user_profiles")
       .select("id")
       .ilike("username", pattern);
+    if (userMatchesError) throw userMatchesError;
 
     // Search alts.username and resolve to user_id
-    const { data: altMatches } = await supabase
+    // Public-directory safety: only public alts can surface a user — service-role bypasses RLS.
+    const { data: altMatches, error: altMatchesError } = await supabase
       .from("alts")
       .select("user_id")
-      .ilike("username", pattern);
+      .ilike("username", pattern)
+      .eq("is_public", true);
+    if (altMatchesError) throw altMatchesError;
 
     const idSet = new Set<string>();
     for (const u of userMatches ?? []) {
@@ -208,10 +212,9 @@ export async function searchPlayers(
   // Step 3: If filtering by format, get user IDs that have played that format
   if (format) {
     // First get tournament IDs for this format (server-side filter)
-    const { data: formatTournaments } = await supabase
-      .from("tournaments")
-      .select("id")
-      .ilike("format", format);
+    const { data: formatTournaments, error: formatTournamentsError } =
+      await supabase.from("tournaments").select("id").ilike("format", format);
+    if (formatTournamentsError) throw formatTournamentsError;
 
     const tournamentIds = (formatTournaments ?? []).map((t) => t.id);
 
@@ -220,10 +223,11 @@ export async function searchPlayers(
     }
 
     // Then get alt IDs that have stats in those tournaments
-    const { data: formatStats } = await supabase
+    const { data: formatStats, error: formatStatsError } = await supabase
       .from("tournament_player_stats")
       .select("alt_id")
       .in("tournament_id", tournamentIds);
+    if (formatStatsError) throw formatStatsError;
 
     const altIds = [...new Set((formatStats ?? []).map((s) => s.alt_id))];
 
@@ -231,15 +235,17 @@ export async function searchPlayers(
       return { players: [], totalCount: 0, page };
     }
 
-    // Resolve alt IDs to user IDs
-    const { data: altUsers } = await supabase
-      .from("alts")
-      .select("user_id")
-      .in("id", altIds);
+    // Resolve alt IDs to user IDs — chunk the IN-list to avoid URI overflow.
+    // Public-directory safety: only public alts drive the format filter — service-role bypasses RLS.
+    const altUsers = await fetchInChunks(altIds, (idChunk) =>
+      supabase
+        .from("alts")
+        .select("user_id")
+        .in("id", idChunk)
+        .eq("is_public", true)
+    );
 
-    const resolvedUserIds = [
-      ...new Set((altUsers ?? []).map((a) => a.user_id)),
-    ];
+    const resolvedUserIds = [...new Set(altUsers.map((a) => a.user_id))];
 
     if (resolvedUserIds.length === 0) {
       return { players: [], totalCount: 0, page };
@@ -304,16 +310,18 @@ export async function searchPlayers(
   }
 
   // Step 4: Get primary alt (avatar) for each user. Chunk the user_id IN-list
-  // (see fetchInChunks) and order by is_public DESC, id ASC so the primary alt
-  // picked per user is deterministic and prefers a PUBLIC alt — a private alt
-  // must never represent a user in the public directory, and coach-badge
-  // resolution only answers for public alts.
+  // (see fetchInChunks) and filter to public alts only — a private alt must never
+  // represent a user in the public directory, and service-role bypasses RLS.
+  // The is_public ORDER is left for determinism but is effectively redundant now
+  // that the filter guarantees only public alts are returned.
   const allUserIds = userList.map((u) => u.id);
   const altRows = await fetchInChunks(allUserIds, (idChunk) =>
     supabase
       .from("alts")
       .select("id, user_id, username, avatar_url")
       .in("user_id", idChunk)
+      // Public-directory safety: only public alts appear in results — service-role bypasses RLS.
+      .eq("is_public", true)
       .order("is_public", { ascending: false })
       .order("id", { ascending: true })
   );
@@ -389,9 +397,15 @@ export async function searchPlayers(
     }
   }
 
-  // Step 6: Build player entries
-  let players: PlayerDirectoryEntry[] = userList.map((user) => {
+  // Step 6: Build player entries.
+  // Users with no public alt are excluded from the directory — they have no
+  // displayable identity and must not appear in public results (service-role
+  // bypasses RLS, so this guard is the sole enforcement point).
+  let players: PlayerDirectoryEntry[] = userList.flatMap((user) => {
     const alt = altMap.get(user.id);
+    // No public alt → exclude from public directory entirely.
+    if (!alt) return [];
+
     const stats = statsPerUser.get(user.id) ?? {
       tournamentCount: 0,
       totalWins: 0,
@@ -401,17 +415,19 @@ export async function searchPlayers(
     const winRate =
       totalMatches > 0 ? (stats.totalWins / totalMatches) * 100 : 0;
 
-    return {
-      userId: user.id,
-      altId: alt?.altId ?? null,
-      username: alt?.username ?? user.username ?? "Unknown",
-      avatarUrl: alt?.avatarUrl ?? null,
-      country: user.country,
-      tournamentCount: stats.tournamentCount,
-      winRate: Math.round(winRate * 10) / 10,
-      totalWins: stats.totalWins,
-      totalLosses: stats.totalLosses,
-    };
+    return [
+      {
+        userId: user.id,
+        altId: alt.altId,
+        username: alt.username,
+        avatarUrl: alt.avatarUrl,
+        country: user.country,
+        tournamentCount: stats.tournamentCount,
+        winRate: Math.round(winRate * 10) / 10,
+        totalWins: stats.totalWins,
+        totalLosses: stats.totalLosses,
+      },
+    ];
   });
 
   // Step 7: Post-sort if needed

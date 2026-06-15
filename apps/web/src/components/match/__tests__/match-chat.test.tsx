@@ -17,14 +17,12 @@ import { MatchChat } from "../match-chat";
 // Mock setup
 // ===========================================================================
 
-const mockGetMatchMessages = jest.fn();
+// MatchChat no longer owns its messages query — it receives `messages`,
+// `messagesLoading`, and `onMessageSent` as props from MatchPageClient. We only
+// need the `getMatchMessages` type import resolved (a type-only import erases at
+// runtime, so this mock keeps the module graph happy if it's ever evaluated).
 jest.mock("@trainers/supabase", () => ({
-  getMatchMessages: (...args: unknown[]) => mockGetMatchMessages(...args),
-}));
-
-const mockUseSupabaseQuery = jest.fn();
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: (...args: unknown[]) => mockUseSupabaseQuery(...args),
+  getMatchMessages: jest.fn(),
 }));
 
 const mockSendMatchMessageAction = jest.fn();
@@ -66,7 +64,13 @@ jest.mock("../presence-indicator", () => ({
 // Default props + helpers
 // ===========================================================================
 
-const defaultProps = {
+// Messages are now passed in as props; the active test's message state is held
+// here so `render(<MatchChat {...defaultProps} />)` call sites pick it up.
+let currentMessages: unknown[] | null = [];
+let currentMessagesLoading = false;
+let mockOnMessageSent = jest.fn();
+
+const baseProps = {
   matchId: 1,
   userAltId: 10,
   isStaff: false,
@@ -74,7 +78,6 @@ const defaultProps = {
   matchStatus: "active",
   staffRequested: false,
   tournamentId: 5,
-  messagesRefreshKey: 0,
   onStaffRequestChange: jest.fn(),
   viewers: [],
   typingUsers: [],
@@ -83,32 +86,46 @@ const defaultProps = {
   onTypingStop: jest.fn(),
 };
 
+// `defaultProps` is a getter object so it always reflects the latest message
+// state set by the setup* helpers below.
+const defaultProps = new Proxy({} as Record<string, unknown>, {
+  get(_target, prop: string) {
+    if (prop === "messages") return currentMessages;
+    if (prop === "messagesLoading") return currentMessagesLoading;
+    if (prop === "onMessageSent") return mockOnMessageSent;
+    return baseProps[prop as keyof typeof baseProps];
+  },
+  ownKeys() {
+    return [
+      ...Object.keys(baseProps),
+      "messages",
+      "messagesLoading",
+      "onMessageSent",
+    ];
+  },
+  getOwnPropertyDescriptor() {
+    return { enumerable: true, configurable: true };
+  },
+});
+
 function setupNoMessages() {
-  const refetchMessages = jest.fn();
-  mockUseSupabaseQuery.mockReturnValue({
-    data: [],
-    isLoading: false,
-    refetch: refetchMessages,
-  });
-  return refetchMessages;
+  currentMessages = [];
+  currentMessagesLoading = false;
+  mockOnMessageSent = jest.fn();
+  return mockOnMessageSent;
 }
 
 function setupMessages(messages: unknown[]) {
-  const refetchMessages = jest.fn();
-  mockUseSupabaseQuery.mockReturnValue({
-    data: messages,
-    isLoading: false,
-    refetch: refetchMessages,
-  });
-  return refetchMessages;
+  currentMessages = messages;
+  currentMessagesLoading = false;
+  mockOnMessageSent = jest.fn();
+  return mockOnMessageSent;
 }
 
 function setupLoading() {
-  mockUseSupabaseQuery.mockReturnValue({
-    data: null,
-    isLoading: true,
-    refetch: jest.fn(),
-  });
+  currentMessages = null;
+  currentMessagesLoading = true;
+  mockOnMessageSent = jest.fn();
 }
 
 // ===========================================================================
@@ -317,9 +334,9 @@ describe("MatchChat", () => {
   // =========================================================================
 
   describe("sending messages", () => {
-    it("sends a message and clears input on success", async () => {
+    it("sends a message, clears input, and notifies the parent on success", async () => {
       const user = userEvent.setup();
-      const refetch = setupNoMessages();
+      const onMessageSent = setupNoMessages();
       mockSendMatchMessageAction.mockResolvedValue({ success: true });
 
       render(<MatchChat {...defaultProps} />);
@@ -335,7 +352,7 @@ describe("MatchChat", () => {
           "Hello!",
           "player"
         );
-        expect(refetch).toHaveBeenCalled();
+        expect(onMessageSent).toHaveBeenCalled();
       });
 
       // Input should be cleared

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import { TournamentPairingsJudge } from "../tournament-pairings-judge";
 import userEvent from "@testing-library/user-event";
 
@@ -12,8 +12,17 @@ jest.mock("next/navigation", () => ({
 // Realtime / Supabase mock (channels RETAINED in judge view)
 // ---------------------------------------------------------------------------
 
+// Captures the postgres_changes handlers registered per channel so tests can
+// fire realtime payloads and assert the cache effect. Keyed by channel name.
+const channelHandlers: Record<string, (payload: { new?: unknown }) => void> =
+  {};
+let currentChannelName = "";
+
 const mockChannel = {
-  on: jest.fn().mockReturnThis(),
+  on: jest.fn((_event: string, _config: unknown, handler) => {
+    channelHandlers[currentChannelName] = handler;
+    return mockChannel;
+  }),
   subscribe: jest.fn((callback) => {
     if (typeof callback === "function") {
       callback("SUBSCRIBED", null);
@@ -24,7 +33,10 @@ const mockChannel = {
 };
 
 const mockSupabase = {
-  channel: jest.fn(() => mockChannel),
+  channel: jest.fn((name: string) => {
+    currentChannelName = name;
+    return mockChannel;
+  }),
 };
 
 jest.mock("@/lib/supabase", () => ({
@@ -33,6 +45,22 @@ jest.mock("@/lib/supabase", () => ({
 
 import { useSupabase } from "@/lib/supabase";
 const mockUseSupabase = useSupabase as jest.MockedFunction<typeof useSupabase>;
+
+// ---------------------------------------------------------------------------
+// TanStack Query client mock — captures setQueryData / invalidateQueries so we
+// can assert the realtime payload mutates the cache (matches) vs refetches
+// (rounds).
+// ---------------------------------------------------------------------------
+
+const mockSetQueryData = jest.fn();
+const mockInvalidateQueries = jest.fn();
+
+jest.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({
+    setQueryData: (...args: unknown[]) => mockSetQueryData(...args),
+    invalidateQueries: (...args: unknown[]) => mockInvalidateQueries(...args),
+  }),
+}));
 
 // ---------------------------------------------------------------------------
 // useApiQuery mock — replaces the three useSupabaseQuery calls
@@ -146,6 +174,9 @@ describe("TournamentPairingsJudge", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockPush.mockClear();
+    for (const key of Object.keys(channelHandlers)) {
+      delete channelHandlers[key];
+    }
     mockUseSupabase.mockReturnValue(
       mockSupabase as ReturnType<typeof useSupabase>
     );
@@ -191,6 +222,48 @@ describe("TournamentPairingsJudge", () => {
 
       expect(screen.getByText("Pairings")).toBeInTheDocument();
       expect(screen.getByText(/No phases configured/)).toBeInTheDocument();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Loading and Error states — must NOT show "No phases configured" while the
+  // pairings query is pending or errored (otherwise a slow/failed fetch is
+  // indistinguishable from a tournament that genuinely has no phases).
+  // -------------------------------------------------------------------------
+
+  describe("Loading and Error States", () => {
+    it("shows a loading state while the pairings query is pending", () => {
+      mockUseApiQuery.mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isError: false,
+        error: null,
+        refetch: jest.fn(),
+      });
+
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      expect(screen.getByText(/Loading pairings/)).toBeInTheDocument();
+      expect(
+        screen.queryByText(/No phases configured/)
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows an error state when the pairings query fails", () => {
+      mockUseApiQuery.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: new Error("Failed to load pairings (HTTP 500)"),
+        refetch: jest.fn(),
+      });
+
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      expect(screen.getByText(/Failed to load pairings/)).toBeInTheDocument();
+      expect(
+        screen.queryByText(/No phases configured/)
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -417,6 +490,248 @@ describe("TournamentPairingsJudge", () => {
       unmount();
       expect(mockChannel.unsubscribe).toHaveBeenCalled();
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // P3-5: payload-driven cache updates
+  // -------------------------------------------------------------------------
+
+  describe("payload-driven realtime cache", () => {
+    const pairingsActive = buildPairingsData({
+      phases: BASE_PHASES,
+      allPhaseRounds: [[{ ...ACTIVE_ROUND_STATS, matches: [] }]],
+      roundsWithStats: [ACTIVE_ROUND_STATS],
+    });
+
+    it("merges a match UPDATE into the cache via setQueryData (no refetch)", () => {
+      mockUseApiQuery.mockReturnValue(apiResult(pairingsActive));
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      // Fire a realtime UPDATE on the matches channel for the active round.
+      const handler = channelHandlers["pairings-matches-1"];
+      expect(handler).toBeDefined();
+      handler!({ new: { id: 7, status: "completed" } });
+
+      // setQueryData targets the pairings key; the matches channel never
+      // invalidates/refetches.
+      expect(mockSetQueryData).toHaveBeenCalledTimes(1);
+      const [key, updater] = mockSetQueryData.mock.calls[0] as [
+        unknown[],
+        (prev: unknown) => unknown,
+      ];
+      expect(key).toContain(mockTournament.id);
+      expect(typeof updater).toBe("function");
+
+      // The matches update must NOT trigger an invalidate/refetch.
+      expect(mockInvalidateQueries).not.toHaveBeenCalled();
+    });
+
+    it("the setQueryData updater patches the changed match by id", () => {
+      const matchA = makeMatch({
+        id: 7,
+        table_number: 1,
+        status: "active",
+        player1: { id: 1, username: "playera" },
+        player2: { id: 2, username: "playerb" },
+      });
+      const data = buildPairingsData({
+        phases: BASE_PHASES,
+        allPhaseRounds: [[{ ...ACTIVE_ROUND_STATS, matches: [matchA] }]],
+        roundsWithStats: [ACTIVE_ROUND_STATS],
+      });
+      mockUseApiQuery.mockReturnValue(apiResult(data));
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      channelHandlers["pairings-matches-1"]!({
+        new: { id: 7, status: "completed", game_wins1: 2 },
+      });
+
+      const [, updater] = mockSetQueryData.mock.calls[0] as [
+        unknown,
+        (prev: unknown) => { allPhaseRounds: { matches: unknown[] }[][] },
+      ];
+      const next = updater(data);
+      const updated = next.allPhaseRounds[0]![0]!.matches[0] as {
+        status: string;
+        game_wins1: number;
+        player1: { username: string };
+      };
+      expect(updated.status).toBe("completed");
+      expect(updated.game_wins1).toBe(2);
+      // Hydrated join survives.
+      expect(updated.player1.username).toBe("playera");
+    });
+
+    it("rounds channel invalidates the pairings query (debounced) — no setQueryData", () => {
+      jest.useFakeTimers();
+      try {
+        mockUseApiQuery.mockReturnValue(apiResult(pairingsActive));
+        render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+        const handler = channelHandlers["pairings-rounds-123"];
+        expect(handler).toBeDefined();
+        handler!({ new: { id: 99 } });
+
+        // Debounced — nothing yet.
+        expect(mockInvalidateQueries).not.toHaveBeenCalled();
+        act(() => {
+          jest.advanceTimersByTime(500);
+        });
+
+        expect(mockInvalidateQueries).toHaveBeenCalledTimes(1);
+        const [arg] = mockInvalidateQueries.mock.calls[0] as [
+          { queryKey: unknown[] },
+        ];
+        expect(arg.queryKey).toContain(mockTournament.id);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Fetcher ActionResult wrapping — fetch-level contract
+  //
+  // The inline fetcher passed to useApiQuery wraps the raw fetch response into
+  // ActionResult<TournamentPairingsData>. useApiQuery relies on result.success
+  // to decide whether to surface the data or throw an error. If the wrapping
+  // were removed (e.g. returning the raw Response), the query would silently
+  // lose data or always throw.
+  //
+  // Because the fetcher is not exported, we test it by:
+  //  1. Capturing it from the mockUseApiQuery call arguments.
+  //  2. Calling it directly with mocked global fetch.
+  //  3. Asserting the ActionResult shape.
+  // -------------------------------------------------------------------------
+
+  describe("fetcher ActionResult wrapping", () => {
+    const savedFetch = globalThis.fetch;
+
+    afterEach(() => {
+      globalThis.fetch = savedFetch;
+    });
+
+    it("resolves { success: false, error: ... } when fetch returns a non-OK response", async () => {
+      // Render the component so mockUseApiQuery captures the fetcher arg.
+      mockUseApiQuery.mockImplementation(
+        (_key: unknown, fetcher: () => Promise<unknown>, _opts?: unknown) => {
+          // Capture the fetcher, return loading so the component is idle.
+          capturedFetcher = fetcher;
+          return {
+            data: undefined,
+            isLoading: true,
+            isError: false,
+            error: null,
+            refetch: jest.fn(),
+          };
+        }
+      );
+
+      let capturedFetcher: (() => Promise<unknown>) | undefined;
+
+      // Re-render after assigning the capture variable above.
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      expect(capturedFetcher).toBeDefined();
+
+      // Now mock fetch to return a 500 error response.
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: jest.fn().mockResolvedValue({}),
+      }) as typeof fetch;
+
+      const result = (await capturedFetcher!()) as {
+        success: boolean;
+        error?: string;
+      };
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("500");
+    });
+
+    it("resolves { success: true, data: ... } when fetch returns an OK response", async () => {
+      let capturedFetcher: (() => Promise<unknown>) | undefined;
+
+      mockUseApiQuery.mockImplementation(
+        (_key: unknown, fetcher: () => Promise<unknown>, _opts?: unknown) => {
+          capturedFetcher = fetcher;
+          return {
+            data: undefined,
+            isLoading: true,
+            isError: false,
+            error: null,
+            refetch: jest.fn(),
+          };
+        }
+      );
+
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      expect(capturedFetcher).toBeDefined();
+
+      const fakeData = {
+        phases: [],
+        allPhaseRounds: [],
+        roundsWithStats: [],
+        unpairedPlayers: [],
+      };
+
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue(fakeData),
+      }) as typeof fetch;
+
+      const result = (await capturedFetcher!()) as {
+        success: boolean;
+        data?: unknown;
+      };
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(fakeData);
+    });
+
+    it.each([
+      [401, "401"],
+      [403, "403"],
+      [404, "404"],
+      [503, "503"],
+    ])(
+      "HTTP %i response resolves { success: false } with status in error message",
+      async (statusCode, statusStr) => {
+        let capturedFetcher: (() => Promise<unknown>) | undefined;
+
+        mockUseApiQuery.mockImplementation(
+          (_key: unknown, fetcher: () => Promise<unknown>, _opts?: unknown) => {
+            capturedFetcher = fetcher;
+            return {
+              data: undefined,
+              isLoading: true,
+              isError: false,
+              error: null,
+              refetch: jest.fn(),
+            };
+          }
+        );
+
+        render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+        globalThis.fetch = jest.fn().mockResolvedValue({
+          ok: false,
+          status: statusCode,
+          json: jest.fn().mockResolvedValue({}),
+        }) as typeof fetch;
+
+        const result = (await capturedFetcher!()) as {
+          success: boolean;
+          error?: string;
+        };
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain(statusStr);
+      }
+    );
   });
 
   // -------------------------------------------------------------------------

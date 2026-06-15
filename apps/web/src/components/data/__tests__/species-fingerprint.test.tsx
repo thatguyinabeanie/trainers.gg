@@ -56,6 +56,14 @@ jest.mock("@trainers/pokemon/sprites", () => ({
 }));
 
 // =============================================================================
+// Clipboard mock — BuildThisButton uses navigator.clipboard.writeText
+// =============================================================================
+Object.defineProperty(navigator, "clipboard", {
+  value: { writeText: jest.fn().mockResolvedValue(undefined) },
+  writable: true,
+});
+
+// =============================================================================
 // Test data factory
 // =============================================================================
 
@@ -119,12 +127,24 @@ function makeDetailBucket(
 describe("SpeciesFingerprint", () => {
   describe("empty / null state", () => {
     it("renders a friendly empty state when detail is null", () => {
-      render(<SpeciesFingerprint detail={null} isChampions={false} />);
+      render(
+        <SpeciesFingerprint
+          detail={null}
+          isChampions={false}
+          species="koraidon"
+        />
+      );
       expect(screen.getByText(/no usage data yet/i)).toBeInTheDocument();
     });
 
     it("still renders the card title in the null state", () => {
-      render(<SpeciesFingerprint detail={null} isChampions={false} />);
+      render(
+        <SpeciesFingerprint
+          detail={null}
+          isChampions={false}
+          species="koraidon"
+        />
+      );
       expect(screen.getByText(/build fingerprint/i)).toBeInTheDocument();
     });
   });
@@ -134,7 +154,11 @@ describe("SpeciesFingerprint", () => {
 
     beforeEach(() => {
       const result = render(
-        <SpeciesFingerprint detail={makeDetailBucket()} isChampions={false} />
+        <SpeciesFingerprint
+          detail={makeDetailBucket()}
+          isChampions={false}
+          species="koraidon"
+        />
       );
       container = result.container;
     });
@@ -158,6 +182,12 @@ describe("SpeciesFingerprint", () => {
     it("renders move names in the bar list", () => {
       expect(screen.getByText("Glacial Lance")).toBeInTheDocument();
       expect(screen.getByText("Protect")).toBeInTheDocument();
+    });
+
+    it("renders the 'Build this' button", () => {
+      expect(
+        screen.getByRole("button", { name: /build this/i })
+      ).toBeInTheDocument();
     });
 
     it("collapses item entries beyond top 5 into 'Other' in the data", () => {
@@ -185,7 +215,11 @@ describe("SpeciesFingerprint", () => {
 
     beforeEach(() => {
       const result = render(
-        <SpeciesFingerprint detail={makeDetailBucket()} isChampions={true} />
+        <SpeciesFingerprint
+          detail={makeDetailBucket()}
+          isChampions={true}
+          species="koraidon"
+        />
       );
       container = result.container;
     });
@@ -220,7 +254,11 @@ describe("SpeciesFingerprint", () => {
       // "Heavy-Duty Boots" (entry 6) should be absorbed into Other and
       // never appear as an individual entry in the rendered legend.
       render(
-        <SpeciesFingerprint detail={makeDetailBucket()} isChampions={false} />
+        <SpeciesFingerprint
+          detail={makeDetailBucket()}
+          isChampions={false}
+          species="koraidon"
+        />
       );
 
       expect(screen.queryByText("Heavy-Duty Boots")).not.toBeInTheDocument();
@@ -235,7 +273,13 @@ describe("SpeciesFingerprint", () => {
         tera: [makeEntry("Fairy", 100)],
         natures: [makeEntry("Timid", 100)],
       });
-      render(<SpeciesFingerprint detail={detail} isChampions={false} />);
+      render(
+        <SpeciesFingerprint
+          detail={detail}
+          isChampions={false}
+          species="koraidon"
+        />
+      );
 
       // No Other bucket should appear
       expect(screen.queryByText("Other")).not.toBeInTheDocument();
@@ -245,14 +289,26 @@ describe("SpeciesFingerprint", () => {
   describe("empty data per dimension", () => {
     it("renders a dash placeholder for a dimension with no data", () => {
       const detail = makeDetailBucket({ items: [] });
-      render(<SpeciesFingerprint detail={detail} isChampions={false} />);
+      render(
+        <SpeciesFingerprint
+          detail={detail}
+          isChampions={false}
+          species="koraidon"
+        />
+      );
       // The empty DonutChart renders a "—" placeholder
       expect(screen.getByText("—")).toBeInTheDocument();
     });
 
     it("renders 'No move data' when moves array is empty", () => {
       const detail = makeDetailBucket({ moves: [] });
-      render(<SpeciesFingerprint detail={detail} isChampions={false} />);
+      render(
+        <SpeciesFingerprint
+          detail={detail}
+          isChampions={false}
+          species="koraidon"
+        />
+      );
       expect(screen.getByText(/no move data/i)).toBeInTheDocument();
     });
   });

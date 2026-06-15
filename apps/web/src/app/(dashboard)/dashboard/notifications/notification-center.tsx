@@ -3,15 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Loader2, CheckCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import {
   getNotifications,
   getUnreadNotificationCount,
   getNotificationCount,
 } from "@trainers/supabase";
-import type { TypedSupabaseClient, Tables } from "@trainers/supabase";
+import type { Tables } from "@trainers/supabase";
 import type { NotificationType } from "@trainers/validators";
+import { useSupabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
+import { queryKeys } from "@/lib/query-keys";
 import {
   markNotificationReadAction,
   markAllNotificationsReadAction,
@@ -63,8 +66,9 @@ export function NotificationCenter({
   initialTotalCount,
   initialUnreadCount,
 }: NotificationCenterProps) {
-  const _supabase = useSupabase();
   const router = useRouter();
+  const { user } = useAuth();
+  const supabase = useSupabase();
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [page, setPage] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -87,48 +91,73 @@ export function NotificationCenter({
       : undefined;
 
   // Fetch notifications for current tab + page
-  const notificationsQueryFn = (client: TypedSupabaseClient) =>
-    getNotifications(client, {
-      limit: PAGE_SIZE,
-      offset: page * PAGE_SIZE,
-      unreadOnly: isUnreadOnly,
-      types: typesFilter,
-    });
-
   const {
     data: notifications,
     refetch: refetchNotifications,
     isLoading,
-  } = useSupabaseQuery(notificationsQueryFn, [activeTab, page, refreshKey]);
+  } = useQuery({
+    queryKey: queryKeys.notifications.list(
+      user?.id ?? "",
+      activeTab,
+      page,
+      refreshKey
+    ),
+    queryFn: () =>
+      getNotifications(supabase, {
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
+        unreadOnly: isUnreadOnly,
+        types: typesFilter,
+      }),
+    staleTime: 30_000,
+    enabled: Boolean(user?.id),
+    // Only seed initialData once a real user?.id exists AND on the first page
+    // of the "all" tab. Gating on user?.id prevents seeding the cache under the
+    // empty-string key while the query is disabled (auth still resolving) —
+    // otherwise that "" entry could be reused across sessions (cross-user leak).
+    initialData:
+      user?.id && page === 0 && activeTab === "all"
+        ? initialNotifications
+        : undefined,
+  });
 
   // Fetch total count for pagination
-  const countQueryFn = (client: TypedSupabaseClient) =>
-    getNotificationCount(client, {
-      unreadOnly: isUnreadOnly,
-      types: typesFilter,
-    });
-
-  const { data: totalCount, refetch: refetchCount } = useSupabaseQuery(
-    countQueryFn,
-    [activeTab, refreshKey]
-  );
+  const { data: totalCount, refetch: refetchCount } = useQuery({
+    queryKey: queryKeys.notifications.count(
+      user?.id ?? "",
+      activeTab,
+      refreshKey
+    ),
+    queryFn: () =>
+      getNotificationCount(supabase, {
+        unreadOnly: isUnreadOnly,
+        types: typesFilter,
+      }),
+    staleTime: 30_000,
+    enabled: Boolean(user?.id),
+    // Gate on user?.id — see the notifications-list query above.
+    initialData:
+      user?.id && activeTab === "all" ? initialTotalCount : undefined,
+  });
 
   // Fetch unread count for the header badge
-  const unreadCountQueryFn = (client: TypedSupabaseClient) =>
-    getUnreadNotificationCount(client);
+  const { data: unreadCount, refetch: refetchUnread } = useQuery({
+    queryKey: queryKeys.notifications.unreadCount(user?.id ?? "", refreshKey),
+    queryFn: () => getUnreadNotificationCount(supabase),
+    staleTime: 30_000,
+    enabled: Boolean(user?.id),
+    // Gate on user?.id — see the notifications-list query above.
+    initialData: user?.id ? initialUnreadCount : undefined,
+  });
 
-  const { data: unreadCount, refetch: refetchUnread } = useSupabaseQuery(
-    unreadCountQueryFn,
-    [refreshKey]
-  );
-
-  // Use initial data on first render, then query data after
+  // Derive display values. While auth is still resolving (no user?.id yet) the
+  // queries are disabled and their caches are unseeded, so fall back to the SSR
+  // `initial*` props directly — this preserves the server-rendered values without
+  // seeding the React Query cache under the empty-string userId key.
   const displayNotifications =
-    notifications ??
-    (page === 0 && activeTab === "all" ? initialNotifications : []);
-  const displayTotalCount =
-    totalCount ?? (activeTab === "all" ? initialTotalCount : 0);
-  const displayUnreadCount = unreadCount ?? initialUnreadCount;
+    notifications ?? (user?.id ? [] : initialNotifications);
+  const displayTotalCount = totalCount ?? (user?.id ? 0 : initialTotalCount);
+  const displayUnreadCount = unreadCount ?? (user?.id ? 0 : initialUnreadCount);
 
   const totalPages = Math.max(1, Math.ceil(displayTotalCount / PAGE_SIZE));
 
@@ -153,7 +182,11 @@ export function NotificationCenter({
     isRead: boolean
   ) => {
     if (!isRead) {
-      await markNotificationReadAction(notificationId);
+      const result = await markNotificationReadAction(notificationId);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
       setRefreshKey((k) => k + 1);
     }
     if (isSafeRelativeUrl(actionUrl)) {

@@ -968,6 +968,214 @@ export async function getPhaseRoundsWithMatches(
   }));
 }
 
+// =============================================================================
+// Public-allowlist variants — for anon-reachable surfaces (SSR pages, public API)
+// =============================================================================
+
+/**
+ * Get all rounds with their matches for a phase — PUBLIC allowlist variant.
+ *
+ * Mirrors `getPhaseRoundsWithMatches` but narrows the `tournament_matches`
+ * SELECT to public-safe columns only. Use this function (instead of
+ * `getPhaseRoundsWithMatches`) whenever the result is serialised and sent to
+ * a `"use client"` component or a public API response.
+ *
+ * Omitted from `tournament_matches` (sensitive / staff-internal):
+ *   staff_notes, staff_requested, staff_requested_at, staff_resolved_by,
+ *   alt1_rating_before, alt1_overall_rating_before, alt1_games_before,
+ *   alt2_rating_before, alt2_overall_rating_before, alt2_games_before,
+ *   alt1_overall_games_before, alt2_overall_games_before,
+ *   elo_applied, player1_match_confirmed, player2_match_confirmed,
+ *   match_confirmed_at.
+ *
+ * Kept: all public statistical and display fields (id, round_id, alt1_id,
+ * alt2_id, table_number, status, game_wins1, game_wins2, match_points1,
+ * match_points2, winner_alt_id, is_bye, start_time, end_time, created_at).
+ *
+ * `tournament_rounds.*` is unchanged — all round columns are public-safe.
+ * `alts` join remains narrow (id, username) — public identity only.
+ * `tournament_player_stats` join remains narrow (alt_id, match_wins,
+ * match_losses) — public stats only.
+ */
+export async function getPublicPhaseRoundsWithMatches(
+  supabase: TypedClient,
+  phaseId: number,
+  tournamentId: number
+) {
+  const { data: rounds, error } = await supabase
+    .from("tournament_rounds")
+    .select("*")
+    .eq("phase_id", phaseId)
+    .order("round_number", { ascending: true });
+
+  if (error) throw error;
+
+  const roundIds = (rounds ?? []).map((r) => r.id);
+  if (roundIds.length === 0) return [];
+
+  const { data: allMatches, error: mErr } = await supabase
+    .from("tournament_matches")
+    .select(
+      `
+      id,
+      round_id,
+      alt1_id,
+      alt2_id,
+      table_number,
+      status,
+      game_wins1,
+      game_wins2,
+      match_points1,
+      match_points2,
+      winner_alt_id,
+      is_bye,
+      start_time,
+      end_time,
+      created_at,
+      player1:alts!tournament_matches_alt1_id_fkey(id, username),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username)
+    `
+    )
+    .in("round_id", roundIds)
+    .order("table_number", { ascending: true });
+
+  if (mErr) throw mErr;
+
+  // Enrich with player stats (public columns only)
+  const statsMap = new Map<number, { wins: number; losses: number }>();
+
+  if (allMatches && allMatches.length > 0) {
+    const altIds = new Set<number>();
+    for (const m of allMatches) {
+      if (m.alt1_id) altIds.add(m.alt1_id);
+      if (m.alt2_id) altIds.add(m.alt2_id);
+    }
+
+    if (altIds.size > 0) {
+      const { data: stats, error: statsError } = await supabase
+        .from("tournament_player_stats")
+        .select("alt_id, match_wins, match_losses")
+        .eq("tournament_id", tournamentId)
+        .in("alt_id", Array.from(altIds));
+
+      if (statsError) throw statsError;
+
+      for (const s of stats ?? []) {
+        statsMap.set(s.alt_id, {
+          wins: s.match_wins ?? 0,
+          losses: s.match_losses ?? 0,
+        });
+      }
+    }
+  }
+
+  // Group matches by round_id
+  const matchesByRound = new Map<
+    number,
+    (typeof allMatches extends (infer T)[] | null ? T : never)[]
+  >();
+  for (const match of allMatches ?? []) {
+    const list = matchesByRound.get(match.round_id) ?? [];
+    list.push(match);
+    matchesByRound.set(match.round_id, list);
+  }
+
+  return (rounds ?? []).map((round) => ({
+    ...round,
+    matches: (matchesByRound.get(round.id) ?? []).map((match) => ({
+      ...match,
+      player1Stats: match.alt1_id
+        ? (statsMap.get(match.alt1_id) ?? null)
+        : null,
+      player2Stats: match.alt2_id
+        ? (statsMap.get(match.alt2_id) ?? null)
+        : null,
+    })),
+  }));
+}
+
+/** A single round-with-public-matches entry. */
+export type PublicPhaseRoundWithMatchesRow = Awaited<
+  ReturnType<typeof getPublicPhaseRoundsWithMatches>
+>[number];
+
+/**
+ * Get all player stats for a tournament — PUBLIC allowlist variant.
+ *
+ * Mirrors `getTournamentPlayerStats` but narrows the `tournament_player_stats`
+ * SELECT to public-safe columns. Use this function (instead of
+ * `getTournamentPlayerStats`) for anon-reachable or cached public API responses.
+ *
+ * Omitted from `tournament_player_stats` (internal / recalculation state):
+ *   standings_need_recalc, opponent_history, last_tiebreaker_update.
+ *
+ * Kept: all public statistical fields needed for standings display (rank,
+ * record, tiebreakers, is_dropped) and the `alts` join (id, username,
+ * avatar_url — public identity only, no user_id / bio / tier).
+ *
+ * `is_dropped` is explicitly kept — it is public-safe per task specification.
+ */
+export async function getPublicTournamentPlayerStats(
+  supabase: TypedClient,
+  tournamentId: number,
+  options: { includeDropped?: boolean } = {}
+) {
+  const { includeDropped = false } = options;
+
+  let query = supabase
+    .from("tournament_player_stats")
+    .select(
+      `
+      id,
+      tournament_id,
+      alt_id,
+      current_standing,
+      final_ranking,
+      match_wins,
+      match_losses,
+      match_points,
+      match_win_percentage,
+      game_wins,
+      game_losses,
+      game_win_percentage,
+      opponent_match_win_percentage,
+      opponent_game_win_percentage,
+      opponent_opponent_match_win_percentage,
+      buchholz_score,
+      modified_buchholz_score,
+      strength_of_schedule,
+      matches_played,
+      rounds_played,
+      current_seed,
+      has_received_bye,
+      is_dropped,
+      created_at,
+      updated_at,
+      alt:alts(
+        id,
+        username,
+        avatar_url
+      )
+    `
+    )
+    .eq("tournament_id", tournamentId)
+    .order("current_standing", { ascending: true, nullsFirst: false });
+
+  if (!includeDropped) {
+    query = query.or("is_dropped.is.null,is_dropped.eq.false");
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** A single public player-stats row with its joined alt. */
+export type PublicTournamentPlayerStatsRow = Awaited<
+  ReturnType<typeof getPublicTournamentPlayerStats>
+>[number];
+
 /**
  * Get check-in status for current user
  * If no altId is provided, returns status for the current authenticated user
@@ -2269,7 +2477,11 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
  */
 export async function getPlayerTournamentHistory(
   supabase: TypedClient,
-  altIds: number[]
+  altIds: number[],
+  // publicOnly: true for service-role public callers (RLS bypassed) — restricts
+  // team_pokemon reads to teams where is_public = true to prevent species leaks.
+  // Authed browser callers leave this false and rely on RLS for own-team access.
+  options: { publicOnly?: boolean } = {}
 ) {
   if (altIds.length === 0) return [];
 
@@ -2327,11 +2539,13 @@ export async function getPlayerTournamentHistory(
     .filter((id) => id > 0);
 
   // Fetch team_id from registrations for team pokemon display
-  const { data: registrations } = await supabase
+  const { data: registrations, error: registrationsError } = await supabase
     .from("tournament_registrations")
     .select("tournament_id, alt_id, team_id")
     .in("alt_id", altIds)
     .in("tournament_id", completedTournamentIds);
+
+  if (registrationsError) throw registrationsError;
 
   const regTeamMap = new Map<string, number | null>();
   for (const r of registrations ?? []) {
@@ -2346,28 +2560,48 @@ export async function getPlayerTournamentHistory(
   const teamPokemonMap = new Map<number, string[]>();
 
   if (registrationTeamIds.length > 0) {
-    const { data: teamPokemon } = await supabase
-      .from("team_pokemon")
-      .select(
-        `
-        team_id,
-        team_position,
-        pokemon:pokemon!team_pokemon_pokemon_id_fkey(species)
-      `
-      )
-      .in("team_id", registrationTeamIds)
-      .order("team_position", { ascending: true });
+    // When publicOnly is set (service-role callers with RLS bypassed), restrict
+    // team_pokemon reads to public teams only to prevent species leaks for
+    // private teams. Authed browser callers pass publicOnly=false and rely on RLS.
+    let allowedTeamIds = registrationTeamIds;
+    if (options.publicOnly) {
+      const { data: publicTeams, error: publicTeamsError } = await supabase
+        .from("teams")
+        .select("id")
+        .in("id", registrationTeamIds)
+        .eq("is_public", true);
+      if (publicTeamsError) throw publicTeamsError;
+      allowedTeamIds = (publicTeams ?? []).map((t) => t.id);
+    }
 
-    for (const tp of teamPokemon ?? []) {
-      const existing = teamPokemonMap.get(tp.team_id) ?? [];
-      const species =
-        tp.pokemon && typeof tp.pokemon === "object" && "species" in tp.pokemon
-          ? (tp.pokemon.species as string)
-          : "";
-      if (species) {
-        existing.push(species);
+    if (allowedTeamIds.length > 0) {
+      const { data: teamPokemon, error: teamPokemonError } = await supabase
+        .from("team_pokemon")
+        .select(
+          `
+          team_id,
+          team_position,
+          pokemon:pokemon!team_pokemon_pokemon_id_fkey(species)
+        `
+        )
+        .in("team_id", allowedTeamIds)
+        .order("team_position", { ascending: true });
+
+      if (teamPokemonError) throw teamPokemonError;
+
+      for (const tp of teamPokemon ?? []) {
+        const existing = teamPokemonMap.get(tp.team_id) ?? [];
+        const species =
+          tp.pokemon &&
+          typeof tp.pokemon === "object" &&
+          "species" in tp.pokemon
+            ? (tp.pokemon.species as string)
+            : "";
+        if (species) {
+          existing.push(species);
+        }
+        teamPokemonMap.set(tp.team_id, existing);
       }
-      teamPokemonMap.set(tp.team_id, existing);
     }
   }
 
@@ -2659,10 +2893,7 @@ export async function getLiveTournamentCommunityIds(
     .eq("status", "active");
 
   if (error) {
-    console.error(
-      "[getLiveTournamentCommunityIds] Failed to fetch:",
-      error
-    );
+    console.error("[getLiveTournamentCommunityIds] Failed to fetch:", error);
     return new Set();
   }
 

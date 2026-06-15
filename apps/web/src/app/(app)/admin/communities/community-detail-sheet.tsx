@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
 import { hasCommunityFeatureAccess } from "@trainers/supabase";
+import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import {
   Sheet,
   SheetContent,
@@ -88,6 +90,7 @@ export function CommunityDetailSheet({
   onOpenChange,
 }: CommunityDetailSheetProps) {
   const router = useRouter();
+  const supabase = useSupabase();
 
   // Form state
   const [reason, setReason] = useState("");
@@ -102,17 +105,13 @@ export function CommunityDetailSheet({
   );
 
   // Discord integration feature flag state
-  const discordQuery = useSupabaseQuery(
-    async (supabase) => {
-      if (!community) return { access: false };
-      return await hasCommunityFeatureAccess(
-        supabase,
-        "discord_integration",
-        community.id
-      );
-    },
-    [community?.id]
-  );
+  const discordQuery = useQuery({
+    queryKey: queryKeys.admin.communityDiscordAccess(community?.id),
+    queryFn: () =>
+      hasCommunityFeatureAccess(supabase, "discord_integration", community!.id),
+    enabled: Boolean(community),
+    staleTime: 30_000,
+  });
   const discordEnabled = discordQuery.data?.access === true;
 
   // Reset form state when the sheet opens/closes or community changes
@@ -369,7 +368,7 @@ export function CommunityDetailSheet({
                   <Label htmlFor="discord-toggle">
                     Discord Integration
                     {discordQuery.error && (
-                      <span className="text-destructive text-xs ml-1 font-normal">
+                      <span className="text-destructive ml-1 text-xs font-normal">
                         (error loading status)
                       </span>
                     )}

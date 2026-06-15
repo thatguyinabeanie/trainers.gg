@@ -17,9 +17,18 @@ const mockSubscribe = jest.fn();
 const mockOn = jest.fn();
 const mockChannel = jest.fn();
 
+// Captures the registered postgres_changes INSERT handler so tests can fire a
+// realtime payload and assert the cache effect.
+let insertHandler:
+  | ((payload: { new: Record<string, unknown> }) => void)
+  | undefined;
+
 // channelObj is self-referential: .on() and .subscribe() both return it (Supabase API)
 const channelObj = { on: mockOn, subscribe: mockSubscribe };
-mockOn.mockReturnValue(channelObj);
+mockOn.mockImplementation((_event, _config, handler) => {
+  insertHandler = handler;
+  return channelObj;
+});
 mockSubscribe.mockReturnValue(channelObj); // channel.subscribe() returns the channel itself
 mockChannel.mockReturnValue(channelObj);
 
@@ -28,12 +37,31 @@ const mockSupabaseClient = {
   removeChannel: mockRemoveChannel,
 };
 
-// ── useSupabaseQuery mock ─────────────────────────────────────────────────
-const mockUseSupabaseQuery = jest.fn();
-
 jest.mock("@/lib/supabase", () => ({
   useSupabase: () => mockSupabaseClient,
-  useSupabaseQuery: (...args: unknown[]) => mockUseSupabaseQuery(...args),
+}));
+
+// ── TanStack Query mock ───────────────────────────────────────────────────
+// The component issues three useQuery calls (notifications, unread-count,
+// invitations) keyed by query-key-factory keys. We dispatch on the key so the
+// realtime setQueryData target can be asserted independently of call order.
+const mockSetQueryData = jest.fn();
+const mockInvalidateQueries = jest.fn();
+const queryResponses: Record<string, unknown> = {};
+
+function keyTag(queryKey: unknown[]): string {
+  // notifications recent → [...,"recent"]; unread → [...,"unread-count"];
+  // invitations → [...,"invitations"].
+  return String(queryKey[queryKey.length - 1]);
+}
+
+jest.mock("@tanstack/react-query", () => ({
+  useQuery: ({ queryKey }: { queryKey: unknown[] }) =>
+    queryResponses[keyTag(queryKey)],
+  useQueryClient: () => ({
+    setQueryData: (...args: unknown[]) => mockSetQueryData(...args),
+    invalidateQueries: (...args: unknown[]) => mockInvalidateQueries(...args),
+  }),
 }));
 
 // ── next/navigation ───────────────────────────────────────────────────────
@@ -101,20 +129,27 @@ function setupQueryMocks({
   invitations = [] as object[],
   isLoading = false,
   error = null as Error | null,
+  notificationsRefetch = noopRefetch,
 } = {}) {
-  // Component always calls useSupabaseQuery in the same order per render:
-  // 0→notifications, 1→unreadCount, 2→invitations (repeating on re-renders)
-  const responses = [
-    { data: notifications, refetch: noopRefetch, isLoading, error },
-    { data: unreadCount, refetch: noopRefetch, isLoading: false, error: null },
-    { data: invitations, refetch: noopRefetch, isLoading: false, error: null },
-  ];
-  let callIndex = 0;
-  mockUseSupabaseQuery.mockImplementation(() => {
-    const response = responses[callIndex % 3];
-    callIndex++;
-    return response;
-  });
+  // Keyed by the last segment of each useQuery key.
+  queryResponses.recent = {
+    data: notifications,
+    refetch: notificationsRefetch,
+    isLoading,
+    error,
+  };
+  queryResponses["unread-count"] = {
+    data: unreadCount,
+    refetch: noopRefetch,
+    isLoading: false,
+    error: null,
+  };
+  queryResponses.invitations = {
+    data: invitations,
+    refetch: noopRefetch,
+    isLoading: false,
+    error: null,
+  };
 }
 
 function makeNotification(overrides = {}) {
@@ -144,8 +179,16 @@ function makeInvitation(overrides = {}) {
 describe("NotificationBell", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockOn.mockReturnValue(channelObj);
+    insertHandler = undefined;
+    for (const key of Object.keys(queryResponses)) {
+      delete queryResponses[key];
+    }
+    mockOn.mockImplementation((_event, _config, handler) => {
+      insertHandler = handler;
+      return channelObj;
+    });
     mockChannel.mockReturnValue(channelObj);
+    mockSubscribe.mockReturnValue(channelObj);
   });
 
   it("renders null when no userId is provided", () => {
@@ -219,13 +262,10 @@ describe("NotificationBell", () => {
 
     it("calls refetch when retry is clicked", async () => {
       const refetch = jest.fn();
-      const responses = [
-        { data: [], refetch, isLoading: false, error: new Error("fail") },
-        { data: 0, refetch: noopRefetch, isLoading: false, error: null },
-        { data: [], refetch: noopRefetch, isLoading: false, error: null },
-      ];
-      let callIndex = 0;
-      mockUseSupabaseQuery.mockImplementation(() => responses[callIndex++ % 3]);
+      setupQueryMocks({
+        error: new Error("fail"),
+        notificationsRefetch: refetch,
+      });
 
       render(<NotificationBell userId="u1" />);
       await userEvent.click(
@@ -459,6 +499,97 @@ describe("NotificationBell", () => {
       const { unmount } = render(<NotificationBell userId="u1" />);
       unmount();
       expect(mockRemoveChannel).toHaveBeenCalledWith(channelObj);
+    });
+
+    describe("payload-driven INSERT", () => {
+      it("prepends the new notification into the cache via setQueryData (no refetch)", () => {
+        const refetch = jest.fn();
+        setupQueryMocks({ notificationsRefetch: refetch });
+        render(<NotificationBell userId="u1" />);
+
+        expect(insertHandler).toBeDefined();
+        insertHandler!({ new: makeNotification({ id: 99 }) });
+
+        // The new row is prepended into the notifications list via setQueryData;
+        // no refetch on INSERT.
+        const recentCall = mockSetQueryData.mock.calls.find(
+          ([key]) =>
+            (key as unknown[])[(key as unknown[]).length - 1] === "recent"
+        );
+        expect(recentCall).toBeDefined();
+        expect(typeof recentCall![1]).toBe("function");
+        expect(refetch).not.toHaveBeenCalled();
+      });
+
+      it("the setQueryData updater puts the new row first", () => {
+        setupQueryMocks();
+        render(<NotificationBell userId="u1" />);
+
+        const newRow = makeNotification({ id: 99 });
+        insertHandler!({ new: newRow });
+
+        const [, updater] = mockSetQueryData.mock.calls[0] as [
+          unknown,
+          (
+            prev: ReturnType<typeof makeNotification>[] | undefined
+          ) => unknown[],
+        ];
+        const existing = makeNotification({ id: 1 });
+        const next = updater([existing]) as ReturnType<
+          typeof makeNotification
+        >[];
+        expect(next[0]!.id).toBe(99);
+        expect(next).toHaveLength(2);
+      });
+
+      it("the updater de-dupes when the row id is already cached", () => {
+        setupQueryMocks();
+        render(<NotificationBell userId="u1" />);
+
+        insertHandler!({ new: makeNotification({ id: 1 }) });
+
+        const [, updater] = mockSetQueryData.mock.calls[0] as [
+          unknown,
+          (
+            prev: ReturnType<typeof makeNotification>[] | undefined
+          ) => unknown[],
+        ];
+        const existing = makeNotification({ id: 1 });
+        const next = updater([existing]);
+        expect(next).toHaveLength(1);
+      });
+
+      it("increments the unread-count cache when the new row is unread", () => {
+        setupQueryMocks();
+        render(<NotificationBell userId="u1" />);
+
+        insertHandler!({ new: makeNotification({ id: 99, read_at: null }) });
+
+        const unreadCall = mockSetQueryData.mock.calls.find(
+          ([key]) =>
+            (key as unknown[])[(key as unknown[]).length - 1] === "unread-count"
+        );
+        expect(unreadCall).toBeDefined();
+        const updater = unreadCall![1] as (prev: number | undefined) => number;
+        expect(updater(2)).toBe(3);
+        expect(updater(undefined)).toBe(1);
+        expect(mockInvalidateQueries).not.toHaveBeenCalled();
+      });
+
+      it("does not touch the unread-count cache when the new row is already read", () => {
+        setupQueryMocks();
+        render(<NotificationBell userId="u1" />);
+
+        insertHandler!({
+          new: makeNotification({ id: 99, read_at: "2026-01-01T00:00:00Z" }),
+        });
+
+        const unreadCall = mockSetQueryData.mock.calls.find(
+          ([key]) =>
+            (key as unknown[])[(key as unknown[]).length - 1] === "unread-count"
+        );
+        expect(unreadCall).toBeUndefined();
+      });
     });
   });
 });

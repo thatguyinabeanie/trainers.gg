@@ -1,44 +1,20 @@
 import type React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
-const mockRefetch = jest.fn();
-
-type MockQueryReturn = {
-  data: unknown;
-  isLoading: boolean;
-  error: unknown;
-  refetch: jest.Mock;
-};
-
-let mockStatsReturn: MockQueryReturn = {
-  data: null,
-  isLoading: false,
-  error: null,
-  refetch: mockRefetch,
-};
-
-let mockLogReturn: MockQueryReturn = {
-  data: null,
-  isLoading: false,
-  error: null,
-  refetch: mockRefetch,
-};
-
-// useSupabaseQuery is called twice: first for stats, second for log
-let queryCallCount = 0;
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: jest.fn(() => {
-    queryCallCount += 1;
-    return queryCallCount % 2 === 1 ? mockStatsReturn : mockLogReturn;
-  }),
-}));
+const mockGetAuditLog = jest.fn();
+const mockGetAuditLogStats = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
-  getAuditLog: jest.fn(),
-  getAuditLogStats: jest.fn(),
+  getAuditLog: (...args: unknown[]) => mockGetAuditLog(...args),
+  getAuditLogStats: (...args: unknown[]) => mockGetAuditLogStats(...args),
+}));
+
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: jest.fn(() => ({})),
 }));
 
 jest.mock("@/components/ui/card", () => ({
@@ -190,6 +166,18 @@ import { ActivityTab } from "../activity-tab";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
+
 function buildLogEntry(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
@@ -213,128 +201,99 @@ function buildLogEntry(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function setupQuery(
-  statsData: unknown,
-  logData: { data: unknown[]; count: number } | null,
-  options: {
-    statsLoading?: boolean;
-    logLoading?: boolean;
-    statsError?: unknown;
-    logError?: unknown;
-  } = {}
-) {
-  queryCallCount = 0;
-  mockStatsReturn = {
-    data: statsData,
-    isLoading: options.statsLoading ?? false,
-    error: options.statsError ?? null,
-    refetch: mockRefetch,
-  };
-  mockLogReturn = {
-    data: logData,
-    isLoading: options.logLoading ?? false,
-    error: options.logError ?? null,
-    refetch: mockRefetch,
-  };
-}
-
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 describe("ActivityTab", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    setupQuery(
-      { total24h: 10, total7d: 70, total30d: 300 },
-      { data: [], count: 0 }
-    );
+    // Default: stats resolved, log resolved empty
+    mockGetAuditLogStats.mockResolvedValue({
+      total24h: 10,
+      total7d: 70,
+      total30d: 300,
+    });
+    mockGetAuditLog.mockResolvedValue({ data: [], count: 0 });
   });
 
   describe("stat cards", () => {
-    it("renders 3 stat cards", () => {
-      render(<ActivityTab />);
-      expect(screen.getAllByTestId("card")).toHaveLength(3);
+    it("renders 3 stat cards", async () => {
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      expect(await screen.findAllByTestId("card")).toHaveLength(3);
     });
 
-    it("shows stat card titles", () => {
-      render(<ActivityTab />);
-      expect(screen.getByText("Last 24 Hours")).toBeInTheDocument();
+    it("shows stat card titles", async () => {
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      expect(await screen.findByText("Last 24 Hours")).toBeInTheDocument();
       expect(screen.getByText("Last 7 Days")).toBeInTheDocument();
       expect(screen.getByText("Last 30 Days")).toBeInTheDocument();
     });
 
-    it("shows stat values from query data", () => {
-      render(<ActivityTab />);
-      expect(screen.getByText("10")).toBeInTheDocument();
+    it("shows stat values from query data", async () => {
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      expect(await screen.findByText("10")).toBeInTheDocument();
       expect(screen.getByText("70")).toBeInTheDocument();
       expect(screen.getByText("300")).toBeInTheDocument();
     });
 
-    it("shows '0' when stats data is null", () => {
-      setupQuery(null, { data: [], count: 0 });
-      render(<ActivityTab />);
-      // Three stat cards each show 0 when values are undefined
-      const zeros = screen.getAllByText("0");
+    it("shows '0' when stats data resolves to null-ish fields", async () => {
+      mockGetAuditLogStats.mockResolvedValue({
+        total24h: 0,
+        total7d: 0,
+        total30d: 0,
+      });
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      const zeros = await screen.findAllByText("0");
       expect(zeros.length).toBeGreaterThanOrEqual(3);
     });
 
-    it("shows skeleton placeholders while stats are loading", () => {
-      setupQuery(null, { data: [], count: 0 }, { statsLoading: true });
-      render(<ActivityTab />);
+    it("shows skeleton placeholders while queries are loading", () => {
+      // Never resolving — stays in loading state
+      mockGetAuditLogStats.mockReturnValue(new Promise(() => {}));
+      mockGetAuditLog.mockReturnValue(new Promise(() => {}));
+      render(<ActivityTab />, { wrapper: createWrapper() });
       expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
     });
   });
 
   describe("error banner", () => {
-    it("shows error banner when stats query errors", () => {
-      setupQuery(
-        null,
-        { data: [], count: 0 },
-        { statsError: new Error("fail") }
-      );
-      render(<ActivityTab />);
+    it("shows error banner when stats query rejects", async () => {
+      mockGetAuditLogStats.mockRejectedValue(new Error("stats fail"));
+      render(<ActivityTab />, { wrapper: createWrapper() });
       expect(
-        screen.getByText(/failed to load audit log data/i)
+        await screen.findByText(/failed to load audit log data/i)
       ).toBeInTheDocument();
     });
 
-    it("shows error banner when log query errors", () => {
-      setupQuery({ total24h: 0, total7d: 0, total30d: 0 }, null, {
-        logError: new Error("fail"),
-      });
-      render(<ActivityTab />);
+    it("shows error banner when log query rejects", async () => {
+      mockGetAuditLog.mockRejectedValue(new Error("log fail"));
+      render(<ActivityTab />, { wrapper: createWrapper() });
       expect(
-        screen.getByText(/failed to load audit log data/i)
+        await screen.findByText(/failed to load audit log data/i)
       ).toBeInTheDocument();
     });
 
-    it("does not show error banner when queries succeed", () => {
-      render(<ActivityTab />);
+    it("does not show error banner when queries succeed", async () => {
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      // Wait for data to load
+      await screen.findByText("10");
       expect(
         screen.queryByText(/failed to load audit log data/i)
       ).not.toBeInTheDocument();
     });
   });
 
-  describe("table loading state", () => {
-    it("shows skeleton rows while log is loading", () => {
-      setupQuery({ total24h: 0, total7d: 0, total30d: 0 }, null, {
-        logLoading: true,
-      });
-      render(<ActivityTab />);
-      // 8 skeleton rows are shown
-      expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
-    });
-  });
-
   describe("empty state", () => {
-    it("shows 'No activity found' when there are no entries", () => {
-      render(<ActivityTab />);
-      expect(screen.getByText("No activity found")).toBeInTheDocument();
+    it("shows 'No activity found' when there are no entries", async () => {
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      expect(await screen.findByText("No activity found")).toBeInTheDocument();
     });
 
     it("shows filter hint when filters are active", async () => {
       const user = userEvent.setup();
-      render(<ActivityTab />);
+      render(<ActivityTab />, { wrapper: createWrapper() });
+
+      // Wait for component to settle
+      await screen.findByText("No activity found");
 
       // Change the action filter from "all" to "match"
       const selects = screen.getAllByRole("combobox");
@@ -345,8 +304,9 @@ describe("ActivityTab", () => {
       ).toBeInTheDocument();
     });
 
-    it("does not show filter hint when no filters are active", () => {
-      render(<ActivityTab />);
+    it("does not show filter hint when no filters are active", async () => {
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      await screen.findByText("No activity found");
       expect(
         screen.queryByText(/try adjusting the filters/i)
       ).not.toBeInTheDocument();
@@ -354,112 +314,100 @@ describe("ActivityTab", () => {
   });
 
   describe("table with entries", () => {
-    it("renders log entries in the table", () => {
-      setupQuery(
-        { total24h: 5, total7d: 30, total30d: 100 },
-        {
-          data: [buildLogEntry({ action: "match.score_submitted" })],
-          count: 1,
-        }
-      );
-      render(<ActivityTab />);
-      expect(screen.getByText("match.score_submitted")).toBeInTheDocument();
+    it("renders log entries in the table", async () => {
+      mockGetAuditLog.mockResolvedValue({
+        data: [buildLogEntry({ action: "match.score_submitted" })],
+        count: 1,
+      });
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      expect(
+        await screen.findByText("match.score_submitted")
+      ).toBeInTheDocument();
     });
 
-    it("renders multiple log entries", () => {
-      setupQuery(
-        { total24h: 2, total7d: 5, total30d: 10 },
-        {
-          data: [
-            buildLogEntry({ id: 1, action: "tournament.started" }),
-            buildLogEntry({ id: 2, action: "admin.sudo_activated" }),
-          ],
-          count: 2,
-        }
-      );
-      render(<ActivityTab />);
-      expect(screen.getByText("tournament.started")).toBeInTheDocument();
+    it("renders multiple log entries", async () => {
+      mockGetAuditLog.mockResolvedValue({
+        data: [
+          buildLogEntry({ id: 1, action: "tournament.started" }),
+          buildLogEntry({ id: 2, action: "admin.sudo_activated" }),
+        ],
+        count: 2,
+      });
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      expect(await screen.findByText("tournament.started")).toBeInTheDocument();
       expect(screen.getByText("admin.sudo_activated")).toBeInTheDocument();
     });
   });
 
   describe("pagination", () => {
-    it("does not show pagination when total pages is 1", () => {
-      setupQuery(
-        { total24h: 0, total7d: 0, total30d: 0 },
-        { data: [], count: 0 }
-      );
-      render(<ActivityTab />);
+    it("does not show pagination when total pages is 1", async () => {
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      await screen.findByText("No activity found");
       expect(
         screen.queryByRole("button", { name: /previous/i })
       ).not.toBeInTheDocument();
     });
 
-    it("shows pagination when there are multiple pages", () => {
-      setupQuery(
-        { total24h: 0, total7d: 0, total30d: 0 },
-        { data: [], count: 200 } // 200 entries with PAGE_SIZE=50 => 4 pages
-      );
-      render(<ActivityTab />);
+    it("shows pagination when there are multiple pages", async () => {
+      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 }); // 4 pages
+      render(<ActivityTab />, { wrapper: createWrapper() });
       expect(
-        screen.getByRole("button", { name: /previous/i })
+        await screen.findByRole("button", { name: /previous/i })
       ).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /next/i })).toBeInTheDocument();
     });
 
-    it("disables Previous button on first page", () => {
-      setupQuery(
-        { total24h: 0, total7d: 0, total30d: 0 },
-        { data: [], count: 200 }
-      );
-      render(<ActivityTab />);
-      expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
+    it("disables Previous button on first page", async () => {
+      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 });
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      expect(
+        await screen.findByRole("button", { name: /previous/i })
+      ).toBeDisabled();
     });
 
-    it("shows page info", () => {
-      setupQuery(
-        { total24h: 0, total7d: 0, total30d: 0 },
-        { data: [], count: 200 }
-      );
-      render(<ActivityTab />);
-      expect(screen.getByText(/page 1 of 4/i)).toBeInTheDocument();
+    it("shows page info", async () => {
+      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 });
+      render(<ActivityTab />, { wrapper: createWrapper() });
+      expect(await screen.findByText(/page 1 of 4/i)).toBeInTheDocument();
     });
 
     it("advances page when Next is clicked", async () => {
+      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 });
       const user = userEvent.setup();
-      setupQuery(
-        { total24h: 0, total7d: 0, total30d: 0 },
-        { data: [], count: 200 }
-      );
-      render(<ActivityTab />);
+      render(<ActivityTab />, { wrapper: createWrapper() });
 
+      await screen.findByRole("button", { name: /next/i });
       await user.click(screen.getByRole("button", { name: /next/i }));
-      expect(screen.getByText(/page 2 of 4/i)).toBeInTheDocument();
+      expect(await screen.findByText(/page 2 of 4/i)).toBeInTheDocument();
     });
   });
 
   describe("refresh button", () => {
-    it("calls refetch when Refresh is clicked", async () => {
+    it("calls query fns again when Refresh is clicked", async () => {
       const user = userEvent.setup();
-      render(<ActivityTab />);
+      render(<ActivityTab />, { wrapper: createWrapper() });
+
+      await screen.findByText("10");
+      const callsBefore = mockGetAuditLogStats.mock.calls.length;
 
       await user.click(screen.getByRole("button", { name: /refresh/i }));
-      expect(mockRefetch).toHaveBeenCalled();
+
+      // After refresh the query fn is re-invoked
+      expect(mockGetAuditLogStats.mock.calls.length).toBeGreaterThan(
+        callsBefore
+      );
     });
   });
 
   describe("filter controls", () => {
     it("resets page to 0 when action filter changes", async () => {
+      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 });
       const user = userEvent.setup();
-      setupQuery(
-        { total24h: 0, total7d: 0, total30d: 0 },
-        { data: [], count: 200 }
-      );
-      render(<ActivityTab />);
+      render(<ActivityTab />, { wrapper: createWrapper() });
 
-      // Go to page 2
+      await screen.findByRole("button", { name: /next/i });
       await user.click(screen.getByRole("button", { name: /next/i }));
-      expect(screen.getByText(/page 2 of 4/i)).toBeInTheDocument();
+      expect(await screen.findByText(/page 2 of 4/i)).toBeInTheDocument();
 
       // Change action filter — should reset to page 1
       const selects = screen.getAllByRole("combobox");
@@ -468,15 +416,13 @@ describe("ActivityTab", () => {
     });
 
     it("resets page to 0 when entity filter changes", async () => {
+      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 });
       const user = userEvent.setup();
-      setupQuery(
-        { total24h: 0, total7d: 0, total30d: 0 },
-        { data: [], count: 200 }
-      );
-      render(<ActivityTab />);
+      render(<ActivityTab />, { wrapper: createWrapper() });
 
+      await screen.findByRole("button", { name: /next/i });
       await user.click(screen.getByRole("button", { name: /next/i }));
-      expect(screen.getByText(/page 2 of 4/i)).toBeInTheDocument();
+      expect(await screen.findByText(/page 2 of 4/i)).toBeInTheDocument();
 
       const selects = screen.getAllByRole("combobox");
       await user.selectOptions(selects[1]!, "tournament");

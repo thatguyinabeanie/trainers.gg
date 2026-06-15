@@ -20,10 +20,8 @@
  *   shared cache entry.
  *
  * CACHE-CONTROL header:
- *   `public, s-maxage=31536000, stale-while-revalidate=86400`
- *   Player stats are tag-invalidated (busted by
- *   `revalidateTag(CacheTags.tournament(id), 'max')` on any round/standings
- *   change), so the CDN entry never needs a short time-based TTL.
+ *   `private, no-store`
+ *   Response includes alts.user_id and private columns; pending column-allowlist fix.
  *
  * CONSUMERS (Phase 2 Task 9 T3c):
  *   `manage/tournament-standings.tsx`, `manage/tournament-overview.tsx`,
@@ -45,11 +43,9 @@ import {
 import { getCachedTournamentPlayerStats } from "@/lib/data/tournament-player-stats-endpoint";
 
 /**
- * Cache-Control for tag-invalidated public data. Long shared-CDN TTL + SWR;
- * on-demand tag bust is the real refresh trigger.
+ * Cache-Control for routes with private/PII columns pending allowlist fix.
  */
-const CACHE_CONTROL =
-  "public, s-maxage=31536000, stale-while-revalidate=86400";
+const CACHE_CONTROL = "private, no-store";
 
 export async function GET(
   request: NextRequest,

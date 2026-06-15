@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getCoachBadges, type CoachBadgeInfo } from "@trainers/supabase";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1011,6 +1013,7 @@ export function MatchHeader({
   userAltId,
   onGameUpdated,
 }: MatchHeaderProps) {
+  const supabase = useSupabase();
   const winsNeeded = Math.ceil(bestOf / 2);
   const matchDecided = myWins >= winsNeeded || opponentWins >= winsNeeded;
 
@@ -1020,10 +1023,12 @@ export function MatchHeader({
   const playerAltIds = [opponent?.id, myPlayer?.id].filter(
     (id): id is number => id != null
   );
-  const { data: coachBadges } = useSupabaseQuery(
-    (supabase) => getCoachBadges(supabase, playerAltIds),
-    [JSON.stringify(playerAltIds)]
-  );
+  const { data: coachBadges } = useQuery({
+    queryKey: queryKeys.match.coachBadges(playerAltIds),
+    queryFn: () => getCoachBadges(supabase, playerAltIds),
+    enabled: playerAltIds.length > 0,
+    staleTime: 30_000,
+  });
 
   const opponentBadge =
     opponent?.id != null ? coachBadges?.get(opponent.id) : undefined;

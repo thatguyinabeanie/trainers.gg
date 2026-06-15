@@ -1,7 +1,10 @@
 import { cacheTag, cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import {
-  createStaticClient,
+  // Service-role client: reads communities (revoke-set table).
+  // Anon SELECT on communities is revoked in the Phase 2 Step-4 migration;
+  // service-role is a constant identity — safe inside a 'use cache' scope.
+  createServiceRoleClient,
   createClientReadOnly,
   getUserId,
 } from "@/lib/supabase/server";
@@ -80,7 +83,7 @@ async function getCachedOrganization(slug: string) {
   cacheTag(CacheTags.community(slug), CacheTags.COMMUNITIES_LIST);
   cacheLife("max");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getCommunityBySlug(supabase, slug);
 }
 

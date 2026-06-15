@@ -3,12 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 import { getUsersByIds } from "@trainers/supabase";
-import {
-  type TypedSupabaseClient,
-  type FeatureFlag,
-} from "@trainers/supabase";
+import { type FeatureFlag } from "@trainers/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -24,7 +22,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import type { SearchPlayersResult } from "@/lib/data/players-search-endpoint";
 
 interface FlagAllowlistSheetProps {
@@ -46,6 +45,8 @@ export function FlagAllowlistSheet({
   onOpenChange,
   onSave,
 }: FlagAllowlistSheetProps) {
+  const supabase = useSupabase();
+
   // --- Allowlist state (local copy, committed on Save) ---
   const [allowedIds, setAllowedIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -76,12 +77,14 @@ export function FlagAllowlistSheet({
     };
   }, []);
 
-  // Fetch current allowed users by their IDs (uses the browser anon client;
-  // will be replaced when a users-by-IDs API route is added in a later task).
-  const currentAllowedQuery = useSupabaseQuery(
-    (supabase: TypedSupabaseClient) => getUsersByIds(supabase, allowedIds),
-    [allowedIds.join(",")]
-  );
+  // Fetch current allowed users by their IDs via the authenticated browser
+  // client. Disabled when the list is empty to avoid an unnecessary round-trip.
+  const currentAllowedQuery = useQuery({
+    queryKey: queryKeys.admin.usersByIds(allowedIds.join(",")),
+    queryFn: () => getUsersByIds(supabase, allowedIds),
+    enabled: allowedIds.length > 0,
+    staleTime: 30_000,
+  });
   const currentAllowedUsers: UserStub[] = currentAllowedQuery.data ?? [];
 
   // Search for users via GET /api/v1/players/search — auth-gated, server-side
@@ -96,7 +99,10 @@ export function FlagAllowlistSheet({
     ["players", "search", debouncedSearch],
     async () => {
       if (!debouncedSearch) {
-        return { success: true as const, data: { players: [], totalCount: 0, page: 1 } };
+        return {
+          success: true as const,
+          data: { players: [], totalCount: 0, page: 1 },
+        };
       }
       const params = new URLSearchParams({ q: debouncedSearch });
       const res = await fetch(`/api/v1/players/search?${params.toString()}`);
@@ -141,7 +147,9 @@ export function FlagAllowlistSheet({
       await onSave(allowedIds);
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save allowlist");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save allowlist"
+      );
     } finally {
       setSaving(false);
     }
@@ -241,7 +249,7 @@ export function FlagAllowlistSheet({
             {debouncedSearch && (
               <div className="rounded-lg border">
                 {searchIsError ? (
-                  <Alert variant="destructive" className="border-0 rounded-lg">
+                  <Alert variant="destructive" className="rounded-lg border-0">
                     <AlertTriangle className="size-4" />
                     <AlertDescription>
                       {searchError instanceof Error

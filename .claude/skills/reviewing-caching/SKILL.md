@@ -259,24 +259,48 @@ const mutation = useMutation({
 - [ ] Optimistic updates for immediate UI feedback (toggles, drag-drop, inline edits)
 - [ ] `staleTime > 0` for data that doesn't change frequently
 
-## Auth-Gated API Routes: `Cache-Control: private, no-store`
+## Auth-Gated API Routes: `Cache-Control`
 
-**Any `/api/v1` route that calls `resolveApiAuth` and returns 401 for anon callers MUST use `Cache-Control: private, no-store` — never `public` or `s-maxage`.**
+**Default for any `/api/v1` route that calls `resolveApiAuth` and returns 401 for anon callers: `Cache-Control: private, no-store`.**
 
-The server-side `'use cache'` + `cacheTag`/`cacheLife` layer is the real caching mechanism and stays. The CDN-facing `Cache-Control` header is a separate, independent concern:
+There is one explicit, locked carve-out (Architecture decision #2, `docs/decisions/2026-06-11-data-access-and-rls-decisions.md`): S-bucket routes with all-public-column data use `public, s-maxage=…` (CDN caching) — see below.
 
-- `public, s-maxage=…` lets a shared CDN/proxy store an authenticated 200 and replay it to anonymous callers — bypassing the "no anonymous open Data API" decision and potentially serving PII.
-- This applies even when the underlying data is "public aggregate" — the auth gate is what matters, not the data sensitivity.
+The server-side `'use cache'` + `cacheTag`/`cacheLife` layer is the real caching mechanism and stays. The CDN-facing `Cache-Control` header is a separate, independent concern.
+
+### Default: `private, no-store`
+
+Any route that returns per-user, PII-bearing, scoped, or private data must use `private, no-store`:
 
 ```ts
-// ✅ Auth-gated route — CDN must not cache this
+// ✅ Per-user or PII-bearing route — CDN must not cache this
 const CACHE_CONTROL = "private, no-store";
-// Reference: apps/web/src/app/api/v1/me/profile/route.ts
+// Reference: apps/web/src/app/api/v1/me/profile/route.ts  (me-scoped data)
 //            apps/web/src/app/api/v1/players/search/route.ts
 
-// ❌ Auth-gated route using public CDN caching — never do this
+// ❌ Per-user or PII-bearing route using public CDN caching — data leak
+// Example: /api/v1/me/profile — reads email, registration drop_notes, private fields
 const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400";
 ```
+
+### Carve-out: `public, s-maxage=…` is ALLOWED when ALL of these hold
+
+> (Locked in Architecture decision #2 — the "caching spike" for S-bucket endpoints.)
+
+1. **Every column in the response is public** — no PII (email, phone), no per-viewer/scoped fields (e.g. `drop_notes`, internal staff notes, anything not already visible on SSR public pages), AND
+2. **The cache entry is tag-invalidated** via `revalidateTag(CacheTags.x, 'max')` (busted on change, not stale-by-TTL).
+
+Why this is safe under those guards: public columns can't leak through a shared CDN entry (the data is already public on SSR pages); the CDN cache is the DB-overload protection (skipping per-request rate-limit on a CDN hit is fine for data that's already public); anon viewers reach this data via SSR pages anyway (constraint #4), so the API edge-cache short-circuits authed repeat reads and deliberate public-data probes only.
+
+```ts
+// ✅ Auth-gated S-bucket route — all-public-column data, tag-invalidated
+// Example: /api/v1/tournaments/[id]/standings — rank, wins, losses, resistance_pct (all public)
+const CACHE_CONTROL = "public, s-maxage=31536000, stale-while-revalidate=86400";
+// Pair with: revalidateTag(CacheTags.tournament(id), 'max') on any standings mutation
+
+// ❌ Same route but response includes drop_notes or any private/scoped field → private, no-store
+```
+
+If **any** column is private, PII-bearing, or viewer-scoped → fall back to `private, no-store`. No exception.
 
 **Also: never read PII inside a shared `'use cache'` scope.** A `'use cache'` fetcher is shared across all viewers with no auth scope. Caching per-user or PII-bearing data inside it leaks that data to every viewer who gets the same cache entry. Such reads must use a request-scoped client (cookie/RLS-bound) outside any `'use cache'` boundary, and the route must be `private, no-store` + authorization-gated.
 
@@ -301,8 +325,65 @@ async function getStaffRoster(slug: string) {
 
 ### Caching Review Checklist for API Routes
 
-- [ ] Does the route call `resolveApiAuth` (or equivalent auth check)?  If yes → `Cache-Control: private, no-store` is **required**
+- [ ] Does the route call `resolveApiAuth` (or equivalent auth check)? If yes → default is `Cache-Control: private, no-store`
+- [ ] Is the response all-public-column data (no PII, no scoped/private fields) AND tag-invalidated? If both → `public, s-maxage=…` is allowed (carve-out above)
 - [ ] Does any `'use cache'` fetcher touch user emails, phone numbers, or other PII? If yes → move those reads outside the cache scope, use a request-scoped client, and gate the route with authorization + `private, no-store`
+
+## S-bucket API Route Caching
+
+A `/api/v1` GET handler for S-bucket data follows a two-layer caching design: the route handler owns auth + `Cache-Control`; a `'use cache'`-wrapped fetcher in `apps/web/src/lib/data/*-endpoint.ts` owns the server-side cache entry.
+
+### Pattern
+
+```
+GET /api/v1/…
+  1. resolveApiAuth(request)   ← OUTSIDE the cache scope
+  2. enforceRateLimit(…)
+  3. getCachedXxx(plainId)     ← calls the 'use cache' fetcher
+  4. NextResponse.json(data, { headers: { "Cache-Control": … } })
+```
+
+The fetcher:
+
+```ts
+// apps/web/src/lib/data/standings-endpoint.ts
+import { cacheTag, cacheLife } from "next/cache";
+import { CacheTags } from "@/lib/cache";
+
+export async function getCachedTournamentStandings(
+  tournamentId: number
+): Promise<TournamentStandingRow[]> {
+  "use cache";
+  cacheTag(CacheTags.tournament(tournamentId));
+  cacheLife("max"); // tag-invalidated entity — no time-based expiry needed
+
+  const supabase = createServiceRoleClient(); // S-bucket SELECT is revoked for anon/authed
+  return getPublicTournamentStandings(supabase, tournamentId);
+}
+```
+
+Key rules:
+
+- **Auth outside cache scope** — `resolveApiAuth` runs in the route handler, not inside the `'use cache'` function. Only plain scalar values (IDs, filter params) are passed into the cached fetcher. Never pass `Request`, session objects, or cookies in.
+- **`createServiceRoleClient()` inside the cache** — S-bucket base tables have `anon`/`authenticated` SELECT revoked (Phase 2 Task 9). Service-role is a constant identity (not per-user) and does not vary the cache key; it is safe inside a shared cache scope for all-public-column data.
+- **Reuse existing `CacheTags`** — no new tag per endpoint. Standings reuse `CacheTags.tournament(id)`, so the existing `invalidateTournamentListCaches(id)` / `revalidateTag(CacheTags.tournament(id), 'max')` busts them automatically.
+- **`revalidateTag(tag, 'max')` for on-demand busting** — route-handler surface always uses the two-arg `revalidateTag`; single-arg is deprecated. Server Actions use `updateTag` via the helpers in `@/lib/cache-invalidation`. Do not cross these surfaces.
+- **`Cache-Control` follows the carve-out above** — all-public-column + tag-invalidated → `public, s-maxage=31536000, stale-while-revalidate=86400`; any private/PII column → `private, no-store`.
+
+### Dynamic-hole gotcha for route handlers
+
+A `'use cache'` function is only a cache entry if it actually gets stored. If a `revalidate: 0` or very short `expire` sneaks in (e.g. via a misused `cacheLife` profile), the fetcher becomes a dynamic hole — every request re-runs the DB query and the CDN never stores a shared entry. Always use `cacheLife("max")` for tag-invalidated S-bucket fetchers; confirm the profile table above if unsure.
+
+### Route-handler review checklist (S-bucket)
+
+- [ ] `resolveApiAuth` called in the route handler, result checked, null → `401`
+- [ ] No auth/session objects passed into the `'use cache'` fetcher — plain values only
+- [ ] `createServiceRoleClient()` (not `createStaticClient()`) inside the fetcher — S-bucket SELECT is revoked
+- [ ] `cacheTag(CacheTags.x)` reuses an existing tag — no ad hoc string literals
+- [ ] `cacheLife("max")` declared explicitly in the fetcher
+- [ ] `Cache-Control` header set per the carve-out rules (public all-columns → `public, s-maxage`; else `private, no-store`)
+- [ ] Write paths use `revalidateTag(tag, 'max')` — two-arg form, not `updateTag`
+- [ ] No PII columns in the response shape for routes using `public, s-maxage`
 
 ## Caching Requirements (Must Be Done at Implementation Time)
 

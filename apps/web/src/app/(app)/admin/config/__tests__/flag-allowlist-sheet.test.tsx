@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -105,16 +106,15 @@ jest.mock("@/components/ui/alert", () => ({
   ),
 }));
 
-// Mock @trainers/supabase to avoid barrel side effects
+// Mock @trainers/supabase — only getUsersByIds is used for the allowlist lookup
+const mockGetUsersByIds = jest.fn();
 jest.mock("@trainers/supabase", () => ({
-  getUsersByIds: jest.fn(),
-  listUsersAdmin: jest.fn(),
+  getUsersByIds: (...args: unknown[]) => mockGetUsersByIds(...args),
 }));
 
-// Mock useSupabaseQuery — used for the "current allowed users" lookup
-const mockUseSupabaseQuery = jest.fn();
-jest.mock("@/lib/supabase", () => ({
-  useSupabaseQuery: (...args: unknown[]) => mockUseSupabaseQuery(...args),
+// Mock the browser Supabase client — createClient() is called inside useQuery's queryFn
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({}),
 }));
 
 // Mock useApiQuery — used for the player search
@@ -138,6 +138,18 @@ import { FlagAllowlistSheet } from "../flag-allowlist-sheet";
 import { toast } from "sonner";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
 
 function buildFlag(overrides: Record<string, unknown> = {}) {
   return {
@@ -167,20 +179,15 @@ interface UserStub {
   image: string | null;
 }
 
-function defaultSupabaseQueryState(
-  data: unknown = null,
-  isLoading = false
-): { data: unknown; isLoading: boolean } {
-  return { data, isLoading };
-}
-
 /** Default useApiQuery idle state — no search in flight. */
-function defaultApiQueryState(overrides: Partial<{
-  data: unknown;
-  isLoading: boolean;
-  isError: boolean;
-  error: Error | null;
-}> = {}) {
+function defaultApiQueryState(
+  overrides: Partial<{
+    data: unknown;
+    isLoading: boolean;
+    isError: boolean;
+    error: Error | null;
+  }> = {}
+) {
   return {
     data: undefined,
     isLoading: false,
@@ -199,8 +206,8 @@ describe("FlagAllowlistSheet", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     onSave.mockResolvedValue(undefined);
-    // Default: empty current allowlist, idle search
-    mockUseSupabaseQuery.mockReturnValue(defaultSupabaseQueryState([]));
+    // Default: getUsersByIds resolves to empty list (no allowed users)
+    mockGetUsersByIds.mockResolvedValue([]);
     mockUseApiQuery.mockReturnValue(defaultApiQueryState());
   });
 
@@ -214,7 +221,8 @@ describe("FlagAllowlistSheet", () => {
         open={open}
         onOpenChange={onOpenChange}
         onSave={onSave}
-      />
+      />,
+      { wrapper: createWrapper() }
     );
   }
 
@@ -226,7 +234,8 @@ describe("FlagAllowlistSheet", () => {
           open={false}
           onOpenChange={onOpenChange}
           onSave={onSave}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       expect(screen.queryByTestId("sheet")).not.toBeInTheDocument();
     });
@@ -287,10 +296,7 @@ describe("FlagAllowlistSheet", () => {
       // The Sheet mock fires onOpenChange(true) in a useEffect, seeding
       // allowedIds from flag.metadata. After the effect the count updates to 1.
       const user = buildUser({ id: "uuid-abc" });
-      // Mock returns for the initial render (empty ids) and after init (seeded ids)
-      mockUseSupabaseQuery.mockReturnValue(
-        defaultSupabaseQueryState([user])
-      );
+      mockGetUsersByIds.mockResolvedValue([user]);
 
       renderSheet({ metadata: { allowed_users: ["uuid-abc"] } });
 
@@ -301,8 +307,8 @@ describe("FlagAllowlistSheet", () => {
     });
 
     it("shows loading text while allowed users are fetching", async () => {
-      // First call: loading, second call: empty search results
-      mockUseSupabaseQuery.mockReturnValue({ data: null, isLoading: true });
+      // Return a never-resolving promise so useQuery stays in isLoading state
+      mockGetUsersByIds.mockReturnValue(new Promise(() => {}));
 
       renderSheet({ metadata: { allowed_users: ["uuid-abc"] } });
 
@@ -313,7 +319,7 @@ describe("FlagAllowlistSheet", () => {
 
     it("renders the username of each allowed user", async () => {
       const user = buildUser({ id: "uuid-abc", username: "ash_ketchum" });
-      mockUseSupabaseQuery.mockReturnValue(defaultSupabaseQueryState([user]));
+      mockGetUsersByIds.mockResolvedValue([user]);
 
       renderSheet({ metadata: { allowed_users: ["uuid-abc"] } });
 
@@ -324,7 +330,7 @@ describe("FlagAllowlistSheet", () => {
 
     it("falls back to user ID when username is null", async () => {
       const user = buildUser({ id: "uuid-no-name", username: null });
-      mockUseSupabaseQuery.mockReturnValue(defaultSupabaseQueryState([user]));
+      mockGetUsersByIds.mockResolvedValue([user]);
 
       renderSheet({ metadata: { allowed_users: ["uuid-no-name"] } });
 
@@ -339,23 +345,24 @@ describe("FlagAllowlistSheet", () => {
       const ue = userEvent.setup();
       const stub = buildUser({ id: "uuid-abc", username: "ash_ketchum" });
 
-      mockUseSupabaseQuery.mockReturnValue(defaultSupabaseQueryState([stub]));
+      mockGetUsersByIds.mockResolvedValue([stub]);
 
       renderSheet({ metadata: { allowed_users: ["uuid-abc"] } });
 
-      // Wait for init — Sheet mock calls onOpenChange(true) in useEffect
+      // Wait for the user row to appear — both allowedIds state must be seeded
+      // by the Sheet init effect AND the useQuery must resolve with the user data
       await waitFor(() => {
-        expect(screen.getByText("(1)")).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /remove ash_ketchum/i })
+        ).toBeInTheDocument();
       });
 
-      // Remove button has aria-label
       const removeBtn = screen.getByRole("button", {
         name: /remove ash_ketchum/i,
       });
 
-      // After clicking remove, allowedIds becomes [] → count shows (0)
-      mockUseSupabaseQuery.mockReturnValue(defaultSupabaseQueryState([]));
-
+      // After clicking remove, allowedIds becomes [] → query is disabled
+      // (enabled: allowedIds.length > 0) → empty-state message shows + count (0)
       await ue.click(removeBtn);
 
       expect(screen.getByText("(0)")).toBeInTheDocument();
@@ -454,7 +461,7 @@ describe("FlagAllowlistSheet", () => {
   describe("saving", () => {
     it("calls onSave with the current allowedIds on Save click", async () => {
       const ue = userEvent.setup();
-      mockUseSupabaseQuery.mockReturnValue(defaultSupabaseQueryState([]));
+      mockGetUsersByIds.mockResolvedValue([]);
 
       renderSheet({ metadata: { allowed_users: ["uuid-abc"] } });
 
@@ -563,7 +570,8 @@ describe("FlagAllowlistSheet", () => {
           open={true}
           onOpenChange={onOpenChange}
           onSave={onSave}
-        />
+        />,
+        { wrapper: createWrapper() }
       );
       // Sheet renders, key/description are undefined but shouldn't throw
       expect(screen.getByTestId("sheet")).toBeInTheDocument();

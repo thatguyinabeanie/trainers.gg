@@ -9,6 +9,7 @@ import {
 
 import { DataChartCard } from "./data-chart-card";
 import { DONUT_SLICE_COLORS } from "./data-shared";
+import { BuildThisButton } from "./build-this-button";
 
 // =============================================================================
 // Types
@@ -23,6 +24,8 @@ interface SpeciesFingerprintProps {
    * - Tera donut is hidden (Champions has no Tera)
    */
   isChampions: boolean;
+  /** Species slug — passed through to `BuildThisButton`. */
+  species: string;
 }
 
 // =============================================================================
@@ -292,7 +295,8 @@ function TopMovesList({ moves }: TopMovesListProps) {
  * "Build Fingerprint" card for the per-species drill-down page.
  *
  * Shows four donuts (item / ability / tera / nature) plus a top-moves bar list,
- * all from the **latest** `SpeciesUsagePeriod` bucket.
+ * all from the **latest** `SpeciesUsagePeriod` bucket. A "Build this" button
+ * copies the modal set to clipboard for quick import into the team builder.
  *
  * Champions rules (when `isChampions` is true):
  * - "Nature" donut is relabelled **"Stat Alignment"** (per the nature-naming convention).
@@ -301,6 +305,7 @@ function TopMovesList({ moves }: TopMovesListProps) {
 export function SpeciesFingerprint({
   detail,
   isChampions,
+  species,
 }: SpeciesFingerprintProps) {
   // Empty / null guard
   if (!detail) {
@@ -326,7 +331,10 @@ export function SpeciesFingerprint({
     : "grid grid-cols-2 gap-4 sm:grid-cols-4";
 
   return (
-    <DataChartCard title="Build fingerprint">
+    <DataChartCard
+      title="Build fingerprint"
+      actions={<BuildThisButton species={species} detail={detail} />}
+    >
       <div className="p-4 pb-3">
         {/* Donut grid */}
         <div className={donutGridClass}>

@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+import { useQuery } from "@tanstack/react-query";
 
 import {
   getTournamentBySlug,
@@ -9,8 +12,8 @@ import {
 import { useApiQuery } from "@trainers/supabase/react-query";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { useSupabaseQuery } from "@/lib/supabase";
-import Link from "next/link";
+import { useSupabase } from "@/lib/supabase";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TournamentSettings } from "@/components/tournaments";
@@ -32,6 +35,7 @@ export function TournamentSettingsPageClient({
   tournamentSlug,
 }: TournamentSettingsPageClientProps) {
   const router = useRouter();
+  const supabase = useSupabase();
   const {
     user: currentUser,
     isLoading: userLoading,
@@ -44,7 +48,9 @@ export function TournamentSettingsPageClient({
   // Fetch the community that owns this tournament via the auth-gated
   // `/api/v1/communities/[slug]` route (Phase 2 S-bucket migration).
   // The route returns the community object directly (not ActionResult-wrapped).
-  type CommunityDetail = NonNullable<Awaited<ReturnType<typeof getCommunityBySlug>>>;
+  type CommunityDetail = NonNullable<
+    Awaited<ReturnType<typeof getCommunityBySlug>>
+  >;
 
   const {
     data: organization,
@@ -65,14 +71,11 @@ export function TournamentSettingsPageClient({
     { staleTime: 30_000 }
   );
 
-  const tournamentQueryFn = (
-    supabase: Parameters<typeof getTournamentBySlug>[0]
-  ) => getTournamentBySlug(supabase, tournamentSlug);
-
-  const { data: tournament, isLoading: tournamentLoading } = useSupabaseQuery(
-    tournamentQueryFn,
-    [tournamentSlug]
-  );
+  const { data: tournament, isLoading: tournamentLoading } = useQuery({
+    queryKey: queryKeys.tournament.bySlug(tournamentSlug),
+    queryFn: () => getTournamentBySlug(supabase, tournamentSlug),
+    staleTime: 30_000,
+  });
 
   const phases = tournament?.phases ?? [];
 
