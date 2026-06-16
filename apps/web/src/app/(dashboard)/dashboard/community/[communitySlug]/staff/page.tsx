@@ -4,7 +4,7 @@ import {
   listCommunityGroups,
 } from "@trainers/supabase";
 
-import { createClient, getUser } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient, getUser } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { RolePermissionsCard } from "@/components/dashboard/role-permissions-card";
@@ -31,9 +31,12 @@ export default async function DashboardStaffPage({ params }: PageProps) {
   const user = await getUser();
   const isOwner = user?.id === organization.owner_user_id;
 
+  // Service-role client for PII enrichment (get_users_pii RPC is service_role-only).
+  const serviceSupabase = createServiceRoleClient();
+
   // Fetch initial data
   const [staffMembers, groups] = await Promise.all([
-    listCommunityStaffWithRoles(supabase, organization.id),
+    listCommunityStaffWithRoles(supabase, organization.id, serviceSupabase),
     listCommunityGroups(supabase, organization.id),
   ]);
 

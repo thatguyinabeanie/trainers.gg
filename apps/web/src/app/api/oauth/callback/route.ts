@@ -221,20 +221,28 @@ async function handleSignInMode({
     // email is no longer in public.users — look up via auth admin API instead.
     // This is only for backwards compatibility with accounts created before
     // DID was stored. New accounts always have DID set.
-    const { data: authListData } = await supabase.auth.admin.listUsers({
-      page: 1,
-      perPage: 50,
-    });
-    const legacyAuthUser = authListData.users.find(
-      (u) => u.email === placeholderEmail
-    );
+    // Use SECURITY DEFINER RPC to look up auth.users by email (service_role only).
+    // Avoids listUsers() pagination — the RPC does a direct indexed lookup.
+    const { data: legacyAuthId, error: legacyLookupError } =
+      await supabase.rpc("get_user_id_by_email", {
+        p_email: placeholderEmail,
+      });
+    if (legacyLookupError) {
+      // Don't silently treat a failed lookup as "no match" — that would create a
+      // duplicate account for an existing user. Surface it; fall through to the
+      // not-found path so the flow continues (same behavior as no match).
+      console.error(
+        "[oauth/callback] get_user_id_by_email (legacy lookup) failed:",
+        legacyLookupError.message
+      );
+    }
 
-    if (legacyAuthUser) {
+    if (legacyAuthId) {
       // Verify the user has a public.users row (created by auth trigger)
       const { data: publicUserRow } = await supabaseAtproto
         .from("users")
         .select("id, did")
-        .eq("id", legacyAuthUser.id)
+        .eq("id", legacyAuthId)
         .maybeSingle();
 
       if (publicUserRow) {
@@ -303,18 +311,21 @@ async function handleSignInMode({
     if (authError) {
       // Check if user already exists in auth (email already registered)
       if (authError.message?.includes("already been registered")) {
-        // User exists in auth — look up their public.users row by auth user id.
-        // email is no longer in public.users; look up the auth user by email
-        // via the admin API to get their id, then update by id.
-        const { data: authListData } = await supabase.auth.admin.listUsers({
-          page: 1,
-          perPage: 50,
-        });
-        const existingAuthUser = authListData.users.find(
-          (u) => u.email === placeholderEmail
-        );
+        // User exists in auth — look up their auth.users id by the deterministic
+        // placeholder email via SECURITY DEFINER RPC (service_role only).
+        // Avoids listUsers() pagination — the RPC does a direct indexed lookup.
+        const { data: foundId, error: conflictLookupError } =
+          await supabase.rpc("get_user_id_by_email", {
+            p_email: placeholderEmail,
+          });
+        if (conflictLookupError) {
+          console.error(
+            "[oauth/callback] get_user_id_by_email (conflict lookup) failed:",
+            conflictLookupError.message
+          );
+        }
 
-        if (existingAuthUser) {
+        if (foundId) {
           const { error: updateExistingError } = await supabaseAtproto
             .from("users")
             .update({
@@ -322,7 +333,7 @@ async function handleSignInMode({
               pds_status: "pending",
               image: profile.avatar,
             })
-            .eq("id", existingAuthUser.id);
+            .eq("id", foundId);
 
           if (updateExistingError) {
             console.error(

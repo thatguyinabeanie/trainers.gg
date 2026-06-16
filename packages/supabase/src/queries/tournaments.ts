@@ -463,7 +463,15 @@ export async function getTournamentById(supabase: TypedClient, id: number) {
 }
 
 /**
- * Get tournament registrations
+ * Get tournament registrations for the staff manage view.
+ *
+ * Joins `tournament_registration_staff` to surface drop metadata
+ * (drop_category, drop_notes, dropped_by, dropped_at) so the UI can render
+ * the "Dropped — <reason>" badge without a separate round-trip.
+ *
+ * The `staff` embed is populated only when the caller is authenticated and
+ * holds tournament.manage permission — that is exactly who uses this query.
+ * Anon / non-staff callers get an empty or absent staff sub-object from RLS.
  */
 export async function getTournamentRegistrations(
   supabase: TypedClient,
@@ -475,7 +483,13 @@ export async function getTournamentRegistrations(
       `
       *,
       alt:alts!tournament_registrations_alt_id_fkey(*),
-      team:teams(*)
+      team:teams(*),
+      staff:tournament_registration_staff(
+        drop_category,
+        drop_notes,
+        dropped_by,
+        dropped_at
+      )
     `
     )
     .eq("tournament_id", tournamentId)
@@ -486,11 +500,17 @@ export async function getTournamentRegistrations(
 }
 
 /**
- * A single tournament registration row with its joined alt and team — the
- * staff-facing shape returned by `getTournamentRegistrations`. Includes
- * staff-internal columns (drop category, check-in state), so consumers must be
- * authenticated + tournament-manage-authorized (Phase 2 Task 9: the base
- * `tournament_registrations` SELECT is revoked from anon/authenticated).
+ * A single tournament registration row with its joined alt, team, and staff
+ * drop metadata — the shape returned by `getTournamentRegistrations`.
+ *
+ * Staff-internal fields (drop_category, drop_notes, dropped_by, dropped_at)
+ * are present via the `staff` sub-object when the caller is authenticated and
+ * holds tournament.manage permission. Anon / non-staff callers receive an
+ * empty or absent staff sub-object from RLS.
+ *
+ * Consumers must be authenticated + tournament-manage-authorized (Phase 2
+ * Task 9: the base `tournament_registrations` SELECT is revoked from
+ * anon/authenticated).
  */
 export type TournamentRegistrationRow = Awaited<
   ReturnType<typeof getTournamentRegistrations>

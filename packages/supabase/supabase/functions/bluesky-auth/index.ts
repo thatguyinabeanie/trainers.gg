@@ -316,13 +316,20 @@ Deno.serve(async (req) => {
       userId = existingUser.id;
     } else {
       // Fallback: check auth.users by placeholder email for legacy accounts
-      // (public.users.email was dropped; look up via the auth layer instead).
-      // supabase-js admin has no getUserByEmail — list + find by deterministic
-      // placeholder email (rare legacy path; default page size is sufficient).
-      const { data: authList } = await supabaseAdmin.auth.admin.listUsers();
-      const legacyAuthId = authList?.users.find(
-        (u) => u.email === placeholderEmail
-      )?.id;
+      // (public.users.email was dropped; look up via SECURITY DEFINER RPC).
+      // Avoids listUsers() pagination — the RPC does a direct indexed lookup.
+      const { data: legacyAuthId, error: legacyLookupError } =
+        await supabaseAdmin.rpc("get_user_id_by_email", {
+          p_email: placeholderEmail,
+        });
+      if (legacyLookupError) {
+        // Surface the failure instead of treating it as "no match" — a silent
+        // failure here would create a duplicate account for an existing user.
+        console.error(
+          "[bluesky-auth] get_user_id_by_email (legacy lookup) failed:",
+          legacyLookupError.message
+        );
+      }
       const { data: userByAuthId } = legacyAuthId
         ? await supabaseAdmin
             .from("users")
@@ -369,14 +376,18 @@ Deno.serve(async (req) => {
         if (authError) {
           // Handle "already registered" edge case gracefully
           if (authError.message?.includes("already been registered")) {
-            // The auth user exists — find the public.users row by auth id.
-            // No getUserByEmail in supabase-js admin; list + find by the
-            // deterministic placeholder email.
-            const { data: conflictList } =
-              await supabaseAdmin.auth.admin.listUsers();
-            const conflictAuthId = conflictList?.users.find(
-              (u) => u.email === placeholderEmail
-            )?.id;
+            // The auth user exists — find their id via SECURITY DEFINER RPC.
+            // Avoids listUsers() pagination — the RPC does a direct indexed lookup.
+            const { data: conflictAuthId, error: conflictLookupError } =
+              await supabaseAdmin.rpc("get_user_id_by_email", {
+                p_email: placeholderEmail,
+              });
+            if (conflictLookupError) {
+              console.error(
+                "[bluesky-auth] get_user_id_by_email (conflict lookup) failed:",
+                conflictLookupError.message
+              );
+            }
 
             const { data: existByAuthId } = conflictAuthId
               ? await supabaseAdmin

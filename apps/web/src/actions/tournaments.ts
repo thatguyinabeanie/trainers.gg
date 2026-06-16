@@ -1518,7 +1518,27 @@ export async function bulkRemovePlayers(
       throw new Error("You don't have permission to manage this tournament");
     }
 
-    // Update status on the base table
+    // Upsert drop metadata FIRST so the audit_registration_status_change
+    // trigger can read drop_category/drop_notes/dropped_by from
+    // tournament_registration_staff when the status UPDATE fires below.
+    // registrationIds are existing registrations so FK is always satisfied.
+    const droppedAt = new Date().toISOString();
+    const staffRows = registrationIds.map((registrationId) => ({
+      registration_id: registrationId,
+      drop_category: dropCategory,
+      drop_notes: dropNotes ?? null,
+      dropped_by: user.id,
+      dropped_at: droppedAt,
+    }));
+
+    const { error: staffError } = await supabase
+      .from("tournament_registration_staff")
+      .upsert(staffRows, { onConflict: "registration_id" });
+
+    if (staffError) throw staffError;
+
+    // Update status on the base table — trigger fires here and reads the
+    // staff rows written above (non-NULL drop reason in audit_log).
     const { data, error } = await supabase
       .from("tournament_registrations")
       .update({ status: "dropped" as const })
@@ -1530,27 +1550,6 @@ export async function bulkRemovePlayers(
 
     const removed = data?.length ?? 0;
     const failed = registrationIds.length - removed;
-
-    // Upsert drop metadata into tournament_registration_staff for each
-    // successfully-dropped registration. drop_category/notes/dropped_by/at
-    // moved out of tournament_registrations by the staff PII migration.
-    if (removed > 0) {
-      const droppedIds = (data ?? []).map((r) => r.id);
-      const droppedAt = new Date().toISOString();
-      const staffRows = droppedIds.map((registrationId) => ({
-        registration_id: registrationId,
-        drop_category: dropCategory,
-        drop_notes: dropNotes ?? null,
-        dropped_by: user.id,
-        dropped_at: droppedAt,
-      }));
-
-      const { error: staffError } = await supabase
-        .from("tournament_registration_staff")
-        .upsert(staffRows, { onConflict: "registration_id" });
-
-      if (staffError) throw staffError;
-    }
 
     // Invalidate cache
     invalidateTournamentCaches(tournamentId);

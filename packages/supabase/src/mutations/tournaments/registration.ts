@@ -248,16 +248,9 @@ export async function updateRegistrationStatus(
     throw new Error("Drop info (category) is required when dropping a player");
   }
 
-  // Update the base registration status only — drop metadata lives in
-  // tournament_registration_staff (split out by the PII migration).
-  const { error: statusError } = await supabase
-    .from("tournament_registrations")
-    .update({ status })
-    .eq("id", registrationId);
-
-  if (statusError) throw statusError;
-
-  // When dropping, upsert the staff metadata into tournament_registration_staff.
+  // When dropping, upsert the staff metadata FIRST so the
+  // audit_registration_status_change trigger can read drop_category/drop_notes/
+  // dropped_by from tournament_registration_staff when the status UPDATE fires.
   if (dropInfo) {
     const { error: staffError } = await supabase
       .from("tournament_registration_staff")
@@ -274,6 +267,15 @@ export async function updateRegistrationStatus(
 
     if (staffError) throw staffError;
   }
+
+  // Update the base registration status — trigger fires here and reads the
+  // staff row written above (non-NULL drop reason in audit_log).
+  const { error: statusError } = await supabase
+    .from("tournament_registrations")
+    .update({ status })
+    .eq("id", registrationId);
+
+  if (statusError) throw statusError;
 
   return { success: true, tournamentId: registration.tournament_id };
 }

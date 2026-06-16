@@ -5,9 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTournamentRegistrations,
   getTournamentInvitationsSent,
-  type TournamentRegistrationRow,
 } from "@trainers/supabase";
-import { type Enums } from "@trainers/supabase";
 import { getErrorMessage } from "@trainers/utils";
 import { InviteForm } from "@/components/tournaments/invite/invite-form";
 import { Input } from "@/components/ui/input";
@@ -60,19 +58,6 @@ import {
 import { useSupabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
 
-// Augmented registration type: once getTournamentRegistrations joins
-// tournament_registration_staff, the staff sub-object will be present.
-// Until that query change lands, staff is undefined and the drop label is hidden.
-// TODO(follow-up): update getTournamentRegistrations to join tournament_registration_staff.
-type RegistrationWithStaff = TournamentRegistrationRow & {
-  staff?: {
-    drop_category: Enums<"drop_category"> | null;
-    drop_notes?: string | null;
-    dropped_at?: string | null;
-    dropped_by?: string | null;
-  } | null;
-};
-
 // Map invitation statuses to StatusBadge Status values + human-readable labels
 const defaultInvitationBadge = {
   status: "pending" as Status,
@@ -118,10 +103,7 @@ export function TournamentRegistrations({
 
   const { data: registrations, error: registrationsError } = useQuery({
     queryKey: queryKeys.tournament.registrations(tournamentId),
-    queryFn: () =>
-      getTournamentRegistrations(supabase, tournamentId) as Promise<
-        RegistrationWithStaff[]
-      >,
+    queryFn: () => getTournamentRegistrations(supabase, tournamentId),
     staleTime: 30_000,
     refetchInterval: 30_000,
   });

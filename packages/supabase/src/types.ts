@@ -4499,6 +4499,15 @@ export type Database = {
           date: string
         }[]
       }
+      get_user_id_by_email: { Args: { p_email: string }; Returns: string }
+      get_users_pii: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          first_name: string
+          last_name: string
+          user_id: string
+        }[]
+      }
       has_community_permission: {
         Args: { p_community_id: number; permission_key: string }
         Returns: boolean

@@ -697,11 +697,22 @@ export type StaffWithRole = {
 };
 
 /**
- * List organization staff with their assigned roles via groups
+ * List organization staff with their assigned roles via groups.
+ *
+ * @param supabase        - Request-scoped (or service-role) client for all non-PII
+ *                          reads (communities, community_staff, groups, group_roles,
+ *                          user_group_roles, users). RLS is enforced on this client.
+ * @param communityId     - Numeric community ID.
+ * @param serviceSupabase - Service-role client used ONLY for `getPiiByUserIds` and
+ *                          `getEmailsByUserIds`. Required because `get_users_pii` RPC
+ *                          has EXECUTE granted to service_role only. Callers that are
+ *                          already staff-permission-gated should pass
+ *                          `createServiceRoleClient()` here.
  */
 export async function listCommunityStaffWithRoles(
   supabase: TypedClient,
-  communityId: number
+  communityId: number,
+  serviceSupabase: TypedClient
 ): Promise<StaffWithRole[]> {
   // Get organization owner
   const { data: community } = await supabase
@@ -801,10 +812,12 @@ export async function listCommunityStaffWithRoles(
   for (const s of staffMembers ?? []) allUserIds.push(s.user_id);
   const uniqueUserIds = [...new Set(allUserIds)];
 
-  // Batch-fetch first/last name (private schema) and email (auth admin) in parallel.
+  // Batch-fetch first/last name (get_users_pii RPC) and email (auth admin) in parallel.
+  // Both helpers require a service-role client — `get_users_pii` has EXECUTE granted
+  // to service_role only, and auth.admin is likewise service-role-only.
   const [piiMap, emailMap] = await Promise.all([
-    getPiiByUserIds(supabase, uniqueUserIds),
-    getEmailsByUserIds(supabase, uniqueUserIds),
+    getPiiByUserIds(serviceSupabase, uniqueUserIds),
+    getEmailsByUserIds(serviceSupabase, uniqueUserIds),
   ]);
 
   // Add owner first (if not already in staff list)
@@ -973,16 +986,24 @@ export async function listCommunityGroups(
 }
 
 /**
- * Search users for staff invitation
+ * Search users for staff invitation.
  * Returns users matching the search term who are NOT already staff.
- * first_name and last_name are fetched from private.user_pii after the
- * PostgREST query since they no longer live in public.users.
+ * first_name and last_name are fetched via the `get_users_pii` RPC after
+ * the PostgREST query since they no longer live in public.users.
+ *
+ * @param supabase        - Request-scoped (or service-role) client for PostgREST reads.
+ * @param communityId     - Numeric community ID.
+ * @param searchTerm      - Username search term (min 2 chars).
+ * @param limit           - Max results to return (default 10).
+ * @param serviceSupabase - Service-role client for `getPiiByUserIds`. Required because
+ *                          `get_users_pii` RPC has EXECUTE granted to service_role only.
  */
 export async function searchUsersForInvite(
   supabase: TypedClient,
   communityId: number,
   searchTerm: string,
-  limit: number = 10
+  limit: number = 10,
+  serviceSupabase?: TypedClient
 ): Promise<
   {
     id: string;
@@ -1032,9 +1053,12 @@ export async function searchUsersForInvite(
   if (error) throw error;
   if (!users || users.length === 0) return [];
 
-  // Enrich with first/last name from private.user_pii
+  // Enrich with first/last name via get_users_pii RPC (service-role only).
+  // Fall back to supabase when no serviceSupabase provided — callers that
+  // already pass a service-role client as `supabase` (e.g. admin server actions)
+  // can omit the fifth argument.
   const piiMap = await getPiiByUserIds(
-    supabase,
+    serviceSupabase ?? supabase,
     users.map((u) => u.id)
   );
 

@@ -33,11 +33,6 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-keys";
-import { supabase } from "@/lib/supabase/client";
-import {
-  getUserAdminDetails,
-  getSiteRoles as fetchSiteRoles,
-} from "@trainers/supabase";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -52,6 +47,7 @@ import {
   unsuspendUserAction,
   grantSiteRoleAction,
   revokeSiteRoleAction,
+  getUserDetailsAction,
 } from "./actions";
 
 // ----------------------------------------------------------------
@@ -128,11 +124,14 @@ export function UserDetailSheet({
   const { data: userData, isLoading: loading, error: queryError, refetch: refetchUser } = useQuery({
     queryKey: queryKeys.admin.userDetail(userId),
     queryFn: async () => {
-      const [userResult, rolesData] = await Promise.all([
-        getUserAdminDetails(supabase, userId!),
-        fetchSiteRoles(supabase),
-      ]);
-      return { user: userResult as UserDetail | null, siteRoles: rolesData as SiteRole[] };
+      const result = await getUserDetailsAction(userId!);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return {
+        user: result.data.user as UserDetail | null,
+        siteRoles: result.data.siteRoles as SiteRole[],
+      };
     },
     enabled: open && !!userId,
   });

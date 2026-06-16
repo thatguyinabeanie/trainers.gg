@@ -9,7 +9,8 @@ import { escapeLike } from "@trainers/utils";
  * Options for listing users in the admin panel.
  */
 export interface ListUsersAdminOptions {
-  /** Filter by username or email (case-insensitive partial match) */
+  /** Filter by username (case-insensitive partial match).
+   * Email search requires auth.admin filtering — not supported here. */
   search?: string;
   /** Filter by suspension status (is_locked) */
   isLocked?: boolean;
@@ -24,8 +25,11 @@ export interface ListUsersAdminOptions {
 // ------------------------------------------------------------------
 
 /**
- * Batch-fetch first/last names from the private schema for a set of user IDs.
- * Requires a service-role client — the private schema is not accessible via RLS.
+ * Batch-fetch first/last names via the `get_users_pii` RPC for a set of user IDs.
+ *
+ * Requires a service-role client — the RPC has EXECUTE granted to service_role
+ * only (it exposes cross-user PII). Using an authenticated or anon client will
+ * return PGRST202 / permission denied.
  *
  * @param supabase - Service-role Supabase client
  * @param userIds  - Array of user UUIDs to look up
@@ -38,11 +42,9 @@ export async function getPiiByUserIds(
 > {
   if (userIds.length === 0) return new Map();
 
-  const { data, error } = await supabase
-    .schema("private")
-    .from("user_pii")
-    .select("user_id, first_name, last_name")
-    .in("user_id", userIds);
+  const { data, error } = await supabase.rpc("get_users_pii", {
+    p_user_ids: userIds,
+  });
 
   if (error) {
     console.error("[getPiiByUserIds] Failed to fetch PII:", error);
@@ -52,7 +54,7 @@ export async function getPiiByUserIds(
   return new Map(
     (data ?? []).map((row) => [
       row.user_id,
-      { first_name: row.first_name, last_name: row.last_name },
+      { first_name: row.first_name ?? null, last_name: row.last_name ?? null },
     ])
   );
 }
@@ -183,7 +185,10 @@ export async function listUsersAdmin(
  * Full user details for the admin detail view.
  *
  * Fetches public.users columns (explicit allowlist — no PII), then merges in
- * email (auth admin API) and first/last/birth_date (private.user_pii).
+ * email (auth admin API) and first/last name (get_users_pii RPC). Birth date is
+ * intentionally NOT included: get_users_pii is a names-only shared RPC (so it
+ * can't leak DOB through community staff rosters), and no admin view consumes
+ * DOB. An admin DOB view would need a dedicated admin-only path.
  *
  * @param supabase - Typed Supabase client
  * @param userId   - UUID of the user to fetch
@@ -237,23 +242,19 @@ export async function getUserAdminDetails(
   if (error) throw error;
   if (!data) return null;
 
-  // Enrich with email (auth admin) + PII (private schema) in parallel
-  const [{ data: authUser }, piiResult] = await Promise.all([
+  // Enrich with email (auth admin) + PII (get_users_pii RPC, service-role only) in parallel
+  const [{ data: authUser }, piiMap] = await Promise.all([
     supabase.auth.admin.getUserById(userId),
-    supabase
-      .schema("private")
-      .from("user_pii")
-      .select("first_name, last_name, birth_date")
-      .eq("user_id", userId)
-      .maybeSingle(),
+    getPiiByUserIds(supabase, [userId]),
   ]);
+
+  const pii = piiMap.get(userId);
 
   return {
     ...data,
     email: authUser?.user?.email ?? null,
-    first_name: piiResult.data?.first_name ?? null,
-    last_name: piiResult.data?.last_name ?? null,
-    birth_date: piiResult.data?.birth_date ?? null,
+    first_name: pii?.first_name ?? null,
+    last_name: pii?.last_name ?? null,
   };
 }
 
