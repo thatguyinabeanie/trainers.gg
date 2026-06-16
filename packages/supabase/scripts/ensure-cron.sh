@@ -38,11 +38,19 @@ if [ -z "$CONTAINER" ]; then
 fi
 
 # supabase_admin is the local superuser; postgres can't create pg_cron.
-PSQL_ADMIN="docker exec -i $CONTAINER psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1"
+# Some local images (e.g. postgres:17.6.1.063) require a PASSWORD for
+# supabase_admin instead of trust auth — without it the connection fails and the
+# whole step silently no-ops. The local Supabase superuser password is the
+# project's db password (default "postgres"); allow override via env for safety.
+PGPASS="${SUPABASE_DB_PASSWORD:-postgres}"
+PSQL_ADMIN="docker exec -i -e PGPASSWORD=$PGPASS $CONTAINER psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1"
+
+# Read-only probes run as `postgres` (trust auth on every image, so they never
+# fail to connect). Only the privileged CREATE EXTENSION needs supabase_admin.
+PSQL_RO="docker exec $CONTAINER psql -U postgres -d postgres -tA"
 
 # If the image doesn't even ship pg_cron, skip gracefully (no local cron).
-AVAILABLE="$(docker exec "$CONTAINER" psql -U supabase_admin -d postgres -tA \
-  -c "SELECT 1 FROM pg_available_extensions WHERE name='pg_cron';" || true)"
+AVAILABLE="$($PSQL_RO -c "SELECT 1 FROM pg_available_extensions WHERE name='pg_cron';" || true)"
 if [ -z "$AVAILABLE" ]; then
   printf "${YELLOW}[ensure-cron] pg_cron not available in this image — skipping (no local cron).${NC}\n"
   exit 0
@@ -69,8 +77,7 @@ run_install() {
   #    privileges exist" (the grants it's revoking now have grant-option deps).
   #    So only create when truly missing — otherwise skip straight to scheduling.
   local has_ext
-  has_ext="$(docker exec "$CONTAINER" psql -U supabase_admin -d postgres -tA \
-    -c "SELECT 1 FROM pg_extension WHERE extname='pg_cron';" || true)"
+  has_ext="$($PSQL_RO -c "SELECT 1 FROM pg_extension WHERE extname='pg_cron';" || true)"
   if [ -z "$has_ext" ]; then
     $PSQL_ADMIN -c "CREATE EXTENSION pg_cron;"
   fi
