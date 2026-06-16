@@ -11,15 +11,22 @@ import {
   runImportStage,
   runCompileStage,
 } from "@trainers/supabase/pipeline";
-import { type Json } from "@trainers/supabase/types";
 import { safeCompare } from "../_shared/timing-safe.ts";
 
-// Derive TypedClient from the (vendored) pipeline fn signature instead of
-// importing @trainers/supabase/client. The edge-function deploy bundler only
-// resolves the vendored subpaths (queries/mutations/pipeline); a runtime
-// import of @trainers/supabase/client fails to bundle ("npm package
-// '@trainers/supabase' does not exist"). A type alias is erased at bundle time.
+// The edge-function deploy bundler only resolves the vendored @trainers/supabase
+// subpaths (queries/mutations/pipeline) — NOT /client or /types — and it does
+// NOT erase type-only imports before resolving them. So we avoid importing
+// either: TypedClient is derived from the (vendored) pipeline fn signature, and
+// Json is defined locally (mirrors the generated Supabase Json type). Both are
+// erased at bundle time and need no module resolution.
 type TypedClient = Parameters<typeof runSyncStage>[0];
+type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
