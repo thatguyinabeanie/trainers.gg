@@ -180,7 +180,10 @@ jobs:
       # /api/v1 Next.js routes). They reference removed query exports and are
       # not worth gating a new check on — fix or delete them at retirement.
       - name: Deno check edge functions
-        run: deno check --config packages/supabase/supabase/functions/deno.json --sloppy-imports $(ls packages/supabase/supabase/functions/*/index.ts | grep -v '/api-')
+        run: >-
+          find packages/supabase/supabase/functions
+          -mindepth 2 -maxdepth 2 -name index.ts -not -path '*/api-*'
+          -exec deno check --config packages/supabase/supabase/functions/deno.json --sloppy-imports {} +
 
   # ── Unit tests (Jest) — web (sharded x2), mobile, packages ─────
   test-web:
