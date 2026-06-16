@@ -62,15 +62,28 @@ else
 fi
 
 echo ""
+# Verdict: healthy ONLY when the extension is actually installed AND jobs exist.
+# shared_preload_libraries containing pg_cron is necessary but NOT sufficient —
+# the extension still has to be created during migration, which fails on older
+# images whose migration role lacks EXECUTE on pg_read_file (the extension hook
+# needs it), leaving the library preloaded but the extension uninstalled.
 case "$PRELOAD" in
-  *pg_cron*)
-    printf "${GREEN}Verdict: pg_cron is configured correctly.${NC}\n"
-    ;;
-  *)
-    printf "${RED}Verdict: this image does NOT preload pg_cron.${NC}\n"
-    printf "  Fix: get this machine onto an image that preloads it —\n"
-    printf "       update the CLI (${YELLOW}pnpm supabase:update${NC}), then\n"
-    printf "       ${YELLOW}pnpm db:stop && pnpm db:start && pnpm db:reset${NC}\n"
-    exit 1
-    ;;
+  *pg_cron*) PRELOADED=1 ;;
+  *)         PRELOADED=0 ;;
 esac
+
+if [ -n "$EXT" ] && [ "$JOBS" != "n/a" ]; then
+  printf "${GREEN}Verdict: pg_cron is configured correctly.${NC}\n"
+elif [ "$PRELOADED" = "1" ] && [ -z "$EXT" ]; then
+  printf "${RED}Verdict: pg_cron is preloaded but the extension is NOT installed.${NC}\n"
+  printf "  Cause: this image's migration role can't run the pg_cron setup hook\n"
+  printf "         (permission denied for pg_read_file) — fixed in newer images.\n"
+  printf "  Fix:   update the CLI (${YELLOW}pnpm supabase:update${NC}), then\n"
+  printf "         ${YELLOW}pnpm db:stop && pnpm db:start && pnpm db:reset${NC}\n"
+  exit 1
+else
+  printf "${RED}Verdict: this image does NOT preload pg_cron.${NC}\n"
+  printf "  Fix: update the CLI (${YELLOW}pnpm supabase:update${NC}), then\n"
+  printf "       ${YELLOW}pnpm db:stop && pnpm db:start && pnpm db:reset${NC}\n"
+  exit 1
+fi
