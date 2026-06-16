@@ -15,9 +15,10 @@ set -e
 #   clone → pnpm install → pnpm db:start → pnpm dev
 # yields working cron with no extra step.
 #
-# Idempotent: removes our jobs by jobid (owner-independent) before rescheduling,
-# so repeated runs never create duplicates. Reuses the import-tick migration
-# file verbatim as the single source of truth for those jobs.
+# Idempotent: schedules via cron.schedule(), which UPSERTs by (jobname, owner).
+# Re-runs update jobs in place rather than duplicating — so we deliberately do
+# NOT DELETE/unschedule first (a single owner = no duplicate jobnames). Reuses
+# the import-tick migration file verbatim as the single source of truth.
 # =============================================================================
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'

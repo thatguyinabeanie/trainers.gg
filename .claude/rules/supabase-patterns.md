@@ -82,11 +82,11 @@ In both cases, a future column added to the table silently expanded the response
 
 ```typescript
 // ✅ Explicit allowlist — new columns added to `alts` stay out of the response
-// Reference: packages/supabase/src/queries/matches.ts
+// Reference: getMatchDetails in packages/supabase/src/queries/tournaments.ts
 const { data, error } = await supabase.from("tournament_matches").select(`
     id, round_id, status, table_number,
-    player_one:alts!player_one_alt_id(id, username, display_name),
-    player_two:alts!player_two_alt_id(id, username, display_name)
+    player_one:alts!player_one_alt_id(id, username, avatar_url),
+    player_two:alts!player_two_alt_id(id, username, avatar_url)
   `);
 
 // ❌ Wildcard embed on a PII table — any new column on `alts` silently leaks

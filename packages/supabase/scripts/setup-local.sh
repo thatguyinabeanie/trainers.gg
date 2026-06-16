@@ -479,7 +479,8 @@ main() {
   if check_fast_path; then
     echo -e "${GREEN}Supabase already set up and running${NC}"
     apply_migrations
-    "$SCRIPT_DIR/ensure-cron.sh"
+    # cron is a dev convenience — surface its errors but don't abort setup (set -e)
+    "$SCRIPT_DIR/ensure-cron.sh" || echo "[ensure-cron] setup failed (dev convenience; see errors above) — continuing"
     generate_types
     exit 0
   fi
@@ -495,7 +496,8 @@ main() {
 
   apply_migrations
   run_seed
-  "$SCRIPT_DIR/ensure-cron.sh"
+  # cron is a dev convenience — surface its errors but don't abort setup (set -e)
+  "$SCRIPT_DIR/ensure-cron.sh" || echo "[ensure-cron] setup failed (dev convenience; see errors above) — continuing"
   generate_types
   create_env_file
   create_env_symlinks
