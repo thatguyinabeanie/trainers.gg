@@ -1379,8 +1379,8 @@ export async function getMatchDetails(supabase: TypedClient, matchId: number) {
     .select(
       `
       *,
-      player1:alts!tournament_matches_alt1_id_fkey(*),
-      player2:alts!tournament_matches_alt2_id_fkey(*),
+      player1:alts!tournament_matches_alt1_id_fkey(id, username, avatar_url),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username, avatar_url),
       round:tournament_rounds(*)
     `
     )

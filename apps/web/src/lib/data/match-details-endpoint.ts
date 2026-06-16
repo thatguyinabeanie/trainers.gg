@@ -12,7 +12,9 @@
  * **Service-role does not vary per user** — it is a single constant identity that
  * bypasses RLS entirely. The match-detail shape is public S-bucket data: the same
  * players, scores, round name, and tournament name already render on the public
- * bracket. No PII is cached.
+ * bracket. The `alts` join is narrowed to an explicit allowlist (`id`, `username`,
+ * `avatar_url`) — no PII fields (`bio`, `user_id`, `tier`, `tier_expires_at`,
+ * `tier_started_at`) are included or cached.
  *
  * `getMatchDetails` joins `alts`, `tournament_phases`, and `tournaments` — all in
  * the Step-4 revoke set. After the revoke, `createStaticClient()` (anon key) would

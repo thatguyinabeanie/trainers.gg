@@ -128,7 +128,7 @@ export async function listCommunities(
     .select(
       `
       *,
-      owner:users!communities_owner_user_id_fkey(*)
+      owner:users!communities_owner_user_id_fkey(id, username, image, name)
     `,
       { count: "exact" }
     )
@@ -180,7 +180,7 @@ export async function getCommunityBySlug(supabase: TypedClient, slug: string) {
     .select(
       `
       *,
-      owner:users!communities_owner_user_id_fkey(*)
+      owner:users!communities_owner_user_id_fkey(id, username, image, name)
     `
     )
     .eq("slug", slug)
@@ -281,7 +281,7 @@ export async function getCommunityById(supabase: TypedClient, id: number) {
     .select(
       `
       *,
-      owner:users!communities_owner_user_id_fkey(*)
+      owner:users!communities_owner_user_id_fkey(id, username, image, name)
     `
     )
     .eq("id", id)
@@ -417,7 +417,7 @@ export async function listCommunityStaff(
     .select(
       `
       *,
-      user:users(*)
+      user:users(id, username, image, name)
     `
     )
     .eq("community_id", communityId);
@@ -469,7 +469,7 @@ export async function getMyCommunityInvitations(
       `
       *,
       organization:communities(*),
-      invited_by:users!community_invitations_invited_by_user_id_fkey(*)
+      invited_by:users!community_invitations_invited_by_user_id_fkey(id, username, image, name)
     `
     )
     .eq("invited_user_id", userId)
@@ -491,8 +491,8 @@ export async function getCommunityInvitations(
     .select(
       `
       *,
-      invited_user:users!community_invitations_invited_user_id_fkey(*),
-      invited_by:users!community_invitations_invited_by_user_id_fkey(*)
+      invited_user:users!community_invitations_invited_user_id_fkey(id, username, image, name),
+      invited_by:users!community_invitations_invited_by_user_id_fkey(id, username, image, name)
     `
     )
     .eq("community_id", communityId)

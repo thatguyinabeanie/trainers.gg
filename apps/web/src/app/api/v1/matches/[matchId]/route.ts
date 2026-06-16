@@ -1,16 +1,21 @@
 /**
  * GET /api/v1/matches/[matchId]
  *
- * Auth-gated public S-bucket endpoint for a single match's full details
- * (players, scores, round, tournament). Consumed by the match-report dialog
+ * Auth-gated endpoint for a single match's full details (players, scores, round,
+ * tournament). Consumed by the match-report dialog
  * (`components/tournament/match-report-dialog.tsx`) after Phase 2 Task 9 (T3o)
  * repoints it off the browser anon client.
  *
  * The match-report dialog only knows the `matchId` (not the tournament id), so
- * this route is keyed on the match. The underlying data is public S-bucket
- * (everything here also renders on the public bracket), so the read is served by
- * a `'use cache'` service-role fetcher — see `getCachedMatchDetails` for the
- * §0.2 rationale. Auth is still required (no anonymous open Data API): anon → 401.
+ * this route is keyed on the match. The read is served by a `'use cache'`
+ * service-role fetcher — see `getCachedMatchDetails` for the §0.2 rationale.
+ * Auth is required (no anonymous open Data API): anon → 401.
+ *
+ * **Cache-Control**: `private, no-store` — the `tournament_matches` wildcard embed
+ * (`match.*`) includes `staff_notes`, a private staff-only field. The response is
+ * therefore not safe for CDN caching regardless of the `alts` allowlist fix.
+ * The player alt join is narrowed to `id, username, avatar_url` — no PII fields
+ * from `alts` appear in the response.
  *
  * Follows the locked route-handler pattern:
  *   route handler (param validation → auth → rate-limit)
@@ -30,7 +35,8 @@ import {
 import { getCachedMatchDetails } from "@/lib/data/match-details-endpoint";
 
 /**
- * Cache-Control for routes with private/PII columns pending allowlist fix.
+ * `private, no-store` — `match.*` includes `staff_notes` (private staff field),
+ * so the response must not be cached by CDN regardless of auth state.
  */
 const CACHE_CONTROL = "private, no-store";
 
