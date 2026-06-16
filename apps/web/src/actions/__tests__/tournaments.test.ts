@@ -740,7 +740,12 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    // Third call: bulk update tournament_registrations (status only)
+    // Third call: upsert drop metadata into tournament_registration_staff (BEFORE status update)
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      upsert: mockUpsert,
+    });
+
+    // Fourth call: bulk update tournament_registrations status to 'dropped'
     (mockSupabase.from as jest.Mock).mockReturnValueOnce({
       update: mockUpdate,
       in: jest.fn().mockReturnThis(),
@@ -749,11 +754,6 @@ describe("bulkRemovePlayers", () => {
         data: [{ id: 1 }, { id: 2 }],
         error: null,
       }),
-    });
-
-    // Fourth call: upsert drop metadata into tournament_registration_staff
-    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
-      upsert: mockUpsert,
     });
 
     // Mock rpc for permission check
@@ -817,7 +817,12 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    // Update only succeeds for 2 of them
+    // Upsert drop metadata FIRST (before status update)
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      upsert: mockUpsert,
+    });
+
+    // Update only succeeds for 2 of them (status update fires after upsert)
     (mockSupabase.from as jest.Mock).mockReturnValueOnce({
       update: mockUpdate,
       in: jest.fn().mockReturnThis(),
@@ -826,11 +831,6 @@ describe("bulkRemovePlayers", () => {
         data: [{ id: 1 }, { id: 2 }],
         error: null,
       }),
-    });
-
-    // Upsert drop metadata for the 2 successfully-dropped registrations
-    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
-      upsert: mockUpsert,
     });
 
     // Mock rpc for permission check

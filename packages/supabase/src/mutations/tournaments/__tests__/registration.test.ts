@@ -51,6 +51,7 @@ type MockQueryBuilder = {
   order: jest.Mock;
   insert: jest.Mock;
   update: jest.Mock;
+  upsert: jest.Mock;
   delete: jest.Mock;
   single: jest.Mock;
 };
@@ -508,8 +509,8 @@ describe("Tournament Registration Mutations", () => {
     });
 
     it("passes drop fields when status is dropped", async () => {
-      // Drop metadata is now written to tournament_registration_staff (not the
-      // tournament_registrations update). The base update only carries { status }.
+      // Drop metadata is written to tournament_registration_staff FIRST so the
+      // audit_registration_status_change trigger can read it when the status UPDATE fires.
       const mockStatusUpdate = jest.fn().mockReturnThis();
       const mockStaffUpsert = jest.fn().mockResolvedValue({ error: null });
       const fromSpy = jest.spyOn(mockClient, "from");
@@ -534,15 +535,15 @@ describe("Tournament Registration Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Third call: status-only update on tournament_registrations
+      // Third call: upsert drop metadata to tournament_registration_staff (BEFORE status update)
+      fromSpy.mockReturnValueOnce({
+        upsert: mockStaffUpsert,
+      } as unknown as MockQueryBuilder);
+
+      // Fourth call: status-only update on tournament_registrations (AFTER staff upsert)
       fromSpy.mockReturnValueOnce({
         update: mockStatusUpdate,
         eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      // Fourth call: upsert drop metadata to tournament_registration_staff
-      fromSpy.mockReturnValueOnce({
-        upsert: mockStaffUpsert,
       } as unknown as MockQueryBuilder);
 
       const result = await updateRegistrationStatus(
@@ -554,10 +555,7 @@ describe("Tournament Registration Mutations", () => {
 
       expect(result).toEqual({ success: true, tournamentId: 100 });
 
-      // Base status update only carries the status field — no drop metadata
-      expect(mockStatusUpdate).toHaveBeenCalledWith({ status: "dropped" });
-
-      // Drop metadata goes into tournament_registration_staff via upsert
+      // Drop metadata goes into tournament_registration_staff via upsert FIRST
       expect(mockStaffUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
           registration_id: registrationId,
@@ -569,12 +567,16 @@ describe("Tournament Registration Mutations", () => {
         { onConflict: "registration_id" }
       );
 
-      // Verify the correct tables were targeted
-      expect(fromSpy).toHaveBeenNthCalledWith(3, "tournament_registrations");
+      // Base status update only carries the status field — no drop metadata
+      expect(mockStatusUpdate).toHaveBeenCalledWith({ status: "dropped" });
+
+      // Verify the correct tables were targeted in the correct order:
+      // staff upsert fires before the status update so the trigger can read it.
       expect(fromSpy).toHaveBeenNthCalledWith(
-        4,
+        3,
         "tournament_registration_staff"
       );
+      expect(fromSpy).toHaveBeenNthCalledWith(4, "tournament_registrations");
     });
 
     it("throws when status is dropped but no dropInfo provided", async () => {

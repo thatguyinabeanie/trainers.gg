@@ -54,6 +54,8 @@ const createMockClient = () => {
   return {
     from: jest.fn().mockReturnValue(mockQueryBuilder),
     schema: jest.fn().mockReturnValue(mockSchemaBuilder),
+    // rpc is used by getPiiByUserIds → get_users_pii. Default: empty PII list.
+    rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
     auth: {
       admin: {
         getUserById: jest

@@ -827,9 +827,9 @@ describe("communities queries", () => {
      *   - supabase.auth.admin.getUserById(id) → email rows (one per user)
      */
     /**
-     * Build a mock client sequenced to match listCommunityStaffWithRoles.
+     * Build mock clients sequenced to match listCommunityStaffWithRoles.
      *
-     * The function issues .from() calls in this order:
+     * The public client issues .from() calls in this order:
      *   0. communities  → .single() → { owner_user_id }
      *   1. community_staff → .then() → staff rows
      *   2. groups       → .then() → groups
@@ -837,9 +837,11 @@ describe("communities queries", () => {
      *   4. user_group_roles → .then() → user group roles
      *   5. users        → .single() → owner user row
      *
-     * Plus parallel:
-     *   - supabase.schema("private").from("user_pii") → .then() → PII rows
-     *   - supabase.auth.admin.getUserById(id) → email (one call per user)
+     * The service client handles PII + email enrichment (3rd arg):
+     *   - serviceSupabase.rpc("get_users_pii", ...) → piiRows
+     *   - serviceSupabase.auth.admin.getUserById(id) → email (one call per user)
+     *
+     * Returns { client, serviceClient } — pass both to listCommunityStaffWithRoles.
      */
     function buildStaffWithRolesMockClient(opts: {
       ownerUserId: string;
@@ -857,7 +859,7 @@ describe("communities queries", () => {
         last_name: string | null;
       }>;
       emailMap?: Record<string, string | null>;
-    }) {
+    }): { client: TypedClient; serviceClient: TypedClient } {
       // Pre-define each .from() call's resolution by call index.
       // Each entry has the method used to terminate it and the data to return.
       const fromCalls: Array<{ method: "single" | "then"; data: unknown }> = [
@@ -901,25 +903,12 @@ describe("communities queries", () => {
         return b;
       };
 
-      // Private schema builder for getPiiByUserIds
+      // Service-role client: handles get_users_pii RPC + auth.admin emails.
+      // Both helpers require service role — the RPC is EXECUTE-granted to
+      // service_role only; auth.admin is likewise service-role-only.
       const piiRows = opts.piiRows ?? [];
-      const privatePiiBuilder: Record<string, unknown> = {};
-      const piiChain = () => privatePiiBuilder;
-      privatePiiBuilder["select"] = jest.fn().mockImplementation(piiChain);
-      privatePiiBuilder["eq"] = jest.fn().mockImplementation(piiChain);
-      privatePiiBuilder["in"] = jest.fn().mockImplementation(piiChain);
-      privatePiiBuilder["then"] = jest
-        .fn()
-        .mockImplementation((resolve: (v: unknown) => unknown) =>
-          Promise.resolve({ data: piiRows, error: null }).then(resolve)
-        );
-
-      const privateSchema = {
-        from: jest.fn().mockReturnValue(privatePiiBuilder),
-      };
-
-      // Auth admin mock for getEmailsByUserIds
       const emailMap = opts.emailMap ?? {};
+
       const getUserById = jest.fn().mockImplementation((id: string) =>
         Promise.resolve({
           data: { user: { email: emailMap[id] ?? null } },
@@ -927,21 +916,33 @@ describe("communities queries", () => {
         })
       );
 
-      return {
+      const serviceClient = {
+        rpc: jest.fn().mockResolvedValue({ data: piiRows, error: null }),
+        auth: {
+          admin: { getUserById },
+        },
+      } as unknown as TypedClient;
+
+      const client = {
         from: jest.fn().mockImplementation(makePublicBuilder),
         rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
-        schema: jest.fn().mockReturnValue(privateSchema),
         auth: {
           getUser: jest
             .fn()
             .mockResolvedValue({ data: { user: null }, error: null }),
-          admin: { getUserById },
+          admin: {
+            getUserById: jest
+              .fn()
+              .mockResolvedValue({ data: { user: null }, error: null }),
+          },
         },
       } as unknown as TypedClient;
+
+      return { client, serviceClient };
     }
 
     it("returns an array with the owner listed first", async () => {
-      const client = buildStaffWithRolesMockClient({
+      const { client, serviceClient } = buildStaffWithRolesMockClient({
         ownerUserId: "user-1",
         staffMembers: [
           {
@@ -963,7 +964,7 @@ describe("communities queries", () => {
         },
       });
 
-      const result = await listCommunityStaffWithRoles(client, 1);
+      const result = await listCommunityStaffWithRoles(client, 1, serviceClient);
 
       expect(Array.isArray(result)).toBe(true);
       // Owner (not in staff table) is prepended first
@@ -974,7 +975,7 @@ describe("communities queries", () => {
     }, 10000);
 
     it("merges PII and email into each staff member", async () => {
-      const client = buildStaffWithRolesMockClient({
+      const { client, serviceClient } = buildStaffWithRolesMockClient({
         ownerUserId: "user-owner",
         staffMembers: [
           {
@@ -992,7 +993,7 @@ describe("communities queries", () => {
         emailMap: { "user-staff": "brock@example.com" },
       });
 
-      const result = await listCommunityStaffWithRoles(client, 1);
+      const result = await listCommunityStaffWithRoles(client, 1, serviceClient);
 
       const staffMember = result.find((r) => r.user_id === "user-staff");
       expect(staffMember).toBeDefined();
@@ -1002,7 +1003,7 @@ describe("communities queries", () => {
     }, 10000);
 
     it("returns empty array when community has no staff and no owner row", async () => {
-      const client = buildStaffWithRolesMockClient({
+      const { client, serviceClient } = buildStaffWithRolesMockClient({
         ownerUserId: "user-owner",
         staffMembers: [],
         // owner user lookup returns null — owner not in users table
@@ -1013,7 +1014,7 @@ describe("communities queries", () => {
         },
       });
 
-      const result = await listCommunityStaffWithRoles(client, 1);
+      const result = await listCommunityStaffWithRoles(client, 1, serviceClient);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(0);

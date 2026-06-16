@@ -12,6 +12,7 @@ const mockGenerateLink = jest.fn();
 const mockCreateUser = jest.fn();
 const mockGetUserById = jest.fn();
 const mockListUsers = jest.fn();
+const mockRpc = jest.fn();
 
 jest.mock("@/lib/atproto/oauth-client", () => ({
   handleAtprotoCallback: (...args: unknown[]) =>
@@ -30,6 +31,7 @@ jest.mock("@/lib/supabase/server", () => ({
         listUsers: (...args: unknown[]) => mockListUsers(...args),
       },
     },
+    rpc: (...args: unknown[]) => mockRpc(...args),
   }),
   createAtprotoServiceClient: () => ({
     from: mockFrom,
@@ -51,6 +53,8 @@ describe("GET /api/oauth/callback", () => {
     // Default auth admin mock defaults — individual tests override as needed
     mockGetUserById.mockResolvedValue({ data: { user: null }, error: null });
     mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
+    // Default rpc mock — returns null (no user found) for get_user_id_by_email
+    mockRpc.mockResolvedValue({ data: null, error: null });
   });
 
   function createRequest(params: Record<string, string>) {
@@ -299,18 +303,8 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      // listUsers finds the legacy auth user by placeholder email
-      mockListUsers.mockResolvedValue({
-        data: {
-          users: [
-            {
-              id: "user-legacy",
-              email: "did_plc_legacy456@bluesky.trainers.gg",
-            },
-          ],
-        },
-        error: null,
-      });
+      // rpc('get_user_id_by_email') finds the legacy auth user's UUID
+      mockRpc.mockResolvedValue({ data: "user-legacy", error: null });
 
       // getUserById fetches email from auth.users (canonical source)
       mockGetUserById.mockResolvedValue({
@@ -398,8 +392,8 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      // listUsers finds no legacy user with this placeholder email
-      mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
+      // rpc('get_user_id_by_email') returns null — no legacy user found
+      // (default mockRpc already returns { data: null, error: null })
 
       // Update after user creation
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
@@ -495,22 +489,12 @@ describe("GET /api/oauth/callback", () => {
         update: mockUpdate,
       }));
 
-      // listUsers is called twice:
-      // 1st call (fallback for initial lookup): no user found by email
-      // 2nd call (after "already registered" error): finds existing auth user
-      mockListUsers
-        .mockResolvedValueOnce({ data: { users: [] }, error: null })
-        .mockResolvedValueOnce({
-          data: {
-            users: [
-              {
-                id: "existing-auth-user",
-                email: "did_plc_conflict@bluesky.trainers.gg",
-              },
-            ],
-          },
-          error: null,
-        });
+      // rpc('get_user_id_by_email') is called twice:
+      // 1st call (legacy fallback during initial lookup): no user found
+      // 2nd call (conflict lookup after "already registered" error): finds existing auth user
+      mockRpc
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({ data: "existing-auth-user", error: null });
 
       mockGetBlueskyProfile.mockResolvedValue({
         handle: "duplicate.bsky.social",
@@ -656,15 +640,8 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      // listUsers finds the legacy user by placeholder email
-      mockListUsers.mockResolvedValue({
-        data: {
-          users: [
-            { id: "user-legacy", email: "did_plc_legacy@bluesky.trainers.gg" },
-          ],
-        },
-        error: null,
-      });
+      // rpc('get_user_id_by_email') finds the legacy user's UUID
+      mockRpc.mockResolvedValue({ data: "user-legacy", error: null });
 
       // getUserById returns the legacy user's email (canonical source)
       mockGetUserById.mockResolvedValue({
@@ -784,7 +761,7 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      // DID lookup returns null; listUsers finds no legacy user
+      // DID lookup returns null; rpc returns null (no legacy user)
       mockFrom.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -794,7 +771,7 @@ describe("GET /api/oauth/callback", () => {
           }),
         }),
       });
-      mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
+      // default mockRpc already returns { data: null, error: null }
 
       mockGetBlueskyProfile.mockResolvedValue({
         handle: "fail.bsky.social",
@@ -826,7 +803,7 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      // DID lookup returns null; listUsers finds no legacy user
+      // DID lookup returns null; rpc returns null (no legacy user)
       mockFrom.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -841,7 +818,7 @@ describe("GET /api/oauth/callback", () => {
             eq: jest.fn().mockResolvedValue({ error: null }),
           }),
       });
-      mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
+      // default mockRpc already returns { data: null, error: null }
 
       // Handle that extracts to a very short name (e.g., "ab")
       mockGetBlueskyProfile.mockResolvedValue({

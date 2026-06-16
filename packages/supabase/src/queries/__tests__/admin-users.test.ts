@@ -288,14 +288,15 @@ describe("admin-users queries", () => {
       };
 
       const mockClient = createMockClient();
-      // First maybeSingle: the public.users query
+      // maybeSingle: the public.users query
       mockClient._queryBuilder.maybeSingle.mockResolvedValueOnce({
         data: mockUser,
         error: null,
       });
-      // Second maybeSingle: private.user_pii query
-      mockClient._queryBuilder.maybeSingle.mockResolvedValueOnce({
-        data: { first_name: "Alice", last_name: "Trainer", birth_date: null },
+
+      // rpc('get_users_pii') returns first/last name rows
+      (mockClient.rpc as jest.Mock).mockResolvedValueOnce({
+        data: [{ user_id: "user-1", first_name: "Alice", last_name: "Trainer" }],
         error: null,
       });
 
@@ -307,15 +308,16 @@ describe("admin-users queries", () => {
 
       const result = await getUserAdminDetails(mockClient, "user-1");
 
-      // Result is enriched with email + PII
+      // Result is enriched with email + PII. birth_date is intentionally absent
+      // (get_users_pii is names-only — DOB needs a dedicated admin-only RPC).
       expect(result).toMatchObject({
         id: "user-1",
         username: "alice",
         email: "alice@example.com",
         first_name: "Alice",
         last_name: "Trainer",
-        birth_date: null,
       });
+      expect(result).not.toHaveProperty("birth_date");
       expect(mockClient.from).toHaveBeenCalledWith("users");
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith("id", "user-1");
       expect(mockClient._queryBuilder.maybeSingle).toHaveBeenCalled();
@@ -350,9 +352,16 @@ describe("admin-users queries", () => {
       const mockUser = { id: "user-1", username: "alice", is_locked: false };
 
       const mockClient = createMockClient();
-      mockClient._queryBuilder.maybeSingle
-        .mockResolvedValueOnce({ data: mockUser, error: null })
-        .mockResolvedValueOnce({ data: null, error: null }); // no PII row
+      mockClient._queryBuilder.maybeSingle.mockResolvedValueOnce({
+        data: mockUser,
+        error: null,
+      });
+
+      // rpc('get_users_pii') returns empty — no PII on file
+      (mockClient.rpc as jest.Mock).mockResolvedValueOnce({
+        data: [],
+        error: null,
+      });
 
       (mockClient.auth.admin.getUserById as jest.Mock).mockResolvedValue({
         data: { user: null },
@@ -365,8 +374,8 @@ describe("admin-users queries", () => {
         email: null,
         first_name: null,
         last_name: null,
-        birth_date: null,
       });
+      expect(result).not.toHaveProperty("birth_date");
     });
   });
 

@@ -25,8 +25,15 @@ const mockSupabase = {
   from: jest.fn(),
   rpc: jest.fn(),
 };
+
+// Separate service-role client with its own rpc mock for PII enrichment
+const mockServiceSupabase = {
+  rpc: jest.fn(),
+};
+
 jest.mock("@/lib/supabase/server", () => ({
   createClient: jest.fn().mockResolvedValue(mockSupabase),
+  createServiceRoleClient: jest.fn().mockReturnValue(mockServiceSupabase),
 }));
 
 // Mock next/cache updateTag
@@ -35,9 +42,12 @@ jest.mock("next/cache", () => ({
   updateTag: (...args: unknown[]) => mockUpdateTag(...args),
 }));
 
-// staff.ts imports getErrorMessage from @trainers/utils
+// staff.ts imports getErrorMessage and PERMISSIONS from @trainers/utils
 jest.mock("@trainers/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
+  PERMISSIONS: {
+    COMMUNITY_INVITE_STAFF: "community.invite_staff",
+  },
 }));
 
 // Mock cache-invalidation helper
@@ -105,16 +115,48 @@ describe("searchUsersForStaffInvite", () => {
         image: null,
       },
     ];
+    // has_community_permission must resolve truthy before the search runs
+    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true, error: null });
     mockSearchUsersForInvite.mockResolvedValue(mockUsers);
 
     const result = await searchUsersForStaffInvite(1, "ash");
 
     expect(result).toEqual({ success: true, data: mockUsers });
+    // Service-role client is passed as the 5th arg for PII enrichment
     expect(mockSearchUsersForInvite).toHaveBeenCalledWith(
       mockSupabase,
       1,
-      "ash"
+      "ash",
+      10,
+      mockServiceSupabase
     );
+  });
+
+  it("returns permission-denied error when has_community_permission is false", async () => {
+    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: false, error: null });
+
+    const result = await searchUsersForStaffInvite(1, "ash");
+
+    expect(result).toEqual({
+      success: false,
+      error: "You do not have permission to invite staff for this community.",
+    });
+    // Service-role search must NOT be performed when permission is denied
+    expect(mockSearchUsersForInvite).not.toHaveBeenCalled();
+  });
+
+  it("propagates rpc errors as a failure result", async () => {
+    mockSupabase.rpc = jest
+      .fn()
+      .mockResolvedValue({ data: null, error: { message: "DB error" } });
+
+    const result = await searchUsersForStaffInvite(1, "ash");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to search users",
+    });
+    expect(mockSearchUsersForInvite).not.toHaveBeenCalled();
   });
 });
 
