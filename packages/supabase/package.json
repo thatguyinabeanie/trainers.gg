@@ -41,6 +41,7 @@
     "db:lint": "supabase db lint",
     "db:seed": "supabase db seed",
     "db:dump": "supabase db dump",
+    "db:cron-check": "./scripts/cron-check.sh",
     "supabase": "supabase"
   },
   "dependencies": {
