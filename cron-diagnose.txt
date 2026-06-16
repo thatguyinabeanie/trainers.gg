@@ -1,0 +1,56 @@
+
+
+⚡ trainers.gg ❯ pnpm db:cron-diagnose                                                                  fix-missing-cron-schema [$!]node ⬢ 22.22.3
+$ pnpm --filter=@trainers/supabase run db:cron-diagnose
+$ ./scripts/cron-diagnose.sh
+
+=== 0. Container + image tag ===
+Container: /supabase_db_supabase
+Image:     public.ecr.aws/supabase/postgres:17.6.1.063
+
+=== 1. shared_preload_libraries (should include pg_cron) ===
+                                                     shared_preload_libraries
+-----------------------------------------------------------------------------------------------------------------------------------
+ pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, pgsodium, auto_explain, pg_tle, plan_filter, supabase_vault
+(1 row)
+
+
+=== 2. cron.database_name (should be 'postgres') ===
+ cron.database_name
+--------------------
+ postgres
+(1 row)
+
+
+=== 3. Is a 'cron' schema present, and who owns it? (ghost check) ===
+List of schemas
+ Name | Owner
+------+-------
+(0 rows)
+
+
+=== 4. Is the pg_cron extension registered? (expect a row if healthy) ===
+     List of installed extensions
+ Name | Version | Schema | Description
+------+---------+--------+-------------
+(0 rows)
+
+
+=== 5. Is pg_cron available to install, and at what version? ===
+  name   | default_version | installed_version
+---------+-----------------+-------------------
+ pg_cron | 1.6.4           |
+(1 row)
+
+
+=== 6. Objects living inside the cron schema (empty = ghost schema) ===
+ relname | relkind
+---------+---------
+(0 rows)
+
+
+=== 7. THE error — attempt CREATE EXTENSION directly (full text) ===
+CREATE EXTENSION
+
+--- done. paste everything above ---
+
