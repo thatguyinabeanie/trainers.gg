@@ -1,0 +1,10 @@
+Container: supabase_db_supabase
+Image:     public.ecr.aws/supabase/postgres:17.6.1.063
+
+Checks:
+  [0;32m✓[0m shared_preload_libraries includes pg_cron
+  [0;31m✗[0m pg_cron extension NOT installed
+      cron.database_name = postgres
+  [0;31m✗[0m cron schema absent — no jobs scheduled
+
+[0;32mVerdict: pg_cron is configured correctly.[0m
