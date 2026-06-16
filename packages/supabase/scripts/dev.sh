@@ -44,11 +44,11 @@ fi
 # =============================================================================
 cd "$SUPABASE_DIR"
 
-# Find the Supabase CLI
-if command -v supabase &>/dev/null; then
-  SUPABASE_CMD="supabase"
-else
-  log_error "Supabase CLI not found."
+# Use ONLY the lockfile-pinned npm binary — no global / PATH / npx fallback — so
+# the CLI version (and bundled postgres image) is deterministic across machines.
+SUPABASE_CMD="$SUPABASE_DIR/node_modules/.bin/supabase"
+if [ ! -x "$SUPABASE_CMD" ]; then
+  log_error "Pinned Supabase CLI not found at $SUPABASE_CMD — run 'pnpm install'."
   exit 1
 fi
 
