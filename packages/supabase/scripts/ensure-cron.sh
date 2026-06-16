@@ -50,7 +50,7 @@ PSQL_ADMIN="docker exec -i -e PGPASSWORD=$PGPASS $CONTAINER psql -U supabase_adm
 PSQL_RO="docker exec $CONTAINER psql -U postgres -d postgres -tA"
 
 # If the image doesn't even ship pg_cron, skip gracefully (no local cron).
-AVAILABLE="$($PSQL_RO -c "SELECT 1 FROM pg_available_extensions WHERE name='pg_cron';" || true)"
+AVAILABLE="$($PSQL_RO -c "SELECT 1 FROM pg_available_extensions WHERE name='pg_cron';")"
 if [ -z "$AVAILABLE" ]; then
   printf "${YELLOW}[ensure-cron] pg_cron not available in this image — skipping (no local cron).${NC}\n"
   exit 0
@@ -77,7 +77,7 @@ run_install() {
   #    privileges exist" (the grants it's revoking now have grant-option deps).
   #    So only create when truly missing — otherwise skip straight to scheduling.
   local has_ext
-  has_ext="$($PSQL_RO -c "SELECT 1 FROM pg_extension WHERE extname='pg_cron';" || true)"
+  has_ext="$($PSQL_RO -c "SELECT 1 FROM pg_extension WHERE extname='pg_cron';")"
   if [ -z "$has_ext" ]; then
     $PSQL_ADMIN -c "CREATE EXTENSION pg_cron;"
   fi
@@ -98,5 +98,9 @@ if run_install; then
 else
   printf "${RED}[ensure-cron] FAILED to install pg_cron (see error above).${NC}\n"
   printf "${RED}[ensure-cron] Boot continues; run 'pnpm db:cron-check' to inspect.${NC}\n"
+  # Propagate the real failure status instead of masking it with exit 0. Callers
+  # that want boot to continue regardless can ignore this exit code themselves;
+  # silently reporting success hid genuine install failures (Error Visibility rule).
+  exit 1
 fi
 exit 0
