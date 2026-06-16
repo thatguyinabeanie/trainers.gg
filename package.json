@@ -51,6 +51,7 @@
     "generate-seed-json": "pnpm --filter=@trainers/supabase run generate-seed-json",
     "generate-seeds": "pnpm --filter=@trainers/supabase run generate-seeds",
     "supabase": "pnpm --filter=@trainers/supabase run supabase",
+    "supabase:update": "pnpm --filter=@trainers/supabase up --latest supabase && pnpm supabase --version",
     "// pds": "",
     "setup:ngrok": "./infra/pds/local-dev.sh tunnel",
     "pds:start": "./infra/pds/local-dev.sh start",

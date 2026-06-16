@@ -73,7 +73,7 @@ catalogs:
   supabase:
     "@supabase/ssr": ^0.9.0
     "@supabase/supabase-js": ^2.108.1
-    supabase: ^2.98.2
+    supabase: ^2.106.0
 
   tamagui:
     "@tamagui/config": 2.0.0-rc.41
