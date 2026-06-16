@@ -228,13 +228,17 @@ async function handleSignInMode({
         p_email: placeholderEmail,
       });
     if (legacyLookupError) {
-      // Don't silently treat a failed lookup as "no match" — that would create a
-      // duplicate account for an existing user. Surface it; fall through to the
-      // not-found path so the flow continues (same behavior as no match).
       console.error(
         "[oauth/callback] get_user_id_by_email (legacy lookup) failed:",
         legacyLookupError.message
       );
+      const errorUrl = new URL("/sign-in", baseUrl);
+      errorUrl.searchParams.set("error", "bluesky_auth_failed");
+      errorUrl.searchParams.set(
+        "error_description",
+        "Account lookup failed — please try again"
+      );
+      return NextResponse.redirect(errorUrl);
     }
 
     if (legacyAuthId) {
@@ -323,6 +327,13 @@ async function handleSignInMode({
             "[oauth/callback] get_user_id_by_email (conflict lookup) failed:",
             conflictLookupError.message
           );
+          const errorUrl = new URL("/sign-in", baseUrl);
+          errorUrl.searchParams.set("error", "bluesky_auth_failed");
+          errorUrl.searchParams.set(
+            "error_description",
+            "Account lookup failed — please try again"
+          );
+          return NextResponse.redirect(errorUrl);
         }
 
         if (foundId) {

@@ -13,6 +13,7 @@ import {
   revokeSiteRole,
   getUserAdminDetails,
   getSiteRoles,
+  type UserAdminDetails,
 } from "@trainers/supabase";
 import { z } from "@trainers/validators";
 
@@ -178,7 +179,7 @@ export async function revokeSiteRoleAction(
 // ----------------------------------------------------------------
 
 type UserDetailsData = {
-  user: Awaited<ReturnType<typeof getUserAdminDetails>>;
+  user: UserAdminDetails | null;
   siteRoles: Awaited<ReturnType<typeof getSiteRoles>>;
 };
 

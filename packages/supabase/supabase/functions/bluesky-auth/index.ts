@@ -323,11 +323,18 @@ Deno.serve(async (req) => {
           p_email: placeholderEmail,
         });
       if (legacyLookupError) {
-        // Surface the failure instead of treating it as "no match" — a silent
-        // failure here would create a duplicate account for an existing user.
         console.error(
           "[bluesky-auth] get_user_id_by_email (legacy lookup) failed:",
           legacyLookupError.message
+        );
+        return jsonResponse(
+          {
+            success: false,
+            error: "Account lookup failed — please try again",
+            code: "LOOKUP_ERROR",
+          },
+          500,
+          cors
         );
       }
       const { data: userByAuthId } = legacyAuthId
@@ -345,10 +352,16 @@ Deno.serve(async (req) => {
 
         // Update DID if not set
         if (!userByAuthId.did) {
-          await supabaseAdmin
+          const { error: didBackfillError } = await supabaseAdmin
             .from("users")
             .update({ did, pds_status: "pending" })
             .eq("id", userByAuthId.id);
+          if (didBackfillError) {
+            console.error(
+              "[bluesky-auth] legacy DID backfill failed:",
+              didBackfillError.message
+            );
+          }
         }
       } else {
         // New user — create account
@@ -387,6 +400,15 @@ Deno.serve(async (req) => {
                 "[bluesky-auth] get_user_id_by_email (conflict lookup) failed:",
                 conflictLookupError.message
               );
+              return jsonResponse(
+                {
+                  success: false,
+                  error: "Account lookup failed — please try again",
+                  code: "LOOKUP_ERROR",
+                },
+                500,
+                cors
+              );
             }
 
             const { data: existByAuthId } = conflictAuthId
@@ -399,7 +421,7 @@ Deno.serve(async (req) => {
 
             if (existByAuthId) {
               // Update their record with current DID and profile data
-              await supabaseAdmin
+              const { error: conflictUpdateError } = await supabaseAdmin
                 .from("users")
                 .update({
                   did,
@@ -407,6 +429,12 @@ Deno.serve(async (req) => {
                   image: profile?.avatar,
                 })
                 .eq("id", existByAuthId.id);
+              if (conflictUpdateError) {
+                console.error(
+                  "[bluesky-auth] conflict DID update failed:",
+                  conflictUpdateError.message
+                );
+              }
 
               userEmail = placeholderEmail;
               userId = existByAuthId.id;

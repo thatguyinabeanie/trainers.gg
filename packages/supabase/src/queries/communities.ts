@@ -1,5 +1,5 @@
 import type { Database } from "../types";
-import type { TypedClient } from "../client";
+import type { TypedClient, ServiceRoleClient } from "../client";
 import { pgInList } from "../postgrest-helpers";
 import { getPiiByUserIds, getEmailsByUserIds } from "./admin-users";
 type OrganizationRow = Database["public"]["Tables"]["communities"]["Row"];
@@ -703,16 +703,15 @@ export type StaffWithRole = {
  *                          reads (communities, community_staff, groups, group_roles,
  *                          user_group_roles, users). RLS is enforced on this client.
  * @param communityId     - Numeric community ID.
- * @param serviceSupabase - Service-role client used ONLY for `getPiiByUserIds` and
- *                          `getEmailsByUserIds`. Required because `get_users_pii` RPC
- *                          has EXECUTE granted to service_role only. Callers that are
- *                          already staff-permission-gated should pass
- *                          `createServiceRoleClient()` here.
+ * @param serviceSupabase - MUST be a service-role client (used for `getPiiByUserIds` and
+ *                          `getEmailsByUserIds` — `get_users_pii` RPC has EXECUTE granted
+ *                          to service_role only). Callers that are already
+ *                          staff-permission-gated should pass `createServiceRoleClient()`.
  */
 export async function listCommunityStaffWithRoles(
   supabase: TypedClient,
   communityId: number,
-  serviceSupabase: TypedClient
+  serviceSupabase: ServiceRoleClient
 ): Promise<StaffWithRole[]> {
   // Get organization owner
   const { data: community } = await supabase
@@ -995,15 +994,16 @@ export async function listCommunityGroups(
  * @param communityId     - Numeric community ID.
  * @param searchTerm      - Username search term (min 2 chars).
  * @param limit           - Max results to return (default 10).
- * @param serviceSupabase - Service-role client for `getPiiByUserIds`. Required because
- *                          `get_users_pii` RPC has EXECUTE granted to service_role only.
+ * @param serviceSupabase - Service-role client for the PII enrichment. If omitted, falls
+ *                          back to `supabase` — only safe when `supabase` is already a
+ *                          service-role client (e.g. admin server actions).
  */
 export async function searchUsersForInvite(
   supabase: TypedClient,
   communityId: number,
   searchTerm: string,
   limit: number = 10,
-  serviceSupabase?: TypedClient
+  serviceSupabase?: ServiceRoleClient
 ): Promise<
   {
     id: string;

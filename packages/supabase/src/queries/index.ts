@@ -234,7 +234,7 @@ export {
   getEmailsByUserIds,
 } from "./admin-users";
 
-export type { ListUsersAdminOptions } from "./admin-users";
+export type { ListUsersAdminOptions, UserAdminDetails } from "./admin-users";
 
 // Feature flag queries
 export {

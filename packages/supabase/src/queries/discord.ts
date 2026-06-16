@@ -639,7 +639,7 @@ export async function getCommunityParticipantUserIds(
       "alts!tournament_registrations_alt_id_fkey(user_id), tournaments!inner(community_id)"
     )
     .eq("tournaments.community_id", communityId)
-    .is("dropped_at", null);
+    .neq("status", "dropped");
 
   if (error)
     throw new Error(

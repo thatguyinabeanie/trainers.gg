@@ -481,9 +481,24 @@ export async function getTournamentRegistrations(
     .from("tournament_registrations")
     .select(
       `
-      *,
-      alt:alts!tournament_registrations_alt_id_fkey(*),
-      team:teams(*),
+      id,
+      alt_id,
+      tournament_id,
+      status,
+      registered_at,
+      checked_in_at,
+      team_id,
+      team_name,
+      team_submitted_at,
+      team_locked,
+      in_game_name,
+      display_name_option,
+      show_country_flag,
+      alt:alts!tournament_registrations_alt_id_fkey(
+        id,
+        username,
+        avatar_url
+      ),
       staff:tournament_registration_staff(
         drop_category,
         drop_notes,

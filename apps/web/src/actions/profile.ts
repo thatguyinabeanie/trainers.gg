@@ -232,6 +232,11 @@ export async function getCurrentUserProfile(): Promise<
       return { success: false, error: "Failed to fetch profile" };
     }
 
+    if (piiResult.error) {
+      console.error("Error fetching user PII:", piiResult.error);
+      return { success: false, error: "Failed to fetch profile" };
+    }
+
     const userData = usersResult.data;
     if (!userData) return { success: true, data: null };
 

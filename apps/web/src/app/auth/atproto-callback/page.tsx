@@ -37,7 +37,14 @@ export default async function AtprotoCallbackPage() {
 
   // Fetch the user's email from auth.users (canonical source — email is no
   // longer stored in public.users).
-  const { data: authUserData } = await supabase.auth.admin.getUserById(user.id);
+  const { data: authUserData, error: authUserError } =
+    await supabase.auth.admin.getUserById(user.id);
+  if (authUserError) {
+    console.error(
+      "[atproto-callback] getUserById failed:",
+      authUserError.message
+    );
+  }
   const email = authUserData?.user?.email ?? null;
 
   // For now, redirect to sign-in with a message that they need to use their email

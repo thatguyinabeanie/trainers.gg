@@ -85,15 +85,15 @@ In both cases, a future column added to the table silently expanded the response
 // Reference: getMatchDetails in packages/supabase/src/queries/tournaments.ts
 const { data, error } = await supabase.from("tournament_matches").select(`
     id, round_id, status, table_number,
-    player_one:alts!player_one_alt_id(id, username, avatar_url),
-    player_two:alts!player_two_alt_id(id, username, avatar_url)
+    player1:alts!tournament_matches_alt1_id_fkey(id, username, avatar_url),
+    player2:alts!tournament_matches_alt2_id_fkey(id, username, avatar_url)
   `);
 
 // ❌ Wildcard embed on a PII table — any new column on `alts` silently leaks
 const { data, error } = await supabase
   .from("tournament_matches")
   .select(
-    "*, player_one:alts!player_one_alt_id(*), player_two:alts!player_two_alt_id(*)"
+    "*, player1:alts!tournament_matches_alt1_id_fkey(*), player2:alts!tournament_matches_alt2_id_fkey(*)"
   );
 ```
 

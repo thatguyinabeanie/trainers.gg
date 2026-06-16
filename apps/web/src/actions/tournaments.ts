@@ -634,7 +634,7 @@ function maybeDemoteMemberRole(
         })
         .eq("alts.user_id", user.id)
         .eq("tournaments.community_id", tournament.community_id)
-        .is("dropped_at", null);
+        .neq("status", "dropped");
 
       if (count === 0) {
         await enqueueCommunityRoleSync(
@@ -952,6 +952,9 @@ export async function getCurrentUserAltsAction(): Promise<
       supabase.rpc("get_my_user_pii"),
       supabase.from("users").select("country").eq("id", userId).maybeSingle(),
     ]);
+
+    if (piiResult.error) throw piiResult.error;
+    if (countryResult.error) throw countryResult.error;
 
     const pii = piiResult.data?.[0] ?? null;
     const country = countryResult.data?.country ?? null;

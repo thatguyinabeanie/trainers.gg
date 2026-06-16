@@ -56,9 +56,21 @@ export async function getSiteRoles(supabase: TypedClient) {
 }
 
 /**
- * Get all users with site admin role
+ * Get all users with site admin role.
+ *
+ * Fetches public.users columns only, then enriches with email (auth admin API)
+ * and first/last name (get_users_pii RPC) using the service-role client.
+ * Mirrors the `listCommunityStaffWithRoles` pattern: `supabase` handles the
+ * PostgREST queries; `serviceSupabase` is used exclusively for the PII helpers
+ * that require service_role EXECUTE on get_users_pii.
+ *
+ * @param supabase        - Typed Supabase client for PostgREST queries
+ * @param serviceSupabase - MUST be a service-role client (PII helpers require service_role)
  */
-export async function getSiteAdmins(supabase: TypedClient) {
+export async function getSiteAdmins(
+  supabase: TypedClient,
+  serviceSupabase: TypedClient
+) {
   // email / first_name / last_name no longer live on public.users — email is in
   // auth.users, names in private.user_pii. Embed only the public columns, then
   // merge email + names from the service-role batch helpers (admin-only page).
@@ -94,8 +106,8 @@ export async function getSiteAdmins(supabase: TypedClient) {
     .filter((id): id is string => Boolean(id));
 
   const [emailMap, piiMap] = await Promise.all([
-    getEmailsByUserIds(supabase, userIds),
-    getPiiByUserIds(supabase, userIds),
+    getEmailsByUserIds(serviceSupabase, userIds),
+    getPiiByUserIds(serviceSupabase, userIds),
   ]);
 
   return rows.map((r) => ({

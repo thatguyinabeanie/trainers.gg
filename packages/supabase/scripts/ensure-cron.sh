@@ -88,8 +88,9 @@ run_install() {
   #    pg_extension guard passes; cron.schedule upserts by (jobname, postgres).
   $PSQL_PG < "$MIGRATION_FILE"
 
-  # 3. Schedule the no-show job AS postgres (its function is created by
-  #    20260220250000; this is the same call that migration uses). Upserts too.
+  # 3. Schedule the no-show job AS postgres (function created by 20260220250000).
+  #    Runs the same schedule (jobname, cron expr, function) the migration uses —
+  #    cron.schedule upserts by (jobname, username), so re-runs update in place.
   $PSQL_PG -c \
     "SELECT cron.schedule('no-show-escalation','* * * * *',\$\$SELECT public.check_no_show_escalation()\$\$);"
 }

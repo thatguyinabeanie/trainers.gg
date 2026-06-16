@@ -42,6 +42,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { startImpersonationAction } from "@/lib/impersonation/actions";
+import { type UserAdminDetails } from "@trainers/supabase";
 import {
   suspendUserAction,
   unsuspendUserAction,
@@ -49,40 +50,6 @@ import {
   revokeSiteRoleAction,
   getUserDetailsAction,
 } from "./actions";
-
-// ----------------------------------------------------------------
-// Types
-// ----------------------------------------------------------------
-
-interface UserDetail {
-  id: string;
-  email: string | null;
-  username: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  image: string | null;
-  is_locked: boolean | null;
-  created_at: string | null;
-  last_sign_in_at: string | null;
-  alts: Array<{
-    id: number;
-    username: string | null;
-    avatar_url: string | null;
-    bio: string | null;
-    tier: string | null;
-    created_at: string | null;
-  }> | null;
-  user_roles: Array<{
-    id: number;
-    created_at: string | null;
-    role: {
-      id: number;
-      name: string;
-      description: string | null;
-      scope: string;
-    } | null;
-  }> | null;
-}
 
 interface SiteRole {
   id: number;
@@ -121,7 +88,10 @@ export function UserDetailSheet({
   onOpenChange,
   onUserUpdated,
 }: UserDetailSheetProps) {
-  const { data: userData, isLoading: loading, error: queryError, refetch: refetchUser } = useQuery({
+  const { data: userData, isLoading: loading, error: queryError, refetch: refetchUser } = useQuery<{
+    user: UserAdminDetails | null;
+    siteRoles: SiteRole[];
+  }>({
     queryKey: queryKeys.admin.userDetail(userId),
     queryFn: async () => {
       const result = await getUserDetailsAction(userId!);
@@ -129,8 +99,8 @@ export function UserDetailSheet({
         throw new Error(result.error);
       }
       return {
-        user: result.data.user as UserDetail | null,
-        siteRoles: result.data.siteRoles as SiteRole[],
+        user: result.data.user,
+        siteRoles: result.data.siteRoles,
       };
     },
     enabled: open && !!userId,

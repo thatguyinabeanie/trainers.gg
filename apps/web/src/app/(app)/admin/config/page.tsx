@@ -19,10 +19,12 @@ import { AdminConfigPageClient } from "./admin-config-client";
 
 export default async function AdminConfigPage() {
   // Both queries are independent — run in parallel.
+  // getSiteAdmins requires a service-role client as its second argument for the
+  // PII enrichment helpers (get_users_pii RPC is service_role-only).
   const supabase = createServiceRoleClient();
   const [siteRoles, siteAdmins] = await Promise.all([
     getSiteRoles(supabase),
-    getSiteAdmins(supabase),
+    getSiteAdmins(supabase, supabase),
   ]);
 
   return (

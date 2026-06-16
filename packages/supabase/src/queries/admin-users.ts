@@ -29,9 +29,15 @@ export interface ListUsersAdminOptions {
  *
  * Requires a service-role client — the RPC has EXECUTE granted to service_role
  * only (it exposes cross-user PII). Using an authenticated or anon client will
- * return PGRST202 / permission denied.
+ * return a permission-denied error (HTTP 403 / code 42501).
  *
- * @param supabase - Service-role Supabase client
+ * INTENTIONAL log-and-degrade: on a runtime RPC error (e.g. transient DB
+ * failure) this function logs the error and returns an empty Map rather than
+ * throwing. First/last names are non-essential enrichment for the admin view;
+ * failing the entire page fetch when names are unavailable would be worse than
+ * degrading gracefully. This is a documented decision, not a silent swallow.
+ *
+ * @param supabase - MUST be a service-role client (`get_users_pii` is service_role-only)
  * @param userIds  - Array of user UUIDs to look up
  */
 export async function getPiiByUserIds(
@@ -72,7 +78,13 @@ const EMAIL_LOOKUP_CHUNK_SIZE = 20;
  * Makes one auth.admin.getUserById call per ID, in bounded-concurrency chunks
  * of EMAIL_LOOKUP_CHUNK_SIZE so a large set doesn't burst the admin API.
  *
- * @param supabase - Service-role Supabase client
+ * INTENTIONAL log-and-degrade: individual lookup failures are logged and
+ * that user's email is returned as null rather than aborting the batch.
+ * Email is non-essential enrichment; failing the whole admin view when one
+ * auth record is missing would be worse than a graceful null. This is a
+ * documented decision, not a silent swallow.
+ *
+ * @param supabase - MUST be a service-role client (auth.admin requires service_role)
  * @param userIds  - Array of user UUIDs to look up
  */
 export async function getEmailsByUserIds(
@@ -115,7 +127,7 @@ export async function getEmailsByUserIds(
  *
  * Returns both data rows and an exact total count for pagination.
  *
- * @param supabase - Typed Supabase client (service role recommended)
+ * @param supabase - MUST be a service-role client (reads PII via service_role-only helpers)
  * @param options  - Filtering and pagination options
  */
 export async function listUsersAdmin(
@@ -201,7 +213,7 @@ export async function listUsersAdmin(
  * can't leak DOB through community staff rosters), and no admin view consumes
  * DOB. An admin DOB view would need a dedicated admin-only path.
  *
- * @param supabase - Typed Supabase client
+ * @param supabase - MUST be a service-role client (reads PII via service_role-only auth admin + RPC)
  * @param userId   - UUID of the user to fetch
  */
 export async function getUserAdminDetails(
@@ -254,11 +266,19 @@ export async function getUserAdminDetails(
   if (!data) return null;
 
   // Enrich with email (auth admin) + PII (get_users_pii RPC, service-role only) in parallel
-  const [{ data: authUser }, piiMap] = await Promise.all([
+  const [authResult, piiMap] = await Promise.all([
     supabase.auth.admin.getUserById(userId),
     getPiiByUserIds(supabase, [userId]),
   ]);
 
+  if (authResult.error) {
+    console.error(
+      "[getUserAdminDetails] auth email lookup failed:",
+      authResult.error.message
+    );
+  }
+
+  const authUser = authResult.data;
   const pii = piiMap.get(userId);
 
   return {
@@ -268,6 +288,15 @@ export async function getUserAdminDetails(
     last_name: pii?.last_name ?? null,
   };
 }
+
+/**
+ * Full user detail shape returned by `getUserAdminDetails`.
+ * Includes all public profile columns plus enriched email (from auth.users)
+ * and first/last name (from the get_users_pii RPC).
+ */
+export type UserAdminDetails = NonNullable<
+  Awaited<ReturnType<typeof getUserAdminDetails>>
+>;
 
 /**
  * Fetch minimal user profiles by a list of UUIDs.
