@@ -59,12 +59,18 @@ export async function getPiiByUserIds(
   );
 }
 
+// Cap on concurrent auth.admin.getUserById calls. There is no batch
+// getUsersByIds in the admin API, so we fan out per id — but in bounded chunks
+// so a large staff roster can't burst hundreds of admin requests at once
+// (rate-limit / timeout risk).
+const EMAIL_LOOKUP_CHUNK_SIZE = 20;
+
 /**
  * Batch-fetch emails for a set of user IDs via the auth admin API.
  * Requires a service-role client — auth.users is not PostgREST-queryable.
  *
- * Makes one auth.admin.getUserById call per ID. For large sets (>50) callers
- * should prefer the `listUsers` admin API instead.
+ * Makes one auth.admin.getUserById call per ID, in bounded-concurrency chunks
+ * of EMAIL_LOOKUP_CHUNK_SIZE so a large set doesn't burst the admin API.
  *
  * @param supabase - Service-role Supabase client
  * @param userIds  - Array of user UUIDs to look up
@@ -75,19 +81,24 @@ export async function getEmailsByUserIds(
 ): Promise<Map<string, string | null>> {
   if (userIds.length === 0) return new Map();
 
-  const results = await Promise.all(
-    userIds.map(async (id) => {
-      const { data, error } = await supabase.auth.admin.getUserById(id);
-      if (error) {
-        console.error("[getEmailsByUserIds] Failed to fetch user:", {
-          id,
-          error,
-        });
-        return [id, null] as [string, string | null];
-      }
-      return [id, data.user?.email ?? null] as [string, string | null];
-    })
-  );
+  const results: [string, string | null][] = [];
+  for (let i = 0; i < userIds.length; i += EMAIL_LOOKUP_CHUNK_SIZE) {
+    const chunk = userIds.slice(i, i + EMAIL_LOOKUP_CHUNK_SIZE);
+    const chunkResults = await Promise.all(
+      chunk.map(async (id) => {
+        const { data, error } = await supabase.auth.admin.getUserById(id);
+        if (error) {
+          console.error("[getEmailsByUserIds] Failed to fetch user:", {
+            id,
+            error,
+          });
+          return [id, null] as [string, string | null];
+        }
+        return [id, data.user?.email ?? null] as [string, string | null];
+      })
+    );
+    results.push(...chunkResults);
+  }
 
   return new Map(results);
 }

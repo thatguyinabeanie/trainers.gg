@@ -1518,12 +1518,20 @@ export async function bulkRemovePlayers(
       throw new Error("You don't have permission to manage this tournament");
     }
 
+    // Build the drop set from the registrations we already fetched above —
+    // they exist and (per the single-tournament guard) all belong to this
+    // tournament. Do NOT upsert staff drop rows from the raw registrationIds: a
+    // stale id would FK-violate the staff upsert and fail the whole batch. This
+    // also preserves the prior "silently ignore missing ids" behaviour
+    // (missing ids are absent from `registrations`, so they count as failed).
+    const validIds = registrations.map((r) => r.id);
+
     // Upsert drop metadata FIRST so the audit_registration_status_change
     // trigger can read drop_category/drop_notes/dropped_by from
     // tournament_registration_staff when the status UPDATE fires below.
-    // registrationIds are existing registrations so FK is always satisfied.
+    // validIds are confirmed-existing registrations, so the FK is satisfied.
     const droppedAt = new Date().toISOString();
-    const staffRows = registrationIds.map((registrationId) => ({
+    const staffRows = validIds.map((registrationId) => ({
       registration_id: registrationId,
       drop_category: dropCategory,
       drop_notes: dropNotes ?? null,
@@ -1542,7 +1550,7 @@ export async function bulkRemovePlayers(
     const { data, error } = await supabase
       .from("tournament_registrations")
       .update({ status: "dropped" as const })
-      .in("id", registrationIds)
+      .in("id", validIds)
       .eq("tournament_id", tournamentId)
       .select("id");
 
