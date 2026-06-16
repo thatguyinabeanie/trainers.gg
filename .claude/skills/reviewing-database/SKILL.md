@@ -11,6 +11,16 @@ Checklist for database changes: migrations, RLS policies, query patterns, and in
 
 Every finding from this review is in scope for the current session. Do not produce a "follow-ups", "future work", or "deferred" section — if a policy is missing, an index is absent, or a query is N+1, fix it now. Only defer when the user explicitly says "address X in a separate PR". Match this to the PR feedback rule in `reviewing-pr-feedback`.
 
+## Security Advisor
+
+Run this first to catch structural issues the checklist may miss:
+
+```bash
+pnpm db:lint
+```
+
+Checks tables without RLS, `SECURITY DEFINER` functions without a pinned `search_path`, and other schema-level security findings. Fix all errors and warnings before reviewing manually.
+
 ## Migration Checks
 
 - [ ] RLS enabled on new tables (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`)
