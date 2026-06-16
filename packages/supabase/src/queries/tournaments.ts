@@ -1372,13 +1372,42 @@ export async function getUserTeams(
 
 /**
  * Get match details by ID
+ *
+ * Explicit column allowlist on `tournament_matches` — no wildcard. Private and
+ * internal-only columns are excluded so the result is safe to serve through the
+ * auth-gated public `/api/v1/matches/[matchId]` route without leaking
+ * staff-only data to authenticated users.
+ *
+ * Kept:   id, round_id, alt1_id, alt2_id, status, table_number,
+ *         winner_alt_id, game_wins1, game_wins2
+ *
+ * Dropped (private / internal):
+ *   staff_notes            — private staff annotation
+ *   staff_requested        — internal staff-call flag
+ *   staff_requested_at     — internal timestamp
+ *   staff_resolved_by      — FK to the resolving staff alt
+ *   elo_applied            — internal ELO lifecycle flag
+ *   alt1_rating_before / alt1_games_before / alt1_overall_* — ELO snapshots
+ *   alt2_rating_before / alt2_games_before / alt2_overall_* — ELO snapshots
+ *   match_points1 / match_points2 — not consumed by any public caller
+ *   player1_match_confirmed / player2_match_confirmed — confirmation state
+ *   match_confirmed_at     — confirmation timestamp
+ *   created_at / start_time / end_time — timestamps not used by any caller
  */
 export async function getMatchDetails(supabase: TypedClient, matchId: number) {
   const { data: match, error } = await supabase
     .from("tournament_matches")
     .select(
       `
-      *,
+      id,
+      round_id,
+      alt1_id,
+      alt2_id,
+      status,
+      table_number,
+      winner_alt_id,
+      game_wins1,
+      game_wins2,
       player1:alts!tournament_matches_alt1_id_fkey(id, username, avatar_url),
       player2:alts!tournament_matches_alt2_id_fkey(id, username, avatar_url),
       round:tournament_rounds(*)

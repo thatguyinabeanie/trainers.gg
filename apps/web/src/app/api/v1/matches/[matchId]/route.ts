@@ -11,9 +11,10 @@
  * service-role fetcher — see `getCachedMatchDetails` for the §0.2 rationale.
  * Auth is required (no anonymous open Data API): anon → 401.
  *
- * **Cache-Control**: `private, no-store` — the `tournament_matches` wildcard embed
- * (`match.*`) includes `staff_notes`, a private staff-only field. The response is
- * therefore not safe for CDN caching regardless of the `alts` allowlist fix.
+ * **Cache-Control**: `private, no-store` — the response is auth-gated and
+ * per-user in the sense that it is tied to a specific match that a user has
+ * standing to view. The `tournament_matches` select is now an explicit allowlist
+ * (no wildcard): `staff_notes` and all other staff/internal columns are excluded.
  * The player alt join is narrowed to `id, username, avatar_url` — no PII fields
  * from `alts` appear in the response.
  *
@@ -35,8 +36,9 @@ import {
 import { getCachedMatchDetails } from "@/lib/data/match-details-endpoint";
 
 /**
- * `private, no-store` — `match.*` includes `staff_notes` (private staff field),
- * so the response must not be cached by CDN regardless of auth state.
+ * `private, no-store` — auth-gated; response not for CDN caching.
+ * `staff_notes` and all internal columns are excluded from the query, but
+ * `private, no-store` is the correct posture for an auth-required route.
  */
 const CACHE_CONTROL = "private, no-store";
 
