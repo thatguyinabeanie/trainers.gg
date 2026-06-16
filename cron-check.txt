@@ -7,4 +7,12 @@ Checks:
       cron.database_name = postgres
   [0;31m✗[0m cron schema absent — no jobs scheduled
 
-[0;32mVerdict: pg_cron is configured correctly.[0m
+[0;31mVerdict: pg_cron is preloaded but the extension is NOT installed.[0m
+  Cause: this image's migration role can't run the pg_cron setup hook
+         (permission denied for pg_read_file) — fixed in newer images.
+  Fix:   update the CLI ([1;33mpnpm supabase:update[0m), then
+         [1;33mpnpm db:stop && pnpm db:start && pnpm db:reset[0m
+/Users/beanie/source/trainers.gg/packages/supabase:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @trainers/supabase@0.0.1 db:cron-check: `./scripts/cron-check.sh`
+Exit status 1
+[ELIFECYCLE] Command failed with exit code 1.

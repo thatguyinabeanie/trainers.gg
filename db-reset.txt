@@ -3,14 +3,14 @@
    • Running db:reset in 1 packages
    • Remote caching disabled
 
-@trainers/supabase:db:reset: cache bypass, force executing 69c0efe277592bef
-@trainers/supabase:db:reset: $ supabase db reset || (docker restart supabase_kong_supabase && sleep 2 && supabase status)
+@trainers/supabase:db:reset: cache bypass, force executing b230bdc28b9682eb
+@trainers/supabase:db:reset: $ (supabase db reset || (docker restart supabase_kong_supabase && sleep 2 && supabase status)) && ./scripts/ensure-cron.sh
 @trainers/supabase:db:reset: WARN: environment variable is unset: SUPABASE_AUTH_EXTERNAL_TWITTER_CLIENT_ID
 @trainers/supabase:db:reset: WARN: environment variable is unset: SUPABASE_AUTH_EXTERNAL_TWITTER_SECRET
-@trainers/supabase:db:reset: WARN: environment variable is unset: SUPABASE_AUTH_EXTERNAL_TWITCH_CLIENT_ID
-@trainers/supabase:db:reset: WARN: environment variable is unset: SUPABASE_AUTH_EXTERNAL_TWITCH_SECRET
 @trainers/supabase:db:reset: WARN: environment variable is unset: SUPABASE_AUTH_EXTERNAL_DISCORD_CLIENT_ID
 @trainers/supabase:db:reset: WARN: environment variable is unset: SUPABASE_AUTH_EXTERNAL_DISCORD_SECRET
+@trainers/supabase:db:reset: WARN: environment variable is unset: SUPABASE_AUTH_EXTERNAL_TWITCH_CLIENT_ID
+@trainers/supabase:db:reset: WARN: environment variable is unset: SUPABASE_AUTH_EXTERNAL_TWITCH_SECRET
 @trainers/supabase:db:reset: Resetting local database...
 @trainers/supabase:db:reset: Recreating database...
 @trainers/supabase:db:reset: Initialising schema...
@@ -606,12 +606,15 @@
 @trainers/supabase:db:reset: NOTICE (00000): Team sheet snapshots created for active/completed tournaments
 @trainers/supabase:db:reset: Seeding data from supabase/seeds/15_vault_secrets.sql...
 @trainers/supabase:db:reset: Restarting containers...
+@trainers/supabase:db:reset: Creating Storage bucket: pds-blobs
 @trainers/supabase:db:reset: Bucket uploads already exists. Do you want to overwrite its properties? [Y/n] 
 @trainers/supabase:db:reset: Updating Storage bucket: uploads
-@trainers/supabase:db:reset: Creating Storage bucket: pds-blobs
 @trainers/supabase:db:reset: Finished supabase db reset on branch fix-missing-cron-schema.
+@trainers/supabase:db:reset: Password for user supabase_admin: 
+@trainers/supabase:db:reset: psql: error: connection to server on socket "/run/postgresql/.s.PGSQL.5432" failed: fe_sendauth: no password supplied
+@trainers/supabase:db:reset: [1;33m[ensure-cron] pg_cron not available in this image — skipping (no local cron).[0m
 
  Tasks:    1 successful, 1 total
 Cached:    0 cached, 1 total
-  Time:    28.655s 
+  Time:    28.952s 
 
