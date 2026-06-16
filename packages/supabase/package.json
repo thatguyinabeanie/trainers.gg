@@ -42,6 +42,7 @@
     "db:seed": "supabase db seed",
     "db:dump": "supabase db dump",
     "db:cron-check": "./scripts/cron-check.sh",
+    "db:cron-diagnose": "./scripts/cron-diagnose.sh",
     "supabase": "supabase"
   },
   "dependencies": {
