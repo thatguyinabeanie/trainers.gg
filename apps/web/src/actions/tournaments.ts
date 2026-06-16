@@ -945,13 +945,16 @@ export async function getCurrentUserAltsAction(): Promise<
 
     if (alts.length === 0) return { success: true, data: [] };
 
-    // Fetch user's name and country for display name options and flag
+    // Fetch PII (first/last name) via RPC and country directly from users.
+    // first_name/last_name moved to get_my_user_pii; country remains on users.
     const userId = alts[0]!.user_id;
-    const { data: user } = await supabase
-      .from("users")
-      .select("first_name, last_name, country")
-      .eq("id", userId)
-      .single();
+    const [piiResult, countryResult] = await Promise.all([
+      supabase.rpc("get_my_user_pii"),
+      supabase.from("users").select("country").eq("id", userId).maybeSingle(),
+    ]);
+
+    const pii = piiResult.data?.[0] ?? null;
+    const country = countryResult.data?.country ?? null;
 
     return {
       success: true,
@@ -960,9 +963,9 @@ export async function getCurrentUserAltsAction(): Promise<
         username: a.username,
         display_name: a.username,
         avatar_url: a.avatar_url,
-        first_name: user?.first_name ?? null,
-        last_name: user?.last_name ?? null,
-        country: user?.country ?? null,
+        first_name: pii?.first_name ?? null,
+        last_name: pii?.last_name ?? null,
+        country,
       })),
     };
   } catch (error) {
@@ -1515,16 +1518,10 @@ export async function bulkRemovePlayers(
       throw new Error("You don't have permission to manage this tournament");
     }
 
-    // Perform single bulk update
+    // Update status on the base table
     const { data, error } = await supabase
       .from("tournament_registrations")
-      .update({
-        status: "dropped" as const,
-        drop_category: dropCategory,
-        drop_notes: dropNotes ?? null,
-        dropped_by: user.id,
-        dropped_at: new Date().toISOString(),
-      })
+      .update({ status: "dropped" as const })
       .in("id", registrationIds)
       .eq("tournament_id", tournamentId)
       .select("id");
@@ -1533,6 +1530,27 @@ export async function bulkRemovePlayers(
 
     const removed = data?.length ?? 0;
     const failed = registrationIds.length - removed;
+
+    // Upsert drop metadata into tournament_registration_staff for each
+    // successfully-dropped registration. drop_category/notes/dropped_by/at
+    // moved out of tournament_registrations by the staff PII migration.
+    if (removed > 0) {
+      const droppedIds = (data ?? []).map((r) => r.id);
+      const droppedAt = new Date().toISOString();
+      const staffRows = droppedIds.map((registrationId) => ({
+        registration_id: registrationId,
+        drop_category: dropCategory,
+        drop_notes: dropNotes ?? null,
+        dropped_by: user.id,
+        dropped_at: droppedAt,
+      }));
+
+      const { error: staffError } = await supabase
+        .from("tournament_registration_staff")
+        .upsert(staffRows, { onConflict: "registration_id" });
+
+      if (staffError) throw staffError;
+    }
 
     // Invalidate cache
     invalidateTournamentCaches(tournamentId);

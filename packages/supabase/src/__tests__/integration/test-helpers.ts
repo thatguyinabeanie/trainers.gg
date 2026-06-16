@@ -42,7 +42,6 @@ export interface TestAlt {
   id: number;
   user_id: string;
   username: string;
-  display_name: string;
 }
 
 /**
@@ -84,17 +83,22 @@ export async function createTestUser(
 
   const userId = authData.user.id;
 
-  // Create user record
-  const { error: userError } = await adminClient.from("users").insert({
-    id: userId,
-    email,
-    username,
-    pds_status: "pending",
-  });
+  // The handle_new_user trigger fires on auth.admin.createUser and creates the
+  // public.users row (and private.user_pii + main alt) automatically.
+  // We only need to patch pds_status — inserting would duplicate key on users_pkey.
+  const { data: updatedUser, error: userError } = await adminClient
+    .from("users")
+    .update({ pds_status: "pending" })
+    .eq("id", userId)
+    .select("username")
+    .single();
 
   if (userError) {
-    throw new Error(`Failed to create user record: ${userError.message}`);
+    throw new Error(`Failed to update user record: ${userError.message}`);
   }
+
+  // Use the username the trigger actually persisted (it may sanitize/suffix it)
+  const actualUsername = updatedUser?.username ?? username;
 
   // Add site admin role if requested
   if (options?.isSiteAdmin) {
@@ -123,7 +127,7 @@ export async function createTestUser(
   return {
     id: userId,
     email,
-    username,
+    username: actualUsername,
     client: userClient,
   };
 }
@@ -135,14 +139,15 @@ export async function createTestAlt(
   adminClient: TypedClient,
   userId: string,
   username: string,
-  displayName: string
+  // display_name was removed from public.alts (migration 20260212014510); the
+  // param is kept for call-site compatibility but no longer persisted.
+  _displayName?: string
 ): Promise<TestAlt> {
   const { data, error } = await adminClient
     .from("alts")
     .insert({
       user_id: userId,
       username,
-      display_name: displayName,
     })
     .select()
     .single();
@@ -155,7 +160,6 @@ export async function createTestAlt(
     id: data.id,
     user_id: data.user_id,
     username: data.username,
-    display_name: data.display_name,
   };
 }
 

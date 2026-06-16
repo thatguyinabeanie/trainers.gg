@@ -33,9 +33,14 @@ export async function getCurrentUser(supabase: TypedClient) {
 
   if (!authUser) return null;
 
+  // Email lives in auth.users only — read it from the session, not from public.users.
+  const email = authUser.email ?? null;
+
   const { data: user, error: userError } = await supabase
     .from("users")
-    .select("*")
+    .select(
+      "id, name, sprite_preference, main_alt_id, country, did, pds_handle, image, username, is_locked, is_coach"
+    )
     .eq("id", authUser.id)
     .single();
 
@@ -87,7 +92,8 @@ export async function getCurrentUser(supabase: TypedClient) {
 
   return {
     id: user.id,
-    email: user.email,
+    // Email comes from auth.users via the session — not from public.users.
+    email,
     name: user.name,
     spritePreference: user.sprite_preference ?? "gen5",
     alt: alt

@@ -229,6 +229,9 @@ export {
   unsuspendUser,
   startImpersonation,
   endImpersonation,
+  // PII helpers — require service-role client
+  getPiiByUserIds,
+  getEmailsByUserIds,
 } from "./admin-users";
 
 export type { ListUsersAdminOptions } from "./admin-users";

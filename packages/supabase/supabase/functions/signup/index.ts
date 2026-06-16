@@ -121,27 +121,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if email already exists
-    const escapedEmail = email.replace(/[%_\\]/g, "\\$&");
-    const { data: existingEmail } = await supabaseAdmin
-      .from("users")
-      .select("id")
-      .ilike("email", escapedEmail)
-      .maybeSingle();
-
-    if (existingEmail) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "An account with this email already exists",
-          code: "EMAIL_TAKEN",
-        } satisfies SignupResponse),
-        {
-          status: 409,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
+    // Note: email uniqueness is enforced by auth.users (not public.users).
+    // public.users.email was dropped — duplicate-email detection is handled
+    // below by catching the "already been registered" error from createUser.
 
     // Generate the Bluesky handle
     const handle = generateHandle(username);
@@ -178,6 +160,20 @@ Deno.serve(async (req) => {
       });
 
     if (authError || !authData.user) {
+      // Detect duplicate email — auth.users enforces uniqueness
+      if (authError?.message?.includes("already been registered")) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "An account with this email already exists",
+            code: "EMAIL_TAKEN",
+          } satisfies SignupResponse),
+          {
+            status: 409,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
       console.error("Supabase auth error:", authError);
       return new Response(
         JSON.stringify({

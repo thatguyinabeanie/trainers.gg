@@ -111,15 +111,15 @@ export async function ensureAlt(supabase: TypedClient) {
     return existing;
   }
 
-  // Get user record for default values
+  // Get user record for default values (explicit columns — email is gone from public.users).
   const { data: userData } = await supabase
     .from("users")
-    .select("*")
+    .select("image")
     .eq("id", user.id)
     .single();
 
-  // Generate default username from email or user id
-  const email = userData?.email ?? user.email ?? "";
+  // Email lives in auth.users only — read from the session, not public.users.
+  const email = user.email ?? "";
   const defaultUsername =
     email
       .split("@")[0]

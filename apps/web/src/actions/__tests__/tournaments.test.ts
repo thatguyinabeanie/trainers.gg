@@ -716,6 +716,7 @@ describe("bulkForceCheckIn", () => {
 describe("bulkRemovePlayers", () => {
   it("performs bulk update with drop fields and returns counts", async () => {
     const mockUpdate = jest.fn().mockReturnThis();
+    const mockUpsert = jest.fn().mockResolvedValue({ error: null });
 
     // First call: select registrations
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
@@ -739,7 +740,7 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    // Third call: bulk update
+    // Third call: bulk update tournament_registrations (status only)
     (mockSupabase.from as jest.Mock).mockReturnValueOnce({
       update: mockUpdate,
       in: jest.fn().mockReturnThis(),
@@ -748,6 +749,11 @@ describe("bulkRemovePlayers", () => {
         data: [{ id: 1 }, { id: 2 }],
         error: null,
       }),
+    });
+
+    // Fourth call: upsert drop metadata into tournament_registration_staff
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      upsert: mockUpsert,
     });
 
     // Mock rpc for permission check
@@ -759,15 +765,21 @@ describe("bulkRemovePlayers", () => {
     expect(result.data).toEqual({ removed: 2, failed: 0 });
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
 
-    // Verify the update payload includes drop metadata
-    expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: "dropped",
-        drop_category: "no_show",
-        drop_notes: null,
-        dropped_by: "user-123",
-        dropped_at: expect.any(String),
-      })
+    // Verify the base update only sets status
+    expect(mockUpdate).toHaveBeenCalledWith({ status: "dropped" });
+
+    // Verify drop metadata was upserted into the staff table
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          registration_id: expect.any(Number),
+          drop_category: "no_show",
+          drop_notes: null,
+          dropped_by: "user-123",
+          dropped_at: expect.any(String),
+        }),
+      ]),
+      { onConflict: "registration_id" }
     );
   });
 
@@ -780,6 +792,7 @@ describe("bulkRemovePlayers", () => {
 
   it("handles partial update failures and passes drop notes", async () => {
     const mockUpdate = jest.fn().mockReturnThis();
+    const mockUpsert = jest.fn().mockResolvedValue({ error: null });
 
     // Select returns 3 registrations
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
@@ -815,6 +828,11 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
+    // Upsert drop metadata for the 2 successfully-dropped registrations
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      upsert: mockUpsert,
+    });
+
     // Mock rpc for permission check
     mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
 
@@ -828,15 +846,20 @@ describe("bulkRemovePlayers", () => {
     expect(result.data).toEqual({ removed: 2, failed: 1 });
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
 
-    // Verify the update payload includes drop metadata with notes
-    expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: "dropped",
-        drop_category: "conduct",
-        drop_notes: "Group violation",
-        dropped_by: "user-123",
-        dropped_at: expect.any(String),
-      })
+    // Verify the base update only sets status
+    expect(mockUpdate).toHaveBeenCalledWith({ status: "dropped" });
+
+    // Verify drop metadata with notes was upserted to the staff table
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          drop_category: "conduct",
+          drop_notes: "Group violation",
+          dropped_by: "user-123",
+          dropped_at: expect.any(String),
+        }),
+      ]),
+      { onConflict: "registration_id" }
     );
   });
 });
@@ -1295,7 +1318,7 @@ describe("getCurrentUserAltsAction", () => {
     expect(result).toEqual({ success: true, data: [] });
   });
 
-  it("enriches alts with user name/country from users table", async () => {
+  it("enriches alts with user name/country from rpc + users table", async () => {
     mockGetCurrentUserAlts.mockResolvedValue([
       {
         id: 1,
@@ -1305,11 +1328,18 @@ describe("getCurrentUserAltsAction", () => {
       },
     ]);
 
+    // rpc("get_my_user_pii") returns first/last name
+    mockSupabase.rpc = jest.fn().mockResolvedValue({
+      data: [{ first_name: "Ash", last_name: "Ketchum", birth_date: null }],
+      error: null,
+    });
+
+    // from("users").select("country") returns country
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValue({
-        data: { first_name: "Ash", last_name: "Ketchum", country: "JP" },
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { country: "JP" },
         error: null,
       }),
     });
@@ -1332,7 +1362,7 @@ describe("getCurrentUserAltsAction", () => {
     }
   });
 
-  it("returns null name/country when user row not found", async () => {
+  it("returns null name/country when rpc and user row not found", async () => {
     mockGetCurrentUserAlts.mockResolvedValue([
       {
         id: 1,
@@ -1342,10 +1372,17 @@ describe("getCurrentUserAltsAction", () => {
       },
     ]);
 
+    // rpc returns empty PII array
+    mockSupabase.rpc = jest.fn().mockResolvedValue({
+      data: [],
+      error: null,
+    });
+
+    // from("users").select("country") returns null
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
     });
 
     const result = await getCurrentUserAltsAction();

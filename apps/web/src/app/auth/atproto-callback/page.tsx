@@ -7,7 +7,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export default async function AtprotoCallbackPage() {
   const cookieStore = await cookies();
@@ -18,11 +18,12 @@ export default async function AtprotoCallbackPage() {
     redirect("/sign-in?error=missing_session");
   }
 
-  // Look up the user by DID
-  const supabase = await createClient();
+  // Use service-role client: the user is not authenticated yet at this point
+  // (this is a pre-auth callback page), and anon SELECT on public.users is revoked.
+  const supabase = createServiceRoleClient();
   const { data: user } = await supabase
     .from("users")
-    .select("id, email, username")
+    .select("id, username")
     .eq("did", did)
     .maybeSingle();
 
@@ -34,11 +35,14 @@ export default async function AtprotoCallbackPage() {
   // Clear the DID cookie
   cookieStore.delete("atproto_did");
 
+  // Fetch the user's email from auth.users (canonical source — email is no
+  // longer stored in public.users).
+  const { data: authUserData } = await supabase.auth.admin.getUserById(user.id);
+  const email = authUserData?.user?.email ?? null;
+
   // For now, redirect to sign-in with a message that they need to use their email
   // In a future iteration, we could implement passwordless sign-in via magic link
   // or use a custom token-based approach with Supabase
-  const emailParam = user.email
-    ? `&email=${encodeURIComponent(user.email)}`
-    : "";
+  const emailParam = email ? `&email=${encodeURIComponent(email)}` : "";
   redirect(`/sign-in?message=bluesky_verified${emailParam}`);
 }

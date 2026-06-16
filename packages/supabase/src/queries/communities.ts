@@ -1,6 +1,7 @@
 import type { Database } from "../types";
 import type { TypedClient } from "../client";
 import { pgInList } from "../postgrest-helpers";
+import { getPiiByUserIds, getEmailsByUserIds } from "./admin-users";
 type OrganizationRow = Database["public"]["Tables"]["communities"]["Row"];
 
 export type CommunityWithCounts = OrganizationRow & {
@@ -711,7 +712,8 @@ export async function listCommunityStaffWithRoles(
 
   const ownerUserId = community?.owner_user_id;
 
-  // Get all staff members with user details
+  // Get all staff members with public user columns only.
+  // first_name, last_name, email are fetched separately below (PII split).
   const { data: staffMembers, error: staffError } = await supabase
     .from("community_staff")
     .select(
@@ -720,7 +722,7 @@ export async function listCommunityStaffWithRoles(
       user_id,
       community_id,
       created_at,
-      user:users(id, username, first_name, last_name, image, email)
+      user:users(id, username, image)
     `
     )
     .eq("community_id", communityId);
@@ -793,11 +795,23 @@ export async function listCommunityStaffWithRoles(
   // Build result with owner included
   const result: StaffWithRole[] = [];
 
+  // Collect all user IDs (owner + staff) to batch-fetch PII and email.
+  const allUserIds: string[] = [];
+  if (ownerUserId) allUserIds.push(ownerUserId);
+  for (const s of staffMembers ?? []) allUserIds.push(s.user_id);
+  const uniqueUserIds = [...new Set(allUserIds)];
+
+  // Batch-fetch first/last name (private schema) and email (auth admin) in parallel.
+  const [piiMap, emailMap] = await Promise.all([
+    getPiiByUserIds(supabase, uniqueUserIds),
+    getEmailsByUserIds(supabase, uniqueUserIds),
+  ]);
+
   // Add owner first (if not already in staff list)
   if (ownerUserId) {
     const { data: ownerUser } = await supabase
       .from("users")
-      .select("id, username, first_name, last_name, image, email")
+      .select("id, username, image")
       .eq("id", ownerUserId)
       .single();
 
@@ -811,7 +825,12 @@ export async function listCommunityStaffWithRoles(
           user_id: ownerUserId,
           community_id: communityId,
           created_at: null,
-          user: ownerUser,
+          user: {
+            ...ownerUser,
+            first_name: piiMap.get(ownerUserId)?.first_name ?? null,
+            last_name: piiMap.get(ownerUserId)?.last_name ?? null,
+            email: emailMap.get(ownerUserId) ?? null,
+          },
           group: null,
           role: null,
           isOwner: true,
@@ -820,15 +839,24 @@ export async function listCommunityStaffWithRoles(
     }
   }
 
-  // Add staff members
+  // Add staff members — merge PII and email into the user shape.
   for (const staff of staffMembers ?? []) {
     const userRole = userRoleMap.get(staff.user_id);
+    const pii = piiMap.get(staff.user_id);
+    const email = emailMap.get(staff.user_id) ?? null;
     result.push({
       id: staff.id,
       user_id: staff.user_id,
       community_id: staff.community_id,
       created_at: staff.created_at,
-      user: staff.user,
+      user: staff.user
+        ? {
+            ...staff.user,
+            first_name: pii?.first_name ?? null,
+            last_name: pii?.last_name ?? null,
+            email,
+          }
+        : null,
       group: userRole?.group ?? null,
       role: userRole?.role ?? null,
       isOwner: staff.user_id === ownerUserId,
@@ -946,7 +974,9 @@ export async function listCommunityGroups(
 
 /**
  * Search users for staff invitation
- * Returns users matching the search term who are NOT already staff
+ * Returns users matching the search term who are NOT already staff.
+ * first_name and last_name are fetched from private.user_pii after the
+ * PostgREST query since they no longer live in public.users.
  */
 export async function searchUsersForInvite(
   supabase: TypedClient,
@@ -985,10 +1015,10 @@ export async function searchUsersForInvite(
     existingUserIds.push(community.owner_user_id);
   }
 
-  // Search users by username
+  // Search users by username — first_name/last_name are no longer in public.users.
   let query = supabase
     .from("users")
-    .select("id, username, first_name, last_name, image")
+    .select("id, username, image")
     .ilike("username", `%${searchTerm}%`)
     .limit(limit);
 
@@ -1000,7 +1030,21 @@ export async function searchUsersForInvite(
   const { data: users, error } = await query;
 
   if (error) throw error;
-  return users ?? [];
+  if (!users || users.length === 0) return [];
+
+  // Enrich with first/last name from private.user_pii
+  const piiMap = await getPiiByUserIds(
+    supabase,
+    users.map((u) => u.id)
+  );
+
+  return users.map((u) => ({
+    id: u.id,
+    username: u.username,
+    image: u.image,
+    first_name: piiMap.get(u.id)?.first_name ?? null,
+    last_name: piiMap.get(u.id)?.last_name ?? null,
+  }));
 }
 
 /**

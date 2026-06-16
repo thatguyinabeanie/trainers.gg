@@ -39,10 +39,34 @@ const createMockClient = () => {
     }),
   };
 
+  // schema("private").from("user_pii") builder — returns empty PII by default
+  const mockPiiQueryBuilder = {
+    select: jest.fn().mockReturnThis(),
+    in: jest.fn().mockResolvedValue({ data: [], error: null }),
+    eq: jest.fn().mockReturnThis(),
+    maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+  };
+
+  const mockSchemaBuilder = {
+    from: jest.fn().mockReturnValue(mockPiiQueryBuilder),
+  };
+
   return {
     from: jest.fn().mockReturnValue(mockQueryBuilder),
+    schema: jest.fn().mockReturnValue(mockSchemaBuilder),
+    auth: {
+      admin: {
+        getUserById: jest
+          .fn()
+          .mockResolvedValue({ data: { user: null }, error: null }),
+      },
+    },
     _queryBuilder: mockQueryBuilder,
-  } as unknown as TypedClient & { _queryBuilder: MockQueryBuilder };
+    _schemaBuilder: mockSchemaBuilder,
+  } as unknown as TypedClient & {
+    _queryBuilder: MockQueryBuilder;
+    _schemaBuilder: typeof mockSchemaBuilder;
+  };
 };
 
 describe("site-roles queries", () => {
@@ -185,24 +209,17 @@ describe("site-roles queries", () => {
   });
 
   describe("getSiteAdmins", () => {
-    it("should fetch all users with site admin role", async () => {
+    it("should fetch all users with site admin role (enriched with email + PII)", async () => {
+      // Base rows — user no longer has email/first_name/last_name from the query
       const mockAdmins = [
         {
           id: 1,
-          user: {
-            id: "user-1",
-            email: "admin1@example.com",
-            username: "admin1",
-          },
+          user: { id: "user-1", username: "admin1", image: null },
           role: { id: 1, name: "site_admin", scope: "site" },
         },
         {
           id: 2,
-          user: {
-            id: "user-2",
-            email: "admin2@example.com",
-            username: "admin2",
-          },
+          user: { id: "user-2", username: "admin2", image: null },
           role: { id: 1, name: "site_admin", scope: "site" },
         },
       ];
@@ -212,9 +229,35 @@ describe("site-roles queries", () => {
         return Promise.resolve({ data: mockAdmins, error: null }).then(resolve);
       });
 
+      // auth.admin.getUserById returns email per user
+      (mockClient.auth.admin.getUserById as jest.Mock)
+        .mockResolvedValueOnce({
+          data: { user: { email: "admin1@example.com" } },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: { user: { email: "admin2@example.com" } },
+          error: null,
+        });
+
       const result = await getSiteAdmins(mockClient);
 
-      expect(result).toEqual(mockAdmins);
+      // Result rows are enriched — user object has email + first_name/last_name merged
+      expect(result).toHaveLength(2);
+      expect(result[0]?.user).toMatchObject({
+        id: "user-1",
+        username: "admin1",
+        email: "admin1@example.com",
+        first_name: null,
+        last_name: null,
+      });
+      expect(result[1]?.user).toMatchObject({
+        id: "user-2",
+        username: "admin2",
+        email: "admin2@example.com",
+        first_name: null,
+        last_name: null,
+      });
       expect(mockClient.from).toHaveBeenCalledWith("user_roles");
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
         "roles.scope",

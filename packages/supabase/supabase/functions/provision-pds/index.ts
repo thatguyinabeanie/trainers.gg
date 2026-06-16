@@ -4,7 +4,7 @@
 // Flow:
 // 1. Verify JWT and extract user ID
 // 2. Check user has pds_status = 'pending'
-// 3. Get user's email from auth.users
+// 3. Get user's email from auth.getUser result
 // 4. Check PDS handle availability
 // 5. Generate secure random password
 // 6. Create PDS invite code + account
@@ -134,9 +134,11 @@ Deno.serve(async (req) => {
     }
 
     // Fetch user from database to check pds_status
+    // email is NOT selected here — public.users.email was dropped.
+    // The caller's email is available from auth.getUser above (user.email).
     const { data: userData, error: fetchError } = await supabaseAdmin
       .from("users")
-      .select("id, email, pds_status, did")
+      .select("id, pds_status, did")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -228,8 +230,9 @@ Deno.serve(async (req) => {
     }
 
     // Create PDS account
-    // Use the user's real email (which may be a placeholder for Bluesky users)
-    const email = userData.email || user.email;
+    // Email comes from auth.getUser (user.email) — public.users.email was dropped.
+    // For Bluesky users this will be the placeholder email stored in auth.users.
+    const email = user.email;
     if (!email) {
       return new Response(
         JSON.stringify({
@@ -347,11 +350,15 @@ Deno.serve(async (req) => {
       });
 
     if (registryError) {
-      console.error("Failed to register user handle in pds_handles registry:", registryError);
+      console.error(
+        "Failed to register user handle in pds_handles registry:",
+        registryError
+      );
       return new Response(
         JSON.stringify({
           success: false,
-          error: "PDS account was created but registry sync failed. Please retry.",
+          error:
+            "PDS account was created but registry sync failed. Please retry.",
           code: "DB_UPDATE_FAILED",
           did: pdsResult.did,
         } satisfies ProvisionPdsResponse),

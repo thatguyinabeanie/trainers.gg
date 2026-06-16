@@ -24,9 +24,11 @@ type MockQueryBuilder = {
   eq: jest.Mock<() => MockQueryBuilder>;
   is: jest.Mock<() => MockQueryBuilder>;
   or: jest.Mock<() => MockQueryBuilder>;
+  ilike: jest.Mock<() => MockQueryBuilder>;
   order: jest.Mock<() => MockQueryBuilder>;
   range: jest.Mock<() => MockQueryBuilder>;
   limit: jest.Mock<() => MockQueryBuilder>;
+  in: jest.Mock<() => MockQueryBuilder>;
   single: jest.Mock<() => Promise<{ data: unknown; error: unknown }>>;
   maybeSingle: jest.Mock<() => Promise<{ data: unknown; error: unknown }>>;
   then: jest.Mock<
@@ -48,9 +50,11 @@ const createMockClient = () => {
     eq: jest.fn().mockReturnThis(),
     is: jest.fn().mockReturnThis(),
     or: jest.fn().mockReturnThis(),
+    ilike: jest.fn().mockReturnThis(),
     order: jest.fn().mockReturnThis(),
     range: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
+    in: jest.fn().mockReturnThis(),
     single: jest.fn().mockResolvedValue({ data: null, error: null }),
     maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
     then: jest.fn((resolve) => {
@@ -58,11 +62,28 @@ const createMockClient = () => {
     }),
   };
 
+  // schema() returns a builder that itself has .from() returning the query builder
+  const mockSchemaBuilder = {
+    from: jest.fn().mockReturnValue(mockQueryBuilder),
+  };
+
   return {
     from: jest.fn().mockReturnValue(mockQueryBuilder),
     rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
+    schema: jest.fn().mockReturnValue(mockSchemaBuilder),
+    auth: {
+      admin: {
+        getUserById: jest
+          .fn()
+          .mockResolvedValue({ data: { user: null }, error: null }),
+      },
+    },
     _queryBuilder: mockQueryBuilder,
-  } as unknown as TypedClient & { _queryBuilder: MockQueryBuilder };
+    _schemaBuilder: mockSchemaBuilder,
+  } as unknown as TypedClient & {
+    _queryBuilder: MockQueryBuilder;
+    _schemaBuilder: typeof mockSchemaBuilder;
+  };
 };
 
 // ---------------------------------------------------------------------------
@@ -90,7 +111,6 @@ describe("admin-users queries", () => {
       const mockUsers = [
         {
           id: "user-1",
-          email: "alice@example.com",
           username: "alice",
           is_locked: false,
           created_at: "2024-01-15T00:00:00Z",
@@ -106,9 +126,23 @@ describe("admin-users queries", () => {
         }).then(resolve);
       });
 
+      // auth.admin.getUserById returns an email for the user
+      (mockClient.auth.admin.getUserById as jest.Mock).mockResolvedValue({
+        data: { user: { email: "alice@example.com" } },
+        error: null,
+      });
+
       const result = await listUsersAdmin(mockClient);
 
-      expect(result.data).toEqual(mockUsers);
+      // Rows are enriched with email + PII (null when private schema returns nothing)
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]).toMatchObject({
+        id: "user-1",
+        username: "alice",
+        email: "alice@example.com",
+        first_name: null,
+        last_name: null,
+      });
       expect(result.count).toBe(1);
       expect(mockClient.from).toHaveBeenCalledWith("users");
       // Default pagination: offset=0, limit=25 => range(0, 24)
@@ -119,14 +153,17 @@ describe("admin-users queries", () => {
       );
     });
 
-    it("should apply search filter across username and email", async () => {
+    it("should apply search filter on username only", async () => {
       const mockClient = createMockClient();
 
       await listUsersAdmin(mockClient, { search: "alice" });
 
-      expect(mockClient._queryBuilder.or).toHaveBeenCalledWith(
-        "username.ilike.%alice%,email.ilike.%alice%"
+      // Search is now username-only via ilike (email search requires auth admin API)
+      expect(mockClient._queryBuilder.ilike).toHaveBeenCalledWith(
+        "username",
+        "%alice%"
       );
+      expect(mockClient._queryBuilder.or).not.toHaveBeenCalled();
     });
 
     it("should escape special characters in search", async () => {
@@ -135,7 +172,8 @@ describe("admin-users queries", () => {
       // escapeLike escapes %, _, and \ characters
       await listUsersAdmin(mockClient, { search: "50%" });
 
-      expect(mockClient._queryBuilder.or).toHaveBeenCalledWith(
+      expect(mockClient._queryBuilder.ilike).toHaveBeenCalledWith(
+        "username",
         expect.stringContaining("50\\%")
       );
     });
@@ -190,7 +228,10 @@ describe("admin-users queries", () => {
         offset: 100,
       });
 
-      expect(mockClient._queryBuilder.or).toHaveBeenCalled();
+      expect(mockClient._queryBuilder.ilike).toHaveBeenCalledWith(
+        "username",
+        "%test%"
+      );
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
         "is_locked",
         true
@@ -237,9 +278,9 @@ describe("admin-users queries", () => {
 
   describe("getUserAdminDetails", () => {
     it("should return full user details when found", async () => {
+      // The base row from public.users — no email/first_name/last_name
       const mockUser = {
         id: "user-1",
-        email: "alice@example.com",
         username: "alice",
         is_locked: false,
         alts: [{ id: 1, username: "alice-alt" }],
@@ -247,14 +288,34 @@ describe("admin-users queries", () => {
       };
 
       const mockClient = createMockClient();
-      mockClient._queryBuilder.maybeSingle.mockResolvedValue({
+      // First maybeSingle: the public.users query
+      mockClient._queryBuilder.maybeSingle.mockResolvedValueOnce({
         data: mockUser,
+        error: null,
+      });
+      // Second maybeSingle: private.user_pii query
+      mockClient._queryBuilder.maybeSingle.mockResolvedValueOnce({
+        data: { first_name: "Alice", last_name: "Trainer", birth_date: null },
+        error: null,
+      });
+
+      // auth.admin.getUserById returns email
+      (mockClient.auth.admin.getUserById as jest.Mock).mockResolvedValue({
+        data: { user: { email: "alice@example.com" } },
         error: null,
       });
 
       const result = await getUserAdminDetails(mockClient, "user-1");
 
-      expect(result).toEqual(mockUser);
+      // Result is enriched with email + PII
+      expect(result).toMatchObject({
+        id: "user-1",
+        username: "alice",
+        email: "alice@example.com",
+        first_name: "Alice",
+        last_name: "Trainer",
+        birth_date: null,
+      });
       expect(mockClient.from).toHaveBeenCalledWith("users");
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith("id", "user-1");
       expect(mockClient._queryBuilder.maybeSingle).toHaveBeenCalled();
@@ -284,6 +345,29 @@ describe("admin-users queries", () => {
         "Database error"
       );
     });
+
+    it("should gracefully handle missing email and PII", async () => {
+      const mockUser = { id: "user-1", username: "alice", is_locked: false };
+
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.maybeSingle
+        .mockResolvedValueOnce({ data: mockUser, error: null })
+        .mockResolvedValueOnce({ data: null, error: null }); // no PII row
+
+      (mockClient.auth.admin.getUserById as jest.Mock).mockResolvedValue({
+        data: { user: null },
+        error: null,
+      });
+
+      const result = await getUserAdminDetails(mockClient, "user-1");
+
+      expect(result).toMatchObject({
+        email: null,
+        first_name: null,
+        last_name: null,
+        birth_date: null,
+      });
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -292,10 +376,10 @@ describe("admin-users queries", () => {
 
   describe("suspendUser", () => {
     it("should set is_locked to true and create audit log entry", async () => {
+      // email is no longer on public.users — select now returns id, username, is_locked
       const mockUser = {
         id: "user-1",
         username: "alice",
-        email: "alice@example.com",
         is_locked: true,
       };
 
@@ -353,7 +437,6 @@ describe("admin-users queries", () => {
       const mockUser = {
         id: "user-1",
         username: "alice",
-        email: "alice@example.com",
         is_locked: true,
       };
 
@@ -419,7 +502,6 @@ describe("admin-users queries", () => {
       const mockUser = {
         id: "user-1",
         username: "alice",
-        email: "alice@example.com",
         is_locked: true,
       };
 
@@ -463,10 +545,10 @@ describe("admin-users queries", () => {
 
   describe("unsuspendUser", () => {
     it("should set is_locked to false and create audit log entry", async () => {
+      // email is no longer on public.users — select now returns id, username, is_locked
       const mockUser = {
         id: "user-1",
         username: "alice",
-        email: "alice@example.com",
         is_locked: false,
       };
 
@@ -535,10 +617,10 @@ describe("admin-users queries", () => {
     });
 
     it("should log console error if audit insert fails but still return user", async () => {
+      // email no longer in public.users select
       const mockUser = {
         id: "user-1",
         username: "alice",
-        email: "alice@example.com",
         is_locked: false,
       };
 

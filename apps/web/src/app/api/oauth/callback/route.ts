@@ -200,45 +200,66 @@ async function handleSignInMode({
   const placeholderEmail = `${didSlug}@bluesky.trainers.gg`;
 
   // Check if user already exists - DID is the authoritative identifier
-  // We only fall back to email for legacy accounts that may not have DID set
+  // We only fall back to email for legacy accounts that may not have DID set.
+  // NOTE: email is canonical in auth.users — public.users no longer has an email column.
   let existingUser: {
     id: string;
-    email: string | null;
     did: string | null;
   } | null = null;
 
   // Primary lookup: by DID (authoritative, collision-free)
   const { data: userByDid } = await supabaseAtproto
     .from("users")
-    .select("id, email, did")
+    .select("id, did")
     .eq("did", did)
     .maybeSingle();
 
   if (userByDid) {
     existingUser = userByDid;
   } else {
-    // Fallback: check by placeholder email for legacy accounts without DID
+    // Fallback: check by placeholder email for legacy accounts without DID.
+    // email is no longer in public.users — look up via auth admin API instead.
     // This is only for backwards compatibility with accounts created before
     // DID was stored. New accounts always have DID set.
-    const { data: userByEmail } = await supabaseAtproto
-      .from("users")
-      .select("id, email, did")
-      .eq("email", placeholderEmail)
-      .maybeSingle();
+    const { data: authListData } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 50,
+    });
+    const legacyAuthUser = authListData.users.find(
+      (u) => u.email === placeholderEmail
+    );
 
-    if (userByEmail) {
-      existingUser = userByEmail;
+    if (legacyAuthUser) {
+      // Verify the user has a public.users row (created by auth trigger)
+      const { data: publicUserRow } = await supabaseAtproto
+        .from("users")
+        .select("id, did")
+        .eq("id", legacyAuthUser.id)
+        .maybeSingle();
+
+      if (publicUserRow) {
+        existingUser = publicUserRow;
+      }
     }
   }
 
   let userEmail: string;
 
-  if (existingUser && existingUser.email) {
-    // Existing user - use their email
-    userEmail = existingUser.email;
+  if (existingUser) {
+    // Existing user — fetch their email from auth.users (canonical source)
+    const { data: authUserData } = await supabase.auth.admin.getUserById(
+      existingUser.id
+    );
+    const resolvedEmail = authUserData?.user?.email;
 
-    // If DID wasn't set on the user record, update it now
-    // Set pds_status to 'pending' so they get a trainers.gg PDS account
+    if (!resolvedEmail) {
+      throw new Error("Could not resolve email for existing user");
+    }
+
+    userEmail = resolvedEmail;
+
+    // If DID wasn't set on the user record, update it now.
+    // Set pds_status to 'pending' so they get a trainers.gg PDS account.
     if (!existingUser.did) {
       const { error: didUpdateError } = await supabaseAtproto
         .from("users")
@@ -282,15 +303,18 @@ async function handleSignInMode({
     if (authError) {
       // Check if user already exists in auth (email already registered)
       if (authError.message?.includes("already been registered")) {
-        // User exists in auth - just update their public.users record with DID
-        // The public.users record should exist due to auth trigger
-        const { data: userByPlaceholderEmail } = await supabaseAtproto
-          .from("users")
-          .select("id")
-          .eq("email", placeholderEmail)
-          .maybeSingle();
+        // User exists in auth — look up their public.users row by auth user id.
+        // email is no longer in public.users; look up the auth user by email
+        // via the admin API to get their id, then update by id.
+        const { data: authListData } = await supabase.auth.admin.listUsers({
+          page: 1,
+          perPage: 50,
+        });
+        const existingAuthUser = authListData.users.find(
+          (u) => u.email === placeholderEmail
+        );
 
-        if (userByPlaceholderEmail) {
+        if (existingAuthUser) {
           const { error: updateExistingError } = await supabaseAtproto
             .from("users")
             .update({
@@ -298,7 +322,7 @@ async function handleSignInMode({
               pds_status: "pending",
               image: profile.avatar,
             })
-            .eq("id", userByPlaceholderEmail.id);
+            .eq("id", existingAuthUser.id);
 
           if (updateExistingError) {
             console.error(

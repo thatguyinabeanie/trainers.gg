@@ -6,6 +6,8 @@
     "jsr:@supabase/functions-js@^0.0.0-automated": "0.0.0-jsr-test.1",
     "jsr:@supabase/supabase-js@2": "2.100.1",
     "npm:@atproto/api@0.14.0": "0.14.0",
+    "npm:@pkmn/data@~0.10.7": "0.10.10",
+    "npm:@pkmn/dex@~0.10.7": "0.10.10",
     "npm:@pkmn/sets@^5.2.0": "5.2.0",
     "npm:@pkmn/sim@~0.10.7": "0.10.7",
     "npm:@supabase/auth-js@2.100.1": "2.100.1",
@@ -109,6 +111,24 @@
       "dependencies": [
         "@atproto/lexicon",
         "zod"
+      ]
+    },
+    "@pkmn/data@0.10.10": {
+      "integrity": "sha512-5EsAgMCUljqQYpadoVYl3jGcJfkG6gDMENdfkvYxz/Jx569D9Y2RNhHCfld1ir2ADZEpF8kZzokEmFeavFzWXQ==",
+      "dependencies": [
+        "@pkmn/dex-types"
+      ]
+    },
+    "@pkmn/dex-types@0.10.10": {
+      "integrity": "sha512-6tXyvC+xNhDqzbnOriNIF8RqQf/FevfLeJmuXTsFZYNkQjhE4JS6JVUcJCVpq8Aj86tmJqPFRVRZp5v8ZPFwyg==",
+      "dependencies": [
+        "@pkmn/types"
+      ]
+    },
+    "@pkmn/dex@0.10.10": {
+      "integrity": "sha512-Hlw+HHaizSeVW/qsaUElnpV8jG93GIAy/c6QuH1cnLy2mplkQ3JxkxIIbIxR5bX5yEhjeXnpAeS7oStVp+Tl8A==",
+      "dependencies": [
+        "@pkmn/dex-types"
       ]
     },
     "@pkmn/sets@5.2.0": {
@@ -404,6 +424,9 @@
   },
   "workspace": {
     "dependencies": [
+      "npm:@pkmn/data@~0.10.7",
+      "npm:@pkmn/dex@~0.10.7",
+      "npm:@pkmn/img@~0.3.3",
       "npm:@pkmn/sets@^5.2.0",
       "npm:@pkmn/sim@~0.10.7",
       "npm:cheerio@1",

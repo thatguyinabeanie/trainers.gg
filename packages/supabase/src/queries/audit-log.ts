@@ -3,6 +3,9 @@ import type { TypedClient } from "../client";
 
 type AuditAction = Database["public"]["Enums"]["audit_action"];
 
+/** PII data for a single user, fetched from private.user_pii via a service-role client. */
+export type UserPii = { first_name: string | null; last_name: string | null };
+
 /** Single audit log row with joined actor user, as returned by getAuditLog. */
 export type AuditLogEntry = NonNullable<
   Awaited<ReturnType<typeof getAuditLog>>["data"]
@@ -58,8 +61,17 @@ export async function getMatchAuditLog(supabase: TypedClient, matchId: number) {
  * Paginated, general-purpose audit log query with filtering.
  *
  * Supports filtering by action types, actor, date range, and entity type.
- * Joins the actor user record for display purposes.
+ * Joins the actor user record (id, username, image) for display purposes.
  * Returns `{ data, count }` where count is the total matching rows.
+ *
+ * `first_name` and `last_name` are no longer stored on `public.users` — they
+ * live in `private.user_pii`, which requires a service-role client to read.
+ * Pass an optional `piiMap` (keyed by user_id) to merge names into the actor
+ * objects. Callers using a browser authenticated client cannot reach
+ * `private.user_pii` and should omit `piiMap`; actor names will be `null`.
+ *
+ * @param supabase - Typed Supabase client (service-role recommended for SSR)
+ * @param options  - Filter and pagination options, plus optional PII map
  */
 export async function getAuditLog(
   supabase: TypedClient,
@@ -70,6 +82,12 @@ export async function getAuditLog(
     entityType?: "tournament" | "match" | "community";
     limit?: number;
     offset?: number;
+    /**
+     * Pre-fetched PII keyed by user_id. Merge first/last names into actor
+     * objects when available. Populate via `getPiiByUserIds` from a service-role
+     * client before calling `getAuditLog`; omit when calling from the browser.
+     */
+    piiMap?: Map<string, UserPii>;
   } = {}
 ) {
   const {
@@ -79,13 +97,16 @@ export async function getAuditLog(
     entityType,
     limit = 50,
     offset = 0,
+    piiMap,
   } = options;
 
-  // Select all audit_log fields + joined actor user for display
+  // Select all audit_log fields + joined actor user for display.
+  // Only columns that exist on public.users — first_name/last_name moved to
+  // private.user_pii and are merged below via the optional piiMap.
   let query = supabase
     .from("audit_log")
     .select(
-      "*, actor_user:users!audit_log_actor_user_id_fkey(id, username, first_name, last_name, image)",
+      "*, actor_user:users!audit_log_actor_user_id_fkey(id, username, image)",
       { count: "exact", head: false }
     )
     .order("created_at", { ascending: false })
@@ -120,7 +141,26 @@ export async function getAuditLog(
   const { data, count, error } = await query;
 
   if (error) throw error;
-  return { data, count };
+
+  // Merge PII (first_name / last_name) into every actor object.
+  // When piiMap is absent (browser client path) both fields default to null.
+  // Always return the enriched shape so AuditLogEntry has a consistent type.
+  const enrichedData = (data ?? []).map((row) => {
+    const actor = row.actor_user;
+    const pii = actor ? (piiMap?.get(actor.id) ?? null) : null;
+    return {
+      ...row,
+      actor_user: actor
+        ? {
+            ...actor,
+            first_name: pii?.first_name ?? null,
+            last_name: pii?.last_name ?? null,
+          }
+        : null,
+    };
+  });
+
+  return { data: enrichedData, count };
 }
 
 /**

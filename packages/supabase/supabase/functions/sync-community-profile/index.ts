@@ -276,7 +276,13 @@ Deno.serve(async (req) => {
           );
 
           if (uploadResult.success) {
-            avatarBlob = uploadResult.data.blob;
+            const blob = uploadResult.data.blob;
+            avatarBlob = {
+              $type: "blob",
+              ref: { $link: blob.ref.toString() },
+              mimeType: blob.mimeType,
+              size: blob.size,
+            };
           }
         }
       } catch (error) {

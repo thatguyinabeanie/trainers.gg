@@ -11,6 +11,8 @@ import {
   runImportStage,
   runCompileStage,
 } from "@trainers/supabase/pipeline";
+import { type TypedClient } from "@trainers/supabase/client";
+import { type Json } from "@trainers/supabase/types";
 import { safeCompare } from "../_shared/timing-safe.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -86,7 +88,7 @@ Deno.serve(async (req) => {
 
     if (stage === "sync") {
       const exclusions = await loadExclusions(supabase);
-      const result = await runSyncStage(supabase, {
+      const result = await runSyncStage(supabase as unknown as TypedClient, {
         limitlessApiKey: LIMITLESS_API_KEY,
         isExcluded: (source: "rk9" | "limitless", id: string) =>
           exclusions.has(`${source}:${id}`),
@@ -122,7 +124,7 @@ Deno.serve(async (req) => {
         "limitless_import_batch_size",
         25
       );
-      const result = await runImportStage(supabase, {
+      const result = await runImportStage(supabase as unknown as TypedClient, {
         limitlessApiKey: LIMITLESS_API_KEY,
         limitlessBatchSize: batchSize,
         deadlineMs,
@@ -153,7 +155,7 @@ Deno.serve(async (req) => {
     }
 
     // stage === "compile"
-    const result = await runCompileStage(supabase);
+    const result = await runCompileStage(supabase as unknown as TypedClient);
     try {
       await recordImportRuns(supabase, "cron", [
         {
@@ -162,7 +164,7 @@ Deno.serve(async (req) => {
           processed: result.eventsCompiled,
           errors: 0,
           remaining: null,
-          detail: result,
+          detail: result as unknown as Json,
         },
       ]);
     } catch (e) {
@@ -206,9 +208,7 @@ function json(body: unknown): Response {
   });
 }
 
-async function loadExclusions(
-  supabase: ReturnType<typeof createClient>
-): Promise<Set<string>> {
+async function loadExclusions(supabase: TypedClient): Promise<Set<string>> {
   const { data, error } = await supabase
     .from("import_exclusions")
     .select("source, source_event_id");
@@ -217,7 +217,7 @@ async function loadExclusions(
 }
 
 async function readNumberConfig(
-  supabase: ReturnType<typeof createClient>,
+  supabase: TypedClient,
   key: string,
   fallback: number
 ): Promise<number> {

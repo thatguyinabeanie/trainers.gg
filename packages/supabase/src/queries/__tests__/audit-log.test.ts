@@ -288,6 +288,9 @@ describe("audit-log queries", () => {
 
   describe("getAuditLog", () => {
     it("should query with default pagination and no filters", async () => {
+      // actor_user no longer embeds first_name/last_name — those come from private.user_pii
+      // via an optional piiMap. The function always enriches the returned rows with
+      // first_name: null / last_name: null when no piiMap is provided.
       const mockData = [
         {
           id: 1,
@@ -296,8 +299,6 @@ describe("audit-log queries", () => {
           actor_user: {
             id: "u1",
             username: "ash",
-            first_name: "Ash",
-            last_name: "Ketchum",
             image: null,
           },
         },
@@ -314,13 +315,30 @@ describe("audit-log queries", () => {
 
       const result = await getAuditLog(mockClient);
 
-      // Verify return shape includes data and count
-      expect(result).toEqual({ data: mockData, count: 1 });
+      // actor_user is enriched: first_name/last_name always present (null without piiMap)
+      expect(result).toEqual({
+        data: [
+          {
+            id: 1,
+            action: "tournament.started",
+            created_at: "2024-06-01T10:00:00Z",
+            actor_user: {
+              id: "u1",
+              username: "ash",
+              image: null,
+              first_name: null,
+              last_name: null,
+            },
+          },
+        ],
+        count: 1,
+      });
 
       // Verify base query chain
       expect(mockClient.from).toHaveBeenCalledWith("audit_log");
+      // select no longer embeds first_name/last_name
       expect(mockClient._queryBuilder.select).toHaveBeenCalledWith(
-        "*, actor_user:users!audit_log_actor_user_id_fkey(id, username, first_name, last_name, image)",
+        "*, actor_user:users!audit_log_actor_user_id_fkey(id, username, image)",
         { count: "exact", head: false }
       );
       expect(mockClient._queryBuilder.order).toHaveBeenCalledWith(
@@ -538,8 +556,9 @@ describe("audit-log queries", () => {
 
     it("should return count alongside data", async () => {
       const mockData = [
-        { id: 1, action: "admin.sudo_activated" },
-        { id: 2, action: "admin.sudo_deactivated" },
+        // actor_user is null — rows without an actor user are preserved as-is
+        { id: 1, action: "admin.sudo_activated", actor_user: null },
+        { id: 2, action: "admin.sudo_deactivated", actor_user: null },
       ];
 
       const mockClient = createMockClient();
@@ -553,7 +572,17 @@ describe("audit-log queries", () => {
 
       const result = await getAuditLog(mockClient);
 
-      expect(result.data).toEqual(mockData);
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0]).toMatchObject({
+        id: 1,
+        action: "admin.sudo_activated",
+        actor_user: null,
+      });
+      expect(result.data[1]).toMatchObject({
+        id: 2,
+        action: "admin.sudo_deactivated",
+        actor_user: null,
+      });
       expect(result.count).toBe(42);
     });
 

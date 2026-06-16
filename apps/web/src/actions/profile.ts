@@ -216,20 +216,26 @@ export async function getCurrentUserProfile(): Promise<
 
     if (!user) return { success: true, data: null };
 
-    const { data: userData, error: dbError } = await supabase
-      .from("users")
-      .select(
-        "id, username, pds_status, pds_handle, did, birth_date, country, main_alt_id, show_discord_publicly"
-      )
-      .eq("id", user.id)
-      .maybeSingle();
+    const [usersResult, piiResult] = await Promise.all([
+      supabase
+        .from("users")
+        .select(
+          "id, username, pds_status, pds_handle, did, country, main_alt_id, show_discord_publicly"
+        )
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase.rpc("get_my_user_pii"),
+    ]);
 
-    if (dbError) {
-      console.error("Error fetching user profile:", dbError);
+    if (usersResult.error) {
+      console.error("Error fetching user profile:", usersResult.error);
       return { success: false, error: "Failed to fetch profile" };
     }
 
+    const userData = usersResult.data;
     if (!userData) return { success: true, data: null };
+
+    const pii = piiResult.data?.[0] ?? null;
 
     // Fetch main alt's avatar URL and bio if a main alt exists
     let altAvatarUrl: string | null = null;
@@ -258,7 +264,7 @@ export async function getCurrentUserProfile(): Promise<
           | null,
         pdsHandle: userData.pds_handle,
         did: userData.did,
-        birthDate: userData.birth_date,
+        birthDate: pii?.birth_date ?? null,
         country: userData.country,
         mainAltId: userData.main_alt_id,
         altAvatarUrl,
@@ -310,7 +316,6 @@ export async function updateProfile(data: {
     // Build update data for the users table
     const userUpdate: {
       username?: string;
-      birth_date?: string;
       country?: string;
     } = {};
     const hasUsernameChange = validated.username !== undefined;
@@ -320,12 +325,19 @@ export async function updateProfile(data: {
       userUpdate.username = validated.username!;
     }
 
-    if (validated.birthDate !== undefined) {
-      userUpdate.birth_date = validated.birthDate;
-    }
-
     if (validated.country !== undefined) {
       userUpdate.country = validated.country.toUpperCase();
+    }
+
+    // birth_date lives in the private schema — route to the dedicated RPC
+    if (validated.birthDate !== undefined) {
+      const { error: piiError } = await supabase.rpc("update_my_user_pii", {
+        p_birth_date: validated.birthDate,
+      });
+      if (piiError) {
+        console.error("Error updating birth date:", piiError);
+        return { success: false, error: "Failed to update profile" };
+      }
     }
 
     // If changing username, check PDS status for provisioning

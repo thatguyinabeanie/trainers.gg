@@ -20,13 +20,86 @@ export interface ListUsersAdminOptions {
 }
 
 // ------------------------------------------------------------------
+// PII helpers
+// ------------------------------------------------------------------
+
+/**
+ * Batch-fetch first/last names from the private schema for a set of user IDs.
+ * Requires a service-role client — the private schema is not accessible via RLS.
+ *
+ * @param supabase - Service-role Supabase client
+ * @param userIds  - Array of user UUIDs to look up
+ */
+export async function getPiiByUserIds(
+  supabase: TypedClient,
+  userIds: string[]
+): Promise<
+  Map<string, { first_name: string | null; last_name: string | null }>
+> {
+  if (userIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .schema("private")
+    .from("user_pii")
+    .select("user_id, first_name, last_name")
+    .in("user_id", userIds);
+
+  if (error) {
+    console.error("[getPiiByUserIds] Failed to fetch PII:", error);
+    return new Map();
+  }
+
+  return new Map(
+    (data ?? []).map((row) => [
+      row.user_id,
+      { first_name: row.first_name, last_name: row.last_name },
+    ])
+  );
+}
+
+/**
+ * Batch-fetch emails for a set of user IDs via the auth admin API.
+ * Requires a service-role client — auth.users is not PostgREST-queryable.
+ *
+ * Makes one auth.admin.getUserById call per ID. For large sets (>50) callers
+ * should prefer the `listUsers` admin API instead.
+ *
+ * @param supabase - Service-role Supabase client
+ * @param userIds  - Array of user UUIDs to look up
+ */
+export async function getEmailsByUserIds(
+  supabase: TypedClient,
+  userIds: string[]
+): Promise<Map<string, string | null>> {
+  if (userIds.length === 0) return new Map();
+
+  const results = await Promise.all(
+    userIds.map(async (id) => {
+      const { data, error } = await supabase.auth.admin.getUserById(id);
+      if (error) {
+        console.error("[getEmailsByUserIds] Failed to fetch user:", {
+          id,
+          error,
+        });
+        return [id, null] as [string, string | null];
+      }
+      return [id, data.user?.email ?? null] as [string, string | null];
+    })
+  );
+
+  return new Map(results);
+}
+
+// ------------------------------------------------------------------
 // Queries
 // ------------------------------------------------------------------
 
 /**
  * Paginated user list for the admin panel.
  *
- * Includes joined alts and site roles for each user.
+ * Fetches public.users columns (no PII), then merges in email (auth admin API)
+ * and first/last name (private.user_pii) for the returned page.
+ *
  * Returns both data rows and an exact total count for pagination.
  *
  * @param supabase - Typed Supabase client (service role recommended)
@@ -38,15 +111,14 @@ export async function listUsersAdmin(
 ) {
   const { search, isLocked, limit = 25, offset = 0 } = options;
 
+  // NOTE: email and first_name/last_name are no longer in public.users.
+  // We fetch public columns first, then enrich with PII and email below.
   let query = supabase
     .from("users")
     .select(
       `
       id,
-      email,
       username,
-      first_name,
-      last_name,
       image,
       is_locked,
       created_at,
@@ -71,10 +143,12 @@ export async function listUsersAdmin(
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  // Apply search filter across username and email
+  // Apply search filter — username only (email search now requires auth admin API,
+  // which is not composable into a PostgREST query; username is sufficient for
+  // the admin panel typeahead).
   if (search) {
     const escaped = escapeLike(search);
-    query = query.or(`username.ilike.%${escaped}%,email.ilike.%${escaped}%`);
+    query = query.ilike("username", `%${escaped}%`);
   }
 
   // Apply suspension filter
@@ -85,13 +159,31 @@ export async function listUsersAdmin(
   const { data, count, error } = await query;
 
   if (error) throw error;
-  return { data: data ?? [], count: count ?? 0 };
+
+  const rows = data ?? [];
+  const userIds = rows.map((r) => r.id);
+
+  // Enrich with email + PII in parallel
+  const [emailMap, piiMap] = await Promise.all([
+    getEmailsByUserIds(supabase, userIds),
+    getPiiByUserIds(supabase, userIds),
+  ]);
+
+  const enriched = rows.map((r) => ({
+    ...r,
+    email: emailMap.get(r.id) ?? null,
+    first_name: piiMap.get(r.id)?.first_name ?? null,
+    last_name: piiMap.get(r.id)?.last_name ?? null,
+  }));
+
+  return { data: enriched, count: count ?? 0 };
 }
 
 /**
  * Full user details for the admin detail view.
  *
- * Includes alts and site roles with role metadata.
+ * Fetches public.users columns (explicit allowlist — no PII), then merges in
+ * email (auth admin API) and first/last/birth_date (private.user_pii).
  *
  * @param supabase - Typed Supabase client
  * @param userId   - UUID of the user to fetch
@@ -104,7 +196,21 @@ export async function getUserAdminDetails(
     .from("users")
     .select(
       `
-      *,
+      id,
+      username,
+      name,
+      image,
+      is_locked,
+      is_coach,
+      country,
+      created_at,
+      last_sign_in_at,
+      last_active_at,
+      sprite_preference,
+      pds_handle,
+      pds_status,
+      did,
+      main_alt_id,
       alts!profiles_user_id_fkey (
         id,
         username,
@@ -129,7 +235,26 @@ export async function getUserAdminDetails(
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+  if (!data) return null;
+
+  // Enrich with email (auth admin) + PII (private schema) in parallel
+  const [{ data: authUser }, piiResult] = await Promise.all([
+    supabase.auth.admin.getUserById(userId),
+    supabase
+      .schema("private")
+      .from("user_pii")
+      .select("first_name, last_name, birth_date")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+
+  return {
+    ...data,
+    email: authUser?.user?.email ?? null,
+    first_name: piiResult.data?.first_name ?? null,
+    last_name: piiResult.data?.last_name ?? null,
+    birth_date: piiResult.data?.birth_date ?? null,
+  };
 }
 
 /**
@@ -173,12 +298,12 @@ export async function suspendUser(
   adminUserId: string,
   reason?: string
 ) {
-  // Update the user record
+  // Update the user record — email is gone from public.users; select only safe columns.
   const { data: user, error: updateError } = await supabase
     .from("users")
     .update({ is_locked: true })
     .eq("id", userId)
-    .select("id, username, email, is_locked")
+    .select("id, username, is_locked")
     .single();
 
   if (updateError) throw updateError;
@@ -219,12 +344,12 @@ export async function unsuspendUser(
   userId: string,
   adminUserId: string
 ) {
-  // Update the user record
+  // Update the user record — email is gone from public.users; select only safe columns.
   const { data: user, error: updateError } = await supabase
     .from("users")
     .update({ is_locked: false })
     .eq("id", userId)
-    .select("id, username, email, is_locked")
+    .select("id, username, is_locked")
     .single();
 
   if (updateError) throw updateError;

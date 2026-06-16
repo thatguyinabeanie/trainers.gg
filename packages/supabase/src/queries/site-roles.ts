@@ -1,4 +1,5 @@
 import type { TypedClient } from "../client";
+import { getEmailsByUserIds, getPiiByUserIds } from "./admin-users";
 
 /**
  * Check if a user has the site admin role.
@@ -58,6 +59,9 @@ export async function getSiteRoles(supabase: TypedClient) {
  * Get all users with site admin role
  */
 export async function getSiteAdmins(supabase: TypedClient) {
+  // email / first_name / last_name no longer live on public.users — email is in
+  // auth.users, names in private.user_pii. Embed only the public columns, then
+  // merge email + names from the service-role batch helpers (admin-only page).
   const { data, error } = await supabase
     .from("user_roles")
     .select(
@@ -66,10 +70,7 @@ export async function getSiteAdmins(supabase: TypedClient) {
       created_at,
       user:users(
         id,
-        email,
         username,
-        first_name,
-        last_name,
         image
       ),
       role:roles!inner(
@@ -87,7 +88,27 @@ export async function getSiteAdmins(supabase: TypedClient) {
     return [];
   }
 
-  return data ?? [];
+  const rows = data ?? [];
+  const userIds = rows
+    .map((r) => r.user?.id)
+    .filter((id): id is string => Boolean(id));
+
+  const [emailMap, piiMap] = await Promise.all([
+    getEmailsByUserIds(supabase, userIds),
+    getPiiByUserIds(supabase, userIds),
+  ]);
+
+  return rows.map((r) => ({
+    ...r,
+    user: r.user
+      ? {
+          ...r.user,
+          email: emailMap.get(r.user.id) ?? null,
+          first_name: piiMap.get(r.user.id)?.first_name ?? null,
+          last_name: piiMap.get(r.user.id)?.last_name ?? null,
+        }
+      : null,
+  }));
 }
 
 /**

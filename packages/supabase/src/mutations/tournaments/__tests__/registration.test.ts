@@ -508,7 +508,10 @@ describe("Tournament Registration Mutations", () => {
     });
 
     it("passes drop fields when status is dropped", async () => {
-      const mockUpdate = jest.fn().mockReturnThis();
+      // Drop metadata is now written to tournament_registration_staff (not the
+      // tournament_registrations update). The base update only carries { status }.
+      const mockStatusUpdate = jest.fn().mockReturnThis();
+      const mockStaffUpsert = jest.fn().mockResolvedValue({ error: null });
       const fromSpy = jest.spyOn(mockClient, "from");
 
       // First call: registration lookup
@@ -531,10 +534,15 @@ describe("Tournament Registration Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Third call: the update
+      // Third call: status-only update on tournament_registrations
       fromSpy.mockReturnValueOnce({
-        update: mockUpdate,
+        update: mockStatusUpdate,
         eq: jest.fn().mockResolvedValue({ error: null }),
+      } as unknown as MockQueryBuilder);
+
+      // Fourth call: upsert drop metadata to tournament_registration_staff
+      fromSpy.mockReturnValueOnce({
+        upsert: mockStaffUpsert,
       } as unknown as MockQueryBuilder);
 
       const result = await updateRegistrationStatus(
@@ -545,14 +553,27 @@ describe("Tournament Registration Mutations", () => {
       );
 
       expect(result).toEqual({ success: true, tournamentId: 100 });
-      expect(mockUpdate).toHaveBeenCalledWith(
+
+      // Base status update only carries the status field — no drop metadata
+      expect(mockStatusUpdate).toHaveBeenCalledWith({ status: "dropped" });
+
+      // Drop metadata goes into tournament_registration_staff via upsert
+      expect(mockStaffUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          status: "dropped",
+          registration_id: registrationId,
           drop_category: "no_show",
           drop_notes: "Did not appear for round 1",
           dropped_by: mockUser.id,
           dropped_at: expect.any(String),
-        })
+        }),
+        { onConflict: "registration_id" }
+      );
+
+      // Verify the correct tables were targeted
+      expect(fromSpy).toHaveBeenNthCalledWith(3, "tournament_registrations");
+      expect(fromSpy).toHaveBeenNthCalledWith(
+        4,
+        "tournament_registration_staff"
       );
     });
 

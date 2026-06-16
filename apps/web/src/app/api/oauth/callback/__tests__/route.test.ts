@@ -10,9 +10,12 @@ const mockGetBlueskyProfile = jest.fn();
 const mockFrom = jest.fn();
 const mockGenerateLink = jest.fn();
 const mockCreateUser = jest.fn();
+const mockGetUserById = jest.fn();
+const mockListUsers = jest.fn();
 
 jest.mock("@/lib/atproto/oauth-client", () => ({
-  handleAtprotoCallback: (...args: unknown[]) => mockHandleAtprotoCallback(...args),
+  handleAtprotoCallback: (...args: unknown[]) =>
+    mockHandleAtprotoCallback(...args),
   getBlueskyProfile: (...args: unknown[]) => mockGetBlueskyProfile(...args),
   extractUsernameFromHandle: (handle: string) => handle.split(".")[0],
 }));
@@ -23,6 +26,8 @@ jest.mock("@/lib/supabase/server", () => ({
       admin: {
         generateLink: mockGenerateLink,
         createUser: mockCreateUser,
+        getUserById: (...args: unknown[]) => mockGetUserById(...args),
+        listUsers: (...args: unknown[]) => mockListUsers(...args),
       },
     },
   }),
@@ -43,6 +48,9 @@ describe("GET /api/oauth/callback", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.NEXT_PUBLIC_SITE_URL = "https://trainers.gg";
+    // Default auth admin mock defaults — individual tests override as needed
+    mockGetUserById.mockResolvedValue({ data: { user: null }, error: null });
+    mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
   });
 
   function createRequest(params: Record<string, string>) {
@@ -62,8 +70,12 @@ describe("GET /api/oauth/callback", () => {
       });
 
       // No existing holder
-      const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockMaybeSingle = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
+      const mockEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 
       // Update call
@@ -82,7 +94,9 @@ describe("GET /api/oauth/callback", () => {
         }
       });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location");
@@ -96,8 +110,12 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: "user-456",
       });
 
-      const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockMaybeSingle = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
+      const mockEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
@@ -133,12 +151,16 @@ describe("GET /api/oauth/callback", () => {
         data: { id: "other-user-789" },
         error: null,
       });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 
       mockFrom.mockReturnValue({ select: mockSelect });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location");
@@ -159,12 +181,16 @@ describe("GET /api/oauth/callback", () => {
         data: null,
         error: { message: "connection timeout" },
       });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 
       mockFrom.mockReturnValue({ select: mockSelect });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location");
@@ -181,11 +207,17 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: "user-456",
       });
 
-      const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockMaybeSingle = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
+      const mockEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 
-      const mockUpdateEq = jest.fn().mockResolvedValue({ error: { message: "DB error" } });
+      const mockUpdateEq = jest
+        .fn()
+        .mockResolvedValue({ error: { message: "DB error" } });
       const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
 
       let fromCallCount = 0;
@@ -195,7 +227,9 @@ describe("GET /api/oauth/callback", () => {
         return { update: mockUpdate };
       });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location");
@@ -216,14 +250,27 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      // User found by DID
+      // User found by DID — no email in public.users (moved to auth.users)
       const mockMaybeSingle = jest.fn().mockResolvedValue({
-        data: { id: "user-existing", email: "did_plc_existing123@bluesky.trainers.gg", did: "did:plc:existing123" },
+        data: { id: "user-existing", did: "did:plc:existing123" },
         error: null,
       });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
       mockFrom.mockReturnValue({ select: mockSelect });
+
+      // getUserById fetches email from auth.users (canonical source)
+      mockGetUserById.mockResolvedValue({
+        data: {
+          user: {
+            id: "user-existing",
+            email: "did_plc_existing123@bluesky.trainers.gg",
+          },
+        },
+        error: null,
+      });
 
       // Magic link generation
       mockGenerateLink.mockResolvedValue({
@@ -231,7 +278,9 @@ describe("GET /api/oauth/callback", () => {
         error: null,
       });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location")!;
@@ -250,16 +299,29 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      // First lookup: DID not found
-      const mockMaybeSingleDid = jest.fn().mockResolvedValue({ data: null, error: null });
-      const mockEqDid = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleDid });
-
-      // Second lookup: found by email
-      const mockMaybeSingleEmail = jest.fn().mockResolvedValue({
-        data: { id: "user-legacy", email: "did_plc_legacy456@bluesky.trainers.gg", did: null },
+      // listUsers finds the legacy auth user by placeholder email
+      mockListUsers.mockResolvedValue({
+        data: {
+          users: [
+            {
+              id: "user-legacy",
+              email: "did_plc_legacy456@bluesky.trainers.gg",
+            },
+          ],
+        },
         error: null,
       });
-      const mockEqEmail = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEmail });
+
+      // getUserById fetches email from auth.users (canonical source)
+      mockGetUserById.mockResolvedValue({
+        data: {
+          user: {
+            id: "user-legacy",
+            email: "did_plc_legacy456@bluesky.trainers.gg",
+          },
+        },
+        error: null,
+      });
 
       // Update call for setting DID on legacy user
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
@@ -269,11 +331,38 @@ describe("GET /api/oauth/callback", () => {
       mockFrom.mockImplementation(() => {
         fromCallCount++;
         if (fromCallCount === 1) {
-          // DID lookup
-          return { select: jest.fn().mockReturnValue({ eq: mockEqDid }) };
+          // DID lookup — not found
+          return {
+            select: jest
+              .fn()
+              .mockReturnValue({
+                eq: jest
+                  .fn()
+                  .mockReturnValue({
+                    maybeSingle: jest
+                      .fn()
+                      .mockResolvedValue({ data: null, error: null }),
+                  }),
+              }),
+          };
         } else if (fromCallCount === 2) {
-          // Email lookup
-          return { select: jest.fn().mockReturnValue({ eq: mockEqEmail }) };
+          // Public users row lookup by legacyAuthUser.id
+          return {
+            select: jest
+              .fn()
+              .mockReturnValue({
+                eq: jest
+                  .fn()
+                  .mockReturnValue({
+                    maybeSingle: jest
+                      .fn()
+                      .mockResolvedValue({
+                        data: { id: "user-legacy", did: null },
+                        error: null,
+                      }),
+                  }),
+              }),
+          };
         } else {
           // Update DID on legacy user
           return { update: mockUpdate };
@@ -285,14 +374,19 @@ describe("GET /api/oauth/callback", () => {
         error: null,
       });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location")!;
       expect(location).toContain("/auth/callback");
       expect(location).toContain("token_hash=token_legacy");
       // Should update DID on legacy user
-      expect(mockUpdate).toHaveBeenCalledWith({ did: "did:plc:legacy456", pds_status: "pending" });
+      expect(mockUpdate).toHaveBeenCalledWith({
+        did: "did:plc:legacy456",
+        pds_status: "pending",
+      });
     });
   });
 
@@ -304,13 +398,8 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      // DID lookup: not found
-      const mockMaybeSingleDid = jest.fn().mockResolvedValue({ data: null, error: null });
-      const mockEqDid = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleDid });
-
-      // Email lookup: not found
-      const mockMaybeSingleEmail = jest.fn().mockResolvedValue({ data: null, error: null });
-      const mockEqEmail = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEmail });
+      // listUsers finds no legacy user with this placeholder email
+      mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
 
       // Update after user creation
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
@@ -320,10 +409,22 @@ describe("GET /api/oauth/callback", () => {
       mockFrom.mockImplementation(() => {
         fromCallCount++;
         if (fromCallCount === 1) {
-          return { select: jest.fn().mockReturnValue({ eq: mockEqDid }) };
-        } else if (fromCallCount === 2) {
-          return { select: jest.fn().mockReturnValue({ eq: mockEqEmail }) };
+          // DID lookup — not found
+          return {
+            select: jest
+              .fn()
+              .mockReturnValue({
+                eq: jest
+                  .fn()
+                  .mockReturnValue({
+                    maybeSingle: jest
+                      .fn()
+                      .mockResolvedValue({ data: null, error: null }),
+                  }),
+              }),
+          };
         } else {
+          // Update new user's public.users row with did/pds_status/image
           return { update: mockUpdate };
         }
       });
@@ -347,7 +448,9 @@ describe("GET /api/oauth/callback", () => {
         error: null,
       });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location")!;
@@ -376,36 +479,38 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      // DID lookup: not found
-      const mockMaybeSingleDid = jest.fn().mockResolvedValue({ data: null, error: null });
-      // Email lookup: not found
-      const mockMaybeSingleEmail = jest.fn().mockResolvedValue({ data: null, error: null });
-
-      // After "already registered" error - lookup by email (.eq — source changed from .ilike)
-      const mockMaybeSingleEq = jest.fn().mockResolvedValue({
-        data: { id: "existing-auth-user" },
-        error: null,
-      });
-      const mockEqRecovery = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEq });
-
       // Update call
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
       const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
 
-      let fromCallCount = 0;
-      mockFrom.mockImplementation(() => {
-        fromCallCount++;
-        if (fromCallCount === 1) {
-          return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleDid }) }) };
-        } else if (fromCallCount === 2) {
-          return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEmail }) }) };
-        } else if (fromCallCount === 3) {
-          // Source uses .eq("email", placeholderEmail) — not .ilike
-          return { select: jest.fn().mockReturnValue({ eq: mockEqRecovery }) };
-        } else {
-          return { update: mockUpdate };
-        }
-      });
+      // DID lookup returns null
+      mockFrom.mockImplementation(() => ({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+        update: mockUpdate,
+      }));
+
+      // listUsers is called twice:
+      // 1st call (fallback for initial lookup): no user found by email
+      // 2nd call (after "already registered" error): finds existing auth user
+      mockListUsers
+        .mockResolvedValueOnce({ data: { users: [] }, error: null })
+        .mockResolvedValueOnce({
+          data: {
+            users: [
+              {
+                id: "existing-auth-user",
+                email: "did_plc_conflict@bluesky.trainers.gg",
+              },
+            ],
+          },
+          error: null,
+        });
 
       mockGetBlueskyProfile.mockResolvedValue({
         handle: "duplicate.bsky.social",
@@ -416,7 +521,9 @@ describe("GET /api/oauth/callback", () => {
       // Create user fails with "already registered"
       mockCreateUser.mockResolvedValue({
         data: null,
-        error: { message: "A user with this email address has already been registered" },
+        error: {
+          message: "A user with this email address has already been registered",
+        },
       });
 
       mockGenerateLink.mockResolvedValue({
@@ -424,7 +531,9 @@ describe("GET /api/oauth/callback", () => {
         error: null,
       });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location")!;
@@ -434,7 +543,9 @@ describe("GET /api/oauth/callback", () => {
 
   describe("sign-in mode - error handling", () => {
     it("redirects to sign-in with error when callback throws", async () => {
-      mockHandleAtprotoCallback.mockRejectedValue(new Error("Token exchange failed"));
+      mockHandleAtprotoCallback.mockRejectedValue(
+        new Error("Token exchange failed")
+      );
 
       const response = await GET(createRequest({ code: "bad", state: "test" }));
 
@@ -453,18 +564,28 @@ describe("GET /api/oauth/callback", () => {
       });
 
       const mockMaybeSingle = jest.fn().mockResolvedValue({
-        data: { id: "user-1", email: "test@bluesky.trainers.gg", did: "did:plc:existing" },
+        data: {
+          id: "user-1",
+          email: "test@bluesky.trainers.gg",
+          did: "did:plc:existing",
+        },
         error: null,
       });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
-      mockFrom.mockReturnValue({ select: jest.fn().mockReturnValue({ eq: mockEq }) });
+      const mockEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockMaybeSingle });
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnValue({ eq: mockEq }),
+      });
 
       mockGenerateLink.mockResolvedValue({
         data: { properties: { hashed_token: null } },
         error: { message: "rate limited" },
       });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location")!;
@@ -480,13 +601,21 @@ describe("GET /api/oauth/callback", () => {
       });
 
       // DID not found, email not found
-      const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
-      mockFrom.mockReturnValue({ select: jest.fn().mockReturnValue({ eq: mockEq }) });
+      const mockMaybeSingle = jest
+        .fn()
+        .mockResolvedValue({ data: null, error: null });
+      const mockEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockMaybeSingle });
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnValue({ eq: mockEq }),
+      });
 
       mockGetBlueskyProfile.mockResolvedValue(null);
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location")!;
@@ -498,7 +627,9 @@ describe("GET /api/oauth/callback", () => {
       process.env.NEXT_PUBLIC_SITE_URL = "https://custom.trainers.gg";
       mockHandleAtprotoCallback.mockRejectedValue(new Error("fail"));
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       const location = response.headers.get("location")!;
       expect(location).toMatch(/^https:\/\/custom\.trainers\.gg\/sign-in/);
@@ -508,7 +639,9 @@ describe("GET /api/oauth/callback", () => {
       delete process.env.NEXT_PUBLIC_SITE_URL;
       mockHandleAtprotoCallback.mockRejectedValue(new Error("fail"));
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       const location = response.headers.get("location")!;
       expect(location).toMatch(/^https:\/\/trainers\.gg\/sign-in/);
@@ -523,11 +656,24 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      // DID lookup: not found
-      const mockMaybeSingleDid = jest.fn().mockResolvedValue({ data: null, error: null });
-      // Email lookup: found, but no DID set (legacy)
-      const mockMaybeSingleEmail = jest.fn().mockResolvedValue({
-        data: { id: "user-legacy", email: "did_plc_legacy@bluesky.trainers.gg", did: null },
+      // listUsers finds the legacy user by placeholder email
+      mockListUsers.mockResolvedValue({
+        data: {
+          users: [
+            { id: "user-legacy", email: "did_plc_legacy@bluesky.trainers.gg" },
+          ],
+        },
+        error: null,
+      });
+
+      // getUserById returns the legacy user's email (canonical source)
+      mockGetUserById.mockResolvedValue({
+        data: {
+          user: {
+            id: "user-legacy",
+            email: "did_plc_legacy@bluesky.trainers.gg",
+          },
+        },
         error: null,
       });
 
@@ -539,10 +685,40 @@ describe("GET /api/oauth/callback", () => {
       mockFrom.mockImplementation(() => {
         fromCallCount++;
         if (fromCallCount === 1) {
-          return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleDid }) }) };
+          // DID lookup — not found
+          return {
+            select: jest
+              .fn()
+              .mockReturnValue({
+                eq: jest
+                  .fn()
+                  .mockReturnValue({
+                    maybeSingle: jest
+                      .fn()
+                      .mockResolvedValue({ data: null, error: null }),
+                  }),
+              }),
+          };
         } else if (fromCallCount === 2) {
-          return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingleEmail }) }) };
+          // Public users row lookup by legacyAuthUser.id — found with no DID
+          return {
+            select: jest
+              .fn()
+              .mockReturnValue({
+                eq: jest
+                  .fn()
+                  .mockReturnValue({
+                    maybeSingle: jest
+                      .fn()
+                      .mockResolvedValue({
+                        data: { id: "user-legacy", did: null },
+                        error: null,
+                      }),
+                  }),
+              }),
+          };
         } else {
+          // Update DID on legacy user
           return { update: mockUpdate };
         }
       });
@@ -552,10 +728,15 @@ describe("GET /api/oauth/callback", () => {
         error: null,
       });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
-      expect(mockUpdate).toHaveBeenCalledWith({ did: "did:plc:legacy", pds_status: "pending" });
+      expect(mockUpdate).toHaveBeenCalledWith({
+        did: "did:plc:legacy",
+        pds_status: "pending",
+      });
       expect(mockUpdateEq).toHaveBeenCalledWith("id", "user-legacy");
     });
 
@@ -568,10 +749,16 @@ describe("GET /api/oauth/callback", () => {
 
       // User found by DID with DID already set
       const mockMaybeSingle = jest.fn().mockResolvedValue({
-        data: { id: "user-existing", email: "did_plc_hasdid@bluesky.trainers.gg", did: "did:plc:hasdid" },
+        data: {
+          id: "user-existing",
+          email: "did_plc_hasdid@bluesky.trainers.gg",
+          did: "did:plc:hasdid",
+        },
         error: null,
       });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
       const mockUpdate = jest.fn();
 
@@ -597,9 +784,17 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
-      mockFrom.mockReturnValue({ select: jest.fn().mockReturnValue({ eq: mockEq }) });
+      // DID lookup returns null; listUsers finds no legacy user
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      });
+      mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
 
       mockGetBlueskyProfile.mockResolvedValue({
         handle: "fail.bsky.social",
@@ -613,7 +808,9 @@ describe("GET /api/oauth/callback", () => {
         error: { message: "Internal server error" },
       });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       expect(response.status).toBe(307);
       const location = response.headers.get("location")!;
@@ -629,12 +826,22 @@ describe("GET /api/oauth/callback", () => {
         linkUserId: undefined,
       });
 
-      const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      // DID lookup returns null; listUsers finds no legacy user
       mockFrom.mockReturnValue({
-        select: jest.fn().mockReturnValue({ eq: mockEq }),
-        update: jest.fn().mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) }),
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+        update: jest
+          .fn()
+          .mockReturnValue({
+            eq: jest.fn().mockResolvedValue({ error: null }),
+          }),
       });
+      mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
 
       // Handle that extracts to a very short name (e.g., "ab")
       mockGetBlueskyProfile.mockResolvedValue({
@@ -679,7 +886,9 @@ describe("GET /api/oauth/callback", () => {
         data: { id: "user-same" },
         error: null,
       });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+      const mockEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockMaybeSingle });
       const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
 
       const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
@@ -692,7 +901,9 @@ describe("GET /api/oauth/callback", () => {
         return { update: mockUpdate };
       });
 
-      const response = await GET(createRequest({ code: "test", state: "test" }));
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
 
       // Should succeed (not error), even though DID is "already linked"
       expect(response.status).toBe(307);

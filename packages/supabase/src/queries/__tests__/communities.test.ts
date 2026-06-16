@@ -75,16 +75,52 @@ const createMockClient = () => {
     }),
   };
 
+  // A minimal private-schema builder that .schema("private") returns.
+  // Supports the .from("user_pii").select(...).in(...) chain used by getPiiByUserIds.
+  const privateSchemaBuilder: MockQueryBuilder = {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    range: jest.fn().mockResolvedValue({ data: [], error: null, count: null }),
+    or: jest.fn().mockReturnThis(),
+    is: jest.fn().mockReturnThis(),
+    in: jest.fn().mockReturnThis(),
+    ilike: jest.fn().mockReturnThis(),
+    not: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+    then: jest.fn((resolve) => {
+      return Promise.resolve({ data: [], error: null, count: null }).then(
+        resolve
+      );
+    }),
+  };
+  const privateSchema = {
+    from: jest.fn().mockReturnValue(privateSchemaBuilder),
+    _queryBuilder: privateSchemaBuilder,
+  };
+
   return {
     from: jest.fn().mockReturnValue(mockQueryBuilder),
     rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
+    schema: jest.fn().mockReturnValue(privateSchema),
     auth: {
       getUser: jest
         .fn()
         .mockResolvedValue({ data: { user: null }, error: null }),
+      admin: {
+        getUserById: jest
+          .fn()
+          .mockResolvedValue({ data: { user: null }, error: null }),
+      },
     },
     _queryBuilder: mockQueryBuilder,
-  } as unknown as TypedClient & { _queryBuilder: MockQueryBuilder };
+    _privateSchema: privateSchema,
+  } as unknown as TypedClient & {
+    _queryBuilder: MockQueryBuilder;
+    _privateSchema: typeof privateSchema;
+  };
 };
 
 describe("communities queries", () => {
@@ -775,34 +811,212 @@ describe("communities queries", () => {
   });
 
   describe("listCommunityStaffWithRoles", () => {
-    it("should fetch staff members with role information", async () => {
-      const mockOrg = { owner_user_id: "user-1" };
-      const mockStaff = [
-        {
-          id: 1,
-          user_id: "user-2",
-          user: { id: "user-2", username: "staff1" },
-        },
+    /**
+     * Build a mock client for listCommunityStaffWithRoles.
+     *
+     * The function issues .from() calls in this order (all via the public schema):
+     *   0. communities — .single() → owner_user_id
+     *   1. community_staff — .then() → staff rows
+     *   2. groups — .then() → groups (empty for simple case)
+     *   3. group_roles — .then() → group roles (empty for simple case)
+     *   4. user_group_roles — .then() → user group roles (empty for simple case)
+     *   5. users — .single() → owner user row
+     *
+     * Plus:
+     *   - supabase.schema("private").from("user_pii") — .then() → PII rows
+     *   - supabase.auth.admin.getUserById(id) → email rows (one per user)
+     */
+    /**
+     * Build a mock client sequenced to match listCommunityStaffWithRoles.
+     *
+     * The function issues .from() calls in this order:
+     *   0. communities  → .single() → { owner_user_id }
+     *   1. community_staff → .then() → staff rows
+     *   2. groups       → .then() → groups
+     *   3. group_roles  → .then() → group roles
+     *   4. user_group_roles → .then() → user group roles
+     *   5. users        → .single() → owner user row
+     *
+     * Plus parallel:
+     *   - supabase.schema("private").from("user_pii") → .then() → PII rows
+     *   - supabase.auth.admin.getUserById(id) → email (one call per user)
+     */
+    function buildStaffWithRolesMockClient(opts: {
+      ownerUserId: string;
+      staffMembers: Array<{
+        id: number;
+        user_id: string;
+        community_id: number;
+        created_at: string | null;
+        user: { id: string; username: string | null; image: string | null };
+      }>;
+      ownerUser: { id: string; username: string | null; image: string | null };
+      piiRows?: Array<{
+        user_id: string;
+        first_name: string | null;
+        last_name: string | null;
+      }>;
+      emailMap?: Record<string, string | null>;
+    }) {
+      // Pre-define each .from() call's resolution by call index.
+      // Each entry has the method used to terminate it and the data to return.
+      const fromCalls: Array<{ method: "single" | "then"; data: unknown }> = [
+        // 0: communities → .single()
+        { method: "single", data: { owner_user_id: opts.ownerUserId } },
+        // 1: community_staff → .then()
+        { method: "then", data: opts.staffMembers },
+        // 2: groups → .then()
+        { method: "then", data: [] },
+        // 3: group_roles → .then()
+        { method: "then", data: [] },
+        // 4: user_group_roles → .then()
+        { method: "then", data: [] },
+        // 5: users (owner) → .single()
+        { method: "single", data: opts.ownerUser },
       ];
 
-      const mockClient = createMockClient();
+      let fromIdx = 0;
 
-      mockClient._queryBuilder.single.mockResolvedValue({
-        data: mockOrg,
-        error: null,
-      });
+      const makePublicBuilder = () => {
+        const callDef = fromCalls[fromIdx++] ?? { method: "then", data: [] };
+        const b: Record<string, unknown> = {};
+        const chain = () => b;
+        b["select"] = jest.fn().mockImplementation(chain);
+        b["eq"] = jest.fn().mockImplementation(chain);
+        b["order"] = jest.fn().mockImplementation(chain);
+        b["in"] = jest.fn().mockImplementation(chain);
+        b["limit"] = jest.fn().mockImplementation(chain);
+        b["not"] = jest.fn().mockImplementation(chain);
+        b["single"] = jest
+          .fn()
+          .mockResolvedValue({ data: callDef.data, error: null });
+        b["maybeSingle"] = jest
+          .fn()
+          .mockResolvedValue({ data: null, error: null });
+        b["then"] = jest
+          .fn()
+          .mockImplementation((resolve: (v: unknown) => unknown) =>
+            Promise.resolve({ data: callDef.data, error: null }).then(resolve)
+          );
+        return b;
+      };
 
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({
-          data: mockStaff,
+      // Private schema builder for getPiiByUserIds
+      const piiRows = opts.piiRows ?? [];
+      const privatePiiBuilder: Record<string, unknown> = {};
+      const piiChain = () => privatePiiBuilder;
+      privatePiiBuilder["select"] = jest.fn().mockImplementation(piiChain);
+      privatePiiBuilder["eq"] = jest.fn().mockImplementation(piiChain);
+      privatePiiBuilder["in"] = jest.fn().mockImplementation(piiChain);
+      privatePiiBuilder["then"] = jest
+        .fn()
+        .mockImplementation((resolve: (v: unknown) => unknown) =>
+          Promise.resolve({ data: piiRows, error: null }).then(resolve)
+        );
+
+      const privateSchema = {
+        from: jest.fn().mockReturnValue(privatePiiBuilder),
+      };
+
+      // Auth admin mock for getEmailsByUserIds
+      const emailMap = opts.emailMap ?? {};
+      const getUserById = jest.fn().mockImplementation((id: string) =>
+        Promise.resolve({
+          data: { user: { email: emailMap[id] ?? null } },
           error: null,
-        }).then(resolve);
+        })
+      );
+
+      return {
+        from: jest.fn().mockImplementation(makePublicBuilder),
+        rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
+        schema: jest.fn().mockReturnValue(privateSchema),
+        auth: {
+          getUser: jest
+            .fn()
+            .mockResolvedValue({ data: { user: null }, error: null }),
+          admin: { getUserById },
+        },
+      } as unknown as TypedClient;
+    }
+
+    it("returns an array with the owner listed first", async () => {
+      const client = buildStaffWithRolesMockClient({
+        ownerUserId: "user-1",
+        staffMembers: [
+          {
+            id: 1,
+            user_id: "user-2",
+            community_id: 1,
+            created_at: "2025-01-01T00:00:00Z",
+            user: { id: "user-2", username: "staff1", image: null },
+          },
+        ],
+        ownerUser: { id: "user-1", username: "owner1", image: null },
+        piiRows: [
+          { user_id: "user-1", first_name: "Owner", last_name: "One" },
+          { user_id: "user-2", first_name: "Staff", last_name: "Member" },
+        ],
+        emailMap: {
+          "user-1": "owner@example.com",
+          "user-2": "staff@example.com",
+        },
       });
 
-      const result = await listCommunityStaffWithRoles(mockClient, 1);
+      const result = await listCommunityStaffWithRoles(client, 1);
 
-      expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
+      // Owner (not in staff table) is prepended first
+      expect(result[0]?.isOwner).toBe(true);
+      expect(result[0]?.user_id).toBe("user-1");
+      expect(result[0]?.user?.first_name).toBe("Owner");
+      expect(result[0]?.user?.email).toBe("owner@example.com");
+    }, 10000);
+
+    it("merges PII and email into each staff member", async () => {
+      const client = buildStaffWithRolesMockClient({
+        ownerUserId: "user-owner",
+        staffMembers: [
+          {
+            id: 5,
+            user_id: "user-staff",
+            community_id: 1,
+            created_at: null,
+            user: { id: "user-staff", username: "brock", image: null },
+          },
+        ],
+        ownerUser: { id: "user-owner", username: "owner", image: null },
+        piiRows: [
+          { user_id: "user-staff", first_name: "Brock", last_name: "Rock" },
+        ],
+        emailMap: { "user-staff": "brock@example.com" },
+      });
+
+      const result = await listCommunityStaffWithRoles(client, 1);
+
+      const staffMember = result.find((r) => r.user_id === "user-staff");
+      expect(staffMember).toBeDefined();
+      expect(staffMember?.user?.first_name).toBe("Brock");
+      expect(staffMember?.user?.last_name).toBe("Rock");
+      expect(staffMember?.user?.email).toBe("brock@example.com");
+    }, 10000);
+
+    it("returns empty array when community has no staff and no owner row", async () => {
+      const client = buildStaffWithRolesMockClient({
+        ownerUserId: "user-owner",
+        staffMembers: [],
+        // owner user lookup returns null — owner not in users table
+        ownerUser: null as unknown as {
+          id: string;
+          username: string | null;
+          image: string | null;
+        },
+      });
+
+      const result = await listCommunityStaffWithRoles(client, 1);
+
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(0);
     }, 10000);
   });
 

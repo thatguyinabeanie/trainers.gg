@@ -248,23 +248,33 @@ export async function updateRegistrationStatus(
     throw new Error("Drop info (category) is required when dropping a player");
   }
 
-  // Build update payload — include drop metadata when dropping a player
-  const updatePayload = dropInfo
-    ? {
-        status,
-        drop_category: dropInfo.dropCategory,
-        drop_notes: dropInfo.dropNotes ?? null,
-        dropped_by: user.id,
-        dropped_at: new Date().toISOString(),
-      }
-    : { status };
-
-  const { error } = await supabase
+  // Update the base registration status only — drop metadata lives in
+  // tournament_registration_staff (split out by the PII migration).
+  const { error: statusError } = await supabase
     .from("tournament_registrations")
-    .update(updatePayload)
+    .update({ status })
     .eq("id", registrationId);
 
-  if (error) throw error;
+  if (statusError) throw statusError;
+
+  // When dropping, upsert the staff metadata into tournament_registration_staff.
+  if (dropInfo) {
+    const { error: staffError } = await supabase
+      .from("tournament_registration_staff")
+      .upsert(
+        {
+          registration_id: registrationId,
+          drop_category: dropInfo.dropCategory,
+          drop_notes: dropInfo.dropNotes ?? null,
+          dropped_by: user.id,
+          dropped_at: new Date().toISOString(),
+        },
+        { onConflict: "registration_id" }
+      );
+
+    if (staffError) throw staffError;
+  }
+
   return { success: true, tournamentId: registration.tournament_id };
 }
 

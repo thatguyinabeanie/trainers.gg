@@ -230,7 +230,8 @@ Deno.serve(async (req) => {
             error: "Invalid or expired session",
             code: "UNAUTHORIZED",
           },
-          401
+          401,
+          cors
         );
       }
 
@@ -299,7 +300,7 @@ Deno.serve(async (req) => {
     // Primary lookup: by DID (authoritative, collision-free)
     const { data: existingUser } = await supabaseAdmin
       .from("users")
-      .select("id, email, did")
+      .select("id, did")
       .eq("did", did)
       .maybeSingle();
 
@@ -307,29 +308,40 @@ Deno.serve(async (req) => {
     let userId: string;
     let isNew = false;
 
-    if (existingUser && existingUser.email) {
-      // Existing user found by DID — sign them in
-      userEmail = existingUser.email;
+    if (existingUser) {
+      // Existing user found by DID — sign them in.
+      // For a Bluesky account the auth email is always the deterministic
+      // placeholder derived from the DID, so we use that directly.
+      userEmail = placeholderEmail;
       userId = existingUser.id;
     } else {
-      // Fallback: check by placeholder email for legacy accounts
-      const { data: userByEmail } = await supabaseAdmin
-        .from("users")
-        .select("id, email, did")
-        .eq("email", placeholderEmail)
-        .maybeSingle();
+      // Fallback: check auth.users by placeholder email for legacy accounts
+      // (public.users.email was dropped; look up via the auth layer instead).
+      // supabase-js admin has no getUserByEmail — list + find by deterministic
+      // placeholder email (rare legacy path; default page size is sufficient).
+      const { data: authList } = await supabaseAdmin.auth.admin.listUsers();
+      const legacyAuthId = authList?.users.find(
+        (u) => u.email === placeholderEmail
+      )?.id;
+      const { data: userByAuthId } = legacyAuthId
+        ? await supabaseAdmin
+            .from("users")
+            .select("id, did")
+            .eq("id", legacyAuthId)
+            .maybeSingle()
+        : { data: null };
 
-      if (userByEmail && userByEmail.email) {
+      if (userByAuthId) {
         // Legacy account found — sign them in and update DID if missing
-        userEmail = userByEmail.email;
-        userId = userByEmail.id;
+        userEmail = placeholderEmail;
+        userId = userByAuthId.id;
 
         // Update DID if not set
-        if (!userByEmail.did) {
+        if (!userByAuthId.did) {
           await supabaseAdmin
             .from("users")
             .update({ did, pds_status: "pending" })
-            .eq("id", userByEmail.id);
+            .eq("id", userByAuthId.id);
         }
       } else {
         // New user — create account
@@ -357,13 +369,24 @@ Deno.serve(async (req) => {
         if (authError) {
           // Handle "already registered" edge case gracefully
           if (authError.message?.includes("already been registered")) {
-            const { data: existByEmail } = await supabaseAdmin
-              .from("users")
-              .select("id, email")
-              .ilike("email", placeholderEmail)
-              .maybeSingle();
+            // The auth user exists — find the public.users row by auth id.
+            // No getUserByEmail in supabase-js admin; list + find by the
+            // deterministic placeholder email.
+            const { data: conflictList } =
+              await supabaseAdmin.auth.admin.listUsers();
+            const conflictAuthId = conflictList?.users.find(
+              (u) => u.email === placeholderEmail
+            )?.id;
 
-            if (existByEmail) {
+            const { data: existByAuthId } = conflictAuthId
+              ? await supabaseAdmin
+                  .from("users")
+                  .select("id")
+                  .eq("id", conflictAuthId)
+                  .maybeSingle()
+              : { data: null };
+
+            if (existByAuthId) {
               // Update their record with current DID and profile data
               await supabaseAdmin
                 .from("users")
@@ -372,10 +395,10 @@ Deno.serve(async (req) => {
                   pds_status: "pending",
                   image: profile?.avatar,
                 })
-                .eq("id", existByEmail.id);
+                .eq("id", existByAuthId.id);
 
               userEmail = placeholderEmail;
-              userId = existByEmail.id;
+              userId = existByAuthId.id;
               isNew = false;
             } else {
               return jsonResponse(
