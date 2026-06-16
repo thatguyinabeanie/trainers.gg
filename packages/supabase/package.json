@@ -39,6 +39,7 @@
     "db:reset": "supabase db reset || (docker restart supabase_kong_supabase && sleep 2 && supabase status)",
     "db:diff": "supabase db diff",
     "db:lint": "supabase db lint",
+    "db:advisor": "./scripts/db-advisor.sh",
     "db:seed": "supabase db seed",
     "db:dump": "supabase db dump",
     "db:cron-check": "./scripts/cron-check.sh",
