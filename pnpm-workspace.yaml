@@ -73,7 +73,13 @@ catalogs:
   supabase:
     "@supabase/ssr": ^0.9.0
     "@supabase/supabase-js": ^2.108.1
-    supabase: ^2.106.0
+    # Pinned EXACT (no caret): the CLI version determines the bundled
+    # supabase/postgres image tag AND whether `gen types --local` works offline.
+    # 2.106.0 pulls image .063 (supabase_admin needs a password) and its `gen
+    # types` requires a platform token even locally (LegacyPlatformAuthRequired).
+    # 2.105.0 pulls .134 (trust auth) and generates types offline. Bump only
+    # after verifying both on a fresh `db:reset`.
+    supabase: 2.105.0
 
   tamagui:
     "@tamagui/config": 2.0.0-rc.41
