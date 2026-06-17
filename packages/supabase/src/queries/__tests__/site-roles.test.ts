@@ -7,7 +7,7 @@ import {
   grantSiteRole,
   revokeSiteRole,
 } from "../site-roles";
-import type { TypedClient } from "../../client";
+import type { TypedClient, ServiceRoleClient } from "../../client";
 
 // Mock query builder
 type MockQueryBuilder = {
@@ -241,7 +241,7 @@ describe("site-roles queries", () => {
         auth: {
           admin: { getUserById },
         },
-      } as unknown as TypedClient;
+      } as unknown as ServiceRoleClient;
     }
 
     it("should fetch all users with site admin role (enriched with email + PII)", async () => {

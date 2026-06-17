@@ -80,22 +80,28 @@ run_install() {
   #    `revoke all on table cron.job from postgres` then fails with "dependent
   #    privileges exist" (the grants it's revoking now have grant-option deps).
   #    So only create when truly missing — otherwise skip straight to scheduling.
+  # `|| return 1` on each psql step: run_install is called as `if run_install`,
+  # which suspends `set -e` inside the function — without these guards an early
+  # step's failure would neither abort nor fail the function (the function would
+  # return the LAST step's status), silently masking it. Returning non-zero here
+  # routes failures through the `else` branch that prints the diagnostics. The
+  # psql errors themselves still surface on stderr.
   local has_ext
   has_ext="$($PSQL_RO -c "SELECT 1 FROM pg_extension WHERE extname='pg_cron';")"
   if [ -z "$has_ext" ]; then
-    $PSQL_ADMIN -c "CREATE EXTENSION pg_cron;"
+    $PSQL_ADMIN -c "CREATE EXTENSION pg_cron;" || return 1
   fi
 
   # 2. Replay the import-tick schedule migration AS postgres (single source of
   #    truth for those three jobs). The extension now exists so the migration's
   #    pg_extension guard passes; cron.schedule upserts by (jobname, postgres).
-  $PSQL_PG < "$MIGRATION_FILE"
+  $PSQL_PG < "$MIGRATION_FILE" || return 1
 
   # 3. Schedule the no-show job AS postgres (function created by 20260220250000).
   #    Runs the same schedule (jobname, cron expr, function) the migration uses —
   #    cron.schedule upserts by (jobname, username), so re-runs update in place.
   $PSQL_PG -c \
-    "SELECT cron.schedule('no-show-escalation','* * * * *',\$\$SELECT public.check_no_show_escalation()\$\$);"
+    "SELECT cron.schedule('no-show-escalation','* * * * *',\$\$SELECT public.check_no_show_escalation()\$\$);" || return 1
 }
 
 if run_install; then

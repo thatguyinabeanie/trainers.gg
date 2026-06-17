@@ -1,4 +1,4 @@
-import type { TypedClient } from "../client";
+import type { TypedClient, ServiceRoleClient } from "../client";
 import { getEmailsByUserIds, getPiiByUserIds } from "./admin-users";
 
 /**
@@ -69,7 +69,7 @@ export async function getSiteRoles(supabase: TypedClient) {
  */
 export async function getSiteAdmins(
   supabase: TypedClient,
-  serviceSupabase: TypedClient
+  serviceSupabase: ServiceRoleClient
 ) {
   // email / first_name / last_name no longer live on public.users — email is in
   // auth.users, names in private.user_pii. Embed only the public columns, then
