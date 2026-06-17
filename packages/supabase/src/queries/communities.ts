@@ -994,9 +994,11 @@ export async function listCommunityGroups(
  * @param communityId     - Numeric community ID.
  * @param searchTerm      - Username search term (min 2 chars).
  * @param limit           - Max results to return (default 10).
- * @param serviceSupabase - Service-role client for the PII enrichment. If omitted, falls
- *                          back to `supabase` — only safe when `supabase` is already a
- *                          service-role client (e.g. admin server actions).
+ * @param serviceSupabase - Service-role client used ONLY for the first/last-name
+ *                          PII enrichment (get_users_pii is service_role-only).
+ *                          When omitted, PII enrichment is skipped and names come
+ *                          back null — we never cast a request-scoped client to
+ *                          service-role (that would defeat the brand + 403 at runtime).
  */
 export async function searchUsersForInvite(
   supabase: TypedClient,
@@ -1053,14 +1055,17 @@ export async function searchUsersForInvite(
   if (error) throw error;
   if (!users || users.length === 0) return [];
 
-  // Enrich with first/last name via get_users_pii RPC (service-role only).
-  // Fall back to supabase when no serviceSupabase provided — callers that
-  // already pass a service-role client as `supabase` (e.g. admin server actions)
-  // can omit the fifth argument. The cast is safe per the JSDoc contract.
-  const piiMap = await getPiiByUserIds(
-    (serviceSupabase ?? supabase) as ServiceRoleClient,
-    users.map((u) => u.id)
-  );
+  // Enrich with first/last name via the get_users_pii RPC — but ONLY when a
+  // service-role client is explicitly provided. The RPC is service_role-only,
+  // so calling it with a request/browser client just 403s and logs noise. We
+  // never cast a non-branded client to ServiceRoleClient (that would defeat the
+  // brand); without serviceSupabase, names are simply omitted.
+  const piiMap = serviceSupabase
+    ? await getPiiByUserIds(
+        serviceSupabase,
+        users.map((u) => u.id)
+      )
+    : new Map<string, { first_name: string | null; last_name: string | null }>();
 
   return users.map((u) => ({
     id: u.id,

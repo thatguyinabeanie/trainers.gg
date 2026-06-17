@@ -35,9 +35,20 @@ BEGIN
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'graphql' AND p.proname = 'resolve'
   LOOP
-    EXECUTE format(
-      'REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon, authenticated',
-      fn
-    );
+    -- Per-function EXCEPTION guard: on the local image the migration role is a
+    -- non-superuser that doesn't own pg_graphql's PUBLIC grant. In practice that
+    -- yields a WARNING ("no privileges could be revoked"), not an error — but if
+    -- any environment instead raises insufficient_privilege, swallow it so the
+    -- migration no-ops cleanly (as the header promises) rather than aborting
+    -- replay. Local enforcement happens via ensure-cron.sh (supabase_admin).
+    BEGIN
+      EXECUTE format(
+        'REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon, authenticated',
+        fn
+      );
+    EXCEPTION
+      WHEN insufficient_privilege THEN
+        RAISE NOTICE 'Skipped REVOKE on % (insufficient privilege; enforced via ensure-cron.sh locally)', fn;
+    END;
   END LOOP;
 END $$;
