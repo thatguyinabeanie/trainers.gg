@@ -53,6 +53,33 @@ PSQL_ADMIN="docker exec -i -e PGPASSWORD $CONTAINER psql -U supabase_admin -d po
 # fail to connect). Only the privileged CREATE EXTENSION needs supabase_admin.
 PSQL_RO="docker exec $CONTAINER psql -U postgres -d postgres -tA"
 
+# -----------------------------------------------------------------------------
+# Revoke GraphQL EXECUTE from PUBLIC (local enforcement of 20260617142717)
+# -----------------------------------------------------------------------------
+# Run this BEFORE the pg_cron-availability check below: GraphQL hardening is
+# independent of pg_cron, and the older local images without pg_cron are exactly
+# where the migration's REVOKE no-ops (non-superuser postgres can't revoke
+# pg_graphql's PUBLIC grant), so the early-exit must NOT skip this. Like pg_cron,
+# this is a supabase_admin operation migrations can't do locally; we run the same
+# REVOKE as supabase_admin so local matches prod (anon/authenticated lose EXECUTE;
+# service_role keeps it). Loops over overloads by oid so no signature is
+# hard-coded. Best-effort — a failure here must not block the stack coming up.
+$PSQL_ADMIN <<'SQL' || printf "${YELLOW}[ensure-cron] GraphQL EXECUTE revoke skipped (see error above) — continuing.${NC}\n"
+DO $$
+DECLARE
+  fn regprocedure;
+BEGIN
+  FOR fn IN
+    SELECT p.oid::regprocedure
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'graphql' AND p.proname = 'resolve'
+  LOOP
+    EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon, authenticated', fn);
+  END LOOP;
+END $$;
+SQL
+
 # If the image doesn't even ship pg_cron, skip gracefully (no local cron).
 AVAILABLE="$($PSQL_RO -c "SELECT 1 FROM pg_available_extensions WHERE name='pg_cron';")"
 if [ -z "$AVAILABLE" ]; then
@@ -114,31 +141,5 @@ else
   # silently reporting success hid genuine install failures (Error Visibility rule).
   exit 1
 fi
-
-# -----------------------------------------------------------------------------
-# Revoke GraphQL EXECUTE from PUBLIC (local enforcement of 20260617142717)
-# -----------------------------------------------------------------------------
-# Like pg_cron, this is a supabase_admin operation migrations can't do locally:
-# pg_graphql grants EXECUTE on graphql.resolve to PUBLIC, and the local migration
-# role (non-superuser postgres) cannot revoke another role's PUBLIC grant. The
-# migration is the hosted path; here we run the same REVOKE as supabase_admin so
-# local matches prod (anon/authenticated lose EXECUTE; service_role keeps it).
-# Loops over overloads by oid so no signature is hard-coded. Best-effort — a
-# failure here must not block the stack coming up, so it does not affect exit 0.
-$PSQL_ADMIN <<'SQL' || printf "${YELLOW}[ensure-cron] GraphQL EXECUTE revoke skipped (see error above) — continuing.${NC}\n"
-DO $$
-DECLARE
-  fn regprocedure;
-BEGIN
-  FOR fn IN
-    SELECT p.oid::regprocedure
-    FROM pg_proc p
-    JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'graphql' AND p.proname = 'resolve'
-  LOOP
-    EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon, authenticated', fn);
-  END LOOP;
-END $$;
-SQL
 
 exit 0

@@ -20,7 +20,9 @@
  *   Non-admin authenticated user → 403.
  *
  * QUERY PARAMS:
- *   - `search`  — optional, partial username/email match
+ *   - `search`  — optional, partial username match (case-insensitive). Email
+ *                 search is not supported: email lives in auth.users and cannot
+ *                 be filtered via a PostgREST query.
  *   - `status`  — optional, "active" | "suspended" | "all" (default "all")
  *   - `page`    — optional, 0-indexed page number (default 0)
  *   - `limit`   — optional, page size (default 25, max 100)
