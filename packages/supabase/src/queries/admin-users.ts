@@ -1,4 +1,4 @@
-import type { TypedClient } from "../client";
+import type { TypedClient, ServiceRoleClient } from "../client";
 import { escapeLike } from "@trainers/utils";
 
 // ------------------------------------------------------------------
@@ -41,7 +41,7 @@ export interface ListUsersAdminOptions {
  * @param userIds  - Array of user UUIDs to look up
  */
 export async function getPiiByUserIds(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   userIds: string[]
 ): Promise<
   Map<string, { first_name: string | null; last_name: string | null }>
@@ -88,7 +88,7 @@ const EMAIL_LOOKUP_CHUNK_SIZE = 20;
  * @param userIds  - Array of user UUIDs to look up
  */
 export async function getEmailsByUserIds(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   userIds: string[]
 ): Promise<Map<string, string | null>> {
   if (userIds.length === 0) return new Map();
@@ -131,7 +131,7 @@ export async function getEmailsByUserIds(
  * @param options  - Filtering and pagination options
  */
 export async function listUsersAdmin(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   options: ListUsersAdminOptions = {}
 ) {
   const { search, isLocked, limit = 25, offset = 0 } = options;
@@ -217,7 +217,7 @@ export async function listUsersAdmin(
  * @param userId   - UUID of the user to fetch
  */
 export async function getUserAdminDetails(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   userId: string
 ) {
   const { data, error } = await supabase

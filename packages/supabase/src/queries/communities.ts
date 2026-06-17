@@ -1056,9 +1056,9 @@ export async function searchUsersForInvite(
   // Enrich with first/last name via get_users_pii RPC (service-role only).
   // Fall back to supabase when no serviceSupabase provided — callers that
   // already pass a service-role client as `supabase` (e.g. admin server actions)
-  // can omit the fifth argument.
+  // can omit the fifth argument. The cast is safe per the JSDoc contract.
   const piiMap = await getPiiByUserIds(
-    serviceSupabase ?? supabase,
+    (serviceSupabase ?? supabase) as ServiceRoleClient,
     users.map((u) => u.id)
   );
 

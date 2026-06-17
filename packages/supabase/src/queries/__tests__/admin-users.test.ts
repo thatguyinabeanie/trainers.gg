@@ -9,7 +9,7 @@ import {
   getPiiByUserIds,
   getEmailsByUserIds,
 } from "../admin-users";
-import type { TypedClient } from "../../client";
+import type { ServiceRoleClient } from "../../client";
 
 // ---------------------------------------------------------------------------
 // Mock Supabase client factory
@@ -82,7 +82,7 @@ const createMockClient = () => {
     },
     _queryBuilder: mockQueryBuilder,
     _schemaBuilder: mockSchemaBuilder,
-  } as unknown as TypedClient & {
+  } as unknown as ServiceRoleClient & {
     _queryBuilder: MockQueryBuilder;
     _schemaBuilder: typeof mockSchemaBuilder;
   };

@@ -21,8 +21,6 @@ import { rejectOrganization as rejectOrganization_core } from "../queries/admin-
 import { suspendOrganization as suspendOrganization_core } from "../queries/admin-communities";
 import { unsuspendOrganization as unsuspendOrganization_core } from "../queries/admin-communities";
 import { transferCommunityOwnership as transferCommunityOwnership_core } from "../queries/admin-communities";
-import { listUsersAdmin as listUsersAdmin_core } from "../queries/admin-users";
-import { getUserAdminDetails as getUserAdminDetails_core } from "../queries/admin-users";
 import { getUsersByIds as getUsersByIds_core } from "../queries/admin-users";
 import { suspendUser as suspendUser_core } from "../queries/admin-users";
 import { unsuspendUser as unsuspendUser_core } from "../queries/admin-users";
@@ -170,11 +168,14 @@ import { getTournamentPhases as getTournamentPhases_core } from "../queries/tour
 import { getTournamentRounds as getTournamentRounds_core } from "../queries/tournaments";
 import { getRoundMatches as getRoundMatches_core } from "../queries/tournaments";
 import { getTournamentStandings as getTournamentStandings_core } from "../queries/tournaments";
+import { getPublicTournamentStandings as getPublicTournamentStandings_core } from "../queries/tournaments";
 import { getPlayerTournamentStats as getPlayerTournamentStats_core } from "../queries/tournaments";
 import { getTournamentPlayerStats as getTournamentPlayerStats_core } from "../queries/tournaments";
 import { getPhaseRoundsWithStats as getPhaseRoundsWithStats_core } from "../queries/tournaments";
 import { getRoundMatchesWithStats as getRoundMatchesWithStats_core } from "../queries/tournaments";
 import { getPhaseRoundsWithMatches as getPhaseRoundsWithMatches_core } from "../queries/tournaments";
+import { getPublicPhaseRoundsWithMatches as getPublicPhaseRoundsWithMatches_core } from "../queries/tournaments";
+import { getPublicTournamentPlayerStats as getPublicTournamentPlayerStats_core } from "../queries/tournaments";
 import { getCheckInStatus as getCheckInStatus_core } from "../queries/tournaments";
 import { getCheckInStats as getCheckInStats_core } from "../queries/tournaments";
 import { getUserTeams as getUserTeams_core } from "../queries/tournaments";
@@ -444,26 +445,6 @@ export async function transferCommunityOwnership(
 ): Promise<Awaited<ReturnType<typeof transferCommunityOwnership_core>>> {
   const client = createBrowserSupabaseClient();
   return transferCommunityOwnership_core(client, ...args);
-}
-
-/**
- * listUsersAdmin (auto-injected with browser client)
- */
-export async function listUsersAdmin(
-  ...args: Parameters<typeof listUsersAdmin_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof listUsersAdmin_core>>> {
-  const client = createBrowserSupabaseClient();
-  return listUsersAdmin_core(client, ...args);
-}
-
-/**
- * getUserAdminDetails (auto-injected with browser client)
- */
-export async function getUserAdminDetails(
-  ...args: Parameters<typeof getUserAdminDetails_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof getUserAdminDetails_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getUserAdminDetails_core(client, ...args);
 }
 
 /**
@@ -1937,6 +1918,16 @@ export async function getTournamentStandings(
 }
 
 /**
+ * getPublicTournamentStandings (auto-injected with browser client)
+ */
+export async function getPublicTournamentStandings(
+  ...args: Parameters<typeof getPublicTournamentStandings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+): Promise<Awaited<ReturnType<typeof getPublicTournamentStandings_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getPublicTournamentStandings_core(client, ...args);
+}
+
+/**
  * getPlayerTournamentStats (auto-injected with browser client)
  */
 export async function getPlayerTournamentStats(
@@ -1984,6 +1975,26 @@ export async function getPhaseRoundsWithMatches(
 ): Promise<Awaited<ReturnType<typeof getPhaseRoundsWithMatches_core>>> {
   const client = createBrowserSupabaseClient();
   return getPhaseRoundsWithMatches_core(client, ...args);
+}
+
+/**
+ * getPublicPhaseRoundsWithMatches (auto-injected with browser client)
+ */
+export async function getPublicPhaseRoundsWithMatches(
+  ...args: Parameters<typeof getPublicPhaseRoundsWithMatches_core> extends [first: infer _F, ...rest: infer R] ? R : never
+): Promise<Awaited<ReturnType<typeof getPublicPhaseRoundsWithMatches_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getPublicPhaseRoundsWithMatches_core(client, ...args);
+}
+
+/**
+ * getPublicTournamentPlayerStats (auto-injected with browser client)
+ */
+export async function getPublicTournamentPlayerStats(
+  ...args: Parameters<typeof getPublicTournamentPlayerStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+): Promise<Awaited<ReturnType<typeof getPublicTournamentPlayerStats_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getPublicTournamentPlayerStats_core(client, ...args);
 }
 
 /**
