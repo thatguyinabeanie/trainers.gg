@@ -515,8 +515,10 @@ export async function getTournamentRegistrations(
 }
 
 /**
- * A single tournament registration row with its joined alt, team, and staff
- * drop metadata — the shape returned by `getTournamentRegistrations`.
+ * A single tournament registration row with its joined alt and staff drop
+ * metadata — the shape returned by `getTournamentRegistrations`. Team data is
+ * exposed via the `team_*` scalar columns (team_id, team_name, …), not a joined
+ * `team` sub-object.
  *
  * Staff-internal fields (drop_category, drop_notes, dropped_by, dropped_at)
  * are present via the `staff` sub-object when the caller is authenticated and
