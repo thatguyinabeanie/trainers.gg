@@ -248,34 +248,29 @@ export async function updateRegistrationStatus(
     throw new Error("Drop info (category) is required when dropping a player");
   }
 
-  // When dropping, upsert the staff metadata FIRST so the
-  // audit_registration_status_change trigger can read drop_category/drop_notes/
-  // dropped_by from tournament_registration_staff when the status UPDATE fires.
   if (dropInfo) {
-    const { error: staffError } = await supabase
-      .from("tournament_registration_staff")
-      .upsert(
-        {
-          registration_id: registrationId,
-          drop_category: dropInfo.dropCategory,
-          drop_notes: dropInfo.dropNotes ?? null,
-          dropped_by: user.id,
-          dropped_at: new Date().toISOString(),
-        },
-        { onConflict: "registration_id" }
-      );
+    // Use the atomic drop_registrations RPC so the staff upsert and the
+    // status UPDATE happen in a single transaction. The audit trigger fires
+    // on the UPDATE and reads drop metadata from tournament_registration_staff
+    // — both writes commit or roll back together, preventing a half-applied
+    // state (staff row written but status still not 'dropped').
+    const { error: dropError } = await supabase.rpc("drop_registrations", {
+      p_registration_ids: [registrationId],
+      p_drop_category: dropInfo.dropCategory,
+      p_drop_notes: dropInfo.dropNotes ?? "",
+      p_dropped_by: user.id,
+    });
 
-    if (staffError) throw staffError;
+    if (dropError) throw dropError;
+  } else {
+    // Non-drop status change: direct update on the base table (no staff row needed).
+    const { error: statusError } = await supabase
+      .from("tournament_registrations")
+      .update({ status })
+      .eq("id", registrationId);
+
+    if (statusError) throw statusError;
   }
-
-  // Update the base registration status — trigger fires here and reads the
-  // staff row written above (non-NULL drop reason in audit_log).
-  const { error: statusError } = await supabase
-    .from("tournament_registrations")
-    .update({ status })
-    .eq("id", registrationId);
-
-  if (statusError) throw statusError;
 
   return { success: true, tournamentId: registration.tournament_id };
 }

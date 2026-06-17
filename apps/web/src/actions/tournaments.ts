@@ -1525,43 +1525,30 @@ export async function bulkRemovePlayers(
 
     // Build the drop set from the registrations we already fetched above —
     // they exist and (per the single-tournament guard) all belong to this
-    // tournament. Do NOT upsert staff drop rows from the raw registrationIds: a
-    // stale id would FK-violate the staff upsert and fail the whole batch. This
-    // also preserves the prior "silently ignore missing ids" behaviour
-    // (missing ids are absent from `registrations`, so they count as failed).
+    // tournament. Do NOT pass raw registrationIds: a stale id would FK-violate
+    // the staff insert inside the RPC and fail the whole batch. This also
+    // preserves the "silently ignore missing ids" behaviour (missing ids are
+    // absent from `registrations`, so they count as failed).
     const validIds = registrations.map((r) => r.id);
 
-    // Upsert drop metadata FIRST so the audit_registration_status_change
-    // trigger can read drop_category/drop_notes/dropped_by from
-    // tournament_registration_staff when the status UPDATE fires below.
-    // validIds are confirmed-existing registrations, so the FK is satisfied.
-    const droppedAt = new Date().toISOString();
-    const staffRows = validIds.map((registrationId) => ({
-      registration_id: registrationId,
-      drop_category: dropCategory,
-      drop_notes: dropNotes ?? null,
-      dropped_by: user.id,
-      dropped_at: droppedAt,
-    }));
+    // Single atomic RPC: upserts tournament_registration_staff rows and flips
+    // tournament_registrations.status to 'dropped' in one transaction.
+    // The audit_registration_status_change trigger fires on the UPDATE and
+    // reads drop metadata from the staff table — both writes commit or roll
+    // back together, preventing a half-applied state.
+    const { data: droppedIds, error: dropError } = await supabase.rpc(
+      "drop_registrations",
+      {
+        p_registration_ids: validIds,
+        p_drop_category: dropCategory,
+        p_drop_notes: dropNotes ?? "",
+        p_dropped_by: user.id,
+      }
+    );
 
-    const { error: staffError } = await supabase
-      .from("tournament_registration_staff")
-      .upsert(staffRows, { onConflict: "registration_id" });
+    if (dropError) throw dropError;
 
-    if (staffError) throw staffError;
-
-    // Update status on the base table — trigger fires here and reads the
-    // staff rows written above (non-NULL drop reason in audit_log).
-    const { data, error } = await supabase
-      .from("tournament_registrations")
-      .update({ status: "dropped" as const })
-      .in("id", validIds)
-      .eq("tournament_id", tournamentId)
-      .select("id");
-
-    if (error) throw error;
-
-    const removed = data?.length ?? 0;
+    const removed = droppedIds?.length ?? 0;
     const failed = registrationIds.length - removed;
 
     // Invalidate cache

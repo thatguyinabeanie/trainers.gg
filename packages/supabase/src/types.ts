@@ -4196,6 +4196,15 @@ export type Database = {
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       delete_team: { Args: { p_team_id: number }; Returns: undefined }
+      drop_registrations: {
+        Args: {
+          p_drop_category: Database["public"]["Enums"]["drop_category"]
+          p_drop_notes: string
+          p_dropped_by: string
+          p_registration_ids: number[]
+        }
+        Returns: number[]
+      }
       fork_team: {
         Args: {
           p_new_name?: string

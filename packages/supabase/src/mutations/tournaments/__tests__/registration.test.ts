@@ -508,11 +508,11 @@ describe("Tournament Registration Mutations", () => {
       ).rejects.toThrow("You don't have permission to update registrations");
     });
 
-    it("passes drop fields when status is dropped", async () => {
-      // Drop metadata is written to tournament_registration_staff FIRST so the
-      // audit_registration_status_change trigger can read it when the status UPDATE fires.
-      const mockStatusUpdate = jest.fn().mockReturnThis();
-      const mockStaffUpsert = jest.fn().mockResolvedValue({ error: null });
+    it("uses drop_registrations RPC atomically when status is dropped", async () => {
+      // The drop path now calls a single atomic RPC instead of two separate
+      // writes (staff upsert then status update). Both writes happen inside the
+      // RPC in a single transaction, so the audit trigger always sees the staff
+      // row when the status UPDATE fires.
       const fromSpy = jest.spyOn(mockClient, "from");
 
       // First call: registration lookup
@@ -535,16 +535,11 @@ describe("Tournament Registration Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Third call: upsert drop metadata to tournament_registration_staff (BEFORE status update)
-      fromSpy.mockReturnValueOnce({
-        upsert: mockStaffUpsert,
-      } as unknown as MockQueryBuilder);
-
-      // Fourth call: status-only update on tournament_registrations (AFTER staff upsert)
-      fromSpy.mockReturnValueOnce({
-        update: mockStatusUpdate,
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
+      // Mock the atomic drop RPC — returns the updated registration id
+      (mockClient.rpc as jest.Mock).mockResolvedValueOnce({
+        data: [registrationId],
+        error: null,
+      });
 
       const result = await updateRegistrationStatus(
         mockClient,
@@ -555,36 +550,27 @@ describe("Tournament Registration Mutations", () => {
 
       expect(result).toEqual({ success: true, tournamentId: 100 });
 
-      // Drop metadata goes into tournament_registration_staff via upsert FIRST
-      expect(mockStaffUpsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          registration_id: registrationId,
-          drop_category: "no_show",
-          drop_notes: "Did not appear for round 1",
-          dropped_by: mockUser.id,
-          dropped_at: expect.any(String),
-        }),
-        { onConflict: "registration_id" }
-      );
+      // The atomic RPC is called with all drop params — no separate from() calls
+      // for the staff table or the status update.
+      expect(mockClient.rpc).toHaveBeenCalledWith("drop_registrations", {
+        p_registration_ids: [registrationId],
+        p_drop_category: "no_show",
+        p_drop_notes: "Did not appear for round 1", // provided notes pass through as-is
+        p_dropped_by: mockUser.id,
+      });
 
-      // Base status update only carries the status field — no drop metadata
-      expect(mockStatusUpdate).toHaveBeenCalledWith({ status: "dropped" });
-
-      // Verify the correct tables were targeted in the correct order:
-      // staff upsert fires before the status update so the trigger can read it.
-      expect(fromSpy).toHaveBeenNthCalledWith(
-        3,
-        "tournament_registration_staff"
-      );
-      expect(fromSpy).toHaveBeenNthCalledWith(4, "tournament_registrations");
+      // Only 2 from() calls (registration + tournament lookup) — the drop itself
+      // goes through rpc(), not from().
+      expect(fromSpy).toHaveBeenCalledTimes(2);
     });
 
-    it("throws and never calls tournament_registrations.update when the staff upsert errors", async () => {
-      const staffUpsertError = { message: "upsert failed", code: "23505" };
-      const mockStatusUpdate = jest.fn();
+    it("throws when drop_registrations RPC returns an error", async () => {
+      // The error path for a drop: the RPC resolves with an error object.
+      // The call site must throw so no silent half-applied state is possible.
+      const rpcError = { message: "rpc failed", code: "P0001" };
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // First call: registration lookup
+      // Registration lookup
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -594,7 +580,7 @@ describe("Tournament Registration Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Second call: tournament lookup
+      // Tournament lookup
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -604,29 +590,21 @@ describe("Tournament Registration Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Third call: upsert to tournament_registration_staff — resolves with an error
-      fromSpy.mockReturnValueOnce({
-        upsert: jest.fn().mockResolvedValue({ error: staffUpsertError }),
-      } as unknown as MockQueryBuilder);
-
-      // Fourth call would be the tournament_registrations status update — must never reach it.
-      // Register a spy so we can assert it was never invoked.
-      fromSpy.mockReturnValueOnce({
-        update: mockStatusUpdate,
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
+      // RPC resolves with an error — simulates DB/RLS rejection
+      (mockClient.rpc as jest.Mock).mockResolvedValueOnce({
+        data: null,
+        error: rpcError,
+      });
 
       await expect(
         updateRegistrationStatus(mockClient, registrationId, "dropped", {
           dropCategory: "no_show",
-          dropNotes: "Staff upsert exploded",
+          dropNotes: "RPC exploded",
         })
-      ).rejects.toMatchObject({ message: "upsert failed", code: "23505" });
+      ).rejects.toMatchObject({ message: "rpc failed", code: "P0001" });
 
-      // The status update must NOT have been called — the throw after the
-      // staff upsert error must short-circuit before reaching
-      // tournament_registrations.update.
-      expect(mockStatusUpdate).not.toHaveBeenCalled();
+      // Only 2 from() calls — no additional table writes after the RPC error
+      expect(fromSpy).toHaveBeenCalledTimes(2);
     });
 
     it("throws when status is dropped but no dropInfo provided", async () => {

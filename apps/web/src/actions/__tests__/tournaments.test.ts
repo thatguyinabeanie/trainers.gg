@@ -714,11 +714,8 @@ describe("bulkForceCheckIn", () => {
 // ── bulkRemovePlayers ──────────────────────────────────────────────────────
 
 describe("bulkRemovePlayers", () => {
-  it("performs bulk update with drop fields and returns counts", async () => {
-    const mockUpdate = jest.fn().mockReturnThis();
-    const mockUpsert = jest.fn().mockResolvedValue({ error: null });
-
-    // First call: select registrations
+  it("calls drop_registrations RPC with validIds and returns counts", async () => {
+    // First call: select registrations (derives validIds — filters stale/cross-tournament ids)
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       in: jest.fn().mockResolvedValue({
@@ -740,24 +737,11 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    // Third call: upsert drop metadata into tournament_registration_staff (BEFORE status update)
-    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
-      upsert: mockUpsert,
-    });
-
-    // Fourth call: bulk update tournament_registrations status to 'dropped'
-    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
-      update: mockUpdate,
-      in: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      select: jest.fn().mockResolvedValue({
-        data: [{ id: 1 }, { id: 2 }],
-        error: null,
-      }),
-    });
-
-    // Mock rpc for permission check
-    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
+    // Mock rpc: permission check resolves true; drop_registrations resolves updated ids
+    mockSupabase.rpc = jest
+      .fn()
+      .mockResolvedValueOnce({ data: true })
+      .mockResolvedValueOnce({ data: [1, 2], error: null });
 
     const result = await bulkRemovePlayers([1, 2], "no_show");
 
@@ -765,22 +749,17 @@ describe("bulkRemovePlayers", () => {
     expect(result.data).toEqual({ removed: 2, failed: 0 });
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
 
-    // Verify the base update only sets status
-    expect(mockUpdate).toHaveBeenCalledWith({ status: "dropped" });
+    // Exactly 2 from() calls: (1) registrations select, (2) tournament lookup.
+    // The drop itself goes through rpc(), not from().
+    expect(mockSupabase.from).toHaveBeenCalledTimes(2);
 
-    // Verify drop metadata was upserted into the staff table
-    expect(mockUpsert).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({
-          registration_id: expect.any(Number),
-          drop_category: "no_show",
-          drop_notes: null,
-          dropped_by: "user-123",
-          dropped_at: expect.any(String),
-        }),
-      ]),
-      { onConflict: "registration_id" }
-    );
+    // The atomic drop RPC is called with the valid ids, category, notes, and caller id
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("drop_registrations", {
+      p_registration_ids: [1, 2],
+      p_drop_category: "no_show",
+      p_drop_notes: "",
+      p_dropped_by: "user-123",
+    });
   });
 
   it("returns empty result for empty array", async () => {
@@ -790,9 +769,7 @@ describe("bulkRemovePlayers", () => {
     expect(result.data).toEqual({ removed: 0, failed: 0 });
   });
 
-  it("returns error and stops before status update when staff upsert errors", async () => {
-    const mockUpdate = jest.fn();
-
+  it("returns error when drop_registrations RPC errors", async () => {
     // First call: select registrations
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
@@ -812,15 +789,14 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    // Third call: upsert into tournament_registration_staff — errors
-    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
-      upsert: jest.fn().mockResolvedValue({
-        error: { message: "FK violation", code: "23503" },
-      }),
-    });
-
-    // rpc for permission check
-    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
+    // rpc: permission check ok; drop_registrations returns an error
+    mockSupabase.rpc = jest
+      .fn()
+      .mockResolvedValueOnce({ data: true })
+      .mockResolvedValueOnce({
+        data: null,
+        error: { message: "RPC error", code: "P0001" },
+      });
 
     const result = await bulkRemovePlayers([1], "no_show");
 
@@ -828,12 +804,8 @@ describe("bulkRemovePlayers", () => {
       success: false,
       error: "Failed to bulk remove players",
     });
-    // status update must NOT have been called
-    expect(mockUpdate).not.toHaveBeenCalled();
-    // Exactly 3 `from()` calls: (1) registrations select, (2) tournament lookup,
-    // (3) staff upsert — the 4th call (tournament_registrations status update)
-    // must never be reached after the staff upsert throws.
-    expect(mockSupabase.from).toHaveBeenCalledTimes(3);
+    // Only 2 from() calls — no extra table writes after RPC error
+    expect(mockSupabase.from).toHaveBeenCalledTimes(2);
   });
 
   it("returns error when getUser returns no user", async () => {
@@ -872,17 +844,14 @@ describe("bulkRemovePlayers", () => {
     });
   });
 
-  it("handles partial update failures and passes drop notes", async () => {
-    const mockUpdate = jest.fn().mockReturnThis();
-    const mockUpsert = jest.fn().mockResolvedValue({ error: null });
-
+  it("handles partial drops and passes drop notes to RPC", async () => {
     // A prior test overrides auth.getUser to a null user; restore a valid
     // authenticated user for this test (test isolation).
     (mockSupabase.auth as Record<string, unknown>).getUser = jest
       .fn()
       .mockResolvedValue({ data: { user: { id: "user-123" } }, error: null });
 
-    // Select returns 3 registrations
+    // Select returns 3 registrations (registrationIds=[1,2,3], all valid)
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       in: jest.fn().mockResolvedValue({
@@ -905,24 +874,11 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    // Upsert drop metadata FIRST (before status update)
-    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
-      upsert: mockUpsert,
-    });
-
-    // Update only succeeds for 2 of them (status update fires after upsert)
-    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
-      update: mockUpdate,
-      in: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      select: jest.fn().mockResolvedValue({
-        data: [{ id: 1 }, { id: 2 }],
-        error: null,
-      }),
-    });
-
-    // Mock rpc for permission check
-    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
+    // rpc: permission check ok; drop_registrations only drops 2 of 3
+    mockSupabase.rpc = jest
+      .fn()
+      .mockResolvedValueOnce({ data: true })
+      .mockResolvedValueOnce({ data: [1, 2], error: null });
 
     const result = await bulkRemovePlayers(
       [1, 2, 3],
@@ -931,24 +887,17 @@ describe("bulkRemovePlayers", () => {
     );
 
     expect(result.success).toBe(true);
+    // removed = returned-rows count (2), failed = registrationIds.length - removed (3 - 2 = 1)
     expect(result.data).toEqual({ removed: 2, failed: 1 });
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
 
-    // Verify the base update only sets status
-    expect(mockUpdate).toHaveBeenCalledWith({ status: "dropped" });
-
-    // Verify drop metadata with notes was upserted to the staff table
-    expect(mockUpsert).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({
-          drop_category: "conduct",
-          drop_notes: "Group violation",
-          dropped_by: "user-123",
-          dropped_at: expect.any(String),
-        }),
-      ]),
-      { onConflict: "registration_id" }
-    );
+    // Drop notes flow through the RPC
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("drop_registrations", {
+      p_registration_ids: [1, 2, 3],
+      p_drop_category: "conduct",
+      p_drop_notes: "Group violation",
+      p_dropped_by: "user-123",
+    });
   });
 });
 
