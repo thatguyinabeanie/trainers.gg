@@ -42,6 +42,10 @@ export interface TestAlt {
   id: number;
   user_id: string;
   username: string;
+  // `display_name` was removed from public.alts (migration 20260212014510). The
+  // test helper keeps a derived field (mirrors the provided name or username) so
+  // existing tests that read `alt.display_name` don't need call-site churn.
+  display_name: string;
 }
 
 /**
@@ -109,19 +113,9 @@ export async function createTestUser(
     });
   }
 
-  // Create a client authenticated as this user
-  const { data: sessionData, error: sessionError } =
-    await adminClient.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-    });
-
-  if (sessionError || !sessionData) {
-    throw new Error(`Failed to generate session: ${sessionError?.message}`);
-  }
-
-  // Create an authenticated client for this user
-  // We'll use the admin client with auth context for simplicity in tests
+  // NOTE: tests use a service-role admin client for simplicity — `client` is
+  // NOT authenticated as this specific test user, it bypasses RLS. (A previous
+  // version generated an unused magic-link session here; removed as dead work.)
   const userClient = createAdminSupabaseClient();
 
   return {
@@ -140,8 +134,9 @@ export async function createTestAlt(
   userId: string,
   username: string,
   // display_name was removed from public.alts (migration 20260212014510); the
-  // param is kept for call-site compatibility but no longer persisted.
-  _displayName?: string
+  // param is no longer persisted but is echoed back on the returned TestAlt
+  // (falling back to username) to preserve the helper's API.
+  displayName?: string
 ): Promise<TestAlt> {
   const { data, error } = await adminClient
     .from("alts")
@@ -160,6 +155,7 @@ export async function createTestAlt(
     id: data.id,
     user_id: data.user_id,
     username: data.username,
+    display_name: displayName ?? data.username,
   };
 }
 
