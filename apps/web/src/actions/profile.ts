@@ -334,17 +334,6 @@ export async function updateProfile(data: {
       userUpdate.country = validated.country.toUpperCase();
     }
 
-    // birth_date lives in the private schema — route to the dedicated RPC
-    if (validated.birthDate !== undefined) {
-      const { error: piiError } = await supabase.rpc("update_my_user_pii", {
-        p_birth_date: validated.birthDate,
-      });
-      if (piiError) {
-        console.error("Error updating birth date:", piiError);
-        return { success: false, error: "Failed to update profile" };
-      }
-    }
-
     // If changing username, check PDS status for provisioning
     if (hasUsernameChange) {
       const { data: userData, error: fetchError } = await supabase
@@ -509,6 +498,21 @@ export async function updateProfile(data: {
       if (authUpdateError) {
         console.error("Error updating auth metadata:", authUpdateError);
         return { success: false, error: "Failed to update auth metadata" };
+      }
+    }
+
+    // birth_date lives in the private schema — route to the dedicated RPC.
+    // Done LAST (after the username/PDS/users/alt/auth updates) so that an
+    // earlier step which returns early on failure (e.g. handle taken, PDS
+    // provision timeout, username conflict) can't leave a partial profile with
+    // the birth date already persisted.
+    if (validated.birthDate !== undefined) {
+      const { error: piiError } = await supabase.rpc("update_my_user_pii", {
+        p_birth_date: validated.birthDate,
+      });
+      if (piiError) {
+        console.error("Error updating birth date:", piiError);
+        return { success: false, error: "Failed to update profile" };
       }
     }
 
