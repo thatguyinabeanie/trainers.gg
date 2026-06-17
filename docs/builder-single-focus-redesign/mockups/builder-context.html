@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Single-focus in builder context</title>
+<style>
+  :root{ --teal:#14b8a6; --border:#23252e; --bg:#0a0b0f; --panel:rgba(20,22,30,.6); --muted:#9aa0ad; --fg:#e9ebf0; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .app{display:flex;flex-direction:column;height:100vh;min-height:640px}
+
+  /* ── Top bar ───────────────────────────── */
+  .topbar{height:52px;flex:0 0 52px;display:flex;align-items:center;gap:14px;padding:0 16px;
+    border-bottom:1px solid var(--border);background:#0c0d12}
+  .brand{font-weight:800;color:var(--teal);font-size:15px}
+  .crumb{color:var(--muted);font-size:13px}
+  .fmt{margin-left:10px;font:600 12px/1 ui-monospace,monospace;color:#cfd2dc;
+    background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:7px 10px}
+  .title{flex:1;text-align:center;color:#cfd2dc;font-size:13px}
+  .tcontrols{display:flex;align-items:center;gap:8px}
+  .tbtn{font-size:12px;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid var(--border);
+    border-radius:8px;padding:7px 10px}
+  .tbtn.primary{background:var(--teal);color:#04201c;border-color:var(--teal);font-weight:700}
+  .toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:6px}
+  .toggle span{padding:7px 9px;font-size:12px;color:var(--muted);display:flex;align-items:center}
+  .toggle .on{background:rgba(20,184,166,.16);color:var(--teal)}
+
+  /* ── Canvas (dotted) ───────────────────── */
+  .canvas{flex:1;position:relative;overflow:hidden;
+    background-color:#0a0b0f;
+    background-image:radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+    background-size:22px 22px;
+    display:flex;flex-direction:column;padding:18px 22px}
+  /* immersive type-tint wash over the dotted bg, for the focused mon */
+  .wash{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(60% 55% at 50% 40%, rgba(150,138,90,.14), transparent 70%)}
+
+  .stage{flex:1;display:grid;grid-template-columns:minmax(220px,.9fr) 1.25fr minmax(220px,.9fr);
+    gap:18px;align-items:start;position:relative;z-index:1;max-width:1280px;width:100%;margin:0 auto}
+  .panel{background:var(--panel);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;padding:14px}
+  .plabel{font:600 10px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+
+  .hexwrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .budget{font:700 13px/1 ui-monospace,monospace;color:#cfd2dc}
+  .finetune{font:600 11px/1 ui-monospace,monospace;color:var(--teal)}
+
+  .center{display:flex;flex-direction:column;align-items:center;gap:9px;padding-top:2px}
+  .silh{width:226px;height:226px;border-radius:50%;
+    background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.10), rgba(255,255,255,.02));
+    border:1px dashed rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:72px}
+  .sname{font:700 18px/1 system-ui;color:#eef0f4}
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+  .chip{font:600 11px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.10);border-radius:7px;padding:6px 9px}
+  .chip b{color:var(--muted);font-weight:600;margin-right:5px}
+  .loadout{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%;max-width:360px;margin-top:2px}
+
+  .moves{display:flex;flex-direction:column;gap:8px}
+  .move{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:10px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);color:#dfe2ea;font:600 13px/1 system-ui}
+  .move .t{width:18px;height:18px;border-radius:5px}
+  .move.sel{outline:2px solid var(--teal);background:rgba(20,184,166,.12)}
+
+  svg .spoke{stroke:rgba(255,255,255,.18);stroke-width:1}
+  svg .poly{fill:rgba(20,184,166,.18);stroke:var(--teal);stroke-width:2}
+  svg .hh{fill:var(--teal)} svg .hh.empty{fill:#3a3f4a}
+  svg .lbl{fill:#aab;font:600 9px ui-monospace,monospace}
+
+  /* carousel at bottom of canvas */
+  .carousel{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:12px;margin-top:14px}
+  .btab{position:relative;width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font:600 11px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)}
+  .btab .n{position:absolute;top:3px;left:6px;font-size:9px;opacity:.55}
+  .btab.active{outline:2px solid var(--teal);transform:translateY(-3px);background:rgba(20,184,166,.14)}
+  .btab.empty{color:#777;border-style:dashed}
+  .arrow{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);color:#cfd2dc}
+
+  /* ── Bottom dock ───────────────────────── */
+  .dock{height:48px;flex:0 0 48px;display:flex;align-items:center;justify-content:center;gap:10px;
+    border-top:1px solid var(--border);background:#0c0d12}
+  .dbtn{font:600 12px/1 system-ui;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid var(--border);
+    border-radius:9px;padding:8px 12px;display:flex;align-items:center;gap:6px}
+  .dbtn .vs{color:var(--muted);font-family:ui-monospace,monospace;font-size:11px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <span class="brand">trainers.gg</span>
+    <span class="crumb">/ Builder ▾</span>
+    <span class="fmt">Champions: Reg M-A ▾</span>
+    <span class="title">Untitled Team ✎</span>
+    <div class="tcontrols">
+      <span class="tbtn">File ▾</span>
+      <span class="tbtn">Validate</span>
+      <span class="tbtn">⚙</span>
+      <span class="tbtn">Sign In</span>
+      <span class="tbtn primary">Sign Up</span>
+      <span class="toggle"><span class="on" title="Single-focus">▣</span><span title="Grid">▦</span></span>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas">
+    <div class="wash"></div>
+
+    <div class="stage">
+      <!-- LEFT: radial stat editor (SP for Champions) -->
+      <div class="panel hexwrap">
+        <div class="plabel">Stats · SP</div>
+        <svg width="200" height="178" viewBox="0 0 200 178">
+          <line class="spoke" x1="100" y1="89" x2="100" y2="22"/>
+          <line class="spoke" x1="100" y1="89" x2="158" y2="56"/>
+          <line class="spoke" x1="100" y1="89" x2="158" y2="122"/>
+          <line class="spoke" x1="100" y1="89" x2="100" y2="156"/>
+          <line class="spoke" x1="100" y1="89" x2="42" y2="122"/>
+          <line class="spoke" x1="100" y1="89" x2="42" y2="56"/>
+          <polygon class="poly" points="100,32 158,64 144,116 100,156 54,112 52,62"/>
+          <circle class="hh" cx="100" cy="32" r="5"/>
+          <circle class="hh empty" cx="158" cy="64" r="5"/>
+          <circle class="hh" cx="144" cy="116" r="5"/>
+          <circle class="hh" cx="100" cy="156" r="5"/>
+          <circle class="hh empty" cx="54" cy="112" r="5"/>
+          <circle class="hh" cx="52" cy="62" r="5"/>
+          <text class="lbl" x="91" y="16">SPE</text>
+          <text class="lbl" x="163" y="56">ATK</text>
+          <text class="lbl" x="163" y="124">DEF</text>
+          <text class="lbl" x="89" y="172">HP</text>
+          <text class="lbl" x="16" y="124">SPA</text>
+          <text class="lbl" x="18" y="56">SPD</text>
+        </svg>
+        <div class="budget">64 / 66</div>
+        <div class="finetune">fine-tune ▾ (± boosts)</div>
+      </div>
+
+      <!-- CENTER: sprite + identity + loadout -->
+      <div class="center">
+        <div class="silh">🦖</div>
+        <div class="sname">Tyranitar</div>
+        <div class="row">
+          <span class="chip">No. 248</span>
+          <span class="chip">♂ · ✦</span>
+          <span class="chip">Lv 50</span>
+        </div>
+        <div class="row">
+          <span class="chip" style="background:#9a8a55;border-color:#9a8a55;color:#fff">Rock</span>
+          <span class="chip" style="background:#4a4a6a;border-color:#4a4a6a;color:#fff">Dark</span>
+        </div>
+        <div class="loadout">
+          <span class="chip"><b>ITEM</b>Assault Vest</span>
+          <span class="chip"><b>ABIL</b>Sand Stream</span>
+          <span class="chip"><b>ALIGN</b>Adamant</span>
+          <span class="chip"><b>TERA</b>Rock</span>
+        </div>
+      </div>
+
+      <!-- RIGHT: moves -->
+      <div class="panel">
+        <div class="plabel">Moves</div>
+        <div class="moves">
+          <div class="move sel"><span class="t" style="background:#9a8a55"></span>Stone Edge</div>
+          <div class="move"><span class="t" style="background:#4a4a6a"></span>Crunch</div>
+          <div class="move"><span class="t" style="background:#c94b4b"></span>Earthquake</div>
+          <div class="move"><span class="t" style="background:#7a7a86"></span>+ Add move</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAROUSEL -->
+    <div class="carousel">
+      <div class="arrow">◀</div>
+      <div class="btab active"><span class="n">01</span>🦖</div>
+      <div class="btab"><span class="n">02</span>🐉</div>
+      <div class="btab empty"><span class="n">03</span>+</div>
+      <div class="btab empty"><span class="n">04</span>+</div>
+      <div class="btab empty"><span class="n">05</span>+</div>
+      <div class="btab empty"><span class="n">06</span>+</div>
+      <div class="arrow">▶</div>
+    </div>
+  </div>
+
+  <!-- BOTTOM DOCK -->
+  <div class="dock">
+    <span class="dbtn">▦ Type matchups ▾</span>
+    <span class="dbtn">⚡ Speed tiers ▾</span>
+    <span class="dbtn">🎯 Damage calc <span class="vs">vs Floette-Eternal</span> ▾</span>
+  </div>
+
+</div>
+</body>
+</html>

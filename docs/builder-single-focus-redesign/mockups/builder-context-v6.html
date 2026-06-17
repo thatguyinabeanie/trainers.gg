@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Single-focus v6 — move metadata</title>
+<style>
+  :root{ --teal:#14b8a6; --border:#23252e; --bg:#0a0b0f; --panel:rgba(20,22,30,.6); --muted:#9aa0ad; --fg:#e9ebf0;
+    --up:#34d399; --down:#fb7185; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .app{display:flex;flex-direction:column;height:100vh;min-height:640px}
+
+  .topbar{height:52px;flex:0 0 52px;display:flex;align-items:center;gap:14px;padding:0 16px;
+    border-bottom:1px solid var(--border);background:#0c0d12}
+  .brand{font-weight:800;color:var(--teal);font-size:15px}
+  .crumb{color:var(--muted);font-size:13px}
+  .fmt{margin-left:10px;font:600 12px/1 ui-monospace,monospace;color:#cfd2dc;
+    background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:7px 10px}
+  .title{flex:1;text-align:center;color:#cfd2dc;font-size:13px}
+  .tcontrols{display:flex;align-items:center;gap:8px}
+  .tbtn{font-size:12px;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid var(--border);
+    border-radius:8px;padding:7px 10px}
+  .tbtn.primary{background:var(--teal);color:#04201c;border-color:var(--teal);font-weight:700}
+  .toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:6px}
+  .toggle span{padding:7px 9px;font-size:12px;color:var(--muted);display:flex;align-items:center}
+  .toggle .on{background:rgba(20,184,166,.16);color:var(--teal)}
+
+  .canvas{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;
+    background-color:#0a0b0f;
+    background-image:radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+    background-size:22px 22px}
+  .wash{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(55% 60% at 50% 45%, rgba(150,138,90,.14), transparent 70%)}
+
+  .stagewrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;z-index:1}
+  .stage{display:grid;grid-template-columns:minmax(260px,1fr) minmax(360px,1.1fr) minmax(300px,1.05fr);
+    gap:24px;align-items:center;width:100%;max-width:1280px}
+
+  .panel{background:var(--panel);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;padding:16px;min-height:420px;display:flex;flex-direction:column}
+  .plabel{font:600 10px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  .plabel.c{text-align:center}
+  .pbody{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .pbody.center{align-items:center}
+
+  .budget{font:700 14px/1 ui-monospace,monospace;color:#cfd2dc;margin-top:6px;text-align:center}
+  .nature{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+  .natpill{font:600 11px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:7px 10px;cursor:pointer}
+  .natpill b{color:var(--muted);font-weight:600;margin-right:6px}
+  .natfx{font:700 10px/1 ui-monospace,monospace}
+  .natfx .u{color:var(--up)} .natfx .d{color:var(--down)}
+  .finetune{font:600 11px/1 ui-monospace,monospace;color:var(--teal);margin-top:10px;text-align:center}
+
+  .center{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .silh{width:240px;height:240px;border-radius:50%;
+    background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.10), rgba(255,255,255,.02));
+    border:1px dashed rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:96px}
+  .sname{font:700 20px/1 system-ui;color:#eef0f4}
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+  .chip{font:600 11px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.10);border-radius:7px;padding:6px 9px;text-align:center}
+  .chip b{color:var(--muted);font-weight:600;margin-right:5px}
+  .tera{background:rgba(20,184,166,.14);border-color:rgba(20,184,166,.5);color:#9ff0e6}
+  .tera b{color:#7fd8cc}
+  .loadout{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;width:100%;max-width:400px;margin-top:2px}
+
+  /* MOVES with metadata columns */
+  .moves{display:flex;flex-direction:column;gap:7px;width:100%}
+  .mvhead{display:grid;grid-template-columns:22px 22px 1fr 34px 34px;gap:9px;align-items:center;
+    padding:0 12px 4px;font:600 9px/1 ui-monospace,monospace;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+  .mvhead .r{text-align:right}
+  .move{display:grid;grid-template-columns:22px 22px 1fr 34px 34px;gap:9px;align-items:center;
+    padding:10px 12px;border-radius:10px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);color:#dfe2ea}
+  .move.sel{outline:2px solid var(--teal);background:rgba(20,184,166,.12)}
+  .move.empty{color:var(--muted)}
+  .ty{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font:700 8px/1 ui-monospace,monospace;color:#fff}
+  .cat{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font:700 9px/1 ui-monospace,monospace}
+  .cat.phys{background:rgba(220,120,70,.18);color:#f0a878;border:1px solid rgba(220,120,70,.4)}
+  .cat.spec{background:rgba(90,120,220,.18);color:#9ab0f0;border:1px solid rgba(90,120,220,.4)}
+  .cat.stat{background:rgba(150,150,160,.14);color:#bbb;border:1px solid rgba(150,150,160,.3)}
+  .mname{font:600 13px/1 system-ui;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bp,.acc{font:600 12px/1 ui-monospace,monospace;color:#cfd2dc;text-align:right}
+
+  svg .spoke{stroke:rgba(255,255,255,.16);stroke-width:1}
+  svg .ring{fill:none;stroke:rgba(255,255,255,.08);stroke-width:1}
+  svg .poly{fill:rgba(20,184,166,.18);stroke:var(--teal);stroke-width:2}
+  svg .hh{fill:var(--teal)} svg .hh.empty{fill:#3a3f4a}
+  svg .ab{fill:#aab;font:700 9px ui-monospace,monospace}
+  svg .ab.up{fill:var(--up)} svg .ab.down{fill:var(--down)}
+  svg .eff{fill:#eef0f4;font:700 13px ui-monospace,monospace}
+  svg .eff.up{fill:var(--up)} svg .eff.down{fill:var(--down)}
+  svg .alloc{fill:#14b8a6;font:600 9px ui-monospace,monospace}
+
+  .carousel{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:12px;
+    padding:0 0 26px;position:relative;z-index:1}
+  .btab{position:relative;width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font:600 11px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)}
+  .btab .n{position:absolute;top:3px;left:6px;font-size:9px;opacity:.55}
+  .btab.active{outline:2px solid var(--teal);transform:translateY(-3px);background:rgba(20,184,166,.14)}
+  .btab.empty{color:#777;border-style:dashed}
+  .arrow{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);color:#cfd2dc}
+
+  .dock{height:48px;flex:0 0 48px;display:flex;align-items:center;justify-content:center;gap:10px;
+    border-top:1px solid var(--border);background:#0c0d12}
+  .dbtn{font:600 12px/1 system-ui;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid var(--border);
+    border-radius:9px;padding:8px 12px;display:flex;align-items:center;gap:6px}
+  .dbtn .vs{color:var(--muted);font-family:ui-monospace,monospace;font-size:11px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <span class="brand">trainers.gg</span>
+    <span class="crumb">/ Builder ▾</span>
+    <span class="fmt">VGC: Reg H ▾</span>
+    <span class="title">Untitled Team ✎</span>
+    <div class="tcontrols">
+      <span class="tbtn">File ▾</span>
+      <span class="tbtn">Validate</span>
+      <span class="tbtn">⚙</span>
+      <span class="tbtn">Sign In</span>
+      <span class="tbtn primary">Sign Up</span>
+      <span class="toggle"><span class="on" title="Single-focus">▣</span><span title="Grid">▦</span></span>
+    </div>
+  </div>
+
+  <div class="canvas">
+    <div class="wash"></div>
+
+    <div class="stagewrap">
+      <div class="stage">
+        <!-- LEFT: radial editor + nature -->
+        <div class="panel">
+          <div class="plabel c">Stats · EVs</div>
+          <div class="pbody center">
+            <svg width="240" height="216" viewBox="0 0 240 216">
+              <polygon class="ring" points="120,40 186,78 186,154 120,192 54,154 54,78"/>
+              <line class="spoke" x1="120" y1="116" x2="120" y2="40"/>
+              <line class="spoke" x1="120" y1="116" x2="186" y2="78"/>
+              <line class="spoke" x1="120" y1="116" x2="186" y2="154"/>
+              <line class="spoke" x1="120" y1="116" x2="120" y2="192"/>
+              <line class="spoke" x1="120" y1="116" x2="54" y2="154"/>
+              <line class="spoke" x1="120" y1="116" x2="54" y2="78"/>
+              <polygon class="poly" points="120,46 182,80 132,140 124,150 110,128 78,90"/>
+              <circle class="hh" cx="120" cy="46" r="5"/>
+              <circle class="hh" cx="182" cy="80" r="5"/>
+              <circle class="hh empty" cx="132" cy="140" r="5"/>
+              <circle class="hh" cx="124" cy="150" r="5"/>
+              <circle class="hh empty" cx="110" cy="128" r="5"/>
+              <circle class="hh empty" cx="78" cy="90" r="5"/>
+              <text class="ab"    x="108" y="22">SPE</text>
+              <text class="eff"   x="106" y="36">123</text>
+              <text class="alloc" x="140" y="36">252</text>
+              <text class="ab up"  x="196" y="72">ATK▲</text>
+              <text class="eff up" x="196" y="86">189</text>
+              <text class="alloc"  x="196" y="98">252</text>
+              <text class="ab"    x="196" y="150">DEF</text>
+              <text class="eff"   x="196" y="164">130</text>
+              <text class="alloc" x="196" y="176">0</text>
+              <text class="ab"    x="150" y="200">HP</text>
+              <text class="eff"   x="150" y="214">175</text>
+              <text class="alloc" x="182" y="214">4</text>
+              <text class="ab down"  x="18" y="150">SPA▼</text>
+              <text class="eff down" x="22" y="164">104</text>
+              <text class="alloc"    x="22" y="176">0</text>
+              <text class="ab"    x="22" y="72">SPD</text>
+              <text class="eff"   x="22" y="86">120</text>
+              <text class="alloc" x="22" y="98">0</text>
+            </svg>
+            <div class="budget">508 / 510</div>
+            <div class="nature">
+              <span class="natpill"><b>NATURE</b>Adamant ▾</span>
+              <span class="natfx"><span class="u">+ATK</span> <span class="d">−SPA</span></span>
+            </div>
+            <div class="finetune">fine-tune ▾ (IV · ± boosts)</div>
+          </div>
+        </div>
+
+        <!-- CENTER: sprite + identity + loadout -->
+        <div class="center">
+          <div class="silh">🦖</div>
+          <div class="sname">Tyranitar</div>
+          <div class="row">
+            <span class="chip">No. 248</span>
+            <span class="chip">♂ · ✦</span>
+            <span class="chip">Lv 50</span>
+          </div>
+          <div class="row">
+            <span class="chip" style="background:#9a8a55;border-color:#9a8a55;color:#fff">Rock</span>
+            <span class="chip" style="background:#4a4a6a;border-color:#4a4a6a;color:#fff">Dark</span>
+            <span class="chip tera"><b>TERA</b>Ghost</span>
+          </div>
+          <div class="loadout">
+            <span class="chip"><b>ITEM</b>Assault Vest</span>
+            <span class="chip"><b>ABIL</b>Sand Stream</span>
+          </div>
+        </div>
+
+        <!-- RIGHT: moves with type · category · BP · ACC -->
+        <div class="panel">
+          <div class="plabel">Moves</div>
+          <div class="pbody">
+            <div class="moves">
+              <div class="mvhead"><span></span><span></span><span>Name</span><span class="r">BP</span><span class="r">Acc</span></div>
+
+              <div class="move sel">
+                <span class="ty" style="background:#9a8a55">RK</span>
+                <span class="cat phys">P</span>
+                <span class="mname">Stone Edge</span>
+                <span class="bp">100</span>
+                <span class="acc">80</span>
+              </div>
+              <div class="move">
+                <span class="ty" style="background:#4a4a6a">DK</span>
+                <span class="cat phys">P</span>
+                <span class="mname">Crunch</span>
+                <span class="bp">80</span>
+                <span class="acc">100</span>
+              </div>
+              <div class="move">
+                <span class="ty" style="background:#b08a4a">GR</span>
+                <span class="cat phys">P</span>
+                <span class="mname">Earthquake</span>
+                <span class="bp">100</span>
+                <span class="acc">100</span>
+              </div>
+              <div class="move">
+                <span class="ty" style="background:#6a6a86">DR</span>
+                <span class="cat stat">St</span>
+                <span class="mname">Dragon Dance</span>
+                <span class="bp">—</span>
+                <span class="acc">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carousel">
+      <div class="arrow">◀</div>
+      <div class="btab active"><span class="n">01</span>🦖</div>
+      <div class="btab"><span class="n">02</span>🐉</div>
+      <div class="btab empty"><span class="n">03</span>+</div>
+      <div class="btab empty"><span class="n">04</span>+</div>
+      <div class="btab empty"><span class="n">05</span>+</div>
+      <div class="btab empty"><span class="n">06</span>+</div>
+      <div class="arrow">▶</div>
+    </div>
+  </div>
+
+  <div class="dock">
+    <span class="dbtn">▦ Type matchups ▾</span>
+    <span class="dbtn">⚡ Speed tiers ▾</span>
+    <span class="dbtn">🎯 Damage calc <span class="vs">vs Floette-Eternal</span> ▾</span>
+  </div>
+
+</div>
+</body>
+</html>

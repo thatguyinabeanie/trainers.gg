@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Single-focus — empty slot</title>
+<style>
+  :root{ --teal:#14b8a6; --border:#23252e; --bg:#0a0b0f; --panel:rgba(20,22,30,.45); --muted:#9aa0ad; --fg:#e9ebf0; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .app{display:flex;flex-direction:column;height:100vh;min-height:700px}
+
+  .topbar{height:50px;flex:0 0 50px;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--border);background:#0c0d12}
+  .brand{font-weight:800;color:var(--teal);font-size:15px}
+  .crumb{color:var(--muted);font-size:13px}
+  .fmt{margin-left:10px;font:600 12px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:7px 10px}
+  .title{flex:1;text-align:center;color:#cfd2dc;font-size:13px}
+  .tcontrols{display:flex;align-items:center;gap:8px}
+  .tbtn{font-size:12px;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:7px 10px}
+  .tbtn.primary{background:var(--teal);color:#04201c;border-color:var(--teal);font-weight:700}
+  .toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:6px}
+  .toggle span{padding:7px 9px;font-size:12px;color:var(--muted);display:flex;align-items:center}
+  .toggle .on{background:rgba(20,184,166,.16);color:var(--teal)}
+
+  .canvas{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;
+    background-color:#0a0b0f;background-image:radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);background-size:22px 22px}
+
+  .stagewrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;z-index:1}
+  .stage{display:grid;grid-template-columns:minmax(240px,1fr) minmax(360px,1.1fr) minmax(240px,1fr);gap:24px;align-items:center;width:100%;max-width:1240px}
+
+  /* faint ghost panels (de-emphasized) */
+  .ghost{opacity:.32;background:var(--panel);border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:16px;min-height:360px;display:flex;flex-direction:column}
+  .glabel{font:600 10px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;text-align:center}
+  .gbody{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px}
+  svg .ring{fill:none;stroke:rgba(255,255,255,.18);stroke-width:1}
+  svg .spoke{stroke:rgba(255,255,255,.12);stroke-width:1}
+  svg .lbl{fill:#777;font:700 8px ui-monospace,monospace}
+  .gbudget{font:700 11px/1 ui-monospace,monospace;color:#777}
+  .gmoves{display:flex;flex-direction:column;gap:9px;width:100%}
+  .gmv{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);color:#777;font:600 12px/1 system-ui}
+  .gmv .sq{width:20px;height:20px;border-radius:5px;border:1px dashed rgba(255,255,255,.18)}
+
+  /* CENTER — the add CTA (the one clear action) */
+  .addcta{display:flex;flex-direction:column;align-items:center;gap:16px;cursor:pointer}
+  .addcircle{width:240px;height:240px;border-radius:50%;border:2px dashed rgba(20,184,166,.5);
+    background:radial-gradient(circle at 50% 45%, rgba(20,184,166,.10), rgba(20,184,166,.02));
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:.2s}
+  .addcircle:hover{border-color:var(--teal);background:radial-gradient(circle at 50% 45%, rgba(20,184,166,.16), rgba(20,184,166,.04))}
+  .plus{font:300 64px/1 system-ui;color:var(--teal)}
+  .addmain{font:700 18px/1 system-ui;color:#eef0f4}
+  .addsub{font:500 12px/1.4 system-ui;color:var(--muted);text-align:center;max-width:260px}
+  .slotpill{font:700 9px/1 ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+  .carousel{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:10px;padding:6px 0 18px;position:relative;z-index:1}
+  .ctitle{font:700 8px/1 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:6px}
+  .btab{position:relative;width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:600 11px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)}
+  .btab .n{position:absolute;top:3px;left:6px;font-size:9px;opacity:.55}
+  .btab.active{outline:2px solid var(--teal);transform:translateY(-3px);background:rgba(20,184,166,.14)}
+  .btab.empty{color:#777;border-style:dashed}
+  .btab.active.empty{color:var(--teal);border-style:dashed}
+  .arrow{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:#cfd2dc}
+
+  .dock{height:46px;flex:0 0 46px;display:flex;align-items:center;justify-content:center;gap:10px;border-top:1px solid var(--border);background:#0c0d12}
+  .dbtn{font:600 12px/1 system-ui;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:8px 12px;display:flex;align-items:center;gap:6px}
+  .dbtn .vs2{color:var(--muted);font-family:ui-monospace,monospace;font-size:11px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <span class="brand">trainers.gg</span><span class="crumb">/ Builder ▾</span>
+    <span class="fmt">VGC: Reg H ▾</span><span class="title">Untitled Team ✎</span>
+    <div class="tcontrols">
+      <span class="tbtn">File ▾</span><span class="tbtn">Validate</span><span class="tbtn">⚙</span>
+      <span class="tbtn">Sign In</span><span class="tbtn primary">Sign Up</span>
+      <span class="toggle"><span class="on">▣</span><span>▦</span></span>
+    </div>
+  </div>
+
+  <div class="canvas">
+    <div class="stagewrap">
+      <div class="stage">
+        <!-- LEFT: ghost stats -->
+        <div class="ghost">
+          <div class="glabel">Stats · EVs</div>
+          <div class="gbody">
+            <svg width="180" height="160" viewBox="0 0 180 160">
+              <polygon class="ring" points="90,28 146,56 146,112 90,140 34,112 34,56"/>
+              <line class="spoke" x1="90" y1="84" x2="90" y2="28"/><line class="spoke" x1="90" y1="84" x2="146" y2="56"/>
+              <line class="spoke" x1="90" y1="84" x2="146" y2="112"/><line class="spoke" x1="90" y1="84" x2="90" y2="140"/>
+              <line class="spoke" x1="90" y1="84" x2="34" y2="112"/><line class="spoke" x1="90" y1="84" x2="34" y2="56"/>
+              <text class="lbl" x="82" y="20">SPE</text><text class="lbl" x="150" y="56">ATK</text>
+              <text class="lbl" x="150" y="116">DEF</text><text class="lbl" x="84" y="156">HP</text>
+              <text class="lbl" x="12" y="116">SPA</text><text class="lbl" x="14" y="56">SPD</text>
+            </svg>
+            <div class="gbudget">— / 510</div>
+          </div>
+        </div>
+
+        <!-- CENTER: ADD CTA -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+          <span class="slotpill">Slot 03 · Empty</span>
+          <div class="addcta">
+            <div class="addcircle">
+              <span class="plus">+</span>
+              <span class="addmain">Add Pokémon</span>
+            </div>
+            <span class="addsub">Pick a species to start building this slot — stats, moves, and item fill in here.</span>
+          </div>
+        </div>
+
+        <!-- RIGHT: ghost moves -->
+        <div class="ghost">
+          <div class="glabel">Moves</div>
+          <div class="gbody" style="justify-content:flex-start;padding-top:6px">
+            <div class="gmoves">
+              <div class="gmv"><span class="sq"></span>+ Add move</div>
+              <div class="gmv"><span class="sq"></span>+ Add move</div>
+              <div class="gmv"><span class="sq"></span>+ Add move</div>
+              <div class="gmv"><span class="sq"></span>+ Add move</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carousel">
+      <span class="ctitle">Your team</span>
+      <div class="arrow">◀</div>
+      <div class="btab"><span class="n">01</span>🦖</div>
+      <div class="btab"><span class="n">02</span>🐉</div>
+      <div class="btab active empty"><span class="n">03</span>+</div>
+      <div class="btab empty"><span class="n">04</span>+</div>
+      <div class="btab empty"><span class="n">05</span>+</div>
+      <div class="btab empty"><span class="n">06</span>+</div>
+      <div class="arrow">▶</div>
+    </div>
+  </div>
+
+  <div class="dock">
+    <span class="dbtn">▦ Type matchups ▾</span>
+    <span class="dbtn">⚡ Speed tiers ▾</span>
+    <span class="dbtn">🎯 Damage calc <span class="vs2">vs —</span> ▾</span>
+  </div>
+
+</div>
+</body>
+</html>
