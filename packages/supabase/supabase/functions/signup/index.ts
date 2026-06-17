@@ -160,8 +160,13 @@ Deno.serve(async (req) => {
       });
 
     if (authError || !authData.user) {
-      // Detect duplicate email — auth.users enforces uniqueness
-      if (authError?.message?.includes("already been registered")) {
+      // Detect duplicate email — auth.users enforces uniqueness. Prefer the
+      // structured error code (stable across Supabase/Auth versions + locales);
+      // fall back to the English message substring for older auth versions.
+      if (
+        authError?.code === "email_exists" ||
+        authError?.message?.includes("already been registered")
+      ) {
         return new Response(
           JSON.stringify({
             success: false,

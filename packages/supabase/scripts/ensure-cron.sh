@@ -43,8 +43,11 @@ fi
 # supabase_admin instead of trust auth — without it the connection fails and the
 # whole step silently no-ops. The local Supabase superuser password is the
 # project's db password (default "postgres"); allow override via env for safety.
-PGPASS="${SUPABASE_DB_PASSWORD:-postgres}"
-PSQL_ADMIN="docker exec -i -e PGPASSWORD=$PGPASS $CONTAINER psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1"
+# Export PGPASSWORD and pass only the NAME to `docker exec -e` (Docker reads the
+# value from this script's environment). Injecting `-e PGPASSWORD=$PGPASS`
+# inline would split/break on a password containing spaces or shell-special chars.
+export PGPASSWORD="${SUPABASE_DB_PASSWORD:-postgres}"
+PSQL_ADMIN="docker exec -i -e PGPASSWORD $CONTAINER psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1"
 
 # Read-only probes run as `postgres` (trust auth on every image, so they never
 # fail to connect). Only the privileged CREATE EXTENSION needs supabase_admin.

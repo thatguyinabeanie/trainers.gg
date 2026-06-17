@@ -634,7 +634,9 @@ function maybeDemoteMemberRole(
         })
         .eq("alts.user_id", user.id)
         .eq("tournaments.community_id", tournament.community_id)
-        .neq("status", "dropped");
+        // "Not dropped" must include NULL status — SQL <> never matches NULL, so
+        // a bare .neq would undercount and could wrongly demote the Discord role.
+        .or("status.is.null,status.neq.dropped");
 
       if (count === 0) {
         await enqueueCommunityRoleSync(

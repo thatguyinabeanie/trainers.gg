@@ -2536,7 +2536,7 @@ describe("cancelRegistration — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      neq: jest.fn().mockResolvedValue({ count: 0, error: null }),
+      or: jest.fn().mockResolvedValue({ count: 0, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 
@@ -2574,7 +2574,7 @@ describe("cancelRegistration — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      neq: jest.fn().mockResolvedValue({ count: 1, error: null }),
+      or: jest.fn().mockResolvedValue({ count: 1, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 
@@ -2605,7 +2605,7 @@ describe("cancelRegistration — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      neq: jest.fn().mockResolvedValue({ count: 0, error: null }),
+      or: jest.fn().mockResolvedValue({ count: 0, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 
@@ -2639,7 +2639,7 @@ describe("withdrawFromTournament — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      neq: jest.fn().mockResolvedValue({ count: 0, error: null }),
+      or: jest.fn().mockResolvedValue({ count: 0, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 
@@ -2676,7 +2676,7 @@ describe("withdrawFromTournament — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      neq: jest.fn().mockResolvedValue({ count: 2, error: null }),
+      or: jest.fn().mockResolvedValue({ count: 2, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 
@@ -2707,7 +2707,7 @@ describe("withdrawFromTournament — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      neq: jest.fn().mockResolvedValue({ count: 0, error: null }),
+      or: jest.fn().mockResolvedValue({ count: 0, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 

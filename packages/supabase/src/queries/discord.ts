@@ -639,7 +639,9 @@ export async function getCommunityParticipantUserIds(
       "alts!tournament_registrations_alt_id_fkey(user_id), tournaments!inner(community_id)"
     )
     .eq("tournaments.community_id", communityId)
-    .neq("status", "dropped");
+    // "Not dropped" must include NULL status — SQL <> never matches NULL, so a
+    // bare .neq would silently exclude registrations whose status is unset.
+    .or("status.is.null,status.neq.dropped");
 
   if (error)
     throw new Error(
