@@ -52,9 +52,10 @@ Immersive, card-less, sprite-center flanked (validated visually). No wrapping ca
 The hexagon **is** the stat control — not a read-only chart beside edit rows.
 
 - **6 spokes** (HP/ATK/DEF/SPA/SPD/SPE). Each handle's distance from center = **points invested** (EV or SP), snapping to the step grid. The connected polygon = the spread shape.
-- **Center** shows remaining budget (`508/510` for EV, `64/66` for SP).
+- **Center** shows invested/total — EV: `…/510` (**legal cap**, 252/stat), SP: `…/66` (Champions, 32/stat). Users configure up to the **legal limit**, not the conservative 508 "useful-max."
 - **Live numbers** per spoke: invested points + resulting final stat.
-- **EV/SP auto-switch** by format — reuses `getStatBudget(isChampions)`, `formatSupportsIvs(format)`, `isChampionsFormat()` from `StatsLane`. Caps, steps, IV-gating, and the SP-vs-EVs label all come from these. No new branching logic.
+- **EV/SP auto-switch** by format — reuses `formatSupportsIvs(format)`, `isChampionsFormat()`, and the per-stat caps/steps/labels from `getStatBudget(isChampions)`. **EV total budget = the legal 510, NOT `getStatBudget(false)`'s 508 display cap** — the editor must let users allocate to the full legal limit (deliberate change from today's `StatsLane`; bump `EV_TOTAL_DISPLAY_MAX` to 510, which applies builder-wide). Champions stays 66 total / 32 per stat, **no IV editing** (always 31). Verified vs the game: EV 252/stat·510 total; Champions SP 32/stat·66 total, lvl 50, 31 IVs.
+  - _Open detail:_ with step 4 the max reachable in multiples of 4 is 508; to truly reach 510 either allow finer granularity for the last 1–2 EV near the cap, or accept 508-reachable while the budget/validator reads 510.
 - **Precision + accessibility (required, not optional):** each invested number is click-to-type; handles are keyboard-focusable with arrow-key nudging by step. Drag-only would be a trap for exact spreads and for a11y.
 - **Budget clamping + breakpoints:** a handle stops when the total is spent (mirrors today's `investBudget` clamp); `+nature` spokes show breakpoint ticks along the spoke.
 - **Nature / Stat Alignment:** click a vertex to cycle `+/−` (colored vertex). Labeled **"Stat Alignment"** in Champions formats, **"Nature"** elsewhere (existing naming convention).
