@@ -790,9 +790,93 @@ describe("bulkRemovePlayers", () => {
     expect(result.data).toEqual({ removed: 0, failed: 0 });
   });
 
+  it("returns error and stops before status update when staff upsert errors", async () => {
+    const mockUpdate = jest.fn();
+
+    // First call: select registrations
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({
+        data: [{ id: 1, tournament_id: 10 }],
+        error: null,
+      }),
+    });
+
+    // Second call: tournament lookup for permission check
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 1 },
+        error: null,
+      }),
+    });
+
+    // Third call: upsert into tournament_registration_staff — errors
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      upsert: jest.fn().mockResolvedValue({
+        error: { message: "FK violation", code: "23503" },
+      }),
+    });
+
+    // rpc for permission check
+    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
+
+    const result = await bulkRemovePlayers([1], "no_show");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to bulk remove players",
+    });
+    // status update must NOT have been called
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("returns error when getUser returns no user", async () => {
+    // Override auth.getUser to return no user
+    (mockSupabase.auth as Record<string, unknown>).getUser = jest
+      .fn()
+      .mockResolvedValue({ data: { user: null }, error: null });
+
+    // First call: select registrations
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({
+        data: [{ id: 1, tournament_id: 10 }],
+        error: null,
+      }),
+    });
+
+    // Second call: tournament lookup
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { community_id: 1 },
+        error: null,
+      }),
+    });
+
+    // rpc for permission check
+    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
+
+    const result = await bulkRemovePlayers([1], "no_show");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to bulk remove players",
+    });
+  });
+
   it("handles partial update failures and passes drop notes", async () => {
     const mockUpdate = jest.fn().mockReturnThis();
     const mockUpsert = jest.fn().mockResolvedValue({ error: null });
+
+    // A prior test overrides auth.getUser to a null user; restore a valid
+    // authenticated user for this test (test isolation).
+    (mockSupabase.auth as Record<string, unknown>).getUser = jest
+      .fn()
+      .mockResolvedValue({ data: { user: { id: "user-123" } }, error: null });
 
     // Select returns 3 registrations
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
@@ -1399,6 +1483,40 @@ describe("getCurrentUserAltsAction", () => {
 
   it("returns error when query throws", async () => {
     mockGetCurrentUserAlts.mockRejectedValue(new Error("not authenticated"));
+
+    const result = await getCurrentUserAltsAction();
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to fetch user alts",
+    });
+  });
+
+  it("returns error when get_my_user_pii RPC errors", async () => {
+    mockGetCurrentUserAlts.mockResolvedValue([
+      {
+        id: 1,
+        user_id: "user-123",
+        username: "ash_ketchum",
+        avatar_url: null,
+      },
+    ]);
+
+    // rpc("get_my_user_pii") returns an error
+    mockSupabase.rpc = jest.fn().mockResolvedValue({
+      data: null,
+      error: { message: "permission denied", code: "42501" },
+    });
+
+    // from("users").select("country") succeeds (Promise.all runs both)
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { country: "US" },
+        error: null,
+      }),
+    });
 
     const result = await getCurrentUserAltsAction();
 
@@ -2418,7 +2536,7 @@ describe("cancelRegistration — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      is: jest.fn().mockResolvedValue({ count: 0, error: null }),
+      neq: jest.fn().mockResolvedValue({ count: 0, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 
@@ -2456,7 +2574,7 @@ describe("cancelRegistration — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      is: jest.fn().mockResolvedValue({ count: 1, error: null }),
+      neq: jest.fn().mockResolvedValue({ count: 1, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 
@@ -2487,7 +2605,7 @@ describe("cancelRegistration — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      is: jest.fn().mockResolvedValue({ count: 0, error: null }),
+      neq: jest.fn().mockResolvedValue({ count: 0, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 
@@ -2521,7 +2639,7 @@ describe("withdrawFromTournament — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      is: jest.fn().mockResolvedValue({ count: 0, error: null }),
+      neq: jest.fn().mockResolvedValue({ count: 0, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 
@@ -2558,7 +2676,7 @@ describe("withdrawFromTournament — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      is: jest.fn().mockResolvedValue({ count: 2, error: null }),
+      neq: jest.fn().mockResolvedValue({ count: 2, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 
@@ -2589,7 +2707,7 @@ describe("withdrawFromTournament — Discord member role remove", () => {
     fromMock.mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      is: jest.fn().mockResolvedValue({ count: 0, error: null }),
+      neq: jest.fn().mockResolvedValue({ count: 0, error: null }),
     });
     (mockSupabase.from as jest.Mock) = fromMock;
 

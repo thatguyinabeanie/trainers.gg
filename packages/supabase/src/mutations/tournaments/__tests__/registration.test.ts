@@ -579,6 +579,56 @@ describe("Tournament Registration Mutations", () => {
       expect(fromSpy).toHaveBeenNthCalledWith(4, "tournament_registrations");
     });
 
+    it("throws and never calls tournament_registrations.update when the staff upsert errors", async () => {
+      const staffUpsertError = { message: "upsert failed", code: "23505" };
+      const mockStatusUpdate = jest.fn();
+      const fromSpy = jest.spyOn(mockClient, "from");
+
+      // First call: registration lookup
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { tournament_id: 100 },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      // Second call: tournament lookup
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { community_id: 200 },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      // Third call: upsert to tournament_registration_staff — resolves with an error
+      fromSpy.mockReturnValueOnce({
+        upsert: jest.fn().mockResolvedValue({ error: staffUpsertError }),
+      } as unknown as MockQueryBuilder);
+
+      // Fourth call would be the tournament_registrations status update — must never reach it.
+      // Register a spy so we can assert it was never invoked.
+      fromSpy.mockReturnValueOnce({
+        update: mockStatusUpdate,
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      } as unknown as MockQueryBuilder);
+
+      await expect(
+        updateRegistrationStatus(mockClient, registrationId, "dropped", {
+          dropCategory: "no_show",
+          dropNotes: "Staff upsert exploded",
+        })
+      ).rejects.toMatchObject({ message: "upsert failed", code: "23505" });
+
+      // The status update must NOT have been called — the throw after the
+      // staff upsert error must short-circuit before reaching
+      // tournament_registrations.update.
+      expect(mockStatusUpdate).not.toHaveBeenCalled();
+    });
+
     it("throws when status is dropped but no dropInfo provided", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 

@@ -211,6 +211,39 @@ describe("site-roles queries", () => {
   });
 
   describe("getSiteAdmins", () => {
+    /**
+     * Build a service-role mock client for PII/email enrichment.
+     * getSiteAdmins now takes a second `serviceSupabase` argument.
+     * The service client is used exclusively for:
+     *   - serviceSupabase.rpc("get_users_pii", ...) → piiRows
+     *   - serviceSupabase.auth.admin.getUserById(id) → email
+     */
+    function buildServiceClient(opts: {
+      piiRows?: Array<{
+        user_id: string;
+        first_name: string | null;
+        last_name: string | null;
+      }>;
+      emailMap?: Record<string, string | null>;
+      piiError?: unknown;
+    } = {}) {
+      const { piiRows = [], emailMap = {}, piiError = null } = opts;
+
+      const getUserById = jest.fn().mockImplementation((id: string) =>
+        Promise.resolve({
+          data: { user: { email: emailMap[id] ?? null } },
+          error: null,
+        })
+      );
+
+      return {
+        rpc: jest.fn().mockResolvedValue({ data: piiError ? null : piiRows, error: piiError }),
+        auth: {
+          admin: { getUserById },
+        },
+      } as unknown as TypedClient;
+    }
+
     it("should fetch all users with site admin role (enriched with email + PII)", async () => {
       // Base rows — user no longer has email/first_name/last_name from the query
       const mockAdmins = [
@@ -231,18 +264,14 @@ describe("site-roles queries", () => {
         return Promise.resolve({ data: mockAdmins, error: null }).then(resolve);
       });
 
-      // auth.admin.getUserById returns email per user
-      (mockClient.auth.admin.getUserById as jest.Mock)
-        .mockResolvedValueOnce({
-          data: { user: { email: "admin1@example.com" } },
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          data: { user: { email: "admin2@example.com" } },
-          error: null,
-        });
+      const serviceClient = buildServiceClient({
+        emailMap: {
+          "user-1": "admin1@example.com",
+          "user-2": "admin2@example.com",
+        },
+      });
 
-      const result = await getSiteAdmins(mockClient);
+      const result = await getSiteAdmins(mockClient, serviceClient);
 
       // Result rows are enriched — user object has email + first_name/last_name merged
       expect(result).toHaveLength(2);
@@ -271,18 +300,89 @@ describe("site-roles queries", () => {
       );
     });
 
+    it("should enrich with PII names when get_users_pii returns data", async () => {
+      const mockAdmins = [
+        {
+          id: 1,
+          user: { id: "user-1", username: "admin1", image: null },
+          role: { id: 1, name: "site_admin", scope: "site" },
+        },
+      ];
+
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: mockAdmins, error: null }).then(resolve);
+      });
+
+      const serviceClient = buildServiceClient({
+        piiRows: [{ user_id: "user-1", first_name: "Admin", last_name: "One" }],
+        emailMap: { "user-1": "admin1@example.com" },
+      });
+
+      const result = await getSiteAdmins(mockClient, serviceClient);
+
+      expect(result[0]?.user).toMatchObject({
+        first_name: "Admin",
+        last_name: "One",
+        email: "admin1@example.com",
+      });
+    });
+
+    it("should still return admins with null names when get_users_pii RPC resolves an error (graceful-degrade)", async () => {
+      const mockAdmins = [
+        {
+          id: 1,
+          user: { id: "user-1", username: "admin1", image: null },
+          role: { id: 1, name: "site_admin", scope: "site" },
+        },
+      ];
+
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: mockAdmins, error: null }).then(resolve);
+      });
+
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      // Service client whose get_users_pii RPC fails
+      const rpcError = { message: "permission denied" };
+      const serviceClient = buildServiceClient({
+        piiError: rpcError,
+        emailMap: { "user-1": "admin1@example.com" },
+      });
+
+      const result = await getSiteAdmins(mockClient, serviceClient);
+
+      // Admins are returned — just without names (graceful degrade)
+      expect(result).toHaveLength(1);
+      expect(result[0]?.user?.first_name).toBeNull();
+      expect(result[0]?.user?.last_name).toBeNull();
+      // Email is still enriched from auth.admin separately
+      expect(result[0]?.user?.email).toBe("admin1@example.com");
+      // The error was logged by getPiiByUserIds
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "[getPiiByUserIds] Failed to fetch PII:",
+        rpcError
+      );
+
+      consoleErrorSpy.mockRestore();
+    });
+
     it("should return empty array when no admins exist", async () => {
       const mockClient = createMockClient();
       mockClient._queryBuilder.then = jest.fn((resolve) => {
         return Promise.resolve({ data: [], error: null }).then(resolve);
       });
 
-      const result = await getSiteAdmins(mockClient);
+      const serviceClient = buildServiceClient();
+      const result = await getSiteAdmins(mockClient, serviceClient);
 
       expect(result).toEqual([]);
     });
 
-    it("should return empty array on error", async () => {
+    it("should return empty array on PostgREST query error", async () => {
       const mockClient = createMockClient();
       const dbError = new Error("Database error");
       mockClient._queryBuilder.then = jest.fn((resolve) => {
@@ -293,7 +393,8 @@ describe("site-roles queries", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
 
-      const result = await getSiteAdmins(mockClient);
+      const serviceClient = buildServiceClient();
+      const result = await getSiteAdmins(mockClient, serviceClient);
 
       expect(result).toEqual([]);
       expect(consoleErrorSpy).toHaveBeenCalled();

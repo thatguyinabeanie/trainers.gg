@@ -10,9 +10,12 @@ const mockAuth = {
   updateUser: jest.fn(),
 };
 
+const mockRpc = jest.fn();
+
 const mockSupabaseClient = {
   from: mockFrom,
   auth: mockAuth,
+  rpc: mockRpc,
 };
 
 jest.mock("@/lib/supabase/server", () => ({
@@ -68,6 +71,9 @@ describe("completeOnboarding", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockFrom.mockReset();
+    mockRpc.mockReset();
+    // Default: rpc succeeds (update_my_user_pii)
+    mockRpc.mockResolvedValue({ error: null });
     // Default: rejectBots allows the request through
     mockRejectBots.mockReset().mockResolvedValue(undefined);
     process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
@@ -174,6 +180,57 @@ describe("completeOnboarding", () => {
     const result = await completeOnboarding(validInput);
 
     expect(result).toEqual({ success: true, error: null });
+  });
+
+  it("calls update_my_user_pii rpc and succeeds when birthDate is provided", async () => {
+    setupHappyPath();
+
+    const result = await completeOnboarding({
+      ...validInput,
+      birthDate: "2000-01-15",
+    });
+
+    expect(result).toEqual({ success: true, error: null });
+    expect(mockRpc).toHaveBeenCalledWith("update_my_user_pii", {
+      p_birth_date: "2000-01-15",
+    });
+  });
+
+  it("returns error when update_my_user_pii rpc errors", async () => {
+    // Steps 1-3 of setupHappyPath (username checks + users update)
+    // 1. Username check in users table — not found
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+      })
+    );
+
+    // 2. Username check in alts table — not found
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+      })
+    );
+
+    // 3. Update users table — success
+    mockFrom.mockReturnValueOnce({
+      update: jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      }),
+    });
+
+    // rpc("update_my_user_pii") errors
+    mockRpc.mockResolvedValue({ error: { message: "pii error", code: "500" } });
+
+    const result = await completeOnboarding({
+      ...validInput,
+      birthDate: "2000-01-15",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to update profile",
+    });
   });
 
   it("throws when bot is detected (rejectBots runs before try block)", async () => {

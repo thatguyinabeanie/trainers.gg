@@ -525,6 +525,174 @@ describe("GET /api/oauth/callback", () => {
     });
   });
 
+  describe("sign-in mode - legacy lookup error", () => {
+    it("redirects to sign-in when get_user_id_by_email (legacy) returns a DB error", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:legacyerr",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      // DID lookup — not found
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      });
+
+      // Legacy email lookup fails with a DB error
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { message: "connection timeout" },
+      });
+
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location")!;
+      expect(location).toContain("/sign-in");
+      expect(location).toContain("error=bluesky_auth_failed");
+      // Must NOT attempt to create a new user
+      expect(mockCreateUser).not.toHaveBeenCalled();
+    });
+
+    it("does not redirect to new-user creation on legacy lookup error", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:legacyerr2",
+        returnUrl: "/dashboard",
+        linkUserId: undefined,
+      });
+
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      });
+
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { message: "permission denied" },
+      });
+
+      await GET(createRequest({ code: "test", state: "test" }));
+
+      // User creation must be skipped entirely
+      expect(mockCreateUser).not.toHaveBeenCalled();
+      expect(mockGetBlueskyProfile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("sign-in mode - conflict lookup error", () => {
+    it("redirects to sign-in when get_user_id_by_email (conflict) returns a DB error", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:conflerr",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      // DID lookup — not found; rpc 1st call (legacy) succeeds with null
+      // rpc 2nd call (conflict) fails with an error
+      mockRpc
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({
+          data: null,
+          error: { message: "connection timeout" },
+        });
+
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+        update: jest
+          .fn()
+          .mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) }),
+      });
+
+      mockGetBlueskyProfile.mockResolvedValue({
+        handle: "conflerr.bsky.social",
+        displayName: "ConflErrUser",
+        avatar: null,
+      });
+
+      // createUser fails with "already registered" to trigger the conflict path
+      mockCreateUser.mockResolvedValue({
+        data: null,
+        error: {
+          message: "A user with this email address has already been registered",
+        },
+      });
+
+      const response = await GET(
+        createRequest({ code: "test", state: "test" })
+      );
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location")!;
+      expect(location).toContain("/sign-in");
+      expect(location).toContain("error=bluesky_auth_failed");
+    });
+
+    it("does not generate a magic link on conflict lookup error", async () => {
+      mockHandleAtprotoCallback.mockResolvedValue({
+        did: "did:plc:nolink",
+        returnUrl: "/",
+        linkUserId: undefined,
+      });
+
+      mockRpc
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({
+          data: null,
+          error: { message: "DB failure" },
+        });
+
+      mockFrom.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+        update: jest
+          .fn()
+          .mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) }),
+      });
+
+      mockGetBlueskyProfile.mockResolvedValue({
+        handle: "nolink.bsky.social",
+        displayName: "NoLink",
+        avatar: null,
+      });
+
+      mockCreateUser.mockResolvedValue({
+        data: null,
+        error: {
+          message: "A user with this email address has already been registered",
+        },
+      });
+
+      await GET(createRequest({ code: "test", state: "test" }));
+
+      // Magic link must NOT be generated when the conflict lookup fails
+      expect(mockGenerateLink).not.toHaveBeenCalled();
+    });
+  });
+
   describe("sign-in mode - error handling", () => {
     it("redirects to sign-in with error when callback throws", async () => {
       mockHandleAtprotoCallback.mockRejectedValue(

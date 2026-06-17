@@ -6,6 +6,8 @@ import {
   unsuspendUser,
   startImpersonation,
   endImpersonation,
+  getPiiByUserIds,
+  getEmailsByUserIds,
 } from "../admin-users";
 import type { TypedClient } from "../../client";
 
@@ -1140,6 +1142,171 @@ describe("admin-users queries", () => {
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Error inserting impersonation-end audit log:",
         auditError
+      );
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // getPiiByUserIds
+  // -----------------------------------------------------------------------
+
+  describe("getPiiByUserIds", () => {
+    it("should return empty Map immediately when given an empty array (no RPC call)", async () => {
+      const mockClient = createMockClient();
+
+      const result = await getPiiByUserIds(mockClient, []);
+
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(0);
+      // No RPC should have been called for an empty input
+      expect(mockClient.rpc).not.toHaveBeenCalled();
+    });
+
+    it("should return a Map of PII entries on success", async () => {
+      const mockClient = createMockClient();
+      (mockClient.rpc as jest.Mock).mockResolvedValueOnce({
+        data: [
+          { user_id: "user-1", first_name: "Alice", last_name: "Trainer" },
+          { user_id: "user-2", first_name: null, last_name: null },
+        ],
+        error: null,
+      });
+
+      const result = await getPiiByUserIds(mockClient, ["user-1", "user-2"]);
+
+      expect(result.size).toBe(2);
+      expect(result.get("user-1")).toEqual({
+        first_name: "Alice",
+        last_name: "Trainer",
+      });
+      expect(result.get("user-2")).toEqual({
+        first_name: null,
+        last_name: null,
+      });
+      expect(mockClient.rpc).toHaveBeenCalledWith("get_users_pii", {
+        p_user_ids: ["user-1", "user-2"],
+      });
+    });
+
+    it("should return empty Map and log error when get_users_pii RPC fails (graceful-degrade)", async () => {
+      const mockClient = createMockClient();
+      const rpcError = new Error("permission denied");
+      (mockClient.rpc as jest.Mock).mockResolvedValueOnce({
+        data: null,
+        error: rpcError,
+      });
+
+      const result = await getPiiByUserIds(mockClient, ["user-1"]);
+
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(0);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "[getPiiByUserIds] Failed to fetch PII:",
+        rpcError
+      );
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // getEmailsByUserIds — chunking at 20
+  // -----------------------------------------------------------------------
+
+  describe("getEmailsByUserIds", () => {
+    it("should return empty Map immediately for empty input (no auth calls)", async () => {
+      const mockClient = createMockClient();
+
+      const result = await getEmailsByUserIds(mockClient, []);
+
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(0);
+      expect(mockClient.auth.admin.getUserById).not.toHaveBeenCalled();
+    });
+
+    it("should call getUserById 21 times and include all 21 ids in result (chunks at 20)", async () => {
+      const mockClient = createMockClient();
+
+      const ids = Array.from({ length: 21 }, (_, i) => `user-${i + 1}`);
+
+      // Each call resolves with a predictable email based on index
+      (mockClient.auth.admin.getUserById as jest.Mock).mockImplementation(
+        (id: string) =>
+          Promise.resolve({
+            data: { user: { email: `${id}@example.com` } },
+            error: null,
+          })
+      );
+
+      const result = await getEmailsByUserIds(mockClient, ids);
+
+      // All 21 users must appear in the result
+      expect(result.size).toBe(21);
+      expect(mockClient.auth.admin.getUserById).toHaveBeenCalledTimes(21);
+
+      // Spot-check first and last to catch off-by-one or first-chunk-only bugs
+      expect(result.get("user-1")).toBe("user-1@example.com");
+      expect(result.get("user-20")).toBe("user-20@example.com");
+      expect(result.get("user-21")).toBe("user-21@example.com");
+    });
+
+    it("should return null for an individual user when getUserById fails for that user", async () => {
+      const mockClient = createMockClient();
+      const lookupError = new Error("user not found");
+
+      (mockClient.auth.admin.getUserById as jest.Mock).mockResolvedValueOnce({
+        data: null,
+        error: lookupError,
+      });
+
+      const result = await getEmailsByUserIds(mockClient, ["user-1"]);
+
+      expect(result.get("user-1")).toBeNull();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "[getEmailsByUserIds] Failed to fetch user:",
+        expect.objectContaining({ id: "user-1", error: lookupError })
+      );
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // getUserAdminDetails — auth error logging
+  // -----------------------------------------------------------------------
+
+  describe("getUserAdminDetails — auth error logging", () => {
+    it("should log the auth error and return null email when getUserById fails", async () => {
+      const mockUser = {
+        id: "user-1",
+        username: "alice",
+        is_locked: false,
+        alts: [],
+        user_roles: [],
+      };
+
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.maybeSingle.mockResolvedValueOnce({
+        data: mockUser,
+        error: null,
+      });
+
+      // PII resolves fine
+      (mockClient.rpc as jest.Mock).mockResolvedValueOnce({
+        data: [],
+        error: null,
+      });
+
+      // auth.admin.getUserById returns an error
+      const authError = { message: "auth lookup failed" };
+      (mockClient.auth.admin.getUserById as jest.Mock).mockResolvedValueOnce({
+        data: null,
+        error: authError,
+      });
+
+      const result = await getUserAdminDetails(mockClient, "user-1");
+
+      // email is null when auth lookup fails
+      expect(result?.email).toBeNull();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "[getUserAdminDetails] auth email lookup failed:",
+        "auth lookup failed"
       );
     });
   });

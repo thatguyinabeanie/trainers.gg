@@ -514,6 +514,44 @@ describe("getCurrentUserProfile", () => {
       error: "Failed to fetch profile",
     });
   });
+
+  it("returns error when get_my_user_pii RPC errors", async () => {
+    mockAuth.getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+
+    // users table returns a valid user row
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: {
+            id: "user-1",
+            username: "pikachu",
+            pds_status: null,
+            pds_handle: null,
+            did: null,
+            country: "US",
+            main_alt_id: null,
+            show_discord_publicly: false,
+          },
+          error: null,
+        }),
+      })
+    );
+
+    // rpc("get_my_user_pii") returns an error
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { message: "permission denied", code: "42501" },
+    });
+
+    const result = await getCurrentUserProfile();
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to fetch profile",
+    });
+  });
 });
 
 /**
