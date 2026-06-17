@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calc versus view v6</title>
+<style>
+  :root{ --teal:#14b8a6; --border:#23252e; --bg:#0a0b0f; --panel:rgba(20,22,30,.55); --muted:#9aa0ad; --fg:#e9ebf0;
+    --up:#34d399; --down:#fb7185; --foe:#fb7185; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .app{display:flex;flex-direction:column;height:100vh;min-height:780px}
+
+  .topbar{height:50px;flex:0 0 50px;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--border);background:#0c0d12}
+  .brand{font-weight:800;color:var(--teal);font-size:15px}
+  .crumb{color:var(--muted);font-size:13px}
+  .fmt{margin-left:10px;font:600 12px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:7px 10px}
+  .title{flex:1;text-align:center;color:#cfd2dc;font-size:13px}
+  .tcontrols{display:flex;align-items:center;gap:8px}
+  .tbtn{font-size:12px;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:7px 10px}
+  .tbtn.primary{background:var(--teal);color:#04201c;border-color:var(--teal);font-weight:700}
+  .toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:6px}
+  .toggle span{padding:7px 9px;font-size:12px;color:var(--muted);display:flex;align-items:center}
+  .toggle .on{background:rgba(20,184,166,.16);color:var(--teal)}
+
+  .canvas{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;
+    background-color:#0a0b0f;background-image:radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);background-size:22px 22px}
+  .wash{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(38% 50% at 24% 38%, rgba(150,138,90,.16), transparent 70%),
+               radial-gradient(38% 50% at 76% 38%, rgba(220,120,170,.14), transparent 70%)}
+
+  .arena{flex:1;display:grid;grid-template-columns:1fr 300px 1fr;gap:18px;align-items:start;padding:16px 24px 6px;position:relative;z-index:1}
+
+  .side{display:flex;flex-direction:column;align-items:center}
+  .col{width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px}
+
+  /* fixed-height bands → all three columns line up row-by-row */
+  .label-band{height:14px;display:flex;align-items:center;justify-content:center}
+  .sidelabel{font:700 9px/1 ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .sidelabel.foe{color:var(--foe)}
+  .hero-band{height:228px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+
+  .silh{width:136px;height:136px;border-radius:50%;background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.10), rgba(255,255,255,.02));border:1px dashed rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:58px;cursor:pointer}
+  .silh.foe{border-color:rgba(251,113,133,.4)}
+  .sname{font:700 18px/1 system-ui;color:#eef0f4}
+  .row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
+  .chip{font:600 10px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:6px;padding:5px 8px}
+  .chip b{color:var(--muted);font-weight:600;margin-right:4px}
+  .tera{background:rgba(20,184,166,.14);border-color:rgba(20,184,166,.5);color:#9ff0e6}
+  .tera b{color:#7fd8cc}
+
+  .card{width:100%;background:var(--panel);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px}
+  .cardhd{font:600 9px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .natmini{font:600 9px/1 ui-monospace,monospace}
+  .natmini .u{color:var(--up)} .natmini .d{color:var(--down)}
+  .hexline{display:flex;align-items:center;justify-content:center;gap:16px}
+  .readout{display:flex;flex-direction:column;gap:3px}
+  .budget{font:700 12px/1 ui-monospace,monospace;color:#cfd2dc}
+  .eff{font:600 10px/1.5 ui-monospace,monospace;color:var(--muted)}
+  .ft{font:600 10px/1 ui-monospace,monospace;color:var(--teal);margin-top:4px}
+
+  /* per-stat boost steppers */
+  .boosts{margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
+  .boosts .bttl{font:700 8px/1 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .bgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .bcell{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .bcell .bs{font:700 8px/1 ui-monospace,monospace;color:#aab}
+  .stp{display:flex;align-items:center;gap:3px}
+  .stp .mb{width:15px;height:15px;border-radius:4px;display:flex;align-items:center;justify-content:center;font:700 10px/1 ui-monospace,monospace;color:var(--muted);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);cursor:pointer}
+  .stp .val{min-width:18px;text-align:center;font:700 10px/1 ui-monospace,monospace;color:var(--muted)}
+  .stp .val.pos{color:var(--up)} .stp .val.neg{color:var(--down)}
+
+  svg .spoke{stroke:rgba(255,255,255,.16);stroke-width:1}
+  svg .ring{fill:none;stroke:rgba(255,255,255,.08);stroke-width:1}
+  svg .poly{fill:rgba(20,184,166,.18);stroke:var(--teal);stroke-width:2}
+  svg .poly.foe{fill:rgba(251,113,133,.16);stroke:var(--foe)}
+  svg .hh{fill:var(--teal)} svg .hh.foe{fill:var(--foe)} svg .hh.empty{fill:#3a3f4a}
+  svg .lbl{fill:#aab;font:700 7px ui-monospace,monospace}
+
+  .moves{display:flex;flex-direction:column;gap:6px}
+  .mv{display:grid;grid-template-columns:20px 20px 1fr 64px 50px;gap:8px;align-items:center;padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+  .mv.sel{outline:2px solid var(--teal)}
+  .ty{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font:700 7px/1 ui-monospace,monospace;color:#fff}
+  .cat{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font:700 8px/1 ui-monospace,monospace}
+  .cat.phys{background:rgba(220,120,70,.18);color:#f0a878}
+  .cat.spec{background:rgba(90,120,220,.18);color:#9ab0f0}
+  .cat.stat{background:rgba(150,150,160,.14);color:#bbb}
+  .mname{font:600 12px/1 system-ui;color:#dfe2ea;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pct{font:700 11px/1 ui-monospace,monospace;color:#eef0f4;text-align:right}
+  .ko{font:800 9px/1 ui-monospace,monospace;text-transform:uppercase;text-align:right}
+  .ko.k1{color:#fb7185}.ko.k2{color:#fbbf24}.ko.k3{color:#f59e0b}.ko.k4{color:var(--muted)}
+
+  /* CENTER: label spacer + vs band (aligns with hero) + field panel (aligns with stats card) */
+  .center{display:flex;flex-direction:column;gap:14px;width:100%}
+  .vs-band{height:228px;display:flex;align-items:center;justify-content:center}
+  .vsbadge{width:46px;height:46px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font:800 16px/1 ui-monospace,monospace;color:#cfd2dc}
+  .fieldpanel{width:100%;background:rgba(20,22,30,.6);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px}
+  .fphd{display:flex;align-items:center;justify-content:space-between}
+  .fptitle{font:700 10px/1 ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .seg{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden}
+  .seg span{padding:5px 9px;font:600 10px/1 ui-monospace,monospace;color:var(--muted)}
+  .seg .on{background:rgba(20,184,166,.16);color:var(--teal)}
+  .fsec{display:flex;flex-direction:column;gap:6px}
+  .fsec .lab{font:700 8px/1 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .pills{display:flex;flex-wrap:wrap;gap:6px}
+  .pill{font:600 10px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:6px 11px;cursor:pointer}
+  .pill.on{background:rgba(20,184,166,.16);border-color:rgba(20,184,166,.5);color:#9ff0e6}
+  .divider{height:1px;background:rgba(255,255,255,.08);margin:2px 0}
+  .sideshd,.srow{display:grid;grid-template-columns:1fr 34px 34px;gap:6px;align-items:center}
+  .sideshd .ttl{font:700 8px/1 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .sideshd .h{font:700 8px/1 ui-monospace,monospace;text-transform:uppercase;text-align:center;color:var(--muted)}
+  .sideshd .h.foe{color:var(--foe)}
+  .srow .nm{font:600 11px/1 system-ui;color:#dfe2ea}
+  .dot{width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,255,255,.18);margin:0 auto;cursor:pointer}
+  .dot.on{background:var(--teal);border-color:var(--teal)}
+  .dot.onfoe{background:var(--foe);border-color:var(--foe)}
+  .cnt{display:flex;gap:3px;justify-content:center}
+  .cnt b{width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;font:600 8px/1 ui-monospace,monospace;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+  .cnt b.on{background:rgba(20,184,166,.16);border-color:rgba(20,184,166,.5);color:#9ff0e6}
+
+  .carousel{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:10px;padding:6px 0 16px;position:relative;z-index:1}
+  .ctitle{font:700 8px/1 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:6px}
+  .btab{position:relative;width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font:600 10px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)}
+  .btab .n{position:absolute;top:3px;left:5px;font-size:8px;opacity:.55}
+  .btab.active{outline:2px solid var(--teal);transform:translateY(-3px);background:rgba(20,184,166,.14)}
+  .btab.empty{color:#777;border-style:dashed}
+  .arrow{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:#cfd2dc}
+
+  .dock{height:46px;flex:0 0 46px;display:flex;align-items:center;justify-content:center;gap:10px;border-top:1px solid var(--border);background:#0c0d12}
+  .dbtn{font:600 12px/1 system-ui;color:#cfd2dc;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:8px 12px;display:flex;align-items:center;gap:6px}
+  .dbtn.act{background:rgba(20,184,166,.16);border-color:rgba(20,184,166,.5);color:#9ff0e6}
+  .dbtn .vs2{color:var(--muted);font-family:ui-monospace,monospace;font-size:11px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <span class="brand">trainers.gg</span><span class="crumb">/ Builder ▾</span>
+    <span class="fmt">VGC: Reg H ▾</span><span class="title">Untitled Team ✎</span>
+    <div class="tcontrols">
+      <span class="tbtn">File ▾</span><span class="tbtn">Validate</span><span class="tbtn">⚙</span>
+      <span class="tbtn">Sign In</span><span class="tbtn primary">Sign Up</span>
+      <span class="toggle"><span class="on">▣</span><span>▦</span></span>
+    </div>
+  </div>
+
+  <div class="canvas">
+    <div class="wash"></div>
+
+    <div class="arena">
+      <!-- ===== YOUR MON ===== -->
+      <div class="side">
+        <div class="col">
+          <div class="label-band"><span class="sidelabel">Your Pokémon</span></div>
+          <div class="hero-band">
+            <div class="silh">🦖</div>
+            <div class="sname">Tyranitar</div>
+            <div class="row">
+              <span class="chip" style="background:#9a8a55;border-color:#9a8a55;color:#fff">Rock</span>
+              <span class="chip" style="background:#4a4a6a;border-color:#4a4a6a;color:#fff">Dark</span>
+              <span class="chip tera"><b>T</b>Ghost</span>
+            </div>
+            <div class="row"><span class="chip"><b>ITEM</b>Assault Vest</span><span class="chip"><b>ABIL</b>Sand Stream</span></div>
+          </div>
+
+          <div class="card">
+            <div class="cardhd"><span>Stats · EVs</span><span class="natmini"><span class="u">+ATK</span> <span class="d">−SPA</span> · Adamant</span></div>
+            <div class="hexline">
+              <svg width="134" height="120" viewBox="0 0 134 120">
+                <polygon class="ring" points="67,22 109,44 109,86 67,108 25,86 25,44"/>
+                <line class="spoke" x1="67" y1="65" x2="67" y2="22"/><line class="spoke" x1="67" y1="65" x2="109" y2="44"/>
+                <line class="spoke" x1="67" y1="65" x2="109" y2="86"/><line class="spoke" x1="67" y1="65" x2="67" y2="108"/>
+                <line class="spoke" x1="67" y1="65" x2="25" y2="86"/><line class="spoke" x1="67" y1="65" x2="25" y2="44"/>
+                <polygon class="poly" points="67,26 107,46 86,80 71,90 63,72 44,52"/>
+                <circle class="hh" cx="67" cy="26" r="4"/><circle class="hh" cx="107" cy="46" r="4"/>
+                <circle class="hh empty" cx="86" cy="80" r="4"/><circle class="hh" cx="71" cy="90" r="4"/>
+                <circle class="hh empty" cx="63" cy="72" r="4"/><circle class="hh empty" cx="44" cy="52" r="4"/>
+                <text class="lbl" x="60" y="16">SPE</text><text class="lbl" x="113" y="44">ATK</text>
+                <text class="lbl" x="113" y="90">DEF</text><text class="lbl" x="61" y="120">HP</text>
+                <text class="lbl" x="5" y="90">SPA</text><text class="lbl" x="7" y="44">SPD</text>
+              </svg>
+              <div class="readout">
+                <div class="budget">508 / 510</div>
+                <div class="eff">HP 175<br>ATK 189<br>DEF 130<br>SPE 123</div>
+                <div class="ft">fine-tune ▾</div>
+              </div>
+            </div>
+            <!-- BOOSTS (ours) -->
+            <div class="boosts">
+              <div class="bttl">Boosts</div>
+              <div class="bgrid">
+                <div class="bcell"><span class="bs">ATK</span><div class="stp"><span class="mb">−</span><span class="val pos">+1</span><span class="mb">+</span></div></div>
+                <div class="bcell"><span class="bs">DEF</span><div class="stp"><span class="mb">−</span><span class="val">0</span><span class="mb">+</span></div></div>
+                <div class="bcell"><span class="bs">SPA</span><div class="stp"><span class="mb">−</span><span class="val">0</span><span class="mb">+</span></div></div>
+                <div class="bcell"><span class="bs">SPD</span><div class="stp"><span class="mb">−</span><span class="val">0</span><span class="mb">+</span></div></div>
+                <div class="bcell"><span class="bs">SPE</span><div class="stp"><span class="mb">−</span><span class="val pos">+1</span><span class="mb">+</span></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardhd"><span>Moves → damage dealt</span><span>% · KO</span></div>
+            <div class="moves">
+              <div class="mv sel"><span class="ty" style="background:#9a8a55">RK</span><span class="cat phys">P</span><span class="mname">Stone Edge</span><span class="pct">71–84%</span><span class="ko k2">2HKO</span></div>
+              <div class="mv"><span class="ty" style="background:#4a4a6a">DK</span><span class="cat phys">P</span><span class="mname">Crunch</span><span class="pct">112–133%</span><span class="ko k1">OHKO</span></div>
+              <div class="mv"><span class="ty" style="background:#b08a4a">GR</span><span class="cat phys">P</span><span class="mname">Earthquake</span><span class="pct">38–45%</span><span class="ko k3">3HKO</span></div>
+              <div class="mv"><span class="ty" style="background:#6a6a86">DR</span><span class="cat stat">St</span><span class="mname">Dragon Dance</span><span class="pct">—</span><span class="ko k4">status</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CENTER ===== -->
+      <div class="side">
+        <div class="center">
+          <div class="label-band"></div>
+          <div class="vs-band"><div class="vsbadge">VS</div></div>
+          <div class="fieldpanel">
+            <div class="fphd">
+              <span class="fptitle">Field</span>
+              <span class="seg"><span>Singles</span><span class="on">Doubles</span></span>
+            </div>
+            <div class="fsec"><span class="lab">Weather</span><div class="pills"><span class="pill on">Sun</span><span class="pill">Rain</span><span class="pill">Sand</span><span class="pill">Snow</span></div></div>
+            <div class="fsec"><span class="lab">Terrain</span><div class="pills"><span class="pill">Grassy</span><span class="pill">Electric</span><span class="pill">Psychic</span><span class="pill">Misty</span></div></div>
+            <div class="fsec"><span class="lab">Other</span><div class="pills"><span class="pill">Gravity</span><span class="pill">Trick Room</span><span class="pill">Fairy Aura</span></div></div>
+            <div class="divider"></div>
+            <div class="fsec">
+              <div class="sideshd"><span class="ttl">Sides</span><span class="h">Ours</span><span class="h foe">Theirs</span></div>
+              <div class="srow"><span class="nm">Reflect</span><span class="dot"></span><span class="dot"></span></div>
+              <div class="srow"><span class="nm">Light Screen</span><span class="dot on"></span><span class="dot"></span></div>
+              <div class="srow"><span class="nm">Aurora Veil</span><span class="dot"></span><span class="dot"></span></div>
+              <div class="srow"><span class="nm">Stealth Rock</span><span class="dot"></span><span class="dot onfoe"></span></div>
+              <div class="srow"><span class="nm">Spikes</span>
+                <span class="cnt"><b>0</b><b class="on">1</b><b>2</b><b>3</b></span>
+                <span class="cnt"><b class="on">0</b><b>1</b><b>2</b><b>3</b></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TARGET ===== -->
+      <div class="side">
+        <div class="col">
+          <div class="label-band"><span class="sidelabel foe">Calc Target · click to edit ▾</span></div>
+          <div class="hero-band">
+            <div class="silh foe">🧚</div>
+            <div class="sname">Flutter Mane</div>
+            <div class="row">
+              <span class="chip" style="background:#5a4a6a;border-color:#5a4a6a;color:#fff">Ghost</span>
+              <span class="chip" style="background:#c98ab0;border-color:#c98ab0;color:#fff">Fairy</span>
+              <span class="chip tera"><b>T</b>Fairy</span>
+            </div>
+            <div class="row"><span class="chip"><b>ITEM</b>Booster Energy</span><span class="chip"><b>ABIL</b>Protosynthesis</span></div>
+          </div>
+
+          <div class="card">
+            <div class="cardhd"><span>Stats · EVs</span><span class="natmini"><span class="u">+SPA</span> <span class="d">−ATK</span> · Timid</span></div>
+            <div class="hexline">
+              <svg width="134" height="120" viewBox="0 0 134 120">
+                <polygon class="ring" points="67,22 109,44 109,86 67,108 25,86 25,44"/>
+                <line class="spoke" x1="67" y1="65" x2="67" y2="22"/><line class="spoke" x1="67" y1="65" x2="109" y2="44"/>
+                <line class="spoke" x1="67" y1="65" x2="109" y2="86"/><line class="spoke" x1="67" y1="65" x2="67" y2="108"/>
+                <line class="spoke" x1="67" y1="65" x2="25" y2="86"/><line class="spoke" x1="67" y1="65" x2="25" y2="44"/>
+                <polygon class="poly foe" points="67,24 85,48 89,82 68,90 40,80 32,48"/>
+                <circle class="hh foe" cx="67" cy="24" r="4"/><circle class="hh empty" cx="85" cy="48" r="4"/>
+                <circle class="hh empty" cx="89" cy="82" r="4"/><circle class="hh" cx="68" cy="90" r="4"/>
+                <circle class="hh foe" cx="40" cy="80" r="4"/><circle class="hh empty" cx="32" cy="48" r="4"/>
+                <text class="lbl" x="60" y="16">SPE</text><text class="lbl" x="113" y="44">ATK</text>
+                <text class="lbl" x="113" y="90">DEF</text><text class="lbl" x="61" y="120">HP</text>
+                <text class="lbl" x="5" y="90">SPA</text><text class="lbl" x="7" y="44">SPD</text>
+              </svg>
+              <div class="readout">
+                <div class="budget">508 / 510</div>
+                <div class="eff">SPE 205<br>SPA 187<br>HP 131<br>SPD 110</div>
+                <div class="ft">fine-tune ▾</div>
+              </div>
+            </div>
+            <!-- BOOSTS (theirs) -->
+            <div class="boosts">
+              <div class="bttl">Boosts</div>
+              <div class="bgrid">
+                <div class="bcell"><span class="bs">ATK</span><div class="stp"><span class="mb">−</span><span class="val neg">−1</span><span class="mb">+</span></div></div>
+                <div class="bcell"><span class="bs">DEF</span><div class="stp"><span class="mb">−</span><span class="val">0</span><span class="mb">+</span></div></div>
+                <div class="bcell"><span class="bs">SPA</span><div class="stp"><span class="mb">−</span><span class="val">0</span><span class="mb">+</span></div></div>
+                <div class="bcell"><span class="bs">SPD</span><div class="stp"><span class="mb">−</span><span class="val">0</span><span class="mb">+</span></div></div>
+                <div class="bcell"><span class="bs">SPE</span><div class="stp"><span class="mb">−</span><span class="val">0</span><span class="mb">+</span></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardhd"><span>Moves → damage taken</span><span>% · KO</span></div>
+            <div class="moves">
+              <div class="mv"><span class="ty" style="background:#c98ab0">FA</span><span class="cat spec">S</span><span class="mname">Moonblast</span><span class="pct">88–104%</span><span class="ko k1">OHKO</span></div>
+              <div class="mv"><span class="ty" style="background:#5a4a6a">GH</span><span class="cat spec">S</span><span class="mname">Shadow Ball</span><span class="pct">44–52%</span><span class="ko k2">2HKO</span></div>
+              <div class="mv"><span class="ty" style="background:#b85c9a">FA</span><span class="cat spec">S</span><span class="mname">Dazzling Gleam</span><span class="pct">66–78%</span><span class="ko k2">2HKO</span></div>
+              <div class="mv"><span class="ty" style="background:#7a7a86">—</span><span class="cat stat">+</span><span class="mname">+ Add move</span><span class="pct">—</span><span class="ko k4">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carousel">
+      <span class="ctitle">Your team</span>
+      <div class="arrow">◀</div>
+      <div class="btab active"><span class="n">01</span>🦖</div>
+      <div class="btab"><span class="n">02</span>🐉</div>
+      <div class="btab empty"><span class="n">03</span>+</div>
+      <div class="btab empty"><span class="n">04</span>+</div>
+      <div class="btab empty"><span class="n">05</span>+</div>
+      <div class="btab empty"><span class="n">06</span>+</div>
+      <div class="arrow">▶</div>
+    </div>
+  </div>
+
+  <div class="dock">
+    <span class="dbtn">▦ Type matchups ▾</span>
+    <span class="dbtn">⚡ Speed tiers ▾</span>
+    <span class="dbtn act">🎯 Damage calc <span class="vs2">vs Flutter Mane</span> · ON ▾</span>
+  </div>
+
+</div>
+</body>
+</html>
