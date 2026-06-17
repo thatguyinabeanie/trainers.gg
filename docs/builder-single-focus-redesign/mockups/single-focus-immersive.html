@@ -1,0 +1,140 @@
+<h2>Single-focus — immersive, no wrapping card</h2>
+<p class="subtitle">Sprite floats center on a type-tinted backdrop. Stats (radial hexagon) and moves are floating panels that flank it. Identity + loadout run along the bottom. Tab strip + carousel arrows up top. This is a wireframe — reacting to arrangement, not final pixels.</p>
+
+<style>
+  .bmock{
+    position:relative;border-radius:14px;overflow:hidden;
+    /* type-tinted immersive backdrop (Rock/Dark example) */
+    background:
+      radial-gradient(120% 90% at 50% 30%, rgba(180,160,120,.20), transparent 60%),
+      linear-gradient(135deg, rgba(140,120,90,.18), rgba(70,70,90,.20));
+    border:1px solid var(--border, #2a2a33);
+    padding:14px 16px 0;min-height:520px;display:flex;flex-direction:column;gap:12px;
+  }
+  .btabs{display:flex;align-items:center;justify-content:center;gap:10px}
+  .btab{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    font:600 11px/1 ui-monospace,monospace;color:#cfd2dc;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)}
+  .btab .n{position:absolute;margin-top:-30px;margin-left:-28px;font-size:9px;opacity:.6}
+  .btab.active{outline:2px solid #14b8a6;transform:translateY(-3px);background:rgba(20,184,166,.14)}
+  .btab.empty{color:#777;border-style:dashed}
+  .arrow{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);color:#cfd2dc}
+  .dots{display:flex;gap:6px;justify-content:center}
+  .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.25)}
+  .dot.on{background:#14b8a6}
+  .bstage{flex:1;display:grid;grid-template-columns:minmax(220px,1fr) 1.1fr minmax(220px,1fr);gap:14px;align-items:center}
+  .panel{background:rgba(20,22,30,.55);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;padding:12px}
+  .plabel{font:600 10px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:#9aa0ad;margin-bottom:8px}
+  .hexwrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .budget{font:700 12px/1 ui-monospace,monospace;color:#cfd2dc}
+  .finetune{font:600 11px/1 ui-monospace,monospace;color:#14b8a6}
+  .sprite{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+  .silh{width:200px;height:200px;border-radius:50%;
+    background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.10), rgba(255,255,255,.02));
+    border:1px dashed rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:64px}
+  .sname{font:700 16px/1 system-ui;color:#eef0f4}
+  .smeta{font:600 11px/1 ui-monospace,monospace;color:#aab;letter-spacing:.06em}
+  .moves{display:flex;flex-direction:column;gap:8px}
+  .move{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);color:#dfe2ea;font:600 13px/1 system-ui}
+  .move .t{width:18px;height:18px;border-radius:5px;background:#b85c3c}
+  .move.sel{outline:2px solid #14b8a6;background:rgba(20,184,166,.12)}
+  .bbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:11px 14px;margin:0 -16px;background:rgba(10,11,16,.6);border-top:1px solid rgba(255,255,255,.08)}
+  .ident{display:flex;align-items:center;gap:9px;color:#eef0f4;font:600 13px/1 system-ui}
+  .pill{font:600 11px/1 ui-monospace,monospace;color:#cfd2dc;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.10);border-radius:7px;padding:6px 9px}
+  .pill b{color:#9aa0ad;font-weight:600;margin-right:5px}
+  .sep{width:1px;height:20px;background:rgba(255,255,255,.12)}
+  /* simple hexagon stat editor sketch */
+  svg .spoke{stroke:rgba(255,255,255,.18);stroke-width:1}
+  svg .poly{fill:rgba(20,184,166,.18);stroke:#14b8a6;stroke-width:2}
+  svg .hh{fill:#14b8a6}
+  svg .hh.empty{fill:#3a3f4a}
+  svg .lbl{fill:#aab;font:600 9px ui-monospace,monospace}
+</style>
+
+<div class="bmock">
+  <!-- TOP: tab strip + carousel -->
+  <div class="btabs">
+    <div class="arrow">◀</div>
+    <div class="btab active">01🦖</div>
+    <div class="btab">02🐉</div>
+    <div class="btab empty">+</div>
+    <div class="btab empty">+</div>
+    <div class="btab empty">+</div>
+    <div class="btab empty">+</div>
+    <div class="arrow">▶</div>
+  </div>
+  <div class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+
+  <!-- STAGE: stats | sprite | moves -->
+  <div class="bstage">
+    <!-- LEFT: radial hexagon stat editor -->
+    <div class="panel hexwrap">
+      <div class="plabel">Stats · EVs</div>
+      <svg width="190" height="170" viewBox="0 0 190 170">
+        <!-- spokes -->
+        <line class="spoke" x1="95" y1="85" x2="95" y2="20"/>
+        <line class="spoke" x1="95" y1="85" x2="151" y2="52"/>
+        <line class="spoke" x1="95" y1="85" x2="151" y2="118"/>
+        <line class="spoke" x1="95" y1="85" x2="95" y2="150"/>
+        <line class="spoke" x1="95" y1="85" x2="39" y2="118"/>
+        <line class="spoke" x1="95" y1="85" x2="39" y2="52"/>
+        <!-- spread polygon -->
+        <polygon class="poly" points="95,30 151,60 138,112 95,150 50,108 48,58"/>
+        <!-- handles -->
+        <circle class="hh" cx="95" cy="30" r="5"/>
+        <circle class="hh empty" cx="151" cy="60" r="5"/>
+        <circle class="hh" cx="138" cy="112" r="5"/>
+        <circle class="hh" cx="95" cy="150" r="5"/>
+        <circle class="hh empty" cx="50" cy="108" r="5"/>
+        <circle class="hh" cx="48" cy="58" r="5"/>
+        <!-- labels -->
+        <text class="lbl" x="86" y="14">SPE</text>
+        <text class="lbl" x="156" y="52">ATK</text>
+        <text class="lbl" x="156" y="120">DEF</text>
+        <text class="lbl" x="84" y="166">HP</text>
+        <text class="lbl" x="14" y="120">SPA</text>
+        <text class="lbl" x="16" y="52">SPD</text>
+      </svg>
+      <div class="budget">508 / 510</div>
+      <div class="finetune">fine-tune ▾  (IV · ± boosts)</div>
+    </div>
+
+    <!-- CENTER: sprite showcase -->
+    <div class="sprite">
+      <div class="silh">🦖</div>
+      <div class="sname">Tyranitar-Mega</div>
+      <div class="smeta">Lv 50 · ♂ · ✦</div>
+    </div>
+
+    <!-- RIGHT: moves -->
+    <div class="panel">
+      <div class="plabel">Moves</div>
+      <div class="moves">
+        <div class="move sel"><span class="t"></span>Stone Edge</div>
+        <div class="move"><span class="t" style="background:#5a4a8a"></span>Crunch</div>
+        <div class="move"><span class="t" style="background:#c94b4b"></span>Earthquake</div>
+        <div class="move"><span class="t" style="background:#7a7a86"></span>+ Add move</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM: identity + loadout bar -->
+  <div class="bbar">
+    <div class="ident">🦖 Tyranitar-Mega</div>
+    <div class="pill">No. 248</div>
+    <div class="pill">♂ · ✦</div>
+    <div class="pill">Rock / Dark</div>
+    <div class="sep"></div>
+    <div class="pill"><b>ITEM</b>Tyranitarite</div>
+    <div class="pill"><b>ABIL</b>Sand Stream</div>
+    <div class="pill"><b>NATURE</b>Serious</div>
+    <div class="pill"><b>TERA</b>Rock</div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:14px">React in the terminal: does the <b>flanked, card-less</b> arrangement feel right? Anything to move — e.g. loadout up vs bottom, panels more/less translucent, sprite bigger?</p>
