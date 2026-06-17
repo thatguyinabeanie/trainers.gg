@@ -830,6 +830,10 @@ describe("bulkRemovePlayers", () => {
     });
     // status update must NOT have been called
     expect(mockUpdate).not.toHaveBeenCalled();
+    // Exactly 3 `from()` calls: (1) registrations select, (2) tournament lookup,
+    // (3) staff upsert — the 4th call (tournament_registrations status update)
+    // must never be reached after the staff upsert throws.
+    expect(mockSupabase.from).toHaveBeenCalledTimes(3);
   });
 
   it("returns error when getUser returns no user", async () => {
