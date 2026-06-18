@@ -381,18 +381,19 @@ describe("FocusCard — basic structure", () => {
   });
 });
 
-describe("FocusCard — calc OFF: cards-2x2 presentation", () => {
+describe("FocusCard — calc OFF: list presentation", () => {
   beforeEach(() => {
     mockCalcEnabled.value = false;
   });
 
   // -------------------------------------------------------------------------
-  // 9. MovesLane receives presentation="cards-2x2" when calc is OFF
+  // 9. MovesLane receives presentation="list" when calc is OFF
+  //    (FocusCard renders moves as a vertical list, not a 2×2 grid).
   // -------------------------------------------------------------------------
-  it("passes presentation='cards-2x2' to MovesLane when calc is OFF", () => {
+  it("passes presentation='list' to MovesLane when calc is OFF", () => {
     renderFocusCard();
     const lane = screen.getByTestId("moves-lane");
-    expect(lane).toHaveAttribute("data-presentation", "cards-2x2");
+    expect(lane).toHaveAttribute("data-presentation", "list");
   });
 
   // -------------------------------------------------------------------------

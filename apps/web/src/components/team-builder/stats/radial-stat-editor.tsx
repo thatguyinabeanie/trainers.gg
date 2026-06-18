@@ -727,7 +727,7 @@ export function RadialStatEditor({
                 {/* Stat label (with ▲/▼ nature indicator) at outer ring */}
                 <text
                   x={lx}
-                  y={ly - 6}
+                  y={ly - 8}
                   textAnchor="middle"
                   dominantBaseline="middle"
                   className={cn(
@@ -736,8 +736,11 @@ export function RadialStatEditor({
                     isNatureBoosted && "text-emerald-500 dark:text-emerald-400",
                     isNatureReduced && "text-rose-500 dark:text-rose-400"
                   )}
-                  /* SVG font-size attr — not Tailwind arbitrary to avoid px restriction */
-                  fontSize={9}
+                  /* SVG user-unit font-size (240 viewBox) — scales with the
+                     hexagon container, so it can't use a Tailwind text class.
+                     Sized up from 9 → 13 for legibility (the SVG text doesn't
+                     respond to the fluid root font-size). */
+                  fontSize={13}
                   aria-hidden
                 >
                   {STAT_SHORT_LABELS[statKey]}
@@ -747,11 +750,11 @@ export function RadialStatEditor({
                 {/* Final stat value — plain, no nature color (arrow is on the label). */}
                 <text
                   x={lx}
-                  y={ly + 7}
+                  y={ly + 10}
                   textAnchor="middle"
                   dominantBaseline="middle"
                   className="fill-foreground font-mono font-bold tabular-nums"
-                  fontSize={11}
+                  fontSize={15}
                   aria-hidden
                 >
                   {liveFinalStat}
