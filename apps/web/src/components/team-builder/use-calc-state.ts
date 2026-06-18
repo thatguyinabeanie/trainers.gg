@@ -78,6 +78,9 @@ export interface BaseSideState {
   stealthRock: boolean;
   spikes: SpikesCount;
   saltCure: boolean;
+  leechSeed: boolean;
+  crit: boolean;
+  singleTarget: boolean;
 }
 export type AttackerSideState = BaseSideState;
 
@@ -562,6 +565,8 @@ function buildField(
   terrain: string,
   gravity: boolean,
   fairyAura: boolean,
+  magicRoom: boolean,
+  wonderRoom: boolean,
   attackerSide: BaseSideState,
   defenderSide: BaseSideState,
   direction: CalcDirection
@@ -580,6 +585,7 @@ function buildField(
     isSR: aSide.stealthRock,
     spikes: aSide.spikes,
     isSaltCured: aSide.saltCure,
+    isSeeded: aSide.leechSeed,
   });
 
   const dSmogon = new Side({
@@ -593,6 +599,7 @@ function buildField(
     isSR: dSide.stealthRock,
     spikes: dSide.spikes,
     isSaltCured: dSide.saltCure,
+    isSeeded: dSide.leechSeed,
   });
 
   return new Field({
@@ -601,6 +608,8 @@ function buildField(
     terrain: asSmogon(terrain || null),
     isGravity: gravity,
     isFairyAura: fairyAura,
+    isMagicRoom: magicRoom,
+    isWonderRoom: wonderRoom,
     attackerSide: aSmogon,
     defenderSide: dSmogon,
   });
@@ -629,7 +638,8 @@ function runCalc(
   isCrit: boolean,
   field: Field,
   faintedForMove?: number,
-  weather?: string
+  weather?: string,
+  singleTarget?: boolean
 ): CalcOutput | null {
   try {
     const basePowerOverride =
@@ -641,6 +651,10 @@ function runCalc(
         ? { isCrit, basePower: basePowerOverride }
         : { isCrit };
     const move = new Move(gen, moveName, moveOpts);
+    // Single Target: override the move's target so the Doubles spread-move
+    // reduction (×0.75) is not applied. The engine gates that on
+    // move.target being allAdjacent/allAdjacentFoes (gen789).
+    if (singleTarget) move.target = "normal";
     const result = calculate(gen, attacker, defender, move, field);
     const damage = result.damage;
     // Distinguish "calc failed" (damage is undefined/null) from "damage is 0"
@@ -842,6 +856,10 @@ export interface UseCalcStateReturn {
   setGravity: (v: boolean) => void;
   fairyAura: boolean;
   setFairyAura: (v: boolean) => void;
+  magicRoom: boolean;
+  setMagicRoom: (v: boolean) => void;
+  wonderRoom: boolean;
+  setWonderRoom: (v: boolean) => void;
   // Sides
   attackerSide: AttackerSideState;
   defenderSide: BaseSideState;
@@ -1029,6 +1047,8 @@ export function useCalcState({
   const [terrain, setTerrain] = useState("");
   const [gravity, setGravity] = useState(false);
   const [fairyAura, setFairyAura] = useState(false);
+  const [magicRoom, setMagicRoom] = useState(false);
+  const [wonderRoom, setWonderRoom] = useState(false);
   const [attackerSide, setAttackerSideState] = useState<AttackerSideState>({
     reflect: false,
     lightScreen: false,
@@ -1040,6 +1060,9 @@ export function useCalcState({
     stealthRock: false,
     spikes: 0,
     saltCure: false,
+    leechSeed: false,
+    crit: false,
+    singleTarget: false,
   });
   const [defenderSide, setDefenderSideState] = useState<BaseSideState>({
     reflect: false,
@@ -1052,6 +1075,9 @@ export function useCalcState({
     stealthRock: false,
     spikes: 0,
     saltCure: false,
+    leechSeed: false,
+    crit: false,
+    singleTarget: false,
   });
 
   // --- Helpers exposed to consumers ---
@@ -1176,6 +1202,8 @@ export function useCalcState({
     effectiveTerrain,
     gravity,
     fairyAura,
+    magicRoom,
+    wonderRoom,
     attackerSide,
     defenderSide,
     direction
@@ -1242,6 +1270,8 @@ export function useCalcState({
     effectiveTerrain,
     gravity,
     fairyAura,
+    magicRoom,
+    wonderRoom,
     attackerSide,
     defenderSide,
     "defense"
@@ -1262,10 +1292,11 @@ export function useCalcState({
         sharedAttacker,
         sharedDefender,
         moveName,
-        isCrit,
+        isCrit || attackerSide.crit,
         sharedOffenseField,
         faintedYours,
-        effectiveWeather
+        effectiveWeather,
+        attackerSide.singleTarget
       );
     }
 
@@ -1277,10 +1308,11 @@ export function useCalcState({
       sharedDefenderAsAttacker,
       sharedOurPokemonAsDefender,
       moveName,
-      isCrit,
+      isCrit || defenderSide.crit,
       sharedDefenseField,
       faintedTheirs,
-      effectiveWeather
+      effectiveWeather,
+      defenderSide.singleTarget
     );
   }
 
@@ -1317,7 +1349,8 @@ export function useCalcState({
     ] as const;
     return rowMoves.map((moveName, idx) => {
       if (!moveName) return null;
-      const isCrit = isFocused ? (critMoves[idx] ?? false) : false;
+      const isCrit =
+        (isFocused ? (critMoves[idx] ?? false) : false) || attackerSide.crit;
       return runCalc(
         gen,
         attacker,
@@ -1326,7 +1359,8 @@ export function useCalcState({
         isCrit,
         sharedOffenseField,
         faintedYours,
-        effectiveWeather
+        effectiveWeather,
+        attackerSide.singleTarget
       );
     });
   }
@@ -1347,10 +1381,11 @@ export function useCalcState({
       sharedDefenderAsAttacker,
       sharedOurPokemonAsDefender,
       moveName,
-      false,
+      defenderSide.crit,
       sharedDefenseField,
       faintedTheirs,
-      effectiveWeather
+      effectiveWeather,
+      defenderSide.singleTarget
     );
   }
 
@@ -1396,10 +1431,11 @@ export function useCalcState({
         sharedDefenderAsAttacker,
         ourDefender,
         moveName,
-        false,
+        defenderSide.crit,
         sharedDefenseField,
         faintedTheirs,
-        effectiveWeather
+        effectiveWeather,
+        defenderSide.singleTarget
       );
     });
   }
@@ -1452,6 +1488,10 @@ export function useCalcState({
     setGravity,
     fairyAura,
     setFairyAura,
+    magicRoom,
+    setMagicRoom,
+    wonderRoom,
+    setWonderRoom,
     attackerSide,
     defenderSide,
     setAttackerSide,

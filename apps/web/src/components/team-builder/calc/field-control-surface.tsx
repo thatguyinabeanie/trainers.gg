@@ -194,6 +194,10 @@ export function FieldControlSurface({
     setGravity,
     fairyAura,
     setFairyAura,
+    magicRoom,
+    setMagicRoom,
+    wonderRoom,
+    setWonderRoom,
     inferredWeather,
     inferredTerrain,
     attackerSide,
@@ -298,6 +302,18 @@ export function FieldControlSurface({
           >
             Fairy Aura
           </PillToggle>
+          <PillToggle
+            active={magicRoom}
+            onClick={() => setMagicRoom(!magicRoom)}
+          >
+            Magic Room
+          </PillToggle>
+          <PillToggle
+            active={wonderRoom}
+            onClick={() => setWonderRoom(!wonderRoom)}
+          >
+            Wonder Room
+          </PillToggle>
         </div>
       </div>
 
@@ -392,6 +408,77 @@ export function FieldControlSurface({
               onChange={(v) => setDefenderSide({ spikes: v })}
             />
           </div>
+
+          <SideSwitchRow
+            label="Leech Seed"
+            yours={attackerSide.leechSeed}
+            theirs={defenderSide.leechSeed}
+            onToggleYours={() =>
+              setAttackerSide({ leechSeed: !attackerSide.leechSeed })
+            }
+            onToggleTheirs={() =>
+              setDefenderSide({ leechSeed: !defenderSide.leechSeed })
+            }
+          />
+
+          {/* ── Boosts section ──────────────────────────────────────── */}
+          <SectionDivider label="Boosts" />
+
+          <SideSwitchRow
+            label="Helping Hand"
+            yours={attackerSide.helpingHand}
+            theirs={defenderSide.helpingHand}
+            onToggleYours={() =>
+              setAttackerSide({ helpingHand: !attackerSide.helpingHand })
+            }
+            onToggleTheirs={() =>
+              setDefenderSide({ helpingHand: !defenderSide.helpingHand })
+            }
+          />
+
+          <SideSwitchRow
+            label="Friend Guard"
+            yours={attackerSide.friendGuard}
+            theirs={defenderSide.friendGuard}
+            onToggleYours={() =>
+              setAttackerSide({ friendGuard: !attackerSide.friendGuard })
+            }
+            onToggleTheirs={() =>
+              setDefenderSide({ friendGuard: !defenderSide.friendGuard })
+            }
+          />
+
+          <SideSwitchRow
+            label="Protect"
+            yours={attackerSide.protect}
+            theirs={defenderSide.protect}
+            onToggleYours={() =>
+              setAttackerSide({ protect: !attackerSide.protect })
+            }
+            onToggleTheirs={() =>
+              setDefenderSide({ protect: !defenderSide.protect })
+            }
+          />
+
+          <SideSwitchRow
+            label="Single Target"
+            yours={attackerSide.singleTarget}
+            theirs={defenderSide.singleTarget}
+            onToggleYours={() =>
+              setAttackerSide({ singleTarget: !attackerSide.singleTarget })
+            }
+            onToggleTheirs={() =>
+              setDefenderSide({ singleTarget: !defenderSide.singleTarget })
+            }
+          />
+
+          <SideSwitchRow
+            label="Critical Hit"
+            yours={attackerSide.crit}
+            theirs={defenderSide.crit}
+            onToggleYours={() => setAttackerSide({ crit: !attackerSide.crit })}
+            onToggleTheirs={() => setDefenderSide({ crit: !defenderSide.crit })}
+          />
         </div>
       </fieldset>
     </div>
