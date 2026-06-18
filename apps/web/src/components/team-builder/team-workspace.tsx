@@ -87,6 +87,7 @@ import { useBuilderPreferences } from "./use-builder-preferences";
 import { useBuilderState } from "./use-builder-state";
 import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
 import { TeamLayoutToggle } from "./team-layout-toggle";
+import { SingleFocusView } from "./layouts/single-focus-view";
 
 // =============================================================================
 // KO-tier semantic tokens (migrated from .builderApp's CSS-module rule).
@@ -991,54 +992,82 @@ export function TeamWorkspaceV2({
                         <TeamLayoutToggle />
                       </div>
                     </div>
-                    {/* Section wraps pokemon rows */}
-                    {/* max-w-[1800px]: workspace-scale cap — no Tailwind scale token at this size */}
-                    <section className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3">
-                      <div
-                        className={cn(
-                          "grid grid-cols-[minmax(0,1fr)] gap-2",
-                          layoutMode === "2x3-vertical" &&
-                            "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
-                        )}
-                      >
-                        <DndContext
-                          id={dndId}
-                          sensors={sensors}
-                          collisionDetection={closestCenter}
-                          onDragEnd={handleDragEnd}
-                        >
-                          <SortableContext
-                            items={itemIds}
-                            strategy={verticalListSortingStrategy}
+                    {/* Section wraps pokemon rows — grid mode only */}
+                    <DndContext
+                      id={dndId}
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      {layoutMode === "single" ? (
+                        /* Single-focus view: full remaining height, no grid wrapper.
+                           SingleFocusView owns its own internal SortableContext
+                           (horizontalListSortingStrategy) — do NOT add one here. */
+                        <div className="min-h-0 w-full flex-1 overflow-hidden">
+                          <SingleFocusView
+                            slots={slots}
+                            activeIdx={state.activeIdx}
+                            onActivate={state.setActiveIdx}
+                            itemIds={itemIds}
+                            format={format}
+                            onRemove={handleRemoveByIdx}
+                            onPokemonUpdate={handlePokemonUpdate}
+                            onAdd={handleAdd}
+                            errorsBySlot={
+                              new Map(
+                                slots.map((p, i) => [
+                                  i,
+                                  p != null
+                                    ? (pokemonErrors.get(p.id) ?? [])
+                                    : [],
+                                ])
+                              )
+                            }
+                          />
+                        </div>
+                      ) : (
+                        /* Grid mode (2x3-vertical): byte-for-byte unchanged path. */
+                        /* max-w-[1800px]: workspace-scale cap — no Tailwind scale token at this size */
+                        <section className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 p-3">
+                          <div
+                            className={cn(
+                              "grid grid-cols-[minmax(0,1fr)] gap-2",
+                              "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
+                            )}
                           >
-                            {slots.map((p, i) => {
-                              const slotPokemonId = p?.id ?? null;
-                              const slotErrors =
-                                slotPokemonId !== null
-                                  ? (pokemonErrors.get(slotPokemonId) ?? [])
-                                  : [];
+                            <SortableContext
+                              items={itemIds}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              {slots.map((p, i) => {
+                                const slotPokemonId = p?.id ?? null;
+                                const slotErrors =
+                                  slotPokemonId !== null
+                                    ? (pokemonErrors.get(slotPokemonId) ?? [])
+                                    : [];
 
-                              return (
-                                <PokeRow
-                                  key={itemIds[i]}
-                                  sortableId={itemIds[i] ?? `__empty__${i}`}
-                                  idx={i}
-                                  pokemon={p}
-                                  isActive={state.activeIdx === i}
-                                  onActivate={state.setActiveIdx}
-                                  onAdd={handleAdd}
-                                  onRemove={handleRemoveByIdx}
-                                  teamPokemon={optimisticTeamPokemon}
-                                  format={format}
-                                  onPokemonUpdate={handlePokemonUpdate}
-                                  slotErrors={slotErrors}
-                                />
-                              );
-                            })}
-                          </SortableContext>
-                        </DndContext>
-                      </div>
-                    </section>
+                                return (
+                                  <PokeRow
+                                    key={itemIds[i]}
+                                    sortableId={itemIds[i] ?? `__empty__${i}`}
+                                    idx={i}
+                                    pokemon={p}
+                                    isActive={state.activeIdx === i}
+                                    onActivate={state.setActiveIdx}
+                                    onAdd={handleAdd}
+                                    onRemove={handleRemoveByIdx}
+                                    teamPokemon={optimisticTeamPokemon}
+                                    format={format}
+                                    onPokemonUpdate={handlePokemonUpdate}
+                                    slotErrors={slotErrors}
+                                  />
+                                );
+                              })}
+                            </SortableContext>
+                          </div>
+                        </section>
+                      )}
+                    </DndContext>
                   </div>
                 </ResizablePanel>
 
@@ -1086,9 +1115,7 @@ export function TeamWorkspaceV2({
                           name,
                         });
                         if (!result.success) {
-                          toast.error(
-                            result.error ?? "Failed to rename team."
-                          );
+                          toast.error(result.error ?? "Failed to rename team.");
                           return;
                         }
                         persistence.onMutationSuccess();
@@ -1195,10 +1222,7 @@ export function TeamWorkspaceV2({
                             aria-hidden="true"
                           />
                         ) : (
-                          <CheckCircle2
-                            className="size-5"
-                            aria-hidden="true"
-                          />
+                          <CheckCircle2 className="size-5" aria-hidden="true" />
                         )}
                       </PopoverTrigger>
                       <PopoverContent
@@ -1217,41 +1241,36 @@ export function TeamWorkspaceV2({
                     </Popover>
                   </div>
 
-                  {/* max-w-[1800px]: workspace-scale cap — no Tailwind scale token at this size */}
-                  <section className="mx-auto my-auto grid w-full max-w-[1800px] gap-2 px-3 pb-3">
-                    <div
-                      className={cn(
-                        "grid grid-cols-[minmax(0,1fr)] gap-2",
-                        layoutMode === "2x3-vertical" &&
-                          "grid-cols-[repeat(auto-fit,minmax(585px,1fr))] items-center justify-center"
-                      )}
+                  {/* Mobile always uses single-focus layout (useTeamLayout forces
+                      "single" on mobile). SingleFocusView owns its own internal
+                      SortableContext — wrap in DndContext for drag-reorder support. */}
+                  <div className="min-h-0 w-full flex-1 overflow-hidden">
+                    <DndContext
+                      id={dndId}
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
                     >
-                      {slots.map((p, i) => {
-                        const slotPokemonId = p?.id ?? null;
-                        const slotErrors =
-                          slotPokemonId !== null
-                            ? (pokemonErrors.get(slotPokemonId) ?? [])
-                            : [];
-
-                        return (
-                          <PokeRow
-                            key={itemIds[i]}
-                            sortableId={itemIds[i] ?? `__empty__${i}`}
-                            idx={i}
-                            pokemon={p}
-                            isActive={state.activeIdx === i}
-                            onActivate={state.setActiveIdx}
-                            onAdd={handleAdd}
-                            onRemove={handleRemoveByIdx}
-                            teamPokemon={optimisticTeamPokemon}
-                            format={format}
-                            onPokemonUpdate={handlePokemonUpdate}
-                            slotErrors={slotErrors}
-                          />
-                        );
-                      })}
-                    </div>
-                  </section>
+                      <SingleFocusView
+                        slots={slots}
+                        activeIdx={state.activeIdx}
+                        onActivate={state.setActiveIdx}
+                        itemIds={itemIds}
+                        format={format}
+                        onRemove={handleRemoveByIdx}
+                        onPokemonUpdate={handlePokemonUpdate}
+                        onAdd={handleAdd}
+                        errorsBySlot={
+                          new Map(
+                            slots.map((p, i) => [
+                              i,
+                              p != null ? (pokemonErrors.get(p.id) ?? []) : [],
+                            ])
+                          )
+                        }
+                      />
+                    </DndContext>
+                  </div>
                 </div>
 
                 {state.rightDrawer === "calc" && (
@@ -1348,7 +1367,6 @@ export function TeamWorkspaceV2({
           setToggle={setSpeedToggle}
           onCollapseToSidepane={() => state.setSpeedView("sidepane")}
         />
-
       </CalcStateProvider>
     </TeamLayoutContext.Provider>
   );
