@@ -211,17 +211,18 @@ function MonStatsCard({
         )}
       </div>
 
-      {/* Radial stat editor */}
+      {/* Radial stat editor — NOT given boosts: stat-stage boosts live solely
+          in the dedicated Boosts row below. Passing them here would also render
+          the boost steppers inside the radial fine-tune expander, giving two
+          ways to edit the same boosts. The fine-tune stays IV-only. */}
       <RadialStatEditor
         pokemon={pokemon}
         format={format}
         onUpdate={onUpdate}
-        boosts={boosts}
-        onBoostChange={onBoostChange}
         compact={compact}
       />
 
-      {/* Boosts row */}
+      {/* Boosts row — the single place to edit stat-stage boosts */}
       <div className="border-border/50 mt-3 border-t border-dashed pt-2.5">
         <span className="text-muted-foreground mb-1.5 block font-mono text-xs font-bold tracking-[0.10em] uppercase">
           Boosts
