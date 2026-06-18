@@ -227,10 +227,7 @@ describe("success — communities", () => {
     const response = await GET(makeRequest());
 
     expect(response.status).toBe(200);
-    expect(await getJson(response)).toEqual({
-      success: true,
-      data: COMMUNITIES_RESULT,
-    });
+    expect(await getJson(response)).toEqual(COMMUNITIES_RESULT);
     expect(mockListCommunitiesAdmin).toHaveBeenCalledWith(
       SERVICE_ROLE_CLIENT,
       expect.objectContaining({ limit: 25, offset: 0 })
@@ -244,10 +241,7 @@ describe("success — communities", () => {
     const response = await GET(makeRequest({ token: "valid-jwt" }));
 
     expect(response.status).toBe(200);
-    expect(await getJson(response)).toEqual({
-      success: true,
-      data: COMMUNITIES_RESULT,
-    });
+    expect(await getJson(response)).toEqual(COMMUNITIES_RESULT);
     expect(mockListCommunitiesAdmin).toHaveBeenCalled();
   });
 
@@ -309,10 +303,7 @@ describe("success — requests", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(await getJson(response)).toEqual({
-      success: true,
-      data: REQUESTS_RESULT,
-    });
+    expect(await getJson(response)).toEqual(REQUESTS_RESULT);
     expect(mockListOrgRequestsAdmin).toHaveBeenCalledWith(
       SERVICE_ROLE_CLIENT,
       expect.objectContaining({ limit: 25, offset: 0 })

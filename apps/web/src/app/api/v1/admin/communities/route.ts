@@ -86,10 +86,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       offset,
     });
 
-    return NextResponse.json(
-      { success: true, data: result },
-      { headers: { "Cache-Control": CACHE_CONTROL } }
-    );
+    return NextResponse.json(result, {
+      headers: { "Cache-Control": CACHE_CONTROL },
+    });
   }
 
   // Default: communities
@@ -102,8 +101,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     offset,
   });
 
-  return NextResponse.json(
-    { success: true, data: result },
-    { headers: { "Cache-Control": CACHE_CONTROL } }
-  );
+  return NextResponse.json(result, {
+    headers: { "Cache-Control": CACHE_CONTROL },
+  });
 }

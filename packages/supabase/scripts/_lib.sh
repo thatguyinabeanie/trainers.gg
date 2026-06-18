@@ -21,5 +21,8 @@ NC='\033[0m'
 # Prints the container name to stdout, or prints nothing if none is found.
 # The caller is responsible for checking whether the result is empty.
 discover_supabase_container() {
-  docker ps --format '{{.Names}}' | grep -E 'supabase_db' | head -n1
+  # awk (not grep|head): awk exits 0 even when nothing matches, so callers
+  # running `set -euo pipefail` (e.g. db-advisor.sh) receive an empty string
+  # to check instead of having the pipeline's non-zero grep abort the script.
+  docker ps --format '{{.Names}}' | awk '/supabase_db/ { print; exit }'
 }
