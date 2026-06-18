@@ -43,54 +43,37 @@ export interface CalcVersusViewProps {
 }
 
 // =============================================================================
-// Helpers — per-side floating hero (sprite + species name + type chips)
+// Helpers — desktop hero content (sprite + chips, NO label)
 // =============================================================================
 
 /**
- * Compact inline hero: sprite button + species name + type + tera + item/ability
- * chips in a flex-column arrangement. No card chrome — floats above the stats
- * card below it.
+ * The inner content of the hero band: sprite + species pill + type/tera/item/ability chips.
+ * Label is rendered separately in the label band for 3-column row alignment.
  */
-interface MonHeroProps {
+interface MonHeroContentProps {
   pokemon: Tables<"pokemon">;
-  /** Optional label for the side tag (e.g., "Calc Target · click to edit ▾"). */
-  sideLabel: string;
-  /** Color class for the side label text. */
-  sideLabelClassName?: string;
   onSpeciesClick: () => void;
   isShiny?: boolean;
+  isFoe?: boolean;
 }
 
-function MonHero({
+function MonHeroContent({
   pokemon,
-  sideLabel,
-  sideLabelClassName,
   onSpeciesClick,
   isShiny = false,
-}: MonHeroProps) {
+}: MonHeroContentProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {/* Side label — fixed-height 14px band to keep 3-col alignment */}
-      <div className="flex h-3.5 items-center justify-center">
-        <span
-          className={cn(
-            "font-mono text-[9px] font-bold tracking-[0.12em] uppercase",
-            sideLabelClassName ?? "text-muted-foreground"
-          )}
-        >
-          {sideLabel}
-        </span>
-      </div>
-
-      {/* Sprite — 144px circle */}
+      {/* Sprite — 136px to fit the hero band comfortably */}
       <SpriteSection
         pokemon={pokemon}
         onSpeciesClick={onSpeciesClick}
         variant="pill-bottom"
         types={types}
         isShiny={isShiny}
+        size={136}
       />
 
       {/* Type + Tera chips */}
@@ -112,7 +95,7 @@ function MonHero({
         )}
       </div>
 
-      {/* Item + Ability */}
+      {/* Item + Ability chips */}
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         {pokemon.held_item && (
           <span className="border-border bg-card text-foreground rounded border px-2 py-0.5 font-mono text-[10px]">
@@ -127,6 +110,50 @@ function MonHero({
           </span>
         )}
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// MonHero — used in mobile layout (label + hero together, stacked vertically)
+// =============================================================================
+
+interface MonHeroProps {
+  pokemon: Tables<"pokemon">;
+  /** Label for the side tag (e.g., "Your Pokémon"). */
+  sideLabel: string;
+  /** Color class for the side label text. */
+  sideLabelClassName?: string;
+  onSpeciesClick: () => void;
+  isShiny?: boolean;
+}
+
+function MonHero({
+  pokemon,
+  sideLabel,
+  sideLabelClassName,
+  onSpeciesClick,
+  isShiny = false,
+}: MonHeroProps) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      {/* Side label */}
+      <div className="flex h-3.5 items-center justify-center">
+        <span
+          className={cn(
+            "font-mono text-[9px] font-bold tracking-[0.12em] uppercase",
+            sideLabelClassName ?? "text-muted-foreground"
+          )}
+        >
+          {sideLabel}
+        </span>
+      </div>
+
+      <MonHeroContent
+        pokemon={pokemon}
+        onSpeciesClick={onSpeciesClick}
+        isShiny={isShiny}
+      />
     </div>
   );
 }
@@ -363,10 +390,10 @@ function MobileStatsSheet({
  * Three-column versus layout for the damage calc.
  *
  * Desktop (≥md): three fixed-height bands so rows align across all three columns:
- *   (a) label band — "Your Pokémon" / "VS" spacer / "Calc Target · click to edit"
- *   (b) hero band  — sprite + name + type chips + item/ability
- *   (c) content   — stats card / FieldControlSurface / stats card (all tops aligned)
- *       Then moves cards below the content row.
+ *   (a) label band  — "Your Pokémon" (teal/muted) | empty spacer | "Calc Target · click to edit ▾" (rose)
+ *   (b) hero band   — sprite + chips | VS badge (same h-56 height) | sprite + chips
+ *   (c) content row — stats card | FieldControlSurface | stats card (all tops aligned)
+ *   (d) moves row   — outgoing moves | empty | incoming moves
  *
  * Mobile (<md): vertical stack:
  *   Your mon → VS divider → Field ▾ bottom-sheet trigger → Target mon
@@ -453,19 +480,62 @@ export function CalcVersusView({
       />
 
       {/* ═══════════════════ DESKTOP LAYOUT (≥ md) ═══════════════════════ */}
-      <div className="hidden md:grid md:grid-cols-[1fr_18rem_1fr] md:items-start md:gap-4">
-        {/* ── YOUR MON (left) ─────────────────────────────────────────── */}
-        <div className="flex flex-col items-center gap-3">
-          {/* (a) label band — 14px fixed height */}
-          <MonHero
-            pokemon={pokemon}
-            sideLabel="Your Pokémon"
-            sideLabelClassName="text-muted-foreground"
-            onSpeciesClick={() => setYourSpeciesOpen(true)}
-            isShiny={pokemon.is_shiny ?? false}
-          />
+      {/*
+        Three-column grid: 1fr | 18rem center | 1fr
+        Four row-bands so columns align:
+          (a) label band   h-3.5  — labels + empty center spacer
+          (b) hero band    h-56   — sprites + VS badge (same height keeps VS centered)
+          (c) content row         — stats cards + field panel (tops aligned by grid)
+          (d) moves row           — moves cards + empty center cell
+        The whole arena is vertically centered within the canvas to avoid a dead
+        gap below the moves on tall viewports (matches the solo single-focus feel).
+      */}
+      <div className="hidden md:flex md:flex-1 md:items-center md:justify-center">
+        <div className="grid w-full grid-cols-[1fr_18rem_1fr] items-start gap-4">
+          {/* ── (a) LABEL BAND ──────────────────────────────────────────── */}
+          {/* Left: "Your Pokémon" */}
+          <div className="flex h-3.5 items-center justify-center">
+            <span className="text-muted-foreground font-mono text-[9px] font-bold tracking-[0.12em] uppercase">
+              Your Pokémon
+            </span>
+          </div>
+          {/* Center: empty spacer (same height keeps rows in sync) */}
+          <div className="h-3.5" />
+          {/* Right: "Calc Target · click to edit ▾" */}
+          <div className="flex h-3.5 items-center justify-center">
+            <span className="font-mono text-[9px] font-bold tracking-[0.12em] text-rose-400/80 uppercase">
+              Calc Target · click to edit ▾
+            </span>
+          </div>
 
-          {/* (c) stats card */}
+          {/* ── (b) HERO BAND ───────────────────────────────────────────── */}
+          {/* Left: your mon sprite + chips */}
+          <div className="flex h-56 items-center justify-center">
+            <MonHeroContent
+              pokemon={pokemon}
+              onSpeciesClick={() => setYourSpeciesOpen(true)}
+              isShiny={pokemon.is_shiny ?? false}
+            />
+          </div>
+          {/* Center: VS badge — same h-56 so it aligns with the hero band */}
+          <div className="flex h-56 items-center justify-center">
+            <div className="border-border bg-card/60 flex size-12 items-center justify-center rounded-full border backdrop-blur-sm">
+              <span className="text-muted-foreground font-mono text-sm font-extrabold">
+                VS
+              </span>
+            </div>
+          </div>
+          {/* Right: target sprite + chips */}
+          <div className="flex h-56 items-center justify-center">
+            <MonHeroContent
+              pokemon={target.pokemon}
+              onSpeciesClick={() => setTargetSpeciesOpen(true)}
+              isFoe
+            />
+          </div>
+
+          {/* ── (c) CONTENT ROW (stats cards + field panel) ─────────────── */}
+          {/* Left: your stats card */}
           <MonStatsCard
             pokemon={pokemon}
             format={format}
@@ -475,47 +545,11 @@ export function CalcVersusView({
             headerLabel="Stats · EVs"
             natureLabel={yourNatureLabel}
           />
-
-          {/* Moves card — outgoing */}
-          <MonMovesCard
-            pokemon={pokemon}
-            format={format}
-            onUpdate={onUpdate}
-            direction="outgoing"
-            outputs={outgoingOutputs}
-            opponent={targetDescriptor}
-            headerLabel="Moves → damage dealt"
-          />
-        </div>
-
-        {/* ── CENTER ──────────────────────────────────────────────────── */}
-        <div className="flex w-full flex-col gap-3">
-          {/* (b) VS badge — same height as hero band, center-aligned */}
-          <div className="flex h-full min-h-48 items-center justify-center">
-            <div className="border-border bg-card/60 flex size-12 items-center justify-center rounded-full border backdrop-blur-sm">
-              <span className="text-muted-foreground font-mono text-sm font-extrabold">
-                VS
-              </span>
-            </div>
-          </div>
-
-          {/* (c) FieldControlSurface */}
+          {/* Center: field panel — top aligns with stats cards via grid items-start */}
           <div className="border-border/60 bg-card/60 w-full rounded-xl border p-3 backdrop-blur-sm">
             <FieldControlSurface calc={calc} />
           </div>
-        </div>
-
-        {/* ── TARGET (right) ──────────────────────────────────────────── */}
-        <div className="flex flex-col items-center gap-3">
-          {/* (a) label band + hero */}
-          <MonHero
-            pokemon={target.pokemon}
-            sideLabel="Calc Target · click to edit ▾"
-            sideLabelClassName="text-rose-400/80"
-            onSpeciesClick={() => setTargetSpeciesOpen(true)}
-          />
-
-          {/* (c) stats card */}
+          {/* Right: target stats card */}
           <MonStatsCard
             pokemon={target.pokemon}
             format={format}
@@ -526,7 +560,20 @@ export function CalcVersusView({
             natureLabel={targetNatureLabel}
           />
 
-          {/* Moves card — incoming */}
+          {/* ── (d) MOVES ROW ───────────────────────────────────────────── */}
+          {/* Left: outgoing moves */}
+          <MonMovesCard
+            pokemon={pokemon}
+            format={format}
+            onUpdate={onUpdate}
+            direction="outgoing"
+            outputs={outgoingOutputs}
+            opponent={targetDescriptor}
+            headerLabel="Moves → damage dealt"
+          />
+          {/* Center: empty — field panel above already fills the center column */}
+          <div />
+          {/* Right: incoming moves */}
           <MonMovesCard
             pokemon={target.pokemon}
             format={format}
