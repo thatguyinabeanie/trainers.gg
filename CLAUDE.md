@@ -42,6 +42,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure                                                   |
 | `tracking-deferred-work`         | Log/update/complete an agreed-but-parked improvement in `docs/deferred-improvements.md` ("small fix now, bigger one later") |
 | `adding-a-regulation`            | A new Champions regulation has dropped — full data-file → registration → flip → test pipeline                               |
+| `reconciling-pkmn-overrides`     | After bumping `@pkmn/*` or `vendor/damage-calc` — audit and prune hardcoded Champions overrides that upstream now provides   |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
 
