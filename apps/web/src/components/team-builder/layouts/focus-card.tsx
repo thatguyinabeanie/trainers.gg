@@ -177,46 +177,16 @@ export function FocusCard({
           </button>
         )}
 
-        {/* ── LEFT PANEL — RadialStatEditor ────────────────────────────────── */}
-        <div
-          className={cn(
-            // Translucent floating panel
-            "w-full rounded-lg border backdrop-blur-sm",
-            "bg-background/50 border-border/40",
-            // Matched height via items-stretch: label pinned top, body flex-centered
-            "flex flex-col",
-            // Ensure substantial panel height to match center column
-            "md:min-h-96"
-          )}
-          style={panelStyle}
-        >
-          <p className="text-muted-foreground/70 border-border/30 border-b px-3 pt-2.5 pb-1.5 text-xs font-semibold tracking-widest uppercase">
-            Stats
-          </p>
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-3">
-            <RadialStatEditor
-              pokemon={pokemon}
-              format={format}
-              onUpdate={onUpdate}
-            />
-            {/* Stat-scoped validation errors */}
-            {statsErrors.length > 0 && (
-              <div className="mt-2 w-full">
-                <FieldErrors errors={statsErrors} />
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* ── CENTER COLUMN — sprite hero + identity cluster ───────────────── */}
         {/*
+          DOM-first so mobile (flex-col, no order overrides) shows sprite before
+          stats and moves. Desktop grid placement restored via md:order-2.
           Relative so the type-tint wash can be absolute behind the content.
-          min-h-96 matches the flanking panels for row alignment.
         */}
         <div
           className={cn(
             "relative flex flex-col items-center justify-center gap-3",
-            "md:min-h-96"
+            "md:order-2"
           )}
         >
           {/* Type-tint wash — decorative, scoped to this column only */}
@@ -228,12 +198,7 @@ export function FocusCard({
             />
           )}
 
-          {/*
-            Sprite (showcase hero).
-            SpriteSection renders at 144px internally — enough for a clear hero
-            in the centered layout. A future SpriteSection `size` prop can push
-            this to 200–236px to fully match the mockup spec.
-          */}
+          {/* Sprite (showcase hero) — size=208 makes it the visual centerpiece. */}
           <div className="relative z-0 flex flex-col items-center gap-2">
             <SpriteSection
               pokemon={pokemon}
@@ -242,6 +207,7 @@ export function FocusCard({
               speciesHasError={id.speciesErrors.length > 0}
               types={id.types}
               isShiny={id.isShiny}
+              size={208}
             />
             <FieldErrors errors={id.speciesErrors} />
           </div>
@@ -289,14 +255,46 @@ export function FocusCard({
           </div>
         </div>
 
+        {/* ── LEFT PANEL — RadialStatEditor ────────────────────────────────── */}
+        {/* Desktop grid placement: md:order-1 (left column). Mobile: second. */}
+        <div
+          className={cn(
+            // Translucent floating panel
+            "w-full rounded-lg border backdrop-blur-sm",
+            "bg-background/50 border-border/40",
+            // Matched height via items-stretch: label pinned top, body flex-centered
+            "flex flex-col",
+            "md:order-1"
+          )}
+          style={panelStyle}
+        >
+          <p className="text-muted-foreground/70 border-border/30 border-b px-3 pt-2.5 pb-1.5 text-xs font-semibold tracking-widest uppercase">
+            Stats
+          </p>
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-3">
+            <RadialStatEditor
+              pokemon={pokemon}
+              format={format}
+              onUpdate={onUpdate}
+            />
+            {/* Stat-scoped validation errors */}
+            {statsErrors.length > 0 && (
+              <div className="mt-2 w-full">
+                <FieldErrors errors={statsErrors} />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* ── RIGHT PANEL — MovesLane + (calc ON) CalcReverseColumn ────────── */}
+        {/* Desktop grid placement: md:order-3 (right column). Mobile: third. */}
         <div
           className={cn(
             // Translucent floating panel — matched height with left via items-stretch
             "w-full rounded-lg border backdrop-blur-sm",
             "bg-background/50 border-border/40",
             "flex flex-col",
-            "md:min-h-96"
+            "md:order-3"
           )}
           style={panelStyle}
         >

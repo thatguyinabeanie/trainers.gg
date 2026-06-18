@@ -29,6 +29,11 @@ interface SpriteSectionProps {
   types: PokemonType[];
   /** Render the shiny variant of the sprite. */
   isShiny?: boolean;
+  /**
+   * Pixel size passed to <Sprite>. API-bound pixel value — Tailwind scale does
+   * not apply here. Defaults to 144 so all existing callers are unchanged.
+   */
+  size?: number;
 }
 
 export function SpriteSection({
@@ -38,6 +43,7 @@ export function SpriteSection({
   speciesHasError = false,
   types,
   isShiny = false,
+  size = 144,
 }: SpriteSectionProps) {
   // ── pill-top (compact / SingleRow) ────────────────────────────────────────
   if (variant === "pill-top") {
@@ -81,7 +87,7 @@ export function SpriteSection({
         <Sprite
           species={pokemon.species ?? ""}
           types={types}
-          size={144}
+          size={size}
           shiny={isShiny}
         />
       </button>
@@ -107,7 +113,7 @@ export function SpriteSection({
       <Sprite
         species={pokemon.species ?? ""}
         types={types}
-        size={144}
+        size={size}
         shiny={isShiny}
       />
     </button>
@@ -118,7 +124,7 @@ export function SpriteSection({
       type="button"
       aria-label={`Change species (${pokemon.species ?? "none"})`}
       className={cn(
-        "flex w-full min-w-0 cursor-pointer items-center justify-between gap-1 rounded-md border border-border bg-background px-2.5 py-1 font-mono text-xs font-semibold transition-colors hover:border-primary focus-visible:border-primary focus-visible:outline-none",
+        "border-border bg-background hover:border-primary focus-visible:border-primary flex w-full min-w-0 cursor-pointer items-center justify-between gap-1 rounded-md border px-2.5 py-1 font-mono text-xs font-semibold transition-colors focus-visible:outline-none",
         speciesHasError && "ring-destructive/40 rounded ring-1"
       )}
       onClick={onSpeciesClick}
