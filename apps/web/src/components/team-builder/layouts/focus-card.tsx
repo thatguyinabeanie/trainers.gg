@@ -31,7 +31,7 @@ import { FieldErrors } from "../validation/field-error";
 // Layout (≥md, wide):
 //   ┌──────────────────────────────────────────────────────────────────────────┐
 //   │  [LEFT PANEL]          [CENTER COLUMN]           [RIGHT PANEL]          │
-//   │  RadialStatEditor      SpriteSection (big)       MovesLane              │
+//   │  RadialStatEditor      SpriteSection (hero)      MovesLane              │
 //   │  (translucent,         identity cluster:         presentation=          │
 //   │   blur backdrop)         nickname · gender ·       "cards-2x2"          │
 //   │                          shiny · level                                  │
@@ -42,8 +42,9 @@ import { FieldErrors } from "../validation/field-error";
 //  Below `md`: vertical stack
 //    sprite+identity → stats panel → moves panel
 //
-// Visual chrome: dotted canvas background, soft type-tint wash behind the
-// center, translucent panels (backdrop-blur + faint border) for left/right.
+// Visual chrome: type-tint wash behind the center column only (decorative).
+// The dotted-canvas background now lives in single-focus-view — this component
+// renders ONLY the 3-column grid (no outer canvas wrapper).
 //
 // Nature lives entirely in RadialStatEditor (spoke cycle buttons); it is NOT
 // shown in the center identity cluster.
@@ -105,8 +106,8 @@ export function FocusCard({
   // ── Type-derived chrome ────────────────────────────────────────────────────
   const types = getSpeciesTypes(pokemon.species ?? "");
 
-  // Type-tint wash for the canvas background (very low opacity sweep)
-  const canvasWash = (() => {
+  // Type-tint wash scoped to the CENTER column only (decorative, pointer-none)
+  const centerWash = (() => {
     if (types.length === 0) return undefined;
     const alpha = "18"; // ~9% opacity — subtle background tint
     const c1 = getTypeColor(types[0]!);
@@ -146,34 +147,28 @@ export function FocusCard({
       />
 
       {/*
-        Canvas — dotted grid background + type-wash overlay.
-        Full bleed, relative so the three-column layout sits on top.
+        Stage grid — the dotted-canvas background lives in single-focus-view.
+        This component renders only the 3-column layout (or vertical stack below md).
+        Position relative so the optional remove button can anchor top-right.
       */}
       <div
         className={cn(
-          "relative flex min-h-0 w-full flex-col",
-          // Dotted canvas texture
-          "bg-[radial-gradient(circle,var(--border)_1px,transparent_1px)] bg-[length:24px_24px]",
-          "bg-card/60 rounded-xl"
+          "relative mx-auto w-full max-w-7xl",
+          // Below md: vertical stack
+          "flex flex-col gap-4",
+          // At md+: 3-column grid, stretch so all three columns share the same height
+          "md:grid md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)_minmax(0,20rem)]",
+          "md:items-stretch md:gap-6"
         )}
       >
-        {/* Type-tint wash (decorative, pointer-none) */}
-        {canvasWash && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-xl"
-            style={{ background: canvasWash }}
-          />
-        )}
-
-        {/* Optional remove button — top-right corner */}
+        {/* Optional remove button — top-right corner of the grid */}
         {onRemove && (
           <button
             type="button"
             onClick={onRemove}
             aria-label={`Remove ${pokemon.species ?? "Pokémon"}`}
             className={cn(
-              "absolute top-2 right-2 z-10",
+              "absolute top-0 right-0 z-10",
               "text-muted-foreground hover:bg-destructive/15 hover:text-destructive",
               "flex size-7 items-center justify-center rounded transition-colors"
             )}
@@ -182,138 +177,153 @@ export function FocusCard({
           </button>
         )}
 
-        {/*
-          Three-column layout at ≥md.
-          Below md: single-column vertical stack.
-          Left + right panels share the same min-height for symmetry.
-        */}
-        <div className="relative z-0 flex flex-col gap-4 p-4 md:flex-row md:items-start md:gap-3">
-          {/* ── LEFT PANEL — RadialStatEditor ──────────────────────────────── */}
-          <div
-            className={cn(
-              // Translucent floating panel
-              "w-full rounded-lg border backdrop-blur-sm md:w-auto md:shrink-0",
-              "bg-background/50 border-border/40",
-              // Matched height: label pinned top, body flex-centered
-              "flex flex-col",
-              // Width: enough to contain the hexagon at max-w-xs (320px)
-              "md:w-80"
-            )}
-            style={panelStyle}
-          >
-            <p className="text-muted-foreground/70 border-border/30 border-b px-3 pt-2.5 pb-1.5 text-xs font-semibold tracking-widest uppercase">
-              Stats
-            </p>
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-3">
-              <RadialStatEditor
-                pokemon={pokemon}
-                format={format}
-                onUpdate={onUpdate}
-              />
-              {/* Stat-scoped validation errors */}
-              {statsErrors.length > 0 && (
-                <div className="mt-2 w-full">
-                  <FieldErrors errors={statsErrors} />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ── CENTER COLUMN — sprite + identity cluster ──────────────────── */}
-          <div className="flex min-w-0 flex-1 flex-col items-center gap-3 py-2">
-            {/* Sprite (showcase — larger than grid-row) */}
-            <div className="flex flex-col items-center gap-2">
-              <SpriteSection
-                pokemon={pokemon}
-                onSpeciesClick={() => setSpeciesOpen(true)}
-                variant="pill-bottom"
-                speciesHasError={id.speciesErrors.length > 0}
-                types={id.types}
-                isShiny={id.isShiny}
-              />
-              <FieldErrors errors={id.speciesErrors} />
-            </div>
-
-            {/* Identity cluster: nickname · gender · shiny · level */}
-            <div className="w-full max-w-56">
-              <MetaBar
-                nickDraft={id.nickDraft}
-                setNickDraft={id.setNickDraft}
-                nicknameRef={id.nicknameRef}
-                gender={id.gender}
-                isShiny={id.isShiny}
-                level={id.level}
-                showLevel={id.showLevel}
-                handleNickBlur={id.handleNickBlur}
-                handleGenderToggle={id.handleGenderToggle}
-                handleShinyToggle={id.handleShinyToggle}
-                onUpdate={onUpdate}
-                nicknameErrors={id.nicknameErrors}
-                genderErrors={id.genderErrors}
-                variant="row"
-              />
-            </div>
-
-            {/* Loadout strip: item · ability only (nature is in RadialStatEditor) */}
-            <div className="w-full max-w-56 space-y-1">
-              <ItemCell
-                pokemon={pokemon}
-                format={format}
-                teamItems={teamItems}
-                errors={id.itemErrors}
-                isMegaStone={id.isMegaStone}
-                onUpdate={onUpdate}
-                variant="grid"
-              />
-              <AbilityCell
-                pokemon={pokemon}
-                format={format}
-                errors={id.abilityErrors}
-                onUpdate={onUpdate}
-                variant="grid"
-              />
-              <FieldErrors errors={id.itemErrors} />
-              <FieldErrors errors={id.abilityErrors} />
-            </div>
-          </div>
-
-          {/* ── RIGHT PANEL — MovesLane + (calc ON) CalcReverseColumn ──────── */}
-          <div
-            className={cn(
-              // Translucent floating panel — matched height with left
-              "w-full rounded-lg border backdrop-blur-sm md:w-auto md:shrink-0",
-              "bg-background/50 border-border/40",
-              "flex flex-col",
-              // Width: moves lane is naturally narrower; min-w ensures readability
-              "md:max-w-xs md:min-w-64"
-            )}
-            style={panelStyle}
-          >
-            <p className="text-muted-foreground/70 border-border/30 border-b px-3 pt-2.5 pb-1.5 text-xs font-semibold tracking-widest uppercase">
-              Moves
-            </p>
-            <div className="flex min-h-0 flex-1 flex-col justify-center">
-              {/*
-                calc OFF → 2×2 card grid (MovesLane handles this internally
-                when presentation="cards-2x2" and calcEnabled is false).
-                calc ON  → standard table with calc columns.
-              */}
-              <MovesLane
-                pokemon={pokemon}
-                format={format}
-                onUpdate={onUpdate}
-                fieldErrors={movesErrors}
-                presentation="cards-2x2"
-              />
-            </div>
-
-            {/* Incoming damage strip — only when calc is ON */}
-            {calcEnabled && (
-              <div className="border-border/30 border-t">
-                <CalcReverseColumn pokemon={pokemon} teammates={[]} />
+        {/* ── LEFT PANEL — RadialStatEditor ────────────────────────────────── */}
+        <div
+          className={cn(
+            // Translucent floating panel
+            "w-full rounded-lg border backdrop-blur-sm",
+            "bg-background/50 border-border/40",
+            // Matched height via items-stretch: label pinned top, body flex-centered
+            "flex flex-col",
+            // Ensure substantial panel height to match center column
+            "md:min-h-96"
+          )}
+          style={panelStyle}
+        >
+          <p className="text-muted-foreground/70 border-border/30 border-b px-3 pt-2.5 pb-1.5 text-xs font-semibold tracking-widest uppercase">
+            Stats
+          </p>
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-3">
+            <RadialStatEditor
+              pokemon={pokemon}
+              format={format}
+              onUpdate={onUpdate}
+            />
+            {/* Stat-scoped validation errors */}
+            {statsErrors.length > 0 && (
+              <div className="mt-2 w-full">
+                <FieldErrors errors={statsErrors} />
               </div>
             )}
           </div>
+        </div>
+
+        {/* ── CENTER COLUMN — sprite hero + identity cluster ───────────────── */}
+        {/*
+          Relative so the type-tint wash can be absolute behind the content.
+          min-h-96 matches the flanking panels for row alignment.
+        */}
+        <div
+          className={cn(
+            "relative flex flex-col items-center justify-center gap-3",
+            "md:min-h-96"
+          )}
+        >
+          {/* Type-tint wash — decorative, scoped to this column only */}
+          {centerWash && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-xl"
+              style={{ background: centerWash }}
+            />
+          )}
+
+          {/*
+            Sprite (showcase hero).
+            SpriteSection renders at 144px internally — enough for a clear hero
+            in the centered layout. A future SpriteSection `size` prop can push
+            this to 200–236px to fully match the mockup spec.
+          */}
+          <div className="relative z-0 flex flex-col items-center gap-2">
+            <SpriteSection
+              pokemon={pokemon}
+              onSpeciesClick={() => setSpeciesOpen(true)}
+              variant="pill-bottom"
+              speciesHasError={id.speciesErrors.length > 0}
+              types={id.types}
+              isShiny={id.isShiny}
+            />
+            <FieldErrors errors={id.speciesErrors} />
+          </div>
+
+          {/* Identity cluster: nickname · gender · shiny · level */}
+          <div className="relative z-0 w-full max-w-56">
+            <MetaBar
+              nickDraft={id.nickDraft}
+              setNickDraft={id.setNickDraft}
+              nicknameRef={id.nicknameRef}
+              gender={id.gender}
+              isShiny={id.isShiny}
+              level={id.level}
+              showLevel={id.showLevel}
+              handleNickBlur={id.handleNickBlur}
+              handleGenderToggle={id.handleGenderToggle}
+              handleShinyToggle={id.handleShinyToggle}
+              onUpdate={onUpdate}
+              nicknameErrors={id.nicknameErrors}
+              genderErrors={id.genderErrors}
+              variant="row"
+            />
+          </div>
+
+          {/* Loadout strip: item · ability only (nature is in RadialStatEditor) */}
+          <div className="relative z-0 w-full max-w-56 space-y-1">
+            <ItemCell
+              pokemon={pokemon}
+              format={format}
+              teamItems={teamItems}
+              errors={id.itemErrors}
+              isMegaStone={id.isMegaStone}
+              onUpdate={onUpdate}
+              variant="grid"
+            />
+            <AbilityCell
+              pokemon={pokemon}
+              format={format}
+              errors={id.abilityErrors}
+              onUpdate={onUpdate}
+              variant="grid"
+            />
+            <FieldErrors errors={id.itemErrors} />
+            <FieldErrors errors={id.abilityErrors} />
+          </div>
+        </div>
+
+        {/* ── RIGHT PANEL — MovesLane + (calc ON) CalcReverseColumn ────────── */}
+        <div
+          className={cn(
+            // Translucent floating panel — matched height with left via items-stretch
+            "w-full rounded-lg border backdrop-blur-sm",
+            "bg-background/50 border-border/40",
+            "flex flex-col",
+            "md:min-h-96"
+          )}
+          style={panelStyle}
+        >
+          <p className="text-muted-foreground/70 border-border/30 border-b px-3 pt-2.5 pb-1.5 text-xs font-semibold tracking-widest uppercase">
+            Moves
+          </p>
+          <div className="flex min-h-0 flex-1 flex-col justify-center">
+            {/*
+              calc OFF → 2×2 card grid (MovesLane handles this internally
+              when presentation="cards-2x2" and calcEnabled is false).
+              calc ON  → standard table with calc columns.
+            */}
+            <MovesLane
+              pokemon={pokemon}
+              format={format}
+              onUpdate={onUpdate}
+              fieldErrors={movesErrors}
+              presentation="cards-2x2"
+            />
+          </div>
+
+          {/* Incoming damage strip — only when calc is ON */}
+          {calcEnabled && (
+            <div className="border-border/30 border-t">
+              <CalcReverseColumn pokemon={pokemon} teammates={[]} />
+            </div>
+          )}
         </div>
       </div>
     </>

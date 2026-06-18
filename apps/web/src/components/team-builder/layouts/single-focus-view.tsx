@@ -3,6 +3,10 @@
 /**
  * SingleFocusView — carousel that hosts one FocusCard at a time.
  *
+ * Layout: a vertically-centered hero block — the FocusCard (or
+ * EmptySlotCenterpiece) is stacked above the carousel row and dots, all
+ * centered as one column inside the dotted-grid canvas.
+ *
  * DND BOUNDARY CONTRACT: This component wraps SpriteTabStrip in a
  * <SortableContext items={itemIds} strategy={horizontalListSortingStrategy}>.
  * The PARENT (team-workspace) owns the <DndContext>. Do NOT add a DndContext
@@ -204,71 +208,79 @@ export function SingleFocusView({
         }}
       />
 
-      <div className="flex h-full flex-col overflow-hidden">
-        {/* ── Stage ─────────────────────────────────────────────────────────── */}
-        {/*
-        tabIndex={0} makes the stage keyboard-focusable.
-        aria-label describes the nav shortcut so screen readers know about it.
-        outline-none removes the default browser focus ring (we rely on the
-        active tab's own ring for visual focus indication within the carousel).
+      {/*
+        Dotted-canvas wrapper — the scrollable region that fills the available
+        height. The stage (FocusCard/empty CTA) and carousel are centered as ONE
+        column inside this wrapper, matching the v7 mockup's .stagewrap rule:
+          flex-direction:column; align-items:center; justify-content:center
+        Keyboard and swipe handlers live here so the whole canvas is interactive.
       */}
-        <div
-          ref={stageRef}
-          className="relative min-h-0 flex-1 overflow-hidden outline-none"
-          tabIndex={0}
-          aria-label="Pokémon slot carousel — use arrow keys to switch slots"
-          onKeyDown={handleKeyDown}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-        >
-          {activePokemon !== null ? (
-            /* ── Filled slot: CalcVersusView (calc on) or FocusCard (calc off) ── */
-            <div
-              key={animKey}
-              className={cn(
-                "h-full overflow-y-auto p-3",
-                // motion-safe: direction-aware slide + fade in
-                // motion-reduce: instant swap (respects prefers-reduced-motion)
-                "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200",
-                slideDir === "right" && "motion-safe:slide-in-from-right-4",
-                slideDir === "left" && "motion-safe:slide-in-from-left-4",
-                slideDir === null && "motion-safe:fade-in"
-              )}
-            >
-              {calc.calcEnabled ? (
-                <CalcVersusView
-                  pokemon={activePokemon}
-                  format={format}
-                  teamItems={resolvedTeamItems}
-                  onUpdate={(fields) =>
-                    onPokemonUpdate(activePokemon.id, fields)
-                  }
-                  calc={calc}
-                />
-              ) : (
-                <FocusCard
-                  pokemon={activePokemon}
-                  format={format}
-                  teamItems={resolvedTeamItems}
-                  onUpdate={(fields) =>
-                    onPokemonUpdate(activePokemon.id, fields)
-                  }
-                  onRemove={() => onRemove(activeIdx)}
-                  slotErrors={activeErrors}
-                />
-              )}
-            </div>
-          ) : (
-            /* ── Empty slot: centerpiece CTA with ghost hints ─────────────── */
-            <EmptySlotCenterpiece
-              slotIdx={activeIdx}
-              onAdd={() => setEmptyPickerOpen(true)}
-              animKey={animKey}
-              slideDir={slideDir}
-            />
-          )}
+      <div
+        ref={stageRef}
+        className={cn(
+          "flex min-h-full flex-col items-center justify-center gap-4 overflow-y-auto p-4",
+          // Dotted canvas texture (moved here from FocusCard)
+          "bg-[radial-gradient(circle,var(--border)_1px,transparent_1px)] bg-[length:24px_24px]",
+          "outline-none"
+        )}
+        tabIndex={0}
+        aria-label="Pokémon slot carousel — use arrow keys to switch slots"
+        onKeyDown={handleKeyDown}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+      >
+        {/* ── Stage: FocusCard or EmptySlotCenterpiece ──────────────────────── */}
+        {activePokemon !== null ? (
+          /* ── Filled slot: CalcVersusView (calc on) or FocusCard (calc off) ── */
+          <div
+            key={animKey}
+            className={cn(
+              "w-full",
+              // motion-safe: direction-aware slide + fade in
+              // motion-reduce: instant swap (respects prefers-reduced-motion)
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200",
+              slideDir === "right" && "motion-safe:slide-in-from-right-4",
+              slideDir === "left" && "motion-safe:slide-in-from-left-4",
+              slideDir === null && "motion-safe:fade-in"
+            )}
+          >
+            {calc.calcEnabled ? (
+              <CalcVersusView
+                pokemon={activePokemon}
+                format={format}
+                teamItems={resolvedTeamItems}
+                onUpdate={(fields) => onPokemonUpdate(activePokemon.id, fields)}
+                calc={calc}
+              />
+            ) : (
+              <FocusCard
+                pokemon={activePokemon}
+                format={format}
+                teamItems={resolvedTeamItems}
+                onUpdate={(fields) => onPokemonUpdate(activePokemon.id, fields)}
+                onRemove={() => onRemove(activeIdx)}
+                slotErrors={activeErrors}
+              />
+            )}
+          </div>
+        ) : (
+          /* ── Empty slot: centerpiece CTA with ghost hints ─────────────── */
+          <EmptySlotCenterpiece
+            slotIdx={activeIdx}
+            onAdd={() => setEmptyPickerOpen(true)}
+            animKey={animKey}
+            slideDir={slideDir}
+          />
+        )}
 
-          {/* ── Arrow nav buttons ──────────────────────────────────────────── */}
+        {/* ── Carousel row — arrows flanking the sprite tab strip ────────── */}
+        {/*
+          The carousel is grouped directly under the stage as part of the same
+          centered block (not pinned to the canvas bottom). Arrows flank the
+          SpriteTabStrip inline, matching the v7 mockup's .carousel layout.
+        */}
+        <div className="flex items-center gap-2">
+          {/* Previous arrow */}
           <button
             type="button"
             aria-label="Previous Pokémon slot"
@@ -276,40 +288,18 @@ export function SingleFocusView({
             disabled={activeIdx === 0}
             className={cn(
               // ≥40px tap target on mobile per mobile-responsiveness rule
-              "absolute top-1/2 left-2 -translate-y-1/2",
               "flex size-10 items-center justify-center rounded-full",
               "bg-background/70 text-muted-foreground backdrop-blur-sm",
               "border-border/40 border shadow-sm",
               "hover:bg-background hover:text-foreground transition-all duration-150",
               "disabled:pointer-events-none disabled:opacity-30",
-              // Hide on very small screens to avoid crowding the stage
-              "xs:flex hidden"
+              // Slightly smaller on desktop where space is less precious
+              "sm:size-9"
             )}
           >
             <ChevronLeft className="size-4" aria-hidden />
           </button>
 
-          <button
-            type="button"
-            aria-label="Next Pokémon slot"
-            onClick={() => activateClamped(activeIdx + 1)}
-            disabled={activeIdx === SLOT_COUNT - 1}
-            className={cn(
-              "absolute top-1/2 right-2 -translate-y-1/2",
-              "flex size-10 items-center justify-center rounded-full",
-              "bg-background/70 text-muted-foreground backdrop-blur-sm",
-              "border-border/40 border shadow-sm",
-              "hover:bg-background hover:text-foreground transition-all duration-150",
-              "disabled:pointer-events-none disabled:opacity-30",
-              "xs:flex hidden"
-            )}
-          >
-            <ChevronRight className="size-4" aria-hidden />
-          </button>
-        </div>
-
-        {/* ── Bottom nav: sprite tab strip + dot indicators ─────────────── */}
-        <div className="border-border/40 bg-background/60 shrink-0 border-t backdrop-blur-sm">
           {/* Sprite tab strip — wrapped in SortableContext for DnD reorder */}
           {/* Parent DndContext is provided by team-workspace */}
           <div className="overflow-x-auto">
@@ -327,37 +317,55 @@ export function SingleFocusView({
             </SortableContext>
           </div>
 
-          {/* Dot row — a compact position indicator below the tab strip */}
-          <div
-            className="flex items-center justify-center gap-1.5 pb-2"
-            role="group"
-            aria-label="Slot position indicators"
+          {/* Next arrow */}
+          <button
+            type="button"
+            aria-label="Next Pokémon slot"
+            onClick={() => activateClamped(activeIdx + 1)}
+            disabled={activeIdx === SLOT_COUNT - 1}
+            className={cn(
+              "flex size-10 items-center justify-center rounded-full",
+              "bg-background/70 text-muted-foreground backdrop-blur-sm",
+              "border-border/40 border shadow-sm",
+              "hover:bg-background hover:text-foreground transition-all duration-150",
+              "disabled:pointer-events-none disabled:opacity-30",
+              "sm:size-9"
+            )}
           >
-            {Array.from({ length: SLOT_COUNT }, (_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`Go to slot ${i + 1}`}
-                aria-pressed={i === activeIdx}
-                onClick={() => activateClamped(i)}
+            <ChevronRight className="size-4" aria-hidden />
+          </button>
+        </div>
+
+        {/* ── Dot row — compact position indicator below the carousel ────── */}
+        <div
+          className="flex items-center justify-center gap-1.5"
+          role="group"
+          aria-label="Slot position indicators"
+        >
+          {Array.from({ length: SLOT_COUNT }, (_, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={`Go to slot ${i + 1}`}
+              aria-pressed={i === activeIdx}
+              onClick={() => activateClamped(i)}
+              className={cn(
+                // ≥40px hit area on mobile; shrinks on sm+ for visual compactness
+                "flex size-10 items-center justify-center sm:size-5",
+                "rounded-full transition-all duration-150"
+              )}
+            >
+              <span
                 className={cn(
-                  // ≥40px hit area on mobile; shrinks on sm+ for visual compactness
-                  "flex size-10 items-center justify-center sm:size-5",
-                  "rounded-full transition-all duration-150"
+                  "block rounded-full transition-all duration-150",
+                  i === activeIdx
+                    ? "bg-primary size-2"
+                    : "bg-muted-foreground/40 hover:bg-muted-foreground/70 size-1.5"
                 )}
-              >
-                <span
-                  className={cn(
-                    "block rounded-full transition-all duration-150",
-                    i === activeIdx
-                      ? "bg-primary size-2"
-                      : "bg-muted-foreground/40 hover:bg-muted-foreground/70 size-1.5"
-                  )}
-                  aria-hidden
-                />
-              </button>
-            ))}
-          </div>
+                aria-hidden
+              />
+            </button>
+          ))}
         </div>
       </div>
     </>
@@ -394,7 +402,7 @@ function EmptySlotCenterpiece({
     <div
       key={animKey}
       className={cn(
-        "relative flex h-full items-center justify-center overflow-hidden p-4",
+        "relative flex w-full items-center justify-center overflow-hidden p-4 py-12",
         // Slide + crossfade transition — same as filled-slot stage
         "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200",
         slideDir === "right" && "motion-safe:slide-in-from-right-4",
