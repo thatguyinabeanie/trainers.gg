@@ -4138,6 +4138,10 @@ export type Database = {
           reset_at: string
         }[]
       }
+      check_table_privilege: {
+        Args: { p_privilege: string; p_role: string; p_table: string }
+        Returns: boolean
+      }
       clear_judge_request: { Args: { p_match_id: number }; Returns: undefined }
       compute_tournament_elo: {
         Args: { p_tournament_id: number }
