@@ -258,7 +258,6 @@ export async function updateRegistrationStatus(
       p_registration_ids: [registrationId],
       p_drop_category: dropInfo.dropCategory,
       p_drop_notes: dropInfo.dropNotes ?? "",
-      p_dropped_by: user.id,
     });
 
     if (dropError) throw dropError;

@@ -32,8 +32,15 @@ export default async function AtprotoCallbackPage() {
     redirect("/auth/link-bluesky");
   }
 
-  // Clear the DID cookie
-  cookieStore.delete("atproto_did");
+  // Clear the DID cookie. cookies().delete() can throw in a Server Component
+  // render context (Next.js only allows cookie mutations in Server Actions /
+  // route handlers) — swallow so a successful callback isn't turned into a 500.
+  // The cookie is short-lived; if the write is refused here it expires on its own.
+  try {
+    cookieStore.delete("atproto_did");
+  } catch {
+    // Non-fatal — cookie mutation not permitted in this render context.
+  }
 
   // Fetch the user's email from auth.users (canonical source — email is no
   // longer stored in public.users).

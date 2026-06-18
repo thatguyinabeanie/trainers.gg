@@ -1542,7 +1542,6 @@ export async function bulkRemovePlayers(
         p_registration_ids: validIds,
         p_drop_category: dropCategory,
         p_drop_notes: dropNotes ?? "",
-        p_dropped_by: user.id,
       }
     );
 

@@ -753,12 +753,13 @@ describe("bulkRemovePlayers", () => {
     // The drop itself goes through rpc(), not from().
     expect(mockSupabase.from).toHaveBeenCalledTimes(2);
 
-    // The atomic drop RPC is called with the valid ids, category, notes, and caller id
+    // The atomic drop RPC is called with the valid ids, category, and notes.
+    // p_dropped_by is NOT passed — the function derives the actor from auth.uid()
+    // internally to prevent manager impersonation.
     expect(mockSupabase.rpc).toHaveBeenCalledWith("drop_registrations", {
       p_registration_ids: [1, 2],
       p_drop_category: "no_show",
       p_drop_notes: "",
-      p_dropped_by: "user-123",
     });
   });
 
@@ -891,12 +892,11 @@ describe("bulkRemovePlayers", () => {
     expect(result.data).toEqual({ removed: 2, failed: 1 });
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
 
-    // Drop notes flow through the RPC
+    // Drop notes flow through the RPC; no p_dropped_by (derived from auth.uid() server-side)
     expect(mockSupabase.rpc).toHaveBeenCalledWith("drop_registrations", {
       p_registration_ids: [1, 2, 3],
       p_drop_category: "conduct",
       p_drop_notes: "Group violation",
-      p_dropped_by: "user-123",
     });
   });
 });

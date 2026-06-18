@@ -4200,7 +4200,6 @@ export type Database = {
         Args: {
           p_drop_category: Database["public"]["Enums"]["drop_category"]
           p_drop_notes: string
-          p_dropped_by: string
           p_registration_ids: number[]
         }
         Returns: number[]

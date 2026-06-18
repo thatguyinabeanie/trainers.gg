@@ -551,12 +551,12 @@ describe("Tournament Registration Mutations", () => {
       expect(result).toEqual({ success: true, tournamentId: 100 });
 
       // The atomic RPC is called with all drop params — no separate from() calls
-      // for the staff table or the status update.
+      // for the staff table or the status update. p_dropped_by is NOT passed:
+      // the function derives the actor from auth.uid() internally to prevent spoofing.
       expect(mockClient.rpc).toHaveBeenCalledWith("drop_registrations", {
         p_registration_ids: [registrationId],
         p_drop_category: "no_show",
         p_drop_notes: "Did not appear for round 1", // provided notes pass through as-is
-        p_dropped_by: mockUser.id,
       });
 
       // Only 2 from() calls (registration + tournament lookup) — the drop itself
