@@ -129,6 +129,7 @@ export {
   type MegaStatBlock,
   REG_MA_BUNDLE,
 } from "./champions-reg-ma";
+export { REG_MB_BUNDLE } from "./champions-reg-mb";
 
 // Format legality
 export {
@@ -155,6 +156,7 @@ export {
   type PokemonLegalityResult,
   LEGALITY_UNAVAILABLE,
   CHAMPIONS_MA_FORMAT_ID,
+  CHAMPIONS_MB_FORMAT_ID,
   type MegaSpeciesWithStone,
   type MegaSpeciesWithAbility,
   speciesHasForms,

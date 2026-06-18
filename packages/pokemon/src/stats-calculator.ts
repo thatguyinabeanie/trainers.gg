@@ -6,13 +6,25 @@
 import { Dex } from "@pkmn/dex";
 
 import { REG_MA_BUNDLE } from "./champions-reg-ma";
+import { REG_MB_BUNDLE } from "./champions-reg-mb";
 
 /**
  * Composed map of all Champions-exclusive mega base stats, drawn from
- * registered regulation bundles. Currently populated only from M-A.
- * stats-calculator reads this instead of maintaining its own copy.
+ * all registered regulation bundles (M-A + M-B). M-B is a superset of M-A,
+ * but we compose manually from both leaf files to avoid importing from
+ * format-legality (which would create a circular dependency).
  */
-const CHAMPIONS_EXCLUSIVE_MEGA_STATS = REG_MA_BUNDLE.megaStats;
+const CHAMPIONS_EXCLUSIVE_MEGA_STATS = new Map([
+  ...REG_MA_BUNDLE.megaStats,
+  ...REG_MB_BUNDLE.megaStats,
+]);
+
+/**
+ * Composed map of all Champions-exclusive mega type overrides from all
+ * registered bundles. M-B adds Staraptor-Mega and Barbaracle-Mega.
+ */
+const CHAMPIONS_MEGA_TYPE_OVERRIDES: ReadonlyMap<string, readonly string[]> =
+  new Map([...REG_MA_BUNDLE.megaTypes, ...REG_MB_BUNDLE.megaTypes]);
 
 export interface BaseStats {
   hp: number;
@@ -236,7 +248,7 @@ export function getBaseStats(species: string): BaseStats | null {
 export function getChampionsMegaTypeOverride(
   species: string
 ): readonly string[] | null {
-  return REG_MA_BUNDLE.megaTypes.get(species) ?? null;
+  return CHAMPIONS_MEGA_TYPE_OVERRIDES.get(species) ?? null;
 }
 
 /**

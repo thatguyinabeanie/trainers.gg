@@ -5,6 +5,7 @@
 import { Dex } from "@pkmn/dex";
 
 import { gen9 } from "./dex";
+import { getChampionsMegaTypeOverride } from "./stats-calculator";
 
 export type PokemonType =
   | "Normal"
@@ -305,17 +306,31 @@ export const POKEMON_TYPES: Record<string, PokemonType[]> = {
 /**
  * Look up a species' types from the Pokédex.
  * Returns an empty array if the species is not found in the dex.
+ *
+ * Resolution order:
+ *   1. Champions mega type overrides — Champions-exclusive megas whose typing
+ *      differs from the base species and is not present in @pkmn/dex (e.g.
+ *      Staraptor-Mega → Fighting/Flying, Barbaracle-Mega → Rock/Fighting).
+ *   2. Gen 9 dex (current gen + Past-tagged species like Aerodactyl)
+ *   3. Gen 6 dex fallback — standard Gen 6/7 mega forms not in Gen 9
  */
 export function getSpeciesTypes(species: string): PokemonType[] {
   try {
-    // Try Gen 9 first (current gen + Past-tagged species like Aerodactyl)
+    // 1. Champions-exclusive mega type overrides (e.g. Staraptor-Mega, Barbaracle-Mega)
+    const override = getChampionsMegaTypeOverride(species);
+    if (override !== null) {
+      return override.filter((t): t is PokemonType =>
+        (ALL_TYPES as readonly string[]).includes(t)
+      );
+    }
+    // 2. Try Gen 9 first (current gen + Past-tagged species like Aerodactyl)
     const s9 = gen9.species.get(species);
     if (s9?.exists) {
       return s9.types.filter((t): t is PokemonType =>
         (ALL_TYPES as readonly string[]).includes(t)
       );
     }
-    // Mega forms and other Past-only species — fall back to Gen 6 raw dex
+    // 3. Mega forms and other Past-only species — fall back to Gen 6 raw dex
     const s6 = Dex.forGen(6).species.get(species);
     if (s6?.exists) {
       return s6.types.filter((t): t is PokemonType =>

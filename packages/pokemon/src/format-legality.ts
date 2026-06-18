@@ -28,6 +28,11 @@ import {
   type MegaSpeciesWithStoneFromBundle,
   REG_MA_BUNDLE,
 } from "./champions-reg-ma";
+import {
+  type MegaSpeciesWithAbilityFromMBBundle,
+  type MegaSpeciesWithStoneFromMBBundle,
+  REG_MB_BUNDLE,
+} from "./champions-reg-mb";
 
 /**
  * Sentinel returned by `getLegal*` when the underlying validator threw
@@ -75,6 +80,9 @@ export function legalSetOrPermissive(
 /** Format ID for Champions VGC 2026 Regulation M-A. */
 export const CHAMPIONS_MA_FORMAT_ID = "gen9championsvgc2026regma";
 
+/** Format ID for Champions VGC 2026 Regulation M-B. */
+export const CHAMPIONS_MB_FORMAT_ID = "gen9championsvgc2026regmb";
+
 // =============================================================================
 // Champions format registry
 // =============================================================================
@@ -86,6 +94,7 @@ export const CHAMPIONS_MA_FORMAT_ID = "gen9championsvgc2026regma";
  */
 const CHAMPIONS_LEGALITY_BY_ID: Record<string, ChampionsRegBundle> = {
   [CHAMPIONS_MA_FORMAT_ID]: REG_MA_BUNDLE,
+  [CHAMPIONS_MB_FORMAT_ID]: REG_MB_BUNDLE,
 };
 
 // =============================================================================
@@ -226,7 +235,9 @@ function computeLegalSpeciesFromSim(formatId: string): LegalityResult {
  * All mega species that appear in `MEGA_SPECIES_TO_STONE`.
  * Re-exported under the original public name for backward compatibility.
  */
-export type MegaSpeciesWithStone = MegaSpeciesWithStoneFromBundle;
+export type MegaSpeciesWithStone =
+  | MegaSpeciesWithStoneFromBundle
+  | MegaSpeciesWithStoneFromMBBundle;
 
 /**
  * All mega species the calculator knows a post-evolution ability for.
@@ -234,15 +245,32 @@ export type MegaSpeciesWithStone = MegaSpeciesWithStoneFromBundle;
  * on Dragon Ascent rather than a stone item, so it appears here only).
  * Re-exported under the original public name for backward compatibility.
  */
-export type MegaSpeciesWithAbility = MegaSpeciesWithAbilityFromBundle;
+export type MegaSpeciesWithAbility =
+  | MegaSpeciesWithAbilityFromBundle
+  | MegaSpeciesWithAbilityFromMBBundle;
 
-/** Maps mega species names to their required mega stone. Composed from all bundles. */
+/**
+ * All registered Champions bundles, in order. When composing global mega maps,
+ * later bundles (M-B) override earlier ones (M-A) for any duplicate keys — but
+ * in practice the same mega never appears in two bundles with different data.
+ * M-B's stone/ability arrays already include all M-A entries (via spread).
+ */
+const ALL_CHAMPIONS_BUNDLES: readonly ChampionsRegBundle[] = [
+  REG_MA_BUNDLE,
+  REG_MB_BUNDLE,
+];
+
+/**
+ * Maps mega species names to their required mega stone.
+ * Composed from ALL registered bundles — M-B is a superset of M-A so its
+ * megaStones array already covers both regulations.
+ */
 const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map(
-  REG_MA_BUNDLE.megaStones
+  ALL_CHAMPIONS_BUNDLES.flatMap((b) => b.megaStones)
 );
 
 const MEGA_STONE_SPECIES_SET: ReadonlySet<string> = new Set(
-  REG_MA_BUNDLE.megaStones.map(([k]) => k)
+  MEGA_SPECIES_TO_STONE.keys()
 );
 
 /**
@@ -255,13 +283,16 @@ export function isMegaSpeciesWithStone(
   return species != null && MEGA_STONE_SPECIES_SET.has(species);
 }
 
-/** Maps mega species → post-evolution ability. Composed from all bundles. */
+/**
+ * Maps mega species → post-evolution ability.
+ * Composed from ALL registered bundles.
+ */
 const MEGA_SPECIES_TO_ABILITY: ReadonlyMap<string, string> = new Map(
-  REG_MA_BUNDLE.megaAbilities
+  ALL_CHAMPIONS_BUNDLES.flatMap((b) => b.megaAbilities)
 );
 
 const MEGA_ABILITY_SPECIES_SET: ReadonlySet<string> = new Set(
-  REG_MA_BUNDLE.megaAbilities.map(([k]) => k)
+  MEGA_SPECIES_TO_ABILITY.keys()
 );
 
 /** Runtime guard: does the calculator know a mega ability for `species`? */
@@ -403,10 +434,14 @@ function computeLegalMovesFromSim(
   return legal;
 }
 
-// Champions move cache is keyed by species only — all Champions species
-// use the same gen-9 AG base validator and the same (currently empty)
-// format-level banlist.
-const championsMoveCache = new Map<string, ReadonlySet<string>>();
+// Champions move cache: outer key = bundle identity (WeakMap), inner key = species.
+// Using a WeakMap ensures different regulation bundles never share cached results —
+// previously a single Map keyed by species would return M-A results for M-B
+// queries (or vice versa) if both bundles share a species.
+const championsMoveCache = new WeakMap<
+  ChampionsRegBundle,
+  Map<string, ReadonlySet<string>>
+>();
 
 /**
  * Some Champions-exclusive megas derive from a base form whose canonical
@@ -419,7 +454,7 @@ const CHAMPIONS_MEGA_LEARNSET_BASE: Readonly<Record<string, string>> = {
 };
 
 /**
- * Compute the legal-move set for a Champions: VGC 2026 Reg M-A species.
+ * Compute the legal-move set for a Champions species using the given regulation bundle.
  *
  * All Champions-roster species exist in the gen-9 pokedex (including
  * Hisui/Paldea/Galar regional forms), so `checkCanLearn` works against
@@ -434,7 +469,15 @@ function computeLegalMovesForChampions(
   species: string,
   bundle: ChampionsRegBundle
 ): LegalityResult {
-  const cached = championsMoveCache.get(species);
+  // Two-level cache: bundle identity (WeakMap) → species (Map).
+  // This prevents a species shared between M-A and M-B from receiving the
+  // wrong cached set when the two bundles differ in moveBanlist.
+  let bundleMoveCache = championsMoveCache.get(bundle);
+  if (!bundleMoveCache) {
+    bundleMoveCache = new Map();
+    championsMoveCache.set(bundle, bundleMoveCache);
+  }
+  const cached = bundleMoveCache.get(species);
   if (cached) return cached;
 
   // For mega species, look up learnset from the base form.
@@ -488,7 +531,7 @@ function computeLegalMovesForChampions(
     }
   }
 
-  championsMoveCache.set(species, legal);
+  bundleMoveCache.set(species, legal);
   return legal;
 }
 
@@ -566,19 +609,32 @@ function computeLegalAbilitiesFromSim(
   return legal;
 }
 
-/** Module-scope cache for Champions ability lookups. */
-const championsAbilityCache = new Map<string, ReadonlySet<string>>();
+/**
+ * Champions ability cache: outer key = bundle identity (WeakMap), inner key = species.
+ * Mirrors the move cache fix — different bundles may have different abilityBanlist
+ * values, so keying by species alone would return stale results across bundles.
+ */
+const championsAbilityCache = new WeakMap<
+  ChampionsRegBundle,
+  Map<string, ReadonlySet<string>>
+>();
 
 /**
  * Compute the legal-ability set for a Champions species.
  * Returns the species' own abilities filtered through the bundle's ability
- * banlist (currently empty for M-A — all abilities legal).
+ * banlist (currently empty for all regulations — all abilities legal).
  */
 function computeLegalAbilitiesForChampions(
   species: string,
   bundle: ChampionsRegBundle
 ): LegalityResult {
-  const cached = championsAbilityCache.get(species);
+  // Two-level cache: bundle identity (WeakMap) → species (Map).
+  let bundleAbilityCache = championsAbilityCache.get(bundle);
+  if (!bundleAbilityCache) {
+    bundleAbilityCache = new Map();
+    championsAbilityCache.set(bundle, bundleAbilityCache);
+  }
+  const cached = bundleAbilityCache.get(species);
   if (cached) return cached;
 
   const gen = SimDex.forGen(9);
@@ -589,7 +645,7 @@ function computeLegalAbilitiesForChampions(
       (name) => !bundle.abilityBanlist.has(name)
     )
   );
-  championsAbilityCache.set(species, legal);
+  bundleAbilityCache.set(species, legal);
   return legal;
 }
 
@@ -828,7 +884,9 @@ export function getMegaAbilityForSpecies(species: string): string | null {
  *          getMegaSpeciesForBaseAndItem("Charizard", "Charizardite Y") → "Charizard-Mega-Y"
  */
 const STONE_TO_MEGA: ReadonlyMap<string, string> = new Map(
-  REG_MA_BUNDLE.megaStones.map(([mega, stone]) => [stone, mega] as const)
+  ALL_CHAMPIONS_BUNDLES.flatMap((b) =>
+    b.megaStones.map(([mega, stone]) => [stone, mega] as const)
+  )
 );
 
 export function getMegaSpeciesForBaseAndItem(
