@@ -196,30 +196,11 @@ describe("completeOnboarding", () => {
     });
   });
 
-  it("returns error when update_my_user_pii rpc errors", async () => {
-    // Steps 1-3 of setupHappyPath (username checks + users update)
-    // 1. Username check in users table — not found
-    mockFrom.mockReturnValueOnce(
-      createQueryBuilder({
-        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-      })
-    );
-
-    // 2. Username check in alts table — not found
-    mockFrom.mockReturnValueOnce(
-      createQueryBuilder({
-        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-      })
-    );
-
-    // 3. Update users table — success
-    mockFrom.mockReturnValueOnce({
-      update: jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      }),
-    });
-
-    // rpc("update_my_user_pii") errors
+  it("logs and continues when update_my_user_pii rpc errors (birth_date is optional)", async () => {
+    setupHappyPath();
+    // The optional birth_date write fails, but username/country/bio are already
+    // committed — onboarding should still succeed (the user can set birth date
+    // later in profile settings) rather than hard-failing mid-flow.
     mockRpc.mockResolvedValue({ error: { message: "pii error", code: "500" } });
 
     const result = await completeOnboarding({
@@ -227,10 +208,7 @@ describe("completeOnboarding", () => {
       birthDate: "2000-01-15",
     });
 
-    expect(result).toEqual({
-      success: false,
-      error: "Failed to update profile",
-    });
+    expect(result).toEqual({ success: true, error: null });
   });
 
   it("throws when bot is detected (rejectBots runs before try block)", async () => {

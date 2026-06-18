@@ -116,8 +116,12 @@ export async function completeOnboarding(data: {
         p_birth_date: validated.birthDate,
       });
       if (piiError) {
+        // Non-blocking: username/country/bio are already committed and
+        // birth_date is optional. Hard-failing here would strand the user in a
+        // confusing "onboarded but told it failed" state (and re-submitting is
+        // awkward once the username is saved). Log and continue — the user can
+        // set their birth date later in profile settings.
         console.error("Error updating birth date during onboarding:", piiError);
-        return { success: false, error: "Failed to update profile" };
       }
     }
 

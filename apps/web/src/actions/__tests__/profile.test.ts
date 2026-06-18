@@ -732,7 +732,9 @@ describe("updateProfile", () => {
     const result = await updateProfile({ firstName: "Ash" });
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe("Failed to update profile");
+    expect(result.error).toBe(
+      "Your other profile changes were saved, but we couldn't update your name or birth date. Please try again."
+    );
   });
 
   it("updates birth date and country without username change", async () => {

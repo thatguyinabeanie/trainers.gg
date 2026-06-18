@@ -544,7 +544,14 @@ export async function updateProfile(data: {
       });
       if (piiError) {
         console.error("Error updating PII:", piiError);
-        return { success: false, error: "Failed to update profile" };
+        // Other profile updates (users/alt/auth/PDS) already committed above;
+        // only the name/birth-date write failed. Say so explicitly so the user
+        // isn't misled into thinking nothing was saved.
+        return {
+          success: false,
+          error:
+            "Your other profile changes were saved, but we couldn't update your name or birth date. Please try again.",
+        };
       }
     }
 
