@@ -469,9 +469,11 @@ export async function getTournamentById(supabase: TypedClient, id: number) {
  * (drop_category, drop_notes, dropped_by, dropped_at) so the UI can render
  * the "Dropped — <reason>" badge without a separate round-trip.
  *
- * The `staff` embed is populated only when the caller is authenticated and
- * holds tournament.manage permission — that is exactly who uses this query.
- * Anon / non-staff callers get an empty or absent staff sub-object from RLS.
+ * RLS on `tournament_registration_staff` filters the `staff` embed only for
+ * identity-bound clients: an authenticated caller without tournament.manage
+ * gets an empty/absent staff sub-object. A service-role client BYPASSES RLS,
+ * so the staff embed is ALWAYS populated there — callers that pass a
+ * service-role client (cached/SSR contexts) must not assume it is filtered.
  */
 export async function getTournamentRegistrations(
   supabase: TypedClient,
@@ -521,9 +523,10 @@ export async function getTournamentRegistrations(
  * `team` sub-object.
  *
  * Staff-internal fields (drop_category, drop_notes, dropped_by, dropped_at)
- * are present via the `staff` sub-object when the caller is authenticated and
- * holds tournament.manage permission. Anon / non-staff callers receive an
- * empty or absent staff sub-object from RLS.
+ * are present via the `staff` sub-object. RLS filters this embed only for
+ * identity-bound clients (an authenticated caller without tournament.manage
+ * receives an empty/absent sub-object); a service-role client bypasses RLS,
+ * so the staff sub-object is ALWAYS present in cached/SSR/service contexts.
  *
  * Consumers must be authenticated + tournament-manage-authorized (Phase 2
  * Task 9: the base `tournament_registrations` SELECT is revoked from
