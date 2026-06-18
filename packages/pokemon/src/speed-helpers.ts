@@ -258,10 +258,10 @@ export function groupBySpeed<T extends { speed: number }>(
 /**
  * Speed-affecting items legal in a given format.
  *
- * Pulls from the curated catalogue above. For modern Champions formats (Reg
- * M-A and Reg M-B) this returns just `choice-scarf`. For older / classic
- * formats it returns the full set so calculations and pickers reflect what the
- * format actually allows.
+ * Pulls from the curated catalogue above. For modern Champions formats this
+ * returns `choice-scarf` (both regs) plus `iron-ball` (added to the pool in Reg
+ * M-B). For older / classic formats it returns the full set so calculations and
+ * pickers reflect what the format actually allows.
  */
 export function getSpeedAffectingItems(
   format: GameFormat

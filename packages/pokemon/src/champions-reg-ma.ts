@@ -445,10 +445,11 @@ const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
  * Every held item legal in Champions: VGC 2026 Reg M-A.
  *
  * Ported from Serebii's Champions items listing (serebii.net/pokemonchampions/items.shtml,
- * captured 2026-04-15). Champions has a curated item pool: 30 hold items,
- * 23 Mega Stones, and 28 Berries. Notably absent vs. gen-9 SV: Life Orb,
- * Choice Band, Choice Specs, Assault Vest, Rocky Helmet, Eviolite, Safety
- * Goggles, and most competitive staples beyond Choice Scarf.
+ * captured 2026-04-15). Champions has a curated item pool of hold items, Mega
+ * Stones, and Berries (exact counts evolve per regulation — see the entries
+ * below rather than relying on a number here). Notably absent vs. gen-9 SV in
+ * Reg M-A: Life Orb, Choice Band, Choice Specs, Assault Vest, Rocky Helmet,
+ * Eviolite, Safety Goggles, and most competitive staples beyond Choice Scarf.
  */
 const CHAMPIONS_MA_LEGAL_ITEMS: ReadonlySet<string> = new Set([
   // Hold items (30)
