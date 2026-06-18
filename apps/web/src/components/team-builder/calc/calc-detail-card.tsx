@@ -109,7 +109,7 @@ export function CalcDetailCard({
   const [localFoesAlive, setLocalFoesAlive] = useState<1 | 2>(foesAlive);
   const [localAllyAlive, setLocalAllyAlive] = useState(allyAlive);
 
-  const moveData = getMoveData(moveName);
+  const moveData = getMoveData(moveName, format?.id);
   const targetInfo = getMoveTargetInfo(moveName);
   const isSpread = targetInfo.isSpread;
 

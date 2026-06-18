@@ -23,6 +23,48 @@ export interface MegaStatBlock {
 }
 
 /**
+ * Champions-specific override for a single move's attributes.
+ *
+ * All fields are optional — only the attributes that differ from the vanilla
+ * @pkmn/dex Gen 9 values are encoded. Display-relevant fields (`type`,
+ * `category`, `basePower`, `accuracy`) are surfaced in the move picker;
+ * battle-only fields (`pp`, `secondary`, `flags`, `mechanics`, `note`) are
+ * stored for future sim integration.
+ */
+export interface ChampionsMoveChange {
+  /** New base power (replaces @pkmn/dex value). */
+  basePower?: number;
+  /** New type (replaces @pkmn/dex value). */
+  type?: string;
+  /** New category (replaces @pkmn/dex value). */
+  category?: "Physical" | "Special" | "Status";
+  /** New accuracy value (replaces @pkmn/dex value). */
+  accuracy?: number | true;
+  /** New PP value (battle-only — not surfaced in move picker display). */
+  pp?: number;
+  /**
+   * Human-readable description of secondary-effect changes (battle-only).
+   * Example: "flinch 30%→20%"
+   */
+  secondary?: string;
+  /**
+   * Flag names added to this move in Champions (battle-only).
+   * Example: ["Slicing"] for moves that gain the Slicing flag.
+   */
+  flags?: readonly string[];
+  /**
+   * Free-form description of mechanics changes not captured by other fields
+   * (battle-only). Example: "resets hit-counter on switch-out".
+   */
+  mechanics?: string;
+  /**
+   * Source citation or clarifying note when data is single-source or
+   * requires disambiguation. Example: "source: Serebii (not corroborated)".
+   */
+  note?: string;
+}
+
+/**
  * Self-contained legality descriptor for one Champions format regulation.
  * Every field is `Readonly*` so callers cannot mutate shared state.
  */
@@ -83,6 +125,17 @@ export interface ChampionsRegBundle {
    * abilities.ts. M-A currently has no custom entries.
    */
   abilityDescs: ReadonlyMap<string, string>;
+
+  /**
+   * Champions-wide move attribute changes keyed by exact move display name.
+   * Covers base power, type, category, accuracy, PP, and battle-only attrs
+   * (secondary effects, flags, mechanics). Populated on M-A (the regulation
+   * that shipped these changes); M-B inherits via reference equality.
+   *
+   * getMoveData() merges display-relevant fields (type, category, basePower,
+   * accuracy) over the @pkmn/dex values when a Champions format is active.
+   */
+  moveChanges: ReadonlyMap<string, ChampionsMoveChange>;
 }
 
 // =============================================================================
@@ -810,6 +863,176 @@ const CHAMPIONS_MA_MEGA_STATS: ReadonlyMap<string, MegaStatBlock> = new Map([
 ]);
 
 // =============================================================================
+// Champions: VGC 2026 Reg M-A — move changes (Champions-wide, shipped at launch)
+// =============================================================================
+
+/**
+ * Champions-wide move attribute changes. These changes shipped at M-A launch
+ * and are inherited unchanged by M-B (no M-B-specific move deltas).
+ *
+ * Keys = exact move display names (matching @pkmn/dex move.name).
+ * Sources: Bulbapedia, Serebii, Smogon — annotated per entry where single-source.
+ *
+ * PP normalization rule (applied to most moves):
+ *   base 5 → 8, 10 → 12, 15 → 16, 20+ → 20.
+ *   Exceptions: Protect/Detect/Baneful Bunker/King's Shield/Spiky Shield/
+ *   Sandstorm/Snowscape/Beak Blast → 8; Night Slash → 20.
+ */
+const CHAMPIONS_MA_MOVE_CHANGES: ReadonlyMap<string, ChampionsMoveChange> =
+  new Map([
+    // -------------------------------------------------------------------------
+    // Base power changes
+    // -------------------------------------------------------------------------
+    ["Trop Kick", { basePower: 85, pp: 16 }],
+    ["Psyshield Bash", { basePower: 90, pp: 12 }],
+    ["Apple Acid", { basePower: 90, pp: 12 }],
+    ["Fire Lash", { basePower: 90, pp: 16 }],
+    ["Grav Apple", { basePower: 90, pp: 12 }],
+    ["Spirit Shackle", { basePower: 90, pp: 12 }],
+    [
+      "First Impression",
+      {
+        basePower: 100,
+        pp: 12,
+        mechanics:
+          "Unusable after the switch-in turn (same restriction as Fake Out).",
+      },
+    ],
+    [
+      "Beak Blast",
+      {
+        basePower: 120,
+        // Exception: Beak Blast gets pp 8 (matches Protect-family protection moves)
+        pp: 8,
+      },
+    ],
+    ["Mountain Gale", { basePower: 120, pp: 12 }],
+    ["Night Daze", { basePower: 90, pp: 12 }],
+    ["Infernal Parade", { basePower: 65, pp: 16 }],
+    // Bone Rush: 25 → 30 BP per hit (multi-hit move, 2–5 hits)
+    ["Bone Rush", { basePower: 30, pp: 12 }],
+
+    // -------------------------------------------------------------------------
+    // Type changes
+    // -------------------------------------------------------------------------
+    ["Snap Trap", { type: "Steel", pp: 20 }],
+    [
+      "Growth",
+      {
+        type: "Grass",
+        pp: 20,
+        // source: Serebii (not corroborated on Bulbapedia)
+        note: "source: Serebii (not corroborated on Bulbapedia)",
+      },
+    ],
+
+    // -------------------------------------------------------------------------
+    // Accuracy changes
+    // -------------------------------------------------------------------------
+    ["Crabhammer", { accuracy: 95, pp: 12 }],
+    ["Syrup Bomb", { accuracy: 90, pp: 12 }],
+    [
+      "Make It Rain",
+      {
+        accuracy: 95,
+        // Exception: Make It Rain retains standard 8 PP (matches other
+        // multi-target 120 BP moves getting the 8-PP Protect-exception)
+        pp: 8,
+        secondary:
+          "user SpA −1 → −2 (increased self-drop after attacking)",
+      },
+    ],
+
+    // -------------------------------------------------------------------------
+    // Secondary effect changes (battle-only — not surfaced in move picker display)
+    // -------------------------------------------------------------------------
+    [
+      "Iron Head",
+      { pp: 16, secondary: "flinch chance 30% → 20%" },
+    ],
+    [
+      "Moonblast",
+      { pp: 16, secondary: "SpA-drop chance 30% → 10%" },
+    ],
+    [
+      "Dire Claw",
+      {
+        pp: 16,
+        secondary: "status condition chance 50% → 30%",
+        flags: ["Slicing"],
+      },
+    ],
+
+    // -------------------------------------------------------------------------
+    // Flag additions (battle-only — Slicing / Sound)
+    // -------------------------------------------------------------------------
+    ["Crush Claw", { pp: 16, flags: ["Slicing"] }],
+    ["Dragon Claw", { pp: 16, flags: ["Slicing"] }],
+    ["Shadow Claw", { pp: 16, flags: ["Slicing"] }],
+    ["Dragon Cheer", { pp: 16, flags: ["Sound"] }],
+
+    // -------------------------------------------------------------------------
+    // Mechanics changes (battle-only)
+    // -------------------------------------------------------------------------
+    [
+      "Rage Fist",
+      {
+        pp: 12,
+        mechanics:
+          "Resets the hit-counter to 0 on switch-out (base BP 50, cap 350 unchanged).",
+      },
+    ],
+    [
+      "Salt Cure",
+      {
+        pp: 16,
+        mechanics:
+          "Residual damage 1/8 → 1/16 per turn (1/4 → 1/8 vs Water/Steel-type targets).",
+      },
+    ],
+    [
+      "Freeze-Dry",
+      {
+        pp: 20,
+        mechanics: "Can no longer inflict the Frozen status condition.",
+      },
+    ],
+    [
+      // NOTE: Unseen Fist is an ABILITY, not a move (no PP). Kept here to
+      // document its Champions nerf alongside the other mechanic changes.
+      "Unseen Fist",
+      {
+        mechanics:
+          "Ability (Urshifu): deals 1/4 damage through Protect and similar blocking moves, instead of full block.",
+      },
+    ],
+    [
+      "Toxic Thread",
+      {
+        pp: 20,
+        mechanics: "Speed drop: −1 → −2 stages (stronger debuff).",
+      },
+    ],
+    [
+      "Fake Out",
+      {
+        pp: 12,
+        mechanics:
+          "Unusable after the switch-in turn (same restriction as First Impression).",
+      },
+    ],
+    [
+      "Poltergeist",
+      {
+        pp: 8,
+        mechanics: "Can now target holders of Mega Stones (bypasses the item-check block).",
+        // source: Smogon only
+        note: "source: Smogon only",
+      },
+    ],
+  ]);
+
+// =============================================================================
 // Bundle export
 // =============================================================================
 
@@ -833,6 +1056,8 @@ export const REG_MA_BUNDLE: ChampionsRegBundle = {
   megaTypes: new Map(),
   // M-A has no custom ability descriptions beyond what @pkmn/dex provides.
   abilityDescs: new Map(),
+  // Champions-wide move changes shipped at M-A launch; inherited by M-B.
+  moveChanges: CHAMPIONS_MA_MOVE_CHANGES,
 };
 
 // =============================================================================

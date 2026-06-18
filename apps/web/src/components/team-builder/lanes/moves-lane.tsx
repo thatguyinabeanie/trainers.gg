@@ -253,7 +253,7 @@ function MoveTile({
   const rowOutputs = calc.computeForwardOutputsForRow(attacker);
   const output = rowOutputs[moveIdx] ?? null;
 
-  const moveData = moveName ? getMoveData(moveName) : null;
+  const moveData = moveName ? getMoveData(moveName, format?.id) : null;
   const isStatus = moveData?.category === "Status";
   const hasCalc = calc.calcEnabled && output !== null && !isStatus;
 

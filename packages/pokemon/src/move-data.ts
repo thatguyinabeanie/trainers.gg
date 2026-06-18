@@ -1,11 +1,26 @@
 /**
  * Move data utilities for Pokemon team builder.
  * Wraps @pkmn/dex move lookups for type, category, base power, and full move data.
+ *
+ * When a Champions format ID is supplied to getMoveData(), Champions-specific
+ * move-attribute changes (base power, type, category, accuracy) are merged
+ * over the @pkmn/dex values. The Champions move-changes dataset lives on the
+ * regulation bundles in champions-reg-ma.ts / champions-reg-mb.ts.
+ *
+ * Cycle-avoidance: this file imports the two leaf bundle files directly rather
+ * than going through format-legality.ts (which re-imports move-data.ts and
+ * would form a cycle). Bundle resolution is a simple map lookup keyed on the
+ * Champions format IDs from the same leaf file (format-legality.ts exports
+ * the constants but they're just strings — we keep a local copy here to stay
+ * cycle-free).
  */
 
 import { Dex } from "@pkmn/dex";
 import { Generations } from "@pkmn/data";
 
+import { type ChampionsMoveChange, REG_MA_BUNDLE } from "./champions-reg-ma";
+import { REG_MB_BUNDLE } from "./champions-reg-mb";
+import { isChampionsFormatId } from "./formats";
 import { type MoveHelperInput } from "./move-helpers";
 
 const gens = new Generations(Dex);
@@ -25,6 +40,35 @@ export type MoveCategory = "Physical" | "Special" | "Status";
 const MOVE_TYPE_FALLBACKS: Record<string, string> = {
   "Light of Ruin": "Fairy",
 };
+
+// =============================================================================
+// Champions move-change resolver
+// =============================================================================
+
+/**
+ * Champions format ID → move-changes map. Keyed by the raw format ID strings
+ * (avoids importing from format-legality.ts which would cycle).
+ *
+ * Both M-A and M-B point to the same map (M-B inherits M-A's changes by
+ * reference) — this is intentional.
+ */
+const CHAMPIONS_MOVE_CHANGES_BY_FORMAT_ID: Readonly<
+  Record<string, ReadonlyMap<string, ChampionsMoveChange>>
+> = {
+  gen9championsvgc2026regma: REG_MA_BUNDLE.moveChanges,
+  gen9championsvgc2026regmb: REG_MB_BUNDLE.moveChanges,
+};
+
+/**
+ * Resolve the Champions move-changes map for a given format ID.
+ * Returns `undefined` for non-Champions formats or unknown IDs.
+ */
+function getChampionsMoveChanges(
+  formatId: string | null | undefined
+): ReadonlyMap<string, ChampionsMoveChange> | undefined {
+  if (!formatId || !isChampionsFormatId(formatId)) return undefined;
+  return CHAMPIONS_MOVE_CHANGES_BY_FORMAT_ID[formatId];
+}
 
 /**
  * Get the type of a move (e.g., "Fire", "Water").
@@ -82,17 +126,47 @@ export interface MoveData {
 
 /**
  * Get full move data by name for UI rendering.
- * Returns null if the move does not exist.
+ *
+ * When `formatId` is a Champions format, display-relevant Champions move
+ * changes (type, category, basePower, accuracy) are merged over the vanilla
+ * @pkmn/dex Gen 9 values so the move picker reflects accurate Champions stats.
+ *
+ * Non-Champions formats and an absent `formatId` → identical to the original
+ * behavior (pure @pkmn/dex lookup).
+ *
+ * Returns null if the move does not exist in @pkmn/dex.
  */
-export function getMoveData(moveName: string): MoveData | null {
+export function getMoveData(
+  moveName: string,
+  formatId?: string | null
+): MoveData | null {
   const move = gen9Dex.moves.get(moveName);
   if (!move?.exists) return null;
+
+  // Start with the vanilla dex values.
+  let type: string = move.type;
+  let category: MoveCategory = move.category as MoveCategory;
+  let basePower: number = move.basePower;
+  let accuracy: number | true = move.accuracy;
+
+  // Apply Champions overrides for display-relevant fields when active.
+  const changes = getChampionsMoveChanges(formatId);
+  if (changes) {
+    const override = changes.get(move.name);
+    if (override) {
+      if (override.type !== undefined) type = override.type;
+      if (override.category !== undefined) category = override.category;
+      if (override.basePower !== undefined) basePower = override.basePower;
+      if (override.accuracy !== undefined) accuracy = override.accuracy;
+    }
+  }
+
   return {
     name: move.name,
-    type: move.type,
-    category: move.category as MoveCategory,
-    basePower: move.basePower,
-    accuracy: move.accuracy,
+    type,
+    category,
+    basePower,
+    accuracy,
     shortDesc: move.shortDesc,
   };
 }

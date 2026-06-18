@@ -294,7 +294,7 @@ function SpeciesRow({
       for (const moveName of legalMoves) {
         const moveRoles = getRolesForMove(moveName);
         if (filteredRoles.some((role) => moveRoles.includes(role))) {
-          const data = getMoveData(moveName);
+          const data = getMoveData(moveName, formatId);
           if (data) matchingMoveNames.push(data.name);
         }
       }

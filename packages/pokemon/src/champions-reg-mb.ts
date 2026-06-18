@@ -283,4 +283,8 @@ export const REG_MB_BUNDLE: ChampionsRegBundle = {
   megaTypes: CHAMPIONS_MB_MEGA_TYPES,
   // M-B introduces 2 custom ability descriptions.
   abilityDescs: CHAMPIONS_MB_ABILITY_DESCS,
+  // M-B introduces no new move-attribute changes; Champions-wide changes
+  // shipped at M-A launch. Inherit the M-A map by reference so consumers
+  // always see the same object regardless of which reg they're working with.
+  moveChanges: REG_MA_BUNDLE.moveChanges,
 };

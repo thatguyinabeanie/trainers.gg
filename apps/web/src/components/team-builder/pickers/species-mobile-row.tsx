@@ -200,9 +200,10 @@ function SpeciesMobileMovesPanel({ species, formatId }: SpeciesMobileMovesPanelP
     );
   }
 
+  // Pass formatId so Champions formats show accurate move stats
   const allMoves: MoveData[] = [];
   for (const moveName of legalMovesResult) {
-    const data = getMoveData(moveName);
+    const data = getMoveData(moveName, formatId);
     if (data) allMoves.push(data);
   }
 

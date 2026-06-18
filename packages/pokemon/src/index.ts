@@ -125,6 +125,7 @@ export {
 
 // Champions regulation bundles (format-specific static legality + calc data)
 export {
+  type ChampionsMoveChange,
   type ChampionsRegBundle,
   type MegaStatBlock,
   REG_MA_BUNDLE,

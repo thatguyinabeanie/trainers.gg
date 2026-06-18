@@ -49,7 +49,7 @@ interface CalcRowProps {
 function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
   const calc = useCalcStateContext();
 
-  const moveData = moveName ? getMoveData(moveName) : null;
+  const moveData = moveName ? getMoveData(moveName, calc.format?.id) : null;
   const isStatus = moveData?.category === "Status";
   const canShowCalcState = calc.calcEnabled && hasPokemon;
   const hasDefender = Boolean(calc.defenderSpecies);
