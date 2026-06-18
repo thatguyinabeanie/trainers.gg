@@ -657,6 +657,27 @@ export function RadialStatEditor({
             const [hx, hy] = polarToXY(STAT_ANGLES[statKey], handleRadius);
             const [lx, ly] = polarToXY(STAT_ANGLES[statKey], LABEL_RADIUS);
 
+            // Anchor each label to its side so the wide inline row sits tidily
+            // OUTSIDE the hexagon instead of sprawling across it: left stats
+            // right-align (flow outward-left), right stats left-align (flow
+            // outward-right), top/bottom center over the vertex.
+            const labelCos = Math.cos((STAT_ANGLES[statKey] * Math.PI) / 180);
+            const labelSide =
+              labelCos > 0.35 ? "right" : labelCos < -0.35 ? "left" : "center";
+            const LABEL_W = 150; // svgu — room for "▲ SPA 206 · 23"
+            const labelX =
+              labelSide === "right"
+                ? lx - 6
+                : labelSide === "left"
+                  ? lx + 6 - LABEL_W
+                  : lx - LABEL_W / 2;
+            const labelJustify =
+              labelSide === "right"
+                ? "justify-start"
+                : labelSide === "left"
+                  ? "justify-end"
+                  : "justify-center";
+
             const liveFinalStat = computeStat({
               statKey,
               base: base[statKey],
@@ -735,15 +756,16 @@ export function RadialStatEditor({
                     Width 120 svgu gives enough room for the longest line.
                     Vertical offset: center the 20svgu-tall row on the label point (ly). */}
                 <foreignObject
-                  x={lx - 60}
+                  x={labelX}
                   y={ly - 10}
-                  width={120}
+                  width={LABEL_W}
                   height={20}
                   style={{ overflow: "visible" }}
                 >
                   <div
                     className={cn(
-                      "flex items-baseline justify-center",
+                      "flex items-baseline whitespace-nowrap",
+                      labelJustify,
                       compact ? "gap-px" : "gap-0.5"
                     )}
                   >
