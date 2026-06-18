@@ -760,7 +760,6 @@ const MEGA_ABILITY_ENTRIES = [
   ["Floette-Mega", "Fairy Aura"],
   ["Froslass-Mega", "Snow Warning"],
   ["Glimmora-Mega", "Adaptability"],
-  ["Golisopod-Mega", "Emergency Exit"],
   ["Golurk-Mega", "Unseen Fist"],
   ["Greninja-Mega", "Protean"],
   ["Hawlucha-Mega", "Limber"],
@@ -768,8 +767,7 @@ const MEGA_ABILITY_ENTRIES = [
   ["Magearna-Mega", "Soul-Heart"],
   ["Magearna-Original-Mega", "Soul-Heart"],
   ["Meganium-Mega", "Mega Sol"],
-  ["Meowstic-F-Mega", "Trace"],
-  ["Meowstic-M-Mega", "Trace"],
+  ["Meowstic-Mega", "Trace"],
   ["Scovillain-Mega", "Spicy Spray"],
   ["Skarmory-Mega", "Keen Eye"],
   ["Starmie-Mega", "Huge Power"],
@@ -924,22 +922,15 @@ const CHAMPIONS_MA_MOVE_CHANGES: ReadonlyMap<string, ChampionsMoveChange> =
         // Exception: Make It Rain retains standard 8 PP (matches other
         // multi-target 120 BP moves getting the 8-PP Protect-exception)
         pp: 8,
-        secondary:
-          "user SpA −1 → −2 (increased self-drop after attacking)",
+        secondary: "user SpA −1 → −2 (increased self-drop after attacking)",
       },
     ],
 
     // -------------------------------------------------------------------------
     // Secondary effect changes (battle-only — not surfaced in move picker display)
     // -------------------------------------------------------------------------
-    [
-      "Iron Head",
-      { pp: 16, secondary: "flinch chance 30% → 20%" },
-    ],
-    [
-      "Moonblast",
-      { pp: 16, secondary: "SpA-drop chance 30% → 10%" },
-    ],
+    ["Iron Head", { pp: 16, secondary: "flinch chance 30% → 20%" }],
+    ["Moonblast", { pp: 16, secondary: "SpA-drop chance 30% → 10%" }],
     [
       "Dire Claw",
       {
@@ -1011,7 +1002,8 @@ const CHAMPIONS_MA_MOVE_CHANGES: ReadonlyMap<string, ChampionsMoveChange> =
       "Poltergeist",
       {
         pp: 8,
-        mechanics: "Can now target holders of Mega Stones (bypasses the item-check block).",
+        mechanics:
+          "Can now target holders of Mega Stones (bypasses the item-check block).",
         // source: Smogon only
         note: "source: Smogon only",
       },
