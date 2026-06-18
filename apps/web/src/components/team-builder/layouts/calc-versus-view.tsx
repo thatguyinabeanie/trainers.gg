@@ -55,25 +55,28 @@ interface MonHeroContentProps {
   onSpeciesClick: () => void;
   isShiny?: boolean;
   isFoe?: boolean;
+  /** Sprite size in px. Desktop two-up passes a large hero size; mobile keeps the default. */
+  size?: number;
 }
 
 function MonHeroContent({
   pokemon,
   onSpeciesClick,
   isShiny = false,
+  size = 136,
 }: MonHeroContentProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {/* Sprite — 136px to fit the hero band comfortably */}
+      {/* Sprite — size driven by caller (large on desktop versus, default on mobile) */}
       <SpriteSection
         pokemon={pokemon}
         onSpeciesClick={onSpeciesClick}
         variant="pill-bottom"
         types={types}
         isShiny={isShiny}
-        size={136}
+        size={size}
       />
 
       {/* Type + Tera chips */}
@@ -531,15 +534,16 @@ export function CalcVersusView({
 
           {/* ── (b) HERO BAND ───────────────────────────────────────────── */}
           {/* Left: your mon sprite + chips */}
-          <div className="flex h-56 items-center justify-center">
+          <div className="flex h-72 items-center justify-center">
             <MonHeroContent
               pokemon={pokemon}
               onSpeciesClick={() => setYourSpeciesOpen(true)}
               isShiny={pokemon.is_shiny ?? false}
+              size={200}
             />
           </div>
           {/* Center: VS badge — same h-56 so it aligns with the hero band */}
-          <div className="flex h-56 items-center justify-center">
+          <div className="flex h-72 items-center justify-center">
             <div className="border-border bg-card/60 flex size-12 items-center justify-center rounded-full border backdrop-blur-sm">
               <span className="text-muted-foreground font-mono text-sm font-extrabold">
                 VS
@@ -547,11 +551,12 @@ export function CalcVersusView({
             </div>
           </div>
           {/* Right: target sprite + chips */}
-          <div className="flex h-56 items-center justify-center">
+          <div className="flex h-72 items-center justify-center">
             <MonHeroContent
               pokemon={target.pokemon}
               onSpeciesClick={() => setTargetSpeciesOpen(true)}
               isFoe
+              size={200}
             />
           </div>
 
