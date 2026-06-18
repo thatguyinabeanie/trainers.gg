@@ -219,8 +219,9 @@ export function SingleFocusView({
         ref={stageRef}
         className={cn(
           "flex min-h-full flex-col items-center justify-center gap-4 overflow-y-auto p-4",
-          // Dotted canvas texture (moved here from FocusCard)
-          "bg-[radial-gradient(circle,var(--border)_1px,transparent_1px)] bg-[length:24px_24px]",
+          // No dotted texture here — the builder shell already renders a global
+          // fixed -z-10 dotted grid behind the whole page. Adding one here
+          // double-stacked the grid (24px over the shell's 28px → moiré).
           "outline-none"
         )}
         tabIndex={0}
