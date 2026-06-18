@@ -101,9 +101,11 @@ export async function getSiteAdmins(
   }
 
   const rows = data ?? [];
-  const userIds = rows
-    .map((r) => r.user?.id)
-    .filter((id): id is string => Boolean(id));
+  const userIds = [
+    ...new Set(
+      rows.map((r) => r.user?.id).filter((id): id is string => Boolean(id))
+    ),
+  ];
 
   const [emailMap, piiMap] = await Promise.all([
     getEmailsByUserIds(serviceSupabase, userIds),

@@ -102,9 +102,11 @@ export async function listOrgRequestsAdmin(
   const rows = data ?? [];
 
   // Collect distinct requester IDs and enrich with PII + email in parallel
-  const requesterIds = rows
-    .map((r) => r.requester?.id)
-    .filter((id): id is string => id != null);
+  const requesterIds = [
+    ...new Set(
+      rows.map((r) => r.requester?.id).filter((id): id is string => id != null)
+    ),
+  ];
 
   const [piiMap, emailMap] = await Promise.all([
     getPiiByUserIds(supabase, requesterIds),

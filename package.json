@@ -47,7 +47,6 @@
     "db:seed": "turbo run db:seed --filter=@trainers/supabase",
     "db:dump": "turbo run db:dump --filter=@trainers/supabase",
     "db:cron-check": "pnpm --filter=@trainers/supabase run db:cron-check",
-    "db:cron-diagnose": "pnpm --filter=@trainers/supabase run db:cron-diagnose",
     "// supabase": "",
     "functions:serve": "turbo run functions:serve --filter=@trainers/supabase",
     "generate-types": "turbo run generate-types --filter=@trainers/supabase",

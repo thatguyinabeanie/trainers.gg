@@ -86,9 +86,11 @@ export async function listCommunitiesAdmin(
   const rows = data ?? [];
 
   // Collect distinct owner IDs and enrich with first/last name from private.user_pii
-  const ownerIds = rows
-    .map((r) => r.owner?.id)
-    .filter((id): id is string => id != null);
+  const ownerIds = [
+    ...new Set(
+      rows.map((r) => r.owner?.id).filter((id): id is string => id != null)
+    ),
+  ];
   const piiMap = await getPiiByUserIds(supabase, ownerIds);
 
   const enriched = rows.map((r) => ({

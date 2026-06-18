@@ -11,6 +11,7 @@ import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
  */
 export const firstNameSchema = z
   .string()
+  .trim()
   .max(64, "First name must be 64 characters or less");
 
 /**
@@ -19,6 +20,7 @@ export const firstNameSchema = z
  */
 export const lastNameSchema = z
   .string()
+  .trim()
   .max(64, "Last name must be 64 characters or less");
 
 /**
@@ -29,6 +31,7 @@ export const lastNameSchema = z
  */
 export const birthDateSchema = z
   .string()
+  .trim()
   .refine(
     (val) => val === "" || /^\d{4}-\d{2}-\d{2}$/.test(val),
     "Birth date must be in YYYY-MM-DD format"
