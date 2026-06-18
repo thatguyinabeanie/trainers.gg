@@ -578,14 +578,18 @@ export function RadialStatEditor({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {/* Hexagon canvas — aspect-square, width-capped.
-          compact=false: max-w-sm (384px) — default solo view.
-          compact=true:  max-w-48 (192px) — two-up versus layout. SVG viewBox
-          scales automatically (h-full w-full) so no geometry changes needed. */}
+      {/* Hexagon canvas — aspect-square, width-capped. Capped well BELOW the
+          card width on purpose: the inline spoke labels extend into the side
+          gutters, so the hexagon must leave ~6rem of room on each side or the
+          labels overflow the card. compact (versus) is a touch smaller still. */}
       <div
         className={cn(
           "relative mx-auto aspect-square w-full touch-none select-none",
-          compact ? "max-w-48" : "max-w-sm"
+          // Same cap in both layouts: the spoke labels live in foreignObjects
+          // INSIDE the SVG, so their rendered size scales with the hexagon's
+          // width. Matching the cap keeps the solo labels the same size as the
+          // versus (compact) labels (the size that reads well).
+          "max-w-44"
         )}
       >
         <svg
@@ -664,7 +668,7 @@ export function RadialStatEditor({
             const labelCos = Math.cos((STAT_ANGLES[statKey] * Math.PI) / 180);
             const labelSide =
               labelCos > 0.35 ? "right" : labelCos < -0.35 ? "left" : "center";
-            const LABEL_W = 150; // svgu — room for "▲ SPA 206 · 23"
+            const LABEL_W = 118; // svgu — just enough for "▲ SPA 206 · 23"
             const labelX =
               labelSide === "right"
                 ? lx - 6
@@ -802,14 +806,14 @@ export function RadialStatEditor({
                       {STAT_SHORT_LABELS[statKey]}
                     </span>
 
-                    {/* Effective stat — bold foreground. aria-hidden: decorative display.
-                        compact: text-xs keeps the row within max-w-48;
-                        default: text-sm gives a slight size bump for legibility. */}
+                    {/* Effective stat — bold foreground. aria-hidden: decorative
+                        display. text-xs in both layouts (the versus/compact size
+                        the labels are tuned to; solo is no longer bumped up). */}
                     <span
                       aria-hidden
                       className={cn(
                         "text-foreground ml-0.5 font-mono font-bold tabular-nums",
-                        compact ? "text-xs" : "text-sm"
+                        "text-xs"
                       )}
                     >
                       {liveFinalStat}
@@ -863,19 +867,13 @@ export function RadialStatEditor({
       >
         <span
           className={cn(
-            "font-mono font-bold tabular-nums",
-            compact ? "text-xs" : "text-sm",
+            "font-mono text-xs font-bold tabular-nums",
             totalEv > budget.total ? "text-destructive" : "text-foreground"
           )}
         >
           {totalEv}
         </span>
-        <span
-          className={cn(
-            "text-muted-foreground font-mono tabular-nums",
-            compact ? "text-xs" : "text-sm"
-          )}
-        >
+        <span className="text-muted-foreground font-mono text-xs tabular-nums">
           / {budget.total}
         </span>
       </div>

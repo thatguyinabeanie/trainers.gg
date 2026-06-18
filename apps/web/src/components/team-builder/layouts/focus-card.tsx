@@ -157,7 +157,7 @@ export function FocusCard({
           // Below md: vertical stack
           "flex flex-col gap-4",
           // At md+: 3-column grid, stretch so all three columns share the same height
-          "md:grid md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)_minmax(0,20rem)]",
+          "md:grid md:grid-cols-[minmax(0,24rem)_minmax(0,1fr)_minmax(0,20rem)]",
           "md:items-stretch md:gap-6"
         )}
       >
