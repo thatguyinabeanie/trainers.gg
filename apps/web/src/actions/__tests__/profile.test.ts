@@ -662,22 +662,26 @@ describe("updateProfile", () => {
     });
 
     expect(result.success).toBe(true);
+    // Omitted PII fields are passed as undefined (not null) — the RPC uses
+    // COALESCE(EXCLUDED.x, existing.x) so undefined leaves the existing value intact.
     expect(mockRpc).toHaveBeenCalledWith("update_my_user_pii", {
       p_first_name: "Ash",
       p_last_name: "Ketchum",
-      p_birth_date: null,
+      p_birth_date: undefined,
     });
   });
 
-  it("passes p_birth_date with null names when only birth date is provided", async () => {
+  it("passes p_birth_date with undefined names when only birth date is provided", async () => {
     mockUsernameQuery();
 
     const result = await updateProfile({ birthDate: "1990-05-15" });
 
     expect(result.success).toBe(true);
+    // Omitted first_name/last_name fields pass as undefined so existing DB values
+    // are preserved; only birth_date is updated this call.
     expect(mockRpc).toHaveBeenCalledWith("update_my_user_pii", {
-      p_first_name: null,
-      p_last_name: null,
+      p_first_name: undefined,
+      p_last_name: undefined,
       p_birth_date: "1990-05-15",
     });
   });

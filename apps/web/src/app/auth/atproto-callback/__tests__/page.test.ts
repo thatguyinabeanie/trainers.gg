@@ -123,7 +123,13 @@ describe("AtprotoCallbackPage", () => {
     });
 
     it("still redirects to bluesky_verified even when cookie delete throws", async () => {
-      mockDelete.mockRejectedValue(new Error("cookie mutation not allowed"));
+      // The page calls cookieStore.delete() without await — a rejected Promise
+      // would be unhandled. The real Next.js implementation throws synchronously
+      // when cookie mutations are disallowed in a Server Component render context;
+      // use a synchronous throw so the try/catch in the page catches it correctly.
+      mockDelete.mockImplementation(() => {
+        throw new Error("cookie mutation not allowed");
+      });
 
       await runPage();
 
