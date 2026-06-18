@@ -4595,6 +4595,7 @@ export type Database = {
       update_my_user_pii: {
         Args: {
           p_birth_date?: string
+          p_clear_birth_date?: boolean
           p_first_name?: string
           p_last_name?: string
         }
