@@ -275,12 +275,13 @@ export function SingleFocusView({
 
         {/* ── Carousel row — arrows flanking the sprite tab strip ────────── */}
         {/*
-          The carousel is grouped directly under the stage as part of the same
-          centered block (not pinned to the canvas bottom). Arrows flank the
-          SpriteTabStrip inline, matching the v7 mockup's .carousel layout.
+          Centered under the stage — justify-center keeps the group symmetric
+          even when the prev arrow is disabled (both arrows always rendered at
+          the same size so the layout doesn't shift at slot 0 or 5).
+          Arrows flank the SpriteTabStrip inline, matching the v7 mockup.
         */}
-        <div className="flex items-center gap-2">
-          {/* Previous arrow */}
+        <div className="flex w-full items-center justify-center gap-2">
+          {/* Previous arrow — always rendered (disabled dims it, never hides it) */}
           <button
             type="button"
             aria-label="Previous Pokémon slot"
@@ -288,7 +289,7 @@ export function SingleFocusView({
             disabled={activeIdx === 0}
             className={cn(
               // ≥40px tap target on mobile per mobile-responsiveness rule
-              "flex size-10 items-center justify-center rounded-full",
+              "flex size-10 shrink-0 items-center justify-center rounded-full",
               "bg-background/70 text-muted-foreground backdrop-blur-sm",
               "border-border/40 border shadow-sm",
               "hover:bg-background hover:text-foreground transition-all duration-150",
@@ -317,14 +318,14 @@ export function SingleFocusView({
             </SortableContext>
           </div>
 
-          {/* Next arrow */}
+          {/* Next arrow — always rendered at same size as prev for symmetry */}
           <button
             type="button"
             aria-label="Next Pokémon slot"
             onClick={() => activateClamped(activeIdx + 1)}
             disabled={activeIdx === SLOT_COUNT - 1}
             className={cn(
-              "flex size-10 items-center justify-center rounded-full",
+              "flex size-10 shrink-0 items-center justify-center rounded-full",
               "bg-background/70 text-muted-foreground backdrop-blur-sm",
               "border-border/40 border shadow-sm",
               "hover:bg-background hover:text-foreground transition-all duration-150",
@@ -338,7 +339,7 @@ export function SingleFocusView({
 
         {/* ── Dot row — compact position indicator below the carousel ────── */}
         <div
-          className="flex items-center justify-center gap-1.5"
+          className="flex w-full items-center justify-center gap-1.5"
           role="group"
           aria-label="Slot position indicators"
         >

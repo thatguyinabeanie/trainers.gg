@@ -198,7 +198,7 @@ export function FocusCard({
             />
           )}
 
-          {/* Sprite (showcase hero) — size=208 makes it the visual centerpiece. */}
+          {/* Sprite (showcase hero) — size=240 makes it the visual centerpiece. */}
           <div className="relative z-0 flex flex-col items-center gap-2">
             <SpriteSection
               pokemon={pokemon}
@@ -207,7 +207,7 @@ export function FocusCard({
               speciesHasError={id.speciesErrors.length > 0}
               types={id.types}
               isShiny={id.isShiny}
-              size={208}
+              size={240}
             />
             <FieldErrors errors={id.speciesErrors} />
           </div>
@@ -303,16 +303,17 @@ export function FocusCard({
           </p>
           <div className="flex min-h-0 flex-1 flex-col justify-center">
             {/*
-              calc OFF → 2×2 card grid (MovesLane handles this internally
-              when presentation="cards-2x2" and calcEnabled is false).
-              calc ON  → standard table with calc columns.
+              calc OFF → vertical list of move rows (type icon · category ·
+              name · BP · ACC, with NAME/BP/ACC header row) matching the mock.
+              calc ON  → standard table with calc columns (MovesLane switches
+              internally when calcEnabled is true).
             */}
             <MovesLane
               pokemon={pokemon}
               format={format}
               onUpdate={onUpdate}
               fieldErrors={movesErrors}
-              presentation="cards-2x2"
+              presentation="list"
             />
           </div>
 
