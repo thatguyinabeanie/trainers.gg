@@ -70,6 +70,11 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  // Single typed view of the service-role client. The vendored pipeline helpers
+  // (runSyncStage/runImportStage/runCompileStage) and the local TypedClient-typed
+  // helpers (loadExclusions/readNumberConfig) all take TypedClient; reuse one cast
+  // instead of scattering `as unknown as TypedClient` at each call site.
+  const typedSupabase = supabase as unknown as TypedClient;
 
   // 3. Global kill-switch: no-op when pipeline_enabled is false.
   const { data: configRow, error: configError } = await supabase
@@ -100,8 +105,8 @@ Deno.serve(async (req) => {
     const deadlineMs = Date.now() + TICK_BUDGET_MS;
 
     if (stage === "sync") {
-      const exclusions = await loadExclusions(supabase);
-      const result = await runSyncStage(supabase as unknown as TypedClient, {
+      const exclusions = await loadExclusions(typedSupabase);
+      const result = await runSyncStage(typedSupabase, {
         limitlessApiKey: LIMITLESS_API_KEY,
         isExcluded: (source: "rk9" | "limitless", id: string) =>
           exclusions.has(`${source}:${id}`),
@@ -133,11 +138,11 @@ Deno.serve(async (req) => {
 
     if (stage === "import") {
       const batchSize = await readNumberConfig(
-        supabase,
+        typedSupabase,
         "limitless_import_batch_size",
         25
       );
-      const result = await runImportStage(supabase as unknown as TypedClient, {
+      const result = await runImportStage(typedSupabase, {
         limitlessApiKey: LIMITLESS_API_KEY,
         limitlessBatchSize: batchSize,
         deadlineMs,
@@ -168,7 +173,7 @@ Deno.serve(async (req) => {
     }
 
     // stage === "compile"
-    const result = await runCompileStage(supabase as unknown as TypedClient);
+    const result = await runCompileStage(typedSupabase);
     try {
       await recordImportRuns(supabase, "cron", [
         {
