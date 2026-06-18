@@ -66,7 +66,8 @@ const mockFindStatBreakpoints = jest.fn();
 const mockIsChampionsFormat = jest.fn();
 
 jest.mock("@trainers/pokemon", () => {
-  const actual = jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon");
+  const actual =
+    jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon");
   return {
     ...actual,
     getBaseStats: (...args: unknown[]) => mockGetBaseStats(...args),
@@ -265,7 +266,9 @@ describe("CalcDefenderStats — no-species fallback", () => {
 
   it("renders without error when species is empty", () => {
     mockGetBaseStats.mockReturnValue(null);
-    expect(() => renderComponent({ defenderSpecies: "", format: UNDEFINED_FORMAT })).not.toThrow();
+    expect(() =>
+      renderComponent({ defenderSpecies: "", format: UNDEFINED_FORMAT })
+    ).not.toThrow();
   });
 });
 
@@ -324,9 +327,9 @@ describe("CalcDefenderStats — EV input display values", () => {
     // [evKey, ev, nature, expectedDisplay]
     ["HP", 0, "Hardy", ""],
     ["HP", 100, "Hardy", "100"],
-    ["Atk", 0, "Adamant", "+"],  // Adamant = +Atk
+    ["Atk", 0, "Adamant", "+"], // Adamant = +Atk
     ["Atk", 252, "Adamant", "252+"],
-    ["SpA", 0, "Adamant", "−"],  // Adamant = −SpA
+    ["SpA", 0, "Adamant", "−"], // Adamant = −SpA
     ["SpA", 100, "Adamant", "100−"],
   ] as const)(
     "%s EV=%i nature=%s → input shows '%s'",
@@ -613,10 +616,10 @@ describe("CalcDefenderStats — HP slider", () => {
 // =============================================================================
 
 describe("CalcDefenderStats — total EV counter", () => {
-  it("shows 0/508 when no EVs are invested", () => {
+  it("shows 0/510 when no EVs are invested", () => {
     renderComponent({ defenderEvs: makeDefaultEvs() });
-    // "/508" is rendered in a nested span; just verify it exists
-    expect(screen.getByText("/508")).toBeInTheDocument();
+    // "/510" is rendered in a nested span; just verify it exists
+    expect(screen.getByText("/510")).toBeInTheDocument();
   });
 
   it("shows correct total when EVs are partially invested", () => {

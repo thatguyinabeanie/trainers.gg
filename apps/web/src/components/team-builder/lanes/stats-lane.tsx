@@ -39,6 +39,7 @@ import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { Slider } from "@/components/ui/slider";
 import { FieldErrors } from "../validation/field-error";
 import { type StatBoosts } from "../use-calc-state";
+import { computeNatureForSuffix } from "../nature-cycle";
 
 // =============================================================================
 // Stat key → boost key mapping
@@ -152,42 +153,6 @@ function getIvs(pokemon: Tables<"pokemon">): StatValues {
   };
 }
 
-/** Canonical neutral nature — the rest (Hardy/Docile/Bashful/Quirky) are duplicates. */
-const NEUTRAL_NATURE = "Serious";
-
-type NatureStat =
-  | "attack"
-  | "defense"
-  | "specialAttack"
-  | "specialDefense"
-  | "speed";
-
-/** When the user adds "+" to a stat with no current −nature, default to a sensible reduced stat. */
-const DEFAULT_REDUCE_FOR_BOOST: Record<NatureStat, NatureStat> = {
-  attack: "specialAttack", // → Adamant
-  defense: "specialAttack", // → Impish
-  specialAttack: "attack", // → Modest
-  specialDefense: "attack", // → Calm
-  speed: "specialAttack", // → Jolly
-};
-
-/** When the user adds "−" to a stat with no current +nature, default to a sensible boosted stat. */
-const DEFAULT_BOOST_FOR_REDUCE: Record<NatureStat, NatureStat> = {
-  attack: "specialAttack", // → Modest (−Atk)
-  defense: "specialAttack", // → Mild (−Def)
-  specialAttack: "attack", // → Adamant (−SpA)
-  specialDefense: "attack", // → Naughty (−SpD)
-  speed: "attack", // → Brave (−Spe)
-};
-
-/** Search NATURE_EFFECTS for a nature with the given (boost, reduce) pair. */
-function findNatureFor(boost: NatureStat, reduce: NatureStat): string | null {
-  for (const [name, eff] of Object.entries(NATURE_EFFECTS)) {
-    if (eff.boost === boost && eff.reduce === reduce) return name;
-  }
-  return null;
-}
-
 /**
  * Parse the EV/SP input as `"12+"`, `"12−"`, `"12-"`, `"12"`, `"+"`, `"−"`, `""`.
  * Tolerates unicode minus and ASCII hyphen for negative-nature suffix.
@@ -204,94 +169,6 @@ function parseEvInput(raw: string): {
   const sym = match[2];
   const suffix = sym === "+" ? "+" : sym === "-" || sym === "−" ? "-" : null;
   return { value, suffix };
-}
-
-const ALL_NATURE_STATS: NatureStat[] = [
-  "attack",
-  "defense",
-  "specialAttack",
-  "specialDefense",
-  "speed",
-];
-
-/**
- * Pick a fresh nature partner stat (the −stat for a +boost, or the +stat for
- * a −reduce). Tries the default first; if the default conflicts with `avoid`
- * (the partner stat we explicitly want to leave alone — typically the
- * previous boost when we're moving the + somewhere new), falls back to the
- * first stat that isn't the new mover or `avoid`.
- */
-function pickFreshPartner(
-  mover: NatureStat,
-  avoid: NatureStat | null,
-  defaults: Record<NatureStat, NatureStat>
-): NatureStat {
-  const def = defaults[mover];
-  if (def !== avoid) return def;
-  return ALL_NATURE_STATS.find((s) => s !== mover && s !== avoid) ?? def;
-}
-
-/**
- * Given the current nature, the row's stat, and the suffix the user typed,
- * compute what the new nature should be (or null if no change needed).
- *
- * Rules (matching user expectation):
- * • suffix === "+": this stat becomes +nature.
- *   - If already +stat: no change.
- *   - If the row's stat is the current −stat (so we'd be moving the + onto a
- *     stat that was the −): the previous boost stat keeps its neutral status
- *     (we DO NOT flip it to −); pick a fresh − partner that isn't the
- *     previous boost or the new boost.
- *   - Otherwise: keep the existing − partner if any, else pick a default.
- * • suffix === "-": symmetric.
- * • suffix === null: if the row's stat WAS +/−, switch to neutral (Serious).
- *
- * HP returns null — HP can't be a nature stat.
- */
-function computeNatureForSuffix(opts: {
-  currentNature: string;
-  statKey: StatKey;
-  suffix: "+" | "-" | null;
-}): string | null {
-  const { currentNature, statKey, suffix } = opts;
-  if (statKey === "hp") return null;
-  const stat = statKey;
-
-  const current = NATURE_EFFECTS[currentNature] ?? {};
-  const currentBoost = current.boost ?? null;
-  const currentReduce = current.reduce ?? null;
-
-  if (suffix === "+") {
-    if (currentBoost === stat) return null;
-
-    let reduce: NatureStat;
-    if (currentReduce && currentReduce !== stat) {
-      // Keep the existing − partner (no conflict).
-      reduce = currentReduce;
-    } else {
-      // Need fresh − partner. Avoid the previous boost so it isn't flipped.
-      reduce = pickFreshPartner(stat, currentBoost, DEFAULT_REDUCE_FOR_BOOST);
-    }
-    return findNatureFor(stat, reduce);
-  }
-
-  if (suffix === "-") {
-    if (currentReduce === stat) return null;
-
-    let boost: NatureStat;
-    if (currentBoost && currentBoost !== stat) {
-      boost = currentBoost;
-    } else {
-      boost = pickFreshPartner(stat, currentReduce, DEFAULT_BOOST_FOR_REDUCE);
-    }
-    return findNatureFor(boost, stat);
-  }
-
-  // suffix === null — user removed the modifier on this stat
-  if (currentBoost === stat || currentReduce === stat) {
-    return NEUTRAL_NATURE;
-  }
-  return null;
 }
 
 // =============================================================================

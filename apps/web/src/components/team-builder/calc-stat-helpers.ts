@@ -18,11 +18,14 @@ import { type StatValues } from "./stat-types";
 // =============================================================================
 
 /**
- * Display cap for total EVs. Intentionally 508 (the *useful* max — 252+252+4),
- * not the 510 legal cap, so the UI signals "you've reached the practical max"
- * before the validator does. Validators in @trainers/pokemon use 510.
+ * Display cap for total EVs. Set to 510 — the full legal EV cap — so the
+ * editor allows allocating to the complete legal limit. Previously this was
+ * 508 (the "useful max" of 252+252+4), but that prevented users from reaching
+ * the legal cap. Note: with step=4 the highest reachable multiple is 508 in
+ * practice; the budget reads 510 so the UI does not block at 508.
+ * Validators in @trainers/pokemon enforce 510 as the hard limit.
  */
-export const EV_TOTAL_DISPLAY_MAX = 508;
+export const EV_TOTAL_DISPLAY_MAX = 510;
 
 export interface StatBudget {
   total: number;
@@ -35,7 +38,12 @@ export interface StatBudget {
 /** Per-format stat-investment budget. Champions uses SP, every other format uses EV. */
 export function getStatBudget(isChampions: boolean): StatBudget {
   return isChampions
-    ? { total: SP_TOTAL_MAX, perStat: SP_PER_STAT_MAX, step: SP_STEP, label: "SP" }
+    ? {
+        total: SP_TOTAL_MAX,
+        perStat: SP_PER_STAT_MAX,
+        step: SP_STEP,
+        label: "SP",
+      }
     : {
         total: EV_TOTAL_DISPLAY_MAX,
         perStat: EV_PER_STAT_MAX,
@@ -139,7 +147,11 @@ export function buildInputDisplay(
 export function computeVizBarWidths(
   finalStat: number,
   noEvFinalStat: number
-): { baseLayerWidth: number; investLayerLeft: number; investLayerWidth: number } {
+): {
+  baseLayerWidth: number;
+  investLayerLeft: number;
+  investLayerWidth: number;
+} {
   const baseLayerWidth = Math.min(100, (noEvFinalStat / 250) * 100);
   const investLayerLeft = baseLayerWidth;
   const investLayerWidth = Math.max(

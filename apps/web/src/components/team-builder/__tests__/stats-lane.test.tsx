@@ -370,7 +370,7 @@ describe("StatsLane", () => {
     expect(screen.getByText("25/66")).toBeInTheDocument();
   });
 
-  it("shows 252/508 total chip in VGC with 252 EVs invested", () => {
+  it("shows 252/510 total chip in VGC with 252 EVs invested", () => {
     renderLane(
       {
         ev_hp: 252,
@@ -382,8 +382,8 @@ describe("StatsLane", () => {
       },
       VGC_FORMAT
     );
-    // Total chip renders as single "252/508" span
-    expect(screen.getByText("252/508")).toBeInTheDocument();
+    // Total chip renders as single "252/510" span
+    expect(screen.getByText("252/510")).toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------
@@ -620,8 +620,8 @@ describe("StatsLane", () => {
       <StatsLane pokemon={pokemonA} format={VGC_FORMAT} onUpdate={jest.fn()} />
     );
 
-    // Baseline: both Pokemon have all EVs at 0, so the chip starts at 0/508.
-    expect(screen.getByText("0/508")).toBeInTheDocument();
+    // Baseline: both Pokemon have all EVs at 0, so the chip starts at 0/510.
+    expect(screen.getByText("0/510")).toBeInTheDocument();
 
     // Simulate a slider drag on Atk — handleSliderChange bubbles the live
     // value via onLiveEv, which sets liveEvByStat in the lane.
@@ -629,7 +629,7 @@ describe("StatsLane", () => {
     fireEvent.change(atkSlider, { target: { value: "100" } });
 
     // Live total now reflects the dragged value (100), not the prop value (0).
-    expect(screen.getByText("100/508")).toBeInTheDocument();
+    expect(screen.getByText("100/510")).toBeInTheDocument();
 
     // Swap to a different pokemon (different id) without committing the drag.
     rerender(
@@ -637,10 +637,10 @@ describe("StatsLane", () => {
     );
 
     // If liveEvByStat were not cleared on pokemon swap, the chip would still
-    // show "100/508" because liveEvByStat['attack'] would override pokemon B's
+    // show "100/510" because liveEvByStat['attack'] would override pokemon B's
     // ev_attack=0. The reset wipes the draft, so we see B's true total.
-    expect(screen.getByText("0/508")).toBeInTheDocument();
-    expect(screen.queryByText("100/508")).not.toBeInTheDocument();
+    expect(screen.getByText("0/510")).toBeInTheDocument();
+    expect(screen.queryByText("100/510")).not.toBeInTheDocument();
   });
 });
 

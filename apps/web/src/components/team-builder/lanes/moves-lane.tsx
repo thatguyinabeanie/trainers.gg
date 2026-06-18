@@ -35,6 +35,7 @@ import {
   useCalcEnabled,
 } from "../calc/calc-state-context";
 import { CalcDetailCard } from "../calc/calc-detail-card";
+import { type CalcOutput } from "../use-calc-state";
 import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
 import { FieldErrors } from "../validation/field-error";
 import { DescriptionTooltip } from "./description-tooltip";
@@ -49,6 +50,37 @@ interface MovesLaneProps {
   onUpdate?: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   /** Validation errors scoped to move fields (move1–move4). */
   fieldErrors?: ValidationError[];
+  /**
+   * Direction of the damage calc displayed in each tile.
+   * - "outgoing" (default): this mon's moves vs the defender in calc context.
+   * - "incoming": opponent's moves vs this mon (for "versus" views).
+   */
+  direction?: "outgoing" | "incoming";
+  /**
+   * Pre-computed outputs for the 4 move slots. When provided, these are used
+   * directly instead of calling `calc.computeForwardOutputsForRow`. Required
+   * for "incoming" views where the parent has already computed the outputs.
+   */
+  outputs?: readonly (CalcOutput | null)[];
+  /**
+   * Popover descriptor for the opposing mon. When omitted, falls back to
+   * `calc.defenderSpecies / defenderAbility / defenderItem / defenderNature`.
+   */
+  opponent?: {
+    species: string;
+    ability: string;
+    item: string;
+    nature: string;
+  };
+  /**
+   * Presentation variant.
+   * - "list" (default): the existing single-column table with optional calc
+   *   columns. Calc-on always uses this path regardless of this prop.
+   * - "cards-2x2": a 2×2 grid of compact move cards showing type icon,
+   *   category icon, move name, BP, and ACC. Only active when calc is OFF;
+   *   when calc is ON the table path renders as usual.
+   */
+  presentation?: "list" | "cards-2x2";
 }
 
 type MoveSlot = "move1" | "move2" | "move3" | "move4";
@@ -234,6 +266,18 @@ interface MoveTileProps {
   onPick: (slotKey: MoveSlot, moveName: string) => void;
   /** Validation errors for this specific move slot. */
   slotErrors: ValidationError[];
+  /**
+   * Pre-computed outputs for all 4 slots. When provided, overrides forward
+   * calc computation — used for injecting incoming damage outputs.
+   */
+  rowOutputs?: readonly (CalcOutput | null)[];
+  /** Popover defender descriptor. When provided, overrides calc context defaults. */
+  popoverDefender?: {
+    species: string;
+    ability: string;
+    item: string;
+    nature: string;
+  };
 }
 
 function MoveTile({
@@ -244,13 +288,18 @@ function MoveTile({
   attacker,
   onPick,
   slotErrors,
+  rowOutputs: injectedOutputs,
+  popoverDefender,
 }: MoveTileProps) {
   const [panel, setPanel] = useState<TilePanel>(null);
   const rowRef = useRef<HTMLTableRowElement>(null);
 
   const calc = useCalcStateContext();
   const moveIdx = SLOT_IDX[slotKey];
-  const rowOutputs = calc.computeForwardOutputsForRow(attacker);
+  // When injectedOutputs are provided (e.g. incoming direction), use them directly.
+  // Otherwise compute forward outputs as today (default behavior unchanged).
+  const rowOutputs =
+    injectedOutputs ?? calc.computeForwardOutputsForRow(attacker);
   const output = rowOutputs[moveIdx] ?? null;
 
   const moveData = moveName ? getMoveData(moveName) : null;
@@ -449,12 +498,14 @@ function MoveTile({
               attacker={attacker}
               moveName={moveName}
               baseOutput={output}
-              defender={{
-                species: calc.defenderSpecies,
-                ability: calc.defenderAbility,
-                item: calc.defenderItem,
-                nature: calc.defenderNature,
-              }}
+              defender={
+                popoverDefender ?? {
+                  species: calc.defenderSpecies,
+                  ability: calc.defenderAbility,
+                  item: calc.defenderItem,
+                  nature: calc.defenderNature,
+                }
+              }
               format={format}
               foesAlive={foesAlive}
               allyAlive={allyAlive}
@@ -577,7 +628,9 @@ function MovesLaneGhost() {
         "flex min-w-0 flex-1 flex-col px-6 py-1 transition-[padding,flex] duration-300 ease-in-out"
       )}
     >
-      <Table className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */>
+      <Table
+        className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */
+      >
         <MovesLaneTileGhost />
         <TableBody>
           {([0, 1, 2, 3] as const).map((i) => (
@@ -604,6 +657,155 @@ function MovesLaneGhost() {
 }
 
 // =============================================================================
+// MoveCard — compact card for the 2×2 grid (no calc, no table row)
+// =============================================================================
+
+interface MoveCardProps {
+  slotKey: MoveSlot;
+  moveName: string | null;
+  species: string;
+  format: GameFormat | undefined;
+  onPick: (slotKey: MoveSlot, moveName: string) => void;
+  slotErrors: ValidationError[];
+}
+
+function MoveCard({
+  slotKey,
+  moveName,
+  species,
+  format,
+  onPick,
+  slotErrors,
+}: MoveCardProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  const moveData = moveName ? getMoveData(moveName) : null;
+
+  const hasError = slotErrors.some((e) => e.severity === "error");
+
+  function handleClick() {
+    setPickerOpen(true);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setPickerOpen(true);
+    }
+  }
+
+  return (
+    <>
+      <div className="flex flex-col gap-1">
+        {/* Card button */}
+        <button
+          type="button"
+          tabIndex={0}
+          onClick={handleClick}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            "border-border bg-card hover:bg-muted flex cursor-pointer flex-col gap-1.5 rounded-md border p-2 text-left transition-colors",
+            hasError && "border-destructive/50 ring-destructive/30 ring-1"
+          )}
+        >
+          {/* Top row: type icon + category icon */}
+          <div className="flex items-center gap-1.5">
+            {moveName && moveData?.type ? (
+              <TypeSymbolIcon
+                type={
+                  moveData.type as Parameters<typeof TypeSymbolIcon>[0]["type"]
+                }
+                size={16}
+              />
+            ) : (
+              <span className="size-4 shrink-0" />
+            )}
+            {moveName &&
+            moveData?.category &&
+            CATEGORY_ICON_URLS_MONO[moveData.category] ? (
+              <img
+                src={CATEGORY_ICON_URLS_MONO[moveData.category]}
+                alt={moveData.category}
+                className="h-4 w-4 shrink-0"
+              />
+            ) : (
+              <span className="size-4 shrink-0" />
+            )}
+            {/* BP / ACC meta — small, right-aligned */}
+            <span className="text-muted-foreground ml-auto font-mono text-xs tabular-nums">
+              {moveName
+                ? moveData?.basePower && moveData.basePower > 0
+                  ? `${moveData.basePower} / ${
+                      moveData.accuracy === true || !moveData.accuracy
+                        ? "—"
+                        : moveData.accuracy
+                    }`
+                  : "— / —"
+                : ""}
+            </span>
+          </div>
+
+          {/* Move name */}
+          <span
+            className={cn(
+              "block truncate text-sm font-medium",
+              !moveName && "text-muted-foreground/50"
+            )}
+          >
+            {moveName ?? "+ Add move"}
+          </span>
+        </button>
+
+        {/* Inline error chips */}
+        {slotErrors.length > 0 && <FieldErrors errors={slotErrors} />}
+      </div>
+
+      {/* Move picker */}
+      {isMobile ? (
+        <MovePickerMobile
+          open={pickerOpen}
+          onOpenChange={(open) => {
+            if (!open) setPickerOpen(false);
+          }}
+          value={moveName}
+          species={species}
+          format={format}
+          onPick={(name) => {
+            onPick(slotKey, name);
+            setPickerOpen(false);
+          }}
+        />
+      ) : (
+        <Dialog
+          open={pickerOpen}
+          onOpenChange={(open) => {
+            if (!open) setPickerOpen(false);
+          }}
+        >
+          <DialogContent
+            showCloseButton={false}
+            className={SELECTOR_DIALOG_CONTENT_CLASS}
+          >
+            <DialogTitle className="sr-only">Choose move</DialogTitle>
+            <MovePicker
+              value={moveName}
+              species={species}
+              format={format}
+              onPick={(name) => {
+                onPick(slotKey, name);
+                setPickerOpen(false);
+              }}
+              onClose={() => setPickerOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+// =============================================================================
 // MovesLaneReal — calc-aware move tiles (requires pokemon)
 // =============================================================================
 
@@ -612,6 +814,12 @@ interface MovesLaneRealProps {
   format: GameFormat | undefined;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   fieldErrors: ValidationError[];
+  direction: "outgoing" | "incoming";
+  outputs: readonly (CalcOutput | null)[] | undefined;
+  opponent:
+    | { species: string; ability: string; item: string; nature: string }
+    | undefined;
+  presentation: "list" | "cards-2x2";
 }
 
 function MovesLaneReal({
@@ -619,10 +827,51 @@ function MovesLaneReal({
   format,
   onUpdate,
   fieldErrors,
+  direction: _direction,
+  outputs,
+  opponent,
+  presentation,
 }: MovesLaneRealProps) {
-  const _calc = useCalcStateContext();
+  const calc = useCalcStateContext();
+
   function handlePick(slotKey: MoveSlot, name: string) {
     onUpdate({ [slotKey]: name });
+  }
+
+  // Resolve the defender descriptor for popovers:
+  // - When `opponent` is explicitly provided, use it (e.g. for incoming views).
+  // - Otherwise fall back to the calc context's current defender values.
+  const popoverDefender = opponent ?? {
+    species: calc.defenderSpecies,
+    ability: calc.defenderAbility,
+    item: calc.defenderItem,
+    nature: calc.defenderNature,
+  };
+
+  // 2×2 card grid: only when presentation is "cards-2x2" AND calc is OFF.
+  // When calc is ON, always fall through to the standard table (direction seam
+  // and calc columns must remain intact).
+  if (presentation === "cards-2x2" && !calc.calcEnabled) {
+    return (
+      <div className="px-6 py-1">
+        <div className="grid grid-cols-2 gap-2">
+          {MOVE_SLOTS.map((slotKey) => {
+            const slotErrors = fieldErrors.filter((e) => e.field === slotKey);
+            return (
+              <MoveCard
+                key={slotKey}
+                slotKey={slotKey}
+                moveName={pokemon[slotKey] || null}
+                species={pokemon.species ?? ""}
+                format={format}
+                onPick={handlePick}
+                slotErrors={slotErrors}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -631,7 +880,9 @@ function MovesLaneReal({
         "flex min-w-0 flex-1 flex-col px-6 py-1 transition-[padding,flex] duration-300 ease-in-out"
       )}
     >
-      <Table className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */>
+      <Table
+        className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */
+      >
         <MovesLaneTileGhost />
         <TableBody>
           {MOVE_SLOTS.map((slotKey) => {
@@ -646,6 +897,8 @@ function MovesLaneReal({
                 attacker={pokemon}
                 onPick={handlePick}
                 slotErrors={slotErrors}
+                rowOutputs={outputs}
+                popoverDefender={popoverDefender}
               />
             );
           })}
@@ -669,12 +922,27 @@ function MovesLaneReal({
  * - Left-click: opens CalcDetailCard when calc data is available, else picker.
  * - Right-click: always opens move picker.
  * - Renders inline FieldError chips for move-scoped validation issues.
+ *
+ * New optional props for direction-agnostic rendering (all default to today's
+ * forward-calc behavior so existing callers are unaffected):
+ * - `direction` — "outgoing" (default) or "incoming"
+ * - `outputs` — pre-computed outputs to inject; omit to compute forward as usual
+ * - `opponent` — popover defender descriptor; omit to use calc context defaults
+ *
+ * The computed direction-aware header label is:
+ *   "Outgoing — vs {opponentSpecies}" | "Incoming — from {opponentSpecies}"
+ * MovesLane does not render a standalone lane header today (the parent owns
+ * that DOM), so the label is a derivable string for callers that need it.
  */
 export function MovesLane({
   pokemon,
   format,
   onUpdate,
   fieldErrors = [],
+  direction = "outgoing",
+  outputs,
+  opponent,
+  presentation = "list",
 }: MovesLaneProps) {
   if (pokemon === null) return <MovesLaneGhost />;
   return (
@@ -683,6 +951,10 @@ export function MovesLane({
       format={format}
       onUpdate={onUpdate ?? (() => {})}
       fieldErrors={fieldErrors}
+      direction={direction}
+      outputs={outputs}
+      opponent={opponent}
+      presentation={presentation}
     />
   );
 }
