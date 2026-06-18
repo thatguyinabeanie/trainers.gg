@@ -194,93 +194,63 @@ describe("getMoveData", () => {
 
 describe("getMoveData — Champions format overrides", () => {
   // -------------------------------------------------------------------------
-  // Base power overrides
+  // basePower overrides — (moveName, vanillaBasePower, championsBasePower)
   // -------------------------------------------------------------------------
-  it("First Impression: basePower 90→100 in Champions M-B", () => {
-    const vanilla = getMoveData("First Impression");
-    expect(vanilla?.basePower).toBe(90); // vanilla @pkmn/dex value
-
-    const champions = getMoveData("First Impression", CHAMPIONS_MB_ID);
-    expect(champions?.basePower).toBe(100);
-  });
+  it.each<[string, number, number]>([
+    ["First Impression", 90, 100],
+    ["Beak Blast", 100, 120],
+    ["Mountain Gale", 100, 120],
+    ["Bone Rush", 25, 30],
+  ])(
+    "%s: basePower %d→%d in Champions M-B",
+    (moveName, vanillaValue, championsValue) => {
+      expect(getMoveData(moveName)?.basePower).toBe(vanillaValue);
+      expect(getMoveData(moveName, CHAMPIONS_MB_ID)?.basePower).toBe(
+        championsValue
+      );
+    }
+  );
 
   it("First Impression: basePower 90→100 in Champions M-A", () => {
-    const champions = getMoveData("First Impression", CHAMPIONS_MA_ID);
-    expect(champions?.basePower).toBe(100);
-  });
-
-  it("Beak Blast: basePower 100→120 in Champions M-B", () => {
-    const vanilla = getMoveData("Beak Blast");
-    expect(vanilla?.basePower).toBe(100);
-
-    const champions = getMoveData("Beak Blast", CHAMPIONS_MB_ID);
-    expect(champions?.basePower).toBe(120);
-  });
-
-  it("Mountain Gale: basePower 100→120 in Champions M-B", () => {
-    const champions = getMoveData("Mountain Gale", CHAMPIONS_MB_ID);
-    expect(champions?.basePower).toBe(120);
-  });
-
-  it("Bone Rush: basePower 25→30 in Champions M-B", () => {
-    const vanilla = getMoveData("Bone Rush");
-    expect(vanilla?.basePower).toBe(25);
-
-    const champions = getMoveData("Bone Rush", CHAMPIONS_MB_ID);
-    expect(champions?.basePower).toBe(30);
+    expect(getMoveData("First Impression", CHAMPIONS_MA_ID)?.basePower).toBe(
+      100
+    );
   });
 
   // -------------------------------------------------------------------------
-  // Type overrides
+  // type overrides — (moveName, vanillaType, championsType)
   // -------------------------------------------------------------------------
-  it("Snap Trap: type Grass→Steel in Champions M-B", () => {
-    // Snap Trap is Grass-type in vanilla @pkmn/dex Gen 9
-    const vanilla = getMoveData("Snap Trap");
-    expect(vanilla?.type).toBe("Grass");
-
-    const champions = getMoveData("Snap Trap", CHAMPIONS_MB_ID);
-    expect(champions?.type).toBe("Steel");
-  });
+  it.each<[string, string, string]>([
+    ["Snap Trap", "Grass", "Steel"],
+    ["Growth", "Normal", "Grass"],
+  ])(
+    "%s: type %s→%s in Champions M-B",
+    (moveName, vanillaValue, championsValue) => {
+      expect(getMoveData(moveName)?.type).toBe(vanillaValue);
+      expect(getMoveData(moveName, CHAMPIONS_MB_ID)?.type).toBe(championsValue);
+    }
+  );
 
   it("Snap Trap: type Grass→Steel in Champions M-A", () => {
-    const champions = getMoveData("Snap Trap", CHAMPIONS_MA_ID);
-    expect(champions?.type).toBe("Steel");
-  });
-
-  it("Growth: type Normal→Grass in Champions M-B", () => {
-    const vanilla = getMoveData("Growth");
-    expect(vanilla?.type).toBe("Normal");
-
-    const champions = getMoveData("Growth", CHAMPIONS_MB_ID);
-    expect(champions?.type).toBe("Grass");
+    expect(getMoveData("Snap Trap", CHAMPIONS_MA_ID)?.type).toBe("Steel");
   });
 
   // -------------------------------------------------------------------------
-  // Accuracy overrides
+  // accuracy overrides — (moveName, vanillaAccuracy, championsAccuracy)
   // -------------------------------------------------------------------------
-  it("Make It Rain: accuracy 100→95 in Champions M-B", () => {
-    const vanilla = getMoveData("Make It Rain");
-    expect(vanilla?.accuracy).toBe(100);
-
-    const champions = getMoveData("Make It Rain", CHAMPIONS_MB_ID);
-    expect(champions?.accuracy).toBe(95);
-  });
-
-  it("Crabhammer: accuracy 90→95 in Champions M-B", () => {
-    const vanilla = getMoveData("Crabhammer");
-    expect(vanilla?.accuracy).toBe(90);
-
-    const champions = getMoveData("Crabhammer", CHAMPIONS_MB_ID);
-    expect(champions?.accuracy).toBe(95);
-  });
-
-  it("Syrup Bomb: accuracy 85→90 in Champions M-B", () => {
-    const vanilla = getMoveData("Syrup Bomb");
-    expect(vanilla?.accuracy).toBe(85);
-
-    const champions = getMoveData("Syrup Bomb", CHAMPIONS_MB_ID);
-    expect(champions?.accuracy).toBe(90);
-  });
+  it.each<[string, number, number]>([
+    ["Make It Rain", 100, 95],
+    ["Crabhammer", 90, 95],
+    ["Syrup Bomb", 85, 90],
+  ])(
+    "%s: accuracy %d→%d in Champions M-B",
+    (moveName, vanillaValue, championsValue) => {
+      expect(getMoveData(moveName)?.accuracy).toBe(vanillaValue);
+      expect(getMoveData(moveName, CHAMPIONS_MB_ID)?.accuracy).toBe(
+        championsValue
+      );
+    }
+  );
 
   // -------------------------------------------------------------------------
   // Non-Champions formats: vanilla values unchanged

@@ -520,7 +520,7 @@ describe("validateChampionsLegality — Champions Reg M-B (gen9championsvgc2026r
     ...overrides,
   });
 
-  it("accepts a legal M-B team: Eelektross-Mega with Eelektrossite and Eelevate", () => {
+  it("accepts a legal M-B team: Eelektross-Mega with valid species, item, and moves (no Tera)", () => {
     const errors = validateChampionsLegality([makeMBMon()], FORMAT_ID);
     expect(errors).toHaveLength(0);
   });

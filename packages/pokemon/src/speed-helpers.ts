@@ -106,7 +106,10 @@ const SPEED_ITEMS: Record<string, SpeedAffectingItem> = {
 };
 
 /** Items that are legal in modern competitive (Reg M-A / Reg M-B). Conservative list. */
-const MODERN_LEGAL_ITEM_IDS = new Set<string>(["choice-scarf"]);
+const MODERN_LEGAL_ITEM_IDS = new Set<string>([
+  "choice-scarf",
+  "iron-ball", // M-B addition: halves Speed (no M-A equivalent — Iron Ball is not in M-A's item pool)
+]);
 
 /** Format IDs that use the modern Champions item set (M-A and M-B share the same rules). */
 const CHAMPIONS_FORMAT_IDS = new Set<string>([
