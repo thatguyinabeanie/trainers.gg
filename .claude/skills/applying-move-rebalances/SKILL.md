@@ -8,6 +8,11 @@ description: Use when a Champions regulation patch rebalances moves or changes a
 Home for all knowledge about the `@smogon/calc` fork at `vendor/damage-calc/calc/`. Covers
 move/ability mechanic changes, new-Mega registration, tests, and the build + ship workflow.
 
+A move/ability rebalance has **two homes**: the calc fork (damage-relevant fields only) AND a
+package-side Champions move-changes dataset that captures **every** attribute (including the
+battle-only ones the calc can't model) for display correctness + a future battle sim. See
+"Package-side move-changes dataset" below.
+
 See `adding-a-regulation` for the legality side (`packages/pokemon/`). See
 `syncing-calc-fork-upstream` for rebasing the fork on upstream `@smogon/calc` changes.
 
@@ -96,6 +101,40 @@ battle-state (accuracy, PP, secondary-effect %, status conditions, switch-out re
 | Secondary-effect % | No | Doesn't affect the damage calculation |
 | Accuracy / PP | No | Not modelled in the calc |
 | Rage Fist reset | No | Battle-state; but its 350 BP cap IS encoded (it's a BP limit) |
+
+> ↳ Battle-only deltas are **not discarded** — the calc can't model them, but the package-side
+> move-changes dataset captures every attribute (see next section).
+
+---
+
+## 2b. Package-side move-changes dataset + builder display (`packages/pokemon`)
+
+The calc fork only models damage-relevant fields, so battle-only deltas (accuracy, PP,
+secondary-effect %, status, non-damage flags) have no home there. They still matter for **display
+correctness** and a **future battle sim**, so Champions move changes are also captured package-side
+as the **single source of truth for every attribute**.
+
+**Principle — encode correct game data even when nothing consumes a given attribute yet.** A
+move's M-B accuracy/PP belongs in the dataset now so a later sim / richer move UI is already
+correct; don't wait for a consumer to exist.
+
+**Where:** a per-reg `moveChanges` map on the Champions reg bundle
+(`packages/pokemon/src/champions-reg-<x>.ts`), keyed by move name → attribute delta
+(`basePower?`, `type?`, `category?`, `accuracy?`, `pp?`, `secondary?`, `status?`, `flags?`). M-B
+inherits M-A's and adds its own, exactly like the other bundle fields.
+
+**Builder-display divergence (important):** the team builder's move picker shows
+name / type / category / **base power / accuracy** / shortDesc via `getMoveData()` in
+`packages/pokemon/src/move-data.ts`, which reads **vanilla `@pkmn/dex`** — NOT Champions-aware. So
+Champions BP/type/accuracy changes won't appear in the builder unless `getMoveData()` applies the
+reg's `moveChanges`. Make `getMoveData(name, formatId?)` format-aware: for a Champions format,
+merge the reg bundle's `moveChanges` over the dex values. (Builder display and the damage calc are
+SEPARATE data worlds — see the table at the top; both must reflect a rebalance.)
+
+**Checklist when a reg rebalances moves:**
+- [ ] Damage-relevant deltas (bp / type / `isSlicing` / `isSound`) → calc fork `CHAMPIONS_PATCH` (§2)
+- [ ] EVERY delta (incl. accuracy / PP / secondary / status) → reg bundle `moveChanges` (package side)
+- [ ] `getMoveData()` applies `moveChanges` for Champions formats (builder display correctness)
 
 ---
 
