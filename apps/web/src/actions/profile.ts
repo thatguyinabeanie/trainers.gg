@@ -4,6 +4,9 @@ import {
   z,
   usernameSchema,
   pdsStatusSchema,
+  firstNameSchema,
+  lastNameSchema,
+  birthDateSchema,
   type ActionResult,
 } from "@trainers/validators";
 import { checkBotId } from "botid/server";
@@ -21,20 +24,15 @@ import {
   generateHandle,
 } from "./pds-utils";
 
+// birthDateSchema (from @trainers/validators) accepts "" as the "clear" sentinel
+// in addition to the standard YYYY-MM-DD format. firstName/lastNameSchema accept
+// empty string so users can remove previously-set names.
 const updateProfileSchema = z.object({
   username: usernameSchema.optional(),
-  firstName: z
-    .string()
-    .max(64, "First name must be 64 characters or less")
-    .optional(),
-  lastName: z
-    .string()
-    .max(64, "Last name must be 64 characters or less")
-    .optional(),
-  birthDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Birth date must be in YYYY-MM-DD format")
-    .optional(),
+  firstName: firstNameSchema.optional(),
+  lastName: lastNameSchema.optional(),
+  // "" = clear the existing birth date; "YYYY-MM-DD" = set/update; omitted = no change
+  birthDate: birthDateSchema.optional(),
   country: z
     .string()
     .length(2, "Country must be a 2-letter ISO code")
@@ -520,18 +518,27 @@ export async function updateProfile(data: {
     // updates) so that an earlier step which returns early on failure (e.g. handle
     // taken, PDS provision timeout, username conflict) can't leave a partial
     // profile with PII already persisted.
+    //
     // The RPC uses COALESCE(EXCLUDED.x, existing.x): an omitted arg (undefined →
-    // DB default NULL) leaves the existing value unchanged, so we can update any
-    // subset of PII fields. (Clearing a field to NULL is intentionally unsupported.)
+    // DB default NULL) leaves the existing value unchanged.
+    //
+    // birth_date clear path: birthDate === "" means "remove the existing value".
+    // We pass p_clear_birth_date: true so the RPC sets birth_date = NULL instead
+    // of applying COALESCE. An undefined birthDate means "no change", a non-empty
+    // string means "set to this date".
     const hasPiiChange =
       validated.firstName !== undefined ||
       validated.lastName !== undefined ||
       validated.birthDate !== undefined;
     if (hasPiiChange) {
+      const isClearingBirthDate = validated.birthDate === "";
       const { error: piiError } = await supabase.rpc("update_my_user_pii", {
         p_first_name: validated.firstName,
         p_last_name: validated.lastName,
-        p_birth_date: validated.birthDate,
+        // Pass undefined (not "") so COALESCE treats it as "no change" when not
+        // explicitly clearing — only forward an actual date string when set.
+        p_birth_date: isClearingBirthDate ? undefined : validated.birthDate,
+        p_clear_birth_date: isClearingBirthDate,
       });
       if (piiError) {
         console.error("Error updating PII:", piiError);

@@ -625,13 +625,6 @@ describe("updateProfile", () => {
     expect(result.error).toBe("Not authenticated");
   });
 
-  it("rejects invalid birth date format", async () => {
-    const result = await updateProfile({ birthDate: "Jan 15 2000" });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBeTruthy();
-  });
-
   it("rejects first name longer than 64 chars", async () => {
     const result = await updateProfile({ firstName: "A".repeat(65) });
 
@@ -668,6 +661,7 @@ describe("updateProfile", () => {
       p_first_name: "Ash",
       p_last_name: "Ketchum",
       p_birth_date: undefined,
+      p_clear_birth_date: false,
     });
   });
 
@@ -683,7 +677,33 @@ describe("updateProfile", () => {
       p_first_name: undefined,
       p_last_name: undefined,
       p_birth_date: "1990-05-15",
+      p_clear_birth_date: false,
     });
+  });
+
+  it("sends p_clear_birth_date: true when birthDate is cleared to empty string", async () => {
+    mockUsernameQuery();
+
+    // birthDate: "" represents the user clearing a previously-set birth date.
+    // The action must call the RPC with p_clear_birth_date: true so the DB
+    // writes NULL instead of ignoring the update via COALESCE.
+    const result = await updateProfile({ birthDate: "" });
+
+    expect(result.success).toBe(true);
+    expect(mockRpc).toHaveBeenCalledWith("update_my_user_pii", {
+      p_first_name: undefined,
+      p_last_name: undefined,
+      p_birth_date: undefined, // not forwarded — clear flag takes precedence
+      p_clear_birth_date: true,
+    });
+  });
+
+  it("rejects non-empty birth date that does not match YYYY-MM-DD format", async () => {
+    // Empty string is the clear sentinel and is valid; only non-empty non-date strings fail.
+    const result = await updateProfile({ birthDate: "Jan 15 2000" });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
   });
 
   it("skips update_my_user_pii RPC when no PII fields are provided", async () => {

@@ -196,8 +196,12 @@ export default function ProfileSettingsPage() {
         updates.bio = bio;
       }
 
-      // Always send birthDate and country if they have values
-      if (birthDate) {
+      // Send birthDate whenever it changed:
+      //   "" (empty) → cleared by user → action interprets "" as "clear"
+      //   "YYYY-MM-DD" → new or updated date → action forwards to the RPC
+      // We intentionally do NOT skip empty-string here — that would make clearing
+      // impossible. The action's Zod schema accepts "" as the clear sentinel.
+      if (hasBirthDateChanged) {
         updates.birthDate = birthDate;
       }
 

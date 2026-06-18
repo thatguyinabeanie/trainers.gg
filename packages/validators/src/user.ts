@@ -1,6 +1,39 @@
 import { z } from "zod";
 import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
+// =============================================================================
+// Shared PII field schemas (used in profile.ts and signup/onboarding flows)
+// =============================================================================
+
+/**
+ * First name — up to 64 characters, optional.
+ * Empty string is accepted and treated as "clear" by the RPC layer.
+ */
+export const firstNameSchema = z
+  .string()
+  .max(64, "First name must be 64 characters or less");
+
+/**
+ * Last name — up to 64 characters, optional.
+ * Empty string is accepted and treated as "clear" by the RPC layer.
+ */
+export const lastNameSchema = z
+  .string()
+  .max(64, "Last name must be 64 characters or less");
+
+/**
+ * Birth date schema.
+ * - Accepts YYYY-MM-DD date strings (set / update path)
+ * - Accepts empty string "" to represent "clear this field"
+ * - Rejects any other non-empty string that doesn't match the date format
+ */
+export const birthDateSchema = z
+  .string()
+  .refine(
+    (val) => val === "" || /^\d{4}-\d{2}-\d{2}$/.test(val),
+    "Birth date must be in YYYY-MM-DD format"
+  );
+
 // Social links schema
 export const socialLinksSchema = z.object({
   twitter: z.string().url().optional(),
@@ -84,3 +117,4 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 export type BlueskyUser = z.infer<typeof blueskyUserSchema>;
 export type SpritePreference = z.infer<typeof spritePreferenceSchema>;
+export type BirthDate = z.infer<typeof birthDateSchema>;
