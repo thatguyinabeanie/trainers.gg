@@ -137,11 +137,13 @@ export function TypePicker({
               }}
               aria-pressed={isSelected}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 rounded py-1.5 text-center text-xs font-semibold uppercase tracking-wide transition-all",
+                "flex flex-col items-center justify-center gap-0.5 rounded py-1.5 text-center text-xs font-semibold tracking-wide uppercase transition-all",
                 colorClass,
                 isSelected && "ring-ring ring-2 ring-offset-1",
                 isTopPick && "ring-primary/40 ring-2 ring-offset-1",
-                !isSelected && !isDisabled && "hover:opacity-90 active:scale-95",
+                !isSelected &&
+                  !isDisabled &&
+                  "hover:opacity-90 active:scale-95",
                 isDisabled && "cursor-not-allowed opacity-30"
               )}
             >
@@ -150,8 +152,7 @@ export function TypePicker({
               {hasUsageData && (
                 <span
                   className={cn(
-                    // text-[10px]: sub-12px usage badge on type pill; no Tailwind scale token
-                    "font-mono text-[10px] tabular-nums leading-none font-normal",
+                    "font-mono text-xs leading-none font-normal tabular-nums",
                     usagePct != null && usagePct > 0
                       ? "opacity-90"
                       : "opacity-40"

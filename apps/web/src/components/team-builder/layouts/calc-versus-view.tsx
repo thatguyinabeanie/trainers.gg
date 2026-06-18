@@ -84,14 +84,14 @@ function MonHeroContent({
         {types.map((t) => (
           <span
             key={t}
-            className="rounded px-2 py-0.5 font-mono text-[10px] font-semibold text-white"
+            className="rounded px-2 py-0.5 font-mono text-xs font-semibold text-white"
             style={{ background: getTypeColor(t) }}
           >
             {t}
           </span>
         ))}
         {pokemon.tera_type && (
-          <span className="border-primary/50 bg-primary/14 text-primary rounded border px-2 py-0.5 font-mono text-[10px] font-semibold">
+          <span className="border-primary/50 bg-primary/14 text-primary rounded border px-2 py-0.5 font-mono text-xs font-semibold">
             <span className="text-primary/70">T·</span>
             {pokemon.tera_type}
           </span>
@@ -101,13 +101,13 @@ function MonHeroContent({
       {/* Item + Ability chips */}
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         {pokemon.held_item && (
-          <span className="border-border bg-card text-foreground rounded border px-2 py-0.5 font-mono text-[10px]">
+          <span className="border-border bg-card text-foreground rounded border px-2 py-0.5 font-mono text-xs">
             <span className="text-muted-foreground">ITEM·</span>
             {pokemon.held_item}
           </span>
         )}
         {pokemon.ability && (
-          <span className="border-border bg-card text-foreground rounded border px-2 py-0.5 font-mono text-[10px]">
+          <span className="border-border bg-card text-foreground rounded border px-2 py-0.5 font-mono text-xs">
             <span className="text-muted-foreground">ABIL·</span>
             {pokemon.ability}
           </span>
@@ -144,7 +144,7 @@ function MonHero({
       <div className="flex h-3.5 items-center justify-center">
         <span
           className={cn(
-            "font-mono text-[9px] font-bold tracking-[0.12em] uppercase",
+            "font-mono text-xs font-bold tracking-[0.12em] uppercase",
             sideLabelClassName ?? "text-muted-foreground"
           )}
         >
@@ -201,11 +201,11 @@ function MonStatsCard({
     >
       {/* Card header */}
       <div className="mb-2.5 flex items-center justify-between">
-        <span className="text-muted-foreground font-mono text-[9px] font-semibold tracking-[0.08em] uppercase">
+        <span className="text-muted-foreground font-mono text-xs font-semibold tracking-[0.08em] uppercase">
           {headerLabel}
         </span>
         {natureLabel && (
-          <span className="text-muted-foreground font-mono text-[9px]">
+          <span className="text-muted-foreground font-mono text-xs">
             {natureLabel}
           </span>
         )}
@@ -223,7 +223,7 @@ function MonStatsCard({
 
       {/* Boosts row */}
       <div className="border-border/50 mt-3 border-t border-dashed pt-2.5">
-        <span className="text-muted-foreground mb-1.5 block font-mono text-[8px] font-bold tracking-[0.10em] uppercase">
+        <span className="text-muted-foreground mb-1.5 block font-mono text-xs font-bold tracking-[0.10em] uppercase">
           Boosts
         </span>
         <StatBoostsRow boosts={boosts} onChange={onBoostChange} />
@@ -268,12 +268,10 @@ function MonMovesCard({
       )}
     >
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-muted-foreground font-mono text-[9px] font-semibold tracking-[0.08em] uppercase">
+        <span className="text-muted-foreground font-mono text-xs font-semibold tracking-[0.08em] uppercase">
           {headerLabel}
         </span>
-        <span className="text-muted-foreground font-mono text-[9px]">
-          % · KO
-        </span>
+        <span className="text-muted-foreground font-mono text-xs">% · KO</span>
       </div>
       <MovesLane
         pokemon={pokemon}
@@ -391,7 +389,7 @@ function MobileStatsSheet({
               onBoostChange={onBoostChange}
             />
             <div className="border-border/50 border-t border-dashed pt-3">
-              <span className="text-muted-foreground mb-2 block font-mono text-[8px] font-bold tracking-[0.10em] uppercase">
+              <span className="text-muted-foreground mb-2 block font-mono text-xs font-bold tracking-[0.10em] uppercase">
                 Boosts
               </span>
               <StatBoostsRow boosts={boosts} onChange={onBoostChange} />
@@ -519,7 +517,7 @@ export function CalcVersusView({
           {/* ── (a) LABEL BAND ──────────────────────────────────────────── */}
           {/* Left: "Your Pokémon" */}
           <div className="flex h-3.5 items-center justify-center">
-            <span className="text-muted-foreground font-mono text-[9px] font-bold tracking-[0.12em] uppercase">
+            <span className="text-muted-foreground font-mono text-xs font-bold tracking-[0.12em] uppercase">
               Your Pokémon
             </span>
           </div>
@@ -527,7 +525,7 @@ export function CalcVersusView({
           <div className="h-3.5" />
           {/* Right: "Calc Target · click to edit ▾" */}
           <div className="flex h-3.5 items-center justify-center">
-            <span className="font-mono text-[9px] font-bold tracking-[0.12em] text-rose-400/80 uppercase">
+            <span className="font-mono text-xs font-bold tracking-[0.12em] text-rose-400/80 uppercase">
               Calc Target · click to edit ▾
             </span>
           </div>

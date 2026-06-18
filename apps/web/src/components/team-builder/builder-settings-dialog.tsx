@@ -15,16 +15,9 @@
 
 import { Info } from "lucide-react";
 
-import {
-  type BuilderPreferences,
-  type PanelView,
-} from "@trainers/validators";
+import { type BuilderPreferences, type PanelView } from "@trainers/validators";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -219,7 +212,7 @@ export function BuilderSettingsDialog({
           <section className="flex flex-col gap-3">
             <h3 className="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
               Damage Calc
-              <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-medium tracking-normal normal-case">
+              <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tracking-normal normal-case">
                 Coming soon
               </span>
             </h3>
