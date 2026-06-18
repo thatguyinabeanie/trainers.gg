@@ -41,6 +41,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `deciding-data-access`           | Deciding where a read/route should live — SSR vs /api/v1 vs direct; anon vs authed; caching + rate-limit requirements       |
 | `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure                                                   |
 | `tracking-deferred-work`         | Log/update/complete an agreed-but-parked improvement in `docs/deferred-improvements.md` ("small fix now, bigger one later") |
+| `adding-a-regulation`            | A new Champions regulation has dropped — full data-file → registration → flip → test pipeline                               |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
 
