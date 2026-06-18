@@ -245,7 +245,10 @@ function SpokeInput({
 }: SpokeInputProps) {
   const [inputBuffer, setInputBuffer] = useState<string | null>(null);
   const inputDisplay = buildInputDisplay(ev, isNatureBoosted, isNatureReduced);
-  const displayValue = inputBuffer ?? inputDisplay;
+  // At rest, a 0-EV spoke shows an em-dash (—) rather than an empty field, so
+  // the inline "· EV" reads "· —" instead of a dangling separator. Focus clears
+  // it to an empty field for typing (see handleFocus).
+  const displayValue = inputBuffer ?? (ev === 0 ? "—" : inputDisplay);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setInputBuffer(e.target.value);
@@ -257,7 +260,9 @@ function SpokeInput({
   }
 
   function handleFocus(e: React.FocusEvent<HTMLInputElement>) {
-    setInputBuffer(e.target.value);
+    // Clear the rest-state em-dash to an empty field so the user types into a
+    // blank input (ev > 0 keeps its numeric value for editing).
+    setInputBuffer(ev === 0 ? "" : e.target.value);
   }
 
   function commitInput(raw: string) {
@@ -724,73 +729,104 @@ export function RadialStatEditor({
                   onBlur={() => setFocusedHandle(null)}
                 />
 
-                {/* Stat label (with ▲/▼ nature indicator) at outer ring */}
-                <text
-                  x={lx}
-                  y={ly - 8}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className={cn(
-                    "fill-current font-mono font-semibold uppercase",
-                    colorClass,
-                    isNatureBoosted && "text-emerald-500 dark:text-emerald-400",
-                    isNatureReduced && "text-rose-500 dark:text-rose-400"
-                  )}
-                  /* SVG user-unit font-size (240 viewBox) — scales with the
-                     hexagon container, so it can't use a Tailwind text class.
-                     Sized up from 9 → 13 for legibility (the SVG text doesn't
-                     respond to the fluid root font-size). */
-                  fontSize={13}
-                  aria-hidden
-                >
-                  {STAT_SHORT_LABELS[statKey]}
-                  {isNatureBoosted ? "▲" : isNatureReduced ? "▼" : ""}
-                </text>
-
-                {/* Final stat value — plain, no nature color (arrow is on the label). */}
-                <text
-                  x={lx}
-                  y={ly + 10}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className="fill-foreground font-mono font-bold tabular-nums"
-                  fontSize={15}
-                  aria-hidden
-                >
-                  {liveFinalStat}
-                </text>
-
-                {/* Allocated EV/SP — single editable teal input (SpokeInput) at y+19.
-                    The teal text element is removed; SpokeInput IS the allocated display.
-                    Shown at a fixed position regardless of EV so layout stays stable. */}
+                {/* Inline label row: ‹arrow› ‹ABBR› ‹effective› · ‹EV input›
+                    Replaces the two stacked SVG <text> nodes and separate SpokeInput
+                    foreignObject. One foreignObject per spoke, centered on the vertex.
+                    Width 120 svgu gives enough room for the longest line.
+                    Vertical offset: center the 20svgu-tall row on the label point (ly). */}
                 <foreignObject
-                  x={lx - 16}
-                  y={ly + 19}
-                  width={32}
-                  height={22}
+                  x={lx - 60}
+                  y={ly - 10}
+                  width={120}
+                  height={20}
                   style={{ overflow: "visible" }}
                 >
-                  <SpokeInput
-                    statKey={statKey}
-                    ev={ev}
-                    isNatureBoosted={isNatureBoosted}
-                    isNatureReduced={isNatureReduced}
-                    investBudget={investBudget}
-                    budget={budget}
-                    nature={nature}
-                    evFieldKey={EV_FIELD[statKey]}
-                    onUpdate={onUpdate}
-                    onDraft={(nextEv) =>
-                      setDraftEvs((prev) => ({ ...prev, [statKey]: nextEv }))
-                    }
-                    onFlush={() => {
-                      setDraftEvs((prev) => {
-                        const next = { ...prev };
-                        delete next[statKey];
-                        return next;
-                      });
-                    }}
-                  />
+                  <div
+                    className={cn(
+                      "flex items-baseline justify-center",
+                      compact ? "gap-px" : "gap-0.5"
+                    )}
+                  >
+                    {/* Arrow — left of abbreviation, colored by nature. aria-hidden:
+                        the slider handle carries the a11y role; these are decorative. */}
+                    {isNatureBoosted && (
+                      <span
+                        aria-hidden
+                        className="text-xs font-bold text-emerald-500 dark:text-emerald-400"
+                      >
+                        ▲
+                      </span>
+                    )}
+                    {isNatureReduced && (
+                      <span
+                        aria-hidden
+                        className="text-xs font-bold text-rose-500 dark:text-rose-400"
+                      >
+                        ▼
+                      </span>
+                    )}
+
+                    {/* Abbreviation — aria-hidden: the input below provides the label */}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "font-mono text-xs font-semibold uppercase",
+                        colorClass,
+                        isNatureBoosted &&
+                          "text-emerald-500 dark:text-emerald-400",
+                        isNatureReduced && "text-rose-500 dark:text-rose-400"
+                      )}
+                    >
+                      {STAT_SHORT_LABELS[statKey]}
+                    </span>
+
+                    {/* Effective stat — bold foreground. aria-hidden: decorative display.
+                        compact: text-xs keeps the row within max-w-48;
+                        default: text-sm gives a slight size bump for legibility. */}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "text-foreground ml-0.5 font-mono font-bold tabular-nums",
+                        compact ? "text-xs" : "text-sm"
+                      )}
+                    >
+                      {liveFinalStat}
+                    </span>
+
+                    {/* Separator — decorative */}
+                    <span
+                      aria-hidden
+                      className="text-muted-foreground/60 mx-0.5 font-mono text-xs"
+                    >
+                      ·
+                    </span>
+
+                    {/* Editable EV/SP inline — reuses full SpokeInput logic */}
+                    <SpokeInput
+                      statKey={statKey}
+                      ev={ev}
+                      isNatureBoosted={isNatureBoosted}
+                      isNatureReduced={isNatureReduced}
+                      investBudget={investBudget}
+                      budget={budget}
+                      nature={nature}
+                      evFieldKey={EV_FIELD[statKey]}
+                      onUpdate={onUpdate}
+                      onDraft={(nextEv) =>
+                        setDraftEvs((prev) => ({
+                          ...prev,
+                          [statKey]: nextEv,
+                        }))
+                      }
+                      onFlush={() => {
+                        setDraftEvs((prev) => {
+                          const next = { ...prev };
+                          delete next[statKey];
+                          return next;
+                        });
+                      }}
+                    />
+                  </div>
                 </foreignObject>
               </g>
             );

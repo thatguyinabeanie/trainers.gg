@@ -213,10 +213,13 @@ describe("RadialStatEditor — spoke labels", () => {
   // -------------------------------------------------------------------------
   it("renders all 6 stat short-labels (HP, ATK, DEF, SPA, SPD, SPE)", () => {
     renderEditor();
-    // The SVG text nodes contain the stat labels. The mock RadialFineTune does
-    // NOT render them; they come from the main editor SVG.
+    // Each spoke renders its abbreviation in an aria-hidden span inside a foreignObject.
+    // Use DOM querySelector since aria-hidden excludes these from the a11y tree.
     for (const label of ["HP", "ATK", "DEF", "SPA", "SPD", "SPE"]) {
-      expect(screen.getByText(label)).toBeInTheDocument();
+      const found = Array.from(document.querySelectorAll("span")).some(
+        (el) => el.textContent === label
+      );
+      expect(found).toBe(true);
     }
   });
 
@@ -523,36 +526,51 @@ describe("RadialStatEditor — nature indicators + pill cycle", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 16. ▲ indicator renders on the +nature stat, ▼ on the -nature stat
+  // 16. ▲ indicator renders on the +nature stat, ▼ on the -nature stat.
+  //     The inline row has the arrow in its OWN span (left of the abbreviation).
+  //     These decorative spans are aria-hidden — query via DOM selector.
   // -------------------------------------------------------------------------
-  it("renders ▲ near the +nature stat (ATK) for Adamant", () => {
+  it("renders ▲ arrow span for ATK for Adamant", () => {
     renderEditor({ nature: "Adamant" });
-    // The SVG text node for ATK gets the ▲ appended
-    const atkLabel = screen.getByText(/ATK▲/);
-    expect(atkLabel).toBeInTheDocument();
-  });
-
-  it("renders ▼ near the -nature stat (SPA) for Adamant", () => {
-    renderEditor({ nature: "Adamant" });
-    const spaLabel = screen.getByText(/SPA▼/);
-    expect(spaLabel).toBeInTheDocument();
-  });
-
-  // -------------------------------------------------------------------------
-  // 16b. Effective stat value is plain (no nature color class on the number)
-  //      — the ▲/▼ arrow is on the label only.
-  // -------------------------------------------------------------------------
-  it("effective stat text does NOT render a ▲ or ▼ prefix for Adamant", () => {
-    renderEditor({ nature: "Adamant" });
-    // The final stat <text> should be a plain number — no arrow prefix.
-    // Verify no text node contains a leading ▲ or ▼ (those belong to labels only).
-    const allText = document.querySelectorAll("svg text")[Symbol.iterator]();
-    const effectiveStatTexts = Array.from(allText).filter(
-      (el) => el.textContent && /^\d/.test(el.textContent.trim())
+    // The ATK spoke row renders a ▲ span (emerald, aria-hidden) to the left of ATK.
+    // Use DOM query since aria-hidden excludes these from the a11y tree.
+    const arrowSpans = Array.from(document.querySelectorAll("span")).filter(
+      (el) => el.textContent === "▲"
     );
-    // None of the numeric stat texts should start with ▲ or ▼
-    for (const el of effectiveStatTexts) {
-      expect(el.textContent?.trim()).not.toMatch(/^[▲▼]/);
+    expect(arrowSpans.length).toBeGreaterThan(0);
+    // The ATK abbreviation is also rendered in a sibling aria-hidden span
+    const atkSpans = Array.from(document.querySelectorAll("span")).filter(
+      (el) => el.textContent === "ATK"
+    );
+    expect(atkSpans.length).toBeGreaterThan(0);
+  });
+
+  it("renders ▼ arrow span for SPA for Adamant", () => {
+    renderEditor({ nature: "Adamant" });
+    const arrowSpans = Array.from(document.querySelectorAll("span")).filter(
+      (el) => el.textContent === "▼"
+    );
+    expect(arrowSpans.length).toBeGreaterThan(0);
+    const spaSpans = Array.from(document.querySelectorAll("span")).filter(
+      (el) => el.textContent === "SPA"
+    );
+    expect(spaSpans.length).toBeGreaterThan(0);
+  });
+
+  // -------------------------------------------------------------------------
+  // 16b. Effective stat value is plain (no combined ▲/▼+number text).
+  //      The arrow and the effective-stat number are in separate sibling spans,
+  //      so no single leaf element contains "▲NNN" or "▼NNN".
+  // -------------------------------------------------------------------------
+  it("no element contains a ▲ or ▼ immediately followed by a digit (Adamant)", () => {
+    renderEditor({ nature: "Adamant" });
+    // Walk all DOM leaf nodes and ensure none read "▲NNN" or "▼NNN"
+    const allElements = Array.from(document.querySelectorAll("*"));
+    for (const el of allElements) {
+      // Only look at leaf nodes (no child elements) to avoid composite matches
+      if (el.childElementCount === 0 && el.textContent) {
+        expect(el.textContent.trim()).not.toMatch(/^[▲▼]\d/);
+      }
     }
   });
 });
