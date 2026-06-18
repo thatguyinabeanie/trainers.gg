@@ -423,6 +423,197 @@ Tera Type: Fire
   });
 });
 
+// =============================================================================
+// Champions Reg M-B — end-to-end validation
+// =============================================================================
+
+describe("validateTeamStructure — Champions Reg M-B (gen9championsvgc2026regmb)", () => {
+  const FORMAT_ID = "gen9championsvgc2026regmb";
+
+  const makeMBMon = (overrides: Partial<ParsedPokemon> = {}): ParsedPokemon => ({
+    species: "Eelektross",
+    nickname: null,
+    level: 50,
+    ability: "Levitate",
+    nature: "Adamant",
+    held_item: null,
+    move1: "Wild Charge",
+    move2: null,
+    move3: null,
+    move4: null,
+    ev_hp: 20,
+    ev_attack: 10,
+    ev_defense: 10,
+    ev_special_attack: 10,
+    ev_special_defense: 10,
+    ev_speed: 6,
+    iv_hp: 31,
+    iv_attack: 31,
+    iv_defense: 31,
+    iv_special_attack: 31,
+    iv_special_defense: 31,
+    iv_speed: 31,
+    tera_type: null,
+    gender: null,
+    is_shiny: false,
+    ...overrides,
+  });
+
+  it("accepts a valid M-B team within SP limits (66 total, ≤32 per stat)", () => {
+    const errors = validateTeamStructure([makeMBMon()], FORMAT_ID);
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects a Pokemon with more than 66 total Stat Points in M-B format", () => {
+    const mon = makeMBMon({ ev_hp: 32, ev_attack: 32, ev_defense: 10 });
+    const errors = validateTeamStructure([mon], FORMAT_ID);
+    expect(errors.some((e) => e.message.includes("total Stat Points"))).toBe(
+      true
+    );
+  });
+
+  it("rejects a Pokemon with more than 32 in a single stat in M-B format", () => {
+    const mon = makeMBMon({
+      ev_hp: 33,
+      ev_attack: 0,
+      ev_defense: 0,
+      ev_special_attack: 0,
+      ev_special_defense: 0,
+      ev_speed: 0,
+    });
+    const errors = validateTeamStructure([mon], FORMAT_ID);
+    expect(errors.some((e) => e.message.includes("Stat Points in HP"))).toBe(
+      true
+    );
+  });
+});
+
+describe("validateChampionsLegality — Champions Reg M-B (gen9championsvgc2026regmb)", () => {
+  const FORMAT_ID = "gen9championsvgc2026regmb";
+
+  const makeMBMon = (overrides: Partial<ParsedPokemon> = {}): ParsedPokemon => ({
+    species: "Eelektross-Mega",
+    nickname: null,
+    level: 50,
+    ability: "Eelevate",
+    nature: "Adamant",
+    held_item: "Eelektrossite",
+    move1: "Wild Charge",
+    move2: null,
+    move3: null,
+    move4: null,
+    ev_hp: 20,
+    ev_attack: 10,
+    ev_defense: 10,
+    ev_special_attack: 10,
+    ev_special_defense: 10,
+    ev_speed: 6,
+    iv_hp: 31,
+    iv_attack: 31,
+    iv_defense: 31,
+    iv_special_attack: 31,
+    iv_special_defense: 31,
+    iv_speed: 31,
+    tera_type: null,
+    gender: null,
+    is_shiny: false,
+    ...overrides,
+  });
+
+  it("accepts a legal M-B team: Eelektross-Mega with Eelektrossite and Eelevate", () => {
+    const errors = validateChampionsLegality([makeMBMon()], FORMAT_ID);
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects a Tera type for M-B format (Terastallization not allowed)", () => {
+    const mon = makeMBMon({ tera_type: "Electric" });
+    const errors = validateChampionsLegality([mon], FORMAT_ID);
+    expect(
+      errors.some((e) => e.message.includes("does not allow Terastallization"))
+    ).toBe(true);
+    expect(errors[0]!.source).toBe("format");
+  });
+
+  it("rejects a species not in the M-B legal list", () => {
+    // Ditto is not in the M-B legal species set
+    const mon = makeMBMon({ species: "Zubat", held_item: null });
+    const errors = validateChampionsLegality([mon], FORMAT_ID);
+    expect(
+      errors.some((e) => e.message.includes("not legal in this Champions format"))
+    ).toBe(true);
+  });
+
+  it("rejects an item not in the M-B legal items list", () => {
+    const mon = makeMBMon({ held_item: "Choice Band" });
+    const errors = validateChampionsLegality([mon], FORMAT_ID);
+    expect(
+      errors.some((e) =>
+        e.message.includes('"Choice Band" is not legal in this Champions format')
+      )
+    ).toBe(true);
+  });
+});
+
+describe("parseAndValidateTeam — Champions Reg M-B (gen9championsvgc2026regmb)", () => {
+  const FORMAT_ID = "gen9championsvgc2026regmb";
+
+  const VALID_MB_SHOWDOWN = `Eelektross-Mega @ Eelektrossite
+Ability: Eelevate
+Level: 50
+EVs: 20 HP / 10 Atk / 10 Def / 10 SpA / 10 SpD / 6 Spe
+Adamant Nature
+- Wild Charge
+- Drain Punch
+- Coil
+- Protect`;
+
+  const MB_SHOWDOWN_WITH_TERA = `Eelektross-Mega @ Eelektrossite
+Ability: Eelevate
+Level: 50
+Tera Type: Electric
+EVs: 20 HP / 10 Atk / 10 Def / 10 SpA / 10 SpD / 6 Spe
+Adamant Nature
+- Wild Charge
+- Drain Punch
+- Coil
+- Protect`;
+
+  it("routes gen9championsvgc2026regmb to validateChampionsLegality and passes a legal team", () => {
+    const result = parseAndValidateTeam(VALID_MB_SHOWDOWN, FORMAT_ID);
+    // Valid M-B team — no legality errors expected
+    const formatErrors = result.errors.filter((e) => e.source === "format");
+    expect(formatErrors).toHaveLength(0);
+  });
+
+  it("routes gen9championsvgc2026regmb to validateChampionsLegality and flags Tera type", () => {
+    const result = parseAndValidateTeam(MB_SHOWDOWN_WITH_TERA, FORMAT_ID);
+    expect(result.valid).toBe(false);
+    const formatErrors = result.errors.filter((e) => e.source === "format");
+    expect(formatErrors.length).toBeGreaterThan(0);
+    expect(
+      formatErrors.some((e) => e.message.includes("Terastallization"))
+    ).toBe(true);
+  });
+
+  it("rejects a team exceeding the 66 SP cap in M-B format", () => {
+    // Over-limit: 32 HP + 32 Atk + 10 Def = 74 total SPs
+    const overLimitText = `Eelektross-Mega @ Eelektrossite
+Ability: Eelevate
+Level: 50
+EVs: 32 HP / 32 Atk / 10 Def
+Adamant Nature
+- Wild Charge
+- Drain Punch
+- Coil
+- Protect`;
+    const result = parseAndValidateTeam(overLimitText, FORMAT_ID);
+    expect(result.valid).toBe(false);
+    expect(
+      result.errors.some((e) => e.message.includes("total Stat Points"))
+    ).toBe(true);
+  });
+});
+
 describe("parsePokepaseUrl", () => {
   it("parses a valid Pokepaste URL", () => {
     const result = parsePokepaseUrl("https://pokepast.es/abcdef0123456789");
