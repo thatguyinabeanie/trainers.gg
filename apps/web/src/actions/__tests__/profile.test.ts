@@ -339,6 +339,8 @@ describe("getCurrentUserProfile", () => {
         pdsStatus: "active",
         pdsHandle: "pikachu.trainers.gg",
         did: "did:plc:abc123",
+        firstName: "Ash",
+        lastName: "Ketchum",
         birthDate: "2000-01-15",
         country: "US",
         mainAltId: null,
@@ -379,6 +381,8 @@ describe("getCurrentUserProfile", () => {
 
     expect(result.success).toBe(true);
     if (result.success && result.data) {
+      expect(result.data.firstName).toBeNull();
+      expect(result.data.lastName).toBeNull();
       expect(result.data.birthDate).toBeNull();
     }
   });
@@ -433,6 +437,8 @@ describe("getCurrentUserProfile", () => {
         pdsStatus: null,
         pdsHandle: null,
         did: null,
+        firstName: null,
+        lastName: null,
         birthDate: null,
         country: "JP",
         mainAltId: 42,
@@ -626,11 +632,83 @@ describe("updateProfile", () => {
     expect(result.error).toBeTruthy();
   });
 
+  it("rejects first name longer than 64 chars", async () => {
+    const result = await updateProfile({ firstName: "A".repeat(65) });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  it("rejects last name longer than 64 chars", async () => {
+    const result = await updateProfile({ lastName: "B".repeat(65) });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
   it("rejects invalid country code", async () => {
     const result = await updateProfile({ country: "USA" });
 
     expect(result.success).toBe(false);
     expect(result.error).toBeTruthy();
+  });
+
+  it("passes p_first_name and p_last_name to update_my_user_pii RPC", async () => {
+    mockUsernameQuery();
+
+    const result = await updateProfile({
+      firstName: "Ash",
+      lastName: "Ketchum",
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockRpc).toHaveBeenCalledWith("update_my_user_pii", {
+      p_first_name: "Ash",
+      p_last_name: "Ketchum",
+      p_birth_date: null,
+    });
+  });
+
+  it("passes p_birth_date with null names when only birth date is provided", async () => {
+    mockUsernameQuery();
+
+    const result = await updateProfile({ birthDate: "1990-05-15" });
+
+    expect(result.success).toBe(true);
+    expect(mockRpc).toHaveBeenCalledWith("update_my_user_pii", {
+      p_first_name: null,
+      p_last_name: null,
+      p_birth_date: "1990-05-15",
+    });
+  });
+
+  it("skips update_my_user_pii RPC when no PII fields are provided", async () => {
+    mockUsernameQuery();
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      })
+    );
+
+    await updateProfile({ country: "JP" });
+
+    expect(mockRpc).not.toHaveBeenCalledWith(
+      "update_my_user_pii",
+      expect.anything()
+    );
+  });
+
+  it("returns error when update_my_user_pii RPC fails for names", async () => {
+    mockUsernameQuery();
+    mockRpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: "permission denied", code: "42501" },
+    });
+
+    const result = await updateProfile({ firstName: "Ash" });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Failed to update profile");
   });
 
   it("updates birth date and country without username change", async () => {

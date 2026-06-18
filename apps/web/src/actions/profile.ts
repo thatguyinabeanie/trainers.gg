@@ -23,6 +23,14 @@ import {
 
 const updateProfileSchema = z.object({
   username: usernameSchema.optional(),
+  firstName: z
+    .string()
+    .max(64, "First name must be 64 characters or less")
+    .optional(),
+  lastName: z
+    .string()
+    .max(64, "Last name must be 64 characters or less")
+    .optional(),
   birthDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Birth date must be in YYYY-MM-DD format")
@@ -42,6 +50,8 @@ interface UserProfile {
   pdsStatus: "pending" | "active" | "failed" | "suspended" | "external" | null;
   pdsHandle: string | null;
   did: string | null;
+  firstName: string | null;
+  lastName: string | null;
   birthDate: string | null;
   country: string | null;
   mainAltId: number | null;
@@ -269,6 +279,8 @@ export async function getCurrentUserProfile(): Promise<
           | null,
         pdsHandle: userData.pds_handle,
         did: userData.did,
+        firstName: pii?.first_name ?? null,
+        lastName: pii?.last_name ?? null,
         birthDate: pii?.birth_date ?? null,
         country: userData.country,
         mainAltId: userData.main_alt_id,
@@ -289,6 +301,8 @@ export async function getCurrentUserProfile(): Promise<
  */
 export async function updateProfile(data: {
   username?: string;
+  firstName?: string;
+  lastName?: string;
   birthDate?: string;
   country?: string;
   bio?: string;
@@ -501,17 +515,26 @@ export async function updateProfile(data: {
       }
     }
 
-    // birth_date lives in the private schema — route to the dedicated RPC.
-    // Done LAST (after the username/PDS/users/alt/auth updates) so that an
-    // earlier step which returns early on failure (e.g. handle taken, PDS
-    // provision timeout, username conflict) can't leave a partial profile with
-    // the birth date already persisted.
-    if (validated.birthDate !== undefined) {
+    // first_name, last_name, and birth_date live in the private schema —
+    // route to the dedicated RPC. Done LAST (after the username/PDS/users/alt/auth
+    // updates) so that an earlier step which returns early on failure (e.g. handle
+    // taken, PDS provision timeout, username conflict) can't leave a partial
+    // profile with PII already persisted.
+    // The RPC uses COALESCE(EXCLUDED.x, existing.x): an omitted arg (undefined →
+    // DB default NULL) leaves the existing value unchanged, so we can update any
+    // subset of PII fields. (Clearing a field to NULL is intentionally unsupported.)
+    const hasPiiChange =
+      validated.firstName !== undefined ||
+      validated.lastName !== undefined ||
+      validated.birthDate !== undefined;
+    if (hasPiiChange) {
       const { error: piiError } = await supabase.rpc("update_my_user_pii", {
+        p_first_name: validated.firstName,
+        p_last_name: validated.lastName,
         p_birth_date: validated.birthDate,
       });
       if (piiError) {
-        console.error("Error updating birth date:", piiError);
+        console.error("Error updating PII:", piiError);
         return { success: false, error: "Failed to update profile" };
       }
     }
