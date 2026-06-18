@@ -277,19 +277,22 @@ describe("groupBySpeed", () => {
 // =============================================================================
 
 describe("getSpeedAffectingItems", () => {
-  it("returns choice-scarf and iron-ball for Champions formats (M-A and M-B share the same set)", () => {
-    for (const formatId of [
-      "gen9championsvgc2026regma",
-      "gen9championsvgc2026regmb",
-    ]) {
-      const format = getFormatById(formatId);
-      if (!format) throw new Error(`format fixture missing: ${formatId}`);
-      const items = getSpeedAffectingItems(format);
-      const ids = items.map((i) => i.id).sort();
-      // Iron Ball (M-B addition) is included for both formats since they share
-      // the MODERN_LEGAL_ITEM_IDS set; choice-scarf is the M-A boost item.
-      expect(ids).toEqual(["choice-scarf", "iron-ball"].sort());
-    }
+  it("returns only choice-scarf for M-A (Iron Ball is not in the M-A item pool)", () => {
+    const format = getFormatById("gen9championsvgc2026regma");
+    if (!format)
+      throw new Error("format fixture missing: gen9championsvgc2026regma");
+    const items = getSpeedAffectingItems(format);
+    const ids = items.map((i) => i.id).sort();
+    expect(ids).toEqual(["choice-scarf"]);
+  });
+
+  it("returns choice-scarf and iron-ball for M-B (Iron Ball was added in M-B)", () => {
+    const format = getFormatById("gen9championsvgc2026regmb");
+    if (!format)
+      throw new Error("format fixture missing: gen9championsvgc2026regmb");
+    const items = getSpeedAffectingItems(format);
+    const ids = items.map((i) => i.id).sort();
+    expect(ids).toEqual(["choice-scarf", "iron-ball"].sort());
   });
 
   it("returns the full classic set for older formats", () => {
