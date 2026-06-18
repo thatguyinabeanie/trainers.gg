@@ -51,13 +51,18 @@ const MOVE_TYPE_FALLBACKS: Record<string, string> = {
  *
  * Both M-A and M-B point to the same map (M-B inherits M-A's changes by
  * reference) — this is intentional.
+ *
+ * Stored as a Map (not a plain Record) to prevent prototype-key collisions —
+ * a formatId like "constructor" or "toString" would resolve an inherited
+ * Object.prototype member and be mis-treated as a registered entry.
  */
-const CHAMPIONS_MOVE_CHANGES_BY_FORMAT_ID: Readonly<
-  Record<string, ReadonlyMap<string, ChampionsMoveChange>>
-> = {
-  gen9championsvgc2026regma: REG_MA_BUNDLE.moveChanges,
-  gen9championsvgc2026regmb: REG_MB_BUNDLE.moveChanges,
-};
+const CHAMPIONS_MOVE_CHANGES_BY_FORMAT_ID = new Map<
+  string,
+  ReadonlyMap<string, ChampionsMoveChange>
+>([
+  ["gen9championsvgc2026regma", REG_MA_BUNDLE.moveChanges],
+  ["gen9championsvgc2026regmb", REG_MB_BUNDLE.moveChanges],
+]);
 
 /**
  * Resolve the Champions move-changes map for a given format ID.
@@ -67,7 +72,7 @@ function getChampionsMoveChanges(
   formatId: string | null | undefined
 ): ReadonlyMap<string, ChampionsMoveChange> | undefined {
   if (!formatId || !isChampionsFormatId(formatId)) return undefined;
-  return CHAMPIONS_MOVE_CHANGES_BY_FORMAT_ID[formatId];
+  return CHAMPIONS_MOVE_CHANGES_BY_FORMAT_ID.get(formatId);
 }
 
 /**

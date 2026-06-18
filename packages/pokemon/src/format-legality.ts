@@ -91,11 +91,15 @@ export const CHAMPIONS_MB_FORMAT_ID = "gen9championsvgc2026regmb";
  * Registry mapping Champions format IDs to their legality bundles.
  * Adding a new Champions regulation requires only: (1) a new bundle file
  * (parallel to champions-reg-ma.ts), and (2) a new entry here.
+ *
+ * Stored as a Map (not a plain Record) to prevent prototype-key collisions —
+ * a formatId like "constructor" or "toString" would resolve an inherited
+ * Object.prototype member and be mis-treated as a registered bundle.
  */
-const CHAMPIONS_LEGALITY_BY_ID: Record<string, ChampionsRegBundle> = {
-  [CHAMPIONS_MA_FORMAT_ID]: REG_MA_BUNDLE,
-  [CHAMPIONS_MB_FORMAT_ID]: REG_MB_BUNDLE,
-};
+const CHAMPIONS_LEGALITY_BY_ID = new Map<string, ChampionsRegBundle>([
+  [CHAMPIONS_MA_FORMAT_ID, REG_MA_BUNDLE],
+  [CHAMPIONS_MB_FORMAT_ID, REG_MB_BUNDLE],
+]);
 
 // =============================================================================
 // @pkmn/sim-backed legality
@@ -705,7 +709,7 @@ function formatUsesTerastalClause(formatId: string): boolean {
  * if legality cannot be determined (treat as permissive).
  */
 export function getLegalSpecies(formatId: string): LegalityResult {
-  const bundle = CHAMPIONS_LEGALITY_BY_ID[formatId];
+  const bundle = CHAMPIONS_LEGALITY_BY_ID.get(formatId);
   if (bundle) return bundle.legalSpecies;
   return computeLegalSpeciesFromSim(formatId);
 }
@@ -730,7 +734,7 @@ export function isLegalSpecies(species: string, formatId: string): boolean {
  * any item).
  */
 export function getLegalItems(formatId: string): LegalityResult {
-  const bundle = CHAMPIONS_LEGALITY_BY_ID[formatId];
+  const bundle = CHAMPIONS_LEGALITY_BY_ID.get(formatId);
   if (bundle) return bundle.legalItems;
   return computeLegalItemsFromSim(formatId);
 }
@@ -759,7 +763,7 @@ export function getLegalMoves(
   species: string,
   formatId: string
 ): LegalityResult {
-  const bundle = CHAMPIONS_LEGALITY_BY_ID[formatId];
+  const bundle = CHAMPIONS_LEGALITY_BY_ID.get(formatId);
   if (bundle) return computeLegalMovesForChampions(species, bundle);
   return computeLegalMovesFromSim(species, formatId);
 }
@@ -791,7 +795,7 @@ export function getLegalAbilities(
   species: string,
   formatId: string
 ): LegalityResult {
-  const bundle = CHAMPIONS_LEGALITY_BY_ID[formatId];
+  const bundle = CHAMPIONS_LEGALITY_BY_ID.get(formatId);
   if (bundle) return computeLegalAbilitiesForChampions(species, bundle);
   return computeLegalAbilitiesFromSim(species, formatId);
 }
@@ -832,7 +836,7 @@ export function isLegalAbility(
  */
 export function getLegalTeraTypes(formatId: string): LegalityResult {
   // Champions formats have no Tera — only Mega Evolutions.
-  if (CHAMPIONS_LEGALITY_BY_ID[formatId]) {
+  if (CHAMPIONS_LEGALITY_BY_ID.has(formatId)) {
     return EMPTY_TERA_SET;
   }
   // Unknown / unregistered formats → permissive.
