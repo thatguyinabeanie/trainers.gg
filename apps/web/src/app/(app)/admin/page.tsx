@@ -41,6 +41,7 @@ import {
   getAuditLog,
   getOrganizationStats,
   getTournamentStats,
+  getPiiByUserIds,
   type PlatformOverview,
   type ActiveUserStats,
   type OrganizationStats,
@@ -111,7 +112,13 @@ interface MetricCardProps {
   theme: MetricTheme;
 }
 
-function MetricCard({ title, value, icon: Icon, subtitle, theme }: MetricCardProps) {
+function MetricCard({
+  title,
+  value,
+  icon: Icon,
+  subtitle,
+  theme,
+}: MetricCardProps) {
   return (
     <Card className={cn("border-l-[3px]", theme.border)}>
       <CardContent className="pt-5">
@@ -384,13 +391,14 @@ async function DashboardData() {
 
   const supabase = createServiceRoleClient();
 
-  // Fetch all 6 dashboard stats in parallel. `.catch(() => null)` lets the
-  // page render a partial error state instead of throwing a full 500.
+  // Fetch 5 dashboard stats in parallel alongside the raw recent audit log.
+  // `.catch(() => null)` lets the page render a partial error state instead of
+  // throwing a full 500.
   const [
     overview,
     activeUsers,
     auditStats,
-    recentLog,
+    rawRecentLog,
     communityStats,
     tournamentStats,
   ] = await Promise.all([
@@ -401,6 +409,36 @@ async function DashboardData() {
     getOrganizationStats(supabase).catch(() => null),
     getTournamentStats(supabase).catch(() => null),
   ]);
+
+  // Enrich the recent audit log with actor first/last names from private.user_pii.
+  // The service-role client can reach this RPC; the browser client cannot.
+  // We collect distinct actor user IDs from the raw result, fetch PII in a single
+  // batch RPC call, then re-run getAuditLog with the populated piiMap so the
+  // built-in merge logic in getAuditLog enriches the actor objects consistently.
+  // getPiiByUserIds degrades gracefully (returns empty Map) on RPC error, so this
+  // never throws and the page always renders.
+  let recentLog = rawRecentLog;
+  if (rawRecentLog?.data && rawRecentLog.data.length > 0) {
+    const actorIds = [
+      ...new Set(
+        rawRecentLog.data
+          .map((row) => row.actor_user?.id)
+          .filter((id): id is string => id != null)
+      ),
+    ];
+    if (actorIds.length > 0) {
+      const piiMap = await getPiiByUserIds(supabase, actorIds).catch(
+        () => null
+      );
+      if (piiMap) {
+        recentLog = await getAuditLog(supabase, {
+          limit: 10,
+          offset: 0,
+          piiMap,
+        }).catch(() => rawRecentLog);
+      }
+    }
+  }
 
   const hasError =
     overview === null ||

@@ -8,13 +8,7 @@ import {
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { Activity, RefreshCw } from "lucide-react";
-import {
-  getAuditLog,
-  getAuditLogStats,
-  type AuditLogEntry,
-  type Database,
-} from "@trainers/supabase";
-import { useSupabase } from "@/lib/supabase";
+import { type AuditLogEntry, type Database } from "@trainers/supabase";
 import { queryKeys } from "@/lib/query-keys";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -113,6 +107,61 @@ const entityTypes = [
   { value: "community", label: "Communities" },
 ] as const;
 
+// --- Fetchers ---
+
+/** Shape returned by GET /api/v1/admin/audit-log/stats */
+interface AuditLogStatsResult {
+  total24h: number;
+  total7d: number;
+  total30d: number;
+}
+
+/** Shape returned by GET /api/v1/admin/audit-log */
+interface AuditLogResult {
+  data: AuditLogEntry[];
+  count: number | null;
+}
+
+/**
+ * Fetch audit log statistics from the service-role API route.
+ * Throws on HTTP error so useQuery can surface it via isError.
+ */
+async function fetchAuditLogStats(): Promise<AuditLogStatsResult> {
+  const res = await fetch("/api/v1/admin/audit-log/stats");
+  if (!res.ok) {
+    throw new Error(`Failed to fetch audit log stats: HTTP ${res.status}`);
+  }
+  return res.json() as Promise<AuditLogStatsResult>;
+}
+
+/**
+ * Fetch a page of audit log entries from the service-role API route.
+ * Actor first/last names are populated server-side via getPiiByUserIds.
+ * Throws on HTTP error so useQuery can surface it via isError.
+ */
+async function fetchAuditLog(
+  actions: AuditAction[] | undefined,
+  entityType: "tournament" | "match" | "community" | undefined,
+  page: number,
+  limit: number
+): Promise<AuditLogResult> {
+  const url = new URL("/api/v1/admin/audit-log", window.location.origin);
+  if (actions && actions.length > 0) {
+    url.searchParams.set("actions", actions.join(","));
+  }
+  if (entityType) {
+    url.searchParams.set("entityType", entityType);
+  }
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("limit", String(limit));
+
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    throw new Error(`Failed to fetch audit log: HTTP ${res.status}`);
+  }
+  return res.json() as Promise<AuditLogResult>;
+}
+
 // --- Stat Card Sub-Component ---
 
 function StatCard({
@@ -147,8 +196,6 @@ function StatCard({
 // --- Component ---
 
 export function ActivityTab() {
-  const supabase = useSupabase();
-
   // Filter state
   const [actionFilter, setActionFilter] = useState("all");
   const [entityFilter, setEntityFilter] = useState("all");
@@ -169,7 +216,7 @@ export function ActivityTab() {
     error: statsError,
   } = useQuery({
     queryKey: queryKeys.admin.auditStats(refreshKey),
-    queryFn: () => getAuditLogStats(supabase),
+    queryFn: () => fetchAuditLogStats(),
     staleTime: 30_000,
   });
 
@@ -185,13 +232,7 @@ export function ActivityTab() {
       page,
       refreshKey
     ),
-    queryFn: () =>
-      getAuditLog(supabase, {
-        actions: actionsForFilter,
-        entityType,
-        limit: PAGE_SIZE,
-        offset: page * PAGE_SIZE,
-      }),
+    queryFn: () => fetchAuditLog(actionsForFilter, entityType, page, PAGE_SIZE),
     staleTime: 30_000,
   });
 
