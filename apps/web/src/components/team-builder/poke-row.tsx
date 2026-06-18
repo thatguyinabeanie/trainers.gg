@@ -11,20 +11,17 @@ import {
   type TeamWithPokemon,
 } from "@trainers/supabase";
 
-import { CompactRow } from "./layouts/compact-row";
-import { CompactRowGhost } from "./layouts/compact-row-ghost";
 import { GridRow } from "./layouts/grid-row";
 import { GridRowGhost } from "./layouts/grid-row-ghost";
 import { SpeciesPickerDialog } from "./pickers/species-picker-dialog";
-import { useTeamLayoutMode } from "./use-team-layout";
 import { type ValidationError } from "./validation-hooks";
 
 // =============================================================================
-// PokeRow — thin layout router
+// PokeRow — filled slot renderer
 //
-// Picks CompactRow (1×6) or GridRow (2×3-vertical) based on the team layout
-// mode. Empty slots render an inline EmptyPokeRow that mirrors the legacy
-// EmptyRow ghost UI.
+// Always renders GridRow (2×3-vertical). Single-focus mode renders via the
+// workspace branch, not through PokeRow. Empty slots render an inline
+// EmptyPokeRow that mirrors the legacy EmptyRow ghost UI.
 // =============================================================================
 
 interface PokeRowProps {
@@ -84,8 +81,6 @@ export function PokeRow({
     zIndex: isDragging ? 10 : undefined,
   };
 
-  const layoutMode = useTeamLayoutMode();
-
   if (!pokemon) {
     return (
       <div ref={setNodeRef} style={style} className="mx-auto w-full">
@@ -93,8 +88,6 @@ export function PokeRow({
       </div>
     );
   }
-
-  const Variant = layoutMode === "2x3-vertical" ? GridRow : CompactRow;
 
   return (
     <div
@@ -104,7 +97,7 @@ export function PokeRow({
       data-selected={isActive}
       onClick={() => onActivate(idx)}
     >
-      <Variant
+      <GridRow
         idx={idx}
         pokemon={pokemon}
         teamPokemon={teamPokemon ?? []}
@@ -123,9 +116,9 @@ export function PokeRow({
 // =============================================================================
 // EmptyPokeRow — inline ghost shell for empty slots
 //
-// Inlined from the legacy EmptyRow in this file. No visual change yet — the
-// ghost-rendering responsibility will move into CompactRow/GridRow in a
-// future polish pass. For now this preserves the existing empty-slot UI.
+// Inlined from the legacy EmptyRow in this file. Always renders GridRowGhost
+// (the 2×3-vertical placeholder). The legacy CompactRow/1×6 layout has been
+// retired; single-focus mode renders via the workspace branch.
 // =============================================================================
 
 interface EmptyPokeRowProps {
@@ -136,8 +129,6 @@ interface EmptyPokeRowProps {
 
 function EmptyPokeRow({ idx, format, onAdd }: EmptyPokeRowProps) {
   const [open, setOpen] = useState(false);
-  const layoutMode = useTeamLayoutMode();
-  const Ghost = layoutMode === "2x3-vertical" ? GridRowGhost : CompactRowGhost;
 
   return (
     <>
@@ -147,7 +138,7 @@ function EmptyPokeRow({ idx, format, onAdd }: EmptyPokeRowProps) {
         aria-label={`Add Pokémon to slot ${String(idx + 1).padStart(2, "0")}`}
         className="focus-visible:ring-primary block w-full rounded-lg text-left focus-visible:ring-2 focus-visible:outline-none"
       >
-        <Ghost idx={idx} />
+        <GridRowGhost idx={idx} />
       </button>
 
       <SpeciesPickerDialog
