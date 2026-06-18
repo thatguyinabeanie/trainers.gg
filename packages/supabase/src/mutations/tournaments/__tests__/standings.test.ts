@@ -16,11 +16,13 @@ jest.mock("../helpers", () => ({
 // Mock client type
 type MockClient = {
   from: jest.Mock;
+  rpc: jest.Mock;
 };
 
 const createMockClient = () => {
   return {
     from: jest.fn(),
+    rpc: jest.fn(),
   } as unknown as TypedClient;
 };
 
@@ -386,14 +388,30 @@ describe("Tournament Standings Mutations", () => {
     const mockAlt = { id: 10, username: "player1", user_id: "user-123" };
     const tournamentId = 100;
     const altId = 10;
+    const registrationId = 123;
+
+    // Builder returned by the tournament_registrations lookup (maybeSingle).
+    const makeRegLookupBuilder = (
+      data: { id: number } | null = { id: registrationId }
+    ) => ({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      not: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data, error: null }),
+    });
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (getCurrentAlt as jest.Mock).mockResolvedValue(mockAlt);
       (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
+      // By default the RPC succeeds.
+      (mockClient as unknown as MockClient).rpc.mockResolvedValue({
+        data: [registrationId],
+        error: null,
+      });
     });
 
-    it("should allow player to drop themselves", async () => {
+    it("should call drop_registrations RPC (not direct update) when player drops themselves", async () => {
       const tournamentBuilder = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -402,7 +420,7 @@ describe("Tournament Standings Mutations", () => {
             id: tournamentId,
             status: "active",
             community_id: 200,
-            organizations: { owner_user_id: "other-user" },
+            communities: { owner_user_id: "other-user" },
           },
           error: null,
         }),
@@ -416,37 +434,31 @@ describe("Tournament Standings Mutations", () => {
           error: null,
         }),
       };
-      statsUpdateBuilder.eq.mockImplementation((field: string) => {
-        if (field === "tournament_id") return statsUpdateBuilder;
-        return statsUpdateBuilder;
-      });
+      statsUpdateBuilder.eq.mockReturnThis();
 
-      const regUpdateBuilder = {
-        update: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-      };
-      regUpdateBuilder.eq.mockImplementation((field: string) => {
-        if (field === "tournament_id") return regUpdateBuilder;
-        return Promise.resolve({ error: null });
-      });
-
-      let _fromCallCount = 0;
       mockClient.from.mockImplementation((table: string) => {
         if (table === "tournaments") return tournamentBuilder;
-        if (table === "tournament_player_stats") {
-          _fromCallCount++;
-          return statsUpdateBuilder;
-        }
-        if (table === "tournament_registrations") return regUpdateBuilder;
+        if (table === "tournament_player_stats") return statsUpdateBuilder;
+        if (table === "tournament_registrations") return makeRegLookupBuilder();
         return {};
       });
 
       const result = await dropPlayer(mockClient, tournamentId, altId);
 
       expect(result).toEqual({ success: true });
+
+      // Must call the RPC — never the old direct update approach.
+      expect((mockClient as unknown as MockClient).rpc).toHaveBeenCalledWith(
+        "drop_registrations",
+        {
+          p_registration_ids: [registrationId],
+          p_drop_category: "other",
+          p_drop_notes: "",
+        }
+      );
     });
 
-    it("should insert new stats record if player has no stats", async () => {
+    it("should forward custom drop category and notes to the RPC", async () => {
       const tournamentBuilder = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -455,7 +467,7 @@ describe("Tournament Standings Mutations", () => {
             id: tournamentId,
             status: "active",
             community_id: 200,
-            organizations: { owner_user_id: "other-user" },
+            communities: { owner_user_id: "other-user" },
           },
           error: null,
         }),
@@ -465,38 +477,72 @@ describe("Tournament Standings Mutations", () => {
         update: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         select: jest.fn().mockResolvedValue({
-          data: [], // No existing record
+          data: [{ alt_id: altId }],
           error: null,
         }),
       };
-      statsUpdateBuilder.eq.mockImplementation((field: string) => {
-        if (field === "tournament_id") return statsUpdateBuilder;
-        return statsUpdateBuilder;
+      statsUpdateBuilder.eq.mockReturnThis();
+
+      mockClient.from.mockImplementation((table: string) => {
+        if (table === "tournaments") return tournamentBuilder;
+        if (table === "tournament_player_stats") return statsUpdateBuilder;
+        if (table === "tournament_registrations") return makeRegLookupBuilder();
+        return {};
       });
 
-      const insertMock = jest.fn().mockResolvedValue({ error: null });
-      const statsInsertBuilder = {
-        insert: insertMock,
+      await dropPlayer(mockClient, tournamentId, altId, {
+        dropCategory: "no_show",
+        dropNotes: "Player did not appear",
+      });
+
+      expect((mockClient as unknown as MockClient).rpc).toHaveBeenCalledWith(
+        "drop_registrations",
+        {
+          p_registration_ids: [registrationId],
+          p_drop_category: "no_show",
+          p_drop_notes: "Player did not appear",
+        }
+      );
+    });
+
+    it("should insert new stats record if player has no existing stats", async () => {
+      const tournamentBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: {
+            id: tournamentId,
+            status: "active",
+            community_id: 200,
+            communities: { owner_user_id: "other-user" },
+          },
+          error: null,
+        }),
       };
 
-      const regUpdateBuilder = {
+      // First call to tournament_player_stats: update returns empty (no existing row).
+      const statsUpdateBuilder = {
         update: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        select: jest.fn().mockResolvedValue({
+          data: [],
+          error: null,
+        }),
       };
-      regUpdateBuilder.eq.mockImplementation((field: string) => {
-        if (field === "tournament_id") return regUpdateBuilder;
-        return Promise.resolve({ error: null });
-      });
+      statsUpdateBuilder.eq.mockReturnThis();
 
-      let fromCallCount = 0;
+      const insertMock = jest.fn().mockResolvedValue({ error: null });
+      const statsInsertBuilder = { insert: insertMock };
+
+      let statsCallCount = 0;
       mockClient.from.mockImplementation((table: string) => {
         if (table === "tournaments") return tournamentBuilder;
         if (table === "tournament_player_stats") {
-          fromCallCount++;
-          if (fromCallCount === 1) return statsUpdateBuilder;
+          statsCallCount++;
+          if (statsCallCount === 1) return statsUpdateBuilder;
           return statsInsertBuilder;
         }
-        if (table === "tournament_registrations") return regUpdateBuilder;
+        if (table === "tournament_registrations") return makeRegLookupBuilder();
         return {};
       });
 
@@ -510,6 +556,52 @@ describe("Tournament Standings Mutations", () => {
           is_dropped: true,
           standings_need_recalc: true,
         })
+      );
+      // RPC still called after stats insert.
+      expect((mockClient as unknown as MockClient).rpc).toHaveBeenCalledWith(
+        "drop_registrations",
+        expect.objectContaining({ p_registration_ids: [registrationId] })
+      );
+    });
+
+    it("should throw when no active registration found for the player", async () => {
+      const tournamentBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: {
+            id: tournamentId,
+            status: "active",
+            community_id: 200,
+            communities: { owner_user_id: "other-user" },
+          },
+          error: null,
+        }),
+      };
+
+      // Stats update must not be reached — but if from() is called for
+      // tournament_registrations before tournament_player_stats we still
+      // need a tournament_player_stats fallback.
+      const statsUpdateBuilder = {
+        update: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        select: jest
+          .fn()
+          .mockResolvedValue({ data: [{ alt_id: altId }], error: null }),
+      };
+      statsUpdateBuilder.eq.mockReturnThis();
+
+      mockClient.from.mockImplementation((table: string) => {
+        if (table === "tournaments") return tournamentBuilder;
+        if (table === "tournament_player_stats") return statsUpdateBuilder;
+        // Registration lookup returns null — player already dropped or not found.
+        if (table === "tournament_registrations")
+          return makeRegLookupBuilder(null);
+        return {};
+      });
+
+      await expect(dropPlayer(mockClient, tournamentId, altId)).rejects.toThrow(
+        "No active registration found for this player in the tournament"
       );
     });
 
@@ -547,7 +639,7 @@ describe("Tournament Standings Mutations", () => {
             id: tournamentId,
             status: "active",
             community_id: 200,
-            organizations: { owner_user_id: "other-user" },
+            communities: { owner_user_id: "other-user" },
           },
           error: null,
         }),
@@ -569,7 +661,7 @@ describe("Tournament Standings Mutations", () => {
             id: tournamentId,
             status: "draft",
             community_id: 200,
-            organizations: { owner_user_id: "other-user" },
+            communities: { owner_user_id: "other-user" },
           },
           error: null,
         }),
@@ -579,6 +671,49 @@ describe("Tournament Standings Mutations", () => {
 
       await expect(dropPlayer(mockClient, tournamentId, altId)).rejects.toThrow(
         "Can only drop players from active tournaments"
+      );
+    });
+
+    it("should propagate RPC errors from drop_registrations", async () => {
+      const tournamentBuilder = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: {
+            id: tournamentId,
+            status: "active",
+            community_id: 200,
+            communities: { owner_user_id: "other-user" },
+          },
+          error: null,
+        }),
+      };
+
+      const statsUpdateBuilder = {
+        update: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        select: jest.fn().mockResolvedValue({
+          data: [{ alt_id: altId }],
+          error: null,
+        }),
+      };
+      statsUpdateBuilder.eq.mockReturnThis();
+
+      mockClient.from.mockImplementation((table: string) => {
+        if (table === "tournaments") return tournamentBuilder;
+        if (table === "tournament_player_stats") return statsUpdateBuilder;
+        if (table === "tournament_registrations") return makeRegLookupBuilder();
+        return {};
+      });
+
+      const rpcError = new Error("Permission denied by RPC");
+      (mockClient as unknown as MockClient).rpc.mockResolvedValue({
+        data: null,
+        error: rpcError,
+      });
+
+      await expect(dropPlayer(mockClient, tournamentId, altId)).rejects.toThrow(
+        "Permission denied by RPC"
       );
     });
   });

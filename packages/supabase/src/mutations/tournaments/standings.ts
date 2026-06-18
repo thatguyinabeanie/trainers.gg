@@ -1,3 +1,4 @@
+import type { Database } from "../../types";
 import {
   type TypedClient,
   getCurrentUser,
@@ -263,12 +264,26 @@ export async function recalculateStandings(
 }
 
 /**
- * Drop a player from the tournament (they can no longer participate)
+ * Drop a player from the tournament (they can no longer participate).
+ *
+ * Routes the registration status change through the `drop_registrations` RPC
+ * so the `tournament_registration_staff` row is written atomically with the
+ * status UPDATE. The audit trigger (`audit_registration_status_change`) reads
+ * `drop_category`/`drop_notes`/`dropped_by` from that staff row — bypassing
+ * the RPC would leave the staff row missing and the audit log with NULL
+ * metadata, diverging from `updateRegistrationStatus`'s behaviour.
+ *
+ * The `tournament_player_stats` update (marking `is_dropped`) is separate
+ * and remains a direct table write — it is not part of the RPC's concern.
  */
 export async function dropPlayer(
   supabase: TypedClient,
   tournamentId: number,
-  altId: number
+  altId: number,
+  dropInfo?: {
+    dropCategory: Database["public"]["Enums"]["drop_category"];
+    dropNotes?: string;
+  }
 ) {
   const user = await getCurrentUser(supabase);
   if (!user) throw new Error("Not authenticated");
@@ -309,6 +324,23 @@ export async function dropPlayer(
     throw new Error("Can only drop players from active tournaments");
   }
 
+  // Resolve registration ID — the drop_registrations RPC operates on
+  // registration IDs, not (tournament_id, alt_id) pairs.
+  const { data: registration, error: regLookupError } = await supabase
+    .from("tournament_registrations")
+    .select("id")
+    .eq("tournament_id", tournamentId)
+    .eq("alt_id", altId)
+    .not("status", "eq", "dropped")
+    .maybeSingle();
+
+  if (regLookupError) throw regLookupError;
+  if (!registration) {
+    throw new Error(
+      "No active registration found for this player in the tournament"
+    );
+  }
+
   // Update player stats to mark as dropped - ensure record exists first
   const { data: updated } = await supabase
     .from("tournament_player_stats")
@@ -341,14 +373,16 @@ export async function dropPlayer(
     if (insertError) throw insertError;
   }
 
-  // Update registration status
-  const { error: regError } = await supabase
-    .from("tournament_registrations")
-    .update({ status: "dropped" })
-    .eq("tournament_id", tournamentId)
-    .eq("alt_id", altId);
+  // Update registration status via the drop_registrations RPC — this writes
+  // the tournament_registration_staff row and flips status = 'dropped' in a
+  // single transaction, ensuring the audit trigger fires with full metadata.
+  const { error: dropError } = await supabase.rpc("drop_registrations", {
+    p_registration_ids: [registration.id],
+    p_drop_category: dropInfo?.dropCategory ?? "other",
+    p_drop_notes: dropInfo?.dropNotes ?? "",
+  });
 
-  if (regError) throw regError;
+  if (dropError) throw dropError;
 
   return { success: true };
 }
