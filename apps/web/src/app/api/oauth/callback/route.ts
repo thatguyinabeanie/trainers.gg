@@ -223,10 +223,12 @@ async function handleSignInMode({
     // DID was stored. New accounts always have DID set.
     // Use SECURITY DEFINER RPC to look up auth.users by email (service_role only).
     // Avoids listUsers() pagination — the RPC does a direct indexed lookup.
-    const { data: legacyAuthId, error: legacyLookupError } =
-      await supabase.rpc("get_user_id_by_email", {
+    const { data: legacyAuthId, error: legacyLookupError } = await supabase.rpc(
+      "get_user_id_by_email",
+      {
         p_email: placeholderEmail,
-      });
+      }
+    );
     if (legacyLookupError) {
       console.error(
         "[oauth/callback] get_user_id_by_email (legacy lookup) failed:",
@@ -259,9 +261,26 @@ async function handleSignInMode({
 
   if (existingUser) {
     // Existing user — fetch their email from auth.users (canonical source)
-    const { data: authUserData } = await supabase.auth.admin.getUserById(
-      existingUser.id
-    );
+    const { data: authUserData, error: authUserError } =
+      await supabase.auth.admin.getUserById(existingUser.id);
+
+    if (authUserError) {
+      // Transient auth-admin failure — surface a retryable error rather than
+      // throwing into the generic bluesky_auth_failed path, which has no
+      // "please retry" framing for the user.
+      console.error(
+        "[oauth/callback] getUserById failed for existing user:",
+        authUserError.message
+      );
+      const errorUrl = new URL("/sign-in", baseUrl);
+      errorUrl.searchParams.set("error", "account_lookup_failed");
+      errorUrl.searchParams.set(
+        "error_description",
+        "Could not retrieve your account — please try again"
+      );
+      return NextResponse.redirect(errorUrl);
+    }
+
     const resolvedEmail = authUserData?.user?.email;
 
     if (!resolvedEmail) {
@@ -313,8 +332,13 @@ async function handleSignInMode({
       });
 
     if (authError) {
-      // Check if user already exists in auth (email already registered)
-      if (authError.message?.includes("already been registered")) {
+      // Check if user already exists in auth (email already registered).
+      // Mirror the signup edge function pattern: check the structured code first,
+      // then fall back to the message string for older Supabase versions.
+      if (
+        authError?.code === "email_exists" ||
+        authError?.message?.includes("already been registered")
+      ) {
         // User exists in auth — look up their auth.users id by the deterministic
         // placeholder email via SECURITY DEFINER RPC (service_role only).
         // Avoids listUsers() pagination — the RPC does a direct indexed lookup.
@@ -337,20 +361,46 @@ async function handleSignInMode({
         }
 
         if (foundId) {
-          const { error: updateExistingError } = await supabaseAtproto
-            .from("users")
-            .update({
-              did,
-              pds_status: "pending",
-              image: profile.avatar,
-            })
-            .eq("id", foundId);
+          const { data: updatedExistingRows, error: updateExistingError } =
+            await supabaseAtproto
+              .from("users")
+              .update({
+                did,
+                pds_status: "pending",
+                image: profile.avatar,
+              })
+              .eq("id", foundId)
+              .select("id");
 
           if (updateExistingError) {
             console.error(
               "Failed to update existing user with DID:",
               updateExistingError
             );
+            const errorUrl = new URL("/sign-in", baseUrl);
+            errorUrl.searchParams.set("error", "bluesky_auth_failed");
+            errorUrl.searchParams.set(
+              "error_description",
+              "Account update failed — please try again"
+            );
+            return NextResponse.redirect(errorUrl);
+          }
+
+          // PostgREST returns {data:[], error:null} for a 0-row update.
+          // A missing public.users row means the auth trigger never ran —
+          // signing in would produce a broken session with no profile.
+          if (!updatedExistingRows || updatedExistingRows.length === 0) {
+            console.error(
+              "[oauth/callback] 0-row update on existing user (conflict branch) — public.users row missing",
+              { foundId }
+            );
+            const errorUrl = new URL("/sign-in", baseUrl);
+            errorUrl.searchParams.set("error", "bluesky_auth_failed");
+            errorUrl.searchParams.set(
+              "error_description",
+              "Account profile missing — please contact support"
+            );
+            return NextResponse.redirect(errorUrl);
           }
         }
         // userEmail is already set to placeholderEmail, proceed to magic link
@@ -361,20 +411,46 @@ async function handleSignInMode({
     } else if (authData?.user) {
       // New user created successfully - update their public.users record
       // pds_status = 'pending' — they'll get a trainers.gg PDS when they set a username
-      const { error: newUserUpdateError } = await supabaseAtproto
-        .from("users")
-        .update({
-          did,
-          pds_status: "pending",
-          image: profile.avatar,
-        })
-        .eq("id", authData.user.id);
+      const { data: updatedNewUserRows, error: newUserUpdateError } =
+        await supabaseAtproto
+          .from("users")
+          .update({
+            did,
+            pds_status: "pending",
+            image: profile.avatar,
+          })
+          .eq("id", authData.user.id)
+          .select("id");
 
       if (newUserUpdateError) {
         console.error(
           "Failed to update new user with DID:",
           newUserUpdateError
         );
+        const errorUrl = new URL("/sign-in", baseUrl);
+        errorUrl.searchParams.set("error", "bluesky_auth_failed");
+        errorUrl.searchParams.set(
+          "error_description",
+          "Account setup failed — please try again"
+        );
+        return NextResponse.redirect(errorUrl);
+      }
+
+      // PostgREST returns {data:[], error:null} for a 0-row update.
+      // A missing public.users row means the auth trigger never ran —
+      // signing in would produce a broken session with no profile.
+      if (!updatedNewUserRows || updatedNewUserRows.length === 0) {
+        console.error(
+          "[oauth/callback] 0-row update on new user — public.users row missing",
+          { userId: authData.user.id }
+        );
+        const errorUrl = new URL("/sign-in", baseUrl);
+        errorUrl.searchParams.set("error", "bluesky_auth_failed");
+        errorUrl.searchParams.set(
+          "error_description",
+          "Account profile missing — please contact support"
+        );
+        return NextResponse.redirect(errorUrl);
       }
     }
   }

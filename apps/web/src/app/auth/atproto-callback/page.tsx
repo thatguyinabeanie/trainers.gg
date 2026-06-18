@@ -42,21 +42,10 @@ export default async function AtprotoCallbackPage() {
     // Non-fatal — cookie mutation not permitted in this render context.
   }
 
-  // Fetch the user's email from auth.users (canonical source — email is no
-  // longer stored in public.users).
-  const { data: authUserData, error: authUserError } =
-    await supabase.auth.admin.getUserById(user.id);
-  if (authUserError) {
-    console.error(
-      "[atproto-callback] getUserById failed:",
-      authUserError.message
-    );
-  }
-  const email = authUserData?.user?.email ?? null;
-
-  // For now, redirect to sign-in with a message that they need to use their email
-  // In a future iteration, we could implement passwordless sign-in via magic link
-  // or use a custom token-based approach with Supabase
-  const emailParam = email ? `&email=${encodeURIComponent(email)}` : "";
-  redirect(`/sign-in?message=bluesky_verified${emailParam}`);
+  // Redirect to sign-in — let the user type their own email.
+  // We intentionally do NOT emit the email in the redirect URL: it would
+  // disclose the linked account's address to anyone who can observe the
+  // redirect (browser history, referrer headers, proxy logs), and the
+  // atproto_did cookie that gates this lookup is forgeable.
+  redirect(`/sign-in?message=bluesky_verified`);
 }
