@@ -22,10 +22,10 @@ beforeEach(() => {
 });
 
 describe("useTeamLayout", () => {
-  it("defaults to 1x6 when nothing is persisted", () => {
+  it("defaults to 'single' when nothing is persisted", () => {
     const { result } = renderHook(() => useTeamLayout());
-    expect(result.current.mode).toBe("1x6");
-    expect(result.current.persisted).toBe("1x6");
+    expect(result.current.mode).toBe("single");
+    expect(result.current.persisted).toBe("single");
     expect(result.current.isMobileLocked).toBe(false);
   });
 
@@ -42,19 +42,19 @@ describe("useTeamLayout", () => {
     expect(result.current.mode).toBe("2x3-vertical");
   });
 
-  it("forces 1x6 on mobile but preserves the persisted value", () => {
+  it("forces 'single' on mobile but preserves the persisted value", () => {
     window.localStorage.setItem("tg.team-layout", "2x3-vertical");
     mockUseIsMobile.mockReturnValue(true);
     const { result } = renderHook(() => useTeamLayout());
-    expect(result.current.mode).toBe("1x6");
+    expect(result.current.mode).toBe("single");
     expect(result.current.persisted).toBe("2x3-vertical");
     expect(result.current.isMobileLocked).toBe(true);
   });
 
-  it("rejects invalid persisted values and falls back to default", () => {
+  it("rejects invalid persisted values and falls back to 'single'", () => {
     window.localStorage.setItem("tg.team-layout", "not-a-mode");
     const { result } = renderHook(() => useTeamLayout());
-    expect(result.current.mode).toBe("1x6");
+    expect(result.current.mode).toBe("single");
   });
 
   it("syncs across multiple consumers in the same tab", () => {
@@ -94,17 +94,50 @@ describe("useTeamLayout", () => {
         "2x3-vertical"
       );
     });
+
+    it("migrates legacy '1x6' localStorage value to 'single'", () => {
+      window.localStorage.setItem("tg.team-layout", "1x6");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("single");
+      expect(result.current.persisted).toBe("single");
+      expect(window.localStorage.getItem("tg.team-layout")).toBe("single");
+    });
+
+    it("migrates legacy '2x3' localStorage value to 'single'", () => {
+      window.localStorage.setItem("tg.team-layout", "2x3");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("single");
+      expect(result.current.persisted).toBe("single");
+      expect(window.localStorage.getItem("tg.team-layout")).toBe("single");
+    });
+
+    it("keeps '2x3-vertical' unchanged (surviving multi-col mode)", () => {
+      window.localStorage.setItem("tg.team-layout", "2x3-vertical");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("2x3-vertical");
+      expect(result.current.persisted).toBe("2x3-vertical");
+      expect(window.localStorage.getItem("tg.team-layout")).toBe(
+        "2x3-vertical"
+      );
+    });
   });
 
   describe("URL param sync", () => {
-    it("?layout=compact yields 1x6 and mirrors to localStorage", () => {
+    it("?layout=compact yields 'single' (legacy alias) and mirrors to localStorage", () => {
       mockSearchParams = new URLSearchParams("layout=compact");
       // Pre-seed storage with a different value to verify URL wins + mirror.
       window.localStorage.setItem("tg.team-layout", "2x3-vertical");
       const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("1x6");
-      expect(result.current.persisted).toBe("1x6");
-      expect(window.localStorage.getItem("tg.team-layout")).toBe("1x6");
+      expect(result.current.mode).toBe("single");
+      expect(result.current.persisted).toBe("single");
+      expect(window.localStorage.getItem("tg.team-layout")).toBe("single");
+    });
+
+    it("?layout=single yields 'single'", () => {
+      mockSearchParams = new URLSearchParams("layout=single");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("single");
+      expect(result.current.persisted).toBe("single");
     });
 
     it("?layout=grid yields 2x3-vertical", () => {
@@ -125,15 +158,15 @@ describe("useTeamLayout", () => {
       expect(result.current.persisted).toBe("2x3-vertical");
     });
 
-    it("ignores unrecognised URL values and uses default when storage is empty", () => {
+    it("ignores unrecognised URL values and uses 'single' default when storage is empty", () => {
       mockSearchParams = new URLSearchParams("layout=garbage");
       const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("1x6");
+      expect(result.current.mode).toBe("single");
     });
 
     it("URL takes precedence over localStorage when both are set", () => {
       mockSearchParams = new URLSearchParams("layout=grid");
-      window.localStorage.setItem("tg.team-layout", "1x6");
+      window.localStorage.setItem("tg.team-layout", "single");
       const { result } = renderHook(() => useTeamLayout());
       expect(result.current.mode).toBe("2x3-vertical");
     });
@@ -146,16 +179,16 @@ describe("useTeamLayout", () => {
       });
     });
 
-    it("setMode('1x6') calls router.replace with ?layout=compact", () => {
+    it("setMode('single') calls router.replace with ?layout=single", () => {
       const { result } = renderHook(() => useTeamLayout());
-      act(() => result.current.setMode("1x6"));
-      expect(mockReplace).toHaveBeenCalledWith("?layout=compact", {
+      act(() => result.current.setMode("single"));
+      expect(mockReplace).toHaveBeenCalledWith("?layout=single", {
         scroll: false,
       });
     });
 
     it("setMode preserves other existing search params", () => {
-      mockSearchParams = new URLSearchParams("foo=bar&layout=compact");
+      mockSearchParams = new URLSearchParams("foo=bar&layout=single");
       const { result } = renderHook(() => useTeamLayout());
       act(() => result.current.setMode("2x3-vertical"));
       const lastCall = mockReplace.mock.calls.at(-1)?.[0] as string;
@@ -166,24 +199,31 @@ describe("useTeamLayout", () => {
   });
 
   describe("mobile lock", () => {
-    it("forces 1x6 regardless of persisted value", () => {
+    it("forces 'single' regardless of persisted value", () => {
       mockUseIsMobile.mockReturnValue(true);
       window.localStorage.setItem("tg.team-layout", "2x3-vertical");
       const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("1x6");
+      expect(result.current.mode).toBe("single");
       expect(result.current.isMobileLocked).toBe(true);
       expect(result.current.persisted).toBe("2x3-vertical");
     });
 
-    it("forces 1x6 even when URL requests grid", () => {
+    it("forces 'single' even when URL requests grid", () => {
       mockUseIsMobile.mockReturnValue(true);
       mockSearchParams = new URLSearchParams("layout=grid");
       const { result } = renderHook(() => useTeamLayout());
-      expect(result.current.mode).toBe("1x6");
+      expect(result.current.mode).toBe("single");
       expect(result.current.isMobileLocked).toBe(true);
       // URL value still wins as the persisted preference for when the user
       // returns to a non-mobile viewport.
       expect(result.current.persisted).toBe("2x3-vertical");
+    });
+
+    it("forces 'single' even when storage has '2x3-vertical' and URL is absent", () => {
+      mockUseIsMobile.mockReturnValue(true);
+      window.localStorage.setItem("tg.team-layout", "2x3-vertical");
+      const { result } = renderHook(() => useTeamLayout());
+      expect(result.current.mode).toBe("single");
     });
   });
 });
