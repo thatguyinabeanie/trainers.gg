@@ -24,13 +24,7 @@ import {
   getStatBudget,
 } from "../calc-stat-helpers";
 import { formatSupportsIvs } from "../format-gating";
-import {
-  computeNatureForSuffix,
-  findNatureFor,
-  NEUTRAL_NATURE,
-  DEFAULT_REDUCE_FOR_BOOST,
-  type NatureStat,
-} from "../nature-cycle";
+import { computeNatureForSuffix } from "../nature-cycle";
 import { type StatBoosts } from "../use-calc-state";
 import { RadialFineTune } from "./radial-fine-tune";
 
@@ -61,16 +55,10 @@ const DRAFT_DEBOUNCE_MS = 400;
 const UNINITIALIZED = Symbol();
 
 /**
- * Cycle order for the nature pill: neutral → +ATK → +DEF → +SPA → +SPD → +SPE → neutral.
- * Gives full single-click coverage of all 5 boostable stats without vertex buttons.
+ * All natures, sorted alphabetically — the options for the stat-alignment /
+ * nature single-select dropdown. NATURE_EFFECTS is keyed by nature name.
  */
-const PILL_CYCLE_STATS: readonly NatureStat[] = [
-  "attack",
-  "defense",
-  "specialAttack",
-  "specialDefense",
-  "speed",
-];
+const NATURE_OPTIONS: readonly string[] = Object.keys(NATURE_EFFECTS).sort();
 
 /** EV field map: stat key → pokemon DB column */
 const EV_FIELD: Record<StatKey, keyof Tables<"pokemon">> = {
@@ -878,51 +866,33 @@ export function RadialStatEditor({
         </span>
       </div>
 
-      {/* ── Nature pill ── */}
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          aria-label={`${naturePillLabel}: ${nature}`}
-          onClick={() => {
-            // Cycle through neutral → +ATK → +DEF → +SPA → +SPD → +SPE → neutral.
-            // Covers all 5 boostable stats without per-vertex buttons.
-            const currentBoost = (NATURE_EFFECTS[nature]?.boost ??
-              null) as NatureStat | null;
-            let newNature: string;
-            if (currentBoost === null) {
-              // Neutral → +ATK (Adamant)
-              const firstStat = PILL_CYCLE_STATS[0]!;
-              newNature =
-                findNatureFor(firstStat, DEFAULT_REDUCE_FOR_BOOST[firstStat]) ??
-                NEUTRAL_NATURE;
-            } else {
-              const idx = PILL_CYCLE_STATS.indexOf(currentBoost);
-              const nextIdx = idx + 1;
-              if (nextIdx >= PILL_CYCLE_STATS.length || idx === -1) {
-                // Last stat (or unknown) → neutral
-                newNature = NEUTRAL_NATURE;
-              } else {
-                const nextStat = PILL_CYCLE_STATS[nextIdx]!;
-                newNature =
-                  findNatureFor(nextStat, DEFAULT_REDUCE_FOR_BOOST[nextStat]) ??
-                  NEUTRAL_NATURE;
-              }
-            }
-            onUpdate({ nature: newNature });
-          }}
+      {/* ── Nature pill ── order-first lifts STAT ALIGN / NATURE above the
+          hexagon (the editor is a flex-col; the hexagon, budget, and fine-tune
+          keep their source order below it). */}
+      <div className="order-first flex items-center gap-2">
+        <label
           className={cn(
-            "bg-muted/60 border-border/60 hover:bg-muted text-foreground flex items-center gap-1.5 rounded-md border font-mono text-xs font-semibold transition-colors",
+            "bg-muted/60 border-border/60 hover:bg-muted flex items-center gap-1.5 rounded-md border font-mono text-xs font-semibold transition-colors",
             compact ? "px-2 py-1" : "px-2.5 py-1.5"
           )}
         >
           <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
             {naturePillLabel}
           </span>
-          <span>{nature}</span>
-          <span className="text-muted-foreground" aria-hidden>
-            ▾
-          </span>
-        </button>
+          {/* Single-select dropdown of every nature (alignment in Champions) */}
+          <select
+            value={nature}
+            onChange={(e) => onUpdate({ nature: e.target.value })}
+            aria-label={naturePillLabel}
+            className="text-foreground cursor-pointer bg-transparent font-mono text-xs font-semibold outline-none"
+          >
+            {NATURE_OPTIONS.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
 
         {/* Nature effects: +STAT −STAT */}
         {(natUpShort || natDownShort) && (
