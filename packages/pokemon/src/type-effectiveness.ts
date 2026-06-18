@@ -308,15 +308,24 @@ export const POKEMON_TYPES: Record<string, PokemonType[]> = {
  * Returns an empty array if the species is not found in the dex.
  *
  * Resolution order:
- *   1. Champions mega type overrides — Champions-exclusive megas whose typing
- *      differs from the base species and is not present in @pkmn/dex (e.g.
- *      Staraptor-Mega → Fighting/Flying, Barbaracle-Mega → Rock/Fighting).
+ *   1. Champions mega type overrides — applied unconditionally without a
+ *      `formatId` guard. This is safe because every key in
+ *      `CHAMPIONS_MEGA_TYPE_OVERRIDES` (currently: Staraptor-Mega,
+ *      Barbaracle-Mega) is also present in @pkmn/dex with **identical** types.
+ *      The override is purely an early-exit optimisation — it can never produce
+ *      a different result than step 2 would for the same name, so a
+ *      non-Champions caller passing one of these names receives the correct,
+ *      standard-dex typing regardless. If a future regulation adds a Champions-
+ *      exclusive mega whose typing diverges from @pkmn/dex, a `formatId?`
+ *      parameter must be added at that point.
  *   2. Gen 9 dex (current gen + Past-tagged species like Aerodactyl)
  *   3. Gen 6 dex fallback — standard Gen 6/7 mega forms not in Gen 9
  */
 export function getSpeciesTypes(species: string): PokemonType[] {
   try {
-    // 1. Champions-exclusive mega type overrides (e.g. Staraptor-Mega, Barbaracle-Mega)
+    // 1. Champions mega type overrides (Staraptor-Mega, Barbaracle-Mega).
+    //    Safe to apply unconditionally — types are identical to @pkmn/dex.
+    //    See JSDoc above for the full invariant.
     const override = getChampionsMegaTypeOverride(species);
     if (override !== null) {
       return override.filter((t): t is PokemonType =>

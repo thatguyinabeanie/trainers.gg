@@ -9,19 +9,25 @@ import { REG_MA_BUNDLE } from "./champions-reg-ma";
 import { REG_MB_BUNDLE } from "./champions-reg-mb";
 
 /**
- * Composed map of all Champions-exclusive mega base stats, drawn from
- * all registered regulation bundles (M-A + M-B). M-B is a superset of M-A,
- * but we compose manually from both leaf files to avoid importing from
- * format-legality (which would create a circular dependency).
+ * Composed map of all Champions-exclusive mega base stats, drawn from the
+ * latest regulation bundle (M-B). `REG_MB_BUNDLE.megaStats` is a strict
+ * superset of M-A — it is constructed as
+ *   `new Map([...REG_MA_BUNDLE.megaStats, ...CHAMPIONS_MB_MEGA_STATS])`
+ * in champions-reg-mb.ts, so spreading M-A here again would duplicate every
+ * M-A entry. We reference M-B's already-composed map directly.
  */
-const CHAMPIONS_EXCLUSIVE_MEGA_STATS = new Map([
-  ...REG_MA_BUNDLE.megaStats,
-  ...REG_MB_BUNDLE.megaStats,
-]);
+const CHAMPIONS_EXCLUSIVE_MEGA_STATS = REG_MB_BUNDLE.megaStats;
 
 /**
  * Composed map of all Champions-exclusive mega type overrides from all
  * registered bundles. M-B adds Staraptor-Mega and Barbaracle-Mega.
+ *
+ * NOTE — asymmetry with megaStats: unlike `REG_MB_BUNDLE.megaStats`,
+ * `REG_MB_BUNDLE.megaTypes` is delta-only (it does NOT include a spread of
+ * REG_MA_BUNDLE.megaTypes). Both bundles must be spread here to produce the
+ * full map. REG_MA_BUNDLE.megaTypes is currently empty, but keeping the
+ * double-spread ensures this stays correct if M-A gains type overrides in a
+ * future regulation. Do NOT collapse this to REG_MB_BUNDLE.megaTypes alone.
  */
 const CHAMPIONS_MEGA_TYPE_OVERRIDES: ReadonlyMap<string, readonly string[]> =
   new Map([...REG_MA_BUNDLE.megaTypes, ...REG_MB_BUNDLE.megaTypes]);
@@ -415,25 +421,32 @@ export function calculateStats(
 }
 
 /**
- * Get stat stage multipliers for in-battle stat changes
+ * Stat stage → damage multiplier table. Allocated once at module scope so
+ * `getStatStageMultiplier` — a damage-calc hot path — never reallocates it.
+ * Covers the full legal range [-6, 6]; stages outside this range fall back to 1.
+ */
+const STAT_STAGE_MULTIPLIERS: Readonly<Record<number, number>> = {
+  [-6]: 0.25,
+  [-5]: 0.28,
+  [-4]: 0.33,
+  [-3]: 0.4,
+  [-2]: 0.5,
+  [-1]: 0.66,
+  [0]: 1,
+  [1]: 1.5,
+  [2]: 2,
+  [3]: 2.5,
+  [4]: 3,
+  [5]: 3.5,
+  [6]: 4,
+};
+
+/**
+ * Get stat stage multipliers for in-battle stat changes.
+ * Stages outside the legal [-6, 6] range fall back to 1 (neutral).
  */
 export function getStatStageMultiplier(stage: number): number {
-  const multipliers: Record<number, number> = {
-    [-6]: 0.25,
-    [-5]: 0.28,
-    [-4]: 0.33,
-    [-3]: 0.4,
-    [-2]: 0.5,
-    [-1]: 0.66,
-    [0]: 1,
-    [1]: 1.5,
-    [2]: 2,
-    [3]: 2.5,
-    [4]: 3,
-    [5]: 3.5,
-    [6]: 4,
-  };
-  return multipliers[stage] || 1;
+  return STAT_STAGE_MULTIPLIERS[stage] ?? 1;
 }
 
 /**

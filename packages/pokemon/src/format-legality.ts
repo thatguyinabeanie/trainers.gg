@@ -273,10 +273,6 @@ const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map(
   ALL_CHAMPIONS_BUNDLES.flatMap((b) => b.megaStones)
 );
 
-const MEGA_STONE_SPECIES_SET: ReadonlySet<string> = new Set(
-  MEGA_SPECIES_TO_STONE.keys()
-);
-
 /**
  * Runtime guard: is `species` one of the known mega forms with a mega
  * stone? Drives picker UI and the team-builder mega toggle.
@@ -284,7 +280,7 @@ const MEGA_STONE_SPECIES_SET: ReadonlySet<string> = new Set(
 export function isMegaSpeciesWithStone(
   species: string | null | undefined
 ): species is MegaSpeciesWithStone {
-  return species != null && MEGA_STONE_SPECIES_SET.has(species);
+  return species != null && MEGA_SPECIES_TO_STONE.has(species);
 }
 
 /**
@@ -295,15 +291,11 @@ const MEGA_SPECIES_TO_ABILITY: ReadonlyMap<string, string> = new Map(
   ALL_CHAMPIONS_BUNDLES.flatMap((b) => b.megaAbilities)
 );
 
-const MEGA_ABILITY_SPECIES_SET: ReadonlySet<string> = new Set(
-  MEGA_SPECIES_TO_ABILITY.keys()
-);
-
 /** Runtime guard: does the calculator know a mega ability for `species`? */
 export function isMegaSpeciesWithAbility(
   species: string | null | undefined
 ): species is MegaSpeciesWithAbility {
-  return species != null && MEGA_ABILITY_SPECIES_SET.has(species);
+  return species != null && MEGA_SPECIES_TO_ABILITY.has(species);
 }
 
 // Module-level cache — computed once per process (worker) lifetime, mirroring

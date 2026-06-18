@@ -651,24 +651,6 @@ export function getAvailableGames(): typeof AVAILABLE_GAMES {
 export const ALL_FORMAT_IDS = VGC_FORMATS.map((f) => f.id);
 
 // =============================================================================
-// Sim compatibility helpers
-// =============================================================================
-
-/**
- * Format IDs that exist in VGC_FORMATS but are NOT supported by @pkmn/sim.
- * Used to filter the VGC registry down to sim-compatible entries.
- *
- * - gen9championsvgc2026regma: Champions' synthetic-mega + Stat Points ruleset
- *   isn't expressible to @pkmn/sim (gen-9 base mechanics with curated bans).
- * - gen9championsvgc2026regmb: Same reason — Champions Reg M-B shares the same
- *   Champions-specific mechanics that @pkmn/sim cannot model.
- */
-export const SIM_UNSUPPORTED_FORMAT_IDS: ReadonlySet<string> = new Set([
-  "gen9championsvgc2026regma",
-  "gen9championsvgc2026regmb",
-]);
-
-// =============================================================================
 // Mechanic capability helpers
 // =============================================================================
 
@@ -726,6 +708,24 @@ export function isChampionsFormat(
 ): boolean {
   return !!format && format.gameShort === "Champions";
 }
+
+// =============================================================================
+// Sim compatibility helpers
+// =============================================================================
+
+/**
+ * Format IDs that exist in VGC_FORMATS but are NOT supported by @pkmn/sim.
+ * Used to filter the VGC registry down to sim-compatible entries.
+ *
+ * Derived from VGC_FORMATS — every Champions format is sim-unsupported by
+ * definition: Champions' synthetic-mega + Stat Points ruleset isn't expressible
+ * to @pkmn/sim (gen-9 base mechanics with curated bans). Deriving from the
+ * canonical list means adding a new Champions regulation to VGC_FORMATS
+ * automatically includes it here — no second, easily-missed write.
+ */
+export const SIM_UNSUPPORTED_FORMAT_IDS: ReadonlySet<string> = new Set(
+  VGC_FORMATS.filter(isChampionsFormat).map((f) => f.id)
+);
 
 /**
  * Build a `Record<string, string>` mapping format ID → Showdown display name

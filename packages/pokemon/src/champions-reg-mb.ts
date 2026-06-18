@@ -136,23 +136,8 @@ const CHAMPIONS_MB_LEGAL_SPECIES: ReadonlySet<string> = new Set([
  */
 const CHAMPIONS_MB_LEGAL_ITEMS: ReadonlySet<string> = new Set([
   ...REG_MA_BUNDLE.legalItems,
-  // 16 new mega stones
-  "Raichunite X",
-  "Raichunite Y",
-  "Sceptilite",
-  "Blazikenite",
-  "Swampertite",
-  "Mawilite",
-  "Metagrossite",
-  "Staraptite",
-  "Scolipite",
-  "Scraftinite",
-  "Eelektrossite",
-  "Pyroarite",
-  "Malamarite",
-  "Barbaracite",
-  "Dragalgite",
-  "Falinksite",
+  // 16 new mega stones — derived from MEGA_MB_STONE_ENTRIES to avoid dual-maintenance
+  ...MEGA_MB_STONE_ENTRIES.map(([, stone]) => stone),
   // 15 new held items
   "Wide Lens",
   "Muscle Band",
@@ -184,13 +169,22 @@ const CHAMPIONS_MB_LEGAL_ITEMS: ReadonlySet<string> = new Set([
 const CHAMPIONS_MB_MEGA_STATS: ReadonlyMap<string, MegaStatBlock> = new Map([
   ["Raichu-Mega-X", { hp: 60, atk: 135, def: 95, spa: 90, spd: 95, spe: 110 }],
   ["Raichu-Mega-Y", { hp: 60, atk: 100, def: 55, spa: 160, spd: 80, spe: 130 }],
-  ["Staraptor-Mega", { hp: 85, atk: 140, def: 100, spa: 60, spd: 90, spe: 110 }],
+  [
+    "Staraptor-Mega",
+    { hp: 85, atk: 140, def: 100, spa: 60, spd: 90, spe: 110 },
+  ],
   ["Scolipede-Mega", { hp: 60, atk: 140, def: 149, spa: 75, spd: 99, spe: 62 }],
   ["Scrafty-Mega", { hp: 65, atk: 130, def: 135, spa: 55, spd: 135, spe: 68 }],
-  ["Eelektross-Mega", { hp: 85, atk: 145, def: 80, spa: 135, spd: 90, spe: 80 }],
+  [
+    "Eelektross-Mega",
+    { hp: 85, atk: 145, def: 80, spa: 135, spd: 90, spe: 80 },
+  ],
   ["Pyroar-Mega", { hp: 86, atk: 88, def: 92, spa: 129, spd: 86, spe: 126 }],
   ["Malamar-Mega", { hp: 86, atk: 102, def: 88, spa: 98, spd: 120, spe: 88 }],
-  ["Barbaracle-Mega", { hp: 72, atk: 140, def: 130, spa: 64, spd: 106, spe: 88 }],
+  [
+    "Barbaracle-Mega",
+    { hp: 72, atk: 140, def: 130, spa: 64, spd: 106, spe: 88 },
+  ],
   ["Dragalge-Mega", { hp: 65, atk: 85, def: 105, spa: 132, spd: 163, spe: 44 }],
   ["Falinks-Mega", { hp: 65, atk: 135, def: 135, spa: 70, spd: 65, spe: 100 }],
 ]);
@@ -275,10 +269,7 @@ export const REG_MB_BUNDLE: ChampionsRegBundle = {
   megaStones: [...REG_MA_BUNDLE.megaStones, ...MEGA_MB_STONE_ENTRIES],
   megaAbilities: [...REG_MA_BUNDLE.megaAbilities, ...MEGA_MB_ABILITY_ENTRIES],
   // Composite stat map: M-A entries plus M-B new megas.
-  megaStats: new Map([
-    ...REG_MA_BUNDLE.megaStats,
-    ...CHAMPIONS_MB_MEGA_STATS,
-  ]),
+  megaStats: new Map([...REG_MA_BUNDLE.megaStats, ...CHAMPIONS_MB_MEGA_STATS]),
   // M-B introduces 2 type overrides; M-A had none.
   megaTypes: CHAMPIONS_MB_MEGA_TYPES,
   // M-B introduces 2 custom ability descriptions.
