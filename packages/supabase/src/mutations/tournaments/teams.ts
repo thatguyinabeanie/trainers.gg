@@ -11,7 +11,10 @@ import {
 import { logError } from "@trainers/utils";
 
 import { type TypedClient, getCurrentAlt } from "./helpers";
-import type { ParsedPokemon, ValidationError } from "@trainers/validators/team";
+import {
+  type ParsedPokemon,
+  type ValidationError,
+} from "@trainers/validators/team";
 
 export type SubmitTeamResult =
   | {

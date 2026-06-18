@@ -186,7 +186,8 @@ export async function getAuditLogWithPii(
   supabase: ServiceRoleClient,
   options: Omit<Parameters<typeof getAuditLog>[1], "piiMap"> = {}
 ): Promise<Awaited<ReturnType<typeof getAuditLog>>> {
-  // Single DB round-trip — no second pass for PII.
+  // One audit_log query, then a single batch PII RPC below (not a per-row N+1,
+  // and no second audit_log list/count scan).
   const result = await getAuditLog(supabase, options);
 
   if (result.data.length === 0) return result;
