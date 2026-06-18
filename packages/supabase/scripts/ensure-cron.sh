@@ -21,18 +21,19 @@ set -e
 # the import-tick migration file verbatim as the single source of truth.
 # =============================================================================
 
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
-
 # Skip where there is no local DB (CI/preview build the DB differently).
 if [ -n "$CI" ] || [ -n "$VERCEL" ] || [ -n "$GITHUB_ACTIONS" ] || [ -n "$SKIP_LOCAL_SUPABASE" ]; then
   exit 0
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=_lib.sh
+source "$SCRIPT_DIR/_lib.sh"
 SUPABASE_DIR="$(dirname "$SCRIPT_DIR")"
 MIGRATION_FILE="$SUPABASE_DIR/supabase/migrations/20260611014924_schedule_import_tick_crons.sql"
+GRAPHQL_REVOKE_FILE="$SUPABASE_DIR/supabase/migrations/20260617142717_revoke_graphql_execute_from_public.sql"
 
-CONTAINER="$(docker ps --format '{{.Names}}' | grep -E 'supabase_db' | head -n1)"
+CONTAINER="$(discover_supabase_container)"
 if [ -z "$CONTAINER" ]; then
   printf "${YELLOW}[ensure-cron] No local Supabase DB container — skipping.${NC}\n"
   exit 0
@@ -62,23 +63,10 @@ PSQL_RO="docker exec $CONTAINER psql -U postgres -d postgres -tA"
 # pg_graphql's PUBLIC grant), so the early-exit must NOT skip this. Like pg_cron,
 # this is a supabase_admin operation migrations can't do locally; we run the same
 # REVOKE as supabase_admin so local matches prod (anon/authenticated lose EXECUTE;
-# service_role keeps it). Loops over overloads by oid so no signature is
-# hard-coded. Best-effort — a failure here must not block the stack coming up.
-$PSQL_ADMIN <<'SQL' || printf "${YELLOW}[ensure-cron] GraphQL EXECUTE revoke skipped (see error above) — continuing.${NC}\n"
-DO $$
-DECLARE
-  fn regprocedure;
-BEGIN
-  FOR fn IN
-    SELECT p.oid::regprocedure
-    FROM pg_proc p
-    JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'graphql' AND p.proname = 'resolve'
-  LOOP
-    EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon, authenticated', fn);
-  END LOOP;
-END $$;
-SQL
+# service_role keeps it). The migration file is the single source of truth for
+# this SQL — pipe it directly rather than duplicating the DO-block here.
+# Best-effort — a failure here must not block the stack coming up.
+$PSQL_ADMIN < "$GRAPHQL_REVOKE_FILE" || printf "${YELLOW}[ensure-cron] GraphQL EXECUTE revoke skipped (see error above) — continuing.${NC}\n"
 
 # If the image doesn't even ship pg_cron, skip gracefully (no local cron).
 AVAILABLE="$($PSQL_RO -c "SELECT 1 FROM pg_available_extensions WHERE name='pg_cron';")"

@@ -15,11 +15,10 @@ set -euo pipefail
 # To update: re-fetch scripts/splinter.sql from that source.
 # =============================================================================
 
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=_lib.sh
+source "$SCRIPT_DIR/_lib.sh"
+
 SPLINTER_SQL="$SCRIPT_DIR/splinter.sql"
 
 if [ ! -f "$SPLINTER_SQL" ]; then
@@ -27,7 +26,7 @@ if [ ! -f "$SPLINTER_SQL" ]; then
   exit 1
 fi
 
-CONTAINER="$(docker ps --format '{{.Names}}' | grep -E 'supabase_db' | head -n1)"
+CONTAINER="$(discover_supabase_container)"
 if [ -z "$CONTAINER" ]; then
   printf "${RED}✗ No running Supabase Postgres container found.${NC}\n"
   printf "  Start it first: ${YELLOW}pnpm db:start${NC}\n"
@@ -66,4 +65,4 @@ printf "Running Supabase Security Advisor lints (splinter) on %s [schemas: %s]\n
   echo "select level, count(*) as findings from _advisor_lints"
   echo "  group by level order by array_position(array['ERROR','WARN','INFO']::text[], level);"
   echo "commit;"
-} | docker exec -i "$CONTAINER" psql -U postgres -d postgres -P pager=off
+} | docker exec -i "$CONTAINER" psql -U postgres -d postgres -P pager=off -v ON_ERROR_STOP=1

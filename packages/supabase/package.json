@@ -44,7 +44,6 @@
     "db:seed": "pnpm exec supabase db seed",
     "db:dump": "pnpm exec supabase db dump",
     "db:cron-check": "./scripts/cron-check.sh",
-    "db:cron-diagnose": "./scripts/cron-diagnose.sh",
     "supabase": "pnpm exec supabase"
   },
   "dependencies": {
