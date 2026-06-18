@@ -17,6 +17,19 @@ jest.mock("@trainers/supabase", () => ({
   getAuditLog: (...args: unknown[]) => mockGetAuditLog(...args),
   getPiiByUserIds: (...args: unknown[]) => mockGetPiiByUserIds(...args),
   isSiteAdmin: (...args: unknown[]) => mockIsSiteAdmin(...args),
+  // Runtime enum allowlist the route validates the `actions` param against.
+  Constants: {
+    public: {
+      Enums: {
+        audit_action: [
+          "admin.role_granted",
+          "admin.user_suspended",
+          "tournament.started",
+          "registration.dropped",
+        ],
+      },
+    },
+  },
 }));
 
 jest.mock("@/lib/api/auth", () => ({
@@ -322,6 +335,28 @@ describe("success", () => {
         actions: ["admin.role_granted", "admin.user_suspended"],
       })
     );
+  });
+
+  it("drops unknown action values before querying (enum allowlist)", async () => {
+    mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
+
+    await GET(makeRequest({ actions: "admin.role_granted,not_a_real_action" }));
+
+    expect(mockGetAuditLog).toHaveBeenCalledWith(
+      SERVICE_ROLE_CLIENT,
+      expect.objectContaining({ actions: ["admin.role_granted"] })
+    );
+  });
+
+  it("applies no action filter when every requested action is invalid", async () => {
+    mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
+
+    await GET(makeRequest({ actions: "bogus,also_bogus" }));
+
+    const opts = (mockGetAuditLog.mock.calls[0] as unknown[])[1] as {
+      actions?: unknown;
+    };
+    expect(opts.actions).toBeUndefined();
   });
 
   it("passes entityType param to getAuditLog", async () => {

@@ -41,6 +41,7 @@ import {
   isSiteAdmin,
   getAuditLog,
   getPiiByUserIds,
+  Constants,
   type AuditLogEntry,
   type Database,
 } from "@trainers/supabase";
@@ -62,6 +63,16 @@ const CACHE_CONTROL = "private, no-store";
 /** Maximum page size to prevent runaway queries. */
 const MAX_LIMIT = 200;
 const DEFAULT_LIMIT = 50;
+
+/**
+ * Runtime allowlist of valid `audit_action` enum values. Unknown values passed
+ * via `?actions=` would otherwise reach Postgres and raise a 22P02, leaking the
+ * enum/column name in the 500 response body. Sourced from the generated
+ * Constants so it stays in sync on `pnpm generate-types`.
+ */
+const VALID_AUDIT_ACTIONS = new Set<AuditAction>(
+  Constants.public.Enums.audit_action
+);
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   // Auth required (no anonymous open Data API).
@@ -109,9 +120,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     ? DEFAULT_LIMIT
     : Math.min(Math.max(1, limitParam), MAX_LIMIT);
 
-  const actions: AuditAction[] | undefined = actionsParam
-    ? (actionsParam.split(",").filter(Boolean) as AuditAction[])
-    : undefined;
+  // Validate requested actions against the enum allowlist. Unknown values are
+  // dropped (rather than reaching the DB and raising a 22P02); if nothing valid
+  // remains, apply no action filter.
+  const validActions = actionsParam
+    ? actionsParam
+        .split(",")
+        .filter((a): a is AuditAction =>
+          VALID_AUDIT_ACTIONS.has(a as AuditAction)
+        )
+    : [];
+  const actions: AuditAction[] | undefined =
+    validActions.length > 0 ? validActions : undefined;
 
   const entityType =
     entityTypeParam === "tournament" ||
