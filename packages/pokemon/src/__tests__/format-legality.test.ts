@@ -871,7 +871,7 @@ describe("format-legality — validatePokemonLegality (Champions M-B)", () => {
     expect(result.reason).toBe("Illegal species: Landorus-Therian");
   });
 
-  it("returns illegal item reason for Life Orb on an M-B species (Life Orb IS in M-B)", () => {
+  it("returns legal for Life Orb on an M-B species (Life Orb IS in M-B)", () => {
     // Life Orb is legal in M-B (was added as a new held item)
     expect(
       validatePokemonLegality("Gholdengo", "Good as Gold", "Life Orb", null, MB)

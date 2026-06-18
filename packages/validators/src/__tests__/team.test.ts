@@ -535,7 +535,9 @@ describe("validateChampionsLegality — Champions Reg M-B (gen9championsvgc2026r
   });
 
   it("rejects a species not in the M-B legal list", () => {
-    // Ditto is not in the M-B legal species set
+    // Zubat is not in the M-B legal species set. (Ditto IS legal in M-B —
+    // M-B is a superset of M-A, whose pool includes Ditto — so we use Zubat
+    // for the illegal-species case.)
     const mon = makeMBMon({ species: "Zubat", held_item: null });
     const errors = validateChampionsLegality([mon], FORMAT_ID);
     expect(

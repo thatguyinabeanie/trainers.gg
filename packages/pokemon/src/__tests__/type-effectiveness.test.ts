@@ -318,16 +318,12 @@ describe("getSpeciesTypes — Champions Reg M-B mega type overrides", () => {
     expect(getSpeciesTypes("Barbaracle-Mega")).toEqual(["Rock", "Fighting"]);
   });
 
-  it("resolves Eelektross-Mega as pure Electric via normal @pkmn/dex path (no type override)", () => {
-    // Eelektross-Mega has no megaTypes override entry; it has no secondary type
-    // and its base is Electric — the stats-calculator custom entry does not affect
-    // type resolution. The mega form isn't in Gen 9 dex, so it falls through to
-    // Gen 6. If Gen 6 also doesn't have it, getSpeciesTypes uses the override path.
-    // Either way the result must be Electric (matching the base species typing).
+  it("does not apply a spurious type override to Eelektross-Mega (no megaTypes entry)", () => {
+    // Eelektross-Mega has no megaTypes override, so getChampionsMegaTypeOverride
+    // returns null and type resolution falls through to the dex. The synthetic mega
+    // form may not exist in the dex (so getSpeciesTypes can return []), so we assert
+    // only that NO incorrect override (Fighting/Rock) is applied — not a positive type.
     const types = getSpeciesTypes("Eelektross-Mega");
-    // Eelektross-Mega has no megaTypes entry so getChampionsMegaTypeOverride returns null,
-    // and the function falls through to dex lookups. Since it's not in Gen 9 or Gen 6
-    // as a real mega, it returns []. We assert it does NOT incorrectly apply a type override.
     expect(types).not.toContain("Fighting");
     expect(types).not.toContain("Rock");
   });

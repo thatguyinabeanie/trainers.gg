@@ -343,9 +343,9 @@ const CHAMPIONS_REGMB_SPEED_TIERS: MetaSpeedEntry[] = [
 // =============================================================================
 
 const TIERS_BY_FORMAT: Record<string, MetaSpeedEntry[]> = {
-  // Champions Reg M-A — April 8 through June 17 2026
+  // Champions Reg M-A — 2026-05-01 through 2026-06-16 (see regulation-calendar.ts)
   gen9championsvgc2026regma: CHAMPIONS_REGMA_SPEED_TIERS,
-  // Champions Reg M-B — June 17 2026+; M-A subset + Mega Evolutions
+  // Champions Reg M-B — 2026-06-17 through 2026-09-02; M-A subset + Mega Evolutions (see regulation-calendar.ts)
   gen9championsvgc2026regmb: CHAMPIONS_REGMB_SPEED_TIERS,
 };
 
