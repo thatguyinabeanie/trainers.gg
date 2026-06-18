@@ -25,7 +25,7 @@
     "db:restart": "pnpm exec supabase stop && pnpm exec supabase start && (./scripts/ensure-cron.sh || echo '[ensure-cron] setup failed (dev convenience; see errors above) — continuing')",
     "db:status": "pnpm exec supabase status",
     "functions:serve": "pnpm exec supabase functions serve --no-verify-jwt --env-file .env",
-    "functions:check": "deno check --config supabase/functions/deno.json --sloppy-imports $(ls supabase/functions/*/index.ts | grep -v '/api-')",
+    "functions:check": "find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts -not -path '*/api-*' -exec deno check --config supabase/functions/deno.json --sloppy-imports {} +",
     "vendor:functions": "tsx scripts/vendor-packages.ts",
     "generate-clients": "tsx scripts/generate-clients.ts",
     "test": "jest",
