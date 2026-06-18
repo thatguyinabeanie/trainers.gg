@@ -309,10 +309,28 @@ Deno.serve(async (req) => {
     let isNew = false;
 
     if (existingUser) {
-      // Existing user found by DID — sign them in.
-      // For a Bluesky account the auth email is always the deterministic
-      // placeholder derived from the DID, so we use that directly.
-      userEmail = placeholderEmail;
+      // Existing user found by DID — resolve their REAL email from auth.users.
+      // auth.users is the canonical email store; the placeholder may differ if
+      // the account was created or migrated outside the normal Bluesky flow.
+      // Using a stale placeholder would cause generateLink() to find no user → 500.
+      const { data: existingAuthData, error: existingAuthError } =
+        await supabaseAdmin.auth.admin.getUserById(existingUser.id);
+      if (existingAuthError || !existingAuthData?.user?.email) {
+        console.error(
+          "[bluesky-auth] getUserById for existing user failed:",
+          existingAuthError?.message ?? "no email on user record"
+        );
+        return jsonResponse(
+          {
+            success: false,
+            error: "Failed to resolve account — please try again",
+            code: "SESSION_ERROR",
+          },
+          500,
+          cors
+        );
+      }
+      userEmail = existingAuthData.user.email;
       userId = existingUser.id;
     } else {
       // Fallback: check auth.users by placeholder email for legacy accounts
@@ -387,8 +405,14 @@ Deno.serve(async (req) => {
           });
 
         if (authError) {
-          // Handle "already registered" edge case gracefully
-          if (authError.message?.includes("already been registered")) {
+          // Handle "already registered" edge case gracefully.
+          // Prefer the structured error code (stable across Supabase/Auth versions
+          // and locales); fall back to the English message substring for older auth
+          // versions — mirrors packages/supabase/supabase/functions/signup/index.ts.
+          if (
+            authError.code === "email_exists" ||
+            authError.message?.includes("already been registered")
+          ) {
             // The auth user exists — find their id via SECURITY DEFINER RPC.
             // Avoids listUsers() pagination — the RPC does a direct indexed lookup.
             const { data: conflictAuthId, error: conflictLookupError } =
