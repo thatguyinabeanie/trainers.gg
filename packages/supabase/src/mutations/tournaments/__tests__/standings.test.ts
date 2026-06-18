@@ -396,7 +396,7 @@ describe("Tournament Standings Mutations", () => {
     ) => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      not: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
       maybeSingle: jest.fn().mockResolvedValue({ data, error: null }),
     });
 

@@ -331,7 +331,7 @@ export async function dropPlayer(
     .select("id")
     .eq("tournament_id", tournamentId)
     .eq("alt_id", altId)
-    .not("status", "eq", "dropped")
+    .or("status.is.null,status.neq.dropped")
     .maybeSingle();
 
   if (regLookupError) throw regLookupError;
