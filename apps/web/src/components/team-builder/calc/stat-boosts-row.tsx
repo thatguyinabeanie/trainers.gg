@@ -1,19 +1,26 @@
 "use client";
 
-import { type StatBoosts } from "../use-calc-state";
 import { cn } from "@/lib/utils";
+
+import { type StatKey, STAT_COLOR_CLASS } from "../stat-types";
+import { type StatBoosts } from "../use-calc-state";
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-/** The 5 stat keys that carry boosts (no HP). */
-const BOOST_STATS: { key: keyof StatBoosts; label: string }[] = [
-  { key: "atk", label: "ATK" },
-  { key: "def", label: "DEF" },
-  { key: "spa", label: "SPA" },
-  { key: "spd", label: "SPD" },
-  { key: "spe", label: "SPE" },
+/** The 5 stat keys that carry boosts (no HP). statKey maps to the per-stat
+ *  color class shared with the hexagon spoke labels. */
+const BOOST_STATS: {
+  key: keyof StatBoosts;
+  statKey: StatKey;
+  label: string;
+}[] = [
+  { key: "atk", statKey: "attack", label: "ATK" },
+  { key: "def", statKey: "defense", label: "DEF" },
+  { key: "spa", statKey: "specialAttack", label: "SPA" },
+  { key: "spd", statKey: "specialDefense", label: "SPD" },
+  { key: "spe", statKey: "speed", label: "SPE" },
 ];
 
 /** Stage range clamped to −6…+6. */
@@ -53,8 +60,9 @@ export interface StatBoostsRowProps {
  * - negative → rose (destructive)
  * - zero     → muted
  *
- * Designed to fit inside a stats card; wraps gracefully at 360 px.
- * Tap targets on +/− buttons are ≥40 px (min-w-10 min-h-10).
+ * Single non-wrapping row: a fixed 5-column grid (one stepper per column),
+ * centered. Steppers are compact (size-6 buttons) so all five fit one line
+ * inside the stats card.
  */
 export function StatBoostsRow({
   boosts,
@@ -62,20 +70,30 @@ export function StatBoostsRow({
   className,
 }: StatBoostsRowProps) {
   return (
-    <div className={cn("flex flex-wrap gap-x-2 gap-y-1.5", className)}>
-      {BOOST_STATS.map(({ key, label }) => {
+    <div
+      className={cn(
+        "grid grid-cols-5 items-center justify-items-center gap-1",
+        className
+      )}
+    >
+      {BOOST_STATS.map(({ key, statKey, label }) => {
         const value = boosts[key] ?? 0;
         const atMin = value <= MIN_STAGE;
         const atMax = value >= MAX_STAGE;
 
         return (
-          <div key={key} className="flex min-w-0 flex-col items-center gap-0.5">
-            {/* Stat label */}
-            <span className="text-muted-foreground font-mono text-xs leading-none font-semibold tracking-[0.06em] uppercase">
+          <div key={key} className="flex flex-col items-center gap-0.5">
+            {/* Stat label — same per-stat color as the hexagon spoke labels */}
+            <span
+              className={cn(
+                "font-mono text-xs leading-none font-semibold tracking-[0.06em] uppercase",
+                STAT_COLOR_CLASS[statKey]
+              )}
+            >
               {label}
             </span>
 
-            {/* − value + stepper */}
+            {/* − value + stepper — compact so 5 fit one line */}
             <div className="flex items-center">
               {/* Decrement button */}
               <button
@@ -84,13 +102,10 @@ export function StatBoostsRow({
                 disabled={atMin}
                 aria-label={`Decrease ${label} stage`}
                 className={cn(
-                  // ≥40px tap target on mobile
-                  "flex min-h-10 min-w-10 items-center justify-center rounded-l border font-mono text-sm leading-none",
+                  "flex size-6 items-center justify-center rounded-l border font-mono text-sm leading-none",
                   "border-border bg-card transition-colors",
                   "hover:enabled:bg-muted active:enabled:bg-muted/80",
-                  "disabled:cursor-not-allowed disabled:opacity-30",
-                  // Shrink on sm+ where more space is available
-                  "sm:min-h-7 sm:min-w-7"
+                  "disabled:cursor-not-allowed disabled:opacity-30"
                 )}
               >
                 {/* Proper minus glyph */}
@@ -100,10 +115,7 @@ export function StatBoostsRow({
               {/* Value display */}
               <span
                 className={cn(
-                  "border-border bg-card w-9 border-y py-0 text-center font-mono text-xs leading-none font-semibold tabular-nums",
-                  // min-h matching the button tap target
-                  "flex min-h-10 items-center justify-center",
-                  "sm:min-h-7",
+                  "border-border bg-card flex size-6 items-center justify-center border-y text-center font-mono text-xs leading-none font-semibold tabular-nums",
                   value > 0 && "text-primary border-primary/30 bg-primary/5",
                   value < 0 &&
                     "border-rose-300/50 bg-rose-50 text-rose-600 dark:border-rose-800/50 dark:bg-rose-950/20 dark:text-rose-400",
@@ -122,11 +134,10 @@ export function StatBoostsRow({
                 disabled={atMax}
                 aria-label={`Increase ${label} stage`}
                 className={cn(
-                  "flex min-h-10 min-w-10 items-center justify-center rounded-r border font-mono text-sm leading-none",
+                  "flex size-6 items-center justify-center rounded-r border font-mono text-sm leading-none",
                   "border-border bg-card transition-colors",
                   "hover:enabled:bg-muted active:enabled:bg-muted/80",
-                  "disabled:cursor-not-allowed disabled:opacity-30",
-                  "sm:min-h-7 sm:min-w-7"
+                  "disabled:cursor-not-allowed disabled:opacity-30"
                 )}
               >
                 +

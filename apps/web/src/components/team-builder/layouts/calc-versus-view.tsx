@@ -20,10 +20,13 @@ import {
 
 import { useTargetAsPokemon } from "../calc/use-target-as-pokemon";
 import { FieldControlSurface } from "../calc/field-control-surface";
+import { formatSupportsTera } from "../format-gating";
 import { StatBoostsRow } from "../calc/stat-boosts-row";
 import { MovesLane } from "../lanes/moves-lane";
 import { RadialStatEditor } from "../stats/radial-stat-editor";
 import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
+import { AbilityCell } from "../shared/fields/ability";
+import { ItemCell } from "../shared/fields/item";
 import { SpriteSection } from "../shared/sprite-section";
 import { useIdentityState } from "../shared/use-identity-state";
 import { type UseCalcStateReturn } from "../use-calc-state";
@@ -57,6 +60,14 @@ interface MonHeroContentProps {
   isFoe?: boolean;
   /** Sprite size in px. Desktop two-up passes a large hero size; mobile keeps the default. */
   size?: number;
+  /** Active format — used to hide the Tera chip in formats without Tera (e.g. Champions). */
+  format: GameFormat | undefined;
+  /** Patch handler — drives the editable item/ability cells. */
+  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  /** Sibling item names for the item-dedup hint (your mon only; [] for the target). */
+  teamItems?: string[];
+  /** Whether the held item is a mega stone (shows the MEGA toggle chip). */
+  isMegaStone?: boolean;
 }
 
 function MonHeroContent({
@@ -64,8 +75,13 @@ function MonHeroContent({
   onSpeciesClick,
   isShiny = false,
   size = 136,
+  format,
+  onUpdate,
+  teamItems = [],
+  isMegaStone = false,
 }: MonHeroContentProps) {
   const types = getSpeciesTypes(pokemon.species ?? "");
+  const showTera = formatSupportsTera(format);
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -90,7 +106,7 @@ function MonHeroContent({
             {t}
           </span>
         ))}
-        {pokemon.tera_type && (
+        {showTera && pokemon.tera_type && (
           <span className="border-primary/50 bg-primary/14 text-primary rounded border px-2 py-0.5 font-mono text-xs font-semibold">
             <span className="text-primary/70">T·</span>
             {pokemon.tera_type}
@@ -98,20 +114,26 @@ function MonHeroContent({
         )}
       </div>
 
-      {/* Item + Ability chips */}
-      <div className="flex flex-wrap items-center justify-center gap-1.5">
-        {pokemon.held_item && (
-          <span className="border-border bg-card text-foreground rounded border px-2 py-0.5 font-mono text-xs">
-            <span className="text-muted-foreground">ITEM·</span>
-            {pokemon.held_item}
-          </span>
-        )}
-        {pokemon.ability && (
-          <span className="border-border bg-card text-foreground rounded border px-2 py-0.5 font-mono text-xs">
-            <span className="text-muted-foreground">ABIL·</span>
-            {pokemon.ability}
-          </span>
-        )}
+      {/* Item + Ability — editable (grid variant, same as the solo FocusCard
+          loadout strip). Edits route through onUpdate; for the target,
+          useTargetAsPokemon maps held_item/ability to the calc-state setters. */}
+      <div className="w-full max-w-56 space-y-1">
+        <ItemCell
+          pokemon={pokemon}
+          format={format}
+          teamItems={teamItems}
+          errors={[]}
+          isMegaStone={isMegaStone}
+          onUpdate={onUpdate}
+          variant="grid"
+        />
+        <AbilityCell
+          pokemon={pokemon}
+          format={format}
+          errors={[]}
+          onUpdate={onUpdate}
+          variant="grid"
+        />
       </div>
     </div>
   );
@@ -129,6 +151,10 @@ interface MonHeroProps {
   sideLabelClassName?: string;
   onSpeciesClick: () => void;
   isShiny?: boolean;
+  format: GameFormat | undefined;
+  onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
+  teamItems?: string[];
+  isMegaStone?: boolean;
 }
 
 function MonHero({
@@ -137,6 +163,10 @@ function MonHero({
   sideLabelClassName,
   onSpeciesClick,
   isShiny = false,
+  format,
+  onUpdate,
+  teamItems = [],
+  isMegaStone = false,
 }: MonHeroProps) {
   return (
     <div className="flex flex-col items-center gap-2">
@@ -156,6 +186,10 @@ function MonHero({
         pokemon={pokemon}
         onSpeciesClick={onSpeciesClick}
         isShiny={isShiny}
+        format={format}
+        onUpdate={onUpdate}
+        teamItems={teamItems}
+        isMegaStone={isMegaStone}
       />
     </div>
   );
@@ -222,11 +256,9 @@ function MonStatsCard({
         compact={compact}
       />
 
-      {/* Boosts row — the single place to edit stat-stage boosts */}
+      {/* Boosts row — the single place to edit stat-stage boosts (no label;
+          the colored per-stat steppers are self-explanatory) */}
       <div className="border-border/50 mt-3 border-t border-dashed pt-2.5">
-        <span className="text-muted-foreground mb-1.5 block font-mono text-xs font-bold tracking-[0.10em] uppercase">
-          Boosts
-        </span>
         <StatBoostsRow boosts={boosts} onChange={onBoostChange} />
       </div>
     </div>
@@ -422,7 +454,7 @@ function MobileStatsSheet({
 export function CalcVersusView({
   pokemon,
   format,
-  teamItems: _teamItems = [],
+  teamItems = [],
   onUpdate,
   calc,
 }: CalcVersusViewProps) {
@@ -539,6 +571,10 @@ export function CalcVersusView({
               onSpeciesClick={() => setYourSpeciesOpen(true)}
               isShiny={pokemon.is_shiny ?? false}
               size={200}
+              format={format}
+              onUpdate={onUpdate}
+              teamItems={teamItems}
+              isMegaStone={yourIdentity.isMegaStone}
             />
           </div>
           {/* Center: VS badge — same h-56 so it aligns with the hero band */}
@@ -556,6 +592,9 @@ export function CalcVersusView({
               onSpeciesClick={() => setTargetSpeciesOpen(true)}
               isFoe
               size={200}
+              format={format}
+              onUpdate={target.onUpdate}
+              isMegaStone={targetIdentity.isMegaStone}
             />
           </div>
 
@@ -571,8 +610,10 @@ export function CalcVersusView({
             natureLabel={yourNatureLabel}
             compact
           />
-          {/* Center: field panel — top aligns with stats cards via grid items-start */}
-          <div className="border-border/60 bg-card/60 w-full rounded-xl border p-3 backdrop-blur-sm">
+          {/* Center: field panel — spans the stats + moves bands so the shorter
+              stats cards don't force a tall content row (which left a gap above
+              the moves). self-stretch matches its height to stats+moves. */}
+          <div className="border-border/60 bg-card/60 w-full self-stretch rounded-xl border p-3 backdrop-blur-sm md:row-span-2">
             <FieldControlSurface calc={calc} />
           </div>
           {/* Right: target stats card — compact=true for the two-up versus layout */}
@@ -599,8 +640,6 @@ export function CalcVersusView({
             headerLabel="Moves → damage dealt"
             compact
           />
-          {/* Center: empty — field panel above already fills the center column */}
-          <div />
           {/* Right: incoming moves — compact=true for denser rows in two-up layout */}
           <MonMovesCard
             pokemon={target.pokemon}
@@ -625,6 +664,10 @@ export function CalcVersusView({
             sideLabelClassName="text-muted-foreground"
             onSpeciesClick={() => setYourSpeciesOpen(true)}
             isShiny={pokemon.is_shiny ?? false}
+            format={format}
+            onUpdate={onUpdate}
+            teamItems={teamItems}
+            isMegaStone={yourIdentity.isMegaStone}
           />
 
           {/* Stats collapse trigger */}
@@ -670,6 +713,9 @@ export function CalcVersusView({
             sideLabel="Calc Target · click to edit ▾"
             sideLabelClassName="text-rose-400/80"
             onSpeciesClick={() => setTargetSpeciesOpen(true)}
+            format={format}
+            onUpdate={target.onUpdate}
+            isMegaStone={targetIdentity.isMegaStone}
           />
 
           {/* Stats collapse trigger */}
