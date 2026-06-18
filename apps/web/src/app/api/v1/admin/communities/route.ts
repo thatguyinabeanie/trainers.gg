@@ -29,20 +29,9 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
-import {
-  listCommunitiesAdmin,
-  listOrgRequestsAdmin,
-  isSiteAdmin,
-} from "@trainers/supabase";
-import { type ActionResult } from "@trainers/validators";
+import { listCommunitiesAdmin, listOrgRequestsAdmin } from "@trainers/supabase";
 
-import { resolveApiAuth } from "@/lib/api/auth";
-import {
-  enforceRateLimit,
-  DEFAULT_API_LIMIT,
-  DEFAULT_WINDOW_MS,
-} from "@/lib/api/rate-limit";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { requireApiAdmin } from "@/lib/api/require-admin";
 
 /** Admin-only: must never be stored or replayed by a shared CDN or browser cache. */
 const CACHE_CONTROL = "private, no-store";
@@ -66,46 +55,13 @@ export interface AdminCommunitiesResponse {
   count: number;
 }
 
-export async function GET(
-  request: NextRequest
-): Promise<NextResponse<ActionResult<AdminCommunitiesResponse>>> {
-  // 1. Authenticate — no anonymous open Data API.
-  const auth = await resolveApiAuth(request);
-  if (!auth) {
-    return NextResponse.json(
-      { success: false, error: "Not authenticated" },
-      { status: 401 }
-    );
-  }
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  // Auth + admin check + rate-limit in one call.
+  const gate = await requireApiAdmin(request);
+  if (gate instanceof NextResponse) return gate;
+  const { serviceRole } = gate;
 
-  // 2. Admin check — this endpoint is site-admin–only.
-  //    Use a service-role client so the user_roles lookup bypasses RLS.
-  const serviceRole = createServiceRoleClient();
-  const isAdmin = await isSiteAdmin(serviceRole, auth.userId);
-  if (!isAdmin) {
-    return NextResponse.json(
-      { success: false, error: "Forbidden" },
-      { status: 403 }
-    );
-  }
-
-  // 3. Rate-limit — keyed on userId.
-  const { allowed, resetAt } = await enforceRateLimit({
-    identifier: auth.userId,
-    limit: DEFAULT_API_LIMIT,
-    windowMs: DEFAULT_WINDOW_MS,
-  });
-  if (!allowed) {
-    return NextResponse.json(
-      { success: false, error: "Too many requests" },
-      {
-        status: 429,
-        headers: { "Retry-After": resetAt.toUTCString() },
-      }
-    );
-  }
-
-  // 4. Parse query params.
+  // Parse query params.
   const { searchParams } = request.nextUrl;
   const type = searchParams.get("type") ?? "communities";
   const search = searchParams.get("search") ?? undefined;
@@ -119,7 +75,7 @@ export async function GET(
   const rawOffset = Number(searchParams.get("offset") ?? 0);
   const offset = Number.isNaN(rawOffset) ? 0 : Math.max(0, rawOffset);
 
-  // 5. Fetch via service-role (survives the Phase 2 anon-revoke on base tables).
+  // Fetch via service-role (survives the Phase 2 anon-revoke on base tables).
   if (type === "requests") {
     const result = await listOrgRequestsAdmin(serviceRole, {
       search,

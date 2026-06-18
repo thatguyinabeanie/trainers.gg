@@ -1,5 +1,6 @@
 import type { Database } from "../types";
-import type { TypedClient } from "../client";
+import type { TypedClient, ServiceRoleClient } from "../client";
+import { getPiiByUserIds } from "./admin-users";
 
 type AuditAction = Database["public"]["Enums"]["audit_action"];
 
@@ -161,6 +162,66 @@ export async function getAuditLog(
   });
 
   return { data: enrichedData, count };
+}
+
+/**
+ * Run `getAuditLog` once, derive distinct actor IDs from the returned rows,
+ * fetch PII in a single batch via `getPiiByUserIds`, and merge names onto the
+ * actor objects in-process.
+ *
+ * This replaces the previous two-call pattern in route handlers and server
+ * components (raw fetch → collect actor IDs → re-fetch with piiMap) which paid
+ * the cost of a second DB round-trip — including a duplicate exact-count scan —
+ * and introduced a pagination race (a row inserted between the two reads could
+ * shift the window). The new helper runs the DB query exactly once and enriches
+ * entirely in JavaScript.
+ *
+ * `getPiiByUserIds` degrades gracefully on RPC error (`.catch(() => null)`), so
+ * actor first/last names remain `null` on failure rather than bubbling an error.
+ *
+ * @param supabase - Service-role client (required — audit_log has anon SELECT revoked)
+ * @param options  - Same filter/pagination options as `getAuditLog`, minus `piiMap`
+ */
+export async function getAuditLogWithPii(
+  supabase: ServiceRoleClient,
+  options: Omit<Parameters<typeof getAuditLog>[1], "piiMap"> = {}
+): Promise<Awaited<ReturnType<typeof getAuditLog>>> {
+  // Single DB round-trip — no second pass for PII.
+  const result = await getAuditLog(supabase, options);
+
+  if (result.data.length === 0) return result;
+
+  // Collect distinct actor user IDs from this page.
+  const actorIds = [
+    ...new Set(
+      result.data
+        .map((row) => row.actor_user?.id)
+        .filter((id): id is string => id != null)
+    ),
+  ];
+
+  if (actorIds.length === 0) return result;
+
+  // Batch-fetch PII, degrade gracefully on failure.
+  const piiMap = await getPiiByUserIds(supabase, actorIds).catch(() => null);
+  if (!piiMap) return result;
+
+  // Merge first_name / last_name onto each actor object in-process.
+  const enriched = result.data.map((row) => {
+    const actor = row.actor_user;
+    if (!actor) return row;
+    const pii = piiMap.get(actor.id) ?? null;
+    return {
+      ...row,
+      actor_user: {
+        ...actor,
+        first_name: pii?.first_name ?? null,
+        last_name: pii?.last_name ?? null,
+      },
+    };
+  });
+
+  return { data: enriched, count: result.count };
 }
 
 /**

@@ -119,10 +119,7 @@ describe("authentication", () => {
     const response = await GET(makeRequest());
 
     expect(response.status).toBe(401);
-    expect(await getJson(response)).toEqual({
-      success: false,
-      error: "Not authenticated",
-    });
+    expect(await getJson(response)).toEqual({ error: "Not authenticated" });
     // Should not proceed to admin check or data fetch
     expect(mockIsSiteAdmin).not.toHaveBeenCalled();
     expect(mockListCoaches).not.toHaveBeenCalled();
@@ -141,10 +138,7 @@ describe("authorization", () => {
     const response = await GET(makeRequest());
 
     expect(response.status).toBe(403);
-    expect(await getJson(response)).toEqual({
-      success: false,
-      error: "Forbidden",
-    });
+    expect(await getJson(response)).toEqual({ error: "Forbidden" });
     // Must check admin with the service-role client + resolved userId
     expect(mockIsSiteAdmin).toHaveBeenCalledWith(
       SERVICE_ROLE_CLIENT,

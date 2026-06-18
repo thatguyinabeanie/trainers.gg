@@ -6,16 +6,14 @@
 // Mocks — declared before imports so Jest hoisting works correctly
 // =============================================================================
 
-const mockGetAuditLog = jest.fn();
-const mockGetPiiByUserIds = jest.fn();
+const mockGetAuditLogWithPii = jest.fn();
 const mockEnforceRateLimit = jest.fn();
 const mockResolveApiAuth = jest.fn();
 const mockIsSiteAdmin = jest.fn();
 const mockCreateServiceRoleClient = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
-  getAuditLog: (...args: unknown[]) => mockGetAuditLog(...args),
-  getPiiByUserIds: (...args: unknown[]) => mockGetPiiByUserIds(...args),
+  getAuditLogWithPii: (...args: unknown[]) => mockGetAuditLogWithPii(...args),
   isSiteAdmin: (...args: unknown[]) => mockIsSiteAdmin(...args),
   // Runtime enum allowlist the route validates the `actions` param against.
   Constants: {
@@ -60,8 +58,8 @@ import { GET } from "../route";
 // Helpers
 // =============================================================================
 
-/** Two audit log entries with actor data, no PII yet. */
-const AUDIT_LOG_RESULT = {
+/** Two audit log entries with PII merged in (single-fetch result). */
+const AUDIT_LOG_RESULT_WITH_PII = {
   data: [
     {
       id: 1,
@@ -71,8 +69,8 @@ const AUDIT_LOG_RESULT = {
         id: "user-1",
         username: "admin_trainer",
         image: null,
-        first_name: null,
-        last_name: null,
+        first_name: "Admin",
+        last_name: "Trainer",
       },
       created_at: "2025-01-01T00:00:00Z",
       tournament_id: null,
@@ -88,8 +86,8 @@ const AUDIT_LOG_RESULT = {
         id: "user-2",
         username: "ash_ketchum",
         image: null,
-        first_name: null,
-        last_name: null,
+        first_name: "Ash",
+        last_name: "Ketchum",
       },
       created_at: "2025-01-02T00:00:00Z",
       tournament_id: 99,
@@ -100,34 +98,6 @@ const AUDIT_LOG_RESULT = {
   ],
   count: 2,
 };
-
-/** Same entries but with PII merged in. */
-const AUDIT_LOG_RESULT_WITH_PII = {
-  data: [
-    {
-      ...AUDIT_LOG_RESULT.data[0],
-      actor_user: {
-        ...AUDIT_LOG_RESULT.data[0]!.actor_user,
-        first_name: "Admin",
-        last_name: "Trainer",
-      },
-    },
-    {
-      ...AUDIT_LOG_RESULT.data[1],
-      actor_user: {
-        ...AUDIT_LOG_RESULT.data[1]!.actor_user,
-        first_name: "Ash",
-        last_name: "Ketchum",
-      },
-    },
-  ],
-  count: 2,
-};
-
-const PII_MAP = new Map([
-  ["user-1", { first_name: "Admin", last_name: "Trainer" }],
-  ["user-2", { first_name: "Ash", last_name: "Ketchum" }],
-]);
 
 const AUTHED_COOKIE = {
   mode: "cookie" as const,
@@ -184,12 +154,8 @@ async function getJson(response: Response) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockCreateServiceRoleClient.mockReturnValue(SERVICE_ROLE_CLIENT);
-  // First getAuditLog call (raw, no piiMap) returns raw result.
-  // Second call (with piiMap) returns PII-enriched result.
-  mockGetAuditLog
-    .mockResolvedValueOnce(AUDIT_LOG_RESULT)
-    .mockResolvedValueOnce(AUDIT_LOG_RESULT_WITH_PII);
-  mockGetPiiByUserIds.mockResolvedValue(PII_MAP);
+  // Single-fetch helper returns PII-enriched result directly.
+  mockGetAuditLogWithPii.mockResolvedValue(AUDIT_LOG_RESULT_WITH_PII);
   mockEnforceRateLimit.mockResolvedValue(RATE_LIMIT_OK);
   // Default: anonymous — tests that need auth must override.
   mockResolveApiAuth.mockResolvedValue(null);
@@ -208,7 +174,7 @@ describe("authentication", () => {
     expect(response.status).toBe(401);
     expect(await getJson(response)).toEqual({ error: "Not authenticated" });
     expect(mockIsSiteAdmin).not.toHaveBeenCalled();
-    expect(mockGetAuditLog).not.toHaveBeenCalled();
+    expect(mockGetAuditLogWithPii).not.toHaveBeenCalled();
   });
 });
 
@@ -225,7 +191,7 @@ describe("admin gate", () => {
 
     expect(response.status).toBe(403);
     expect(await getJson(response)).toEqual({ error: "Forbidden" });
-    expect(mockGetAuditLog).not.toHaveBeenCalled();
+    expect(mockGetAuditLogWithPii).not.toHaveBeenCalled();
   });
 
   it("proceeds past the admin gate when isSiteAdmin returns true", async () => {
@@ -235,7 +201,7 @@ describe("admin gate", () => {
     const response = await GET(makeRequest());
 
     expect(response.status).toBe(200);
-    expect(mockGetAuditLog).toHaveBeenCalled();
+    expect(mockGetAuditLogWithPii).toHaveBeenCalled();
   });
 });
 
@@ -253,7 +219,7 @@ describe("rate limiting", () => {
 
     expect(response.status).toBe(429);
     expect(response.headers.get("retry-after")).toBeTruthy();
-    expect(mockGetAuditLog).not.toHaveBeenCalled();
+    expect(mockGetAuditLogWithPii).not.toHaveBeenCalled();
   });
 });
 
@@ -294,33 +260,16 @@ describe("success", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
-  it("calls getAuditLog twice — first raw, then with piiMap populated", async () => {
+  it("calls getAuditLogWithPii exactly once — no double-fetch", async () => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
 
     await GET(makeRequest());
 
-    // First call: no piiMap (raw fetch to collect actor IDs)
-    expect(mockGetAuditLog).toHaveBeenCalledTimes(2);
-    const firstCallOptions = (mockGetAuditLog.mock.calls[0] as unknown[])[1];
-    expect(firstCallOptions).not.toHaveProperty("piiMap");
-
-    // Second call: piiMap populated
-    const secondCallOptions = (mockGetAuditLog.mock.calls[1] as unknown[])[1];
-    expect(secondCallOptions).toHaveProperty("piiMap", PII_MAP);
+    // Single round-trip: the helper handles PII enrichment internally.
+    expect(mockGetAuditLogWithPii).toHaveBeenCalledTimes(1);
   });
 
-  it("calls getPiiByUserIds with the distinct actor IDs", async () => {
-    mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
-
-    await GET(makeRequest());
-
-    expect(mockGetPiiByUserIds).toHaveBeenCalledWith(
-      SERVICE_ROLE_CLIENT,
-      expect.arrayContaining(["user-1", "user-2"])
-    );
-  });
-
-  it("passes actions param as array to getAuditLog", async () => {
+  it("passes actions param as array to getAuditLogWithPii", async () => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
 
     await GET(
@@ -329,7 +278,7 @@ describe("success", () => {
       })
     );
 
-    expect(mockGetAuditLog).toHaveBeenCalledWith(
+    expect(mockGetAuditLogWithPii).toHaveBeenCalledWith(
       SERVICE_ROLE_CLIENT,
       expect.objectContaining({
         actions: ["admin.role_granted", "admin.user_suspended"],
@@ -342,7 +291,7 @@ describe("success", () => {
 
     await GET(makeRequest({ actions: "admin.role_granted,not_a_real_action" }));
 
-    expect(mockGetAuditLog).toHaveBeenCalledWith(
+    expect(mockGetAuditLogWithPii).toHaveBeenCalledWith(
       SERVICE_ROLE_CLIENT,
       expect.objectContaining({ actions: ["admin.role_granted"] })
     );
@@ -353,18 +302,18 @@ describe("success", () => {
 
     await GET(makeRequest({ actions: "bogus,also_bogus" }));
 
-    const opts = (mockGetAuditLog.mock.calls[0] as unknown[])[1] as {
+    const opts = (mockGetAuditLogWithPii.mock.calls[0] as unknown[])[1] as {
       actions?: unknown;
     };
     expect(opts.actions).toBeUndefined();
   });
 
-  it("passes entityType param to getAuditLog", async () => {
+  it("passes entityType param to getAuditLogWithPii", async () => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
 
     await GET(makeRequest({ entityType: "tournament" }));
 
-    expect(mockGetAuditLog).toHaveBeenCalledWith(
+    expect(mockGetAuditLogWithPii).toHaveBeenCalledWith(
       SERVICE_ROLE_CLIENT,
       expect.objectContaining({ entityType: "tournament" })
     );
@@ -375,7 +324,7 @@ describe("success", () => {
 
     await GET(makeRequest({ page: "2", limit: "10" }));
 
-    expect(mockGetAuditLog).toHaveBeenCalledWith(
+    expect(mockGetAuditLogWithPii).toHaveBeenCalledWith(
       SERVICE_ROLE_CLIENT,
       expect.objectContaining({ offset: 20, limit: 10 })
     );
@@ -386,7 +335,7 @@ describe("success", () => {
 
     await GET(makeRequest({ limit: "9999" }));
 
-    expect(mockGetAuditLog).toHaveBeenCalledWith(
+    expect(mockGetAuditLogWithPii).toHaveBeenCalledWith(
       SERVICE_ROLE_CLIENT,
       expect.objectContaining({ limit: 200 })
     );
@@ -394,82 +343,28 @@ describe("success", () => {
 });
 
 // =============================================================================
-// PII enrichment edge cases
+// Empty result
 // =============================================================================
 
-describe("PII enrichment edge cases", () => {
+describe("empty result", () => {
   beforeEach(() => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
     mockIsSiteAdmin.mockResolvedValue(true);
   });
 
-  it("skips the second getAuditLog call when there are no actor IDs", async () => {
-    // Return a page with no actor_user references
-    mockGetAuditLog.mockReset();
-    mockGetAuditLog.mockResolvedValueOnce({ data: [], count: 0 });
+  it("returns 200 with empty data when there are no log entries", async () => {
+    mockGetAuditLogWithPii.mockResolvedValueOnce({ data: [], count: 0 });
 
     const response = await GET(makeRequest());
 
     expect(response.status).toBe(200);
-    // Only called once (raw pass) — no second pass needed
-    expect(mockGetAuditLog).toHaveBeenCalledTimes(1);
-    expect(mockGetPiiByUserIds).not.toHaveBeenCalled();
-  });
-
-  it("falls back to raw result when getPiiByUserIds fails", async () => {
-    mockGetPiiByUserIds.mockRejectedValueOnce(new Error("RPC error"));
-
-    const response = await GET(makeRequest());
-
-    // Should still return 200 with the raw (non-PII-enriched) data
-    expect(response.status).toBe(200);
-    const body = (await getJson(response)) as typeof AUDIT_LOG_RESULT;
-    expect(body.count).toBe(2);
-    // getAuditLog should only have been called once (the raw pass)
-    expect(mockGetAuditLog).toHaveBeenCalledTimes(1);
-  });
-
-  it("deduplicates repeated actor IDs before calling getPiiByUserIds", async () => {
-    // Return a log where the same actor appears twice
-    const duplicateActorLog = {
-      data: [
-        {
-          ...AUDIT_LOG_RESULT.data[0],
-          id: 1,
-          actor_user: {
-            id: "user-1",
-            username: "admin_trainer",
-            image: null,
-            first_name: null,
-            last_name: null,
-          },
-        },
-        {
-          ...AUDIT_LOG_RESULT.data[0],
-          id: 2,
-          actor_user: {
-            id: "user-1",
-            username: "admin_trainer",
-            image: null,
-            first_name: null,
-            last_name: null,
-          },
-        },
-      ],
-      count: 2,
+    const body = (await getJson(response)) as {
+      data: unknown[];
+      count: number;
     };
-    mockGetAuditLog.mockReset();
-    mockGetAuditLog
-      .mockResolvedValueOnce(duplicateActorLog)
-      .mockResolvedValueOnce(duplicateActorLog);
-
-    await GET(makeRequest());
-
-    // getPiiByUserIds should receive deduplicated IDs
-    const calledIds = (
-      mockGetPiiByUserIds.mock.calls[0] as unknown[]
-    )[1] as string[];
-    expect(calledIds).toHaveLength(1);
-    expect(calledIds[0]).toBe("user-1");
+    expect(body.data).toHaveLength(0);
+    expect(body.count).toBe(0);
+    // Still only one call — even for empty pages.
+    expect(mockGetAuditLogWithPii).toHaveBeenCalledTimes(1);
   });
 });

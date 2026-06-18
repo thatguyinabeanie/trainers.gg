@@ -167,6 +167,7 @@ export {
   getTournamentAuditLog,
   getMatchAuditLog,
   getAuditLog,
+  getAuditLogWithPii,
   getAuditLogStats,
 } from "./audit-log";
 export type { AuditLogEntry } from "./audit-log";

@@ -14,50 +14,18 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isSiteAdmin, getAuditLogStats } from "@trainers/supabase";
+import { getAuditLogStats } from "@trainers/supabase";
 
-import { resolveApiAuth } from "@/lib/api/auth";
-import {
-  enforceRateLimit,
-  extractRequestIp,
-  DEFAULT_API_LIMIT,
-  DEFAULT_WINDOW_MS,
-} from "@/lib/api/rate-limit";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { requireApiAdmin } from "@/lib/api/require-admin";
 
 /** Per-user/admin data: never cache in a shared CDN or the browser. */
 const CACHE_CONTROL = "private, no-store";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  // Auth required (no anonymous open Data API).
-  const auth = await resolveApiAuth(request);
-  if (!auth) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
-  // Admin gate — read-only admin check.
-  const serviceRole = createServiceRoleClient();
-  const isAdmin = await isSiteAdmin(serviceRole, auth.userId);
-  if (!isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  // Rate-limit: keyed on userId when authed, request IP as fallback.
-  const identifier = auth.userId ?? extractRequestIp(request);
-  const { allowed, resetAt } = await enforceRateLimit({
-    identifier,
-    limit: DEFAULT_API_LIMIT,
-    windowMs: DEFAULT_WINDOW_MS,
-  });
-  if (!allowed) {
-    return NextResponse.json(
-      { error: "Too many requests" },
-      {
-        status: 429,
-        headers: { "Retry-After": resetAt.toUTCString() },
-      }
-    );
-  }
+  // Auth + admin check + rate-limit in one call.
+  const gate = await requireApiAdmin(request);
+  if (gate instanceof NextResponse) return gate;
+  const { serviceRole } = gate;
 
   const stats = await getAuditLogStats(serviceRole);
 
