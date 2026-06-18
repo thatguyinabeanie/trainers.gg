@@ -509,7 +509,10 @@ export function CalcVersusView({
         gap below the moves on tall viewports (matches the solo single-focus feel).
       */}
       <div className="hidden md:flex md:flex-1 md:items-center md:justify-center">
-        <div className="grid w-full grid-cols-[1fr_18rem_1fr] items-start gap-4">
+        {/* Side columns capped at 28rem (≈ mock's 440px) and the whole grid
+            centered, so the compact cards don't stretch across the full 1fr
+            width and leave the small hexagon floating in a too-wide card. */}
+        <div className="grid w-full grid-cols-[minmax(0,28rem)_18rem_minmax(0,28rem)] items-start justify-center gap-4">
           {/* ── (a) LABEL BAND ──────────────────────────────────────────── */}
           {/* Left: "Your Pokémon" */}
           <div className="flex h-3.5 items-center justify-center">
