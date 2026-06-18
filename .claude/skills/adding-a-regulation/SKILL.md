@@ -13,6 +13,12 @@ All touch-points are in `packages/pokemon/` unless noted. Work top-to-bottom; do
 **Primary source**: `https://www.serebii.net/pokemonchampions/rankedbattle/regulation{x-y}.shtml`
 (e.g. `.../regulationm-c.shtml`)
 
+**Reputable sources only.** Restrict ALL web research to authoritative sources — pass these as `allowed_domains` on every search:
+
+- `serebii.net` (primary) · `bulbapedia.bulbagarden.net` · `smogon.com` · `pokemon.com` · `championships.pokemon.com`
+
+Do NOT use fan/news/aggregator/forum sites (e.g. game8, op.gg, pokebase, thegamehaus, insider-gaming, comicbook, gamesradar, nintendoeverything, rotomlabs, Threads, Reddit, YouTube). If a fact appears only off-allowlist, treat it as **UNCONFIRMED** rather than encoding it.
+
 **Workflow**:
 1. Open the new reg's page AND the previous reg's page side-by-side.
 2. Diff them to isolate the delta (new species, new megas, new items, new abilities).

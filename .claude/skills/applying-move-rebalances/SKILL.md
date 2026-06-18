@@ -131,6 +131,8 @@ reg's `moveChanges`. Make `getMoveData(name, formatId?)` format-aware: for a Cha
 merge the reg bundle's `moveChanges` over the dex values. (Builder display and the damage calc are
 SEPARATE data worlds — see the table at the top; both must reflect a rebalance.)
 
+**Sourcing:** pull move-change values from **reputable sources only** (Serebii primary, Bulbapedia, Smogon, `pokemon.com`/`championships.pokemon.com`) — pass them as `allowed_domains`. Avoid game8/op.gg/pokebase/news-aggregators/forums/YouTube; off-allowlist values are UNCONFIRMED. Full allowlist lives in the `adding-a-regulation` skill.
+
 **Checklist when a reg rebalances moves:**
 - [ ] Damage-relevant deltas (bp / type / `isSlicing` / `isSound`) → calc fork `CHAMPIONS_PATCH` (§2)
 - [ ] EVERY delta (incl. accuracy / PP / secondary / status) → reg bundle `moveChanges` (package side)
