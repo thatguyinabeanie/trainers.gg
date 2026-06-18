@@ -175,6 +175,8 @@ interface MonStatsCardProps {
   ) => void;
   headerLabel: string;
   natureLabel?: string;
+  /** Pass compact=true to shrink the hexagon for two-up layouts. */
+  compact?: boolean;
 }
 
 function MonStatsCard({
@@ -185,9 +187,15 @@ function MonStatsCard({
   onBoostChange,
   headerLabel,
   natureLabel,
+  compact = false,
 }: MonStatsCardProps) {
   return (
-    <div className="border-border/60 bg-card/60 w-full rounded-xl border p-3 backdrop-blur-sm">
+    <div
+      className={cn(
+        "border-border/60 bg-card/60 w-full rounded-xl border backdrop-blur-sm",
+        compact ? "p-2.5" : "p-3"
+      )}
+    >
       {/* Card header */}
       <div className="mb-2.5 flex items-center justify-between">
         <span className="text-muted-foreground font-mono text-[9px] font-semibold tracking-[0.08em] uppercase">
@@ -207,6 +215,7 @@ function MonStatsCard({
         onUpdate={onUpdate}
         boosts={boosts}
         onBoostChange={onBoostChange}
+        compact={compact}
       />
 
       {/* Boosts row */}
@@ -234,6 +243,8 @@ interface MonMovesCardProps {
   >[0][];
   opponent: { species: string; ability: string; item: string; nature: string };
   headerLabel: string;
+  /** Pass compact=true to tighten move rows for two-up layouts. */
+  compact?: boolean;
 }
 
 function MonMovesCard({
@@ -244,9 +255,15 @@ function MonMovesCard({
   outputs,
   opponent,
   headerLabel,
+  compact = false,
 }: MonMovesCardProps) {
   return (
-    <div className="border-border/60 bg-card/60 w-full rounded-xl border p-3 backdrop-blur-sm">
+    <div
+      className={cn(
+        "border-border/60 bg-card/60 w-full rounded-xl border backdrop-blur-sm",
+        compact ? "p-2.5" : "p-3"
+      )}
+    >
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-muted-foreground font-mono text-[9px] font-semibold tracking-[0.08em] uppercase">
           {headerLabel}
@@ -262,6 +279,7 @@ function MonMovesCard({
         direction={direction}
         outputs={outputs}
         opponent={opponent}
+        compact={compact}
       />
     </div>
   );
@@ -535,7 +553,7 @@ export function CalcVersusView({
           </div>
 
           {/* ── (c) CONTENT ROW (stats cards + field panel) ─────────────── */}
-          {/* Left: your stats card */}
+          {/* Left: your stats card — compact=true for the two-up versus layout */}
           <MonStatsCard
             pokemon={pokemon}
             format={format}
@@ -544,12 +562,13 @@ export function CalcVersusView({
             onBoostChange={calc.setAttackerBoost}
             headerLabel="Stats · EVs"
             natureLabel={yourNatureLabel}
+            compact
           />
           {/* Center: field panel — top aligns with stats cards via grid items-start */}
           <div className="border-border/60 bg-card/60 w-full rounded-xl border p-3 backdrop-blur-sm">
             <FieldControlSurface calc={calc} />
           </div>
-          {/* Right: target stats card */}
+          {/* Right: target stats card — compact=true for the two-up versus layout */}
           <MonStatsCard
             pokemon={target.pokemon}
             format={format}
@@ -558,10 +577,11 @@ export function CalcVersusView({
             onBoostChange={calc.setDefenderBoost}
             headerLabel="Stats · EVs"
             natureLabel={targetNatureLabel}
+            compact
           />
 
           {/* ── (d) MOVES ROW ───────────────────────────────────────────── */}
-          {/* Left: outgoing moves */}
+          {/* Left: outgoing moves — compact=true for denser rows in two-up layout */}
           <MonMovesCard
             pokemon={pokemon}
             format={format}
@@ -570,10 +590,11 @@ export function CalcVersusView({
             outputs={outgoingOutputs}
             opponent={targetDescriptor}
             headerLabel="Moves → damage dealt"
+            compact
           />
           {/* Center: empty — field panel above already fills the center column */}
           <div />
-          {/* Right: incoming moves */}
+          {/* Right: incoming moves — compact=true for denser rows in two-up layout */}
           <MonMovesCard
             pokemon={target.pokemon}
             format={format}
@@ -582,6 +603,7 @@ export function CalcVersusView({
             outputs={incomingOutputs}
             opponent={yourDescriptor}
             headerLabel="Moves → damage taken"
+            compact
           />
         </div>
       </div>

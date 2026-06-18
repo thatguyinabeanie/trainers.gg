@@ -45,6 +45,12 @@ export interface RadialStatEditorProps {
   /** Current stat boost stages (atk/def/spa/spd/spe). Only rendered when provided. */
   boosts?: StatBoosts;
   onBoostChange?: (stat: keyof StatBoosts, value: number) => void;
+  /**
+   * When true, renders a smaller/denser hexagon for side-by-side layouts
+   * (e.g. the damage-calc versus view). Defaults to false — the solo
+   * single-focus view is unchanged.
+   */
+  compact?: boolean;
 }
 
 // =============================================================================
@@ -340,6 +346,7 @@ export function RadialStatEditor({
   onUpdate,
   boosts,
   onBoostChange,
+  compact = false,
 }: RadialStatEditorProps) {
   const isChampions = isChampionsFormat(format);
   const showIvs = formatSupportsIvs(format);
@@ -566,8 +573,16 @@ export function RadialStatEditor({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {/* Hexagon canvas — aspect-square, width-capped */}
-      <div className="relative mx-auto aspect-square w-full max-w-sm touch-none select-none">
+      {/* Hexagon canvas — aspect-square, width-capped.
+          compact=false: max-w-sm (384px) — default solo view.
+          compact=true:  max-w-48 (192px) — two-up versus layout. SVG viewBox
+          scales automatically (h-full w-full) so no geometry changes needed. */}
+      <div
+        className={cn(
+          "relative mx-auto aspect-square w-full touch-none select-none",
+          compact ? "max-w-48" : "max-w-sm"
+        )}
+      >
         <svg
           ref={svgRef}
           viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
@@ -787,13 +802,19 @@ export function RadialStatEditor({
       >
         <span
           className={cn(
-            "font-mono text-sm font-bold tabular-nums",
+            "font-mono font-bold tabular-nums",
+            compact ? "text-xs" : "text-sm",
             totalEv > budget.total ? "text-destructive" : "text-foreground"
           )}
         >
           {totalEv}
         </span>
-        <span className="text-muted-foreground font-mono text-sm tabular-nums">
+        <span
+          className={cn(
+            "text-muted-foreground font-mono tabular-nums",
+            compact ? "text-xs" : "text-sm"
+          )}
+        >
           / {budget.total}
         </span>
       </div>
@@ -830,7 +851,10 @@ export function RadialStatEditor({
             }
             onUpdate({ nature: newNature });
           }}
-          className="bg-muted/60 border-border/60 hover:bg-muted text-foreground flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-mono text-xs font-semibold transition-colors"
+          className={cn(
+            "bg-muted/60 border-border/60 hover:bg-muted text-foreground flex items-center gap-1.5 rounded-md border font-mono text-xs font-semibold transition-colors",
+            compact ? "px-2 py-1" : "px-2.5 py-1.5"
+          )}
         >
           <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
             {naturePillLabel}

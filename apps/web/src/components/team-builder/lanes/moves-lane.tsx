@@ -81,6 +81,12 @@ interface MovesLaneProps {
    *   when calc is ON the table path renders as usual.
    */
   presentation?: "list" | "cards-2x2";
+  /**
+   * When true, renders a tighter/denser move table for side-by-side layouts
+   * (e.g. the damage-calc versus view). Defaults to false — the solo
+   * single-focus view is unchanged.
+   */
+  compact?: boolean;
 }
 
 type MoveSlot = "move1" | "move2" | "move3" | "move4";
@@ -278,6 +284,8 @@ interface MoveTileProps {
     item: string;
     nature: string;
   };
+  /** When true, renders a denser row for two-up versus layouts. */
+  compact?: boolean;
 }
 
 function MoveTile({
@@ -290,6 +298,7 @@ function MoveTile({
   slotErrors,
   rowOutputs: injectedOutputs,
   popoverDefender,
+  compact = false,
 }: MoveTileProps) {
   const [panel, setPanel] = useState<TilePanel>(null);
   const rowRef = useRef<HTMLTableRowElement>(null);
@@ -414,7 +423,9 @@ function MoveTile({
               <TooltipTrigger
                 render={<span />}
                 className={cn(
-                  "block max-w-36 truncate text-sm font-medium",
+                  "block max-w-36 truncate font-medium",
+                  /* compact: text-xs (12px) for denser rows; default: text-sm (14px) */
+                  compact ? "text-xs" : "text-sm",
                   !moveName && "text-muted-foreground/50"
                 )}
               >
@@ -820,6 +831,7 @@ interface MovesLaneRealProps {
     | { species: string; ability: string; item: string; nature: string }
     | undefined;
   presentation: "list" | "cards-2x2";
+  compact: boolean;
 }
 
 function MovesLaneReal({
@@ -831,6 +843,7 @@ function MovesLaneReal({
   outputs,
   opponent,
   presentation,
+  compact,
 }: MovesLaneRealProps) {
   const calc = useCalcStateContext();
 
@@ -877,11 +890,19 @@ function MovesLaneReal({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-1 flex-col px-6 py-1 transition-[padding,flex] duration-300 ease-in-out"
+        "flex min-w-0 flex-1 flex-col transition-[padding,flex] duration-300 ease-in-out",
+        /* compact=true: tighter padding for two-up versus layout */
+        compact ? "px-2 py-0.5" : "px-6 py-1"
       )}
     >
       <Table
-        className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */
+        className={cn(
+          "w-full border-separate",
+          /* border-spacing-y: hairline row gap — no Tailwind scale token for sub-4px values */
+          compact
+            ? "border-spacing-y-[2px]" /* 2px hairline when compact */
+            : "border-spacing-y-[3px]" /* 3px hairline default */
+        )}
       >
         <MovesLaneTileGhost />
         <TableBody>
@@ -899,6 +920,7 @@ function MovesLaneReal({
                 slotErrors={slotErrors}
                 rowOutputs={outputs}
                 popoverDefender={popoverDefender}
+                compact={compact}
               />
             );
           })}
@@ -943,6 +965,7 @@ export function MovesLane({
   outputs,
   opponent,
   presentation = "list",
+  compact = false,
 }: MovesLaneProps) {
   if (pokemon === null) return <MovesLaneGhost />;
   return (
@@ -955,6 +978,7 @@ export function MovesLane({
       outputs={outputs}
       opponent={opponent}
       presentation={presentation}
+      compact={compact}
     />
   );
 }
