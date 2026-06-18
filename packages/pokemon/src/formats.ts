@@ -117,6 +117,19 @@ export const VGC_FORMATS: GameFormat[] = [
   // `gameShort === "Champions"`, not the generation number.
   // Showdown format IDs TBD — using placeholder convention until confirmed.
   {
+    id: "gen9championsvgc2026regmb",
+    game: "Pokemon Champions",
+    gameShort: "Champions",
+    generation: 9,
+    category: "VGC",
+    year: 2026,
+    regulation: "M-B",
+    label: "Champions: Reg M-B",
+    showdownName: "[Champions] VGC 2026 Reg M-B",
+    doubles: true,
+    active: true,
+  },
+  {
     id: "gen9championsvgc2026regma",
     game: "Pokemon Champions",
     gameShort: "Champions",
@@ -127,7 +140,7 @@ export const VGC_FORMATS: GameFormat[] = [
     label: "Champions: Reg M-A",
     showdownName: "[Champions] VGC 2026 Reg M-A",
     doubles: true,
-    active: true,
+    active: false,
   },
 
   // =========================================================================
@@ -647,9 +660,12 @@ export const ALL_FORMAT_IDS = VGC_FORMATS.map((f) => f.id);
  *
  * - gen9championsvgc2026regma: Champions' synthetic-mega + Stat Points ruleset
  *   isn't expressible to @pkmn/sim (gen-9 base mechanics with curated bans).
+ * - gen9championsvgc2026regmb: Same reason — Champions Reg M-B shares the same
+ *   Champions-specific mechanics that @pkmn/sim cannot model.
  */
 export const SIM_UNSUPPORTED_FORMAT_IDS: ReadonlySet<string> = new Set([
   "gen9championsvgc2026regma",
+  "gen9championsvgc2026regmb",
 ]);
 
 // =============================================================================

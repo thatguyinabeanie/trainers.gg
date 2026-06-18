@@ -105,8 +105,14 @@ const SPEED_ITEMS: Record<string, SpeedAffectingItem> = {
   },
 };
 
-/** Items that are legal in modern competitive (Reg M-A flavored). Conservative list. */
+/** Items that are legal in modern competitive (Reg M-A / Reg M-B). Conservative list. */
 const MODERN_LEGAL_ITEM_IDS = new Set<string>(["choice-scarf"]);
+
+/** Format IDs that use the modern Champions item set (M-A and M-B share the same rules). */
+const CHAMPIONS_FORMAT_IDS = new Set<string>([
+  "gen9championsvgc2026regma",
+  "gen9championsvgc2026regmb",
+]);
 
 /** Weather → ability id that doubles speed under that weather. */
 const WEATHER_SPEED_ABILITIES: Record<
@@ -249,15 +255,15 @@ export function groupBySpeed<T extends { speed: number }>(
 /**
  * Speed-affecting items legal in a given format.
  *
- * Pulls from the curated catalogue above. For modern Champions Reg M-A this
- * returns just `choice-scarf`. For older / classic formats (currently anything
- * pre-Champions) it returns the full set so calculations and pickers reflect
- * what the format actually allows.
+ * Pulls from the curated catalogue above. For modern Champions formats (Reg
+ * M-A and Reg M-B) this returns just `choice-scarf`. For older / classic
+ * formats it returns the full set so calculations and pickers reflect what the
+ * format actually allows.
  */
 export function getSpeedAffectingItems(
   format: GameFormat
 ): SpeedAffectingItem[] {
-  const useModernSet = format.id === "gen9championsvgc2026regma";
+  const useModernSet = CHAMPIONS_FORMAT_IDS.has(format.id);
   const legalIds = useModernSet
     ? MODERN_LEGAL_ITEM_IDS
     : new Set(Object.keys(SPEED_ITEMS));

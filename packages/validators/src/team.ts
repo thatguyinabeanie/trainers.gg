@@ -28,9 +28,10 @@ import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
  */
 export const FORMAT_MAP = {
   "reg-i": "gen9vgc2025regi",
-  // Champions Reg MA: no @pkmn/sim format ID yet (no Tera, Stat Points instead of EVs/IVs).
+  // Champions Reg MA/MB: no @pkmn/sim format ID yet (no Tera, Stat Points instead of EVs/IVs).
   // Champions legality is checked by `validateChampionsLegality()` instead.
   gen9championsvgc2026regma: null,
+  gen9championsvgc2026regmb: null,
   "reg-h": "gen9vgc2024regh",
   "reg-g": "gen9vgc2024regg",
   "reg-f": "gen9vgc2024regf",
@@ -278,7 +279,7 @@ function validateChampionsStatPoints(
  * - Every Pokemon has at least one move
  * - Every Pokemon has an ability
  * - Pokemon nicknames do not contain profanity
- * - Champions format (gen9championsvgc2026regma): Stat Point limits (max 32 per stat, 66 total)
+ * - Champions formats (gen9championsvgc2026regma, gen9championsvgc2026regmb): Stat Point limits (max 32 per stat, 66 total)
  */
 export function validateTeamStructure(
   team: ParsedTeam,
