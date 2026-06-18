@@ -161,7 +161,6 @@ describe("authentication", () => {
 
     expect(response.status).toBe(401);
     expect(await getJson(response)).toEqual({
-      success: false,
       error: "Not authenticated",
     });
     expect(mockListCommunitiesAdmin).not.toHaveBeenCalled();
@@ -182,7 +181,6 @@ describe("authorization", () => {
 
     expect(response.status).toBe(403);
     expect(await getJson(response)).toEqual({
-      success: false,
       error: "Forbidden",
     });
     expect(mockListCommunitiesAdmin).not.toHaveBeenCalled();
