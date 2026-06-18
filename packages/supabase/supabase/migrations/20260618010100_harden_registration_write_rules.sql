@@ -46,9 +46,6 @@
 -- from the comparison for other reasons):
 --   status       — the primary field managers write (confirm/drop transitions)
 --   team_locked  — toggled by the tournament-start flow
---   notes        — implicitly permitted by the previous denylist (not listed
---                  in the forbidden set); preserved to avoid breaking any
---                  existing manager write that sets notes
 --   id           — PK, never changes in an UPDATE (generated always as identity)
 --   alt_id       — immutable; already guarded by Guard 1 for ALL callers
 --   tournament_id — immutable; already guarded by Guard 1 for ALL callers
@@ -119,13 +116,12 @@ BEGIN
     --
     -- Allowed keys:
     --   status, team_locked  — the two columns managers legitimately write
-    --   notes                — implicitly permitted by the prior denylist
     --   id                   — PK, never changes in UPDATE
     --   alt_id, tournament_id — covered by Guard 1 (immutable for everyone)
-    IF (to_jsonb(NEW) - ARRAY['status', 'team_locked', 'notes',
+    IF (to_jsonb(NEW) - ARRAY['status', 'team_locked',
                                'id', 'alt_id', 'tournament_id'])
          IS DISTINCT FROM
-       (to_jsonb(OLD) - ARRAY['status', 'team_locked', 'notes',
+       (to_jsonb(OLD) - ARRAY['status', 'team_locked',
                                'id', 'alt_id', 'tournament_id'])
     THEN
       RAISE EXCEPTION 'Managers may only change status and team_locked on a registration'
@@ -154,5 +150,5 @@ COMMENT ON FUNCTION public.enforce_registration_write_rules() IS
   'Service-role bypass (AFTER Guard 1): service_role callers may write any '
   'non-immutable column (migration/cron/backfill path). Uses auth.role() = '
   '''service_role'' — NOT auth.uid() IS NULL, which would also exempt anon. '
-  'Guard 2 (non-owner callers): allowlist — only status, team_locked, and '
-  'notes may change. Any new column is blocked by default (fails closed).';
+  'Guard 2 (non-owner callers): allowlist — only status and team_locked may '
+  'change. Any new column is blocked by default (fails closed).';
