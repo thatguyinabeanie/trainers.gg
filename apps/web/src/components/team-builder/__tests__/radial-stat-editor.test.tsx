@@ -8,7 +8,7 @@
  *  • SpokeInput accepts typed EV values and calls onUpdate
  *  • Arrow-key on handle nudges by budget.step
  *  • Budget enforces 510 total (VGC) and 66 total (Champions)
- *  • Nature vertex cycle buttons call onUpdate({ nature })
+ *  • Nature pill cycles through all 5 boostable stats (vertex buttons removed)
  *  • IVs are editable only in non-Champions (formatSupportsIvs)
  *  • Center chip shows invested / total budget
  *  • Draft reset on pokemon.id change
@@ -462,46 +462,64 @@ describe("RadialStatEditor — keyboard handle nudging", () => {
   });
 });
 
-describe("RadialStatEditor — nature cycle buttons", () => {
+describe("RadialStatEditor — nature indicators + pill cycle", () => {
   // -------------------------------------------------------------------------
-  // 14. Nature cycle buttons render for the 5 non-HP stats
+  // 14. No per-vertex nature buttons — they have been removed in favour of
+  //     the nature pill below the hexagon (cleaner UI, less clutter).
   // -------------------------------------------------------------------------
-  it("renders 5 nature cycle buttons (one per non-HP stat)", () => {
+  it("renders NO per-vertex nature cycle buttons (vertex buttons removed)", () => {
     renderEditor();
-    // Each non-HP spoke has a "Cycle nature for <stat>" button
+    // There must be no button whose aria-label contains "cycle nature" —
+    // that was the old vertex-button convention.
     const cycleButtons = screen
       .getAllByRole("button")
       .filter((btn) =>
         btn.getAttribute("aria-label")?.toLowerCase().includes("cycle nature")
       );
-    expect(cycleButtons).toHaveLength(5);
+    expect(cycleButtons).toHaveLength(0);
   });
 
   // -------------------------------------------------------------------------
-  // 15. Clicking a nature cycle button calls onUpdate with the new nature
+  // 15. Nature pill cycles through all 5 stats (covers the gap left by
+  //     removing vertex buttons).
   // -------------------------------------------------------------------------
-  it("clicking Attack nature button from Hardy calls onUpdate with a +Atk nature", () => {
+  it("pill cycles from neutral (Hardy) to +ATK nature on first click", () => {
     const { onUpdate } = renderEditor({ nature: "Hardy" });
-    // Nature cycle button aria-label uses STAT_LABELS: "Cycle nature for Atk"
-    const atkNatureBtn = screen.getByRole("button", {
-      name: /cycle nature for atk/i,
-    });
-    fireEvent.click(atkNatureBtn);
-    expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ nature: expect.any(String) })
+    const pill = screen.getByRole("button", { name: /NATURE: Hardy/i });
+    fireEvent.click(pill);
+    // First click: neutral → +ATK (Adamant/Lonely/Brave/Naughty)
+    const plusAtkNatures = ["Adamant", "Lonely", "Brave", "Naughty"];
+    const calls = onUpdate.mock.calls.map(
+      (c: [Partial<Tables<"pokemon">>]) => c[0]
     );
+    expect(
+      calls.some((c) => c.nature && plusAtkNatures.includes(c.nature as string))
+    ).toBe(true);
   });
 
-  it("clicking Speed nature button from Hardy calls onUpdate with a +Spe nature (Jolly/Timid/…)", () => {
-    const { onUpdate } = renderEditor({ nature: "Hardy" });
-    // Nature cycle button aria-label uses STAT_LABELS: "Cycle nature for Spe"
-    const speBtn = screen.getByRole("button", {
-      name: /cycle nature for spe/i,
-    });
-    fireEvent.click(speBtn);
-    expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ nature: expect.any(String) })
+  it("pill cycles from +ATK to +DEF nature on click", () => {
+    const { onUpdate } = renderEditor({ nature: "Adamant" }); // +ATK
+    const pill = screen.getByRole("button", { name: /NATURE: Adamant/i });
+    fireEvent.click(pill);
+    // Second click: +ATK → +DEF (Bold/Impish/Lax/Relaxed)
+    const plusDefNatures = ["Bold", "Impish", "Lax", "Relaxed"];
+    const calls = onUpdate.mock.calls.map(
+      (c: [Partial<Tables<"pokemon">>]) => c[0]
     );
+    expect(
+      calls.some((c) => c.nature && plusDefNatures.includes(c.nature as string))
+    ).toBe(true);
+  });
+
+  it("pill cycles from +SPE (last stat) back to neutral (Serious)", () => {
+    // Jolly = +SPE / −SPA — the last stat in PILL_CYCLE_STATS
+    const { onUpdate } = renderEditor({ nature: "Jolly" });
+    const pill = screen.getByRole("button", { name: /NATURE: Jolly/i });
+    fireEvent.click(pill);
+    const calls = onUpdate.mock.calls.map(
+      (c: [Partial<Tables<"pokemon">>]) => c[0]
+    );
+    expect(calls.some((c) => c.nature === "Serious")).toBe(true);
   });
 
   // -------------------------------------------------------------------------
@@ -518,6 +536,24 @@ describe("RadialStatEditor — nature cycle buttons", () => {
     renderEditor({ nature: "Adamant" });
     const spaLabel = screen.getByText(/SPA▼/);
     expect(spaLabel).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 16b. Effective stat value is plain (no nature color class on the number)
+  //      — the ▲/▼ arrow is on the label only.
+  // -------------------------------------------------------------------------
+  it("effective stat text does NOT render a ▲ or ▼ prefix for Adamant", () => {
+    renderEditor({ nature: "Adamant" });
+    // The final stat <text> should be a plain number — no arrow prefix.
+    // Verify no text node contains a leading ▲ or ▼ (those belong to labels only).
+    const allText = document.querySelectorAll("svg text")[Symbol.iterator]();
+    const effectiveStatTexts = Array.from(allText).filter(
+      (el) => el.textContent && /^\d/.test(el.textContent.trim())
+    );
+    // None of the numeric stat texts should start with ▲ or ▼
+    for (const el of effectiveStatTexts) {
+      expect(el.textContent?.trim()).not.toMatch(/^[▲▼]/);
+    }
   });
 });
 

@@ -24,7 +24,13 @@ import {
   getStatBudget,
 } from "../calc-stat-helpers";
 import { formatSupportsIvs } from "../format-gating";
-import { cycleNature, computeNatureForSuffix } from "../nature-cycle";
+import {
+  computeNatureForSuffix,
+  findNatureFor,
+  NEUTRAL_NATURE,
+  DEFAULT_REDUCE_FOR_BOOST,
+  type NatureStat,
+} from "../nature-cycle";
 import { type StatBoosts } from "../use-calc-state";
 import { RadialFineTune } from "./radial-fine-tune";
 
@@ -47,6 +53,18 @@ export interface RadialStatEditorProps {
 
 const DRAFT_DEBOUNCE_MS = 400;
 const UNINITIALIZED = Symbol();
+
+/**
+ * Cycle order for the nature pill: neutral → +ATK → +DEF → +SPA → +SPD → +SPE → neutral.
+ * Gives full single-click coverage of all 5 boostable stats without vertex buttons.
+ */
+const PILL_CYCLE_STATS: readonly NatureStat[] = [
+  "attack",
+  "defense",
+  "specialAttack",
+  "specialDefense",
+  "speed",
+];
 
 /** EV field map: stat key → pokemon DB column */
 const EV_FIELD: Record<StatKey, keyof Tables<"pokemon">> = {
@@ -279,13 +297,12 @@ function SpokeInput({
       onKeyDown={handleKeyDown}
       aria-label={`${STAT_SHORT_LABELS[statKey]} investment`}
       className={cn(
-        /* Transparent at rest — ring on focus. 4 chars wide, mono, tiny. */
+        /* Transparent at rest — ring on focus. 4 chars wide, mono, tiny, teal. */
         "focus:ring-primary h-5 w-8 rounded bg-transparent text-center font-mono text-xs outline-none focus:ring-1",
         "border border-transparent focus:border-transparent",
+        "text-primary",
         inputBuffer !== null && "bg-background/80",
-        isNatureBoosted && "text-emerald-600 dark:text-emerald-400",
-        isNatureReduced && "text-rose-600 dark:text-rose-400",
-        !isNatureBoosted && !isNatureReduced && "text-muted-foreground"
+        ev === 0 && inputBuffer === null && "text-muted-foreground/50"
       )}
     />
   );
@@ -300,10 +317,11 @@ function SpokeInput({
  *
  * Layout:
  *  • SVG hexagon — 6 spokes, draggable handles, polygon fill shows spread.
- *  • Each vertex has: nature-cycle button (≥40px hit), draggable EV handle,
- *    typed text input, and final-stat readout.
+ *  • Each vertex has: draggable EV handle, stat label (with ▲/▼), effective
+ *    value (plain), and one editable teal allocated-number input.
  *  • Budget readout BELOW the SVG as "{invested} / {total}" — hexagon center clean.
  *  • Nature pill below budget: STAT ALIGN/NATURE + current nature + effects.
+ *    Clicking cycles through neutral → +ATK → +DEF → +SPA → +SPD → +SPE → neutral.
  *  • "Fine-tune ▾ (± boosts)" expander below for IVs + boost steppers.
  *
  * Primary interactions:
@@ -311,8 +329,7 @@ function SpokeInput({
  *  • ↑/↓ arrow keys on the SVG handle: ±step.
  *  • PageUp/PageDown on the handle: jump to next/prev breakpoint.
  *  • Click-drag on the handle: radius → EV, snapped to budget.step.
- *  • Click on vertex nature zone: cycleNature (neutral → boosted → reduced).
- *  • Click on nature pill: cycle nature for the boosted stat (or open fine-tune).
+ *  • Click on nature pill: cycle through all 5 boostable stats (full coverage).
  *
  * All EV/budget logic is reused verbatim from calc-stat-helpers.ts and
  * nature-cycle.ts — no duplication.
@@ -630,46 +647,12 @@ export function RadialStatEditor({
               isChampions,
             });
 
-            // Nature button lives at the tip (MAX_RADIUS) — separate hit zone
-            const [nx, ny] = polarToXY(STAT_ANGLES[statKey], MAX_RADIUS + 4);
             const colorClass = STAT_COLOR_CLASS[statKey];
 
             const isFocused = focusedHandle === statKey;
 
             return (
               <g key={statKey}>
-                {/* Nature cycle button (≥40px hit area via foreignObject) */}
-                {statKey !== "hp" && (
-                  <foreignObject
-                    x={nx - 20}
-                    y={ny - 20}
-                    width={40}
-                    height={40}
-                    style={{ overflow: "visible" }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newNature = cycleNature(nature, statKey);
-                        if (newNature) onUpdate({ nature: newNature });
-                      }}
-                      aria-label={`Cycle nature for ${STAT_LABELS[statKey]}`}
-                      className={cn(
-                        "flex size-10 items-center justify-center rounded-full text-xs font-bold transition-opacity hover:opacity-70",
-                        isNatureBoosted &&
-                          "text-emerald-500 dark:text-emerald-400",
-                        isNatureReduced && "text-rose-500 dark:text-rose-400",
-                        !isNatureBoosted &&
-                          !isNatureReduced &&
-                          "text-transparent"
-                      )}
-                      tabIndex={-1}
-                    >
-                      {isNatureBoosted ? "▲" : isNatureReduced ? "▼" : "·"}
-                    </button>
-                  </foreignObject>
-                )}
-
                 {/* EV handle dot — always rendered at handleRadius (MIN_RADIUS at 0 EV).
                     Filled teal = has investment; muted fill = 0 investment.
                     A subtle ring outline ensures the dot is always legible at MIN_RADIUS. */}
@@ -746,45 +729,25 @@ export function RadialStatEditor({
                   {isNatureBoosted ? "▲" : isNatureReduced ? "▼" : ""}
                 </text>
 
-                {/* Final stat value — larger, bold */}
+                {/* Final stat value — plain, no nature color (arrow is on the label). */}
                 <text
                   x={lx}
                   y={ly + 7}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className={cn(
-                    "fill-foreground font-mono font-bold tabular-nums",
-                    isNatureBoosted && "fill-emerald-600 dark:fill-emerald-400",
-                    isNatureReduced && "fill-rose-600 dark:fill-rose-400"
-                  )}
+                  className="fill-foreground font-mono font-bold tabular-nums"
                   fontSize={11}
                   aria-hidden
                 >
                   {liveFinalStat}
                 </text>
 
-                {/* Allocated EV/SP — small teal number below the final stat.
-                    Only shown when ev > 0 so zero-investment spokes stay clean. */}
-                {ev > 0 && (
-                  <text
-                    x={lx}
-                    y={ly + 19}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="fill-primary font-mono tabular-nums"
-                    fontSize={8}
-                    aria-hidden
-                  >
-                    {ev}
-                  </text>
-                )}
-
-                {/* Per-spoke EV input — rendered as a foreignObject near the label.
-                    Transparent at rest, ring on focus. Sits below the final stat
-                    and allocated number. */}
+                {/* Allocated EV/SP — single editable teal input (SpokeInput) at y+19.
+                    The teal text element is removed; SpokeInput IS the allocated display.
+                    Shown at a fixed position regardless of EV so layout stays stable. */}
                 <foreignObject
                   x={lx - 16}
-                  y={ly + (ev > 0 ? 22 : 14)}
+                  y={ly + 19}
                   width={32}
                   height={22}
                   style={{ overflow: "visible" }}
@@ -841,10 +804,31 @@ export function RadialStatEditor({
           type="button"
           aria-label={`${naturePillLabel}: ${nature}`}
           onClick={() => {
-            // Cycle nature for the currently boosted stat, or ATK as default
-            const targetStat: StatKey = natUp ?? "attack";
-            const newNature = cycleNature(nature, targetStat);
-            if (newNature) onUpdate({ nature: newNature });
+            // Cycle through neutral → +ATK → +DEF → +SPA → +SPD → +SPE → neutral.
+            // Covers all 5 boostable stats without per-vertex buttons.
+            const currentBoost = (NATURE_EFFECTS[nature]?.boost ??
+              null) as NatureStat | null;
+            let newNature: string;
+            if (currentBoost === null) {
+              // Neutral → +ATK (Adamant)
+              const firstStat = PILL_CYCLE_STATS[0]!;
+              newNature =
+                findNatureFor(firstStat, DEFAULT_REDUCE_FOR_BOOST[firstStat]) ??
+                NEUTRAL_NATURE;
+            } else {
+              const idx = PILL_CYCLE_STATS.indexOf(currentBoost);
+              const nextIdx = idx + 1;
+              if (nextIdx >= PILL_CYCLE_STATS.length || idx === -1) {
+                // Last stat (or unknown) → neutral
+                newNature = NEUTRAL_NATURE;
+              } else {
+                const nextStat = PILL_CYCLE_STATS[nextIdx]!;
+                newNature =
+                  findNatureFor(nextStat, DEFAULT_REDUCE_FOR_BOOST[nextStat]) ??
+                  NEUTRAL_NATURE;
+              }
+            }
+            onUpdate({ nature: newNature });
           }}
           className="bg-muted/60 border-border/60 hover:bg-muted text-foreground flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-mono text-xs font-semibold transition-colors"
         >
