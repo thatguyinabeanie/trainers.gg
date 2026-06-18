@@ -50,6 +50,7 @@ export {
   isNature,
   POKEMON_BASE_STATS,
   getBaseStats,
+  getChampionsMegaTypeOverride,
   calculateHP,
   calculateStat,
   calculateChampionsHP,
@@ -122,6 +123,13 @@ export {
   AdvancedTeamValidator,
 } from "./team-validator";
 
+// Champions regulation bundles (format-specific static legality + calc data)
+export {
+  type ChampionsRegBundle,
+  type MegaStatBlock,
+  REG_MA_BUNDLE,
+} from "./champions-reg-ma";
+
 // Format legality
 export {
   getCanonicalBaseSpecies,
@@ -146,6 +154,7 @@ export {
   type LegalityResult,
   type PokemonLegalityResult,
   LEGALITY_UNAVAILABLE,
+  CHAMPIONS_MA_FORMAT_ID,
   type MegaSpeciesWithStone,
   type MegaSpeciesWithAbility,
   speciesHasForms,

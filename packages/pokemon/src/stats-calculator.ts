@@ -5,71 +5,14 @@
 
 import { Dex } from "@pkmn/dex";
 
-/** Base stats for Champions-exclusive mega forms not present in @pkmn/dex. */
-const CHAMPIONS_EXCLUSIVE_MEGA_STATS: ReadonlyMap<
-  string,
-  {
-    hp: number;
-    atk: number;
-    def: number;
-    spa: number;
-    spd: number;
-    spe: number;
-  }
-> = new Map([
-  [
-    "Chandelure-Mega",
-    { hp: 60, atk: 75, def: 110, spa: 175, spd: 110, spe: 90 },
-  ],
-  [
-    "Chesnaught-Mega",
-    { hp: 88, atk: 147, def: 162, spa: 74, spd: 95, spe: 84 },
-  ],
-  ["Chimecho-Mega", { hp: 75, atk: 50, def: 110, spa: 135, spd: 120, spe: 65 }],
-  ["Clefable-Mega", { hp: 95, atk: 80, def: 93, spa: 135, spd: 110, spe: 70 }],
-  [
-    "Crabominable-Mega",
-    { hp: 97, atk: 157, def: 122, spa: 62, spd: 107, spe: 33 },
-  ],
-  ["Delphox-Mega", { hp: 75, atk: 69, def: 72, spa: 159, spd: 125, spe: 134 }],
-  [
-    "Dragonite-Mega",
-    { hp: 91, atk: 124, def: 115, spa: 145, spd: 125, spe: 100 },
-  ],
-  ["Drampa-Mega", { hp: 78, atk: 85, def: 110, spa: 160, spd: 116, spe: 36 }],
-  ["Emboar-Mega", { hp: 110, atk: 148, def: 75, spa: 110, spd: 110, spe: 75 }],
-  [
-    "Excadrill-Mega",
-    { hp: 110, atk: 165, def: 100, spa: 65, spd: 65, spe: 103 },
-  ],
-  [
-    "Feraligatr-Mega",
-    { hp: 85, atk: 160, def: 125, spa: 89, spd: 93, spe: 78 },
-  ],
-  ["Froslass-Mega", { hp: 70, atk: 80, def: 70, spa: 140, spd: 100, spe: 120 }],
-  ["Glimmora-Mega", { hp: 83, atk: 90, def: 105, spa: 150, spd: 96, spe: 101 }],
-  ["Golurk-Mega", { hp: 89, atk: 159, def: 105, spa: 70, spd: 105, spe: 55 }],
-  ["Greninja-Mega", { hp: 72, atk: 125, def: 77, spa: 133, spd: 81, spe: 142 }],
-  ["Hawlucha-Mega", { hp: 78, atk: 137, def: 100, spa: 74, spd: 93, spe: 118 }],
-  ["Meganium-Mega", { hp: 80, atk: 92, def: 115, spa: 143, spd: 115, spe: 80 }],
-  ["Meowstic-Mega", { hp: 74, atk: 65, def: 85, spa: 121, spd: 95, spe: 115 }],
-  [
-    "Scovillain-Mega",
-    { hp: 65, atk: 138, def: 85, spa: 138, spd: 85, spe: 75 },
-  ],
-  [
-    "Skarmory-Mega",
-    { hp: 65, atk: 140, def: 110, spa: 40, spd: 100, spe: 110 },
-  ],
-  [
-    "Starmie-Mega",
-    { hp: 60, atk: 100, def: 105, spa: 130, spd: 105, spe: 120 },
-  ],
-  [
-    "Victreebel-Mega",
-    { hp: 80, atk: 125, def: 85, spa: 135, spd: 95, spe: 70 },
-  ],
-]);
+import { REG_MA_BUNDLE } from "./champions-reg-ma";
+
+/**
+ * Composed map of all Champions-exclusive mega base stats, drawn from
+ * registered regulation bundles. Currently populated only from M-A.
+ * stats-calculator reads this instead of maintaining its own copy.
+ */
+const CHAMPIONS_EXCLUSIVE_MEGA_STATS = REG_MA_BUNDLE.megaStats;
 
 export interface BaseStats {
   hp: number;
@@ -267,6 +210,33 @@ export function getBaseStats(species: string): BaseStats | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Look up any custom type override for a Champions mega species.
+ *
+ * M-A currently has no entries — `REG_MA_BUNDLE.megaTypes` is an empty Map.
+ * This resolver is wired here so T5 (or any future regulation) can populate
+ * `bundle.megaTypes` without touching the call-site in the damage calculator.
+ *
+ * Synthetic-mega TYPE resolution today:
+ *   - Standard Gen 6/7 megas: types come from @pkmn/dex Gen 6 species data.
+ *     `getBaseStats()` already falls back to Gen 6 for stats; the damage
+ *     calculator reads `types` from the same dex entry via `Dex.forGen(6)`.
+ *   - Champions-exclusive megas (e.g. Greninja-Mega): @pkmn/dex has no entry.
+ *     The damage calculator currently derives types by stripping "-Mega" and
+ *     reading the base species types. Type overrides in `bundle.megaTypes` are
+ *     NOT yet wired into the damage calculator — that wiring is T5's job.
+ *     Call this function from the damage calculator's type resolver to pick up
+ *     overrides once they exist.
+ *
+ * Returns the override type array if present, or null to signal "use default
+ * resolution" (strip "-Mega" → base species types from @pkmn/dex).
+ */
+export function getChampionsMegaTypeOverride(
+  species: string
+): readonly string[] | null {
+  return REG_MA_BUNDLE.megaTypes.get(species) ?? null;
 }
 
 /**
