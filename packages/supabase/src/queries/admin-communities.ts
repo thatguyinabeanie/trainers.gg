@@ -1,6 +1,7 @@
 import { escapeLike } from "@trainers/utils";
 import type { Database } from "../types";
-import type { TypedClient } from "../client";
+import type { TypedClient, ServiceRoleClient } from "../client";
+import { getPiiByUserIds } from "./admin-users";
 
 type OrganizationStatus = Database["public"]["Enums"]["community_status"];
 type OrganizationTier = Database["public"]["Enums"]["community_tier"];
@@ -28,15 +29,18 @@ export interface ListOrganizationsAdminOptions {
 /**
  * List organizations for the admin panel with search, filtering, and pagination.
  *
- * Selects core community fields plus the owner relationship and admin notes
- * from the separate `community_admin_notes` table.
+ * Selects core community fields plus the owner relationship (id, username, image
+ * only — first_name/last_name were moved to private.user_pii in PR #361) and
+ * admin notes from the separate `community_admin_notes` table. Owner names are
+ * enriched via `getPiiByUserIds` after the main query so callers still receive
+ * first_name/last_name on the owner object.
  * Returns data and exact count for pagination.
  *
- * @param supabase - Typed Supabase client
+ * @param supabase - MUST be a service-role client (getPiiByUserIds is service_role-only)
  * @param options - Search, filter, and pagination options
  */
 export async function listCommunitiesAdmin(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   options: ListOrganizationsAdminOptions = {}
 ) {
   const { search, status, tier, limit = 25, offset = 0 } = options;
@@ -54,7 +58,7 @@ export async function listCommunitiesAdmin(
       is_featured,
       created_at,
       updated_at,
-      owner:users!communities_owner_user_id_fkey(id, username, first_name, last_name, image),
+      owner:users!communities_owner_user_id_fkey(id, username, image),
       community_admin_notes(notes, updated_at, updated_by)
     `,
       { count: "exact", head: false }
@@ -79,21 +83,43 @@ export async function listCommunitiesAdmin(
 
   if (error) throw error;
 
-  return { data: data ?? [], count: count ?? 0 };
+  const rows = data ?? [];
+
+  // Collect distinct owner IDs and enrich with first/last name from private.user_pii
+  const ownerIds = rows
+    .map((r) => r.owner?.id)
+    .filter((id): id is string => id != null);
+  const piiMap = await getPiiByUserIds(supabase, ownerIds);
+
+  const enriched = rows.map((r) => ({
+    ...r,
+    owner: r.owner
+      ? {
+          ...r.owner,
+          first_name: piiMap.get(r.owner.id)?.first_name ?? null,
+          last_name: piiMap.get(r.owner.id)?.last_name ?? null,
+        }
+      : null,
+  }));
+
+  return { data: enriched, count: count ?? 0 };
 }
 
 /**
  * Get full admin details for a single organization.
  *
- * Returns all community fields, the owner relationship, and admin notes
- * from the separate `community_admin_notes` table.
+ * Returns all community fields, the owner relationship (id, username, image
+ * only — first_name/last_name were moved to private.user_pii in PR #361), and
+ * admin notes from the separate `community_admin_notes` table. Owner names are
+ * enriched via `getPiiByUserIds` after the main query so callers still receive
+ * first_name/last_name on the owner object.
  * Returns null if the organization is not found.
  *
- * @param supabase - Typed Supabase client
+ * @param supabase - MUST be a service-role client (getPiiByUserIds is service_role-only)
  * @param communityId - Organization ID
  */
 export async function getCommunityAdminDetails(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   communityId: number
 ) {
   const { data, error } = await supabase
@@ -101,7 +127,7 @@ export async function getCommunityAdminDetails(
     .select(
       `
       *,
-      owner:users!communities_owner_user_id_fkey(id, username, first_name, last_name, image),
+      owner:users!communities_owner_user_id_fkey(id, username, image),
       community_admin_notes(notes, updated_at, updated_by)
     `
     )
@@ -109,7 +135,27 @@ export async function getCommunityAdminDetails(
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+  if (!data) return null;
+
+  // Enrich owner with first/last name from private.user_pii
+  const ownerId = data.owner?.id;
+  const piiMap = ownerId
+    ? await getPiiByUserIds(supabase, [ownerId])
+    : new Map<
+        string,
+        { first_name: string | null; last_name: string | null }
+      >();
+
+  return {
+    ...data,
+    owner: data.owner
+      ? {
+          ...data.owner,
+          first_name: piiMap.get(ownerId!)?.first_name ?? null,
+          last_name: piiMap.get(ownerId!)?.last_name ?? null,
+        }
+      : null,
+  };
 }
 
 // ------------------------------------------------------------------

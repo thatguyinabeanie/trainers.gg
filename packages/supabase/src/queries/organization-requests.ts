@@ -1,5 +1,6 @@
 import { escapeLike } from "@trainers/utils";
-import type { TypedClient } from "../client";
+import type { TypedClient, ServiceRoleClient } from "../client";
+import { getPiiByUserIds, getEmailsByUserIds } from "./admin-users";
 
 /**
  * Get the current user's most recent organization request.
@@ -46,10 +47,15 @@ export interface ListOrgRequestsAdminOptions {
 
 /**
  * List organization requests for the admin panel.
- * Joins to users table for requester info.
+ * Joins to users table for requester info (id, username, image only —
+ * first_name/last_name/email were moved out of public.users in PR #361).
+ * Requester names are enriched via getPiiByUserIds and emails via
+ * getEmailsByUserIds after the main query, preserving the original return shape.
+ *
+ * @param supabase - MUST be a service-role client (PII helpers are service_role-only)
  */
 export async function listOrgRequestsAdmin(
-  supabase: TypedClient,
+  supabase: ServiceRoleClient,
   options: ListOrgRequestsAdminOptions = {}
 ) {
   const { search, status, limit = 25, offset = 0 } = options;
@@ -70,7 +76,7 @@ export async function listOrgRequestsAdmin(
       reviewed_at,
       created_at,
       updated_at,
-      requester:users!community_requests_user_id_fkey(id, username, first_name, last_name, image, email)
+      requester:users!community_requests_user_id_fkey(id, username, image)
     `,
       { count: "exact", head: false }
     )
@@ -93,5 +99,29 @@ export async function listOrgRequestsAdmin(
 
   if (error) throw error;
 
-  return { data: data ?? [], count: count ?? 0 };
+  const rows = data ?? [];
+
+  // Collect distinct requester IDs and enrich with PII + email in parallel
+  const requesterIds = rows
+    .map((r) => r.requester?.id)
+    .filter((id): id is string => id != null);
+
+  const [piiMap, emailMap] = await Promise.all([
+    getPiiByUserIds(supabase, requesterIds),
+    getEmailsByUserIds(supabase, requesterIds),
+  ]);
+
+  const enriched = rows.map((r) => ({
+    ...r,
+    requester: r.requester
+      ? {
+          ...r.requester,
+          first_name: piiMap.get(r.requester.id)?.first_name ?? null,
+          last_name: piiMap.get(r.requester.id)?.last_name ?? null,
+          email: emailMap.get(r.requester.id) ?? null,
+        }
+      : null,
+  }));
+
+  return { data: enriched, count: count ?? 0 };
 }
