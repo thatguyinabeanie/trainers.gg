@@ -341,7 +341,37 @@ champions: [
 ],
 ```
 
-## 11. Tests
+## 11. Register in the damage-calc fork
+
+The legality bundle (the `@trainers/pokemon` package side) does **NOT** make the damage calculator support the regulation — `vendor/damage-calc` is an entirely separate data world. Without this step, every new Mega added in the bundle will silently calculate 0 damage for all moves because the calc has never heard of them.
+
+### Files to edit in `vendor/damage-calc/calc/src/`
+
+| File | What to add |
+| --- | --- |
+| `data/species.ts` | Add every new base species AND each of its new Mega formes to `CHAMPIONS_LIST`. A forme definition alone is NOT enough — `otherFormes` are filtered to `CHAMPIONS_LIST`, so both the base and the Mega must appear as explicit entries. |
+| `data/abilities.ts` | Add new ability names to the `CHAMPIONS` array (the names list used for validation and UI). |
+| `mechanics/champions.ts` | Implement calc-relevant ability effects (damage multipliers, type-changing effects, etc.) for any brand-new Champions ability (e.g. Eelevate, Fire Mane). |
+| `data/moves.ts` | Add move stat patches to `CHAMPIONS_PATCH` for any move rebalances the new reg introduces. |
+
+For the detailed how-to on each file — including the exact shape of a `CHAMPIONS_PATCH` entry, how ability effect hooks work, and how to run the fork test suite — see the `applying-move-rebalances` skill. This step is a checklist pointer; that skill is the implementation guide.
+
+### After editing the fork
+
+1. Rebuild `dist/`: run the fork's build script inside `vendor/damage-calc/` (see `applying-move-rebalances` skill for the exact command).
+2. Run the fork's test suite to confirm no regressions.
+3. Bump the submodule pointer: `git add vendor/damage-calc && git commit` at the repo root so the new `dist/` is picked up.
+
+### Checklist
+
+- [ ] All new base species added to `CHAMPIONS_LIST` in `data/species.ts`
+- [ ] All new Mega formes added to `CHAMPIONS_LIST` in `data/species.ts`
+- [ ] New ability names added to the `CHAMPIONS` array in `data/abilities.ts`
+- [ ] Calc-relevant ability effects implemented in `mechanics/champions.ts`
+- [ ] Move rebalances added to `CHAMPIONS_PATCH` in `data/moves.ts` (if applicable)
+- [ ] Fork `dist/` rebuilt and committed to the submodule
+
+## 12. Tests
 
 Add tests in `packages/pokemon/src/__tests__/`:
 
@@ -407,7 +437,9 @@ pnpm test --filter @trainers/validators
 pnpm typecheck --filter @trainers/pokemon --filter @trainers/validators
 ```
 
-## 12. Reconcile manual overrides with upstream @pkmn
+**Verify in the actual damage calculator, not just the builder** — they use different data sources. The builder reads the legality bundle; the damage calculator reads `vendor/damage-calc/calc/src/data/`. Open a team in the builder UI, navigate to the damage calc, and confirm the new Megas can deal and receive damage. If the species list in the calc shows nothing for the new reg, step 11 (fork registration) was likely missed or the submodule was not bumped.
+
+## 13. Reconcile manual overrides with upstream @pkmn
 
 After adding a new regulation, run the `reconciling-pkmn-overrides` skill — some "brand-new" content may already be present upstream by the time the reg drops. That skill covers the full procedure: which override categories to probe, the exact dex queries to use, the guard-test pattern, and when to delete vs. investigate a discrepancy.
 
