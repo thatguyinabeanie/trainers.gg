@@ -1071,8 +1071,11 @@ export function TeamWorkspaceV2({
                   </div>
                 </ResizablePanel>
 
-                {/* Right panel: Damage Calc (conditional) */}
-                {state.rightDrawer === "calc" && (
+                {/* Right panel: Damage Calc (conditional).
+                    Grid mode only — in single-focus, the in-stage versus view
+                    (CalcVersusView) provides the target editor + field controls,
+                    so this drawer would be redundant. */}
+                {state.rightDrawer === "calc" && layoutMode !== "single" && (
                   <>
                     <ResizableHandle variant="ghost" />
                     <ResizablePanel
@@ -1273,7 +1276,10 @@ export function TeamWorkspaceV2({
                   </div>
                 </div>
 
-                {state.rightDrawer === "calc" && (
+                {/* Grid mode only — single-focus (incl. all mobile) uses the
+                    in-stage versus view instead of this drawer. Mobile always
+                    forces "single", so this never renders on mobile. */}
+                {state.rightDrawer === "calc" && layoutMode !== "single" && (
                   <div className="w-full border-t p-3">
                     <CalcBottomPanel
                       teamSlots={slots}
