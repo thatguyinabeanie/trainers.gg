@@ -16,7 +16,6 @@ import {
   getBaseStats,
   getCanonicalBaseSpecies,
   getMegaAbilityForSpecies,
-  getMegaSpeciesForBaseAndItem,
   getSpeciesTypes,
   isChampionsFormat,
 } from "@trainers/pokemon";
@@ -438,27 +437,24 @@ function buildAttackerFromDb(
     // mega's species + post-evolution ability. When OFF, simulate as the
     // base form (pre-mega turn 1, or two-megas scenario where THIS Pokemon
     // doesn't mega this match).
+    // Mega handling: the species itself is the source of truth — the builder's
+    // MEGA chip sets the mega form explicitly. When the species is a mega form
+    // and the per-calc mega toggle is OFF, simulate the base form (pre-mega
+    // turn 1 / two-megas scenario). We do NOT auto-upgrade a base species that
+    // merely holds its mega stone — toggling the MEGA chip must drive the calc.
     const isMegaForm = getMegaAbilityForSpecies(db.species) !== null;
-    const megaFromItem = !isMegaForm
-      ? getMegaSpeciesForBaseAndItem(db.species, db.held_item ?? "")
-      : null;
-    const canMega = isMegaForm || megaFromItem !== null;
-    const megaSpecies = isMegaForm ? db.species : megaFromItem;
     const effectiveSpecies =
-      canMega && megaActive && megaSpecies
-        ? megaSpecies
-        : canMega && !megaActive && isMegaForm
-          ? getCanonicalBaseSpecies(db.species)
-          : db.species;
-    // Verify the effective species (which may differ from db.species after mega
-    // resolution) also has known base stats before constructing.
+      isMegaForm && !megaActive
+        ? getCanonicalBaseSpecies(db.species)
+        : db.species;
+    // Verify the effective species has known base stats before constructing.
     if (!getBaseStats(effectiveSpecies)) return null;
     // Also verify the species exists in @smogon/calc's gen data — @pkmn/dex
     // and @smogon/calc have different species coverage per gen.
     if (!calcGenKnowsSpecies(gen, effectiveSpecies)) return null;
     const calcAbility =
-      canMega && megaActive && megaSpecies
-        ? (getMegaAbilityForSpecies(megaSpecies) ?? db.ability ?? null)
+      isMegaForm && megaActive
+        ? (getMegaAbilityForSpecies(db.species) ?? db.ability ?? null)
         : (db.ability ?? null);
     return new Pokemon(gen, effectiveSpecies, {
       level: db.level ?? 50,
@@ -500,23 +496,13 @@ function buildDefenderPokemon(
 ): Pokemon | null {
   if (!species) return null;
   try {
-    // Per-calc mega toggle (see buildAttackerFromDb).
+    // Mega handling — species is the source of truth (see buildAttackerFromDb).
     const isMegaForm = getMegaAbilityForSpecies(species) !== null;
-    // Also handle base species holding its mega stone
-    const megaFromItem = !isMegaForm
-      ? getMegaSpeciesForBaseAndItem(species, item)
-      : null;
-    const canMega = isMegaForm || megaFromItem !== null;
-    const megaSpecies = isMegaForm ? species : megaFromItem;
     const effectiveSpecies =
-      canMega && megaActive && megaSpecies
-        ? megaSpecies
-        : canMega && !megaActive && isMegaForm
-          ? getCanonicalBaseSpecies(species)
-          : species;
+      isMegaForm && !megaActive ? getCanonicalBaseSpecies(species) : species;
     const calcAbility =
-      canMega && megaActive && megaSpecies
-        ? (getMegaAbilityForSpecies(megaSpecies) ?? ability)
+      isMegaForm && megaActive
+        ? (getMegaAbilityForSpecies(species) ?? ability)
         : ability;
     // Bail if the species has no base stats in @pkmn/dex.
     if (!getBaseStats(effectiveSpecies)) return null;
