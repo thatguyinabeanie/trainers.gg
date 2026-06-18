@@ -108,10 +108,10 @@ function SpriteTab({
         "rounded-lg px-1 py-1 transition-all duration-150",
         // Active lift
         isActive && "-translate-y-0.5",
-        // Active empty tab — teal dashed ring (no inline style needed — Tailwind)
+        // Active empty tab — primary dashed ring (OKLCH primary token via Tailwind)
         isActive &&
           !pokemon &&
-          "outline outline-2 outline-offset-2 outline-teal-500 outline-dashed",
+          "outline-primary outline outline-2 outline-offset-2 outline-dashed",
         // Drag ghost opacity
         isDragging && "opacity-40",
         // Hover state for interactive feedback

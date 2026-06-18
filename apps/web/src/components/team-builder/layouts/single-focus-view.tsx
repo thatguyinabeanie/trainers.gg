@@ -341,8 +341,8 @@ export function SingleFocusView({
                 aria-pressed={i === activeIdx}
                 onClick={() => activateClamped(i)}
                 className={cn(
-                  // ≥40px hit area; tiny visual dot
-                  "flex size-5 items-center justify-center",
+                  // ≥40px hit area on mobile; shrinks on sm+ for visual compactness
+                  "flex size-10 items-center justify-center sm:size-5",
                   "rounded-full transition-all duration-150"
                 )}
               >
