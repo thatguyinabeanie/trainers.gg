@@ -407,6 +407,38 @@ pnpm test --filter @trainers/validators
 pnpm typecheck --filter @trainers/pokemon --filter @trainers/validators
 ```
 
+## 12. Reconcile manual overrides with upstream @pkmn
+
+Several bundle fields exist **only because** `@pkmn`/`@smogon/calc` does not yet ship Champions/Z-A data: `megaStats`, `megaTypes`, `abilityDescs`, the brand-new abilities in `megaAbilities`, and synthetic-mega `legalAbilities`. Once upstream adds that data (a `@pkmn/*` bump or a `vendor/damage-calc` submodule update), our manual entries become **redundant and can silently drift** — the override shadows the dex, so a corrected upstream stat/type/effect never reaches the calc.
+
+**Run this reconciliation:**
+- every time you add a new regulation (some "brand-new" content may already be upstream by then), **and**
+- whenever you bump the `vendor/damage-calc` submodule or any `@pkmn/*` dependency.
+
+For each manually-added entry, probe the dex the same way the resolver does, and **delete the override** if upstream now covers it (let the dex be the source of truth):
+
+```ts
+import { Dex } from "@pkmn/dex"; // or the project's calc Dex import
+
+// Synthetic mega stats / types: if the dex now resolves the forme, remove the
+// megaStats entry (and the megaTypes entry, if upstream's types match) so
+// getBaseStats() / type resolution fall through to the dex.
+const mon = Dex.forGen(9).species.get("Eelektross-Mega");
+if (mon?.exists && mon.baseStats) {
+  /* upstream now has it -> drop from megaStats / megaTypes */
+}
+
+// Brand-new abilities: if the dex knows the ability, drop the abilityDescs entry
+// (its shortDesc becomes the source of truth) and confirm the calc fork now
+// implements the effect.
+const ability = Dex.forGen(9).abilities.get("Eelevate");
+if (ability?.exists) {
+  /* upstream now has it -> drop from abilityDescs */
+}
+```
+
+**Rule:** the bundle should hold only what upstream still lacks; never keep a manual value that *disagrees* with a now-present upstream value. To catch drift automatically, add a guard test asserting each `megaStats`/`abilityDescs`/`megaTypes` key is still **absent** from the dex — when one starts existing upstream, the test flips red and prompts you to remove the override.
+
 ## Gotchas
 
 - **String casing must match exactly.** Species, item, ability, and stone names use PascalCase display names (e.g. `"Greninja-Mega"`, not `"greninja-mega"`). A typo causes `.has()` to silently return `false` at runtime — legality checks become permissive rather than throwing.
