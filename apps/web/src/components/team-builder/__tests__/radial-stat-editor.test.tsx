@@ -245,25 +245,25 @@ describe("RadialStatEditor — spoke labels", () => {
   });
 });
 
-describe("RadialStatEditor — center budget chip", () => {
+describe("RadialStatEditor — budget readout (below SVG)", () => {
   // -------------------------------------------------------------------------
-  // 4. Center chip shows 0 / budget.total by default
+  // 4. Budget readout shows invested / total below the hexagon
   // -------------------------------------------------------------------------
-  it("shows 0 invested and /510 total in VGC by default", () => {
+  it("shows 0 invested and / 510 total in VGC by default", () => {
     renderEditor();
-    // The chip renders the total as plain text "0" above "/510"
+    // Budget is rendered below the SVG as two separate spans: "0" and "/ 510"
     expect(screen.getByText("0")).toBeInTheDocument();
-    expect(screen.getByText("/510")).toBeInTheDocument();
+    expect(screen.getByText("/ 510")).toBeInTheDocument();
   });
 
-  it("shows 0 invested and /66 total in Champions by default", () => {
+  it("shows 0 invested and / 66 total in Champions by default", () => {
     renderEditor({}, CHAMPIONS_FORMAT);
     expect(screen.getByText("0")).toBeInTheDocument();
-    expect(screen.getByText("/66")).toBeInTheDocument();
+    expect(screen.getByText("/ 66")).toBeInTheDocument();
   });
 
   // -------------------------------------------------------------------------
-  // 5. Center chip reflects committed EV investment
+  // 5. Budget readout reflects committed EV investment
   // -------------------------------------------------------------------------
   it("shows invested amount matching committed EVs", () => {
     renderEditor({
@@ -555,20 +555,107 @@ describe("RadialStatEditor — SVG investment polygon", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 20. Center budget aria-label announces invested / total
+  // 20. Budget readout aria-label announces invested / total (accessible summary)
   // -------------------------------------------------------------------------
-  it("center chip group aria-label announces 0 of 510 EV invested", () => {
+  it("budget readout aria-label announces 0 of 510 EV invested", () => {
     renderEditor();
     // budget.label is "EV" (singular) for VGC → "0 of 510 EV invested"
-    const chip = document.querySelector('[aria-label="0 of 510 EV invested"]');
-    expect(chip).not.toBeNull();
+    // The aria-label is on the budget div below the SVG
+    const budgetEl = document.querySelector(
+      '[aria-label="0 of 510 EV invested"]'
+    );
+    expect(budgetEl).not.toBeNull();
   });
 
-  it("center chip group aria-label announces 0 of 66 SP invested in Champions", () => {
+  it("budget readout aria-label announces 0 of 66 SP invested in Champions", () => {
     renderEditor({}, CHAMPIONS_FORMAT);
     // budget.label is "SP" (singular) for Champions → "0 of 66 SP invested"
-    const chip = document.querySelector('[aria-label="0 of 66 SP invested"]');
-    expect(chip).not.toBeNull();
+    const budgetEl = document.querySelector(
+      '[aria-label="0 of 66 SP invested"]'
+    );
+    expect(budgetEl).not.toBeNull();
+  });
+});
+
+describe("RadialStatEditor — nature pill", () => {
+  // -------------------------------------------------------------------------
+  // 22. Nature pill renders with current nature and label
+  // -------------------------------------------------------------------------
+  it("renders nature pill with NATURE label in VGC format", () => {
+    renderEditor({ nature: "Adamant" }, VGC_FORMAT);
+    // The pill button has aria-label "NATURE: Adamant"
+    const pill = screen.getByRole("button", { name: /NATURE: Adamant/i });
+    expect(pill).toBeInTheDocument();
+  });
+
+  it("renders nature pill with STAT ALIGN label in Champions format", () => {
+    renderEditor({ nature: "Adamant" }, CHAMPIONS_FORMAT);
+    const pill = screen.getByRole("button", { name: /STAT ALIGN: Adamant/i });
+    expect(pill).toBeInTheDocument();
+  });
+
+  it("clicking the nature pill calls onUpdate with a new nature", () => {
+    const { onUpdate } = renderEditor({ nature: "Hardy" }, VGC_FORMAT);
+    const pill = screen.getByRole("button", { name: /NATURE: Hardy/i });
+    fireEvent.click(pill);
+    // cycleNature(Hardy, attack) → first +Atk nature (Adamant/Lonely/Brave/Naughty)
+    expect(onUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ nature: expect.any(String) })
+    );
+  });
+
+  it("shows +ATK color span when nature boosts ATK (Adamant)", () => {
+    renderEditor({ nature: "Adamant" }, VGC_FORMAT);
+    // The nature effects span renders "+ATK" in emerald
+    expect(screen.getByText("+ATK")).toBeInTheDocument();
+  });
+
+  it("shows −SPA color span when nature reduces SPA (Adamant)", () => {
+    renderEditor({ nature: "Adamant" }, VGC_FORMAT);
+    expect(screen.getByText("−SPA")).toBeInTheDocument();
+  });
+
+  it("does not show effect spans for neutral nature (Hardy)", () => {
+    renderEditor({ nature: "Hardy" }, VGC_FORMAT);
+    // Hardy has no boost/reduce — no +/− spans should appear
+    expect(screen.queryByText(/^\+/)).toBeNull();
+    expect(screen.queryByText(/^−/)).toBeNull();
+  });
+});
+
+describe("RadialStatEditor — handles always visible at 0 investment", () => {
+  // -------------------------------------------------------------------------
+  // 23. Six handle circles are rendered for ALL stats regardless of EV
+  // -------------------------------------------------------------------------
+  it("renders 6 slider hit targets at 0 EV (handles always visible)", () => {
+    // All EVs at 0 — every handle must still be rendered (at MIN_RADIUS)
+    renderEditor({
+      ev_hp: 0,
+      ev_attack: 0,
+      ev_defense: 0,
+      ev_special_attack: 0,
+      ev_special_defense: 0,
+      ev_speed: 0,
+    });
+    const handles = screen.getAllByRole("slider");
+    expect(handles).toHaveLength(6);
+  });
+
+  it("handles render with aria-valuenow=0 at zero investment", () => {
+    renderEditor({
+      ev_hp: 0,
+      ev_attack: 0,
+      ev_defense: 0,
+      ev_special_attack: 0,
+      ev_special_defense: 0,
+      ev_speed: 0,
+    });
+    const handles = screen.getAllByRole("slider");
+    // Every handle at 0 EV must have aria-valuenow="0"
+    const zeroHandles = handles.filter(
+      (h) => h.getAttribute("aria-valuenow") === "0"
+    );
+    expect(zeroHandles).toHaveLength(6);
   });
 });
 
@@ -593,8 +680,9 @@ describe("RadialStatEditor — draft reset on pokemon change", () => {
     const hpHandle = screen.getByRole("slider", { name: /HP investment/i });
     fireEvent.keyDown(hpHandle, { key: "ArrowUp" });
 
-    // Center chip should now reflect the draft (4 EVs from +1 step)
-    expect(screen.queryByText("4")).toBeTruthy();
+    // Budget readout should now reflect the draft (4 EVs from +1 step)
+    // Use getAllByText since "4" appears in multiple places (budget + allocated number)
+    expect(screen.getAllByText("4").length).toBeGreaterThan(0);
 
     // Swap to a different pokemon — draft must clear
     rerender(

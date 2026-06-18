@@ -72,6 +72,22 @@ const STAT_ANGLES: Record<StatKey, number> = {
   specialAttack: 210, // top-left
 };
 
+/**
+ * Vertices in clockwise ANGULAR order around the hexagon (matching STAT_ANGLES).
+ * The polygon + grid rings MUST connect vertices in this order — iterating in
+ * STAT_KEYS order (hp, atk, def, spa, spd, spe) connects them out of sequence
+ * (def→spa jumps across the hexagon), producing a self-intersecting "bowtie"
+ * with missing sections instead of a clean convex hexagon.
+ */
+const HEX_ORDER: readonly StatKey[] = [
+  "hp", // -90 top
+  "attack", // -30 top-right
+  "defense", // 30 bottom-right
+  "speed", // 90 bottom
+  "specialDefense", // 150 bottom-left
+  "specialAttack", // 210 top-left
+];
+
 /** Short labels for the hexagon vertices */
 const STAT_SHORT_LABELS: Record<StatKey, string> = {
   hp: "HP",
@@ -88,9 +104,16 @@ const STAT_SHORT_LABELS: Record<StatKey, string> = {
 
 const SVG_SIZE = 240; // viewBox square
 const CENTER = SVG_SIZE / 2; // 120
-const MAX_RADIUS = 88; // outer ring radius (spoke tip at full investment)
-const MIN_RADIUS = 14; // inner hub radius (0 investment)
-const LABEL_RADIUS = 108; // stat label + number ring
+const MAX_RADIUS = 92; // outer ring radius (spoke tip at full investment)
+/**
+ * MIN_RADIUS must be large enough that all six handles are visible at 0 investment
+ * and don't overlap each other near the center. At 0 EV every handle sits at this
+ * radius, so it must clear the center hub with comfortable spacing.
+ * With 6 handles at radius 34 in a 240px viewBox, the arc distance between
+ * adjacent handles is ≈35px (34 × 2π/6) — enough separation to be distinct.
+ */
+const MIN_RADIUS = 34;
+const LABEL_RADIUS = 112; // stat label + number ring
 const HANDLE_HIT_RADIUS = 22; // ≥44px hit area = 22 SVG units in 240px box
 
 /** Convert polar (degrees from top, clockwise) to SVG [x, y] */
@@ -101,7 +124,7 @@ function polarToXY(angleDeg: number, radius: number): [number, number] {
 
 /** Build the SVG polygon points string for the investment shape */
 function buildPolygonPoints(radii: Record<StatKey, number>): string {
-  return STAT_KEYS.map((k) =>
+  return HEX_ORDER.map((k) =>
     polarToXY(STAT_ANGLES[k], radii[k]).join(",")
   ).join(" ");
 }
@@ -179,6 +202,10 @@ interface SpokeInputProps {
   onFlush: () => void;
 }
 
+/**
+ * Transparent/borderless at rest, primary ring on focus — shows allocated value.
+ * Click-to-type preserved for a11y / exact spreads. Drag + keyboard unchanged.
+ */
 function SpokeInput({
   statKey,
   ev,
@@ -252,13 +279,13 @@ function SpokeInput({
       onKeyDown={handleKeyDown}
       aria-label={`${STAT_SHORT_LABELS[statKey]} investment`}
       className={cn(
-        /* 5 chars wide, mono, small — sits beside the stat label */
-        "focus:ring-primary h-5 w-10 rounded border bg-transparent text-center font-mono text-xs outline-none focus:ring-1",
-        isNatureBoosted &&
-          "border-emerald-400/70 text-emerald-600 dark:text-emerald-400",
-        isNatureReduced &&
-          "border-rose-400/70 text-rose-600 dark:text-rose-400",
-        !isNatureBoosted && !isNatureReduced && "border-border text-foreground"
+        /* Transparent at rest — ring on focus. 4 chars wide, mono, tiny. */
+        "focus:ring-primary h-5 w-8 rounded bg-transparent text-center font-mono text-xs outline-none focus:ring-1",
+        "border border-transparent focus:border-transparent",
+        inputBuffer !== null && "bg-background/80",
+        isNatureBoosted && "text-emerald-600 dark:text-emerald-400",
+        isNatureReduced && "text-rose-600 dark:text-rose-400",
+        !isNatureBoosted && !isNatureReduced && "text-muted-foreground"
       )}
     />
   );
@@ -275,9 +302,9 @@ function SpokeInput({
  *  • SVG hexagon — 6 spokes, draggable handles, polygon fill shows spread.
  *  • Each vertex has: nature-cycle button (≥40px hit), draggable EV handle,
  *    typed text input, and final-stat readout.
- *  • Center chip shows invested/total budget.
- *  • "Fine-tune ▾" expander reveals IV inputs (non-Champions) and boost
- *    steppers (when boosts/onBoostChange are provided).
+ *  • Budget readout BELOW the SVG as "{invested} / {total}" — hexagon center clean.
+ *  • Nature pill below budget: STAT ALIGN/NATURE + current nature + effects.
+ *  • "Fine-tune ▾ (± boosts)" expander below for IVs + boost steppers.
  *
  * Primary interactions:
  *  • Click-to-type on EV input (inputBuffer pattern — mirrors StatsLane).
@@ -285,6 +312,7 @@ function SpokeInput({
  *  • PageUp/PageDown on the handle: jump to next/prev breakpoint.
  *  • Click-drag on the handle: radius → EV, snapped to budget.step.
  *  • Click on vertex nature zone: cycleNature (neutral → boosted → reduced).
+ *  • Click on nature pill: cycle nature for the boosted stat (or open fine-tune).
  *
  * All EV/budget logic is reused verbatim from calc-stat-helpers.ts and
  * nature-cycle.ts — no duplication.
@@ -514,10 +542,15 @@ export function RadialStatEditor({
   // --- Grid lines (reference hexagons at 25%, 50%, 75%, 100%) ---
   const gridFractions = [0.25, 0.5, 0.75, 1.0];
 
+  // --- Nature pill label and effects ---
+  const naturePillLabel = isChampions ? "STAT ALIGN" : "NATURE";
+  const natUpShort = natUp ? STAT_SHORT_LABELS[natUp] : null;
+  const natDownShort = natDown ? STAT_SHORT_LABELS[natDown] : null;
+
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-2">
       {/* Hexagon canvas — aspect-square, width-capped */}
-      <div className="relative mx-auto aspect-square w-full max-w-xs touch-none select-none">
+      <div className="relative mx-auto aspect-square w-full max-w-sm touch-none select-none">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
@@ -527,7 +560,7 @@ export function RadialStatEditor({
           {/* ── Grid lines (reference hexagons) ── */}
           {gridFractions.map((frac) => {
             const r = MIN_RADIUS + frac * (MAX_RADIUS - MIN_RADIUS);
-            const pts = STAT_KEYS.map((k) =>
+            const pts = HEX_ORDER.map((k) =>
               polarToXY(STAT_ANGLES[k], r).join(",")
             ).join(" ");
             return (
@@ -637,14 +670,21 @@ export function RadialStatEditor({
                   </foreignObject>
                 )}
 
-                {/* EV handle dot — color via CSS currentColor from the colorClass */}
-                {/* colorClass = "text-rose-500 dark:text-rose-400" → CSS color property
-                    fill-current maps SVG fill: currentColor */}
+                {/* EV handle dot — always rendered at handleRadius (MIN_RADIUS at 0 EV).
+                    Filled teal = has investment; muted fill = 0 investment.
+                    A subtle ring outline ensures the dot is always legible at MIN_RADIUS. */}
                 <circle
                   cx={hx}
                   cy={hy}
-                  r={6}
-                  className={cn("pointer-events-none fill-current", colorClass)}
+                  r={5}
+                  className={cn(
+                    "pointer-events-none",
+                    ev > 0
+                      ? "fill-primary stroke-primary/40"
+                      : "fill-muted-foreground/50 stroke-muted-foreground/20"
+                  )}
+                  /* 1.5px ring — SVG stroke, not Tailwind scale */
+                  strokeWidth={1.5}
                   aria-hidden
                 />
 
@@ -653,10 +693,9 @@ export function RadialStatEditor({
                   <circle
                     cx={hx}
                     cy={hy}
-                    r={10}
+                    r={9}
                     fill="none"
-                    className={cn("pointer-events-none", colorClass)}
-                    stroke="currentColor"
+                    className="stroke-primary pointer-events-none"
                     /* 2px focus ring — SVG stroke, not Tailwind scale */
                     strokeWidth={2}
                     aria-hidden
@@ -687,9 +726,7 @@ export function RadialStatEditor({
                   onBlur={() => setFocusedHandle(null)}
                 />
 
-                {/* Stat label + nature indicator at the outer ring.
-                    colorClass sets CSS `color` (text-rose-500 etc.).
-                    fill-current maps SVG fill to CSS color. */}
+                {/* Stat label (with ▲/▼ nature indicator) at outer ring */}
                 <text
                   x={lx}
                   y={ly - 6}
@@ -709,24 +746,46 @@ export function RadialStatEditor({
                   {isNatureBoosted ? "▲" : isNatureReduced ? "▼" : ""}
                 </text>
 
-                {/* Final stat value */}
+                {/* Final stat value — larger, bold */}
                 <text
                   x={lx}
                   y={ly + 7}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className="fill-foreground font-mono font-bold tabular-nums"
-                  fontSize={10}
+                  className={cn(
+                    "fill-foreground font-mono font-bold tabular-nums",
+                    isNatureBoosted && "fill-emerald-600 dark:fill-emerald-400",
+                    isNatureReduced && "fill-rose-600 dark:fill-rose-400"
+                  )}
+                  fontSize={11}
                   aria-hidden
                 >
                   {liveFinalStat}
                 </text>
 
-                {/* Per-spoke EV input — rendered as a foreignObject near the label */}
+                {/* Allocated EV/SP — small teal number below the final stat.
+                    Only shown when ev > 0 so zero-investment spokes stay clean. */}
+                {ev > 0 && (
+                  <text
+                    x={lx}
+                    y={ly + 19}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-primary font-mono tabular-nums"
+                    fontSize={8}
+                    aria-hidden
+                  >
+                    {ev}
+                  </text>
+                )}
+
+                {/* Per-spoke EV input — rendered as a foreignObject near the label.
+                    Transparent at rest, ring on focus. Sits below the final stat
+                    and allocated number. */}
                 <foreignObject
-                  x={lx - 20}
-                  y={ly + 14}
-                  width={40}
+                  x={lx - 16}
+                  y={ly + (ev > 0 ? 22 : 14)}
+                  width={32}
                   height={22}
                   style={{ overflow: "visible" }}
                 >
@@ -755,45 +814,67 @@ export function RadialStatEditor({
               </g>
             );
           })}
-
-          {/* ── Center budget chip ── */}
-          <g
-            aria-label={`${totalEv} of ${budget.total} ${budget.label} invested`}
-          >
-            <circle
-              cx={CENTER}
-              cy={CENTER}
-              r={24}
-              className="fill-background stroke-border"
-              /* 1.5px center chip border — SVG stroke */
-              strokeWidth={1.5}
-            />
-            <text
-              x={CENTER}
-              y={CENTER - 4}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className={cn(
-                "font-mono font-bold tabular-nums",
-                totalEv > budget.total ? "fill-destructive" : "fill-foreground"
-              )}
-              /* SVG font-size attr — not Tailwind arbitrary to avoid px restriction */
-              fontSize={10}
-            >
-              {totalEv}
-            </text>
-            <text
-              x={CENTER}
-              y={CENTER + 6}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="fill-muted-foreground font-mono tabular-nums"
-              fontSize={8}
-            >
-              /{budget.total}
-            </text>
-          </g>
         </svg>
+      </div>
+
+      {/* ── Budget readout — below SVG, not center chip ── */}
+      <div
+        aria-label={`${totalEv} of ${budget.total} ${budget.label} invested`}
+        className="flex items-center justify-center gap-1"
+      >
+        <span
+          className={cn(
+            "font-mono text-sm font-bold tabular-nums",
+            totalEv > budget.total ? "text-destructive" : "text-foreground"
+          )}
+        >
+          {totalEv}
+        </span>
+        <span className="text-muted-foreground font-mono text-sm tabular-nums">
+          / {budget.total}
+        </span>
+      </div>
+
+      {/* ── Nature pill ── */}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label={`${naturePillLabel}: ${nature}`}
+          onClick={() => {
+            // Cycle nature for the currently boosted stat, or ATK as default
+            const targetStat: StatKey = natUp ?? "attack";
+            const newNature = cycleNature(nature, targetStat);
+            if (newNature) onUpdate({ nature: newNature });
+          }}
+          className="bg-muted/60 border-border/60 hover:bg-muted text-foreground flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-mono text-xs font-semibold transition-colors"
+        >
+          <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+            {naturePillLabel}
+          </span>
+          <span>{nature}</span>
+          <span className="text-muted-foreground" aria-hidden>
+            ▾
+          </span>
+        </button>
+
+        {/* Nature effects: +STAT −STAT */}
+        {(natUpShort || natDownShort) && (
+          <span className="font-mono text-xs font-bold">
+            {natUpShort && (
+              <span className="text-emerald-600 dark:text-emerald-400">
+                +{natUpShort}
+              </span>
+            )}
+            {natUpShort && natDownShort && (
+              <span className="text-muted-foreground mx-0.5"> </span>
+            )}
+            {natDownShort && (
+              <span className="text-rose-600 dark:text-rose-400">
+                −{natDownShort}
+              </span>
+            )}
+          </span>
+        )}
       </div>
 
       {/* ── Fine-tune expander ── */}
