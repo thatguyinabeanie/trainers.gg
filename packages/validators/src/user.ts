@@ -6,8 +6,9 @@ import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 // =============================================================================
 
 /**
- * First name — up to 64 characters, optional.
- * Empty string is accepted and treated as "clear" by the RPC layer.
+ * First name — required string, up to 64 characters. Optionality is applied by
+ * callers via `.optional()`; an empty string is accepted and treated as "clear"
+ * by the RPC layer.
  */
 export const firstNameSchema = z
   .string()
@@ -15,8 +16,9 @@ export const firstNameSchema = z
   .max(64, "First name must be 64 characters or less");
 
 /**
- * Last name — up to 64 characters, optional.
- * Empty string is accepted and treated as "clear" by the RPC layer.
+ * Last name — required string, up to 64 characters. Optionality is applied by
+ * callers via `.optional()`; an empty string is accepted and treated as "clear"
+ * by the RPC layer.
  */
 export const lastNameSchema = z
   .string()

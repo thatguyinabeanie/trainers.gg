@@ -37,7 +37,7 @@
     "generate-seeds": "tsx scripts/generate-seed-data/index.ts",
     "db:migrate": "pnpm exec supabase migration up",
     "db:push": "pnpm exec supabase db push",
-    "db:reset": "(pnpm exec supabase db reset || (docker restart supabase_kong_supabase && sleep 2 && pnpm exec supabase status)) && (./scripts/ensure-cron.sh || echo '[ensure-cron] setup failed (dev convenience; see errors above) — continuing')",
+    "db:reset": "(pnpm exec supabase db reset || (docker restart supabase_kong_supabase && sleep 2 && pnpm exec supabase db reset)) && (./scripts/ensure-cron.sh || echo '[ensure-cron] setup failed (dev convenience; see errors above) — continuing')",
     "db:diff": "pnpm exec supabase db diff",
     "db:lint": "pnpm exec supabase db lint",
     "db:advisor": "./scripts/db-advisor.sh",

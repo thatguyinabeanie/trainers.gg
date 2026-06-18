@@ -240,14 +240,14 @@ describe("admin check wiring", () => {
     );
   });
 
-  it("rate-limits after the admin check passes", async () => {
+  it("rate-limits before the admin check (isSiteAdmin not called when rate-limited)", async () => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_ADMIN);
     mockEnforceRateLimit.mockResolvedValue(RATE_LIMIT_DENIED);
 
     const response = await GET(makeRequest());
 
-    // Admin check passed (isSiteAdmin was called), but rate limit kicked in
-    expect(mockIsSiteAdmin).toHaveBeenCalled();
+    // Rate limit runs before the admin DB read, so isSiteAdmin is never reached.
+    expect(mockIsSiteAdmin).not.toHaveBeenCalled();
     expect(response.status).toBe(429);
   });
 });
