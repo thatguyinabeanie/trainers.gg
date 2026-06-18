@@ -3,8 +3,12 @@
  *
  * Every `GET /api/v1/admin/*` route repeats the same ~30-line sequence:
  *   1. `resolveApiAuth` — 401 for anon / invalid sessions
- *   2. `createServiceRoleClient` + `isSiteAdmin` — 403 for non-admins
- *   3. `enforceRateLimit` — 429 when the window is exhausted
+ *   2. `enforceRateLimit` — 429 when the window is exhausted (before any DB read)
+ *   3. `createServiceRoleClient` + `isSiteAdmin` — 403 for non-admins
+ *
+ * Rate-limiting runs BEFORE the admin check so an authenticated non-admin can't
+ * force an `isSiteAdmin()` service-role DB read on every request — abusive
+ * authenticated traffic is throttled before it reaches the database.
  *
  * This helper consolidates that sequence so each route only handles its own
  * business logic. On failure it returns the `NextResponse` directly so the
@@ -69,15 +73,10 @@ export async function requireApiAdmin(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // 2. Admin gate — read-only admin check (not the sudo/mutation gate).
-  //    Service-role client so the user_roles lookup bypasses RLS.
-  const serviceRole = createServiceRoleClient();
-  const isAdmin = await isSiteAdmin(serviceRole, auth.userId);
-  if (!isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  // 3. Rate-limit — keyed on userId when authed, request IP as fallback.
+  // 2. Rate-limit — keyed on userId when authed, request IP as fallback.
+  //    Runs BEFORE the admin check so an authenticated non-admin can't force a
+  //    service-role isSiteAdmin() DB read on every request; abusive traffic is
+  //    throttled before it reaches the database.
   const identifier = auth.userId ?? extractRequestIp(request);
   const { allowed, resetAt } = await enforceRateLimit({
     identifier,
@@ -92,6 +91,14 @@ export async function requireApiAdmin(
         headers: { "Retry-After": resetAt.toUTCString() },
       }
     );
+  }
+
+  // 3. Admin gate — read-only admin check (not the sudo/mutation gate).
+  //    Service-role client so the user_roles lookup bypasses RLS.
+  const serviceRole = createServiceRoleClient();
+  const isAdmin = await isSiteAdmin(serviceRole, auth.userId);
+  if (!isAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   return { serviceRole, userId: auth.userId };

@@ -129,13 +129,13 @@ describe("403 — authenticated but not a site admin", () => {
     expect(await getJson(res)).toEqual({ error: "Forbidden" });
   });
 
-  it("does not call enforceRateLimit when user is not an admin", async () => {
+  it("calls enforceRateLimit before the admin check (rate-limit precedes the DB read)", async () => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
     mockIsSiteAdmin.mockResolvedValue(false);
 
     await requireApiAdmin(makeRequest());
 
-    expect(mockEnforceRateLimit).not.toHaveBeenCalled();
+    expect(mockEnforceRateLimit).toHaveBeenCalled();
   });
 
   it("calls isSiteAdmin with the service-role client and the userId", async () => {
@@ -221,7 +221,7 @@ describe("success — returns { serviceRole, userId }", () => {
 });
 
 // =============================================================================
-// Gate order — verify the sequence auth → admin → rate-limit
+// Gate order — verify the sequence auth → rate-limit → admin
 // =============================================================================
 
 describe("gate ordering", () => {
@@ -233,12 +233,12 @@ describe("gate ordering", () => {
     expect(mockIsSiteAdmin).not.toHaveBeenCalled();
   });
 
-  it("checks admin before rate-limit (enforceRateLimit not called for non-admin)", async () => {
+  it("checks rate-limit before admin (isSiteAdmin not called when rate-limited)", async () => {
     mockResolveApiAuth.mockResolvedValue(AUTHED_COOKIE);
-    mockIsSiteAdmin.mockResolvedValue(false);
+    mockEnforceRateLimit.mockResolvedValue(RATE_LIMIT_DENIED);
 
     await requireApiAdmin(makeRequest());
 
-    expect(mockEnforceRateLimit).not.toHaveBeenCalled();
+    expect(mockIsSiteAdmin).not.toHaveBeenCalled();
   });
 });
