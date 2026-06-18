@@ -519,8 +519,10 @@ export async function updateProfile(data: {
     // taken, PDS provision timeout, username conflict) can't leave a partial
     // profile with PII already persisted.
     //
-    // The RPC uses COALESCE(EXCLUDED.x, existing.x): an omitted arg (undefined →
-    // DB default NULL) leaves the existing value unchanged.
+    // For first_name/last_name the RPC distinguishes three caller intents:
+    // undefined (omitted → DB default NULL) leaves the existing value unchanged,
+    // an empty string ("") clears the field to NULL, and a non-empty string sets
+    // it. (See migration 20260618181620_normalize_pii_empty_string_to_null.)
     //
     // birth_date clear path: birthDate === "" means "remove the existing value".
     // We pass p_clear_birth_date: true so the RPC sets birth_date = NULL instead

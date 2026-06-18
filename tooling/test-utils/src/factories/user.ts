@@ -4,7 +4,7 @@ import type { Tables } from "@trainers/supabase/types";
 // NOTE: email, first_name, last_name, birth_date, phone_number,
 // external_accounts and public_metadata were removed from public.users in the
 // PII-split migration (20260616100000). email now lives in auth.users; the
-// name/DOB fields live in private.user_pii (see userPiiFactory).
+// name/DOB fields live in private.user_pii.
 export const userFactory = Factory.define<Tables<"users">>(({ sequence }) => ({
   id: `user-${sequence}`,
   username: `user_${sequence}`,
