@@ -92,7 +92,7 @@ interface MovesLaneProps {
 type MoveSlot = "move1" | "move2" | "move3" | "move4";
 
 /** Which popover panel is open for a tile. */
-type TilePanel = "detail" | "picker" | null;
+type TilePanel = "picker" | null;
 
 // =============================================================================
 // Helpers
@@ -301,6 +301,8 @@ function MoveTile({
   compact = false,
 }: MoveTileProps) {
   const [panel, setPanel] = useState<TilePanel>(null);
+  const [hovered, setHovered] = useState(false);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowRef = useRef<HTMLTableRowElement>(null);
 
   const calc = useCalcStateContext();
@@ -328,34 +330,31 @@ function MoveTile({
 
   const hasError = slotErrors.some((e) => e.severity === "error");
 
-  function handleContextMenu(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    setPanel("picker");
+  function handleMouseEnter() {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => setHovered(true), 120);
+  }
+
+  function handleMouseLeave() {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    setHovered(false);
   }
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
-    if (moveName && hasCalc) {
-      setPanel("detail");
-    } else {
-      setPanel("picker");
-    }
+    setPanel("picker");
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       e.stopPropagation();
-      if (moveName && hasCalc) {
-        setPanel("detail");
-      } else {
-        setPanel("picker");
-      }
+      setPanel("picker");
     }
   }
 
-  const detailOpen = panel === "detail";
+  // Show breakdown on hover when there is calc data to display
+  const detailOpen = hovered && hasCalc && !!moveName && output !== null;
   const pickerOpen = panel === "picker";
   const isMobile = useIsMobile();
 
@@ -364,7 +363,7 @@ function MoveTile({
       <Popover
         open={detailOpen}
         onOpenChange={(open) => {
-          if (!open && panel === "detail") setPanel(null);
+          if (!open) setHovered(false);
         }}
       >
         <TableRow
@@ -372,7 +371,8 @@ function MoveTile({
           tabIndex={0}
           onClick={handleClick}
           onKeyDown={handleKeyDown}
-          onContextMenu={handleContextMenu}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           className={cn(
             "cursor-pointer border-none transition-colors",
             "[&_td]:border-y [&_td]:border-transparent [&_td]:transition-colors",
@@ -389,7 +389,7 @@ function MoveTile({
             hasError && "ring-destructive/50 ring-1"
           )}
         >
-          {/* Type icon */}
+          {/* Type icon — invisible placeholder keeps row height when empty */}
           <TableCell className="w-6 p-1 align-middle">
             {moveName && moveData?.type ? (
               <TypeSymbolIcon
@@ -398,10 +398,12 @@ function MoveTile({
                 }
                 size={20}
               />
-            ) : null}
+            ) : (
+              <span className="block size-5" aria-hidden />
+            )}
           </TableCell>
 
-          {/* Category icon */}
+          {/* Category icon — invisible placeholder keeps row height when empty */}
           <TableCell className="w-8 p-1 align-middle">
             {moveName &&
             moveData?.category &&
@@ -411,7 +413,9 @@ function MoveTile({
                 alt={moveData.category}
                 className="h-6 w-6 shrink-0"
               />
-            ) : null}
+            ) : (
+              <span className="block size-6" aria-hidden />
+            )}
           </TableCell>
 
           {/* Move name */}
@@ -518,11 +522,7 @@ function MoveTile({
                 }
               }
               format={format}
-              foesAlive={foesAlive}
-              allyAlive={allyAlive}
               weather={calc.weather || calc.inferredWeather}
-              onClose={() => setPanel(null)}
-              onChangeMove={() => setPanel("picker")}
             />
           ) : null}
         </PopoverContent>
@@ -941,8 +941,8 @@ function MovesLaneReal({
  * placeholder tiles) with no interactive elements and no hook calls.
  *
  * When `pokemon` is set:
- * - Left-click: opens CalcDetailCard when calc data is available, else picker.
- * - Right-click: always opens move picker.
+ * - Left-click / Enter / Space: always opens the move picker.
+ * - Hover: shows the CalcDetailCard breakdown popover when calc data is available.
  * - Renders inline FieldError chips for move-scoped validation issues.
  *
  * New optional props for direction-agnostic rendering (all default to today's
