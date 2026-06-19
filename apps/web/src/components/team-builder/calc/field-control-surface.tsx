@@ -131,7 +131,9 @@ function SideSwitchRow({
           aria-label={`${label} (ours)`}
         />
       </div>
-      <span className="text-muted-foreground text-center text-xs">{label}</span>
+      <span className="text-muted-foreground text-center text-xs whitespace-nowrap">
+        {label}
+      </span>
       <div className="flex justify-start">
         <Switch
           size="sm"
