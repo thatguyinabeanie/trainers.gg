@@ -239,7 +239,10 @@ function DefenderStatRow({
   function handleSliderChange(raw: number) {
     const clamped = Math.min(raw, investBudget);
     const snapped = Math.round(clamped / budget.step) * budget.step;
-    setDefenderEv(evKey, snapped);
+    // Re-clamp after snap: snapping up to the nearest step can exceed the budget
+    // when the remaining headroom is smaller than the step (e.g. 2 EVs left → snaps to 4).
+    const finalEv = Math.min(investBudget, budget.perStat, snapped);
+    setDefenderEv(evKey, finalEv);
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -258,7 +261,10 @@ function DefenderStatRow({
     const clamped = Math.min(val, investBudget, budget.perStat);
     const snapped =
       Math.round(Math.max(0, clamped) / budget.step) * budget.step;
-    setDefenderEv(evKey, snapped);
+    // Re-clamp after snap: snapping up to the nearest step can exceed the budget
+    // when the remaining headroom is smaller than the step (e.g. 2 EVs left → snaps to 4).
+    const finalEv = Math.min(investBudget, budget.perStat, snapped);
+    setDefenderEv(evKey, finalEv);
     setInputBuffer(null);
   }
 

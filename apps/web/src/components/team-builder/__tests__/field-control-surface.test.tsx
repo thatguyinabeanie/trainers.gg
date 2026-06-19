@@ -108,6 +108,9 @@ function makeBaseSide(overrides: Partial<BaseSideState> = {}): BaseSideState {
     stealthRock: false,
     spikes: 0,
     saltCure: false,
+    leechSeed: false,
+    crit: false,
+    singleTarget: false,
     ...overrides,
   };
 }

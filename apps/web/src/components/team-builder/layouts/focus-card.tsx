@@ -55,6 +55,8 @@ interface FocusCardProps {
   format: GameFormat | undefined;
   /** Sibling item names — for the item deduplication hint in ItemCell. */
   teamItems?: string[];
+  /** All 6 team slots — used to populate the species picker's currentTeam exclusion list. */
+  slots?: (Tables<"pokemon"> | null)[];
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   onRemove?: () => void;
   slotErrors?: ValidationError[];
@@ -64,6 +66,7 @@ export function FocusCard({
   pokemon,
   format,
   teamItems = [],
+  slots,
   onUpdate,
   onRemove,
   slotErrors = [],
@@ -132,7 +135,12 @@ export function FocusCard({
     : undefined;
 
   // ── Derived team siblings (for species picker) ─────────────────────────────
-  const currentTeam = filterCurrentTeam([]);
+  // Pass the full team slots so the species picker can exclude already-picked
+  // species from suggestions. Filter out null (empty) slots; falls back to []
+  // when the parent doesn't supply slots.
+  const currentTeam = filterCurrentTeam(
+    (slots ?? []).filter((s): s is Tables<"pokemon"> => s !== null)
+  );
 
   return (
     <>

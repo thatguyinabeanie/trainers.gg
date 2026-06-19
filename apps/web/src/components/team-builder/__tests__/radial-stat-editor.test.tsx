@@ -358,7 +358,7 @@ describe("RadialStatEditor — SpokeInput text inputs", () => {
     const calls = onUpdate.mock.calls.map(
       (c: [Partial<Tables<"pokemon">>]) => c[0]
     );
-    expect(calls.some((c) => (c.ev_hp ?? 0) <= 252)).toBe(true);
+    expect(calls.some((c) => c.ev_hp === 252)).toBe(true);
   });
 
   // -------------------------------------------------------------------------
@@ -372,7 +372,7 @@ describe("RadialStatEditor — SpokeInput text inputs", () => {
     const calls = onUpdate.mock.calls.map(
       (c: [Partial<Tables<"pokemon">>]) => c[0]
     );
-    expect(calls.some((c) => (c.ev_hp ?? 0) <= 32)).toBe(true);
+    expect(calls.some((c) => c.ev_hp === 32)).toBe(true);
   });
 
   // -------------------------------------------------------------------------
@@ -444,10 +444,7 @@ describe("RadialStatEditor — keyboard handle nudging", () => {
     fireEvent.keyDown(hpHandle, { key: "ArrowDown" });
     await new Promise((r) => setTimeout(r, 50));
     // No update should fire when ev is already 0 and delta would go negative
-    const calls = onUpdate.mock.calls.map(
-      (c: [Partial<Tables<"pokemon">>]) => c[0]
-    );
-    expect(calls.some((c) => (c.ev_hp ?? 0) < 0)).toBe(false);
+    expect(onUpdate).not.toHaveBeenCalled();
   });
 
   // -------------------------------------------------------------------------

@@ -395,12 +395,16 @@ function StatRow({
       suffix,
     });
 
-    const update: Partial<TablesUpdate<"pokemon">> = { [evFieldKey]: snapped };
+    // Re-clamp after snap: snapping up to the nearest step can exceed the budget
+    // when the remaining headroom is smaller than the step (e.g. 2 EVs left → snaps to 4).
+    const finalEv = Math.min(investBudget, budget.perStat, snapped);
+
+    const update: Partial<TablesUpdate<"pokemon">> = { [evFieldKey]: finalEv };
     if (newNature !== null) update.nature = newNature;
     // Cancel any in-flight slider draft so the still-armed debounce timer
     // doesn't fire a duplicate onUpdate after the text commit.
     setDraftEv(null);
-    onLiveEv?.(statKey, snapped);
+    onLiveEv?.(statKey, finalEv);
     onUpdate(update);
     setInputBuffer(null);
   }

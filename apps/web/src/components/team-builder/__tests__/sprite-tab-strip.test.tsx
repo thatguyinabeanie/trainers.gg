@@ -191,9 +191,9 @@ beforeEach(() => {
 
 describe("SpriteTabStrip", () => {
   describe("rendering", () => {
-    it("renders a tablist with 6 tabs", () => {
+    it("renders a toolbar with 6 slot buttons", () => {
       renderStrip();
-      expect(screen.getByRole("tablist")).toBeInTheDocument();
+      expect(screen.getByRole("toolbar")).toBeInTheDocument();
       // Each tab is a <button> — 6 tabs total
       expect(screen.getAllByRole("button")).toHaveLength(6);
     });

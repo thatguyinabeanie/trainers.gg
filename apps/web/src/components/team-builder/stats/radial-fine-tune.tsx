@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { type GameFormat } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
@@ -95,7 +95,9 @@ function IvRow({ statKey, iv, onUpdate }: IvRowProps) {
         value={displayIv}
         aria-label={`${STAT_LABELS[statKey]} IV`}
         onChange={(e) => {
-          const v = Math.max(0, Math.min(31, Number(e.target.value)));
+          const parsed = Number(e.target.value);
+          if (Number.isNaN(parsed)) return; // ignore non-numeric input (e.g. "e", "")
+          const v = Math.max(0, Math.min(31, parsed));
           setDraftIv(v);
         }}
         onBlur={() => {
@@ -190,6 +192,7 @@ export function RadialFineTune({
   boosts,
   onBoostChange,
 }: RadialFineTuneProps) {
+  const panelId = useId();
   const hasContent =
     showIvs || (boosts !== undefined && onBoostChange !== undefined);
   if (!hasContent) return null;
@@ -201,7 +204,7 @@ export function RadialFineTune({
         type="button"
         onClick={() => onOpenChange(!open)}
         aria-expanded={open}
-        aria-controls="radial-fine-tune-panel"
+        aria-controls={panelId}
         className="text-muted-foreground hover:bg-muted hover:text-foreground flex w-full items-center justify-between rounded px-2 py-1 text-xs transition-colors"
       >
         <span className="font-medium">
@@ -223,7 +226,7 @@ export function RadialFineTune({
       {/* Collapsible body */}
       {open && (
         <div
-          id="radial-fine-tune-panel"
+          id={panelId}
           className="border-border/60 bg-muted/30 mt-1 rounded-lg border px-3 py-2"
         >
           {/* Two-column layout: IVs on the left, Boosts on the right */}

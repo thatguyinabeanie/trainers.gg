@@ -194,7 +194,7 @@ export function SpriteTabStrip({
   return (
     <div
       className="flex w-full items-end justify-center gap-1 px-2 py-1"
-      role="tablist"
+      role="toolbar"
       aria-label="Team slots"
     >
       {slots.map((pokemon, idx) => {

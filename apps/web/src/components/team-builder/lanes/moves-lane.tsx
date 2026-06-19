@@ -277,13 +277,6 @@ interface MoveTileProps {
    * calc computation — used for injecting incoming damage outputs.
    */
   rowOutputs?: readonly (CalcOutput | null)[];
-  /** Popover defender descriptor. When provided, overrides calc context defaults. */
-  popoverDefender?: {
-    species: string;
-    ability: string;
-    item: string;
-    nature: string;
-  };
   /** When true, renders a denser row for two-up versus layouts. */
   compact?: boolean;
   /**
@@ -307,7 +300,6 @@ function MoveTile({
   onPick,
   slotErrors,
   rowOutputs: injectedOutputs,
-  popoverDefender: _popoverDefender,
   compact = false,
   onHover,
 }: MoveTileProps) {
@@ -818,6 +810,11 @@ function MovesLaneReal({
     el: HTMLTableRowElement;
   } | null>(null);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, []);
 
   function handleRowHover(
     slotKey: MoveSlot,
@@ -908,7 +905,6 @@ function MovesLaneReal({
                 onPick={handlePick}
                 slotErrors={slotErrors}
                 rowOutputs={outputs}
-                popoverDefender={popoverDefender}
                 compact={compact}
                 onHover={handleRowHover}
               />

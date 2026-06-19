@@ -16,6 +16,7 @@ import {
   getBaseStats,
   getCanonicalBaseSpecies,
   getMegaAbilityForSpecies,
+  getMegaSpeciesForBaseAndItem,
   getSpeciesTypes,
   isChampionsFormat,
 } from "@trainers/pokemon";
@@ -498,12 +499,24 @@ function buildDefenderPokemon(
   try {
     // Mega handling — species is the source of truth (see buildAttackerFromDb).
     const isMegaForm = getMegaAbilityForSpecies(species) !== null;
+    // When a base species holds its mega stone, resolve the mega form so the
+    // calc uses mega stats — matching what calc-defender-header.tsx displays.
+    const megaFromItem =
+      !isMegaForm && megaActive
+        ? getMegaSpeciesForBaseAndItem(species, item)
+        : null;
     const effectiveSpecies =
-      isMegaForm && !megaActive ? getCanonicalBaseSpecies(species) : species;
+      isMegaForm && !megaActive
+        ? getCanonicalBaseSpecies(species)
+        : megaFromItem
+          ? megaFromItem
+          : species;
     const calcAbility =
       isMegaForm && megaActive
         ? (getMegaAbilityForSpecies(species) ?? ability)
-        : ability;
+        : megaFromItem
+          ? (getMegaAbilityForSpecies(megaFromItem) ?? ability)
+          : ability;
     // Bail if the species has no base stats in @pkmn/dex.
     if (!getBaseStats(effectiveSpecies)) return null;
     // Bail if the species is unknown to @smogon/calc's gen data.

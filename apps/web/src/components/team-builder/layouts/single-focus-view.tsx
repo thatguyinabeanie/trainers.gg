@@ -84,6 +84,13 @@ interface SingleFocusViewProps {
 const SLOT_COUNT = 6;
 const SWIPE_THRESHOLD = 40; // px horizontal delta to trigger a slot switch
 
+// Module-level sentinel — must live outside the component so it is created once.
+// If it were inside the component body, React Concurrent/Strict mode could
+// create a new Symbol on re-render before the first setState commit, making
+// the `prevActiveIdx !== UNINITIALIZED` guard always true and causing an
+// invalid Symbol > number comparison for `activeIdx > prevActiveIdx`.
+const UNINITIALIZED = Symbol();
+
 // =============================================================================
 // SingleFocusView
 // =============================================================================
@@ -110,7 +117,6 @@ export function SingleFocusView({
   const [slideDir, setSlideDir] = useState<"left" | "right" | null>(null);
   const [animKey, setAnimKey] = useState<number>(0); // bumped to restart animation
 
-  const UNINITIALIZED = Symbol();
   const [prevActiveIdx, setPrevActiveIdx] = useState<
     number | typeof UNINITIALIZED
   >(UNINITIALIZED);

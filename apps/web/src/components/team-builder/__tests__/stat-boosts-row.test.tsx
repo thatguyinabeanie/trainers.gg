@@ -131,11 +131,8 @@ describe("StatBoostsRow — clamp at +6 (max)", () => {
     const btn = screen.getByRole("button", { name: /increase atk/i });
     // Clicking a disabled button shouldn't fire onClick
     fireEvent.click(btn);
-    // The onClick handler wraps Math.min(MAX, value+1) = Math.min(6,7) = 6 === 6 → no new call?
-    // Actually the component calls Math.min(6, value+1) but still calls onChange.
-    // What matters is the button is disabled; browser won't fire click on disabled.
-    // The disabled attribute is set, verified above.
     expect(btn).toBeDisabled();
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("+ button is NOT disabled when value is +5", () => {
@@ -150,6 +147,15 @@ describe("StatBoostsRow — clamp at −6 (min)", () => {
     renderRow({ atk: -6 });
     const btn = screen.getByRole("button", { name: /decrease atk/i });
     expect(btn).toBeDisabled();
+  });
+
+  it("clicking disabled − at −6 does NOT call onChange", () => {
+    const onChange = jest.fn();
+    renderRow({ atk: -6 }, onChange);
+    const btn = screen.getByRole("button", { name: /decrease atk/i });
+    fireEvent.click(btn);
+    expect(btn).toBeDisabled();
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("− button is NOT disabled when value is −5", () => {
