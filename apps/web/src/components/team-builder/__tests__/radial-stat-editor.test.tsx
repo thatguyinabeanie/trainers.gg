@@ -468,7 +468,8 @@ describe("RadialStatEditor — keyboard handle nudging", () => {
 describe("RadialStatEditor — nature indicators + pill cycle", () => {
   // -------------------------------------------------------------------------
   // 14. No per-vertex nature buttons — they have been removed in favour of
-  //     the nature pill below the hexagon (cleaner UI, less clutter).
+  //     the nature <select> dropdown below the hexagon (cleaner UI, less
+  //     clutter and accessible via native select semantics).
   // -------------------------------------------------------------------------
   it("renders NO per-vertex nature cycle buttons (vertex buttons removed)", () => {
     renderEditor();
@@ -483,46 +484,40 @@ describe("RadialStatEditor — nature indicators + pill cycle", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 15. Nature pill cycles through all 5 stats (covers the gap left by
-  //     removing vertex buttons).
+  // 15. Nature pill is now a native <select> (aria-label "NATURE" or
+  //     "STAT ALIGN"). Changing it calls onUpdate({ nature }).
   // -------------------------------------------------------------------------
-  it("pill cycles from neutral (Hardy) to +ATK nature on first click", () => {
+  it("nature select renders with current nature value", () => {
+    renderEditor({ nature: "Hardy" });
+    // The <select> has aria-label matching the naturePillLabel ("NATURE" in VGC)
+    const select = screen.getByRole("combobox", { name: /NATURE/i });
+    expect((select as HTMLSelectElement).value).toBe("Hardy");
+  });
+
+  it("changing nature select calls onUpdate with selected nature", () => {
     const { onUpdate } = renderEditor({ nature: "Hardy" });
-    const pill = screen.getByRole("button", { name: /NATURE: Hardy/i });
-    fireEvent.click(pill);
-    // First click: neutral → +ATK (Adamant/Lonely/Brave/Naughty)
-    const plusAtkNatures = ["Adamant", "Lonely", "Brave", "Naughty"];
-    const calls = onUpdate.mock.calls.map(
-      (c: [Partial<Tables<"pokemon">>]) => c[0]
-    );
-    expect(
-      calls.some((c) => c.nature && plusAtkNatures.includes(c.nature as string))
-    ).toBe(true);
+    const select = screen.getByRole("combobox", { name: /NATURE/i });
+    fireEvent.change(select, { target: { value: "Adamant" } });
+    expect(onUpdate).toHaveBeenCalledWith({ nature: "Adamant" });
   });
 
-  it("pill cycles from +ATK to +DEF nature on click", () => {
-    const { onUpdate } = renderEditor({ nature: "Adamant" }); // +ATK
-    const pill = screen.getByRole("button", { name: /NATURE: Adamant/i });
-    fireEvent.click(pill);
-    // Second click: +ATK → +DEF (Bold/Impish/Lax/Relaxed)
-    const plusDefNatures = ["Bold", "Impish", "Lax", "Relaxed"];
-    const calls = onUpdate.mock.calls.map(
-      (c: [Partial<Tables<"pokemon">>]) => c[0]
-    );
-    expect(
-      calls.some((c) => c.nature && plusDefNatures.includes(c.nature as string))
-    ).toBe(true);
+  it("nature select in Champions format has aria-label 'STAT ALIGN'", () => {
+    renderEditor({ nature: "Hardy" }, CHAMPIONS_FORMAT);
+    const select = screen.getByRole("combobox", { name: /STAT ALIGN/i });
+    expect(select).toBeInTheDocument();
   });
 
-  it("pill cycles from +SPE (last stat) back to neutral (Serious)", () => {
-    // Jolly = +SPE / −SPA — the last stat in PILL_CYCLE_STATS
-    const { onUpdate } = renderEditor({ nature: "Jolly" });
-    const pill = screen.getByRole("button", { name: /NATURE: Jolly/i });
-    fireEvent.click(pill);
-    const calls = onUpdate.mock.calls.map(
-      (c: [Partial<Tables<"pokemon">>]) => c[0]
+  it("nature select contains all 25 nature options", () => {
+    renderEditor({ nature: "Hardy" });
+    const select = screen.getByRole("combobox", { name: /NATURE/i });
+    // NATURE_EFFECTS has 25 entries (all natures including neutral ones)
+    const options = Array.from((select as HTMLSelectElement).options).map(
+      (o) => o.value
     );
-    expect(calls.some((c) => c.nature === "Serious")).toBe(true);
+    expect(options).toContain("Adamant");
+    expect(options).toContain("Jolly");
+    expect(options).toContain("Hardy");
+    expect(options.length).toBeGreaterThanOrEqual(25);
   });
 
   // -------------------------------------------------------------------------
@@ -631,31 +626,28 @@ describe("RadialStatEditor — SVG investment polygon", () => {
   });
 });
 
-describe("RadialStatEditor — nature pill", () => {
+describe("RadialStatEditor — nature select (replaces old pill button)", () => {
   // -------------------------------------------------------------------------
-  // 22. Nature pill renders with current nature and label
+  // 22. Nature select renders with current nature value
   // -------------------------------------------------------------------------
-  it("renders nature pill with NATURE label in VGC format", () => {
+  it("renders nature select with current nature value in VGC format", () => {
     renderEditor({ nature: "Adamant" }, VGC_FORMAT);
-    // The pill button has aria-label "NATURE: Adamant"
-    const pill = screen.getByRole("button", { name: /NATURE: Adamant/i });
-    expect(pill).toBeInTheDocument();
+    // The native <select> has aria-label "NATURE" in VGC
+    const select = screen.getByRole("combobox", { name: /NATURE/i });
+    expect((select as HTMLSelectElement).value).toBe("Adamant");
   });
 
-  it("renders nature pill with STAT ALIGN label in Champions format", () => {
+  it("renders nature select with 'STAT ALIGN' aria-label in Champions format", () => {
     renderEditor({ nature: "Adamant" }, CHAMPIONS_FORMAT);
-    const pill = screen.getByRole("button", { name: /STAT ALIGN: Adamant/i });
-    expect(pill).toBeInTheDocument();
+    const select = screen.getByRole("combobox", { name: /STAT ALIGN/i });
+    expect((select as HTMLSelectElement).value).toBe("Adamant");
   });
 
-  it("clicking the nature pill calls onUpdate with a new nature", () => {
+  it("changing nature select calls onUpdate with selected nature", () => {
     const { onUpdate } = renderEditor({ nature: "Hardy" }, VGC_FORMAT);
-    const pill = screen.getByRole("button", { name: /NATURE: Hardy/i });
-    fireEvent.click(pill);
-    // cycleNature(Hardy, attack) → first +Atk nature (Adamant/Lonely/Brave/Naughty)
-    expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ nature: expect.any(String) })
-    );
+    const select = screen.getByRole("combobox", { name: /NATURE/i });
+    fireEvent.change(select, { target: { value: "Jolly" } });
+    expect(onUpdate).toHaveBeenCalledWith({ nature: "Jolly" });
   });
 
   it("shows +ATK color span when nature boosts ATK (Adamant)", () => {

@@ -49,7 +49,10 @@ jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => mockUseIsMobile(),
 }));
 
-// @trainers/pokemon — stub getSpeciesTypes and getTypeColor
+// @trainers/pokemon — stub getSpeciesTypes, getTypeColor, and all picker-loader
+// functions that item-picker.tsx and ability-picker.tsx call at module load
+// time (getAllItems is a top-level const; without this stub Jest throws
+// "getAllItems is not a function" before the test even renders).
 jest.mock("@trainers/pokemon", () => ({
   getSpeciesTypes: jest.fn((species: string) => {
     if (species === "Garchomp") return ["Dragon", "Ground"];
@@ -61,8 +64,22 @@ jest.mock("@trainers/pokemon", () => ({
   getFormsForSpecies: jest.fn(() => []),
   getMegaAbilityForSpecies: jest.fn(() => null),
   getMegaStoneForSpecies: jest.fn(() => null),
+  getCanonicalBaseSpecies: jest.fn((s: string) => s),
   NATURE_EFFECTS: {},
   formatSupportsLevel: jest.fn(() => false),
+  // item-picker.tsx calls getAllItems() at module load — return empty array
+  getAllItems: jest.fn(() => []),
+  getItemShortDesc: jest.fn(() => ""),
+  getLegalItems: jest.fn(() => null),
+  legalSetOrPermissive: jest.fn(
+    (s: Set<string> | null) => s ?? new Set<string>()
+  ),
+  // ability-picker.tsx
+  getAllAbilities: jest.fn(() => []),
+  getAbilityShortDesc: jest.fn(() => ""),
+  getLegalAbilities: jest.fn(() => null),
+  getValidAbilities: jest.fn(() => []),
+  formatHasTera: jest.fn(() => true),
 }));
 
 // useTargetAsPokemon — controlled stub
@@ -145,6 +162,28 @@ jest.mock("../shared/use-identity-state", () => ({
       handleShinyToggle: jest.fn(),
     };
   }),
+}));
+
+// ItemCell stub — renders "ITEM· {item}" so existing chip assertions keep passing
+jest.mock("../shared/fields/item", () => ({
+  ItemCell: ({ pokemon }: { pokemon: Tables<"pokemon"> }) =>
+    pokemon.held_item ? (
+      <div data-testid="item-cell">
+        <span>ITEM·</span>
+        <span>{pokemon.held_item}</span>
+      </div>
+    ) : null,
+}));
+
+// AbilityCell stub — renders "ABIL· {ability}" so existing chip assertions keep passing
+jest.mock("../shared/fields/ability", () => ({
+  AbilityCell: ({ pokemon }: { pokemon: Tables<"pokemon"> }) =>
+    pokemon.ability ? (
+      <div data-testid="ability-cell">
+        <span>ABIL·</span>
+        <span>{pokemon.ability}</span>
+      </div>
+    ) : null,
 }));
 
 // RadialStatEditor stub
@@ -465,6 +504,10 @@ function makeCalcStub(
     setGravity: jest.fn(),
     fairyAura: false,
     setFairyAura: jest.fn(),
+    magicRoom: false,
+    setMagicRoom: jest.fn(),
+    wonderRoom: false,
+    setWonderRoom: jest.fn(),
     attackerSide: {
       reflect: false,
       lightScreen: false,
@@ -476,6 +519,9 @@ function makeCalcStub(
       stealthRock: false,
       spikes: 0 as const,
       saltCure: false,
+      leechSeed: false,
+      crit: false,
+      singleTarget: false,
     },
     defenderSide: {
       reflect: false,
@@ -488,6 +534,9 @@ function makeCalcStub(
       stealthRock: false,
       spikes: 0 as const,
       saltCure: false,
+      leechSeed: false,
+      crit: false,
+      singleTarget: false,
     },
     setAttackerSide: jest.fn(),
     setDefenderSide: jest.fn(),
