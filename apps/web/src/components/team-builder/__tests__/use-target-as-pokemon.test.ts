@@ -246,6 +246,27 @@ describe("useTargetAsPokemon — onUpdate routing", () => {
     }
   );
 
+  // ---------------------------------------------------------------------------
+  // IV fields → setDefenderIv with long→short translation
+  // ---------------------------------------------------------------------------
+  it.each([
+    ["iv_hp", "hp", 31],
+    ["iv_attack", "atk", 0],
+    ["iv_defense", "def", 31],
+    ["iv_special_attack", "spa", 12],
+    ["iv_special_defense", "spd", 31],
+    ["iv_speed", "spe", 31],
+  ] as const)(
+    "onUpdate({ %s: %i }) calls setDefenderIv('%s', %i)",
+    (col, shortKey, value) => {
+      const setDefenderIv = jest.fn();
+      const { onUpdate } = useTargetAsPokemon(makeCalcState({ setDefenderIv }));
+      onUpdate({ [col]: value });
+      expect(setDefenderIv).toHaveBeenCalledWith(shortKey, value);
+      expect(setDefenderIv).toHaveBeenCalledTimes(1);
+    }
+  );
+
   it("onUpdate({ ev_special_attack: 252 }) calls setDefenderEv('spa', 252)", () => {
     const setDefenderEv = jest.fn();
     const { onUpdate } = useTargetAsPokemon(makeCalcState({ setDefenderEv }));

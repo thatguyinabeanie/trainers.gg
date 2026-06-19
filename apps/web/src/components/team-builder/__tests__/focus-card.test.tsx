@@ -59,19 +59,22 @@ jest.mock("../stats/radial-stat-editor", () => ({
   ),
 }));
 
-// MovesLane — stub that exposes the presentation prop for assertions
+// MovesLane — stub that exposes the presentation and fieldErrors props for assertions
 jest.mock("../lanes/moves-lane", () => ({
   MovesLane: ({
     pokemon,
     presentation,
+    fieldErrors = [],
   }: {
     pokemon: { species?: string | null } | null;
     presentation?: string;
+    fieldErrors?: Array<{ message: string }>;
   }) => (
     <div
       data-testid="moves-lane"
       data-species={pokemon?.species ?? ""}
       data-presentation={presentation ?? "list"}
+      data-field-errors={fieldErrors.map((e) => e.message).join("|")}
     />
   ),
 }));
@@ -487,15 +490,13 @@ describe("FocusCard — validation errors", () => {
         slotErrors: [makeError("move1", "error", "Move 1 required")],
       }
     );
-    // FieldErrors inside the moves panel renders the alert
-    // The stub MovesLane doesn't render FieldErrors, so errors rendered by
-    // FocusCard's own layout (via fieldErrors passed to MovesLane) won't be
-    // visible from the stub. However, FocusCard passes movesErrors to MovesLane
-    // as fieldErrors — we confirm the error partition reaches the card at all
-    // by checking that no crash occurs and that errorsForFields correctly filters.
-    // The alert from the identity area would show identity errors only.
-    // Here we only assert no error is thrown and the card renders.
-    expect(screen.getByTestId("moves-lane")).toBeInTheDocument();
+    // FocusCard partitions slotErrors by field group and passes movesErrors to
+    // MovesLane as fieldErrors. The mock exposes them via data-field-errors so
+    // we can assert the partition actually reaches the component.
+    expect(screen.getByTestId("moves-lane")).toHaveAttribute(
+      "data-field-errors",
+      "Move 1 required"
+    );
   });
 
   // -------------------------------------------------------------------------
