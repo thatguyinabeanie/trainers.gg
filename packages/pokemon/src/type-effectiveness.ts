@@ -308,24 +308,25 @@ export const POKEMON_TYPES: Record<string, PokemonType[]> = {
  * Returns an empty array if the species is not found in the dex.
  *
  * Resolution order:
- *   1. Champions mega type overrides — applied unconditionally without a
- *      `formatId` guard. This is safe because every key in
- *      `CHAMPIONS_MEGA_TYPE_OVERRIDES` (currently: Staraptor-Mega,
- *      Barbaracle-Mega) is also present in @pkmn/dex with **identical** types.
- *      The override is purely an early-exit optimisation — it can never produce
- *      a different result than step 2 would for the same name, so a
- *      non-Champions caller passing one of these names receives the correct,
- *      standard-dex typing regardless. If a future regulation adds a Champions-
- *      exclusive mega whose typing diverges from @pkmn/dex, a `formatId?`
- *      parameter must be added at that point.
+ *   1. Champions mega type overrides — the overrides exist to supply
+ *      authoritative typing for synthetic Champions mega forms (Staraptor-Mega,
+ *      Barbaracle-Mega) independent of any external dex. They are applied
+ *      unconditionally because `getSpeciesTypes()` is format-agnostic (takes no
+ *      `formatId`), so there is no per-format gate. For the current two entries
+ *      the override happens to match what @pkmn/dex returns, making the early
+ *      exit idempotent — but that is incidental, not the reason the overrides
+ *      exist. If a future regulation introduces a Champions mega whose typing
+ *      DIVERGES from the standard dex, a `formatId?` parameter must be added at
+ *      that point to gate the override per-format.
  *   2. Gen 9 dex (current gen + Past-tagged species like Aerodactyl)
  *   3. Gen 6 dex fallback — standard Gen 6/7 mega forms not in Gen 9
  */
 export function getSpeciesTypes(species: string): PokemonType[] {
   try {
     // 1. Champions mega type overrides (Staraptor-Mega, Barbaracle-Mega).
-    //    Safe to apply unconditionally — types are identical to @pkmn/dex.
-    //    See JSDoc above for the full invariant.
+    //    Applied unconditionally to supply self-contained, authoritative typing
+    //    for Champions megas. Currently idempotent vs @pkmn/dex — incidental.
+    //    See JSDoc above for rationale and the formatId caveat.
     const override = getChampionsMegaTypeOverride(species);
     if (override !== null) {
       return override.filter((t): t is PokemonType =>

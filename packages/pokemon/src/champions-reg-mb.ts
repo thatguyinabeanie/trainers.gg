@@ -194,8 +194,17 @@ const CHAMPIONS_MB_MEGA_STATS: ReadonlyMap<string, MegaStatBlock> = new Map([
 // =============================================================================
 
 /**
- * Type overrides for M-B megas whose typing differs from the base species and
- * is not present in @pkmn/dex. Only 2 new entries in M-B.
+ * Authoritative type data for M-B mega forms whose typing differs from their
+ * base species. Stored here so Champions type resolution is self-contained and
+ * does not depend on external dex state.
+ *
+ * - Staraptor-Mega: base is Normal/Flying → mega changes Normal to Fighting.
+ * - Barbaracle-Mega: base is Rock/Water → mega changes Water to Fighting.
+ *
+ * These two entries also happen to be present in @pkmn/dex (gen 6 and gen 9)
+ * with identical types, so applying the override is currently idempotent.
+ * That is incidental — the overrides exist to be authoritative for Champions,
+ * not because they are absent from the external dex.
  */
 const CHAMPIONS_MB_MEGA_TYPES: ReadonlyMap<string, readonly string[]> = new Map(
   [
