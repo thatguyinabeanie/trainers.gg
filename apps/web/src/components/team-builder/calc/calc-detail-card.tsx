@@ -144,7 +144,12 @@ export function CalcDetailCard({
       ? baseOutput.recoveryTier
       : baseVerdict;
 
-  const eff = getMoveEffectiveness(moveName, defender.species, weather);
+  const eff = getMoveEffectiveness(
+    moveName,
+    defender.species,
+    weather,
+    format?.id
+  );
 
   // Raw damage range from rolls — scaled by the same override factor used
   // for the percentages so the two readouts stay consistent.

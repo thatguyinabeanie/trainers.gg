@@ -68,7 +68,12 @@ function CalcRow({ moveName, output, hasPokemon }: CalcRowProps) {
   const effectiveWeather = calc.weather || calc.inferredWeather;
   const eff =
     moveName && hasDefender && !isStatus
-      ? getMoveEffectiveness(moveName, calc.defenderSpecies, effectiveWeather)
+      ? getMoveEffectiveness(
+          moveName,
+          calc.defenderSpecies,
+          effectiveWeather,
+          calc.format?.id
+        )
       : null;
 
   return (
@@ -154,7 +159,7 @@ export function CalcColumn({ pokemon }: CalcColumnProps) {
   const outputs = calc.computeForwardOutputsForRow(pokemon);
   const hasPokemon = pokemon !== null;
   return (
-    <div className="min-w-60 w-60 max-w-60 flex flex-col justify-center shrink-0 overflow-hidden bg-[color-mix(in_oklch,var(--muted)_40%,transparent)] border-l border-border py-3 gap-1 relative animate-[calc-col-enter_0.3s_cubic-bezier(0.4,0,0.2,1)_both]">
+    <div className="border-border relative flex w-60 max-w-60 min-w-60 shrink-0 animate-[calc-col-enter_0.3s_cubic-bezier(0.4,0,0.2,1)_both] flex-col justify-center gap-1 overflow-hidden border-l bg-[color-mix(in_oklch,var(--muted)_40%,transparent)] py-3">
       <div className="calc-col-header">CALC</div>
       {MOVE_SLOTS.map((slot, i) => (
         <CalcRow

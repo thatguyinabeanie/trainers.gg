@@ -629,7 +629,8 @@ function runCalc(
   isCrit: boolean,
   field: Field,
   faintedForMove?: number,
-  weather?: string
+  weather?: string,
+  formatId?: string | null
 ): CalcOutput | null {
   try {
     const basePowerOverride =
@@ -690,7 +691,7 @@ function runCalc(
     // like Weather Ball resolve to the correct type (e.g. Fire under Sun).
     const moveEffectiveness = isImmune
       ? 0
-      : getMoveEffectiveness(moveName, defenderSpeciesName, weather);
+      : getMoveEffectiveness(moveName, defenderSpeciesName, weather, formatId);
     const isSuperEffective = moveEffectiveness > 1;
     const recoveryVerdict = isImmune
       ? { tier: null, suffix: "" }
@@ -1265,7 +1266,8 @@ export function useCalcState({
         isCrit,
         sharedOffenseField,
         faintedYours,
-        effectiveWeather
+        effectiveWeather,
+        format?.id
       );
     }
 
@@ -1280,7 +1282,8 @@ export function useCalcState({
       isCrit,
       sharedDefenseField,
       faintedTheirs,
-      effectiveWeather
+      effectiveWeather,
+      format?.id
     );
   }
 
@@ -1326,7 +1329,8 @@ export function useCalcState({
         isCrit,
         sharedOffenseField,
         faintedYours,
-        effectiveWeather
+        effectiveWeather,
+        format?.id
       );
     });
   }
@@ -1350,7 +1354,8 @@ export function useCalcState({
       false,
       sharedDefenseField,
       faintedTheirs,
-      effectiveWeather
+      effectiveWeather,
+      format?.id
     );
   }
 
@@ -1399,7 +1404,8 @@ export function useCalcState({
         false,
         sharedDefenseField,
         faintedTheirs,
-        effectiveWeather
+        effectiveWeather,
+        format?.id
       );
     });
   }
