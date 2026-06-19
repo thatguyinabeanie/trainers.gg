@@ -1450,7 +1450,7 @@ export async function getMatchDetails(supabase: TypedClient, matchId: number) {
       game_wins2,
       player1:alts!tournament_matches_alt1_id_fkey(id, username, avatar_url),
       player2:alts!tournament_matches_alt2_id_fkey(id, username, avatar_url),
-      round:tournament_rounds(*)
+      round:tournament_rounds(id, phase_id, round_number, name, status, start_time, end_time)
     `
     )
     .eq("id", matchId)

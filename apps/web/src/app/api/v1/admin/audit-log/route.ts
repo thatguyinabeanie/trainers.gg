@@ -90,6 +90,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const validActions = actionsParam
     ? actionsParam
         .split(",")
+        .map((a) => a.trim())
         .filter((a): a is AuditAction =>
           VALID_AUDIT_ACTIONS.has(a as AuditAction)
         )
