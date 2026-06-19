@@ -101,13 +101,14 @@ export async function getAuditLog(
     piiMap,
   } = options;
 
-  // Select all audit_log fields + joined actor user for display.
+  // Explicit audit_log column allowlist (no wildcard — a future column must be
+  // opted in here) + joined actor user for display.
   // Only columns that exist on public.users — first_name/last_name moved to
   // private.user_pii and are merged below via the optional piiMap.
   let query = supabase
     .from("audit_log")
     .select(
-      "*, actor_user:users!audit_log_actor_user_id_fkey(id, username, image)",
+      "id, action, actor_user_id, actor_alt_id, community_id, tournament_id, match_id, game_id, metadata, created_at, actor_user:users!audit_log_actor_user_id_fkey(id, username, image)",
       { count: "exact", head: false }
     )
     .order("created_at", { ascending: false })

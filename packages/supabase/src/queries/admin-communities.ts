@@ -128,7 +128,11 @@ export async function getCommunityAdminDetails(
     .from("communities")
     .select(
       `
-      *,
+      id, slug, name, description, about, status, tier, owner_user_id,
+      logo_url, banner_url, icon, social_links, discord_invite_url,
+      bluesky_handle, bluesky_did, pds_status, is_featured, featured_order,
+      platform_fee_percentage, subscription_tier, subscription_started_at,
+      subscription_expires_at, created_at, updated_at,
       owner:users!communities_owner_user_id_fkey(id, username, image),
       community_admin_notes(notes, updated_at, updated_by)
     `
