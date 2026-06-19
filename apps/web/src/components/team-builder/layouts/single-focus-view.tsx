@@ -210,15 +210,15 @@ export function SingleFocusView({
 
       {/*
         Dotted-canvas wrapper — the scrollable region that fills the available
-        height. The stage (FocusCard/empty CTA) and carousel are centered as ONE
-        column inside this wrapper, matching the v7 mockup's .stagewrap rule:
-          flex-direction:column; align-items:center; justify-content:center
-        Keyboard and swipe handlers live here so the whole canvas is interactive.
+        height. Keyboard and swipe handlers live here so the whole canvas is
+        interactive. The inner wrapper below provides the centering via my-auto
+        (safe for overflow-y-auto) instead of justify-center (which clips content
+        that overflows below the fold on short viewports).
       */}
       <div
         ref={stageRef}
         className={cn(
-          "flex min-h-full flex-col items-center justify-center gap-4 overflow-y-auto p-4",
+          "flex min-h-full flex-col items-center overflow-y-auto p-4",
           // No dotted texture here — the builder shell already renders a global
           // fixed -z-10 dotted grid behind the whole page. Adding one here
           // double-stacked the grid (24px over the shell's 28px → moiré).
@@ -230,145 +230,158 @@ export function SingleFocusView({
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       >
-        {/* ── Stage: FocusCard or EmptySlotCenterpiece ──────────────────────── */}
-        {activePokemon !== null ? (
-          /* ── Filled slot: CalcVersusView (calc on) or FocusCard (calc off) ── */
-          <div
-            key={animKey}
-            className={cn(
-              "w-full",
-              // motion-safe: direction-aware slide + fade in
-              // motion-reduce: instant swap (respects prefers-reduced-motion)
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200",
-              slideDir === "right" && "motion-safe:slide-in-from-right-4",
-              slideDir === "left" && "motion-safe:slide-in-from-left-4",
-              slideDir === null && "motion-safe:fade-in"
-            )}
-          >
-            {calc.calcEnabled ? (
-              <CalcVersusView
-                pokemon={activePokemon}
-                format={format}
-                teamItems={resolvedTeamItems}
-                onUpdate={(fields) => onPokemonUpdate(activePokemon.id, fields)}
-                calc={calc}
-              />
-            ) : (
-              <FocusCard
-                pokemon={activePokemon}
-                format={format}
-                teamItems={resolvedTeamItems}
-                onUpdate={(fields) => onPokemonUpdate(activePokemon.id, fields)}
-                onRemove={() => onRemove(activeIdx)}
-                slotErrors={activeErrors}
-              />
-            )}
-          </div>
-        ) : (
-          /* ── Empty slot: centerpiece CTA with ghost hints ─────────────── */
-          <EmptySlotCenterpiece
-            slotIdx={activeIdx}
-            onAdd={() => setEmptyPickerOpen(true)}
-            animKey={animKey}
-            slideDir={slideDir}
-          />
-        )}
-
-        {/* ── Carousel row — arrows flanking the sprite tab strip ────────── */}
         {/*
+          Inner wrapper: centers the stage + carousel + dots as a column when
+          there is vertical room, but scrolls cleanly (carousel never clipped)
+          when content is taller than the viewport. my-auto provides the
+          centering equivalent of justify-center without clipping overflow.
+        */}
+        <div className="my-auto flex flex-col items-center gap-4">
+          {/* ── Stage: FocusCard or EmptySlotCenterpiece ──────────────────────── */}
+          {activePokemon !== null ? (
+            /* ── Filled slot: CalcVersusView (calc on) or FocusCard (calc off) ── */
+            <div
+              key={animKey}
+              className={cn(
+                "w-full",
+                // motion-safe: direction-aware slide + fade in
+                // motion-reduce: instant swap (respects prefers-reduced-motion)
+                "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200",
+                slideDir === "right" && "motion-safe:slide-in-from-right-4",
+                slideDir === "left" && "motion-safe:slide-in-from-left-4",
+                slideDir === null && "motion-safe:fade-in"
+              )}
+            >
+              {calc.calcEnabled ? (
+                <CalcVersusView
+                  pokemon={activePokemon}
+                  format={format}
+                  teamItems={resolvedTeamItems}
+                  onUpdate={(fields) =>
+                    onPokemonUpdate(activePokemon.id, fields)
+                  }
+                  calc={calc}
+                />
+              ) : (
+                <FocusCard
+                  pokemon={activePokemon}
+                  format={format}
+                  teamItems={resolvedTeamItems}
+                  onUpdate={(fields) =>
+                    onPokemonUpdate(activePokemon.id, fields)
+                  }
+                  onRemove={() => onRemove(activeIdx)}
+                  slotErrors={activeErrors}
+                />
+              )}
+            </div>
+          ) : (
+            /* ── Empty slot: centerpiece CTA with ghost hints ─────────────── */
+            <EmptySlotCenterpiece
+              slotIdx={activeIdx}
+              onAdd={() => setEmptyPickerOpen(true)}
+              animKey={animKey}
+              slideDir={slideDir}
+            />
+          )}
+
+          {/* ── Carousel row — arrows flanking the sprite tab strip ────────── */}
+          {/*
           Centered under the stage — justify-center keeps the group symmetric
           even when the prev arrow is disabled (both arrows always rendered at
           the same size so the layout doesn't shift at slot 0 or 5).
           Arrows flank the SpriteTabStrip inline, matching the v7 mockup.
         */}
-        <div className="flex w-full items-center justify-center gap-2">
-          {/* Previous arrow — always rendered (disabled dims it, never hides it) */}
-          <button
-            type="button"
-            aria-label="Previous Pokémon slot"
-            onClick={() => activateClamped(activeIdx - 1)}
-            disabled={activeIdx === 0}
-            className={cn(
-              // ≥40px tap target on mobile per mobile-responsiveness rule
-              "flex size-10 shrink-0 items-center justify-center rounded-full",
-              "bg-background/70 text-muted-foreground backdrop-blur-sm",
-              "border-border/40 border shadow-sm",
-              "hover:bg-background hover:text-foreground transition-all duration-150",
-              "disabled:pointer-events-none disabled:opacity-30",
-              // Slightly smaller on desktop where space is less precious
-              "sm:size-9"
-            )}
-          >
-            <ChevronLeft className="size-4" aria-hidden />
-          </button>
-
-          {/* Sprite tab strip — wrapped in SortableContext for DnD reorder */}
-          {/* Parent DndContext is provided by team-workspace */}
-          <div className="overflow-x-auto">
-            <SortableContext
-              items={itemIds}
-              strategy={horizontalListSortingStrategy}
-            >
-              <SpriteTabStrip
-                slots={slots}
-                activeIdx={activeIdx}
-                onActivate={onActivate}
-                itemIds={itemIds}
-                errorsBySlot={errorsBySlot}
-              />
-            </SortableContext>
-          </div>
-
-          {/* Next arrow — always rendered at same size as prev for symmetry */}
-          <button
-            type="button"
-            aria-label="Next Pokémon slot"
-            onClick={() => activateClamped(activeIdx + 1)}
-            disabled={activeIdx === SLOT_COUNT - 1}
-            className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full",
-              "bg-background/70 text-muted-foreground backdrop-blur-sm",
-              "border-border/40 border shadow-sm",
-              "hover:bg-background hover:text-foreground transition-all duration-150",
-              "disabled:pointer-events-none disabled:opacity-30",
-              "sm:size-9"
-            )}
-          >
-            <ChevronRight className="size-4" aria-hidden />
-          </button>
-        </div>
-
-        {/* ── Dot row — compact position indicator below the carousel ────── */}
-        <div
-          className="flex w-full items-center justify-center gap-1.5"
-          role="group"
-          aria-label="Slot position indicators"
-        >
-          {Array.from({ length: SLOT_COUNT }, (_, i) => (
+          <div className="flex w-full items-center justify-center gap-2">
+            {/* Previous arrow — always rendered (disabled dims it, never hides it) */}
             <button
-              key={i}
               type="button"
-              aria-label={`Go to slot ${i + 1}`}
-              aria-pressed={i === activeIdx}
-              onClick={() => activateClamped(i)}
+              aria-label="Previous Pokémon slot"
+              onClick={() => activateClamped(activeIdx - 1)}
+              disabled={activeIdx === 0}
               className={cn(
-                // ≥40px hit area on mobile; shrinks on sm+ for visual compactness
-                "flex size-10 items-center justify-center sm:size-5",
-                "rounded-full transition-all duration-150"
+                // ≥40px tap target on mobile per mobile-responsiveness rule
+                "flex size-10 shrink-0 items-center justify-center rounded-full",
+                "bg-background/70 text-muted-foreground backdrop-blur-sm",
+                "border-border/40 border shadow-sm",
+                "hover:bg-background hover:text-foreground transition-all duration-150",
+                "disabled:pointer-events-none disabled:opacity-30",
+                // Slightly smaller on desktop where space is less precious
+                "sm:size-9"
               )}
             >
-              <span
-                className={cn(
-                  "block rounded-full transition-all duration-150",
-                  i === activeIdx
-                    ? "bg-primary size-2"
-                    : "bg-muted-foreground/40 hover:bg-muted-foreground/70 size-1.5"
-                )}
-                aria-hidden
-              />
+              <ChevronLeft className="size-4" aria-hidden />
             </button>
-          ))}
+
+            {/* Sprite tab strip — wrapped in SortableContext for DnD reorder */}
+            {/* Parent DndContext is provided by team-workspace */}
+            <div className="overflow-x-auto">
+              <SortableContext
+                items={itemIds}
+                strategy={horizontalListSortingStrategy}
+              >
+                <SpriteTabStrip
+                  slots={slots}
+                  activeIdx={activeIdx}
+                  onActivate={onActivate}
+                  itemIds={itemIds}
+                  errorsBySlot={errorsBySlot}
+                />
+              </SortableContext>
+            </div>
+
+            {/* Next arrow — always rendered at same size as prev for symmetry */}
+            <button
+              type="button"
+              aria-label="Next Pokémon slot"
+              onClick={() => activateClamped(activeIdx + 1)}
+              disabled={activeIdx === SLOT_COUNT - 1}
+              className={cn(
+                "flex size-10 shrink-0 items-center justify-center rounded-full",
+                "bg-background/70 text-muted-foreground backdrop-blur-sm",
+                "border-border/40 border shadow-sm",
+                "hover:bg-background hover:text-foreground transition-all duration-150",
+                "disabled:pointer-events-none disabled:opacity-30",
+                "sm:size-9"
+              )}
+            >
+              <ChevronRight className="size-4" aria-hidden />
+            </button>
+          </div>
+
+          {/* ── Dot row — compact position indicator below the carousel ────── */}
+          <div
+            className="flex w-full items-center justify-center gap-1.5"
+            role="group"
+            aria-label="Slot position indicators"
+          >
+            {Array.from({ length: SLOT_COUNT }, (_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Go to slot ${i + 1}`}
+                aria-pressed={i === activeIdx}
+                onClick={() => activateClamped(i)}
+                className={cn(
+                  // ≥40px hit area on mobile; shrinks on sm+ for visual compactness
+                  "flex size-10 items-center justify-center sm:size-5",
+                  "rounded-full transition-all duration-150"
+                )}
+              >
+                <span
+                  className={cn(
+                    "block rounded-full transition-all duration-150",
+                    i === activeIdx
+                      ? "bg-primary size-2"
+                      : "bg-muted-foreground/40 hover:bg-muted-foreground/70 size-1.5"
+                  )}
+                  aria-hidden
+                />
+              </button>
+            ))}
+          </div>
         </div>
+        {/* end inner centering wrapper */}
       </div>
     </>
   );
