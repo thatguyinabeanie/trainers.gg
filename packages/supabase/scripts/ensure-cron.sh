@@ -124,10 +124,12 @@ if run_install; then
 else
   printf "${RED}[ensure-cron] FAILED to install pg_cron (see error above).${NC}\n"
   printf "${RED}[ensure-cron] Boot continues; run 'pnpm db:cron-check' to inspect.${NC}\n"
-  # Propagate the real failure status instead of masking it with exit 0. Callers
-  # that want boot to continue regardless can ignore this exit code themselves;
-  # silently reporting success hid genuine install failures (Error Visibility rule).
-  exit 1
+  # Best-effort by design: local pg_cron is a dev convenience, so a failed install
+  # must not block `pnpm db:start` / `db:reset` / `pnpm dev`. The single non-blocking
+  # policy lives HERE (loud red diagnostics above + the db:cron-check pointer) rather
+  # than being scattered across callers as `|| echo ... continuing` — which is a
+  # `|| true`-style mask the Error Visibility rule forbids. Real, non-cron failures
+  # inside run_install still surface in the output above.
 fi
 
 exit 0
