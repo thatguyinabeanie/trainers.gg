@@ -37,7 +37,8 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `reviewing-pr`                   | PR review orchestrator: dispatches domain-specific checks                                                                   |
 | `reviewing-database`             | RLS, migrations, indexes, N+1, unbounded fetches, query perf                                                                |
 | `reviewing-caching`              | Next.js `'use cache'` (Cache Components), TanStack Query, cache invalidation                                                |
-| `reviewing-pr-feedback`          | Fetch/group/resolve PR comments with user, no deferrals, re-review loop                                                     |
+| `reviewing-pr-feedback`          | Orchestrate PR feedback: wait for review+CI, enumerate CI, delegate comments, re-review loop                                |
+| `responding-to-review-comments`  | Address PR review comments: fetch, group, two-reply protocol (decision + done), resolve threads                             |
 | `deciding-data-access`           | Deciding where a read/route should live — SSR vs /api/v1 vs direct; anon vs authed; caching + rate-limit requirements       |
 | `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure                                                   |
 | `tracking-deferred-work`         | Log/update/complete an agreed-but-parked improvement in `docs/deferred-improvements.md` ("small fix now, bigger one later") |
@@ -312,7 +313,7 @@ Pass `model` explicitly on every Agent dispatch. Anything that produces large ou
 
 **Never declare a PR "ready to merge" before every review thread is resolved and CI is green.** For PR-feedback work, use the `reviewing-pr-feedback` skill — it enforces fetch-all-comments → group → fix → reply → resolve → re-review before completion.
 
-**No "deferred" / "follow-up" / "for future" buckets.** When reviewing PRs, databases, caching, or code, address every finding in the current session. Only label something as deferred if the user explicitly tells you to. Review skills (`reviewing-pr-feedback`, `reviewing-pr`, `reviewing-database`, `reviewing-caching`) all share this rule — see the "No Deferrals" section in each.
+**No "deferred" / "follow-up" / "for future" buckets.** When reviewing PRs, databases, caching, or code, address every finding in the current session. Only label something as deferred if the user explicitly tells you to. Review skills (`reviewing-pr-feedback`, `responding-to-review-comments`, `reviewing-pr`, `reviewing-database`, `reviewing-caching`) all share this rule — see the "No Deferrals" section in each.
 
 **Enumerate every CI check by name with pass/fail/pending before declaring CI green.** "CI is running" or "CI looks good" is not evidence — list each check (Lint, Typecheck, Tests, codecov/patch, E2E, preview deploys) and its current status. See Phase 1 of `reviewing-pr-feedback` and the report format in the `pre-push-checker` agent.
 

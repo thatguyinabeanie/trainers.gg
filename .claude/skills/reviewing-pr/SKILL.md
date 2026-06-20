@@ -34,7 +34,7 @@ Dispatch independent checks in parallel where possible.
 
 ### Phase 3: CI + Feedback
 
-After fixes are pushed, invoke `reviewing-pr-feedback` to monitor CI, fetch comments, address them with the user, and reply.
+After fixes are pushed, invoke `reviewing-pr-feedback` to monitor CI and run the feedback loop (which delegates comment handling to `responding-to-review-comments`).
 
 ### Phase 4: Final Verification
 
