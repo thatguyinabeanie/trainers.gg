@@ -30,13 +30,29 @@ export const lastNameSchema = z
  * - Accepts YYYY-MM-DD date strings (set / update path)
  * - Accepts empty string "" to represent "clear this field"
  * - Rejects any other non-empty string that doesn't match the date format
+ * - Rejects impossible calendar dates (e.g. 2026-99-99, 2026-02-30) that pass
+ *   the shape regex but would fail the Postgres `date` cast with a 500 error.
+ *   Validated via a UTC round-trip check (no external libraries needed).
  */
 export const birthDateSchema = z
   .string()
   .trim()
   .refine(
-    (val) => val === "" || /^\d{4}-\d{2}-\d{2}$/.test(val),
-    "Birth date must be in YYYY-MM-DD format"
+    (val) => {
+      if (val === "") return true;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) return false;
+      // Shape alone accepts impossible dates like 2026-99-99, which then fail the
+      // Postgres `date` cast with a 500 instead of a clean validation error. Confirm
+      // the parts round-trip to a real calendar date (UTC to avoid TZ drift).
+      const [year, month, day] = val.split("-").map(Number);
+      const dt = new Date(Date.UTC(year!, month! - 1, day!));
+      return (
+        dt.getUTCFullYear() === year &&
+        dt.getUTCMonth() === month! - 1 &&
+        dt.getUTCDate() === day
+      );
+    },
+    "Birth date must be a valid date in YYYY-MM-DD format"
   );
 
 // Social links schema
