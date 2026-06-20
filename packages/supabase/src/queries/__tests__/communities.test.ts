@@ -75,16 +75,52 @@ const createMockClient = () => {
     }),
   };
 
+  // A minimal private-schema builder that .schema("private") returns.
+  // Supports the .from("user_pii").select(...).in(...) chain used by getPiiByUserIds.
+  const privateSchemaBuilder: MockQueryBuilder = {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    range: jest.fn().mockResolvedValue({ data: [], error: null, count: null }),
+    or: jest.fn().mockReturnThis(),
+    is: jest.fn().mockReturnThis(),
+    in: jest.fn().mockReturnThis(),
+    ilike: jest.fn().mockReturnThis(),
+    not: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+    then: jest.fn((resolve) => {
+      return Promise.resolve({ data: [], error: null, count: null }).then(
+        resolve
+      );
+    }),
+  };
+  const privateSchema = {
+    from: jest.fn().mockReturnValue(privateSchemaBuilder),
+    _queryBuilder: privateSchemaBuilder,
+  };
+
   return {
     from: jest.fn().mockReturnValue(mockQueryBuilder),
     rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
+    schema: jest.fn().mockReturnValue(privateSchema),
     auth: {
       getUser: jest
         .fn()
         .mockResolvedValue({ data: { user: null }, error: null }),
+      admin: {
+        getUserById: jest
+          .fn()
+          .mockResolvedValue({ data: { user: null }, error: null }),
+      },
     },
     _queryBuilder: mockQueryBuilder,
-  } as unknown as TypedClient & { _queryBuilder: MockQueryBuilder };
+    _privateSchema: privateSchema,
+  } as unknown as TypedClient & {
+    _queryBuilder: MockQueryBuilder;
+    _privateSchema: typeof privateSchema;
+  };
 };
 
 describe("communities queries", () => {
@@ -775,34 +811,213 @@ describe("communities queries", () => {
   });
 
   describe("listCommunityStaffWithRoles", () => {
-    it("should fetch staff members with role information", async () => {
-      const mockOrg = { owner_user_id: "user-1" };
-      const mockStaff = [
-        {
-          id: 1,
-          user_id: "user-2",
-          user: { id: "user-2", username: "staff1" },
-        },
+    /**
+     * Build a mock client for listCommunityStaffWithRoles.
+     *
+     * The function issues .from() calls in this order (all via the public schema):
+     *   0. communities — .single() → owner_user_id
+     *   1. community_staff — .then() → staff rows
+     *   2. groups — .then() → groups (empty for simple case)
+     *   3. group_roles — .then() → group roles (empty for simple case)
+     *   4. user_group_roles — .then() → user group roles (empty for simple case)
+     *   5. users — .single() → owner user row
+     *
+     * Plus:
+     *   - supabase.schema("private").from("user_pii") — .then() → PII rows
+     *   - supabase.auth.admin.getUserById(id) → email rows (one per user)
+     */
+    /**
+     * Build mock clients sequenced to match listCommunityStaffWithRoles.
+     *
+     * The public client issues .from() calls in this order:
+     *   0. communities  → .single() → { owner_user_id }
+     *   1. community_staff → .then() → staff rows
+     *   2. groups       → .then() → groups
+     *   3. group_roles  → .then() → group roles
+     *   4. user_group_roles → .then() → user group roles
+     *   5. users        → .single() → owner user row
+     *
+     * The service client handles PII + email enrichment (3rd arg):
+     *   - serviceSupabase.rpc("get_users_pii", ...) → piiRows
+     *   - serviceSupabase.auth.admin.getUserById(id) → email (one call per user)
+     *
+     * Returns { client, serviceClient } — pass both to listCommunityStaffWithRoles.
+     */
+    function buildStaffWithRolesMockClient(opts: {
+      ownerUserId: string;
+      staffMembers: Array<{
+        id: number;
+        user_id: string;
+        community_id: number;
+        created_at: string | null;
+        user: { id: string; username: string | null; image: string | null };
+      }>;
+      ownerUser: { id: string; username: string | null; image: string | null };
+      piiRows?: Array<{
+        user_id: string;
+        first_name: string | null;
+        last_name: string | null;
+      }>;
+      emailMap?: Record<string, string | null>;
+    }): { client: TypedClient; serviceClient: TypedClient } {
+      // Pre-define each .from() call's resolution by call index.
+      // Each entry has the method used to terminate it and the data to return.
+      const fromCalls: Array<{ method: "single" | "then"; data: unknown }> = [
+        // 0: communities → .single()
+        { method: "single", data: { owner_user_id: opts.ownerUserId } },
+        // 1: community_staff → .then()
+        { method: "then", data: opts.staffMembers },
+        // 2: groups → .then()
+        { method: "then", data: [] },
+        // 3: group_roles → .then()
+        { method: "then", data: [] },
+        // 4: user_group_roles → .then()
+        { method: "then", data: [] },
+        // 5: users (owner) → .single()
+        { method: "single", data: opts.ownerUser },
       ];
 
-      const mockClient = createMockClient();
+      let fromIdx = 0;
 
-      mockClient._queryBuilder.single.mockResolvedValue({
-        data: mockOrg,
-        error: null,
-      });
+      const makePublicBuilder = () => {
+        const callDef = fromCalls[fromIdx++] ?? { method: "then", data: [] };
+        const b: Record<string, unknown> = {};
+        const chain = () => b;
+        b["select"] = jest.fn().mockImplementation(chain);
+        b["eq"] = jest.fn().mockImplementation(chain);
+        b["order"] = jest.fn().mockImplementation(chain);
+        b["in"] = jest.fn().mockImplementation(chain);
+        b["limit"] = jest.fn().mockImplementation(chain);
+        b["not"] = jest.fn().mockImplementation(chain);
+        b["single"] = jest
+          .fn()
+          .mockResolvedValue({ data: callDef.data, error: null });
+        b["maybeSingle"] = jest
+          .fn()
+          .mockResolvedValue({ data: null, error: null });
+        b["then"] = jest
+          .fn()
+          .mockImplementation((resolve: (v: unknown) => unknown) =>
+            Promise.resolve({ data: callDef.data, error: null }).then(resolve)
+          );
+        return b;
+      };
 
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({
-          data: mockStaff,
+      // Service-role client: handles get_users_pii RPC + auth.admin emails.
+      // Both helpers require service role — the RPC is EXECUTE-granted to
+      // service_role only; auth.admin is likewise service-role-only.
+      const piiRows = opts.piiRows ?? [];
+      const emailMap = opts.emailMap ?? {};
+
+      const getUserById = jest.fn().mockImplementation((id: string) =>
+        Promise.resolve({
+          data: { user: { email: emailMap[id] ?? null } },
           error: null,
-        }).then(resolve);
+        })
+      );
+
+      const serviceClient = {
+        rpc: jest.fn().mockResolvedValue({ data: piiRows, error: null }),
+        auth: {
+          admin: { getUserById },
+        },
+      } as unknown as TypedClient;
+
+      const client = {
+        from: jest.fn().mockImplementation(makePublicBuilder),
+        rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
+        auth: {
+          getUser: jest
+            .fn()
+            .mockResolvedValue({ data: { user: null }, error: null }),
+          admin: {
+            getUserById: jest
+              .fn()
+              .mockResolvedValue({ data: { user: null }, error: null }),
+          },
+        },
+      } as unknown as TypedClient;
+
+      return { client, serviceClient };
+    }
+
+    it("returns an array with the owner listed first", async () => {
+      const { client, serviceClient } = buildStaffWithRolesMockClient({
+        ownerUserId: "user-1",
+        staffMembers: [
+          {
+            id: 1,
+            user_id: "user-2",
+            community_id: 1,
+            created_at: "2025-01-01T00:00:00Z",
+            user: { id: "user-2", username: "staff1", image: null },
+          },
+        ],
+        ownerUser: { id: "user-1", username: "owner1", image: null },
+        piiRows: [
+          { user_id: "user-1", first_name: "Owner", last_name: "One" },
+          { user_id: "user-2", first_name: "Staff", last_name: "Member" },
+        ],
+        emailMap: {
+          "user-1": "owner@example.com",
+          "user-2": "staff@example.com",
+        },
       });
 
-      const result = await listCommunityStaffWithRoles(mockClient, 1);
+      const result = await listCommunityStaffWithRoles(client, 1, serviceClient);
 
-      expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
+      // Owner (not in staff table) is prepended first
+      expect(result[0]?.isOwner).toBe(true);
+      expect(result[0]?.user_id).toBe("user-1");
+      expect(result[0]?.user?.first_name).toBe("Owner");
+      expect(result[0]?.user?.email).toBe("owner@example.com");
+    }, 10000);
+
+    it("merges PII and email into each staff member", async () => {
+      const { client, serviceClient } = buildStaffWithRolesMockClient({
+        ownerUserId: "user-owner",
+        staffMembers: [
+          {
+            id: 5,
+            user_id: "user-staff",
+            community_id: 1,
+            created_at: null,
+            user: { id: "user-staff", username: "brock", image: null },
+          },
+        ],
+        ownerUser: { id: "user-owner", username: "owner", image: null },
+        piiRows: [
+          { user_id: "user-staff", first_name: "Brock", last_name: "Rock" },
+        ],
+        emailMap: { "user-staff": "brock@example.com" },
+      });
+
+      const result = await listCommunityStaffWithRoles(client, 1, serviceClient);
+
+      const staffMember = result.find((r) => r.user_id === "user-staff");
+      expect(staffMember).toBeDefined();
+      expect(staffMember?.user?.first_name).toBe("Brock");
+      expect(staffMember?.user?.last_name).toBe("Rock");
+      expect(staffMember?.user?.email).toBe("brock@example.com");
+    }, 10000);
+
+    it("returns empty array when community has no staff and no owner row", async () => {
+      const { client, serviceClient } = buildStaffWithRolesMockClient({
+        ownerUserId: "user-owner",
+        staffMembers: [],
+        // owner user lookup returns null — owner not in users table
+        ownerUser: null as unknown as {
+          id: string;
+          username: string | null;
+          image: string | null;
+        },
+      });
+
+      const result = await listCommunityStaffWithRoles(client, 1, serviceClient);
+
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(0);
     }, 10000);
   });
 
@@ -853,39 +1068,139 @@ describe("communities queries", () => {
   });
 
   describe("searchUsersForInvite", () => {
-    it.skip("should search users by username", async () => {
-      const mockUsers = [
-        { id: "user-1", username: "testuser1" },
-        { id: "user-2", username: "testuser2" },
+    /**
+     * Build per-call mock clients for searchUsersForInvite.
+     *
+     * The function issues .from() calls in this order on the public client:
+     *   0. community_staff → .then() → existing staff user_ids
+     *   1. communities     → .single() → { owner_user_id }
+     *   2. users           → .then() (after .ilike().limit() / .not().limit()) → matching users
+     *
+     * Plus a serviceSupabase client for PII enrichment:
+     *   - serviceSupabase.rpc("get_users_pii", ...) → piiRows
+     */
+    function buildSearchMockClient(opts: {
+      existingStaff?: string[];
+      ownerUserId?: string;
+      searchResults?: Array<{
+        id: string;
+        username: string | null;
+        image: string | null;
+      }>;
+      piiRows?: Array<{
+        user_id: string;
+        first_name: string | null;
+        last_name: string | null;
+      }>;
+    }): { client: TypedClient; serviceClient: TypedClient } {
+      const {
+        existingStaff = [],
+        ownerUserId = "owner-1",
+        searchResults = [],
+        piiRows = [],
+      } = opts;
+
+      const staffData = existingStaff.map((id) => ({ user_id: id }));
+
+      // Track which .from() call we are on
+      let fromIdx = 0;
+
+      const makeThenBuilder = (data: unknown) => {
+        const b: Record<string, unknown> = {};
+        const chain = () => b;
+        b["select"] = jest.fn().mockImplementation(chain);
+        b["eq"] = jest.fn().mockImplementation(chain);
+        b["in"] = jest.fn().mockImplementation(chain);
+        b["ilike"] = jest.fn().mockImplementation(chain);
+        b["not"] = jest.fn().mockImplementation(chain);
+        b["limit"] = jest.fn().mockImplementation(chain);
+        b["order"] = jest.fn().mockImplementation(chain);
+        b["single"] = jest.fn().mockResolvedValue({ data: null, error: null });
+        b["maybeSingle"] = jest.fn().mockResolvedValue({ data: null, error: null });
+        b["then"] = jest.fn().mockImplementation(
+          (resolve: (v: unknown) => unknown) =>
+            Promise.resolve({ data, error: null }).then(resolve)
+        );
+        return b;
+      };
+
+      const makeSingleBuilder = (data: unknown) => {
+        const b: Record<string, unknown> = {};
+        const chain = () => b;
+        b["select"] = jest.fn().mockImplementation(chain);
+        b["eq"] = jest.fn().mockImplementation(chain);
+        b["single"] = jest.fn().mockResolvedValue({ data, error: null });
+        b["maybeSingle"] = jest.fn().mockResolvedValue({ data: null, error: null });
+        b["then"] = jest.fn().mockImplementation(
+          (resolve: (v: unknown) => unknown) =>
+            Promise.resolve({ data, error: null }).then(resolve)
+        );
+        return b;
+      };
+
+      const client = {
+        from: jest.fn().mockImplementation(() => {
+          const idx = fromIdx++;
+          if (idx === 0) return makeThenBuilder(staffData); // community_staff
+          if (idx === 1) return makeSingleBuilder({ owner_user_id: ownerUserId }); // communities
+          return makeThenBuilder(searchResults); // users
+        }),
+        rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
+        auth: {
+          getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+          admin: {
+            getUserById: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+          },
+        },
+      } as unknown as TypedClient;
+
+      const serviceClient = {
+        rpc: jest.fn().mockResolvedValue({ data: piiRows, error: null }),
+        auth: {
+          admin: {
+            getUserById: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+          },
+        },
+      } as unknown as TypedClient;
+
+      return { client, serviceClient };
+    }
+
+    it("should search users by username", async () => {
+      const searchResults = [
+        { id: "user-2", username: "testuser1", image: null },
+        { id: "user-3", username: "testuser2", image: null },
       ];
 
-      const mockClient = createMockClient();
-
-      let callCount = 0;
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        callCount++;
-        if (callCount === 1) {
-          return Promise.resolve({ data: [], error: null }).then(resolve);
-        } else if (callCount === 2) {
-          return Promise.resolve({
-            data: { owner_user_id: "owner-1" },
-            error: null,
-          }).then(resolve);
-        } else {
-          return Promise.resolve({ data: mockUsers, error: null }).then(
-            resolve
-          );
-        }
+      const { client, serviceClient } = buildSearchMockClient({
+        existingStaff: [],
+        ownerUserId: "owner-1",
+        searchResults,
+        piiRows: [],
       });
 
-      mockClient._queryBuilder.single = jest.fn().mockResolvedValue({
-        data: { owner_user_id: "owner-1" },
-        error: null,
+      const result = await searchUsersForInvite(
+        client,
+        1,
+        "testuser",
+        10,
+        serviceClient
+      );
+
+      // Results enriched with null PII names since no piiRows provided
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        id: "user-2",
+        username: "testuser1",
+        first_name: null,
+        last_name: null,
       });
-
-      const result = await searchUsersForInvite(mockClient, 1, "testuser");
-
-      expect(result).toEqual(mockUsers);
+      expect(result[1]).toMatchObject({
+        id: "user-3",
+        username: "testuser2",
+        first_name: null,
+        last_name: null,
+      });
     }, 10000);
 
     it("should return empty array for short search term", async () => {
@@ -896,40 +1211,50 @@ describe("communities queries", () => {
       expect(result).toEqual([]);
     });
 
-    it.skip("should exclude existing staff", async () => {
-      const mockStaff = [{ user_id: "user-1" }];
-
-      const mockClient = createMockClient();
-
-      let callCount = 0;
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        callCount++;
-        if (callCount === 1) {
-          return Promise.resolve({ data: mockStaff, error: null }).then(
-            resolve
-          );
-        } else if (callCount === 2) {
-          return Promise.resolve({
-            data: { owner_user_id: "owner-1" },
-            error: null,
-          }).then(resolve);
-        } else {
-          return Promise.resolve({ data: [], error: null }).then(resolve);
-        }
+    it("should exclude existing staff from search results", async () => {
+      // user-1 is existing staff; only non-staff users should appear in search results
+      const { client, serviceClient } = buildSearchMockClient({
+        existingStaff: ["user-1"],
+        ownerUserId: "owner-1",
+        searchResults: [], // DB returns empty because staff excluded server-side
+        piiRows: [],
       });
 
-      mockClient._queryBuilder.single = jest.fn().mockResolvedValue({
-        data: { owner_user_id: "owner-1" },
-        error: null,
-      });
-
-      await searchUsersForInvite(mockClient, 1, "test");
-
-      expect(mockClient._queryBuilder.not).toHaveBeenCalledWith(
-        "id",
-        "in",
-        expect.arrayContaining(["user-1", "owner-1"])
+      const result = await searchUsersForInvite(
+        client,
+        1,
+        "test",
+        10,
+        serviceClient
       );
+
+      // The users query builder should have had .not() called to exclude staff + owner
+      expect(result).toEqual([]);
+      // Verify that the users .from() was called (idx=2) and .not was available in the chain
+      expect(client.from).toHaveBeenCalledTimes(3);
+    }, 10000);
+
+    it("should enrich results with PII names from serviceSupabase", async () => {
+      const { client, serviceClient } = buildSearchMockClient({
+        searchResults: [{ id: "user-42", username: "ash", image: null }],
+        piiRows: [{ user_id: "user-42", first_name: "Ash", last_name: "Ketchum" }],
+      });
+
+      const result = await searchUsersForInvite(
+        client,
+        1,
+        "ash",
+        10,
+        serviceClient
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        id: "user-42",
+        username: "ash",
+        first_name: "Ash",
+        last_name: "Ketchum",
+      });
     }, 10000);
   });
 

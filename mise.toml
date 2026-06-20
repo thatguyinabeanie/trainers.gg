@@ -16,7 +16,12 @@ opencode = "latest"
 java = "zulu-21"
 ruby = "3.3"
 lefthook = "latest"
-supabase = "latest"
+# supabase CLI is intentionally NOT managed by mise — it's an npm devDependency
+# (catalog:supabase in packages/supabase), so its version is pinned by the
+# committed pnpm lockfile and installed by `pnpm install`. mise's "latest" drifted
+# per machine and the CLI version determines the supabase/postgres image tag,
+# which silently broke local pg_cron setup. Use `pnpm supabase ...` (or the
+# db:* scripts) so the lockfile-pinned binary is used, not a stray global one.
 neovim = "latest"
 # Android SDK is NOT included here — most devs already have it via Android Studio.
 # If you don't, create a mise.local.toml with:

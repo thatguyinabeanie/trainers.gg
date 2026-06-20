@@ -167,6 +167,7 @@ export {
   getTournamentAuditLog,
   getMatchAuditLog,
   getAuditLog,
+  getAuditLogWithPii,
   getAuditLogStats,
 } from "./audit-log";
 export type { AuditLogEntry } from "./audit-log";
@@ -229,9 +230,12 @@ export {
   unsuspendUser,
   startImpersonation,
   endImpersonation,
+  // PII helpers — require service-role client
+  getPiiByUserIds,
+  getEmailsByUserIds,
 } from "./admin-users";
 
-export type { ListUsersAdminOptions } from "./admin-users";
+export type { ListUsersAdminOptions, UserAdminDetails } from "./admin-users";
 
 // Feature flag queries
 export {

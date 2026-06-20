@@ -38,7 +38,7 @@ import {
   getPlatformOverview,
   getActiveUserStats,
   getAuditLogStats,
-  getAuditLog,
+  getAuditLogWithPii,
   getOrganizationStats,
   getTournamentStats,
   type PlatformOverview,
@@ -65,7 +65,7 @@ type AuditAction = Database["public"]["Enums"]["audit_action"];
 
 // Derive return types from the query functions for use as prop types below.
 type AuditLogStats = Awaited<ReturnType<typeof getAuditLogStats>>;
-type AuditLogResult = Awaited<ReturnType<typeof getAuditLog>>;
+type AuditLogResult = Awaited<ReturnType<typeof getAuditLogWithPii>>;
 
 // ── Metric Card ─────────────────────────────────────────────────────
 
@@ -111,7 +111,13 @@ interface MetricCardProps {
   theme: MetricTheme;
 }
 
-function MetricCard({ title, value, icon: Icon, subtitle, theme }: MetricCardProps) {
+function MetricCard({
+  title,
+  value,
+  icon: Icon,
+  subtitle,
+  theme,
+}: MetricCardProps) {
   return (
     <Card className={cn("border-l-[3px]", theme.border)}>
       <CardContent className="pt-5">
@@ -384,8 +390,10 @@ async function DashboardData() {
 
   const supabase = createServiceRoleClient();
 
-  // Fetch all 6 dashboard stats in parallel. `.catch(() => null)` lets the
-  // page render a partial error state instead of throwing a full 500.
+  // Fetch all dashboard stats in parallel. `getAuditLogWithPii` runs the audit
+  // log query once and enriches actor names in-process — no second DB round-trip.
+  // `.catch(() => null)` lets the page render a partial error state instead of
+  // throwing a full 500.
   const [
     overview,
     activeUsers,
@@ -397,7 +405,7 @@ async function DashboardData() {
     getPlatformOverview(supabase).catch(() => null),
     getActiveUserStats(supabase).catch(() => null),
     getAuditLogStats(supabase).catch(() => null),
-    getAuditLog(supabase, { limit: 10, offset: 0 }).catch(() => null),
+    getAuditLogWithPii(supabase, { limit: 10, offset: 0 }).catch(() => null),
     getOrganizationStats(supabase).catch(() => null),
     getTournamentStats(supabase).catch(() => null),
   ]);

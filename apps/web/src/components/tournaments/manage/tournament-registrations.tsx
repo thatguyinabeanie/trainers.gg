@@ -488,8 +488,8 @@ export function TournamentRegistrations({
                             }
                             label={
                               registration.status === "dropped" &&
-                              registration.drop_category
-                                ? `Dropped - ${DROP_CATEGORY_LABELS[registration.drop_category] ?? registration.drop_category}`
+                              registration.staff?.drop_category
+                                ? `Dropped - ${DROP_CATEGORY_LABELS[registration.staff.drop_category] ?? registration.staff.drop_category}`
                                 : undefined
                             }
                           />

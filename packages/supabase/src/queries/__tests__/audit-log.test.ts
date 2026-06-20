@@ -3,10 +3,24 @@ import {
   getTournamentAuditLog,
   getMatchAuditLog,
   getAuditLog,
+  getAuditLogWithPii,
   getAuditLogStats,
 } from "../audit-log";
 import type { TypedClient } from "../../client";
 import type { Database } from "../../types";
+
+// Mock getPiiByUserIds so getAuditLogWithPii tests don't depend on admin-users.
+const mockGetPiiByUserIds =
+  jest.fn<
+    (
+      ...args: unknown[]
+    ) => Promise<
+      Map<string, { first_name: string | null; last_name: string | null }>
+    >
+  >();
+jest.mock("../admin-users", () => ({
+  getPiiByUserIds: (...args: unknown[]) => mockGetPiiByUserIds(...args),
+}));
 
 type AuditAction = Database["public"]["Enums"]["audit_action"];
 
@@ -288,6 +302,9 @@ describe("audit-log queries", () => {
 
   describe("getAuditLog", () => {
     it("should query with default pagination and no filters", async () => {
+      // actor_user no longer embeds first_name/last_name — those come from private.user_pii
+      // via an optional piiMap. The function always enriches the returned rows with
+      // first_name: null / last_name: null when no piiMap is provided.
       const mockData = [
         {
           id: 1,
@@ -296,8 +313,6 @@ describe("audit-log queries", () => {
           actor_user: {
             id: "u1",
             username: "ash",
-            first_name: "Ash",
-            last_name: "Ketchum",
             image: null,
           },
         },
@@ -314,13 +329,30 @@ describe("audit-log queries", () => {
 
       const result = await getAuditLog(mockClient);
 
-      // Verify return shape includes data and count
-      expect(result).toEqual({ data: mockData, count: 1 });
+      // actor_user is enriched: first_name/last_name always present (null without piiMap)
+      expect(result).toEqual({
+        data: [
+          {
+            id: 1,
+            action: "tournament.started",
+            created_at: "2024-06-01T10:00:00Z",
+            actor_user: {
+              id: "u1",
+              username: "ash",
+              image: null,
+              first_name: null,
+              last_name: null,
+            },
+          },
+        ],
+        count: 1,
+      });
 
       // Verify base query chain
       expect(mockClient.from).toHaveBeenCalledWith("audit_log");
+      // explicit column allowlist (no wildcard); actor embed unchanged
       expect(mockClient._queryBuilder.select).toHaveBeenCalledWith(
-        "*, actor_user:users!audit_log_actor_user_id_fkey(id, username, first_name, last_name, image)",
+        "id, action, actor_user_id, actor_alt_id, community_id, tournament_id, match_id, game_id, metadata, created_at, actor_user:users!audit_log_actor_user_id_fkey(id, username, image)",
         { count: "exact", head: false }
       );
       expect(mockClient._queryBuilder.order).toHaveBeenCalledWith(
@@ -538,8 +570,9 @@ describe("audit-log queries", () => {
 
     it("should return count alongside data", async () => {
       const mockData = [
-        { id: 1, action: "admin.sudo_activated" },
-        { id: 2, action: "admin.sudo_deactivated" },
+        // actor_user is null — rows without an actor user are preserved as-is
+        { id: 1, action: "admin.sudo_activated", actor_user: null },
+        { id: 2, action: "admin.sudo_deactivated", actor_user: null },
       ];
 
       const mockClient = createMockClient();
@@ -553,7 +586,17 @@ describe("audit-log queries", () => {
 
       const result = await getAuditLog(mockClient);
 
-      expect(result.data).toEqual(mockData);
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0]).toMatchObject({
+        id: 1,
+        action: "admin.sudo_activated",
+        actor_user: null,
+      });
+      expect(result.data[1]).toMatchObject({
+        id: 2,
+        action: "admin.sudo_deactivated",
+        actor_user: null,
+      });
       expect(result.count).toBe(42);
     });
 
@@ -613,6 +656,196 @@ describe("audit-log queries", () => {
       await getAuditLog(mockClient, { actions: ["match.score_submitted"] });
 
       expect(mockClient._queryBuilder.not).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getAuditLogWithPii", () => {
+    // Helpers to build minimal audit log rows with actor_user.
+    const makeRow = (id: number, actorId: string) => ({
+      id,
+      action: "tournament.started",
+      created_at: "2025-01-01T00:00:00Z",
+      actor_user: {
+        id: actorId,
+        username: `user_${actorId}`,
+        image: null,
+        first_name: null,
+        last_name: null,
+      },
+      tournament_id: null,
+      match_id: null,
+      community_id: null,
+      metadata: {},
+    });
+
+    const makeRowNoActor = (id: number) => ({
+      id,
+      action: "admin.sudo_activated",
+      created_at: "2025-01-02T00:00:00Z",
+      actor_user: null,
+      tournament_id: null,
+      match_id: null,
+      community_id: null,
+      metadata: {},
+    });
+
+    /** Create a mock client that returns `result` from getAuditLog's query. */
+    const makeClientWithResult = (data: unknown[], count: number) => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data, error: null, count }).then(resolve);
+      });
+      return mockClient;
+    };
+
+    beforeEach(() => {
+      mockGetPiiByUserIds.mockReset();
+    });
+
+    it("returns the raw result unchanged when there are no rows", async () => {
+      const mockClient = makeClientWithResult([], 0);
+      mockGetPiiByUserIds.mockResolvedValue(new Map());
+
+      const result = await getAuditLogWithPii(mockClient);
+
+      expect(result).toEqual({ data: [], count: 0 });
+      // getPiiByUserIds should not be called for empty pages
+      expect(mockGetPiiByUserIds).not.toHaveBeenCalled();
+    });
+
+    it("returns the raw result unchanged when no actor IDs are present", async () => {
+      const row = makeRowNoActor(1);
+      const mockClient = makeClientWithResult([row], 1);
+      mockGetPiiByUserIds.mockResolvedValue(new Map());
+
+      const result = await getAuditLogWithPii(mockClient);
+
+      // Row with null actor_user should pass through unchanged
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]).toMatchObject({ actor_user: null });
+      expect(mockGetPiiByUserIds).not.toHaveBeenCalled();
+    });
+
+    it("merges first_name and last_name from piiMap onto actor objects", async () => {
+      const row = makeRow(1, "user-a");
+      const mockClient = makeClientWithResult([row], 1);
+
+      const piiMap = new Map([
+        ["user-a", { first_name: "Ash", last_name: "Ketchum" }],
+      ]);
+      mockGetPiiByUserIds.mockResolvedValue(piiMap);
+
+      const result = await getAuditLogWithPii(mockClient);
+
+      expect(result.data[0]!.actor_user).toMatchObject({
+        id: "user-a",
+        first_name: "Ash",
+        last_name: "Ketchum",
+      });
+    });
+
+    it("leaves actor names null when piiMap has no entry for the actor", async () => {
+      const row = makeRow(1, "user-unknown");
+      const mockClient = makeClientWithResult([row], 1);
+      // piiMap exists but doesn't contain user-unknown
+      const piiMap = new Map([
+        ["other-user", { first_name: "X", last_name: "Y" }],
+      ]);
+      mockGetPiiByUserIds.mockResolvedValue(piiMap);
+
+      const result = await getAuditLogWithPii(mockClient);
+
+      expect(result.data[0]!.actor_user).toMatchObject({
+        first_name: null,
+        last_name: null,
+      });
+    });
+
+    it("deduplicates actor IDs before calling getPiiByUserIds", async () => {
+      // Two rows with the same actor_user.id
+      const row1 = makeRow(1, "user-a");
+      const row2 = { ...makeRow(2, "user-a"), id: 2 };
+      const mockClient = makeClientWithResult([row1, row2], 2);
+      mockGetPiiByUserIds.mockResolvedValue(
+        new Map([["user-a", { first_name: "Ash", last_name: "Ketchum" }]])
+      );
+
+      await getAuditLogWithPii(mockClient);
+
+      const calledIds = (
+        mockGetPiiByUserIds.mock.calls[0] as unknown[]
+      )[1] as string[];
+      expect(calledIds).toHaveLength(1);
+      expect(calledIds[0]).toBe("user-a");
+    });
+
+    it("degrades gracefully and returns un-enriched data when getPiiByUserIds rejects", async () => {
+      const row = makeRow(1, "user-a");
+      const mockClient = makeClientWithResult([row], 1);
+      mockGetPiiByUserIds.mockRejectedValue(new Error("RPC error"));
+
+      const result = await getAuditLogWithPii(mockClient);
+
+      // Should not throw — returns the raw (un-enriched) result
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]!.actor_user).toMatchObject({
+        first_name: null,
+        last_name: null,
+      });
+    });
+
+    it("preserves the count from the single DB query", async () => {
+      const row = makeRow(1, "user-a");
+      const mockClient = makeClientWithResult([row], 42);
+      mockGetPiiByUserIds.mockResolvedValue(
+        new Map([["user-a", { first_name: "A", last_name: "B" }]])
+      );
+
+      const result = await getAuditLogWithPii(mockClient);
+
+      expect(result.count).toBe(42);
+    });
+
+    it("enriches multiple actors from the same page", async () => {
+      const row1 = makeRow(1, "user-a");
+      const row2 = makeRow(2, "user-b");
+      const mockClient = makeClientWithResult([row1, row2], 2);
+
+      const piiMap = new Map([
+        ["user-a", { first_name: "Ash", last_name: "Ketchum" }],
+        ["user-b", { first_name: "Misty", last_name: "Waterflower" }],
+      ]);
+      mockGetPiiByUserIds.mockResolvedValue(piiMap);
+
+      const result = await getAuditLogWithPii(mockClient);
+
+      expect(result.data[0]!.actor_user).toMatchObject({
+        first_name: "Ash",
+        last_name: "Ketchum",
+      });
+      expect(result.data[1]!.actor_user).toMatchObject({
+        first_name: "Misty",
+        last_name: "Waterflower",
+      });
+    });
+
+    it("passes options through to getAuditLog (limit, offset, actions)", async () => {
+      const mockClient = makeClientWithResult([], 0);
+      mockGetPiiByUserIds.mockResolvedValue(new Map());
+
+      await getAuditLogWithPii(mockClient, {
+        limit: 10,
+        offset: 20,
+        actions: [
+          "tournament.started",
+        ] as Database["public"]["Enums"]["audit_action"][],
+      });
+
+      // range(20, 29) → offset=20, limit=10
+      expect(mockClient._queryBuilder.range).toHaveBeenCalledWith(20, 29);
+      expect(mockClient._queryBuilder.in).toHaveBeenCalledWith("action", [
+        "tournament.started",
+      ]);
     });
   });
 

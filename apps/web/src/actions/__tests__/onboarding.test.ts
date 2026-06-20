@@ -10,9 +10,12 @@ const mockAuth = {
   updateUser: jest.fn(),
 };
 
+const mockRpc = jest.fn();
+
 const mockSupabaseClient = {
   from: mockFrom,
   auth: mockAuth,
+  rpc: mockRpc,
 };
 
 jest.mock("@/lib/supabase/server", () => ({
@@ -68,6 +71,9 @@ describe("completeOnboarding", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockFrom.mockReset();
+    mockRpc.mockReset();
+    // Default: rpc succeeds (update_my_user_pii)
+    mockRpc.mockResolvedValue({ error: null });
     // Default: rejectBots allows the request through
     mockRejectBots.mockReset().mockResolvedValue(undefined);
     process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
@@ -172,6 +178,35 @@ describe("completeOnboarding", () => {
     setupHappyPath();
 
     const result = await completeOnboarding(validInput);
+
+    expect(result).toEqual({ success: true, error: null });
+  });
+
+  it("calls update_my_user_pii rpc and succeeds when birthDate is provided", async () => {
+    setupHappyPath();
+
+    const result = await completeOnboarding({
+      ...validInput,
+      birthDate: "2000-01-15",
+    });
+
+    expect(result).toEqual({ success: true, error: null });
+    expect(mockRpc).toHaveBeenCalledWith("update_my_user_pii", {
+      p_birth_date: "2000-01-15",
+    });
+  });
+
+  it("logs and continues when update_my_user_pii rpc errors (birth_date is optional)", async () => {
+    setupHappyPath();
+    // The optional birth_date write fails, but username/country/bio are already
+    // committed — onboarding should still succeed (the user can set birth date
+    // later in profile settings) rather than hard-failing mid-flow.
+    mockRpc.mockResolvedValue({ error: { message: "pii error", code: "500" } });
+
+    const result = await completeOnboarding({
+      ...validInput,
+      birthDate: "2000-01-15",
+    });
 
     expect(result).toEqual({ success: true, error: null });
   });

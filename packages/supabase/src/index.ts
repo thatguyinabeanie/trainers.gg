@@ -40,6 +40,9 @@ export type {
   Json,
 } from "./types";
 
+// Generated runtime enum constants — used for input validation at API boundaries
+export { Constants } from "./types";
+
 // Utility exports
 export {
   checkRegistrationOpen,

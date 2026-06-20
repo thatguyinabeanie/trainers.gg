@@ -463,7 +463,17 @@ export async function getTournamentById(supabase: TypedClient, id: number) {
 }
 
 /**
- * Get tournament registrations
+ * Get tournament registrations for the staff manage view.
+ *
+ * Joins `tournament_registration_staff` to surface drop metadata
+ * (drop_category, drop_notes, dropped_by, dropped_at) so the UI can render
+ * the "Dropped — <reason>" badge without a separate round-trip.
+ *
+ * RLS on `tournament_registration_staff` filters the `staff` embed only for
+ * identity-bound clients: an authenticated caller without tournament.manage
+ * gets an empty/absent staff sub-object. A service-role client BYPASSES RLS,
+ * so the staff embed is ALWAYS populated there — callers that pass a
+ * service-role client (cached/SSR contexts) must not assume it is filtered.
  */
 export async function getTournamentRegistrations(
   supabase: TypedClient,
@@ -473,9 +483,30 @@ export async function getTournamentRegistrations(
     .from("tournament_registrations")
     .select(
       `
-      *,
-      alt:alts!tournament_registrations_alt_id_fkey(*),
-      team:teams(*)
+      id,
+      alt_id,
+      tournament_id,
+      status,
+      registered_at,
+      checked_in_at,
+      team_id,
+      team_name,
+      team_submitted_at,
+      team_locked,
+      in_game_name,
+      display_name_option,
+      show_country_flag,
+      alt:alts!tournament_registrations_alt_id_fkey(
+        id,
+        username,
+        avatar_url
+      ),
+      staff:tournament_registration_staff(
+        drop_category,
+        drop_notes,
+        dropped_by,
+        dropped_at
+      )
     `
     )
     .eq("tournament_id", tournamentId)
@@ -486,11 +517,20 @@ export async function getTournamentRegistrations(
 }
 
 /**
- * A single tournament registration row with its joined alt and team — the
- * staff-facing shape returned by `getTournamentRegistrations`. Includes
- * staff-internal columns (drop category, check-in state), so consumers must be
- * authenticated + tournament-manage-authorized (Phase 2 Task 9: the base
- * `tournament_registrations` SELECT is revoked from anon/authenticated).
+ * A single tournament registration row with its joined alt and staff drop
+ * metadata — the shape returned by `getTournamentRegistrations`. Team data is
+ * exposed via the `team_*` scalar columns (team_id, team_name, …), not a joined
+ * `team` sub-object.
+ *
+ * Staff-internal fields (drop_category, drop_notes, dropped_by, dropped_at)
+ * are present via the `staff` sub-object. RLS filters this embed only for
+ * identity-bound clients (an authenticated caller without tournament.manage
+ * receives an empty/absent sub-object); a service-role client bypasses RLS,
+ * so the staff sub-object is ALWAYS present in cached/SSR/service contexts.
+ *
+ * Consumers must be authenticated + tournament-manage-authorized (Phase 2
+ * Task 9: the base `tournament_registrations` SELECT is revoked from
+ * anon/authenticated).
  */
 export type TournamentRegistrationRow = Awaited<
   ReturnType<typeof getTournamentRegistrations>
@@ -1372,16 +1412,45 @@ export async function getUserTeams(
 
 /**
  * Get match details by ID
+ *
+ * Explicit column allowlist on `tournament_matches` — no wildcard. Private and
+ * internal-only columns are excluded so the result is safe to serve through the
+ * auth-gated public `/api/v1/matches/[matchId]` route without leaking
+ * staff-only data to authenticated users.
+ *
+ * Kept:   id, round_id, alt1_id, alt2_id, status, table_number,
+ *         winner_alt_id, game_wins1, game_wins2
+ *
+ * Dropped (private / internal):
+ *   staff_notes            — private staff annotation
+ *   staff_requested        — internal staff-call flag
+ *   staff_requested_at     — internal timestamp
+ *   staff_resolved_by      — FK to the resolving staff alt
+ *   elo_applied            — internal ELO lifecycle flag
+ *   alt1_rating_before / alt1_games_before / alt1_overall_* — ELO snapshots
+ *   alt2_rating_before / alt2_games_before / alt2_overall_* — ELO snapshots
+ *   match_points1 / match_points2 — not consumed by any public caller
+ *   player1_match_confirmed / player2_match_confirmed — confirmation state
+ *   match_confirmed_at     — confirmation timestamp
+ *   created_at / start_time / end_time — timestamps not used by any caller
  */
 export async function getMatchDetails(supabase: TypedClient, matchId: number) {
   const { data: match, error } = await supabase
     .from("tournament_matches")
     .select(
       `
-      *,
-      player1:alts!tournament_matches_alt1_id_fkey(*),
-      player2:alts!tournament_matches_alt2_id_fkey(*),
-      round:tournament_rounds(*)
+      id,
+      round_id,
+      alt1_id,
+      alt2_id,
+      status,
+      table_number,
+      winner_alt_id,
+      game_wins1,
+      game_wins2,
+      player1:alts!tournament_matches_alt1_id_fkey(id, username, avatar_url),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username, avatar_url),
+      round:tournament_rounds(id, phase_id, round_number, name, status, start_time, end_time)
     `
     )
     .eq("id", matchId)
@@ -1391,7 +1460,9 @@ export async function getMatchDetails(supabase: TypedClient, matchId: number) {
 
   const { data: phase } = await supabase
     .from("tournament_phases")
-    .select("*, tournament:tournaments!tournament_phases_tournament_id_fkey(*)")
+    .select(
+      "id, tournament_id, name, phase_type, status, tournament:tournaments!tournament_phases_tournament_id_fkey(id, name, slug, status)"
+    )
     .eq("id", match.round?.phase_id)
     .single();
 

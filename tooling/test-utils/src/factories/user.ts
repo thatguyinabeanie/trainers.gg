@@ -1,28 +1,28 @@
 import { Factory } from "fishery";
 import type { Tables } from "@trainers/supabase/types";
 
+// NOTE: email, first_name, last_name, birth_date, phone_number,
+// external_accounts and public_metadata were removed from public.users in the
+// PII-split migration (20260616100000). email now lives in auth.users; the
+// name/DOB fields live in private.user_pii.
 export const userFactory = Factory.define<Tables<"users">>(({ sequence }) => ({
   id: `user-${sequence}`,
   username: `user_${sequence}`,
-  email: `user${sequence}@test.local`,
   bio: null,
-  birth_date: null,
   country: null,
   created_at: new Date().toISOString(),
   did: null,
-  external_accounts: null,
-  first_name: null,
+  discord_dm_warn_until: null,
   image: null,
+  is_coach: false,
   is_locked: false,
   last_active_at: null,
-  last_name: null,
   last_sign_in_at: null,
   main_alt_id: null,
   name: `Test User ${sequence}`,
   pds_handle: null,
   pds_status: null,
-  phone_number: null,
-  public_metadata: null,
+  show_discord_publicly: false,
   sprite_preference: null,
   updated_at: new Date().toISOString(),
 }));

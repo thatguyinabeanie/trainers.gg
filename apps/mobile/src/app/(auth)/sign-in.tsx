@@ -28,21 +28,22 @@ async function resolveLoginIdentifier(
   }
 
   try {
-    const { data, error } = await getSupabase()
-      .from("users")
-      .select("email")
-      .ilike("username", trimmed)
-      .maybeSingle();
+    // public.users.email is no longer directly accessible via the anon role.
+    // Use the SECURITY DEFINER RPC (anon-callable) that reads auth.users instead.
+    const { data: resolvedEmail, error } = await getSupabase().rpc(
+      "get_email_by_username",
+      { p_username: trimmed }
+    );
 
     if (error) {
       return { email: null, error: "Failed to look up username" };
     }
 
-    if (!data) {
+    if (!resolvedEmail) {
       return { email: null, error: "Username not found" };
     }
 
-    return { email: data.email, error: null };
+    return { email: resolvedEmail, error: null };
   } catch {
     return { email: null, error: "Failed to connect to server" };
   }

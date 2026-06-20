@@ -93,11 +93,14 @@ export async function getCachedCommunityBySlug(
  * `'use cache'` + `createServiceRoleClient()` version as a PII-leak: any viewer's
  * response (with emails) could be replayed to every other caller.
  *
- * Instead, the caller passes a **request-scoped, RLS-bound client** (the
- * `auth.supabase` from `resolveApiAuth`). The route handler authenticates the
- * caller (401), rate-limits (429), and verifies the caller manages this community
- * (`canManageCommunity` → 403) before invoking this. Do NOT re-add `'use cache'`,
- * `cacheTag`, `cacheLife`, or `createServiceRoleClient()` here.
+ * Instead, all non-PII reads use the **request-scoped, RLS-bound client** (the
+ * `auth.supabase` from `resolveApiAuth`). PII enrichment (`get_users_pii` RPC,
+ * auth.admin email lookup) uses a separate service-role client because both
+ * operations require service_role EXECUTE. The route handler has already
+ * authenticated (401), rate-limited (429), and permission-checked (403) the
+ * caller before reaching here.
+ *
+ * Do NOT re-add `'use cache'`, `cacheTag`, or `cacheLife` here.
  *
  * @param supabase - Request-scoped client bound to the authenticated caller.
  * @param communityId - Numeric community ID.
@@ -106,7 +109,9 @@ export async function getCommunityStaff(
   supabase: TypedSupabaseClient,
   communityId: number
 ): Promise<CommunityStaffMember[]> {
-  return listCommunityStaffWithRoles(supabase, communityId);
+  // Service-role is required for PII enrichment (get_users_pii + auth.admin).
+  const serviceSupabase = createServiceRoleClient();
+  return listCommunityStaffWithRoles(supabase, communityId, serviceSupabase);
 }
 
 // =============================================================================

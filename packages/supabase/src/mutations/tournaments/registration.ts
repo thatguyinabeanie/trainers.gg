@@ -248,23 +248,29 @@ export async function updateRegistrationStatus(
     throw new Error("Drop info (category) is required when dropping a player");
   }
 
-  // Build update payload — include drop metadata when dropping a player
-  const updatePayload = dropInfo
-    ? {
-        status,
-        drop_category: dropInfo.dropCategory,
-        drop_notes: dropInfo.dropNotes ?? null,
-        dropped_by: user.id,
-        dropped_at: new Date().toISOString(),
-      }
-    : { status };
+  if (dropInfo) {
+    // Use the atomic drop_registrations RPC so the staff upsert and the
+    // status UPDATE happen in a single transaction. The audit trigger fires
+    // on the UPDATE and reads drop metadata from tournament_registration_staff
+    // — both writes commit or roll back together, preventing a half-applied
+    // state (staff row written but status still not 'dropped').
+    const { error: dropError } = await supabase.rpc("drop_registrations", {
+      p_registration_ids: [registrationId],
+      p_drop_category: dropInfo.dropCategory,
+      p_drop_notes: dropInfo.dropNotes ?? "",
+    });
 
-  const { error } = await supabase
-    .from("tournament_registrations")
-    .update(updatePayload)
-    .eq("id", registrationId);
+    if (dropError) throw dropError;
+  } else {
+    // Non-drop status change: direct update on the base table (no staff row needed).
+    const { error: statusError } = await supabase
+      .from("tournament_registrations")
+      .update({ status })
+      .eq("id", registrationId);
 
-  if (error) throw error;
+    if (statusError) throw statusError;
+  }
+
   return { success: true, tournamentId: registration.tournament_id };
 }
 

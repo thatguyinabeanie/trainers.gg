@@ -1,6 +1,6 @@
 ---
 name: reviewing-database
-description: Use when reviewing or writing database changes — covers RLS policies, migrations, indexes, N+1 queries, unbounded fetches, and query efficiency
+description: Invoke before pushing any migration, when adding or modifying tables/RLS policies/functions/indexes, when writing Supabase query functions in packages/supabase/src/, or after running `pnpm db:lint` or `pnpm db:advisor`. Covers security advisor findings, RLS correctness, migration safety, indexes, N+1 queries, and query efficiency.
 ---
 
 # Reviewing Database
@@ -10,6 +10,17 @@ Checklist for database changes: migrations, RLS policies, query patterns, and in
 ## No Deferrals
 
 Every finding from this review is in scope for the current session. Do not produce a "follow-ups", "future work", or "deferred" section — if a policy is missing, an index is absent, or a query is N+1, fix it now. Only defer when the user explicitly says "address X in a separate PR". Match this to the PR feedback rule in `reviewing-pr-feedback`.
+
+## Automated First Pass
+
+Run both before manual review — fix all errors and warnings first:
+
+```bash
+pnpm db:lint      # schema/typing linter: bad column refs, type mismatches in functions/views
+pnpm db:advisor   # Security Advisor parity: RLS disabled, SECURITY DEFINER views, mutable search_path, exposed auth.users
+```
+
+`db:lint` is Supabase's schema-typing linter (`supabase db lint`). `db:advisor` runs the same `splinter` lint ruleset that powers the dashboard's Security & Performance Advisor, against the local database — `db lint` does NOT cover those security findings.
 
 ## Migration Checks
 

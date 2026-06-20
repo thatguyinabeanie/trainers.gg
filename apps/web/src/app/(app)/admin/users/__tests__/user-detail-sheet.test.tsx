@@ -4,17 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
-const mockGetUserAdminDetails = jest.fn();
-const mockGetSiteRoles = jest.fn();
-
-jest.mock("@trainers/supabase", () => ({
-  getUserAdminDetails: (...args: unknown[]) => mockGetUserAdminDetails(...args),
-  getSiteRoles: (...args: unknown[]) => mockGetSiteRoles(...args),
-}));
-
-jest.mock("@/lib/supabase/client", () => ({
-  supabase: {},
-}));
+const mockGetUserDetailsAction = jest.fn();
 
 jest.mock("@/components/ui/sheet", () => ({
   Sheet: ({
@@ -175,6 +165,8 @@ jest.mock("../actions", () => ({
   grantSiteRoleAction: (...args: unknown[]) => mockGrantSiteRoleAction(...args),
   revokeSiteRoleAction: (...args: unknown[]) =>
     mockRevokeSiteRoleAction(...args),
+  getUserDetailsAction: (...args: unknown[]) =>
+    mockGetUserDetailsAction(...args),
 }));
 
 const mockStartImpersonationAction = jest.fn();
@@ -241,8 +233,10 @@ async function renderAndWaitForLoad(props = defaultProps) {
 describe("UserDetailSheet", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetUserAdminDetails.mockResolvedValue(buildUser());
-    mockGetSiteRoles.mockResolvedValue([]);
+    mockGetUserDetailsAction.mockResolvedValue({
+      success: true,
+      data: { user: buildUser(), siteRoles: [] },
+    });
     mockSuspendUserAction.mockResolvedValue({ success: true });
     mockUnsuspendUserAction.mockResolvedValue({ success: true });
     mockGrantSiteRoleAction.mockResolvedValue({ success: true });
@@ -264,14 +258,14 @@ describe("UserDetailSheet", () => {
       render(<UserDetailSheet {...defaultProps} userId={null} />, {
         wrapper: createWrapper(),
       });
-      expect(mockGetUserAdminDetails).not.toHaveBeenCalled();
+      expect(mockGetUserDetailsAction).not.toHaveBeenCalled();
     });
   });
 
   describe("loading state", () => {
     it("shows loading spinner while fetching", () => {
       // Don't resolve — keep it in loading state
-      mockGetUserAdminDetails.mockReturnValue(new Promise(() => {}));
+      mockGetUserDetailsAction.mockReturnValue(new Promise(() => {}));
       render(<UserDetailSheet {...defaultProps} />, {
         wrapper: createWrapper(),
       });
@@ -282,7 +276,10 @@ describe("UserDetailSheet", () => {
 
   describe("user not found", () => {
     it("shows 'User not found' when user data is null", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(null);
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: { user: null, siteRoles: [] },
+      });
       await renderAndWaitForLoad();
       expect(screen.getByText("User not found")).toBeInTheDocument();
     });
@@ -290,7 +287,10 @@ describe("UserDetailSheet", () => {
 
   describe("error state", () => {
     it("shows error message when fetch fails", async () => {
-      mockGetUserAdminDetails.mockRejectedValue(new Error("Network error"));
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: false,
+        error: "Network error",
+      });
       await renderAndWaitForLoad();
       expect(screen.getByText("Network error")).toBeInTheDocument();
     });
@@ -303,9 +303,10 @@ describe("UserDetailSheet", () => {
     });
 
     it("shows username when name fields are absent", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({ first_name: null, last_name: null })
-      );
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: { user: buildUser({ first_name: null, last_name: null }), siteRoles: [] },
+      });
       await renderAndWaitForLoad();
       expect(screen.getByText("ash_ketchum")).toBeInTheDocument();
     });
@@ -340,9 +341,10 @@ describe("UserDetailSheet", () => {
     });
 
     it("shows 'Never' when last_sign_in_at is null", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({ last_sign_in_at: null })
-      );
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: { user: buildUser({ last_sign_in_at: null }), siteRoles: [] },
+      });
       await renderAndWaitForLoad();
       expect(screen.getByText("Never")).toBeInTheDocument();
     });
@@ -353,7 +355,10 @@ describe("UserDetailSheet", () => {
     });
 
     it("shows 'Suspended' badge when user is locked", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(buildUser({ is_locked: true }));
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: { user: buildUser({ is_locked: true }), siteRoles: [] },
+      });
       await renderAndWaitForLoad();
       expect(screen.getByText("Suspended")).toBeInTheDocument();
     });
@@ -366,58 +371,70 @@ describe("UserDetailSheet", () => {
     });
 
     it("shows alt count in section heading", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({
-          alts: [
-            {
-              id: 1,
-              username: "pikachu",
-              avatar_url: null,
-              bio: null,
-              tier: "master",
-              created_at: null,
-            },
-          ],
-        })
-      );
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          user: buildUser({
+            alts: [
+              {
+                id: 1,
+                username: "pikachu",
+                avatar_url: null,
+                bio: null,
+                tier: "master",
+                created_at: null,
+              },
+            ],
+          }),
+          siteRoles: [],
+        },
+      });
       await renderAndWaitForLoad();
       expect(screen.getByText("Alts (1)")).toBeInTheDocument();
     });
 
     it("shows alt username", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({
-          alts: [
-            {
-              id: 1,
-              username: "pikachu",
-              avatar_url: null,
-              bio: null,
-              tier: null,
-              created_at: null,
-            },
-          ],
-        })
-      );
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          user: buildUser({
+            alts: [
+              {
+                id: 1,
+                username: "pikachu",
+                avatar_url: null,
+                bio: null,
+                tier: null,
+                created_at: null,
+              },
+            ],
+          }),
+          siteRoles: [],
+        },
+      });
       await renderAndWaitForLoad();
       expect(screen.getByText("pikachu")).toBeInTheDocument();
     });
 
     it("shows alt tier badge when tier is set", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({
-          alts: [
-            {
-              id: 1,
-              username: "pikachu",
-              avatar_url: null,
-              bio: null,
-              tier: "master",
-              created_at: null,
-            },
-          ],
-        })
-      );
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          user: buildUser({
+            alts: [
+              {
+                id: 1,
+                username: "pikachu",
+                avatar_url: null,
+                bio: null,
+                tier: "master",
+                created_at: null,
+              },
+            ],
+          }),
+          siteRoles: [],
+        },
+      });
       await renderAndWaitForLoad();
       expect(screen.getByText("master")).toBeInTheDocument();
     });
@@ -430,56 +447,70 @@ describe("UserDetailSheet", () => {
     });
 
     it("shows assigned site role badges", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({
-          user_roles: [
-            {
-              id: 10,
-              created_at: null,
-              role: {
-                id: 1,
-                name: "site_admin",
-                description: "Site administrator",
-                scope: "site",
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          user: buildUser({
+            user_roles: [
+              {
+                id: 10,
+                created_at: null,
+                role: {
+                  id: 1,
+                  name: "site_admin",
+                  description: "Site administrator",
+                  scope: "site",
+                },
               },
-            },
-          ],
-        })
-      );
+            ],
+          }),
+          siteRoles: [],
+        },
+      });
       await renderAndWaitForLoad();
       expect(screen.getByText("Site Admin")).toBeInTheDocument();
     });
 
     it("does not show non-site roles as site roles", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({
-          user_roles: [
-            {
-              id: 11,
-              created_at: null,
-              role: {
-                id: 2,
-                name: "community_leader",
-                description: null,
-                scope: "community",
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          user: buildUser({
+            user_roles: [
+              {
+                id: 11,
+                created_at: null,
+                role: {
+                  id: 2,
+                  name: "community_leader",
+                  description: null,
+                  scope: "community",
+                },
               },
-            },
-          ],
-        })
-      );
+            ],
+          }),
+          siteRoles: [],
+        },
+      });
       await renderAndWaitForLoad();
       expect(screen.getByText("No site roles assigned")).toBeInTheDocument();
     });
 
     it("shows Add button when available roles exist", async () => {
-      mockGetSiteRoles.mockResolvedValue([
-        {
-          id: 1,
-          name: "site_admin",
-          description: null,
-          scope: "site",
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          user: buildUser(),
+          siteRoles: [
+            {
+              id: 1,
+              name: "site_admin",
+              description: null,
+              scope: "site",
+            },
+          ],
         },
-      ]);
+      });
       await renderAndWaitForLoad();
       expect(screen.getByRole("button", { name: /add/i })).toBeInTheDocument();
     });
@@ -510,7 +541,10 @@ describe("UserDetailSheet", () => {
 
   describe("actions — suspended user", () => {
     it("shows 'Unsuspend Account' button when user is locked", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(buildUser({ is_locked: true }));
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: { user: buildUser({ is_locked: true }), siteRoles: [] },
+      });
       await renderAndWaitForLoad();
       expect(
         screen.getByRole("button", { name: /unsuspend account/i })
@@ -518,7 +552,10 @@ describe("UserDetailSheet", () => {
     });
 
     it("does not show suspension reason input for locked user", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(buildUser({ is_locked: true }));
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: { user: buildUser({ is_locked: true }), siteRoles: [] },
+      });
       await renderAndWaitForLoad();
       expect(
         screen.queryByPlaceholderText(/reason for suspension/i)
@@ -672,7 +709,10 @@ describe("UserDetailSheet", () => {
 
   describe("unsuspend action flow", () => {
     it("opens confirmation dialog when 'Unsuspend Account' is clicked", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(buildUser({ is_locked: true }));
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: { user: buildUser({ is_locked: true }), siteRoles: [] },
+      });
 
       const user = userEvent.setup();
       await renderAndWaitForLoad();
@@ -686,7 +726,10 @@ describe("UserDetailSheet", () => {
     });
 
     it("calls unsuspendUserAction when confirmed", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(buildUser({ is_locked: true }));
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: { user: buildUser({ is_locked: true }), siteRoles: [] },
+      });
 
       const user = userEvent.setup();
       await renderAndWaitForLoad();
@@ -704,22 +747,26 @@ describe("UserDetailSheet", () => {
 
   describe("revoke role flow", () => {
     it("opens confirmation dialog when remove role button is clicked", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({
-          user_roles: [
-            {
-              id: 10,
-              created_at: null,
-              role: {
-                id: 1,
-                name: "site_admin",
-                description: null,
-                scope: "site",
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          user: buildUser({
+            user_roles: [
+              {
+                id: 10,
+                created_at: null,
+                role: {
+                  id: 1,
+                  name: "site_admin",
+                  description: null,
+                  scope: "site",
+                },
               },
-            },
-          ],
-        })
-      );
+            ],
+          }),
+          siteRoles: [],
+        },
+      });
 
       const user = userEvent.setup();
       await renderAndWaitForLoad();
@@ -733,22 +780,26 @@ describe("UserDetailSheet", () => {
     });
 
     it("calls revokeSiteRoleAction when confirmed", async () => {
-      mockGetUserAdminDetails.mockResolvedValue(
-        buildUser({
-          user_roles: [
-            {
-              id: 10,
-              created_at: null,
-              role: {
-                id: 1,
-                name: "site_admin",
-                description: null,
-                scope: "site",
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          user: buildUser({
+            user_roles: [
+              {
+                id: 10,
+                created_at: null,
+                role: {
+                  id: 1,
+                  name: "site_admin",
+                  description: null,
+                  scope: "site",
+                },
               },
-            },
-          ],
-        })
-      );
+            ],
+          }),
+          siteRoles: [],
+        },
+      });
 
       const user = userEvent.setup();
       await renderAndWaitForLoad();
@@ -769,9 +820,15 @@ describe("UserDetailSheet", () => {
 
   describe("grant role flow", () => {
     it("calls grantSiteRoleAction when a role is selected and Add is clicked", async () => {
-      mockGetSiteRoles.mockResolvedValue([
-        { id: 2, name: "site_moderator", description: null, scope: "site" },
-      ]);
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          user: buildUser(),
+          siteRoles: [
+            { id: 2, name: "site_moderator", description: null, scope: "site" },
+          ],
+        },
+      });
 
       const user = userEvent.setup();
       await renderAndWaitForLoad();
@@ -788,9 +845,15 @@ describe("UserDetailSheet", () => {
     });
 
     it("shows action error when grant fails", async () => {
-      mockGetSiteRoles.mockResolvedValue([
-        { id: 2, name: "site_moderator", description: null, scope: "site" },
-      ]);
+      mockGetUserDetailsAction.mockResolvedValue({
+        success: true,
+        data: {
+          user: buildUser(),
+          siteRoles: [
+            { id: 2, name: "site_moderator", description: null, scope: "site" },
+          ],
+        },
+      });
       mockGrantSiteRoleAction.mockResolvedValue({
         success: false,
         error: "Role already assigned",
@@ -822,16 +885,13 @@ describe("UserDetailSheet", () => {
       });
 
       await waitFor(() => {
-        expect(mockGetUserAdminDetails).toHaveBeenCalledWith(
-          expect.anything(),
-          "user-abc-123"
-        );
+        expect(mockGetUserDetailsAction).toHaveBeenCalledWith("user-abc-123");
       });
     });
 
-    it("fetches site roles alongside user details", async () => {
+    it("fetches user and site roles together via getUserDetailsAction", async () => {
       await renderAndWaitForLoad();
-      expect(mockGetSiteRoles).toHaveBeenCalled();
+      expect(mockGetUserDetailsAction).toHaveBeenCalledWith("user-abc-123");
     });
   });
 });

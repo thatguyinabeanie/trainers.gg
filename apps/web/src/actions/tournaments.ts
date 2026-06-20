@@ -634,7 +634,9 @@ function maybeDemoteMemberRole(
         })
         .eq("alts.user_id", user.id)
         .eq("tournaments.community_id", tournament.community_id)
-        .is("dropped_at", null);
+        // "Not dropped" must include NULL status — SQL <> never matches NULL, so
+        // a bare .neq would undercount and could wrongly demote the Discord role.
+        .or("status.is.null,status.neq.dropped");
 
       if (count === 0) {
         await enqueueCommunityRoleSync(
@@ -945,13 +947,19 @@ export async function getCurrentUserAltsAction(): Promise<
 
     if (alts.length === 0) return { success: true, data: [] };
 
-    // Fetch user's name and country for display name options and flag
+    // Fetch PII (first/last name) via RPC and country directly from users.
+    // first_name/last_name moved to get_my_user_pii; country remains on users.
     const userId = alts[0]!.user_id;
-    const { data: user } = await supabase
-      .from("users")
-      .select("first_name, last_name, country")
-      .eq("id", userId)
-      .single();
+    const [piiResult, countryResult] = await Promise.all([
+      supabase.rpc("get_my_user_pii"),
+      supabase.from("users").select("country").eq("id", userId).maybeSingle(),
+    ]);
+
+    if (piiResult.error) throw piiResult.error;
+    if (countryResult.error) throw countryResult.error;
+
+    const pii = piiResult.data?.[0] ?? null;
+    const country = countryResult.data?.country ?? null;
 
     return {
       success: true,
@@ -960,9 +968,9 @@ export async function getCurrentUserAltsAction(): Promise<
         username: a.username,
         display_name: a.username,
         avatar_url: a.avatar_url,
-        first_name: user?.first_name ?? null,
-        last_name: user?.last_name ?? null,
-        country: user?.country ?? null,
+        first_name: pii?.first_name ?? null,
+        last_name: pii?.last_name ?? null,
+        country,
       })),
     };
   } catch (error) {
@@ -1515,23 +1523,31 @@ export async function bulkRemovePlayers(
       throw new Error("You don't have permission to manage this tournament");
     }
 
-    // Perform single bulk update
-    const { data, error } = await supabase
-      .from("tournament_registrations")
-      .update({
-        status: "dropped" as const,
-        drop_category: dropCategory,
-        drop_notes: dropNotes ?? null,
-        dropped_by: user.id,
-        dropped_at: new Date().toISOString(),
-      })
-      .in("id", registrationIds)
-      .eq("tournament_id", tournamentId)
-      .select("id");
+    // Build the drop set from the registrations we already fetched above —
+    // they exist and (per the single-tournament guard) all belong to this
+    // tournament. Do NOT pass raw registrationIds: a stale id would FK-violate
+    // the staff insert inside the RPC and fail the whole batch. This also
+    // preserves the "silently ignore missing ids" behaviour (missing ids are
+    // absent from `registrations`, so they count as failed).
+    const validIds = registrations.map((r) => r.id);
 
-    if (error) throw error;
+    // Single atomic RPC: upserts tournament_registration_staff rows and flips
+    // tournament_registrations.status to 'dropped' in one transaction.
+    // The audit_registration_status_change trigger fires on the UPDATE and
+    // reads drop metadata from the staff table — both writes commit or roll
+    // back together, preventing a half-applied state.
+    const { data: droppedIds, error: dropError } = await supabase.rpc(
+      "drop_registrations",
+      {
+        p_registration_ids: validIds,
+        p_drop_category: dropCategory,
+        p_drop_notes: dropNotes ?? "",
+      }
+    );
 
-    const removed = data?.length ?? 0;
+    if (dropError) throw dropError;
+
+    const removed = droppedIds?.length ?? 0;
     const failed = registrationIds.length - removed;
 
     // Invalidate cache

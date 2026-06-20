@@ -102,11 +102,14 @@ describe("AdminConfigPage (server component)", () => {
     expect(mockGetSiteRoles).toHaveBeenCalledWith(SERVICE_ROLE_CLIENT);
   });
 
-  it("calls getSiteAdmins with the service-role client", async () => {
+  it("calls getSiteAdmins with the service-role client for both params", async () => {
     await AdminConfigPage();
 
     expect(mockGetSiteAdmins).toHaveBeenCalledTimes(1);
-    expect(mockGetSiteAdmins).toHaveBeenCalledWith(SERVICE_ROLE_CLIENT);
+    expect(mockGetSiteAdmins).toHaveBeenCalledWith(
+      SERVICE_ROLE_CLIENT,
+      SERVICE_ROLE_CLIENT
+    );
   });
 
   it("runs getSiteRoles and getSiteAdmins in parallel (both called before either resolves)", async () => {

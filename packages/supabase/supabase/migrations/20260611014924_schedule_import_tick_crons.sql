@@ -52,6 +52,16 @@ DECLARE
   v_body jsonb := '{}'::jsonb;
   v_job  text;
 BEGIN
+  -- Skip entirely if pg_cron is not installed (local dev without the extension).
+  -- A function call into the missing `cron` schema raises invalid_schema_name
+  -- (3F000), which the trailing handler's `WHEN undefined_table` (42P01) does NOT
+  -- catch — so returning early here is what keeps `db:reset`/`db:start` green
+  -- on a cron-less local Postgres image.
+  IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    RAISE NOTICE 'pg_cron not installed — cron scheduling skipped';
+    RETURN;
+  END IF;
+
   SELECT decrypted_secret INTO v_url FROM vault.decrypted_secrets WHERE name = 'project_url';
   SELECT decrypted_secret INTO v_key FROM vault.decrypted_secrets WHERE name = 'service_role_key';
 
@@ -103,6 +113,10 @@ BEGIN
   );
 
   RAISE NOTICE 'import-tick crons scheduled (sync 5m, import 1m, compile 2m)';
+-- Note: this handler is unreachable for the cron-less case — the early RETURN
+-- guard above (pg_extension check) exits before any cron.* call when pg_cron is
+-- absent. Retained as belt-and-suspenders; the early RETURN is what keeps
+-- db:reset/db:start green.
 EXCEPTION WHEN undefined_table THEN
   RAISE NOTICE 'pg_cron not available (expected in local dev) — cron scheduling skipped';
 WHEN OTHERS THEN

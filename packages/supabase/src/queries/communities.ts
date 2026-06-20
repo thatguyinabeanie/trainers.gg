@@ -1,6 +1,7 @@
 import type { Database } from "../types";
-import type { TypedClient } from "../client";
+import type { TypedClient, ServiceRoleClient } from "../client";
 import { pgInList } from "../postgrest-helpers";
+import { getPiiByUserIds, getEmailsByUserIds } from "./admin-users";
 type OrganizationRow = Database["public"]["Tables"]["communities"]["Row"];
 
 export type CommunityWithCounts = OrganizationRow & {
@@ -128,7 +129,7 @@ export async function listCommunities(
     .select(
       `
       *,
-      owner:users!communities_owner_user_id_fkey(*)
+      owner:users!communities_owner_user_id_fkey(id, username, image, name)
     `,
       { count: "exact" }
     )
@@ -180,7 +181,7 @@ export async function getCommunityBySlug(supabase: TypedClient, slug: string) {
     .select(
       `
       *,
-      owner:users!communities_owner_user_id_fkey(*)
+      owner:users!communities_owner_user_id_fkey(id, username, image, name)
     `
     )
     .eq("slug", slug)
@@ -281,7 +282,7 @@ export async function getCommunityById(supabase: TypedClient, id: number) {
     .select(
       `
       *,
-      owner:users!communities_owner_user_id_fkey(*)
+      owner:users!communities_owner_user_id_fkey(id, username, image, name)
     `
     )
     .eq("id", id)
@@ -417,7 +418,7 @@ export async function listCommunityStaff(
     .select(
       `
       *,
-      user:users(*)
+      user:users(id, username, image, name)
     `
     )
     .eq("community_id", communityId);
@@ -469,7 +470,7 @@ export async function getMyCommunityInvitations(
       `
       *,
       organization:communities(*),
-      invited_by:users!community_invitations_invited_by_user_id_fkey(*)
+      invited_by:users!community_invitations_invited_by_user_id_fkey(id, username, image, name)
     `
     )
     .eq("invited_user_id", userId)
@@ -491,8 +492,8 @@ export async function getCommunityInvitations(
     .select(
       `
       *,
-      invited_user:users!community_invitations_invited_user_id_fkey(*),
-      invited_by:users!community_invitations_invited_by_user_id_fkey(*)
+      invited_user:users!community_invitations_invited_user_id_fkey(id, username, image, name),
+      invited_by:users!community_invitations_invited_by_user_id_fkey(id, username, image, name)
     `
     )
     .eq("community_id", communityId)
@@ -696,11 +697,21 @@ export type StaffWithRole = {
 };
 
 /**
- * List organization staff with their assigned roles via groups
+ * List organization staff with their assigned roles via groups.
+ *
+ * @param supabase        - Request-scoped (or service-role) client for all non-PII
+ *                          reads (communities, community_staff, groups, group_roles,
+ *                          user_group_roles, users). RLS is enforced on this client.
+ * @param communityId     - Numeric community ID.
+ * @param serviceSupabase - MUST be a service-role client (used for `getPiiByUserIds` and
+ *                          `getEmailsByUserIds` — `get_users_pii` RPC has EXECUTE granted
+ *                          to service_role only). Callers that are already
+ *                          staff-permission-gated should pass `createServiceRoleClient()`.
  */
 export async function listCommunityStaffWithRoles(
   supabase: TypedClient,
-  communityId: number
+  communityId: number,
+  serviceSupabase: ServiceRoleClient
 ): Promise<StaffWithRole[]> {
   // Get organization owner
   const { data: community } = await supabase
@@ -711,7 +722,8 @@ export async function listCommunityStaffWithRoles(
 
   const ownerUserId = community?.owner_user_id;
 
-  // Get all staff members with user details
+  // Get all staff members with public user columns only.
+  // first_name, last_name, email are fetched separately below (PII split).
   const { data: staffMembers, error: staffError } = await supabase
     .from("community_staff")
     .select(
@@ -720,7 +732,7 @@ export async function listCommunityStaffWithRoles(
       user_id,
       community_id,
       created_at,
-      user:users(id, username, first_name, last_name, image, email)
+      user:users(id, username, image)
     `
     )
     .eq("community_id", communityId);
@@ -793,11 +805,25 @@ export async function listCommunityStaffWithRoles(
   // Build result with owner included
   const result: StaffWithRole[] = [];
 
+  // Collect all user IDs (owner + staff) to batch-fetch PII and email.
+  const allUserIds: string[] = [];
+  if (ownerUserId) allUserIds.push(ownerUserId);
+  for (const s of staffMembers ?? []) allUserIds.push(s.user_id);
+  const uniqueUserIds = [...new Set(allUserIds)];
+
+  // Batch-fetch first/last name (get_users_pii RPC) and email (auth admin) in parallel.
+  // Both helpers require a service-role client — `get_users_pii` has EXECUTE granted
+  // to service_role only, and auth.admin is likewise service-role-only.
+  const [piiMap, emailMap] = await Promise.all([
+    getPiiByUserIds(serviceSupabase, uniqueUserIds),
+    getEmailsByUserIds(serviceSupabase, uniqueUserIds),
+  ]);
+
   // Add owner first (if not already in staff list)
   if (ownerUserId) {
     const { data: ownerUser } = await supabase
       .from("users")
-      .select("id, username, first_name, last_name, image, email")
+      .select("id, username, image")
       .eq("id", ownerUserId)
       .single();
 
@@ -811,7 +837,12 @@ export async function listCommunityStaffWithRoles(
           user_id: ownerUserId,
           community_id: communityId,
           created_at: null,
-          user: ownerUser,
+          user: {
+            ...ownerUser,
+            first_name: piiMap.get(ownerUserId)?.first_name ?? null,
+            last_name: piiMap.get(ownerUserId)?.last_name ?? null,
+            email: emailMap.get(ownerUserId) ?? null,
+          },
           group: null,
           role: null,
           isOwner: true,
@@ -820,15 +851,24 @@ export async function listCommunityStaffWithRoles(
     }
   }
 
-  // Add staff members
+  // Add staff members — merge PII and email into the user shape.
   for (const staff of staffMembers ?? []) {
     const userRole = userRoleMap.get(staff.user_id);
+    const pii = piiMap.get(staff.user_id);
+    const email = emailMap.get(staff.user_id) ?? null;
     result.push({
       id: staff.id,
       user_id: staff.user_id,
       community_id: staff.community_id,
       created_at: staff.created_at,
-      user: staff.user,
+      user: staff.user
+        ? {
+            ...staff.user,
+            first_name: pii?.first_name ?? null,
+            last_name: pii?.last_name ?? null,
+            email,
+          }
+        : null,
       group: userRole?.group ?? null,
       role: userRole?.role ?? null,
       isOwner: staff.user_id === ownerUserId,
@@ -945,14 +985,27 @@ export async function listCommunityGroups(
 }
 
 /**
- * Search users for staff invitation
- * Returns users matching the search term who are NOT already staff
+ * Search users for staff invitation.
+ * Returns users matching the search term who are NOT already staff.
+ * first_name and last_name are fetched via the `get_users_pii` RPC after
+ * the PostgREST query since they no longer live in public.users.
+ *
+ * @param supabase        - Request-scoped (or service-role) client for PostgREST reads.
+ * @param communityId     - Numeric community ID.
+ * @param searchTerm      - Username search term (min 2 chars).
+ * @param limit           - Max results to return (default 10).
+ * @param serviceSupabase - Service-role client used ONLY for the first/last-name
+ *                          PII enrichment (get_users_pii is service_role-only).
+ *                          When omitted, PII enrichment is skipped and names come
+ *                          back null — we never cast a request-scoped client to
+ *                          service-role (that would defeat the brand + 403 at runtime).
  */
 export async function searchUsersForInvite(
   supabase: TypedClient,
   communityId: number,
   searchTerm: string,
-  limit: number = 10
+  limit: number = 10,
+  serviceSupabase?: ServiceRoleClient
 ): Promise<
   {
     id: string;
@@ -985,10 +1038,10 @@ export async function searchUsersForInvite(
     existingUserIds.push(community.owner_user_id);
   }
 
-  // Search users by username
+  // Search users by username — first_name/last_name are no longer in public.users.
   let query = supabase
     .from("users")
-    .select("id, username, first_name, last_name, image")
+    .select("id, username, image")
     .ilike("username", `%${searchTerm}%`)
     .limit(limit);
 
@@ -1000,7 +1053,27 @@ export async function searchUsersForInvite(
   const { data: users, error } = await query;
 
   if (error) throw error;
-  return users ?? [];
+  if (!users || users.length === 0) return [];
+
+  // Enrich with first/last name via the get_users_pii RPC — but ONLY when a
+  // service-role client is explicitly provided. The RPC is service_role-only,
+  // so calling it with a request/browser client just 403s and logs noise. We
+  // never cast a non-branded client to ServiceRoleClient (that would defeat the
+  // brand); without serviceSupabase, names are simply omitted.
+  const piiMap = serviceSupabase
+    ? await getPiiByUserIds(
+        serviceSupabase,
+        users.map((u) => u.id)
+      )
+    : new Map<string, { first_name: string | null; last_name: string | null }>();
+
+  return users.map((u) => ({
+    id: u.id,
+    username: u.username,
+    image: u.image,
+    first_name: piiMap.get(u.id)?.first_name ?? null,
+    last_name: piiMap.get(u.id)?.last_name ?? null,
+  }));
 }
 
 /**

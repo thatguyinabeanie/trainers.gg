@@ -2,6 +2,7 @@ import {
   getPhaseRoundsWithStats,
   listTournamentsGrouped,
   getActiveMatch,
+  getTournamentRegistrations,
 } from "../tournaments";
 import type { TypedClient } from "../../client";
 
@@ -525,6 +526,107 @@ describe("listTournamentsGrouped", () => {
     );
 
     consoleErrorSpy.mockRestore();
+  });
+});
+
+// =============================================================================
+// getTournamentRegistrations — narrowed select column list
+// =============================================================================
+
+describe("getTournamentRegistrations", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should use explicit column list (no wildcard, no alts(*), no teams(*))", async () => {
+    const mockClient = createMockClient();
+    const registrationRows = [
+      {
+        id: 1,
+        alt_id: 10,
+        tournament_id: 42,
+        status: "registered",
+        registered_at: "2025-01-01T00:00:00Z",
+        checked_in_at: null,
+        team_id: null,
+        team_name: null,
+        team_submitted_at: null,
+        team_locked: false,
+        in_game_name: "Ash",
+        display_name_option: "ign",
+        show_country_flag: true,
+        alt: { id: 10, username: "ash", avatar_url: null },
+        staff: null,
+      },
+    ];
+
+    const selectMock = jest.fn().mockReturnThis();
+    const eqMock = jest.fn().mockReturnThis();
+    const orderMock = jest.fn().mockResolvedValue({
+      data: registrationRows,
+      error: null,
+    });
+
+    (mockClient.from as jest.Mock).mockReturnValueOnce({
+      select: selectMock,
+      eq: eqMock,
+      order: orderMock,
+    });
+
+    const result = await getTournamentRegistrations(mockClient, 42);
+
+    expect(mockClient.from).toHaveBeenCalledWith("tournament_registrations");
+    expect(eqMock).toHaveBeenCalledWith("tournament_id", 42);
+    expect(orderMock).toHaveBeenCalledWith("registered_at", {
+      ascending: true,
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe(1);
+
+    // Verify the select string uses explicit columns — not "*" or alts(*) or teams(*)
+    const selectArg: string = (selectMock.mock.calls[0] as string[])[0] ?? "";
+    expect(selectArg).not.toContain("alts(*)");
+    expect(selectArg).not.toContain("teams(*)");
+    // Must contain specific alt join
+    expect(selectArg).toContain(
+      "alt:alts!tournament_registrations_alt_id_fkey"
+    );
+    // Must contain staff embed
+    expect(selectArg).toContain("staff:tournament_registration_staff");
+    // Must include explicit registration columns
+    expect(selectArg).toContain("alt_id");
+    expect(selectArg).toContain("tournament_id");
+    expect(selectArg).toContain("status");
+    expect(selectArg).toContain("registered_at");
+  });
+
+  it("should return empty array when no registrations exist", async () => {
+    const mockClient = createMockClient();
+
+    (mockClient.from as jest.Mock).mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({ data: null, error: null }),
+    });
+
+    const result = await getTournamentRegistrations(mockClient, 99);
+
+    expect(result).toEqual([]);
+  });
+
+  it("should throw when the query returns an error", async () => {
+    const mockClient = createMockClient();
+    const dbError = new Error("permission denied");
+
+    (mockClient.from as jest.Mock).mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({ data: null, error: dbError }),
+    });
+
+    await expect(getTournamentRegistrations(mockClient, 42)).rejects.toThrow(
+      "permission denied"
+    );
   });
 });
 

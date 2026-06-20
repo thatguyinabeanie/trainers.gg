@@ -11,6 +11,10 @@ import {
 import { logError } from "@trainers/utils";
 
 import { type TypedClient, getCurrentAlt } from "./helpers";
+import {
+  type ParsedPokemon,
+  type ValidationError,
+} from "@trainers/validators/team";
 
 export type SubmitTeamResult =
   | {
@@ -77,7 +81,7 @@ export async function submitTeam(
     // Return structured errors instead of throwing
     return {
       success: false,
-      errors: result.errors.map((e) => e.message),
+      errors: result.errors.map((e: ValidationError) => e.message),
     };
   }
 
@@ -155,7 +159,7 @@ export async function submitTeam(
   // move1 is required in the schema → fall back to empty string.
   // `mon.gender` is `ParsedPokemonGender = "Male" | "Female" | null`,
   // structurally identical to the `pokemon_gender` enum, so no cast needed.
-  const pokemonInserts = result.team.map((mon) => ({
+  const pokemonInserts = result.team.map((mon: ParsedPokemon) => ({
     species: mon.species,
     nickname: mon.nickname,
     level: mon.level,
@@ -227,7 +231,7 @@ export async function submitTeam(
     teamId: newTeam.id,
     pokemonCount: result.team.length,
     teamName: newTeam.name ?? "Unnamed Team",
-    species: result.team.map((mon) => mon.species),
+    species: result.team.map((mon: ParsedPokemon) => mon.species),
   };
 }
 
@@ -337,7 +341,8 @@ export async function selectTeamForTournament(
   //    closed: better to ask the user to retry than to silently approve a
   //    possibly-illegal team.
   if (gameFormat) {
-    const UNAVAILABLE = "Legality check is temporarily unavailable. Please try again in a moment.";
+    const UNAVAILABLE =
+      "Legality check is temporarily unavailable. Please try again in a moment.";
     const legalSpecies = getLegalSpecies(gameFormat);
     const legalItems = getLegalItems(gameFormat);
     const legalTera = getLegalTeraTypes(gameFormat);
@@ -353,11 +358,7 @@ export async function selectTeamForTournament(
     for (const mon of teamPokemon) {
       const species = mon.species ?? "";
       const label = species || "Pokemon";
-      if (
-        species &&
-        legalSpecies !== undefined &&
-        !legalSpecies.has(species)
-      ) {
+      if (species && legalSpecies !== undefined && !legalSpecies.has(species)) {
         legalityErrors.push(
           `${label} is not legal in this tournament's format.`
         );

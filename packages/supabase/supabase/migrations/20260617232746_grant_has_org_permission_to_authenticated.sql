@@ -1,0 +1,27 @@
+-- =============================================================================
+-- Grant EXECUTE on has_org_permission to authenticated (fix dormant staff RLS)
+-- =============================================================================
+-- 21 "Staff can ..." RLS policies across 7 tournament tables (tournament_matches,
+-- tournament_pairings, tournament_rounds, tournament_standings, tournament_phases,
+-- tournament_player_stats, tournament_opponent_history) gate manager writes with
+-- `has_org_permission(community_id, 'tournament.manage')`. But EXECUTE on
+-- has_org_permission was never granted to `authenticated` (only has_community_permission
+-- was). So when an authenticated manager does a DIRECT write to one of those tables,
+-- the policy evaluation raises `42501: permission denied for function has_org_permission`.
+--
+-- This is mostly dormant because most manager writes go through SECURITY DEFINER
+-- RPCs (start_round, advance_to_top_cut, report_match_result, …) that bypass RLS —
+-- but it bites any direct authenticated write, e.g. dropPlayer's
+-- tournament_player_stats.is_dropped update.
+--
+-- has_org_permission is a thin wrapper that just delegates:
+--   `SELECT public.has_community_permission(org_id, permission_key)`
+-- which IS already granted to authenticated. So granting EXECUTE on the wrapper is
+-- equivalent + safe — it makes the 21 legacy policies evaluate correctly.
+--
+-- TECH DEBT (deferred): the org→community split-brain (has_org_permission vs
+-- has_community_permission, 21 vs 38 policies) should eventually be consolidated
+-- onto has_community_permission. This migration is the minimal, safe unblock.
+-- =============================================================================
+
+GRANT EXECUTE ON FUNCTION public.has_org_permission(bigint, text) TO authenticated;

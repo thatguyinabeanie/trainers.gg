@@ -1,15 +1,19 @@
 "use server";
 
-import { positiveIntSchema, uuidSchema } from "@trainers/validators";
+import { positiveIntSchema, uuidSchema, type ActionResult } from "@trainers/validators";
 import {
   withAdminAction,
-  type ActionResult,
+  withAdminReadAction,
+  type ActionResult as AdminActionResult,
 } from "@/lib/auth/with-admin-action";
 import {
   suspendUser,
   unsuspendUser,
   grantSiteRole,
   revokeSiteRole,
+  getUserAdminDetails,
+  getSiteRoles,
+  type UserAdminDetails,
 } from "@trainers/supabase";
 import { z } from "@trainers/validators";
 
@@ -27,7 +31,7 @@ const reasonSchema = z.string().max(1000).optional();
 export async function suspendUserAction(
   userId: string,
   reason?: string
-): Promise<ActionResult> {
+): Promise<AdminActionResult> {
   const parsedUserId = uuidSchema.safeParse(userId);
   if (!parsedUserId.success) {
     return {
@@ -65,7 +69,7 @@ export async function suspendUserAction(
  */
 export async function unsuspendUserAction(
   userId: string
-): Promise<ActionResult> {
+): Promise<AdminActionResult> {
   const parsedUserId = uuidSchema.safeParse(userId);
   if (!parsedUserId.success) {
     return {
@@ -90,7 +94,7 @@ export async function unsuspendUserAction(
 export async function grantSiteRoleAction(
   userId: string,
   roleId: number
-): Promise<ActionResult> {
+): Promise<AdminActionResult> {
   const parsedUserId = uuidSchema.safeParse(userId);
   if (!parsedUserId.success) {
     return {
@@ -123,7 +127,7 @@ export async function grantSiteRoleAction(
 export async function revokeSiteRoleAction(
   userId: string,
   roleId: number
-): Promise<ActionResult> {
+): Promise<AdminActionResult> {
   const parsedUserId = uuidSchema.safeParse(userId);
   if (!parsedUserId.success) {
     return {
@@ -168,4 +172,39 @@ export async function revokeSiteRoleAction(
       adminUserId
     );
   }, "Error revoking site role");
+}
+
+// ----------------------------------------------------------------
+// User Detail (read)
+// ----------------------------------------------------------------
+
+type UserDetailsData = {
+  user: UserAdminDetails | null;
+  siteRoles: Awaited<ReturnType<typeof getSiteRoles>>;
+};
+
+/**
+ * Load a single user's admin detail (profile + PII + site roles) for the
+ * admin user-detail sheet. Gated by withAdminReadAction (site_admin) and run
+ * with a service-role client because getUserAdminDetails reads PII via the
+ * service_role-only get_users_pii RPC and the auth admin email API.
+ */
+export async function getUserDetailsAction(
+  userId: string
+): Promise<ActionResult<UserDetailsData>> {
+  const parsedUserId = uuidSchema.safeParse(userId);
+  if (!parsedUserId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
+    };
+  }
+
+  return withAdminReadAction(async (supabase) => {
+    const [user, siteRoles] = await Promise.all([
+      getUserAdminDetails(supabase, parsedUserId.data),
+      getSiteRoles(supabase),
+    ]);
+    return { success: true, data: { user, siteRoles } };
+  }, "Error loading user details");
 }

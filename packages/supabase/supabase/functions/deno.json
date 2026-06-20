@@ -24,6 +24,7 @@
     "@trainers/validators/community": "../../../validators/src/community.ts",
     "@trainers/validators/admin": "../../../validators/src/admin.ts",
     "@trainers/validators/action-result": "../../../validators/src/action-result.ts",
+    "@trainers/validators/team": "../../../validators/src/team.ts",
     "@trainers/utils": "../../../utils/src/index.ts",
     "@trainers/supabase/mutations": "../../src/mutations/index.ts",
     "@trainers/supabase/pipeline": "../../src/mutations/pipeline.ts",

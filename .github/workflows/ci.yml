@@ -152,6 +152,39 @@ jobs:
       - name: Typecheck
         run: pnpm turbo run typecheck --log-prefix=none
 
+  # ── Deno type-check for Supabase edge functions ───────────────
+  # Edge functions run on Deno, not Node — `pnpm typecheck` (tsc) does NOT
+  # cover them, and they bundle via esbuild at deploy without a type gate.
+  # This job catches edge-function type errors (e.g. a missing arg, a stale
+  # query import) before they reach a preview/prod deploy.
+  deno-check:
+    name: Deno Check (edge functions)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # --sloppy-imports: the @trainers/* workspace packages use extensionless
+      # (Node-style) relative imports, which Deno rejects by default. esbuild
+      # resolves them at bundle time; this flag lets `deno check` do the same.
+      # The deprecated `api-*` functions are excluded: they are unreferenced,
+      # not declared in config.toml, and pending retirement (replaced by
+      # /api/v1 Next.js routes). They reference removed query exports and are
+      # not worth gating a new check on — fix or delete them at retirement.
+      - name: Deno check edge functions
+        run: >-
+          find packages/supabase/supabase/functions
+          -mindepth 2 -maxdepth 2 -name index.ts -not -path '*/api-*'
+          -exec deno check --config packages/supabase/supabase/functions/deno.json --sloppy-imports {} +
+
   # ── Unit tests (Jest) — web (sharded x2), mobile, packages ─────
   test-web:
     name: Test @trainers/web (shard ${{ matrix.shard }})

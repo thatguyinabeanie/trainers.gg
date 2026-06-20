@@ -124,16 +124,9 @@ jest.mock("@/components/ui/separator", () => ({
   Separator: () => <hr />,
 }));
 
-// Mock @trainers/supabase — listUsersAdmin is called directly in the useQuery fn
-const mockListUsersAdmin = jest.fn();
-jest.mock("@trainers/supabase", () => ({
-  listUsersAdmin: (...args: unknown[]) => mockListUsersAdmin(...args),
-}));
-
-// Mock the Supabase browser client — coaches-manager calls createClient()
-jest.mock("@/lib/supabase/client", () => ({
-  createClient: jest.fn(() => ({})),
-}));
+// Note: @trainers/supabase listUsersAdmin is no longer used by the component.
+// The user search now calls fetch("/api/v1/admin/users?search=…&limit=5") directly.
+// No supabase or createClient mock needed for user search.
 
 // Mock server actions
 const mockGrantCoachStatusAction = jest.fn();
@@ -193,11 +186,16 @@ function buildCoach(overrides: Partial<CoachRow> = {}): CoachRow {
   };
 }
 
-// Configure the listUsersAdmin mock for user search results
+// Configure global.fetch to return a user-search API response.
+// The component calls fetch("/api/v1/admin/users?search=…&limit=5") and
+// reads `{ data, count }` from res.json(), returning `data`.
 function setSearchQuery(
   data: { id: string; username: string | null; image: string | null }[] = []
 ) {
-  mockListUsersAdmin.mockResolvedValue({ data, count: data.length });
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ data, count: data.length }),
+  } as unknown as Response);
 }
 
 // Default coaches API query result — no data (component falls back to initialData prop)
@@ -217,12 +215,18 @@ function setCoachesQuery(
 // ---------------------------------------------------------------------------
 
 describe("CoachesManager", () => {
+  const originalFetch = global.fetch;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    setSearchQuery(); // default: no results
+    setSearchQuery(); // default: empty search results (no fetch call expected for non-search tests)
     setCoachesQuery(); // default: undefined data, component uses initialData prop
     mockRevokeCoachStatusAction.mockResolvedValue({ success: true });
     mockGrantCoachStatusAction.mockResolvedValue({ success: true });
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
   });
 
   // -------------------------------------------------------------------------
