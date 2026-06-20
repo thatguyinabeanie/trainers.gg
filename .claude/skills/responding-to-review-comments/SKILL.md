@@ -15,7 +15,7 @@ Fetch review comments, group them by theme, walk through each with the user, pos
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | **Reply #1 — Decision** | The moment the fix is decided (end of Group and Present, as soon as the user picks an approach — or immediately for not-an-issue) | What is going to be done: "Adopting X — <change>. Implementing in this round." |
 | **Reply #2 — Done**     | Right after the fix is committed + pushed (Reply #2 — Done section)                                                               | "Fixed in `<sha>` — <one-line of what changed>."                               |
-| **Resolve**             | Once Reply #2 is posted and the fix is verified                                                                                   | Resolve the thread.                                                            |
+| **Resolve**             | Once Reply #2 is posted and the fix is verified — or right after the single reply for a not-an-issue comment                      | Resolve the thread.                                                            |
 
 Rules that make this non-negotiable:
 
@@ -156,7 +156,7 @@ gh api repos/{owner}/{repo}/pulls/{pr}/reviews --paginate \
 
 ## Reply #2 — Done (after push)
 
-This is the second half of the two-reply protocol. After pushing, post Reply #2 to **every** comment you already acknowledged in Reply #1 (and any not-yet-replied comment). Lead each reply with a status label.
+This is the second half of the two-reply protocol. After pushing, post Reply #2 to every **fix** comment you acknowledged in Reply #1 (and any not-yet-replied comment). Not-an-issue comments are the exception — they were already resolved after their single explanatory reply, so they have no Reply #2. Lead each reply with a status label.
 
 ### Status Labels
 
