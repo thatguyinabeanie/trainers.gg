@@ -33,11 +33,6 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-keys";
-import { supabase } from "@/lib/supabase/client";
-import {
-  getUserAdminDetails,
-  getSiteRoles as fetchSiteRoles,
-} from "@trainers/supabase";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -47,46 +42,14 @@ import {
   Loader2,
 } from "lucide-react";
 import { startImpersonationAction } from "@/lib/impersonation/actions";
+import { type UserAdminDetails } from "@trainers/supabase";
 import {
   suspendUserAction,
   unsuspendUserAction,
   grantSiteRoleAction,
   revokeSiteRoleAction,
+  getUserDetailsAction,
 } from "./actions";
-
-// ----------------------------------------------------------------
-// Types
-// ----------------------------------------------------------------
-
-interface UserDetail {
-  id: string;
-  email: string | null;
-  username: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  image: string | null;
-  is_locked: boolean | null;
-  created_at: string | null;
-  last_sign_in_at: string | null;
-  alts: Array<{
-    id: number;
-    username: string | null;
-    avatar_url: string | null;
-    bio: string | null;
-    tier: string | null;
-    created_at: string | null;
-  }> | null;
-  user_roles: Array<{
-    id: number;
-    created_at: string | null;
-    role: {
-      id: number;
-      name: string;
-      description: string | null;
-      scope: string;
-    } | null;
-  }> | null;
-}
 
 interface SiteRole {
   id: number;
@@ -125,14 +88,20 @@ export function UserDetailSheet({
   onOpenChange,
   onUserUpdated,
 }: UserDetailSheetProps) {
-  const { data: userData, isLoading: loading, error: queryError, refetch: refetchUser } = useQuery({
+  const { data: userData, isLoading: loading, error: queryError, refetch: refetchUser } = useQuery<{
+    user: UserAdminDetails | null;
+    siteRoles: SiteRole[];
+  }>({
     queryKey: queryKeys.admin.userDetail(userId),
     queryFn: async () => {
-      const [userResult, rolesData] = await Promise.all([
-        getUserAdminDetails(supabase, userId!),
-        fetchSiteRoles(supabase),
-      ]);
-      return { user: userResult as UserDetail | null, siteRoles: rolesData as SiteRole[] };
+      const result = await getUserDetailsAction(userId!);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return {
+        user: result.data.user,
+        siteRoles: result.data.siteRoles,
+      };
     },
     enabled: open && !!userId,
   });

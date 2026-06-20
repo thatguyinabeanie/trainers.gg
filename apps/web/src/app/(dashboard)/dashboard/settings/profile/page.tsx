@@ -39,6 +39,8 @@ export default function ProfileSettingsPage() {
 
   // Form state
   const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [bio, setBio] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [country, setCountry] = useState("");
@@ -53,6 +55,8 @@ export default function ProfileSettingsPage() {
   const [originalBirthDate, setOriginalBirthDate] = useState("");
   const [originalCountry, setOriginalCountry] = useState("");
 
+  const [originalFirstName, setOriginalFirstName] = useState("");
+  const [originalLastName, setOriginalLastName] = useState("");
   const [altId, setAltId] = useState<number | null>(null);
   const [altAvatarUrl, setAltAvatarUrl] = useState<string | null>(null);
   const [showDiscordPublicly, setShowDiscordPublicly] = useState(false);
@@ -67,6 +71,10 @@ export default function ProfileSettingsPage() {
         const profile = result.data;
         setUsername(profile.username ?? "");
         setOriginalUsername(profile.username ?? "");
+        setFirstName(profile.firstName ?? "");
+        setOriginalFirstName(profile.firstName ?? "");
+        setLastName(profile.lastName ?? "");
+        setOriginalLastName(profile.lastName ?? "");
         setBio(profile.bio ?? "");
         setOriginalBio(profile.bio ?? "");
         setBirthDate(profile.birthDate ?? "");
@@ -142,11 +150,15 @@ export default function ProfileSettingsPage() {
   const hasUsernameChanged =
     username.toLowerCase() !== originalUsername.toLowerCase() &&
     username.length > 0;
+  const hasFirstNameChanged = firstName !== originalFirstName;
+  const hasLastNameChanged = lastName !== originalLastName;
   const hasBioChanged = bio !== originalBio;
   const hasBirthDateChanged = birthDate !== originalBirthDate;
   const hasCountryChanged = country !== originalCountry;
   const hasAnyChange =
     hasUsernameChanged ||
+    hasFirstNameChanged ||
+    hasLastNameChanged ||
     hasBioChanged ||
     hasBirthDateChanged ||
     hasCountryChanged;
@@ -161,6 +173,8 @@ export default function ProfileSettingsPage() {
     startTransition(async () => {
       const updates: {
         username?: string;
+        firstName?: string;
+        lastName?: string;
         bio?: string;
         birthDate?: string;
         country?: string;
@@ -170,12 +184,24 @@ export default function ProfileSettingsPage() {
         updates.username = username;
       }
 
+      if (hasFirstNameChanged) {
+        updates.firstName = firstName;
+      }
+
+      if (hasLastNameChanged) {
+        updates.lastName = lastName;
+      }
+
       if (hasBioChanged) {
         updates.bio = bio;
       }
 
-      // Always send birthDate and country if they have values
-      if (birthDate) {
+      // Send birthDate whenever it changed:
+      //   "" (empty) → cleared by user → action interprets "" as "clear"
+      //   "YYYY-MM-DD" → new or updated date → action forwards to the RPC
+      // We intentionally do NOT skip empty-string here — that would make clearing
+      // impossible. The action's Zod schema accepts "" as the clear sentinel.
+      if (hasBirthDateChanged) {
         updates.birthDate = birthDate;
       }
 
@@ -193,6 +219,8 @@ export default function ProfileSettingsPage() {
       if (result.success) {
         toast.success("Profile updated");
         setOriginalUsername(username);
+        setOriginalFirstName(firstName);
+        setOriginalLastName(lastName);
         setOriginalBio(bio);
         setOriginalBirthDate(birthDate);
         setOriginalCountry(country);
@@ -207,9 +235,9 @@ export default function ProfileSettingsPage() {
     return (
       <DashboardContent>
         <Card>
-        <CardContent className="flex min-h-[200px] items-center justify-center">
-          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-        </CardContent>
+          <CardContent className="flex min-h-[200px] items-center justify-center">
+            <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+          </CardContent>
         </Card>
       </DashboardContent>
     );
@@ -218,136 +246,164 @@ export default function ProfileSettingsPage() {
   return (
     <DashboardContent>
       <Card>
-      <CardHeader>
-        <CardTitle>Profile</CardTitle>
-        <CardDescription>
-          Your account details and public profile information
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Avatar sprite picker */}
-        {altId ? (
-          <SpritePicker
-            altId={altId}
-            currentAvatarUrl={altAvatarUrl}
-            onAvatarChange={setAltAvatarUrl}
-          />
-        ) : (
-          <div>
-            <p className="font-medium">{displayName}</p>
-            <p className="text-muted-foreground text-sm">@{originalUsername}</p>
-          </div>
-        )}
-
-        {/* Username field */}
-        <div className="space-y-2">
-          <Label htmlFor="username">Username</Label>
-          {isPlaceholderUsername && (
-            <p className="text-sm text-amber-600 dark:text-amber-400">
-              You have a temporary username. Choose a permanent one below.
-            </p>
-          )}
-          <div className="relative">
-            <Input
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Choose a username"
-              className="pr-10"
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>
+            Your account details and public profile information
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Avatar sprite picker */}
+          {altId ? (
+            <SpritePicker
+              altId={altId}
+              currentAvatarUrl={altAvatarUrl}
+              onAvatarChange={setAltAvatarUrl}
             />
-            {usernameStatus === "checking" && (
-              <Loader2 className="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin" />
+          ) : (
+            <div>
+              <p className="font-medium">{displayName}</p>
+              <p className="text-muted-foreground text-sm">
+                @{originalUsername}
+              </p>
+            </div>
+          )}
+
+          {/* Username field */}
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            {isPlaceholderUsername && (
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                You have a temporary username. Choose a permanent one below.
+              </p>
+            )}
+            <div className="relative">
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Choose a username"
+                className="pr-10"
+              />
+              {usernameStatus === "checking" && (
+                <Loader2 className="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin" />
+              )}
+              {usernameStatus === "available" && (
+                <Check className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+              )}
+              {(usernameStatus === "taken" || usernameStatus === "error") && (
+                <X className="text-destructive absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
+              )}
+            </div>
+            {usernameError && (
+              <p className="text-destructive text-sm">{usernameError}</p>
             )}
             {usernameStatus === "available" && (
-              <Check className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                Username is available
+              </p>
             )}
-            {(usernameStatus === "taken" || usernameStatus === "error") && (
-              <X className="text-destructive absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
-            )}
-          </div>
-          {usernameError && (
-            <p className="text-destructive text-sm">{usernameError}</p>
-          )}
-          {usernameStatus === "available" && (
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">
-              Username is available
-            </p>
-          )}
-          <p className="text-muted-foreground text-xs">
-            3-20 characters. Letters, numbers, underscores, and hyphens. Casing
-            is preserved but uniqueness is case-insensitive.
-          </p>
-        </div>
-
-        {/* Bio field */}
-        <div className="space-y-2">
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea
-            id="bio"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="Tell people about yourself"
-            maxLength={160}
-            rows={3}
-          />
-          <p className="text-muted-foreground text-xs">
-            {bio.length}/160 characters
-          </p>
-        </div>
-
-        {/* Birth date field */}
-        <div className="space-y-2">
-          <Label htmlFor="birthDate">Birth Date</Label>
-          <Input
-            id="birthDate"
-            type="date"
-            value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
-          />
-        </div>
-
-        {/* Country dropdown */}
-        <div className="space-y-2">
-          <Label htmlFor="country">Country</Label>
-          <Select value={country} onValueChange={(v) => setCountry(v ?? "")}>
-            <SelectTrigger id="country">
-              <SelectValue placeholder="Select your country" />
-            </SelectTrigger>
-            <SelectContent>
-              {COUNTRIES.map((c) => (
-                <SelectItem key={c.code} value={c.code}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Privacy section */}
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-base font-medium">Privacy</h3>
-            <p className="text-muted-foreground text-sm">
-              Control what information is visible on your public profile.
+            <p className="text-muted-foreground text-xs">
+              3-20 characters. Letters, numbers, underscores, and hyphens.
+              Casing is preserved but uniqueness is case-insensitive.
             </p>
           </div>
-          <div className="bg-card rounded-lg border px-4 py-3">
-            {!isLoading && (
-              <DiscordProfilePrivacyRow initialEnabled={showDiscordPublicly} />
-            )}
-          </div>
-        </div>
 
-        <Button onClick={handleSave} disabled={!canSave}>
-          {isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          Save Changes
-        </Button>
-      </CardContent>
-    </Card>
+          {/* First name field */}
+          <div className="space-y-2">
+            <Label htmlFor="firstName">First Name</Label>
+            <Input
+              id="firstName"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Your first name"
+              maxLength={64}
+            />
+          </div>
+
+          {/* Last name field */}
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name</Label>
+            <Input
+              id="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Your last name"
+              maxLength={64}
+            />
+          </div>
+
+          {/* Bio field */}
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Tell people about yourself"
+              maxLength={160}
+              rows={3}
+            />
+            <p className="text-muted-foreground text-xs">
+              {bio.length}/160 characters
+            </p>
+          </div>
+
+          {/* Birth date field */}
+          <div className="space-y-2">
+            <Label htmlFor="birthDate">Birth Date</Label>
+            <Input
+              id="birthDate"
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+            />
+          </div>
+
+          {/* Country dropdown */}
+          <div className="space-y-2">
+            <Label htmlFor="country">Country</Label>
+            <Select value={country} onValueChange={(v) => setCountry(v ?? "")}>
+              <SelectTrigger id="country">
+                <SelectValue placeholder="Select your country" />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Privacy section */}
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-medium">Privacy</h3>
+              <p className="text-muted-foreground text-sm">
+                Control what information is visible on your public profile.
+              </p>
+            </div>
+            <div className="bg-card rounded-lg border px-4 py-3">
+              {!isLoading && (
+                <DiscordProfilePrivacyRow
+                  initialEnabled={showDiscordPublicly}
+                />
+              )}
+            </div>
+          </div>
+
+          <Button onClick={handleSave} disabled={!canSave}>
+            {isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save Changes
+          </Button>
+        </CardContent>
+      </Card>
     </DashboardContent>
   );
 }

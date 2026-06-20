@@ -39,6 +39,9 @@ export {
 
 // User validators
 export {
+  firstNameSchema,
+  lastNameSchema,
+  birthDateSchema,
   socialLinksSchema,
   userSettingsSchema,
   gamePreferencesSchema,
@@ -47,6 +50,7 @@ export {
   blueskyUserSchema,
   spritePreferenceSchema,
   updateSpritePreferenceSchema,
+  type BirthDate,
   type SocialLinks,
   type UserSettings,
   type GamePreferences,

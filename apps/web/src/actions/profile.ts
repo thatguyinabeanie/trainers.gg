@@ -4,6 +4,9 @@ import {
   z,
   usernameSchema,
   pdsStatusSchema,
+  firstNameSchema,
+  lastNameSchema,
+  birthDateSchema,
   type ActionResult,
 } from "@trainers/validators";
 import { checkBotId } from "botid/server";
@@ -21,12 +24,15 @@ import {
   generateHandle,
 } from "./pds-utils";
 
+// birthDateSchema (from @trainers/validators) accepts "" as the "clear" sentinel
+// in addition to the standard YYYY-MM-DD format. firstName/lastNameSchema accept
+// empty string so users can remove previously-set names.
 const updateProfileSchema = z.object({
   username: usernameSchema.optional(),
-  birthDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Birth date must be in YYYY-MM-DD format")
-    .optional(),
+  firstName: firstNameSchema.optional(),
+  lastName: lastNameSchema.optional(),
+  // "" = clear the existing birth date; "YYYY-MM-DD" = set/update; omitted = no change
+  birthDate: birthDateSchema.optional(),
   country: z
     .string()
     .length(2, "Country must be a 2-letter ISO code")
@@ -42,6 +48,8 @@ interface UserProfile {
   pdsStatus: "pending" | "active" | "failed" | "suspended" | "external" | null;
   pdsHandle: string | null;
   did: string | null;
+  firstName: string | null;
+  lastName: string | null;
   birthDate: string | null;
   country: string | null;
   mainAltId: number | null;
@@ -216,20 +224,31 @@ export async function getCurrentUserProfile(): Promise<
 
     if (!user) return { success: true, data: null };
 
-    const { data: userData, error: dbError } = await supabase
-      .from("users")
-      .select(
-        "id, username, pds_status, pds_handle, did, birth_date, country, main_alt_id, show_discord_publicly"
-      )
-      .eq("id", user.id)
-      .maybeSingle();
+    const [usersResult, piiResult] = await Promise.all([
+      supabase
+        .from("users")
+        .select(
+          "id, username, pds_status, pds_handle, did, country, main_alt_id, show_discord_publicly"
+        )
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase.rpc("get_my_user_pii"),
+    ]);
 
-    if (dbError) {
-      console.error("Error fetching user profile:", dbError);
+    if (usersResult.error) {
+      console.error("Error fetching user profile:", usersResult.error);
       return { success: false, error: "Failed to fetch profile" };
     }
 
+    if (piiResult.error) {
+      console.error("Error fetching user PII:", piiResult.error);
+      return { success: false, error: "Failed to fetch profile" };
+    }
+
+    const userData = usersResult.data;
     if (!userData) return { success: true, data: null };
+
+    const pii = piiResult.data?.[0] ?? null;
 
     // Fetch main alt's avatar URL and bio if a main alt exists
     let altAvatarUrl: string | null = null;
@@ -258,7 +277,9 @@ export async function getCurrentUserProfile(): Promise<
           | null,
         pdsHandle: userData.pds_handle,
         did: userData.did,
-        birthDate: userData.birth_date,
+        firstName: pii?.first_name ?? null,
+        lastName: pii?.last_name ?? null,
+        birthDate: pii?.birth_date ?? null,
         country: userData.country,
         mainAltId: userData.main_alt_id,
         altAvatarUrl,
@@ -278,6 +299,8 @@ export async function getCurrentUserProfile(): Promise<
  */
 export async function updateProfile(data: {
   username?: string;
+  firstName?: string;
+  lastName?: string;
   birthDate?: string;
   country?: string;
   bio?: string;
@@ -310,7 +333,6 @@ export async function updateProfile(data: {
     // Build update data for the users table
     const userUpdate: {
       username?: string;
-      birth_date?: string;
       country?: string;
     } = {};
     const hasUsernameChange = validated.username !== undefined;
@@ -318,10 +340,6 @@ export async function updateProfile(data: {
     if (hasUsernameChange) {
       // usernameSchema already rejects temp_*/user_* placeholders + profanity
       userUpdate.username = validated.username!;
-    }
-
-    if (validated.birthDate !== undefined) {
-      userUpdate.birth_date = validated.birthDate;
     }
 
     if (validated.country !== undefined) {
@@ -492,6 +510,48 @@ export async function updateProfile(data: {
       if (authUpdateError) {
         console.error("Error updating auth metadata:", authUpdateError);
         return { success: false, error: "Failed to update auth metadata" };
+      }
+    }
+
+    // first_name, last_name, and birth_date live in the private schema —
+    // route to the dedicated RPC. Done LAST (after the username/PDS/users/alt/auth
+    // updates) so that an earlier step which returns early on failure (e.g. handle
+    // taken, PDS provision timeout, username conflict) can't leave a partial
+    // profile with PII already persisted.
+    //
+    // For first_name/last_name the RPC distinguishes three caller intents:
+    // undefined (omitted → DB default NULL) leaves the existing value unchanged,
+    // an empty string ("") clears the field to NULL, and a non-empty string sets
+    // it. (See migration 20260618181620_normalize_pii_empty_string_to_null.)
+    //
+    // birth_date clear path: birthDate === "" means "remove the existing value".
+    // We pass p_clear_birth_date: true so the RPC sets birth_date = NULL instead
+    // of applying COALESCE. An undefined birthDate means "no change", a non-empty
+    // string means "set to this date".
+    const hasPiiChange =
+      validated.firstName !== undefined ||
+      validated.lastName !== undefined ||
+      validated.birthDate !== undefined;
+    if (hasPiiChange) {
+      const isClearingBirthDate = validated.birthDate === "";
+      const { error: piiError } = await supabase.rpc("update_my_user_pii", {
+        p_first_name: validated.firstName,
+        p_last_name: validated.lastName,
+        // Pass undefined (not "") so COALESCE treats it as "no change" when not
+        // explicitly clearing — only forward an actual date string when set.
+        p_birth_date: isClearingBirthDate ? undefined : validated.birthDate,
+        p_clear_birth_date: isClearingBirthDate,
+      });
+      if (piiError) {
+        console.error("Error updating PII:", piiError);
+        // Other profile updates (users/alt/auth/PDS) already committed above;
+        // only the name/birth-date write failed. Say so explicitly so the user
+        // isn't misled into thinking nothing was saved.
+        return {
+          success: false,
+          error:
+            "Your other profile changes were saved, but we couldn't update your name or birth date. Please try again.",
+        };
       }
     }
 

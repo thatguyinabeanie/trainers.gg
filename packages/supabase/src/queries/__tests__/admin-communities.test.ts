@@ -11,6 +11,24 @@ import {
 import type { TypedClient } from "../../client";
 
 // ---------------------------------------------------------------------------
+// Mock admin-users PII helper so listCommunitiesAdmin / getCommunityAdminDetails
+// tests don't depend on the service-role RPC path.
+// ---------------------------------------------------------------------------
+
+const mockGetPiiByUserIds =
+  jest.fn<
+    (
+      ...args: unknown[]
+    ) => Promise<
+      Map<string, { first_name: string | null; last_name: string | null }>
+    >
+  >();
+
+jest.mock("../admin-users", () => ({
+  getPiiByUserIds: (...args: unknown[]) => mockGetPiiByUserIds(...args),
+}));
+
+// ---------------------------------------------------------------------------
 // Mock Supabase client factory
 // ---------------------------------------------------------------------------
 
@@ -105,6 +123,8 @@ describe("admin-communities queries", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    // Default: PII lookup returns an empty Map (miss case)
+    mockGetPiiByUserIds.mockResolvedValue(new Map());
   });
 
   afterEach(() => {
@@ -116,7 +136,8 @@ describe("admin-communities queries", () => {
   // -----------------------------------------------------------------------
 
   describe("listCommunitiesAdmin", () => {
-    it("should return organizations with default pagination", async () => {
+    it("should return organizations with default pagination, enriched with owner PII", async () => {
+      const ownerUserId = "owner-uuid-1";
       const mockOrgs = [
         {
           id: 1,
@@ -124,11 +145,16 @@ describe("admin-communities queries", () => {
           slug: "team-rocket",
           status: "active",
           tier: "free",
+          owner: { id: ownerUserId, username: "giovanni", image: null },
         },
       ];
 
+      // PII lookup returns names for the owner
+      mockGetPiiByUserIds.mockResolvedValue(
+        new Map([[ownerUserId, { first_name: "Giovanni", last_name: "Boss" }]])
+      );
+
       const mockClient = createMockClient();
-      // The chain ends with .range() after order()
       mockClient._queryBuilder.range = jest.fn().mockResolvedValue({
         data: mockOrgs,
         error: null,
@@ -137,7 +163,19 @@ describe("admin-communities queries", () => {
 
       const result = await listCommunitiesAdmin(mockClient);
 
-      expect(result.data).toEqual(mockOrgs);
+      // Owner should be enriched with PII from the mock
+      expect(result.data).toEqual([
+        {
+          ...mockOrgs[0],
+          owner: {
+            id: ownerUserId,
+            username: "giovanni",
+            image: null,
+            first_name: "Giovanni",
+            last_name: "Boss",
+          },
+        },
+      ]);
       expect(result.count).toBe(1);
       expect(mockClient.from).toHaveBeenCalledWith("communities");
       expect(mockClient._queryBuilder.order).toHaveBeenCalledWith(
@@ -146,6 +184,44 @@ describe("admin-communities queries", () => {
       );
       // Default: offset=0, limit=25 => range(0, 24)
       expect(mockClient._queryBuilder.range).toHaveBeenCalledWith(0, 24);
+      // PII lookup called with the owner's id
+      expect(mockGetPiiByUserIds).toHaveBeenCalledWith(mockClient, [
+        ownerUserId,
+      ]);
+    });
+
+    it("should set owner PII fields to null when lookup returns no match (miss case)", async () => {
+      const ownerUserId = "owner-uuid-miss";
+      const mockOrgs = [
+        {
+          id: 2,
+          name: "Pallet Town FC",
+          slug: "pallet-town-fc",
+          status: "active",
+          tier: "free",
+          owner: { id: ownerUserId, username: "ash", image: null },
+        },
+      ];
+
+      // Empty map → miss on every id
+      mockGetPiiByUserIds.mockResolvedValue(new Map());
+
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.range = jest.fn().mockResolvedValue({
+        data: mockOrgs,
+        error: null,
+        count: 1,
+      });
+
+      const result = await listCommunitiesAdmin(mockClient);
+
+      expect(result.data[0]).toMatchObject({
+        owner: {
+          id: ownerUserId,
+          first_name: null,
+          last_name: null,
+        },
+      });
     });
 
     it("should apply search filter across name and slug", async () => {
@@ -250,15 +326,21 @@ describe("admin-communities queries", () => {
   // -----------------------------------------------------------------------
 
   describe("getCommunityAdminDetails", () => {
-    it("should return full community details when found", async () => {
+    it("should return full community details enriched with owner PII when found", async () => {
+      const ownerId = "user-1";
       const mockOrg = {
         id: 1,
         name: "Team Rocket",
         slug: "team-rocket",
         status: "active",
         community_admin_notes: [{ notes: "Approved by admin" }],
-        owner: { id: "user-1", username: "giovanni" },
+        owner: { id: ownerId, username: "giovanni", image: null },
       };
+
+      // PII lookup returns names for the owner
+      mockGetPiiByUserIds.mockResolvedValue(
+        new Map([[ownerId, { first_name: "Giovanni", last_name: "Boss" }]])
+      );
 
       const mockClient = createMockClient();
       mockClient._queryBuilder.maybeSingle.mockResolvedValue({
@@ -268,10 +350,52 @@ describe("admin-communities queries", () => {
 
       const result = await getCommunityAdminDetails(mockClient, 1);
 
-      expect(result).toEqual(mockOrg);
+      expect(result).toEqual({
+        ...mockOrg,
+        owner: {
+          id: ownerId,
+          username: "giovanni",
+          image: null,
+          first_name: "Giovanni",
+          last_name: "Boss",
+        },
+      });
       expect(mockClient.from).toHaveBeenCalledWith("communities");
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith("id", 1);
       expect(mockClient._queryBuilder.maybeSingle).toHaveBeenCalled();
+      // PII lookup called with the owner's id
+      expect(mockGetPiiByUserIds).toHaveBeenCalledWith(mockClient, [ownerId]);
+    });
+
+    it("should set owner PII fields to null when PII lookup misses (miss case)", async () => {
+      const ownerId = "user-no-pii";
+      const mockOrg = {
+        id: 2,
+        name: "Pallet Town FC",
+        slug: "pallet-town-fc",
+        status: "active",
+        community_admin_notes: [],
+        owner: { id: ownerId, username: "ash", image: null },
+      };
+
+      // Empty map → miss
+      mockGetPiiByUserIds.mockResolvedValue(new Map());
+
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.maybeSingle.mockResolvedValue({
+        data: mockOrg,
+        error: null,
+      });
+
+      const result = await getCommunityAdminDetails(mockClient, 2);
+
+      expect(result).toMatchObject({
+        owner: {
+          id: ownerId,
+          first_name: null,
+          last_name: null,
+        },
+      });
     });
 
     it("should return null when organization is not found", async () => {

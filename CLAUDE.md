@@ -6,46 +6,46 @@ All-in-one integrated platform for Pokemon fans. Current focus: competitive batt
 
 Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill before working in an area.
 
-| Skill                            | When to Use                                                                                                                 |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `building-web-app`               | Web routes, components, Server Actions, data fetching, proxy.ts                                                             |
-| `building-mobile-app`            | Mobile screens, Tamagui UI, Expo Router, SecureStore                                                                        |
-| `querying-supabase`              | DB queries/mutations, client selection, Edge Functions                                                                      |
-| `using-realtime`                 | Supabase Realtime — presence, broadcast, postgres_changes subscriptions                                                     |
-| `validating-input`               | Zod schemas, Server Action return types, profanity filter                                                                   |
-| `creating-components`            | UI components, design tokens, design principles                                                                             |
-| `checking-mobile-parity`         | After developing web features, check for mobile parity tickets                                                              |
-| `implementing-tournaments`       | Swiss pairings, standings, brackets, adapters                                                                               |
-| `parsing-pokemon`                | Team parsing, legality validation, type effectiveness                                                                       |
-| `using-utils`                    | `getLabel()`, `getErrorMessage()`, permissions, formatting                                                                  |
-| `working-with-usage-data`        | team_slots, usage RPCs, per-source tournament data, /data page                                                              |
-| `building-charts`                | recharts charts, d3-sankey flows, usage-over-time lines (/data, dashboards)                                                 |
-| `tracking-analytics`             | PostHog event constants, adding new events                                                                                  |
-| `integrating-bluesky`            | Bluesky/AT Protocol, DID resolution, public agent                                                                           |
-| `writing-tests`                  | Fishery factories, Supabase/AT Protocol mocks, Jest config                                                                  |
-| `writing-e2e-tests`              | Playwright E2E — fixtures, auth setup, tournament-runner in apps/web/e2e/                                                   |
-| `managing-infrastructure`        | PDS on Fly.io, ngrok tunnel for local dev                                                                                   |
-| `troubleshooting-local-env`      | Local dev breakage — Supabase, stale types, env symlinks, calc submodule                                                    |
-| `creating-edge-functions`        | Creating/updating Supabase edge functions                                                                                   |
-| `managing-edge-imports`          | Deno import maps, `deno.json` management                                                                                    |
-| `auditing-code`                  | Codebase audits for type safety, architecture, maintainability                                                              |
-| `auditing-mobile-responsiveness` | Mobile-viewport audit — overflow probes, tap targets, table→cards punch list                                                |
-| `writing-skills`                 | Creating/editing skills, agents, maintaining the architecture                                                               |
-| `design-system`                  | Elevation, typography hierarchy, transitions, layout conventions                                                            |
-| `product-vision`                 | Product vision, feature roadmap, differentiators, user types                                                                |
-| `competitive-landscape`          | Competitive landscape, positioning, alternatives by category                                                                |
-| `reviewing-pr`                   | PR review orchestrator: dispatches domain-specific checks                                                                   |
-| `reviewing-database`             | RLS, migrations, indexes, N+1, unbounded fetches, query perf                                                                |
-| `reviewing-caching`              | Next.js `'use cache'` (Cache Components), TanStack Query, cache invalidation                                                |
-| `reviewing-pr-feedback`          | Orchestrate PR feedback: wait for review+CI, enumerate CI, delegate comments, re-review loop                                |
-| `responding-to-review-comments`  | Address PR review comments: fetch, group, two-reply protocol (decision + done), resolve threads                             |
-| `deciding-data-access`           | Deciding where a read/route should live — SSR vs /api/v1 vs direct; anon vs authed; caching + rate-limit requirements       |
-| `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure                                                   |
-| `tracking-deferred-work`         | Log/update/complete an agreed-but-parked improvement in `docs/deferred-improvements.md` ("small fix now, bigger one later") |
-| `adding-a-regulation`            | A new Champions regulation has dropped — full data-file → registration → flip → test pipeline                               |
-| `reconciling-pkmn-overrides`     | After bumping `@pkmn/*` or `vendor/damage-calc` — audit and prune hardcoded Champions overrides that upstream now provides   |
-| `applying-move-rebalances`       | Applying Champions move/ability mechanic changes to the @smogon/calc fork (CHAMPIONS_LIST, ability effects, move patches, dist rebuild + submodule bump) |
-| `syncing-calc-fork-upstream`     | Syncing upstream smogon/damage-calc into our fork; checking if upstream now ships our customizations                         |
+| Skill                            | When to Use                                                                                                                                                                                                |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `building-web-app`               | Web routes, components, Server Actions, data fetching, proxy.ts                                                                                                                                            |
+| `building-mobile-app`            | Mobile screens, Tamagui UI, Expo Router, SecureStore                                                                                                                                                       |
+| `querying-supabase`              | DB queries/mutations, client selection, Edge Functions                                                                                                                                                     |
+| `using-realtime`                 | Supabase Realtime — presence, broadcast, postgres_changes subscriptions                                                                                                                                    |
+| `validating-input`               | Zod schemas, Server Action return types, profanity filter                                                                                                                                                  |
+| `creating-components`            | UI components, design tokens, design principles                                                                                                                                                            |
+| `checking-mobile-parity`         | After developing web features, check for mobile parity tickets                                                                                                                                             |
+| `implementing-tournaments`       | Swiss pairings, standings, brackets, adapters                                                                                                                                                              |
+| `parsing-pokemon`                | Team parsing, legality validation, type effectiveness                                                                                                                                                      |
+| `using-utils`                    | `getLabel()`, `getErrorMessage()`, permissions, formatting                                                                                                                                                 |
+| `working-with-usage-data`        | team_slots, usage RPCs, per-source tournament data, /data page                                                                                                                                             |
+| `building-charts`                | recharts charts, d3-sankey flows, usage-over-time lines (/data, dashboards)                                                                                                                                |
+| `tracking-analytics`             | PostHog event constants, adding new events                                                                                                                                                                 |
+| `integrating-bluesky`            | Bluesky/AT Protocol, DID resolution, public agent                                                                                                                                                          |
+| `writing-tests`                  | Fishery factories, Supabase/AT Protocol mocks, Jest config                                                                                                                                                 |
+| `writing-e2e-tests`              | Playwright E2E — fixtures, auth setup, tournament-runner in apps/web/e2e/                                                                                                                                  |
+| `managing-infrastructure`        | PDS on Fly.io, ngrok tunnel for local dev                                                                                                                                                                  |
+| `troubleshooting-local-env`      | Local dev breakage — Supabase, stale types, env symlinks, calc submodule                                                                                                                                   |
+| `creating-edge-functions`        | Creating/updating Supabase edge functions                                                                                                                                                                  |
+| `managing-edge-imports`          | Deno import maps, `deno.json` management                                                                                                                                                                   |
+| `auditing-code`                  | Codebase audits for type safety, architecture, maintainability                                                                                                                                             |
+| `auditing-mobile-responsiveness` | Mobile-viewport audit — overflow probes, tap targets, table→cards punch list                                                                                                                               |
+| `writing-skills`                 | Creating/editing skills, agents, maintaining the architecture                                                                                                                                              |
+| `design-system`                  | Elevation, typography hierarchy, transitions, layout conventions                                                                                                                                           |
+| `product-vision`                 | Product vision, feature roadmap, differentiators, user types                                                                                                                                               |
+| `competitive-landscape`          | Competitive landscape, positioning, alternatives by category                                                                                                                                               |
+| `reviewing-pr`                   | PR review orchestrator: dispatches domain-specific checks                                                                                                                                                  |
+| `reviewing-database`             | Before pushing migrations; when adding/modifying tables, RLS policies, functions, or indexes; when writing query functions in `packages/supabase/src/`; after `pnpm db:lint` or `pnpm db:advisor` findings |
+| `reviewing-caching`              | Next.js `'use cache'` (Cache Components), TanStack Query, cache invalidation                                                                                                                               |
+| `reviewing-pr-feedback`          | Orchestrate PR feedback: wait for review+CI, enumerate CI, delegate comments, re-review loop                                                                                                               |
+| `responding-to-review-comments`  | Address PR review comments: fetch, group, two-reply protocol (decision + done), resolve threads                                                                                                            |
+| `deciding-data-access`           | Deciding where a read/route should live — SSR vs /api/v1 vs direct; anon vs authed; caching + rate-limit requirements                                                                                      |
+| `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure                                                                                                                                  |
+| `tracking-deferred-work`         | Log/update/complete an agreed-but-parked improvement in `docs/deferred-improvements.md` ("small fix now, bigger one later")                                                                                |
+| `adding-a-regulation`            | A new Champions regulation has dropped — full data-file → registration → flip → test pipeline                                                                                                              |
+| `reconciling-pkmn-overrides`     | After bumping `@pkmn/*` or `vendor/damage-calc` — audit and prune hardcoded Champions overrides that upstream now provides                                                                                 |
+| `applying-move-rebalances`       | Applying Champions move/ability mechanic changes to the @smogon/calc fork (CHAMPIONS_LIST, ability effects, move patches, dist rebuild + submodule bump)                                                   |
+| `syncing-calc-fork-upstream`     | Syncing upstream smogon/damage-calc into our fork; checking if upstream now ships our customizations                                                                                                       |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
 
@@ -360,3 +360,29 @@ Linear for issue tracking (MCP server available). **Team**: `trainers-gg`. **Def
 | **RLS**              | Row Level Security — PostgreSQL access control via `auth.uid()`.                  |
 | **Team Sheet**       | Player's Pokemon team for a tournament. Parsed via `@trainers/validators`.        |
 | **Protected Route**  | Route requiring auth regardless of maintenance mode. Enforced in `proxy.ts`.      |
+
+<!-- VERCEL BEST PRACTICES START -->
+
+## Best practices for developing on Vercel
+
+These defaults are optimized for AI coding agents (and humans) working on apps that deploy to Vercel.
+
+- Treat Vercel Functions as stateless + ephemeral (no durable RAM/FS, no background daemons), use Blob or marketplace integrations for preserving state
+- Edge Functions (standalone) are deprecated; prefer Vercel Functions
+- Don't start new projects on Vercel KV/Postgres (both discontinued); use Marketplace Redis/Postgres instead
+- Store secrets in Vercel Env Variables; not in git or `NEXT_PUBLIC_*`
+- Provision Marketplace native integrations with `vercel integration add` (CI/agent-friendly)
+- Sync env + project settings with `vercel env pull` / `vercel pull` when you need local/offline parity
+- Use `waitUntil` for post-response work; avoid the deprecated Function `context` parameter
+- Set Function regions near your primary data source; avoid cross-region DB/service roundtrips
+- Tune Fluid Compute knobs (e.g., `maxDuration`, memory/CPU) for long I/O-heavy calls (LLMs, APIs)
+- Use Runtime Cache for fast **regional** caching + tag invalidation (don't treat it as global KV)
+- Use Cron Jobs for schedules; cron runs in UTC and triggers your production URL via HTTP GET
+- Use Vercel Blob for uploads/media; Use Edge Config for small, globally-read config
+- If Enable Deployment Protection is enabled, use a bypass secret to directly access them
+- Add OpenTelemetry via `@vercel/otel` on Node; don't expect OTEL support on the Edge runtime
+- Enable Web Analytics + Speed Insights early
+- Use AI Gateway for model routing, set AI_GATEWAY_API_KEY, using a model string (e.g. 'anthropic/claude-sonnet-4.6'), Gateway is already default in AI SDK
+  needed. Always curl https://ai-gateway.vercel.sh/v1/models first; never trust model IDs from memory
+- For durable agent loops or untrusted code: use Workflow (pause/resume/state) + Sandbox; use Vercel MCP for secure infra access
+<!-- VERCEL BEST PRACTICES END -->

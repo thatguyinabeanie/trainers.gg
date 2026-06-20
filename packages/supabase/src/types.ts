@@ -373,6 +373,43 @@ export type Database = {
       [_ in never]: never
     }
   }
+  private: {
+    Tables: {
+      user_pii: {
+        Row: {
+          birth_date: string | null
+          first_name: string | null
+          last_name: string | null
+          user_id: string
+        }
+        Insert: {
+          birth_date?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          user_id: string
+        }
+        Update: {
+          birth_date?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       alts: {
@@ -3167,25 +3204,93 @@ export type Database = {
           },
         ]
       }
-      tournament_registrations: {
+      tournament_registration_staff: {
         Row: {
-          alt_id: number
-          checked_in_at: string | null
-          created_at: string | null
-          display_name_option: string | null
           drop_category: Database["public"]["Enums"]["drop_category"] | null
           drop_notes: string | null
           dropped_at: string | null
           dropped_by: string | null
-          id: number
-          in_game_name: string | null
-          registered_at: string | null
+          registration_id: number
           rental_team_photo_key: string | null
           rental_team_photo_uploaded_at: string | null
           rental_team_photo_url: string | null
           rental_team_photo_verified: boolean | null
           rental_team_photo_verified_at: string | null
           rental_team_photo_verified_by: number | null
+        }
+        Insert: {
+          drop_category?: Database["public"]["Enums"]["drop_category"] | null
+          drop_notes?: string | null
+          dropped_at?: string | null
+          dropped_by?: string | null
+          registration_id: number
+          rental_team_photo_key?: string | null
+          rental_team_photo_uploaded_at?: string | null
+          rental_team_photo_url?: string | null
+          rental_team_photo_verified?: boolean | null
+          rental_team_photo_verified_at?: string | null
+          rental_team_photo_verified_by?: number | null
+        }
+        Update: {
+          drop_category?: Database["public"]["Enums"]["drop_category"] | null
+          drop_notes?: string | null
+          dropped_at?: string | null
+          dropped_by?: string | null
+          registration_id?: number
+          rental_team_photo_key?: string | null
+          rental_team_photo_uploaded_at?: string | null
+          rental_team_photo_url?: string | null
+          rental_team_photo_verified?: boolean | null
+          rental_team_photo_verified_at?: string | null
+          rental_team_photo_verified_by?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_registration_staff_dropped_by_fkey"
+            columns: ["dropped_by"]
+            isOneToOne: false
+            referencedRelation: "public_user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_registration_staff_dropped_by_fkey"
+            columns: ["dropped_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_registration_staff_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: true
+            referencedRelation: "public_tournament_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_registration_staff_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: true
+            referencedRelation: "tournament_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_registration_staff_rental_team_photo_verified_b_fkey"
+            columns: ["rental_team_photo_verified_by"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_registrations: {
+        Row: {
+          alt_id: number
+          checked_in_at: string | null
+          created_at: string | null
+          display_name_option: string | null
+          id: number
+          in_game_name: string | null
+          registered_at: string | null
           show_country_flag: boolean | null
           status: Database["public"]["Enums"]["registration_status"] | null
           team_id: number | null
@@ -3199,19 +3304,9 @@ export type Database = {
           checked_in_at?: string | null
           created_at?: string | null
           display_name_option?: string | null
-          drop_category?: Database["public"]["Enums"]["drop_category"] | null
-          drop_notes?: string | null
-          dropped_at?: string | null
-          dropped_by?: string | null
           id?: never
           in_game_name?: string | null
           registered_at?: string | null
-          rental_team_photo_key?: string | null
-          rental_team_photo_uploaded_at?: string | null
-          rental_team_photo_url?: string | null
-          rental_team_photo_verified?: boolean | null
-          rental_team_photo_verified_at?: string | null
-          rental_team_photo_verified_by?: number | null
           show_country_flag?: boolean | null
           status?: Database["public"]["Enums"]["registration_status"] | null
           team_id?: number | null
@@ -3225,19 +3320,9 @@ export type Database = {
           checked_in_at?: string | null
           created_at?: string | null
           display_name_option?: string | null
-          drop_category?: Database["public"]["Enums"]["drop_category"] | null
-          drop_notes?: string | null
-          dropped_at?: string | null
-          dropped_by?: string | null
           id?: never
           in_game_name?: string | null
           registered_at?: string | null
-          rental_team_photo_key?: string | null
-          rental_team_photo_uploaded_at?: string | null
-          rental_team_photo_url?: string | null
-          rental_team_photo_verified?: boolean | null
-          rental_team_photo_verified_at?: string | null
-          rental_team_photo_verified_by?: number | null
           show_country_flag?: boolean | null
           status?: Database["public"]["Enums"]["registration_status"] | null
           team_id?: number | null
@@ -3250,27 +3335,6 @@ export type Database = {
           {
             foreignKeyName: "tournament_registrations_alt_id_fkey"
             columns: ["alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tournament_registrations_dropped_by_fkey"
-            columns: ["dropped_by"]
-            isOneToOne: false
-            referencedRelation: "public_user_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tournament_registrations_dropped_by_fkey"
-            columns: ["dropped_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tournament_registrations_rental_team_photo_verified_by_fkey"
-            columns: ["rental_team_photo_verified_by"]
             isOneToOne: false
             referencedRelation: "alts"
             referencedColumns: ["id"]
@@ -3878,27 +3942,20 @@ export type Database = {
       users: {
         Row: {
           bio: string | null
-          birth_date: string | null
           country: string | null
           created_at: string | null
           did: string | null
           discord_dm_warn_until: string | null
-          email: string | null
-          external_accounts: Json | null
-          first_name: string | null
           id: string
           image: string | null
           is_coach: boolean
           is_locked: boolean | null
           last_active_at: string | null
-          last_name: string | null
           last_sign_in_at: string | null
           main_alt_id: number | null
           name: string | null
           pds_handle: string | null
           pds_status: Database["public"]["Enums"]["pds_account_status"] | null
-          phone_number: string | null
-          public_metadata: Json | null
           show_discord_publicly: boolean
           sprite_preference:
             | Database["public"]["Enums"]["sprite_preference"]
@@ -3908,27 +3965,20 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
-          birth_date?: string | null
           country?: string | null
           created_at?: string | null
           did?: string | null
           discord_dm_warn_until?: string | null
-          email?: string | null
-          external_accounts?: Json | null
-          first_name?: string | null
           id: string
           image?: string | null
           is_coach?: boolean
           is_locked?: boolean | null
           last_active_at?: string | null
-          last_name?: string | null
           last_sign_in_at?: string | null
           main_alt_id?: number | null
           name?: string | null
           pds_handle?: string | null
           pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
-          phone_number?: string | null
-          public_metadata?: Json | null
           show_discord_publicly?: boolean
           sprite_preference?:
             | Database["public"]["Enums"]["sprite_preference"]
@@ -3938,27 +3988,20 @@ export type Database = {
         }
         Update: {
           bio?: string | null
-          birth_date?: string | null
           country?: string | null
           created_at?: string | null
           did?: string | null
           discord_dm_warn_until?: string | null
-          email?: string | null
-          external_accounts?: Json | null
-          first_name?: string | null
           id?: string
           image?: string | null
           is_coach?: boolean
           is_locked?: boolean | null
           last_active_at?: string | null
-          last_name?: string | null
           last_sign_in_at?: string | null
           main_alt_id?: number | null
           name?: string | null
           pds_handle?: string | null
           pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
-          phone_number?: string | null
-          public_metadata?: Json | null
           show_discord_publicly?: boolean
           sprite_preference?:
             | Database["public"]["Enums"]["sprite_preference"]
@@ -4153,6 +4196,14 @@ export type Database = {
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       delete_team: { Args: { p_team_id: number }; Returns: undefined }
+      drop_registrations: {
+        Args: {
+          p_drop_category: Database["public"]["Enums"]["drop_category"]
+          p_drop_notes: string
+          p_registration_ids: number[]
+        }
+        Returns: number[]
+      }
       fork_team: {
         Args: {
           p_new_name?: string
@@ -4237,6 +4288,14 @@ export type Database = {
           resolved_by: number
           status: Database["public"]["Enums"]["match_game_status"]
           winner_alt_id: number
+        }[]
+      }
+      get_my_user_pii: {
+        Args: never
+        Returns: {
+          birth_date: string
+          first_name: string
+          last_name: string
         }[]
       }
       get_org_id_from_group_role: {
@@ -4448,6 +4507,15 @@ export type Database = {
           date: string
         }[]
       }
+      get_user_id_by_email: { Args: { p_email: string }; Returns: string }
+      get_users_pii: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          first_name: string
+          last_name: string
+          user_id: string
+        }[]
+      }
       has_community_permission: {
         Args: { p_community_id: number; permission_key: string }
         Returns: boolean
@@ -4523,6 +4591,19 @@ export type Database = {
       submit_game_selection: {
         Args: { p_game_id: number; p_selected_winner_alt_id: number }
         Returns: Json
+      }
+      update_my_user_pii: {
+        Args: {
+          p_birth_date?: string
+          p_clear_birth_date?: boolean
+          p_first_name?: string
+          p_last_name?: string
+        }
+        Returns: {
+          birth_date: string
+          first_name: string
+          last_name: string
+        }[]
       }
       user_has_community_role: {
         Args: { p_community_id: number; p_role_name: string; p_user_id: string }
@@ -5152,6 +5233,9 @@ export const Constants = {
     Enums: {},
   },
   limitless: {
+    Enums: {},
+  },
+  private: {
     Enums: {},
   },
   public: {

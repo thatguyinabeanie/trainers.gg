@@ -17,9 +17,9 @@ import {
   removeStaffCompletely as removeStaffMutation,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
-import { getErrorMessage } from "@trainers/utils";
+import { getErrorMessage, PERMISSIONS } from "@trainers/utils";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { invalidateCommunityPageCaches } from "@/lib/cache-invalidation";
 import { enqueueCommunityRoleSync } from "@/lib/discord/enqueue-helpers";
 import { rejectBots } from "./utils";
@@ -47,8 +47,42 @@ export async function searchUsersForStaffInvite(
   >
 > {
   try {
+    await rejectBots();
     const supabase = await createClient();
-    const users = await searchUsersQuery(supabase, communityId, searchTerm);
+
+    // Authorization: this search enriches results with first/last name via the
+    // service_role-only get_users_pii RPC (which bypasses RLS). Gate on
+    // community.invite_staff BEFORE the service-role read — otherwise any
+    // signed-in user could enumerate arbitrary users' names by searching with
+    // any community id. The PostgREST reads inside the query run under RLS, but
+    // the PII enrichment does not, so the app layer must gate it.
+    const { data: canInvite, error: permError } = await supabase.rpc(
+      "has_community_permission",
+      {
+        p_community_id: communityId,
+        permission_key: PERMISSIONS.COMMUNITY_INVITE_STAFF,
+      }
+    );
+    if (permError) {
+      throw new Error(`Permission check failed: ${permError.message}`);
+    }
+    if (!canInvite) {
+      return {
+        success: false,
+        error: "You do not have permission to invite staff for this community.",
+      };
+    }
+
+    // Service-role client required for PII enrichment (get_users_pii RPC is
+    // service_role-only). The auth client handles the PostgREST reads under RLS.
+    const serviceSupabase = createServiceRoleClient();
+    const users = await searchUsersQuery(
+      supabase,
+      communityId,
+      searchTerm,
+      10,
+      serviceSupabase
+    );
 
     return { success: true, data: users };
   } catch (error) {

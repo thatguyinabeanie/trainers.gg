@@ -1,10 +1,11 @@
 import {
-  socialLinksSchema,
-  userSettingsSchema,
+  birthDateSchema,
+  blueskyUserSchema,
   gamePreferencesSchema,
+  socialLinksSchema,
   updateProfileSchema,
   updateSettingsSchema,
-  blueskyUserSchema,
+  userSettingsSchema,
 } from "../user";
 
 describe("socialLinksSchema", () => {
@@ -168,5 +169,33 @@ describe("blueskyUserSchema", () => {
       did: "did:plc:abc123",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("birthDateSchema", () => {
+  it.each([
+    // valid inputs
+    ["", true, "empty string (clear sentinel)"],
+    ["1990-05-15", true, "real calendar date"],
+    ["2000-02-29", true, "Feb 29 on a real leap year"],
+    ["2024-12-31", true, "last day of year"],
+  ])("accepts %s (%s)", (input, expected) => {
+    expect(birthDateSchema.safeParse(input).success).toBe(expected);
+  });
+
+  it.each([
+    // impossible calendar dates that pass shape regex
+    ["2026-99-99", false, "impossible month and day"],
+    ["2026-02-30", false, "Feb 30 (never exists)"],
+    ["2023-02-29", false, "Feb 29 on a non-leap year"],
+    ["2026-04-31", false, "April 31 (April has 30 days)"],
+    // wrong shape entirely
+    ["not-a-date", false, "non-date string"],
+    ["1990-5-15", false, "single-digit month (wrong shape)"],
+    ["1990-05-5", false, "single-digit day (wrong shape)"],
+    ["19900515", false, "no separators"],
+    ["1990/05/15", false, "wrong separator"],
+  ])("rejects %s (%s)", (input, expected) => {
+    expect(birthDateSchema.safeParse(input).success).toBe(expected);
   });
 });

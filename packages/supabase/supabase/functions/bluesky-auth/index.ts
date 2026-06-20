@@ -230,7 +230,8 @@ Deno.serve(async (req) => {
             error: "Invalid or expired session",
             code: "UNAUTHORIZED",
           },
-          401
+          401,
+          cors
         );
       }
 
@@ -299,7 +300,7 @@ Deno.serve(async (req) => {
     // Primary lookup: by DID (authoritative, collision-free)
     const { data: existingUser } = await supabaseAdmin
       .from("users")
-      .select("id, email, did")
+      .select("id, did")
       .eq("did", did)
       .maybeSingle();
 
@@ -307,29 +308,78 @@ Deno.serve(async (req) => {
     let userId: string;
     let isNew = false;
 
-    if (existingUser && existingUser.email) {
-      // Existing user found by DID — sign them in
-      userEmail = existingUser.email;
+    if (existingUser) {
+      // Existing user found by DID — resolve their REAL email from auth.users.
+      // auth.users is the canonical email store; the placeholder may differ if
+      // the account was created or migrated outside the normal Bluesky flow.
+      // Using a stale placeholder would cause generateLink() to find no user → 500.
+      const { data: existingAuthData, error: existingAuthError } =
+        await supabaseAdmin.auth.admin.getUserById(existingUser.id);
+      if (existingAuthError || !existingAuthData?.user?.email) {
+        console.error(
+          "[bluesky-auth] getUserById for existing user failed:",
+          existingAuthError?.message ?? "no email on user record"
+        );
+        return jsonResponse(
+          {
+            success: false,
+            error: "Failed to resolve account — please try again",
+            code: "SESSION_ERROR",
+          },
+          500,
+          cors
+        );
+      }
+      userEmail = existingAuthData.user.email;
       userId = existingUser.id;
     } else {
-      // Fallback: check by placeholder email for legacy accounts
-      const { data: userByEmail } = await supabaseAdmin
-        .from("users")
-        .select("id, email, did")
-        .eq("email", placeholderEmail)
-        .maybeSingle();
+      // Fallback: check auth.users by placeholder email for legacy accounts
+      // (public.users.email was dropped; look up via SECURITY DEFINER RPC).
+      // Avoids listUsers() pagination — the RPC does a direct indexed lookup.
+      const { data: legacyAuthId, error: legacyLookupError } =
+        await supabaseAdmin.rpc("get_user_id_by_email", {
+          p_email: placeholderEmail,
+        });
+      if (legacyLookupError) {
+        console.error(
+          "[bluesky-auth] get_user_id_by_email (legacy lookup) failed:",
+          legacyLookupError.message
+        );
+        return jsonResponse(
+          {
+            success: false,
+            error: "Account lookup failed — please try again",
+            code: "LOOKUP_ERROR",
+          },
+          500,
+          cors
+        );
+      }
+      const { data: userByAuthId } = legacyAuthId
+        ? await supabaseAdmin
+            .from("users")
+            .select("id, did")
+            .eq("id", legacyAuthId)
+            .maybeSingle()
+        : { data: null };
 
-      if (userByEmail && userByEmail.email) {
+      if (userByAuthId) {
         // Legacy account found — sign them in and update DID if missing
-        userEmail = userByEmail.email;
-        userId = userByEmail.id;
+        userEmail = placeholderEmail;
+        userId = userByAuthId.id;
 
         // Update DID if not set
-        if (!userByEmail.did) {
-          await supabaseAdmin
+        if (!userByAuthId.did) {
+          const { error: didBackfillError } = await supabaseAdmin
             .from("users")
             .update({ did, pds_status: "pending" })
-            .eq("id", userByEmail.id);
+            .eq("id", userByAuthId.id);
+          if (didBackfillError) {
+            console.error(
+              "[bluesky-auth] legacy DID backfill failed:",
+              didBackfillError.message
+            );
+          }
         }
       } else {
         // New user — create account
@@ -355,27 +405,63 @@ Deno.serve(async (req) => {
           });
 
         if (authError) {
-          // Handle "already registered" edge case gracefully
-          if (authError.message?.includes("already been registered")) {
-            const { data: existByEmail } = await supabaseAdmin
-              .from("users")
-              .select("id, email")
-              .ilike("email", placeholderEmail)
-              .maybeSingle();
+          // Handle "already registered" edge case gracefully.
+          // Prefer the structured error code (stable across Supabase/Auth versions
+          // and locales); fall back to the English message substring for older auth
+          // versions — mirrors packages/supabase/supabase/functions/signup/index.ts.
+          if (
+            authError.code === "email_exists" ||
+            authError.message?.includes("already been registered")
+          ) {
+            // The auth user exists — find their id via SECURITY DEFINER RPC.
+            // Avoids listUsers() pagination — the RPC does a direct indexed lookup.
+            const { data: conflictAuthId, error: conflictLookupError } =
+              await supabaseAdmin.rpc("get_user_id_by_email", {
+                p_email: placeholderEmail,
+              });
+            if (conflictLookupError) {
+              console.error(
+                "[bluesky-auth] get_user_id_by_email (conflict lookup) failed:",
+                conflictLookupError.message
+              );
+              return jsonResponse(
+                {
+                  success: false,
+                  error: "Account lookup failed — please try again",
+                  code: "LOOKUP_ERROR",
+                },
+                500,
+                cors
+              );
+            }
 
-            if (existByEmail) {
+            const { data: existByAuthId } = conflictAuthId
+              ? await supabaseAdmin
+                  .from("users")
+                  .select("id")
+                  .eq("id", conflictAuthId)
+                  .maybeSingle()
+              : { data: null };
+
+            if (existByAuthId) {
               // Update their record with current DID and profile data
-              await supabaseAdmin
+              const { error: conflictUpdateError } = await supabaseAdmin
                 .from("users")
                 .update({
                   did,
                   pds_status: "pending",
                   image: profile?.avatar,
                 })
-                .eq("id", existByEmail.id);
+                .eq("id", existByAuthId.id);
+              if (conflictUpdateError) {
+                console.error(
+                  "[bluesky-auth] conflict DID update failed:",
+                  conflictUpdateError.message
+                );
+              }
 
               userEmail = placeholderEmail;
-              userId = existByEmail.id;
+              userId = existByAuthId.id;
               isNew = false;
             } else {
               return jsonResponse(

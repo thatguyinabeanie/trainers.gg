@@ -92,14 +92,13 @@ export async function completeOnboarding(data: {
       };
     }
 
-    // Update users table
+    // Update users table (birth_date lives in the private schema — see RPC below)
     const { error: updateError } = await supabase
       .from("users")
       .update({
         username: validated.username,
         country: validated.country.toUpperCase(),
         bio: validated.bio || null,
-        ...(validated.birthDate ? { birth_date: validated.birthDate } : {}),
       })
       .eq("id", user.id);
 
@@ -109,6 +108,21 @@ export async function completeOnboarding(data: {
       }
       console.error("Error updating user:", updateError);
       return { success: false, error: "Failed to update profile" };
+    }
+
+    // birth_date lives in the private schema — route to the dedicated RPC
+    if (validated.birthDate) {
+      const { error: piiError } = await supabase.rpc("update_my_user_pii", {
+        p_birth_date: validated.birthDate,
+      });
+      if (piiError) {
+        // Non-blocking: username/country/bio are already committed and
+        // birth_date is optional. Hard-failing here would strand the user in a
+        // confusing "onboarded but told it failed" state (and re-submitting is
+        // awkward once the username is saved). Log and continue — the user can
+        // set their birth date later in profile settings.
+        console.error("Error updating birth date during onboarding:", piiError);
+      }
     }
 
     // Get main alt ID and update alt record (non-blocking — log failures)

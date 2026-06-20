@@ -42,6 +42,9 @@ export interface TestAlt {
   id: number;
   user_id: string;
   username: string;
+  // `display_name` was removed from public.alts (migration 20260212014510). The
+  // test helper keeps a derived field (mirrors the provided name or username) so
+  // existing tests that read `alt.display_name` don't need call-site churn.
   display_name: string;
 }
 
@@ -84,17 +87,22 @@ export async function createTestUser(
 
   const userId = authData.user.id;
 
-  // Create user record
-  const { error: userError } = await adminClient.from("users").insert({
-    id: userId,
-    email,
-    username,
-    pds_status: "pending",
-  });
+  // The handle_new_user trigger fires on auth.admin.createUser and creates the
+  // public.users row (and private.user_pii + main alt) automatically.
+  // We only need to patch pds_status — inserting would duplicate key on users_pkey.
+  const { data: updatedUser, error: userError } = await adminClient
+    .from("users")
+    .update({ pds_status: "pending" })
+    .eq("id", userId)
+    .select("username")
+    .single();
 
   if (userError) {
-    throw new Error(`Failed to create user record: ${userError.message}`);
+    throw new Error(`Failed to update user record: ${userError.message}`);
   }
+
+  // Use the username the trigger actually persisted (it may sanitize/suffix it)
+  const actualUsername = updatedUser?.username ?? username;
 
   // Add site admin role if requested
   if (options?.isSiteAdmin) {
@@ -105,25 +113,15 @@ export async function createTestUser(
     });
   }
 
-  // Create a client authenticated as this user
-  const { data: sessionData, error: sessionError } =
-    await adminClient.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-    });
-
-  if (sessionError || !sessionData) {
-    throw new Error(`Failed to generate session: ${sessionError?.message}`);
-  }
-
-  // Create an authenticated client for this user
-  // We'll use the admin client with auth context for simplicity in tests
+  // NOTE: tests use a service-role admin client for simplicity — `client` is
+  // NOT authenticated as this specific test user, it bypasses RLS. (A previous
+  // version generated an unused magic-link session here; removed as dead work.)
   const userClient = createAdminSupabaseClient();
 
   return {
     id: userId,
     email,
-    username,
+    username: actualUsername,
     client: userClient,
   };
 }
@@ -135,14 +133,16 @@ export async function createTestAlt(
   adminClient: TypedClient,
   userId: string,
   username: string,
-  displayName: string
+  // display_name was removed from public.alts (migration 20260212014510); the
+  // param is no longer persisted but is echoed back on the returned TestAlt
+  // (falling back to username) to preserve the helper's API.
+  displayName?: string
 ): Promise<TestAlt> {
   const { data, error } = await adminClient
     .from("alts")
     .insert({
       user_id: userId,
       username,
-      display_name: displayName,
     })
     .select()
     .single();
@@ -155,7 +155,7 @@ export async function createTestAlt(
     id: data.id,
     user_id: data.user_id,
     username: data.username,
-    display_name: data.display_name,
+    display_name: displayName ?? data.username,
   };
 }
 

@@ -79,13 +79,17 @@ check_docker() {
 # =============================================================================
 check_supabase_cli() {
   echo -e "${YELLOW}Checking Supabase CLI...${NC}"
-  if ! command -v supabase &> /dev/null; then
-    echo -e "${YELLOW}Supabase CLI not found. Using npx...${NC}"
-    SUPABASE_CMD="npx supabase@latest"
-  else
-    SUPABASE_CMD="supabase"
-    echo -e "${GREEN}Supabase CLI found${NC}"
+  # Use ONLY the lockfile-pinned npm CLI (packages/supabase devDependency) — no
+  # global / PATH / npx fallback — so the CLI version, and therefore the bundled
+  # supabase/postgres image, is identical on every machine. That drift is exactly
+  # what silently broke local pg_cron setup.
+  SUPABASE_CMD="$SUPABASE_DIR/node_modules/.bin/supabase"
+  if [ ! -x "$SUPABASE_CMD" ]; then
+    echo -e "${RED}Pinned Supabase CLI not found at $SUPABASE_CMD${NC}"
+    echo -e "${RED}Run 'pnpm install' first — supabase is a devDependency.${NC}"
+    exit 1
   fi
+  echo -e "${GREEN}Using pinned Supabase CLI from node_modules${NC}"
 }
 
 # =============================================================================
@@ -475,6 +479,8 @@ main() {
   if check_fast_path; then
     echo -e "${GREEN}Supabase already set up and running${NC}"
     apply_migrations
+    # cron is a dev convenience — best-effort policy lives in ensure-cron.sh (always exits 0)
+    "$SCRIPT_DIR/ensure-cron.sh"
     generate_types
     exit 0
   fi
@@ -490,6 +496,8 @@ main() {
 
   apply_migrations
   run_seed
+  # cron is a dev convenience — best-effort policy lives in ensure-cron.sh (always exits 0)
+  "$SCRIPT_DIR/ensure-cron.sh"
   generate_types
   create_env_file
   create_env_symlinks

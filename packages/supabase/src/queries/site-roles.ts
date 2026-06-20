@@ -1,4 +1,5 @@
-import type { TypedClient } from "../client";
+import type { TypedClient, ServiceRoleClient } from "../client";
+import { getEmailsByUserIds, getPiiByUserIds } from "./admin-users";
 
 /**
  * Check if a user has the site admin role.
@@ -55,9 +56,24 @@ export async function getSiteRoles(supabase: TypedClient) {
 }
 
 /**
- * Get all users with site admin role
+ * Get all users with site admin role.
+ *
+ * Fetches public.users columns only, then enriches with email (auth admin API)
+ * and first/last name (get_users_pii RPC) using the service-role client.
+ * Mirrors the `listCommunityStaffWithRoles` pattern: `supabase` handles the
+ * PostgREST queries; `serviceSupabase` is used exclusively for the PII helpers
+ * that require service_role EXECUTE on get_users_pii.
+ *
+ * @param supabase        - Typed Supabase client for PostgREST queries
+ * @param serviceSupabase - MUST be a service-role client (PII helpers require service_role)
  */
-export async function getSiteAdmins(supabase: TypedClient) {
+export async function getSiteAdmins(
+  supabase: TypedClient,
+  serviceSupabase: ServiceRoleClient
+) {
+  // email / first_name / last_name no longer live on public.users — email is in
+  // auth.users, names in private.user_pii. Embed only the public columns, then
+  // merge email + names from the service-role batch helpers (admin-only page).
   const { data, error } = await supabase
     .from("user_roles")
     .select(
@@ -66,10 +82,7 @@ export async function getSiteAdmins(supabase: TypedClient) {
       created_at,
       user:users(
         id,
-        email,
         username,
-        first_name,
-        last_name,
         image
       ),
       role:roles!inner(
@@ -87,7 +100,29 @@ export async function getSiteAdmins(supabase: TypedClient) {
     return [];
   }
 
-  return data ?? [];
+  const rows = data ?? [];
+  const userIds = [
+    ...new Set(
+      rows.map((r) => r.user?.id).filter((id): id is string => Boolean(id))
+    ),
+  ];
+
+  const [emailMap, piiMap] = await Promise.all([
+    getEmailsByUserIds(serviceSupabase, userIds),
+    getPiiByUserIds(serviceSupabase, userIds),
+  ]);
+
+  return rows.map((r) => ({
+    ...r,
+    user: r.user
+      ? {
+          ...r.user,
+          email: emailMap.get(r.user.id) ?? null,
+          first_name: piiMap.get(r.user.id)?.first_name ?? null,
+          last_name: piiMap.get(r.user.id)?.last_name ?? null,
+        }
+      : null,
+  }));
 }
 
 /**

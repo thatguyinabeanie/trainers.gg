@@ -6,6 +6,7 @@
 // Default implementation returns a passthrough query builder so
 // extra from() calls (e.g. for cache invalidation) don't break tests.
 const mockFrom = jest.fn();
+const mockRpc = jest.fn();
 const mockAuth = {
   getUser: jest.fn(),
   getSession: jest.fn(),
@@ -15,6 +16,7 @@ const mockFunctionsInvoke = jest.fn();
 
 const mockSupabaseClient = {
   from: mockFrom,
+  rpc: mockRpc,
   auth: mockAuth,
   functions: {
     invoke: mockFunctionsInvoke,
@@ -266,6 +268,8 @@ describe("checkUsernameAvailability", () => {
 describe("getCurrentUserProfile", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: rpc("get_my_user_pii") returns an empty PII array (no birth date)
+    mockRpc.mockResolvedValue({ data: [], error: null });
   });
 
   it("returns null when not authenticated", async () => {
@@ -281,6 +285,7 @@ describe("getCurrentUserProfile", () => {
       data: { user: { id: "user-1" } },
     });
 
+    // users SELECT returns no row; rpc returns empty array (default mock)
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
@@ -297,6 +302,7 @@ describe("getCurrentUserProfile", () => {
       data: { user: { id: "user-1" } },
     });
 
+    // users SELECT — no birth_date (moved to PII RPC)
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
         maybeSingle: jest.fn().mockResolvedValue({
@@ -306,14 +312,22 @@ describe("getCurrentUserProfile", () => {
             pds_status: "active",
             pds_handle: "pikachu.trainers.gg",
             did: "did:plc:abc123",
-            birth_date: "2000-01-15",
             country: "US",
             main_alt_id: null,
+            show_discord_publicly: false,
           },
           error: null,
         }),
       })
     );
+
+    // rpc("get_my_user_pii") returns birth_date
+    mockRpc.mockResolvedValue({
+      data: [
+        { first_name: "Ash", last_name: "Ketchum", birth_date: "2000-01-15" },
+      ],
+      error: null,
+    });
 
     const result = await getCurrentUserProfile();
 
@@ -325,13 +339,52 @@ describe("getCurrentUserProfile", () => {
         pdsStatus: "active",
         pdsHandle: "pikachu.trainers.gg",
         did: "did:plc:abc123",
+        firstName: "Ash",
+        lastName: "Ketchum",
         birthDate: "2000-01-15",
         country: "US",
         mainAltId: null,
         altAvatarUrl: null,
         bio: null,
+        showDiscordPublicly: false,
       },
     });
+  });
+
+  it("returns birthDate as null when rpc returns empty array", async () => {
+    mockAuth.getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: {
+            id: "user-1",
+            username: "pikachu",
+            pds_status: null,
+            pds_handle: null,
+            did: null,
+            country: "US",
+            main_alt_id: null,
+            show_discord_publicly: false,
+          },
+          error: null,
+        }),
+      })
+    );
+
+    // rpc returns no PII rows
+    mockRpc.mockResolvedValue({ data: [], error: null });
+
+    const result = await getCurrentUserProfile();
+
+    expect(result.success).toBe(true);
+    if (result.success && result.data) {
+      expect(result.data.firstName).toBeNull();
+      expect(result.data.lastName).toBeNull();
+      expect(result.data.birthDate).toBeNull();
+    }
   });
 
   it("returns altAvatarUrl when main_alt_id exists and alt has avatar", async () => {
@@ -339,7 +392,7 @@ describe("getCurrentUserProfile", () => {
       data: { user: { id: "user-1" } },
     });
 
-    // First call: users table
+    // First call: users table — no birth_date, no show_discord_publicly
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
         maybeSingle: jest.fn().mockResolvedValue({
@@ -349,22 +402,25 @@ describe("getCurrentUserProfile", () => {
             pds_status: null,
             pds_handle: null,
             did: null,
-            birth_date: null,
             country: "JP",
             main_alt_id: 42,
+            show_discord_publicly: false,
           },
           error: null,
         }),
       })
     );
 
-    // Second call: alts table for avatar_url
+    // rpc returns no birth_date (default mock → [])
+
+    // Second call: alts table for avatar_url + bio
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
         maybeSingle: jest.fn().mockResolvedValue({
           data: {
             avatar_url:
               "https://play.pokemonshowdown.com/sprites/gen5/garchomp.png",
+            bio: null,
           },
           error: null,
         }),
@@ -381,12 +437,15 @@ describe("getCurrentUserProfile", () => {
         pdsStatus: null,
         pdsHandle: null,
         did: null,
+        firstName: null,
+        lastName: null,
         birthDate: null,
         country: "JP",
         mainAltId: 42,
         altAvatarUrl:
           "https://play.pokemonshowdown.com/sprites/gen5/garchomp.png",
         bio: null,
+        showDiscordPublicly: false,
       },
     });
   });
@@ -406,20 +465,22 @@ describe("getCurrentUserProfile", () => {
             pds_status: null,
             pds_handle: null,
             did: null,
-            birth_date: null,
             country: "JP",
             main_alt_id: 42,
+            show_discord_publicly: false,
           },
           error: null,
         }),
       })
     );
 
+    // rpc returns no PII rows (default mock)
+
     // Second call: alts table — no avatar
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
         maybeSingle: jest.fn().mockResolvedValue({
-          data: { avatar_url: null },
+          data: { avatar_url: null, bio: null },
           error: null,
         }),
       })
@@ -451,6 +512,44 @@ describe("getCurrentUserProfile", () => {
         }),
       })
     );
+
+    const result = await getCurrentUserProfile();
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to fetch profile",
+    });
+  });
+
+  it("returns error when get_my_user_pii RPC errors", async () => {
+    mockAuth.getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+
+    // users table returns a valid user row
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: {
+            id: "user-1",
+            username: "pikachu",
+            pds_status: null,
+            pds_handle: null,
+            did: null,
+            country: "US",
+            main_alt_id: null,
+            show_discord_publicly: false,
+          },
+          error: null,
+        }),
+      })
+    );
+
+    // rpc("get_my_user_pii") returns an error
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { message: "permission denied", code: "42501" },
+    });
 
     const result = await getCurrentUserProfile();
 
@@ -495,6 +594,8 @@ describe("updateProfile", () => {
     global.fetch = jest.fn().mockResolvedValue({
       json: () => Promise.resolve({ success: true }),
     });
+    // Default: rpc calls succeed (update_my_user_pii, get_my_user_pii, has_community_permission)
+    mockRpc.mockResolvedValue({ data: null, error: null });
     // Default fallback for the "current username" fetch and bio/alt queries
     // added by cache invalidation. Keep eq chainable so
     // select(...).eq(...).maybeSingle() works correctly.
@@ -524,8 +625,15 @@ describe("updateProfile", () => {
     expect(result.error).toBe("Not authenticated");
   });
 
-  it("rejects invalid birth date format", async () => {
-    const result = await updateProfile({ birthDate: "Jan 15 2000" });
+  it("rejects first name longer than 64 chars", async () => {
+    const result = await updateProfile({ firstName: "A".repeat(65) });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  it("rejects last name longer than 64 chars", async () => {
+    const result = await updateProfile({ lastName: "B".repeat(65) });
 
     expect(result.success).toBe(false);
     expect(result.error).toBeTruthy();
@@ -536,6 +644,97 @@ describe("updateProfile", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBeTruthy();
+  });
+
+  it("passes p_first_name and p_last_name to update_my_user_pii RPC", async () => {
+    mockUsernameQuery();
+
+    const result = await updateProfile({
+      firstName: "Ash",
+      lastName: "Ketchum",
+    });
+
+    expect(result.success).toBe(true);
+    // Omitted PII fields are passed as undefined (not null) — the RPC uses
+    // COALESCE(EXCLUDED.x, existing.x) so undefined leaves the existing value intact.
+    expect(mockRpc).toHaveBeenCalledWith("update_my_user_pii", {
+      p_first_name: "Ash",
+      p_last_name: "Ketchum",
+      p_birth_date: undefined,
+      p_clear_birth_date: false,
+    });
+  });
+
+  it("passes p_birth_date with undefined names when only birth date is provided", async () => {
+    mockUsernameQuery();
+
+    const result = await updateProfile({ birthDate: "1990-05-15" });
+
+    expect(result.success).toBe(true);
+    // Omitted first_name/last_name fields pass as undefined so existing DB values
+    // are preserved; only birth_date is updated this call.
+    expect(mockRpc).toHaveBeenCalledWith("update_my_user_pii", {
+      p_first_name: undefined,
+      p_last_name: undefined,
+      p_birth_date: "1990-05-15",
+      p_clear_birth_date: false,
+    });
+  });
+
+  it("sends p_clear_birth_date: true when birthDate is cleared to empty string", async () => {
+    mockUsernameQuery();
+
+    // birthDate: "" represents the user clearing a previously-set birth date.
+    // The action must call the RPC with p_clear_birth_date: true so the DB
+    // writes NULL instead of ignoring the update via COALESCE.
+    const result = await updateProfile({ birthDate: "" });
+
+    expect(result.success).toBe(true);
+    expect(mockRpc).toHaveBeenCalledWith("update_my_user_pii", {
+      p_first_name: undefined,
+      p_last_name: undefined,
+      p_birth_date: undefined, // not forwarded — clear flag takes precedence
+      p_clear_birth_date: true,
+    });
+  });
+
+  it("rejects non-empty birth date that does not match YYYY-MM-DD format", async () => {
+    // Empty string is the clear sentinel and is valid; only non-empty non-date strings fail.
+    const result = await updateProfile({ birthDate: "Jan 15 2000" });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  it("skips update_my_user_pii RPC when no PII fields are provided", async () => {
+    mockUsernameQuery();
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      })
+    );
+
+    await updateProfile({ country: "JP" });
+
+    expect(mockRpc).not.toHaveBeenCalledWith(
+      "update_my_user_pii",
+      expect.anything()
+    );
+  });
+
+  it("returns error when update_my_user_pii RPC fails for names", async () => {
+    mockUsernameQuery();
+    mockRpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: "permission denied", code: "42501" },
+    });
+
+    const result = await updateProfile({ firstName: "Ash" });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "Your other profile changes were saved, but we couldn't update your name or birth date. Please try again."
+    );
   });
 
   it("updates birth date and country without username change", async () => {

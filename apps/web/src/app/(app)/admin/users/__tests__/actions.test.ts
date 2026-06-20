@@ -4,9 +4,11 @@
 
 // --- Mocks (declared before imports so jest.mock hoisting works) ---
 
-// Mock the auth check
+// Mock the auth check — both require-admin exports are needed:
+// requireAdminWithSudo (withAdminAction) and requireAdmin (withAdminReadAction)
 jest.mock("@/lib/auth/require-admin", () => ({
   requireAdminWithSudo: jest.fn(),
+  requireAdmin: jest.fn(),
 }));
 
 // Mock the Supabase service role client — the from() chain is configured per-test
@@ -22,11 +24,16 @@ jest.mock("@/lib/supabase/server", () => ({
 }));
 
 // Mock the Supabase query functions
+const mockGetUserAdminDetails = jest.fn();
+const mockGetSiteRoles = jest.fn();
 jest.mock("@trainers/supabase", () => ({
   suspendUser: jest.fn(),
   unsuspendUser: jest.fn(),
   grantSiteRole: jest.fn(),
   revokeSiteRole: jest.fn(),
+  getUserAdminDetails: (...args: unknown[]) =>
+    mockGetUserAdminDetails(...args),
+  getSiteRoles: (...args: unknown[]) => mockGetSiteRoles(...args),
 }));
 
 // Import after mocks are declared
@@ -35,8 +42,9 @@ import {
   unsuspendUserAction,
   grantSiteRoleAction,
   revokeSiteRoleAction,
+  getUserDetailsAction,
 } from "../actions";
-import { requireAdminWithSudo } from "@/lib/auth/require-admin";
+import { requireAdminWithSudo, requireAdmin } from "@/lib/auth/require-admin";
 import {
   suspendUser,
   unsuspendUser,
@@ -46,6 +54,7 @@ import {
 
 // Cast to jest.Mock for type-safe mock API access
 const mockRequireAdminWithSudo = requireAdminWithSudo as jest.Mock;
+const mockRequireAdmin = requireAdmin as jest.Mock;
 const mockSuspendUser = suspendUser as jest.Mock;
 const mockUnsuspendUser = unsuspendUser as jest.Mock;
 const mockGrantSiteRole = grantSiteRole as jest.Mock;
@@ -291,6 +300,76 @@ describe("revokeSiteRoleAction", () => {
     expect(result).toEqual({
       success: false,
       error: expect.stringContaining("Error revoking site role"),
+    });
+  });
+});
+
+// ----------------------------------------------------------------
+// getUserDetailsAction
+// ----------------------------------------------------------------
+
+describe("getUserDetailsAction", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Default: site_admin role check passes (no sudo required for reads)
+    mockRequireAdmin.mockResolvedValue({ userId: ADMIN_USER_ID });
+    mockGetUserAdminDetails.mockResolvedValue({ id: TARGET_USER_ID });
+    mockGetSiteRoles.mockResolvedValue([]);
+  });
+
+  it("returns error without calling DB when userId is not a valid UUID", async () => {
+    const result = await getUserDetailsAction("not-a-uuid");
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/Invalid input/);
+    }
+    // No admin check or DB query should have run
+    expect(mockRequireAdmin).not.toHaveBeenCalled();
+    expect(mockGetUserAdminDetails).not.toHaveBeenCalled();
+  });
+
+  it("returns user details and site roles on success", async () => {
+    const mockUser = { id: TARGET_USER_ID, username: "ash_ketchum" };
+    const mockRoles = [{ id: 1, name: "moderator" }];
+
+    mockGetUserAdminDetails.mockResolvedValue(mockUser);
+    mockGetSiteRoles.mockResolvedValue(mockRoles);
+
+    const result = await getUserDetailsAction(TARGET_USER_ID);
+
+    expect(result).toEqual({
+      success: true,
+      data: { user: mockUser, siteRoles: mockRoles },
+    });
+    expect(mockGetUserAdminDetails).toHaveBeenCalledWith(
+      mockServiceClient,
+      TARGET_USER_ID
+    );
+    expect(mockGetSiteRoles).toHaveBeenCalledWith(mockServiceClient);
+  });
+
+  it("rejects non-admin callers before hitting the DB", async () => {
+    // requireAdmin returns a failure shape (same as withAdminReadAction propagates)
+    mockRequireAdmin.mockResolvedValue({
+      success: false,
+      error: "Not authorized",
+    });
+
+    const result = await getUserDetailsAction(TARGET_USER_ID);
+
+    expect(result).toEqual({ success: false, error: "Not authorized" });
+    expect(mockGetUserAdminDetails).not.toHaveBeenCalled();
+  });
+
+  it("returns generic error when getUserAdminDetails throws", async () => {
+    mockGetUserAdminDetails.mockRejectedValue(new Error("DB failure"));
+
+    const result = await getUserDetailsAction(TARGET_USER_ID);
+
+    expect(result).toEqual({
+      success: false,
+      error: expect.stringContaining("Error loading user details"),
     });
   });
 });

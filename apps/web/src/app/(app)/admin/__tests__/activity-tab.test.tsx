@@ -5,17 +5,31 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
-const mockGetAuditLog = jest.fn();
-const mockGetAuditLogStats = jest.fn();
+// ActivityTab now fetches via HTTP routes (/api/v1/admin/audit-log[/stats])
+// rather than calling @trainers/supabase functions directly in the browser.
+// Mock global.fetch so tests control both response shapes without a network.
 
-jest.mock("@trainers/supabase", () => ({
-  getAuditLog: (...args: unknown[]) => mockGetAuditLog(...args),
-  getAuditLogStats: (...args: unknown[]) => mockGetAuditLogStats(...args),
-}));
+/** Builds a minimal Response-like object for fetch mocks. */
+function makeResponse(body: unknown, ok = true): Response {
+  return {
+    ok,
+    status: ok ? 200 : 500,
+    json: () => Promise.resolve(body),
+  } as unknown as Response;
+}
 
-jest.mock("@/lib/supabase/client", () => ({
-  createClient: jest.fn(() => ({})),
-}));
+// Separate response factories — tests override these to customise per-scenario.
+const mockGetAuditLogStats = jest.fn<Promise<Response>, []>();
+const mockGetAuditLog = jest.fn<Promise<Response>, [RequestInfo | URL]>();
+
+// Route fetch() calls to the right mock based on URL.
+global.fetch = jest.fn((input: RequestInfo | URL): Promise<Response> => {
+  const url = typeof input === "string" ? input : input.toString();
+  if (url.includes("/stats")) {
+    return mockGetAuditLogStats();
+  }
+  return mockGetAuditLog(input);
+}) as unknown as typeof global.fetch;
 
 jest.mock("@/components/ui/card", () => ({
   Card: ({ children }: { children: React.ReactNode }) => (
@@ -206,13 +220,13 @@ function buildLogEntry(overrides: Record<string, unknown> = {}) {
 describe("ActivityTab", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Default: stats resolved, log resolved empty
-    mockGetAuditLogStats.mockResolvedValue({
-      total24h: 10,
-      total7d: 70,
-      total30d: 300,
-    });
-    mockGetAuditLog.mockResolvedValue({ data: [], count: 0 });
+    // Default: stats resolved with known values, log resolved empty.
+    // mockGetAuditLogStats / mockGetAuditLog return Response objects so that
+    // the component's `fetch().then(r => r.json())` chain resolves correctly.
+    mockGetAuditLogStats.mockResolvedValue(
+      makeResponse({ total24h: 10, total7d: 70, total30d: 300 })
+    );
+    mockGetAuditLog.mockResolvedValue(makeResponse({ data: [], count: 0 }));
   });
 
   describe("stat cards", () => {
@@ -236,11 +250,9 @@ describe("ActivityTab", () => {
     });
 
     it("shows '0' when stats data resolves to null-ish fields", async () => {
-      mockGetAuditLogStats.mockResolvedValue({
-        total24h: 0,
-        total7d: 0,
-        total30d: 0,
-      });
+      mockGetAuditLogStats.mockResolvedValue(
+        makeResponse({ total24h: 0, total7d: 0, total30d: 0 })
+      );
       render(<ActivityTab />, { wrapper: createWrapper() });
       const zeros = await screen.findAllByText("0");
       expect(zeros.length).toBeGreaterThanOrEqual(3);
@@ -257,7 +269,8 @@ describe("ActivityTab", () => {
 
   describe("error banner", () => {
     it("shows error banner when stats query rejects", async () => {
-      mockGetAuditLogStats.mockRejectedValue(new Error("stats fail"));
+      // fetchAuditLogStats throws when fetch() rejects (network error) or !res.ok
+      mockGetAuditLogStats.mockResolvedValue(makeResponse(null, false));
       render(<ActivityTab />, { wrapper: createWrapper() });
       expect(
         await screen.findByText(/failed to load audit log data/i)
@@ -265,7 +278,7 @@ describe("ActivityTab", () => {
     });
 
     it("shows error banner when log query rejects", async () => {
-      mockGetAuditLog.mockRejectedValue(new Error("log fail"));
+      mockGetAuditLog.mockResolvedValue(makeResponse(null, false));
       render(<ActivityTab />, { wrapper: createWrapper() });
       expect(
         await screen.findByText(/failed to load audit log data/i)
@@ -315,10 +328,12 @@ describe("ActivityTab", () => {
 
   describe("table with entries", () => {
     it("renders log entries in the table", async () => {
-      mockGetAuditLog.mockResolvedValue({
-        data: [buildLogEntry({ action: "match.score_submitted" })],
-        count: 1,
-      });
+      mockGetAuditLog.mockResolvedValue(
+        makeResponse({
+          data: [buildLogEntry({ action: "match.score_submitted" })],
+          count: 1,
+        })
+      );
       render(<ActivityTab />, { wrapper: createWrapper() });
       expect(
         await screen.findByText("match.score_submitted")
@@ -326,13 +341,15 @@ describe("ActivityTab", () => {
     });
 
     it("renders multiple log entries", async () => {
-      mockGetAuditLog.mockResolvedValue({
-        data: [
-          buildLogEntry({ id: 1, action: "tournament.started" }),
-          buildLogEntry({ id: 2, action: "admin.sudo_activated" }),
-        ],
-        count: 2,
-      });
+      mockGetAuditLog.mockResolvedValue(
+        makeResponse({
+          data: [
+            buildLogEntry({ id: 1, action: "tournament.started" }),
+            buildLogEntry({ id: 2, action: "admin.sudo_activated" }),
+          ],
+          count: 2,
+        })
+      );
       render(<ActivityTab />, { wrapper: createWrapper() });
       expect(await screen.findByText("tournament.started")).toBeInTheDocument();
       expect(screen.getByText("admin.sudo_activated")).toBeInTheDocument();
@@ -349,7 +366,7 @@ describe("ActivityTab", () => {
     });
 
     it("shows pagination when there are multiple pages", async () => {
-      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 }); // 4 pages
+      mockGetAuditLog.mockResolvedValue(makeResponse({ data: [], count: 200 })); // 4 pages
       render(<ActivityTab />, { wrapper: createWrapper() });
       expect(
         await screen.findByRole("button", { name: /previous/i })
@@ -358,7 +375,7 @@ describe("ActivityTab", () => {
     });
 
     it("disables Previous button on first page", async () => {
-      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 });
+      mockGetAuditLog.mockResolvedValue(makeResponse({ data: [], count: 200 }));
       render(<ActivityTab />, { wrapper: createWrapper() });
       expect(
         await screen.findByRole("button", { name: /previous/i })
@@ -366,13 +383,13 @@ describe("ActivityTab", () => {
     });
 
     it("shows page info", async () => {
-      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 });
+      mockGetAuditLog.mockResolvedValue(makeResponse({ data: [], count: 200 }));
       render(<ActivityTab />, { wrapper: createWrapper() });
       expect(await screen.findByText(/page 1 of 4/i)).toBeInTheDocument();
     });
 
     it("advances page when Next is clicked", async () => {
-      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 });
+      mockGetAuditLog.mockResolvedValue(makeResponse({ data: [], count: 200 }));
       const user = userEvent.setup();
       render(<ActivityTab />, { wrapper: createWrapper() });
 
@@ -388,11 +405,12 @@ describe("ActivityTab", () => {
       render(<ActivityTab />, { wrapper: createWrapper() });
 
       await screen.findByText("10");
+      // Count how many times the stats endpoint was fetched before refresh
       const callsBefore = mockGetAuditLogStats.mock.calls.length;
 
       await user.click(screen.getByRole("button", { name: /refresh/i }));
 
-      // After refresh the query fn is re-invoked
+      // Refresh bumps the query key (refreshKey) which forces a new fetch
       expect(mockGetAuditLogStats.mock.calls.length).toBeGreaterThan(
         callsBefore
       );
@@ -401,7 +419,7 @@ describe("ActivityTab", () => {
 
   describe("filter controls", () => {
     it("resets page to 0 when action filter changes", async () => {
-      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 });
+      mockGetAuditLog.mockResolvedValue(makeResponse({ data: [], count: 200 }));
       const user = userEvent.setup();
       render(<ActivityTab />, { wrapper: createWrapper() });
 
@@ -416,7 +434,7 @@ describe("ActivityTab", () => {
     });
 
     it("resets page to 0 when entity filter changes", async () => {
-      mockGetAuditLog.mockResolvedValue({ data: [], count: 200 });
+      mockGetAuditLog.mockResolvedValue(makeResponse({ data: [], count: 200 }));
       const user = userEvent.setup();
       render(<ActivityTab />, { wrapper: createWrapper() });
 

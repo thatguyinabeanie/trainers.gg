@@ -13,6 +13,21 @@ import {
 } from "@trainers/supabase/pipeline";
 import { safeCompare } from "../_shared/timing-safe.ts";
 
+// The edge-function deploy bundler only resolves the vendored @trainers/supabase
+// subpaths (queries/mutations/pipeline) — NOT /client or /types — and it does
+// NOT erase type-only imports before resolving them. So we avoid importing
+// either: TypedClient is derived from the (vendored) pipeline fn signature, and
+// Json is defined locally (mirrors the generated Supabase Json type). Both are
+// erased at bundle time and need no module resolution.
+type TypedClient = Parameters<typeof runSyncStage>[0];
+type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LIMITLESS_API_KEY = Deno.env.get("LIMITLESS_API_KEY") ?? undefined;
@@ -55,6 +70,11 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  // Single typed view of the service-role client. The vendored pipeline helpers
+  // (runSyncStage/runImportStage/runCompileStage) and the local TypedClient-typed
+  // helpers (loadExclusions/readNumberConfig) all take TypedClient; reuse one cast
+  // instead of scattering `as unknown as TypedClient` at each call site.
+  const typedSupabase = supabase as unknown as TypedClient;
 
   // 3. Global kill-switch: no-op when pipeline_enabled is false.
   const { data: configRow, error: configError } = await supabase
@@ -85,8 +105,8 @@ Deno.serve(async (req) => {
     const deadlineMs = Date.now() + TICK_BUDGET_MS;
 
     if (stage === "sync") {
-      const exclusions = await loadExclusions(supabase);
-      const result = await runSyncStage(supabase, {
+      const exclusions = await loadExclusions(typedSupabase);
+      const result = await runSyncStage(typedSupabase, {
         limitlessApiKey: LIMITLESS_API_KEY,
         isExcluded: (source: "rk9" | "limitless", id: string) =>
           exclusions.has(`${source}:${id}`),
@@ -118,11 +138,11 @@ Deno.serve(async (req) => {
 
     if (stage === "import") {
       const batchSize = await readNumberConfig(
-        supabase,
+        typedSupabase,
         "limitless_import_batch_size",
         25
       );
-      const result = await runImportStage(supabase, {
+      const result = await runImportStage(typedSupabase, {
         limitlessApiKey: LIMITLESS_API_KEY,
         limitlessBatchSize: batchSize,
         deadlineMs,
@@ -153,7 +173,7 @@ Deno.serve(async (req) => {
     }
 
     // stage === "compile"
-    const result = await runCompileStage(supabase);
+    const result = await runCompileStage(typedSupabase);
     try {
       await recordImportRuns(supabase, "cron", [
         {
@@ -162,7 +182,7 @@ Deno.serve(async (req) => {
           processed: result.eventsCompiled,
           errors: 0,
           remaining: null,
-          detail: result,
+          detail: result as unknown as Json,
         },
       ]);
     } catch (e) {
@@ -206,9 +226,7 @@ function json(body: unknown): Response {
   });
 }
 
-async function loadExclusions(
-  supabase: ReturnType<typeof createClient>
-): Promise<Set<string>> {
+async function loadExclusions(supabase: TypedClient): Promise<Set<string>> {
   const { data, error } = await supabase
     .from("import_exclusions")
     .select("source, source_event_id");
@@ -217,7 +235,7 @@ async function loadExclusions(
 }
 
 async function readNumberConfig(
-  supabase: ReturnType<typeof createClient>,
+  supabase: TypedClient,
   key: string,
   fallback: number
 ): Promise<number> {

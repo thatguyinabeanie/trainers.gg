@@ -360,7 +360,7 @@ test.describe("Admin panel — admin user with sudo mode", () => {
 
     // Search input
     await expect(
-      main.getByPlaceholder(/Search by username or email/i)
+      main.getByPlaceholder(/Search by username/i)
     ).toBeVisible();
 
     // Refresh button

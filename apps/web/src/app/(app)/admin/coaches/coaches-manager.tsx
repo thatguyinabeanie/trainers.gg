@@ -12,8 +12,8 @@ import {
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { listUsersAdmin } from "@trainers/supabase";
 import { useApiQuery } from "@trainers/supabase/react-query";
+import { type ActionResult } from "@trainers/validators";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -32,9 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useSupabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/query-keys";
-import { type ActionResult } from "@trainers/validators";
 
 import { grantCoachStatusAction, revokeCoachStatusAction } from "./actions";
 
@@ -62,6 +60,13 @@ interface CoachRow {
   main_alt_id: number | null;
 }
 
+/** Minimal user shape returned by the admin user-search endpoint. */
+interface UserSearchRow {
+  id: string;
+  username: string | null;
+  image: string | null;
+}
+
 interface CoachesManagerProps {
   /** Server-rendered initial coach list (used as TanStack Query initialData). */
   coaches: CoachRow[];
@@ -75,7 +80,7 @@ interface CoachesManagerProps {
 const COACHES_QUERY_KEY = ["admin", "coaches"] as const;
 
 // ---------------------------------------------------------------------------
-// Fetcher
+// Fetchers
 // ---------------------------------------------------------------------------
 
 /**
@@ -90,6 +95,24 @@ async function fetchCoaches(): Promise<ActionResult<CoachRow[]>> {
   return res.json() as Promise<ActionResult<CoachRow[]>>;
 }
 
+/**
+ * Search for users by username via the gated admin users route.
+ * The route returns `{ data: [...users], count }` — not an ActionResult envelope —
+ * so we use a plain fetch and throw on HTTP errors to let useQuery handle the
+ * error state.
+ */
+async function fetchUserSearch(search: string): Promise<UserSearchRow[]> {
+  const url = new URL("/api/v1/admin/users", window.location.origin);
+  url.searchParams.set("search", search);
+  url.searchParams.set("limit", "5");
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    throw new Error(`User search failed: HTTP ${res.status}`);
+  }
+  const json = (await res.json()) as { data: UserSearchRow[]; count: number };
+  return json.data ?? [];
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -98,7 +121,6 @@ export function CoachesManager({
   coaches: initialCoaches,
 }: CoachesManagerProps) {
   const queryClient = useQueryClient();
-  const supabase = useSupabase();
 
   // --- Coaches list via TanStack Query (repoints away from useSupabaseQuery) ---
   const {
@@ -148,26 +170,19 @@ export function CoachesManager({
     }, 300);
   }
 
-  // Search for users to grant coach status to — direct Supabase read (no
-  // dedicated admin API route for user search).
+  // Search for users to grant coach status to — gated admin API route.
+  // Uses a plain useQuery (not useApiQuery) because /api/v1/admin/users returns
+  // { data, count } rather than the ActionResult envelope that useApiQuery expects.
   const searchQuery = useQuery({
     queryKey: queryKeys.admin.userSearch(debouncedGrantSearch),
-    queryFn: () =>
-      listUsersAdmin(supabase, {
-        search: debouncedGrantSearch,
-        limit: 5,
-      }),
+    queryFn: () => fetchUserSearch(debouncedGrantSearch),
     enabled: Boolean(debouncedGrantSearch),
     staleTime: 30_000,
   });
 
-  const searchResults = (
-    (searchQuery.data?.data ?? []) as {
-      id: string;
-      username: string | null;
-      image: string | null;
-    }[]
-  ).filter((u) => !coaches.some((c) => c.id === u.id));
+  const searchResults = (searchQuery.data ?? []).filter(
+    (u) => !coaches.some((c) => c.id === u.id)
+  );
 
   // --- Revoke handler ---
   async function handleRevoke() {

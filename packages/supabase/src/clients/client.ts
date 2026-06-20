@@ -14,15 +14,11 @@ import { getUserGrowthStats as getUserGrowthStats_core } from "../queries/admin-
 import { getActiveUserStats as getActiveUserStats_core } from "../queries/admin-analytics";
 import { getTournamentStats as getTournamentStats_core } from "../queries/admin-analytics";
 import { getOrganizationStats as getOrganizationStats_core } from "../queries/admin-analytics";
-import { listCommunitiesAdmin as listCommunitiesAdmin_core } from "../queries/admin-communities";
-import { getCommunityAdminDetails as getCommunityAdminDetails_core } from "../queries/admin-communities";
 import { approveOrganization as approveOrganization_core } from "../queries/admin-communities";
 import { rejectOrganization as rejectOrganization_core } from "../queries/admin-communities";
 import { suspendOrganization as suspendOrganization_core } from "../queries/admin-communities";
 import { unsuspendOrganization as unsuspendOrganization_core } from "../queries/admin-communities";
 import { transferCommunityOwnership as transferCommunityOwnership_core } from "../queries/admin-communities";
-import { listUsersAdmin as listUsersAdmin_core } from "../queries/admin-users";
-import { getUserAdminDetails as getUserAdminDetails_core } from "../queries/admin-users";
 import { getUsersByIds as getUsersByIds_core } from "../queries/admin-users";
 import { suspendUser as suspendUser_core } from "../queries/admin-users";
 import { unsuspendUser as unsuspendUser_core } from "../queries/admin-users";
@@ -124,7 +120,6 @@ import { getNotificationCount as getNotificationCount_core } from "../queries/no
 import { getUnreadNotificationCount as getUnreadNotificationCount_core } from "../queries/notifications";
 import { getActiveMatchNotifications as getActiveMatchNotifications_core } from "../queries/notifications";
 import { getMyOrganizationRequest as getMyOrganizationRequest_core } from "../queries/organization-requests";
-import { listOrgRequestsAdmin as listOrgRequestsAdmin_core } from "../queries/organization-requests";
 import { getUserPermissions as getUserPermissions_core } from "../queries/permissions";
 import { hasPermission as hasPermission_core } from "../queries/permissions";
 import { getPipelineMonitor as getPipelineMonitor_core } from "../queries/pipeline";
@@ -170,11 +165,14 @@ import { getTournamentPhases as getTournamentPhases_core } from "../queries/tour
 import { getTournamentRounds as getTournamentRounds_core } from "../queries/tournaments";
 import { getRoundMatches as getRoundMatches_core } from "../queries/tournaments";
 import { getTournamentStandings as getTournamentStandings_core } from "../queries/tournaments";
+import { getPublicTournamentStandings as getPublicTournamentStandings_core } from "../queries/tournaments";
 import { getPlayerTournamentStats as getPlayerTournamentStats_core } from "../queries/tournaments";
 import { getTournamentPlayerStats as getTournamentPlayerStats_core } from "../queries/tournaments";
 import { getPhaseRoundsWithStats as getPhaseRoundsWithStats_core } from "../queries/tournaments";
 import { getRoundMatchesWithStats as getRoundMatchesWithStats_core } from "../queries/tournaments";
 import { getPhaseRoundsWithMatches as getPhaseRoundsWithMatches_core } from "../queries/tournaments";
+import { getPublicPhaseRoundsWithMatches as getPublicPhaseRoundsWithMatches_core } from "../queries/tournaments";
+import { getPublicTournamentPlayerStats as getPublicTournamentPlayerStats_core } from "../queries/tournaments";
 import { getCheckInStatus as getCheckInStatus_core } from "../queries/tournaments";
 import { getCheckInStats as getCheckInStats_core } from "../queries/tournaments";
 import { getUserTeams as getUserTeams_core } from "../queries/tournaments";
@@ -330,7 +328,12 @@ import { completeTournament as completeTournament_core } from "../mutations/tour
  * getPlatformOverview (auto-injected with browser client)
  */
 export async function getPlatformOverview(
-  ...args: Parameters<typeof getPlatformOverview_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlatformOverview_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlatformOverview_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlatformOverview_core(client, ...args);
@@ -340,7 +343,12 @@ export async function getPlatformOverview(
  * getUserGrowthStats (auto-injected with browser client)
  */
 export async function getUserGrowthStats(
-  ...args: Parameters<typeof getUserGrowthStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserGrowthStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserGrowthStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserGrowthStats_core(client, ...args);
@@ -350,7 +358,12 @@ export async function getUserGrowthStats(
  * getActiveUserStats (auto-injected with browser client)
  */
 export async function getActiveUserStats(
-  ...args: Parameters<typeof getActiveUserStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getActiveUserStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getActiveUserStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getActiveUserStats_core(client, ...args);
@@ -360,7 +373,12 @@ export async function getActiveUserStats(
  * getTournamentStats (auto-injected with browser client)
  */
 export async function getTournamentStats(
-  ...args: Parameters<typeof getTournamentStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentStats_core(client, ...args);
@@ -370,37 +388,27 @@ export async function getTournamentStats(
  * getOrganizationStats (auto-injected with browser client)
  */
 export async function getOrganizationStats(
-  ...args: Parameters<typeof getOrganizationStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getOrganizationStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getOrganizationStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getOrganizationStats_core(client, ...args);
 }
 
 /**
- * listCommunitiesAdmin (auto-injected with browser client)
- */
-export async function listCommunitiesAdmin(
-  ...args: Parameters<typeof listCommunitiesAdmin_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof listCommunitiesAdmin_core>>> {
-  const client = createBrowserSupabaseClient();
-  return listCommunitiesAdmin_core(client, ...args);
-}
-
-/**
- * getCommunityAdminDetails (auto-injected with browser client)
- */
-export async function getCommunityAdminDetails(
-  ...args: Parameters<typeof getCommunityAdminDetails_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof getCommunityAdminDetails_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getCommunityAdminDetails_core(client, ...args);
-}
-
-/**
  * approveOrganization (auto-injected with browser client)
  */
 export async function approveOrganization(
-  ...args: Parameters<typeof approveOrganization_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof approveOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof approveOrganization_core>>> {
   const client = createBrowserSupabaseClient();
   return approveOrganization_core(client, ...args);
@@ -410,7 +418,12 @@ export async function approveOrganization(
  * rejectOrganization (auto-injected with browser client)
  */
 export async function rejectOrganization(
-  ...args: Parameters<typeof rejectOrganization_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof rejectOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof rejectOrganization_core>>> {
   const client = createBrowserSupabaseClient();
   return rejectOrganization_core(client, ...args);
@@ -420,7 +433,12 @@ export async function rejectOrganization(
  * suspendOrganization (auto-injected with browser client)
  */
 export async function suspendOrganization(
-  ...args: Parameters<typeof suspendOrganization_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof suspendOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof suspendOrganization_core>>> {
   const client = createBrowserSupabaseClient();
   return suspendOrganization_core(client, ...args);
@@ -430,7 +448,12 @@ export async function suspendOrganization(
  * unsuspendOrganization (auto-injected with browser client)
  */
 export async function unsuspendOrganization(
-  ...args: Parameters<typeof unsuspendOrganization_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof unsuspendOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof unsuspendOrganization_core>>> {
   const client = createBrowserSupabaseClient();
   return unsuspendOrganization_core(client, ...args);
@@ -440,37 +463,27 @@ export async function unsuspendOrganization(
  * transferCommunityOwnership (auto-injected with browser client)
  */
 export async function transferCommunityOwnership(
-  ...args: Parameters<typeof transferCommunityOwnership_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof transferCommunityOwnership_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof transferCommunityOwnership_core>>> {
   const client = createBrowserSupabaseClient();
   return transferCommunityOwnership_core(client, ...args);
 }
 
 /**
- * listUsersAdmin (auto-injected with browser client)
- */
-export async function listUsersAdmin(
-  ...args: Parameters<typeof listUsersAdmin_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof listUsersAdmin_core>>> {
-  const client = createBrowserSupabaseClient();
-  return listUsersAdmin_core(client, ...args);
-}
-
-/**
- * getUserAdminDetails (auto-injected with browser client)
- */
-export async function getUserAdminDetails(
-  ...args: Parameters<typeof getUserAdminDetails_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof getUserAdminDetails_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getUserAdminDetails_core(client, ...args);
-}
-
-/**
  * getUsersByIds (auto-injected with browser client)
  */
 export async function getUsersByIds(
-  ...args: Parameters<typeof getUsersByIds_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUsersByIds_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUsersByIds_core>>> {
   const client = createBrowserSupabaseClient();
   return getUsersByIds_core(client, ...args);
@@ -480,7 +493,12 @@ export async function getUsersByIds(
  * suspendUser (auto-injected with browser client)
  */
 export async function suspendUser(
-  ...args: Parameters<typeof suspendUser_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof suspendUser_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof suspendUser_core>>> {
   const client = createBrowserSupabaseClient();
   return suspendUser_core(client, ...args);
@@ -490,7 +508,12 @@ export async function suspendUser(
  * unsuspendUser (auto-injected with browser client)
  */
 export async function unsuspendUser(
-  ...args: Parameters<typeof unsuspendUser_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof unsuspendUser_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof unsuspendUser_core>>> {
   const client = createBrowserSupabaseClient();
   return unsuspendUser_core(client, ...args);
@@ -500,7 +523,12 @@ export async function unsuspendUser(
  * startImpersonation (auto-injected with browser client)
  */
 export async function startImpersonation(
-  ...args: Parameters<typeof startImpersonation_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof startImpersonation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof startImpersonation_core>>> {
   const client = createBrowserSupabaseClient();
   return startImpersonation_core(client, ...args);
@@ -510,7 +538,12 @@ export async function startImpersonation(
  * endImpersonation (auto-injected with browser client)
  */
 export async function endImpersonation(
-  ...args: Parameters<typeof endImpersonation_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof endImpersonation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof endImpersonation_core>>> {
   const client = createBrowserSupabaseClient();
   return endImpersonation_core(client, ...args);
@@ -520,7 +553,12 @@ export async function endImpersonation(
  * listAnnouncements (auto-injected with browser client)
  */
 export async function listAnnouncements(
-  ...args: Parameters<typeof listAnnouncements_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listAnnouncements_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listAnnouncements_core>>> {
   const client = createBrowserSupabaseClient();
   return listAnnouncements_core(client, ...args);
@@ -530,7 +568,12 @@ export async function listAnnouncements(
  * getActiveAnnouncements (auto-injected with browser client)
  */
 export async function getActiveAnnouncements(
-  ...args: Parameters<typeof getActiveAnnouncements_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getActiveAnnouncements_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getActiveAnnouncements_core>>> {
   const client = createBrowserSupabaseClient();
   return getActiveAnnouncements_core(client, ...args);
@@ -540,7 +583,12 @@ export async function getActiveAnnouncements(
  * createAnnouncement (auto-injected with browser client)
  */
 export async function createAnnouncement(
-  ...args: Parameters<typeof createAnnouncement_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createAnnouncement_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createAnnouncement_core>>> {
   const client = createBrowserSupabaseClient();
   return createAnnouncement_core(client, ...args);
@@ -550,7 +598,12 @@ export async function createAnnouncement(
  * updateAnnouncement (auto-injected with browser client)
  */
 export async function updateAnnouncement(
-  ...args: Parameters<typeof updateAnnouncement_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updateAnnouncement_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updateAnnouncement_core>>> {
   const client = createBrowserSupabaseClient();
   return updateAnnouncement_core(client, ...args);
@@ -560,7 +613,12 @@ export async function updateAnnouncement(
  * deleteAnnouncement (auto-injected with browser client)
  */
 export async function deleteAnnouncement(
-  ...args: Parameters<typeof deleteAnnouncement_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteAnnouncement_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteAnnouncement_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteAnnouncement_core(client, ...args);
@@ -570,7 +628,12 @@ export async function deleteAnnouncement(
  * getTournamentAuditLog (auto-injected with browser client)
  */
 export async function getTournamentAuditLog(
-  ...args: Parameters<typeof getTournamentAuditLog_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentAuditLog_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentAuditLog_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentAuditLog_core(client, ...args);
@@ -580,7 +643,12 @@ export async function getTournamentAuditLog(
  * getMatchAuditLog (auto-injected with browser client)
  */
 export async function getMatchAuditLog(
-  ...args: Parameters<typeof getMatchAuditLog_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMatchAuditLog_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMatchAuditLog_core>>> {
   const client = createBrowserSupabaseClient();
   return getMatchAuditLog_core(client, ...args);
@@ -590,7 +658,12 @@ export async function getMatchAuditLog(
  * getAuditLog (auto-injected with browser client)
  */
 export async function getAuditLog(
-  ...args: Parameters<typeof getAuditLog_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getAuditLog_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getAuditLog_core>>> {
   const client = createBrowserSupabaseClient();
   return getAuditLog_core(client, ...args);
@@ -600,7 +673,12 @@ export async function getAuditLog(
  * getAuditLogStats (auto-injected with browser client)
  */
 export async function getAuditLogStats(
-  ...args: Parameters<typeof getAuditLogStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getAuditLogStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getAuditLogStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getAuditLogStats_core(client, ...args);
@@ -610,7 +688,12 @@ export async function getAuditLogStats(
  * getCoachBadges (auto-injected with browser client)
  */
 export async function getCoachBadges(
-  ...args: Parameters<typeof getCoachBadges_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCoachBadges_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCoachBadges_core>>> {
   const client = createBrowserSupabaseClient();
   return getCoachBadges_core(client, ...args);
@@ -620,7 +703,12 @@ export async function getCoachBadges(
  * getCoachProfileByHandle (auto-injected with browser client)
  */
 export async function getCoachProfileByHandle(
-  ...args: Parameters<typeof getCoachProfileByHandle_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCoachProfileByHandle_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCoachProfileByHandle_core>>> {
   const client = createBrowserSupabaseClient();
   return getCoachProfileByHandle_core(client, ...args);
@@ -630,7 +718,12 @@ export async function getCoachProfileByHandle(
  * listCoaches (auto-injected with browser client)
  */
 export async function listCoaches(
-  ...args: Parameters<typeof listCoaches_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listCoaches_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listCoaches_core>>> {
   const client = createBrowserSupabaseClient();
   return listCoaches_core(client, ...args);
@@ -640,7 +733,12 @@ export async function listCoaches(
  * listPublicCommunities (auto-injected with browser client)
  */
 export async function listPublicCommunities(
-  ...args: Parameters<typeof listPublicCommunities_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listPublicCommunities_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listPublicCommunities_core>>> {
   const client = createBrowserSupabaseClient();
   return listPublicCommunities_core(client, ...args);
@@ -650,7 +748,12 @@ export async function listPublicCommunities(
  * listFeaturedCommunities (auto-injected with browser client)
  */
 export async function listFeaturedCommunities(
-  ...args: Parameters<typeof listFeaturedCommunities_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listFeaturedCommunities_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listFeaturedCommunities_core>>> {
   const client = createBrowserSupabaseClient();
   return listFeaturedCommunities_core(client, ...args);
@@ -660,7 +763,12 @@ export async function listFeaturedCommunities(
  * listAllCommunitiesForSudo (auto-injected with browser client)
  */
 export async function listAllCommunitiesForSudo(
-  ...args: Parameters<typeof listAllCommunitiesForSudo_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listAllCommunitiesForSudo_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listAllCommunitiesForSudo_core>>> {
   const client = createBrowserSupabaseClient();
   return listAllCommunitiesForSudo_core(client, ...args);
@@ -670,7 +778,12 @@ export async function listAllCommunitiesForSudo(
  * listCommunities (auto-injected with browser client)
  */
 export async function listCommunities(
-  ...args: Parameters<typeof listCommunities_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listCommunities_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listCommunities_core>>> {
   const client = createBrowserSupabaseClient();
   return listCommunities_core(client, ...args);
@@ -680,7 +793,12 @@ export async function listCommunities(
  * getCommunityBySlug (auto-injected with browser client)
  */
 export async function getCommunityBySlug(
-  ...args: Parameters<typeof getCommunityBySlug_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityBySlug_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityBySlug_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityBySlug_core(client, ...args);
@@ -690,7 +808,12 @@ export async function getCommunityBySlug(
  * getCommunityById (auto-injected with browser client)
  */
 export async function getCommunityById(
-  ...args: Parameters<typeof getCommunityById_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityById_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityById_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityById_core(client, ...args);
@@ -700,7 +823,12 @@ export async function getCommunityById(
  * listMyCommunities (auto-injected with browser client)
  */
 export async function listMyCommunities(
-  ...args: Parameters<typeof listMyCommunities_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listMyCommunities_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listMyCommunities_core>>> {
   const client = createBrowserSupabaseClient();
   return listMyCommunities_core(client, ...args);
@@ -710,7 +838,12 @@ export async function listMyCommunities(
  * canManageCommunity (auto-injected with browser client)
  */
 export async function canManageCommunity(
-  ...args: Parameters<typeof canManageCommunity_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof canManageCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof canManageCommunity_core>>> {
   const client = createBrowserSupabaseClient();
   return canManageCommunity_core(client, ...args);
@@ -720,7 +853,12 @@ export async function canManageCommunity(
  * listCommunityStaff (auto-injected with browser client)
  */
 export async function listCommunityStaff(
-  ...args: Parameters<typeof listCommunityStaff_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listCommunityStaff_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listCommunityStaff_core>>> {
   const client = createBrowserSupabaseClient();
   return listCommunityStaff_core(client, ...args);
@@ -730,7 +868,12 @@ export async function listCommunityStaff(
  * hasCommunityAccess (auto-injected with browser client)
  */
 export async function hasCommunityAccess(
-  ...args: Parameters<typeof hasCommunityAccess_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof hasCommunityAccess_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof hasCommunityAccess_core>>> {
   const client = createBrowserSupabaseClient();
   return hasCommunityAccess_core(client, ...args);
@@ -740,7 +883,12 @@ export async function hasCommunityAccess(
  * getMyCommunityInvitations (auto-injected with browser client)
  */
 export async function getMyCommunityInvitations(
-  ...args: Parameters<typeof getMyCommunityInvitations_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMyCommunityInvitations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMyCommunityInvitations_core>>> {
   const client = createBrowserSupabaseClient();
   return getMyCommunityInvitations_core(client, ...args);
@@ -750,7 +898,12 @@ export async function getMyCommunityInvitations(
  * getCommunityInvitations (auto-injected with browser client)
  */
 export async function getCommunityInvitations(
-  ...args: Parameters<typeof getCommunityInvitations_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityInvitations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityInvitations_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityInvitations_core(client, ...args);
@@ -760,7 +913,12 @@ export async function getCommunityInvitations(
  * listMyOwnedCommunities (auto-injected with browser client)
  */
 export async function listMyOwnedCommunities(
-  ...args: Parameters<typeof listMyOwnedCommunities_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listMyOwnedCommunities_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listMyOwnedCommunities_core>>> {
   const client = createBrowserSupabaseClient();
   return listMyOwnedCommunities_core(client, ...args);
@@ -770,7 +928,12 @@ export async function listMyOwnedCommunities(
  * getCommunityWithTournamentStats (auto-injected with browser client)
  */
 export async function getCommunityWithTournamentStats(
-  ...args: Parameters<typeof getCommunityWithTournamentStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityWithTournamentStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityWithTournamentStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityWithTournamentStats_core(client, ...args);
@@ -780,7 +943,12 @@ export async function getCommunityWithTournamentStats(
  * listCommunityTournaments (auto-injected with browser client)
  */
 export async function listCommunityTournaments(
-  ...args: Parameters<typeof listCommunityTournaments_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listCommunityTournaments_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listCommunityTournaments_core>>> {
   const client = createBrowserSupabaseClient();
   return listCommunityTournaments_core(client, ...args);
@@ -790,7 +958,12 @@ export async function listCommunityTournaments(
  * listCommunityStaffWithRoles (auto-injected with browser client)
  */
 export async function listCommunityStaffWithRoles(
-  ...args: Parameters<typeof listCommunityStaffWithRoles_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listCommunityStaffWithRoles_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listCommunityStaffWithRoles_core>>> {
   const client = createBrowserSupabaseClient();
   return listCommunityStaffWithRoles_core(client, ...args);
@@ -800,7 +973,12 @@ export async function listCommunityStaffWithRoles(
  * listCommunityGroups (auto-injected with browser client)
  */
 export async function listCommunityGroups(
-  ...args: Parameters<typeof listCommunityGroups_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listCommunityGroups_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listCommunityGroups_core>>> {
   const client = createBrowserSupabaseClient();
   return listCommunityGroups_core(client, ...args);
@@ -810,7 +988,12 @@ export async function listCommunityGroups(
  * searchUsersForInvite (auto-injected with browser client)
  */
 export async function searchUsersForInvite(
-  ...args: Parameters<typeof searchUsersForInvite_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof searchUsersForInvite_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof searchUsersForInvite_core>>> {
   const client = createBrowserSupabaseClient();
   return searchUsersForInvite_core(client, ...args);
@@ -820,7 +1003,12 @@ export async function searchUsersForInvite(
  * hasCommunityPermission (auto-injected with browser client)
  */
 export async function hasCommunityPermission(
-  ...args: Parameters<typeof hasCommunityPermission_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof hasCommunityPermission_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof hasCommunityPermission_core>>> {
   const client = createBrowserSupabaseClient();
   return hasCommunityPermission_core(client, ...args);
@@ -830,7 +1018,12 @@ export async function hasCommunityPermission(
  * getCommunityStats (auto-injected with browser client)
  */
 export async function getCommunityStats(
-  ...args: Parameters<typeof getCommunityStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityStats_core(client, ...args);
@@ -840,7 +1033,12 @@ export async function getCommunityStats(
  * getTopReturningPlayers (auto-injected with browser client)
  */
 export async function getTopReturningPlayers(
-  ...args: Parameters<typeof getTopReturningPlayers_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTopReturningPlayers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTopReturningPlayers_core>>> {
   const client = createBrowserSupabaseClient();
   return getTopReturningPlayers_core(client, ...args);
@@ -850,7 +1048,12 @@ export async function getTopReturningPlayers(
  * getCommunityActivity (auto-injected with browser client)
  */
 export async function getCommunityActivity(
-  ...args: Parameters<typeof getCommunityActivity_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityActivity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityActivity_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityActivity_core(client, ...args);
@@ -860,7 +1063,12 @@ export async function getCommunityActivity(
  * getDiscordServerByChannelId (auto-injected with browser client)
  */
 export async function getDiscordServerByChannelId(
-  ...args: Parameters<typeof getDiscordServerByChannelId_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getDiscordServerByChannelId_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getDiscordServerByChannelId_core>>> {
   const client = createBrowserSupabaseClient();
   return getDiscordServerByChannelId_core(client, ...args);
@@ -870,7 +1078,12 @@ export async function getDiscordServerByChannelId(
  * getDiscordServerByGuildId (auto-injected with browser client)
  */
 export async function getDiscordServerByGuildId(
-  ...args: Parameters<typeof getDiscordServerByGuildId_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getDiscordServerByGuildId_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getDiscordServerByGuildId_core>>> {
   const client = createBrowserSupabaseClient();
   return getDiscordServerByGuildId_core(client, ...args);
@@ -880,7 +1093,12 @@ export async function getDiscordServerByGuildId(
  * getDiscordServerByCommunityId (auto-injected with browser client)
  */
 export async function getDiscordServerByCommunityId(
-  ...args: Parameters<typeof getDiscordServerByCommunityId_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getDiscordServerByCommunityId_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getDiscordServerByCommunityId_core>>> {
   const client = createBrowserSupabaseClient();
   return getDiscordServerByCommunityId_core(client, ...args);
@@ -890,7 +1108,12 @@ export async function getDiscordServerByCommunityId(
  * listDiscordServers (auto-injected with browser client)
  */
 export async function listDiscordServers(
-  ...args: Parameters<typeof listDiscordServers_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listDiscordServers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listDiscordServers_core>>> {
   const client = createBrowserSupabaseClient();
   return listDiscordServers_core(client, ...args);
@@ -900,7 +1123,12 @@ export async function listDiscordServers(
  * listChannelMappings (auto-injected with browser client)
  */
 export async function listChannelMappings(
-  ...args: Parameters<typeof listChannelMappings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listChannelMappings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listChannelMappings_core>>> {
   const client = createBrowserSupabaseClient();
   return listChannelMappings_core(client, ...args);
@@ -910,7 +1138,12 @@ export async function listChannelMappings(
  * getChannelMappingsForEvent (auto-injected with browser client)
  */
 export async function getChannelMappingsForEvent(
-  ...args: Parameters<typeof getChannelMappingsForEvent_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getChannelMappingsForEvent_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getChannelMappingsForEvent_core>>> {
   const client = createBrowserSupabaseClient();
   return getChannelMappingsForEvent_core(client, ...args);
@@ -920,7 +1153,12 @@ export async function getChannelMappingsForEvent(
  * listDmSettings (auto-injected with browser client)
  */
 export async function listDmSettings(
-  ...args: Parameters<typeof listDmSettings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listDmSettings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listDmSettings_core>>> {
   const client = createBrowserSupabaseClient();
   return listDmSettings_core(client, ...args);
@@ -930,7 +1168,12 @@ export async function listDmSettings(
  * getDmSetting (auto-injected with browser client)
  */
 export async function getDmSetting(
-  ...args: Parameters<typeof getDmSetting_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getDmSetting_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getDmSetting_core>>> {
   const client = createBrowserSupabaseClient();
   return getDmSetting_core(client, ...args);
@@ -940,7 +1183,12 @@ export async function getDmSetting(
  * listDmPreferences (auto-injected with browser client)
  */
 export async function listDmPreferences(
-  ...args: Parameters<typeof listDmPreferences_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listDmPreferences_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listDmPreferences_core>>> {
   const client = createBrowserSupabaseClient();
   return listDmPreferences_core(client, ...args);
@@ -950,7 +1198,12 @@ export async function listDmPreferences(
  * getDmPreference (auto-injected with browser client)
  */
 export async function getDmPreference(
-  ...args: Parameters<typeof getDmPreference_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getDmPreference_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getDmPreference_core>>> {
   const client = createBrowserSupabaseClient();
   return getDmPreference_core(client, ...args);
@@ -960,7 +1213,12 @@ export async function getDmPreference(
  * isDmEnabledForUser (auto-injected with browser client)
  */
 export async function isDmEnabledForUser(
-  ...args: Parameters<typeof isDmEnabledForUser_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof isDmEnabledForUser_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof isDmEnabledForUser_core>>> {
   const client = createBrowserSupabaseClient();
   return isDmEnabledForUser_core(client, ...args);
@@ -970,7 +1228,12 @@ export async function isDmEnabledForUser(
  * listRoleMappings (auto-injected with browser client)
  */
 export async function listRoleMappings(
-  ...args: Parameters<typeof listRoleMappings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listRoleMappings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listRoleMappings_core>>> {
   const client = createBrowserSupabaseClient();
   return listRoleMappings_core(client, ...args);
@@ -980,7 +1243,12 @@ export async function listRoleMappings(
  * getRoleMapping (auto-injected with browser client)
  */
 export async function getRoleMapping(
-  ...args: Parameters<typeof getRoleMapping_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getRoleMapping_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getRoleMapping_core>>> {
   const client = createBrowserSupabaseClient();
   return getRoleMapping_core(client, ...args);
@@ -990,7 +1258,12 @@ export async function getRoleMapping(
  * getRoleMappingById (auto-injected with browser client)
  */
 export async function getRoleMappingById(
-  ...args: Parameters<typeof getRoleMappingById_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getRoleMappingById_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getRoleMappingById_core>>> {
   const client = createBrowserSupabaseClient();
   return getRoleMappingById_core(client, ...args);
@@ -1000,7 +1273,12 @@ export async function getRoleMappingById(
  * getDiscordServerById (auto-injected with browser client)
  */
 export async function getDiscordServerById(
-  ...args: Parameters<typeof getDiscordServerById_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getDiscordServerById_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getDiscordServerById_core>>> {
   const client = createBrowserSupabaseClient();
   return getDiscordServerById_core(client, ...args);
@@ -1010,7 +1288,12 @@ export async function getDiscordServerById(
  * getEnabledRoleMappings (auto-injected with browser client)
  */
 export async function getEnabledRoleMappings(
-  ...args: Parameters<typeof getEnabledRoleMappings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getEnabledRoleMappings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getEnabledRoleMappings_core>>> {
   const client = createBrowserSupabaseClient();
   return getEnabledRoleMappings_core(client, ...args);
@@ -1020,7 +1303,12 @@ export async function getEnabledRoleMappings(
  * listChannelFailures (auto-injected with browser client)
  */
 export async function listChannelFailures(
-  ...args: Parameters<typeof listChannelFailures_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listChannelFailures_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listChannelFailures_core>>> {
   const client = createBrowserSupabaseClient();
   return listChannelFailures_core(client, ...args);
@@ -1030,7 +1318,12 @@ export async function listChannelFailures(
  * getChannelFailureCount (auto-injected with browser client)
  */
 export async function getChannelFailureCount(
-  ...args: Parameters<typeof getChannelFailureCount_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getChannelFailureCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getChannelFailureCount_core>>> {
   const client = createBrowserSupabaseClient();
   return getChannelFailureCount_core(client, ...args);
@@ -1040,8 +1333,14 @@ export async function getChannelFailureCount(
  * listAllEnabledRoleMappingsWithServer (auto-injected with browser client)
  */
 export async function listAllEnabledRoleMappingsWithServer(
-  ...args: Parameters<typeof listAllEnabledRoleMappingsWithServer_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof listAllEnabledRoleMappingsWithServer_core>>> {
+  ...args: Parameters<
+    typeof listAllEnabledRoleMappingsWithServer_core
+  > extends [first: infer _F, ...rest: infer R]
+    ? R
+    : never
+): Promise<
+  Awaited<ReturnType<typeof listAllEnabledRoleMappingsWithServer_core>>
+> {
   const client = createBrowserSupabaseClient();
   return listAllEnabledRoleMappingsWithServer_core(client, ...args);
 }
@@ -1050,7 +1349,12 @@ export async function listAllEnabledRoleMappingsWithServer(
  * getDiscordIdsByUserIds (auto-injected with browser client)
  */
 export async function getDiscordIdsByUserIds(
-  ...args: Parameters<typeof getDiscordIdsByUserIds_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getDiscordIdsByUserIds_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getDiscordIdsByUserIds_core>>> {
   const client = createBrowserSupabaseClient();
   return getDiscordIdsByUserIds_core(client, ...args);
@@ -1060,7 +1364,12 @@ export async function getDiscordIdsByUserIds(
  * getCommunityStaffUserIds (auto-injected with browser client)
  */
 export async function getCommunityStaffUserIds(
-  ...args: Parameters<typeof getCommunityStaffUserIds_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityStaffUserIds_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityStaffUserIds_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityStaffUserIds_core(client, ...args);
@@ -1070,7 +1379,12 @@ export async function getCommunityStaffUserIds(
  * getCommunityParticipantUserIds (auto-injected with browser client)
  */
 export async function getCommunityParticipantUserIds(
-  ...args: Parameters<typeof getCommunityParticipantUserIds_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityParticipantUserIds_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityParticipantUserIds_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityParticipantUserIds_core(client, ...args);
@@ -1080,7 +1394,12 @@ export async function getCommunityParticipantUserIds(
  * getCommunityWinnerUserIds (auto-injected with browser client)
  */
 export async function getCommunityWinnerUserIds(
-  ...args: Parameters<typeof getCommunityWinnerUserIds_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityWinnerUserIds_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityWinnerUserIds_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityWinnerUserIds_core(client, ...args);
@@ -1090,8 +1409,15 @@ export async function getCommunityWinnerUserIds(
  * getCommunityCurrentlyPlayingUserIds (auto-injected with browser client)
  */
 export async function getCommunityCurrentlyPlayingUserIds(
-  ...args: Parameters<typeof getCommunityCurrentlyPlayingUserIds_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof getCommunityCurrentlyPlayingUserIds_core>>> {
+  ...args: Parameters<typeof getCommunityCurrentlyPlayingUserIds_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<
+  Awaited<ReturnType<typeof getCommunityCurrentlyPlayingUserIds_core>>
+> {
   const client = createBrowserSupabaseClient();
   return getCommunityCurrentlyPlayingUserIds_core(client, ...args);
 }
@@ -1100,7 +1426,12 @@ export async function getCommunityCurrentlyPlayingUserIds(
  * getCommunityMemberUserIds (auto-injected with browser client)
  */
 export async function getCommunityMemberUserIds(
-  ...args: Parameters<typeof getCommunityMemberUserIds_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityMemberUserIds_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityMemberUserIds_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityMemberUserIds_core(client, ...args);
@@ -1110,7 +1441,12 @@ export async function getCommunityMemberUserIds(
  * getUserByDiscordId (auto-injected with browser client)
  */
 export async function getUserByDiscordId(
-  ...args: Parameters<typeof getUserByDiscordId_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserByDiscordId_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserByDiscordId_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserByDiscordId_core(client, ...args);
@@ -1120,7 +1456,12 @@ export async function getUserByDiscordId(
  * listActiveTournaments (auto-injected with browser client)
  */
 export async function listActiveTournaments(
-  ...args: Parameters<typeof listActiveTournaments_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listActiveTournaments_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listActiveTournaments_core>>> {
   const client = createBrowserSupabaseClient();
   return listActiveTournaments_core(client, ...args);
@@ -1130,7 +1471,12 @@ export async function listActiveTournaments(
  * listUpcomingTournaments (auto-injected with browser client)
  */
 export async function listUpcomingTournaments(
-  ...args: Parameters<typeof listUpcomingTournaments_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listUpcomingTournaments_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listUpcomingTournaments_core>>> {
   const client = createBrowserSupabaseClient();
   return listUpcomingTournaments_core(client, ...args);
@@ -1140,8 +1486,14 @@ export async function listUpcomingTournaments(
  * getTournamentByNameOrSlugInCommunity (auto-injected with browser client)
  */
 export async function getTournamentByNameOrSlugInCommunity(
-  ...args: Parameters<typeof getTournamentByNameOrSlugInCommunity_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof getTournamentByNameOrSlugInCommunity_core>>> {
+  ...args: Parameters<
+    typeof getTournamentByNameOrSlugInCommunity_core
+  > extends [first: infer _F, ...rest: infer R]
+    ? R
+    : never
+): Promise<
+  Awaited<ReturnType<typeof getTournamentByNameOrSlugInCommunity_core>>
+> {
   const client = createBrowserSupabaseClient();
   return getTournamentByNameOrSlugInCommunity_core(client, ...args);
 }
@@ -1150,7 +1502,12 @@ export async function getTournamentByNameOrSlugInCommunity(
  * listStandings (auto-injected with browser client)
  */
 export async function listStandings(
-  ...args: Parameters<typeof listStandings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listStandings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listStandings_core>>> {
   const client = createBrowserSupabaseClient();
   return listStandings_core(client, ...args);
@@ -1160,7 +1517,12 @@ export async function listStandings(
  * listCurrentPairings (auto-injected with browser client)
  */
 export async function listCurrentPairings(
-  ...args: Parameters<typeof listCurrentPairings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listCurrentPairings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listCurrentPairings_core>>> {
   const client = createBrowserSupabaseClient();
   return listCurrentPairings_core(client, ...args);
@@ -1170,7 +1532,12 @@ export async function listCurrentPairings(
  * listCommunityLeaderboard (auto-injected with browser client)
  */
 export async function listCommunityLeaderboard(
-  ...args: Parameters<typeof listCommunityLeaderboard_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listCommunityLeaderboard_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listCommunityLeaderboard_core>>> {
   const client = createBrowserSupabaseClient();
   return listCommunityLeaderboard_core(client, ...args);
@@ -1180,7 +1547,12 @@ export async function listCommunityLeaderboard(
  * searchTournamentsInCommunity (auto-injected with browser client)
  */
 export async function searchTournamentsInCommunity(
-  ...args: Parameters<typeof searchTournamentsInCommunity_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof searchTournamentsInCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof searchTournamentsInCommunity_core>>> {
   const client = createBrowserSupabaseClient();
   return searchTournamentsInCommunity_core(client, ...args);
@@ -1190,8 +1562,14 @@ export async function searchTournamentsInCommunity(
  * searchUserActiveTournamentRegistrations (auto-injected with browser client)
  */
 export async function searchUserActiveTournamentRegistrations(
-  ...args: Parameters<typeof searchUserActiveTournamentRegistrations_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof searchUserActiveTournamentRegistrations_core>>> {
+  ...args: Parameters<
+    typeof searchUserActiveTournamentRegistrations_core
+  > extends [first: infer _F, ...rest: infer R]
+    ? R
+    : never
+): Promise<
+  Awaited<ReturnType<typeof searchUserActiveTournamentRegistrations_core>>
+> {
   const client = createBrowserSupabaseClient();
   return searchUserActiveTournamentRegistrations_core(client, ...args);
 }
@@ -1200,7 +1578,12 @@ export async function searchUserActiveTournamentRegistrations(
  * searchPlayersInCommunity (auto-injected with browser client)
  */
 export async function searchPlayersInCommunity(
-  ...args: Parameters<typeof searchPlayersInCommunity_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof searchPlayersInCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof searchPlayersInCommunity_core>>> {
   const client = createBrowserSupabaseClient();
   return searchPlayersInCommunity_core(client, ...args);
@@ -1210,7 +1593,12 @@ export async function searchPlayersInCommunity(
  * getPlayerByUsername (auto-injected with browser client)
  */
 export async function getPlayerByUsername(
-  ...args: Parameters<typeof getPlayerByUsername_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerByUsername_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerByUsername_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerByUsername_core(client, ...args);
@@ -1220,7 +1608,12 @@ export async function getPlayerByUsername(
  * getPlayerCommunityStats (auto-injected with browser client)
  */
 export async function getPlayerCommunityStats(
-  ...args: Parameters<typeof getPlayerCommunityStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerCommunityStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerCommunityStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerCommunityStats_core(client, ...args);
@@ -1230,7 +1623,12 @@ export async function getPlayerCommunityStats(
  * getPublicTeamForCommunity (auto-injected with browser client)
  */
 export async function getPublicTeamForCommunity(
-  ...args: Parameters<typeof getPublicTeamForCommunity_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPublicTeamForCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPublicTeamForCommunity_core>>> {
   const client = createBrowserSupabaseClient();
   return getPublicTeamForCommunity_core(client, ...args);
@@ -1240,7 +1638,12 @@ export async function getPublicTeamForCommunity(
  * getDeliveryFailure (auto-injected with browser client)
  */
 export async function getDeliveryFailure(
-  ...args: Parameters<typeof getDeliveryFailure_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getDeliveryFailure_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getDeliveryFailure_core>>> {
   const client = createBrowserSupabaseClient();
   return getDeliveryFailure_core(client, ...args);
@@ -1250,7 +1653,12 @@ export async function getDeliveryFailure(
  * getDiscordIntegrationOverview (auto-injected with browser client)
  */
 export async function getDiscordIntegrationOverview(
-  ...args: Parameters<typeof getDiscordIntegrationOverview_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getDiscordIntegrationOverview_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getDiscordIntegrationOverview_core>>> {
   const client = createBrowserSupabaseClient();
   return getDiscordIntegrationOverview_core(client, ...args);
@@ -1260,7 +1668,12 @@ export async function getDiscordIntegrationOverview(
  * listRecentFailures (auto-injected with browser client)
  */
 export async function listRecentFailures(
-  ...args: Parameters<typeof listRecentFailures_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listRecentFailures_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listRecentFailures_core>>> {
   const client = createBrowserSupabaseClient();
   return listRecentFailures_core(client, ...args);
@@ -1270,7 +1683,12 @@ export async function listRecentFailures(
  * getPublicDiscordHandle (auto-injected with browser client)
  */
 export async function getPublicDiscordHandle(
-  ...args: Parameters<typeof getPublicDiscordHandle_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPublicDiscordHandle_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPublicDiscordHandle_core>>> {
   const client = createBrowserSupabaseClient();
   return getPublicDiscordHandle_core(client, ...args);
@@ -1280,7 +1698,12 @@ export async function getPublicDiscordHandle(
  * listFeatureFlags (auto-injected with browser client)
  */
 export async function listFeatureFlags(
-  ...args: Parameters<typeof listFeatureFlags_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listFeatureFlags_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listFeatureFlags_core>>> {
   const client = createBrowserSupabaseClient();
   return listFeatureFlags_core(client, ...args);
@@ -1290,7 +1713,12 @@ export async function listFeatureFlags(
  * getFeatureFlag (auto-injected with browser client)
  */
 export async function getFeatureFlag(
-  ...args: Parameters<typeof getFeatureFlag_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getFeatureFlag_core>>> {
   const client = createBrowserSupabaseClient();
   return getFeatureFlag_core(client, ...args);
@@ -1300,7 +1728,12 @@ export async function getFeatureFlag(
  * isFeatureEnabled (auto-injected with browser client)
  */
 export async function isFeatureEnabled(
-  ...args: Parameters<typeof isFeatureEnabled_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof isFeatureEnabled_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof isFeatureEnabled_core>>> {
   const client = createBrowserSupabaseClient();
   return isFeatureEnabled_core(client, ...args);
@@ -1310,7 +1743,12 @@ export async function isFeatureEnabled(
  * createFeatureFlag (auto-injected with browser client)
  */
 export async function createFeatureFlag(
-  ...args: Parameters<typeof createFeatureFlag_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createFeatureFlag_core>>> {
   const client = createBrowserSupabaseClient();
   return createFeatureFlag_core(client, ...args);
@@ -1320,7 +1758,12 @@ export async function createFeatureFlag(
  * updateFeatureFlag (auto-injected with browser client)
  */
 export async function updateFeatureFlag(
-  ...args: Parameters<typeof updateFeatureFlag_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updateFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updateFeatureFlag_core>>> {
   const client = createBrowserSupabaseClient();
   return updateFeatureFlag_core(client, ...args);
@@ -1330,7 +1773,12 @@ export async function updateFeatureFlag(
  * deleteFeatureFlag (auto-injected with browser client)
  */
 export async function deleteFeatureFlag(
-  ...args: Parameters<typeof deleteFeatureFlag_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteFeatureFlag_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteFeatureFlag_core(client, ...args);
@@ -1340,7 +1788,12 @@ export async function deleteFeatureFlag(
  * hasCommunityFeatureAccess (auto-injected with browser client)
  */
 export async function hasCommunityFeatureAccess(
-  ...args: Parameters<typeof hasCommunityFeatureAccess_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof hasCommunityFeatureAccess_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof hasCommunityFeatureAccess_core>>> {
   const client = createBrowserSupabaseClient();
   return hasCommunityFeatureAccess_core(client, ...args);
@@ -1350,7 +1803,12 @@ export async function hasCommunityFeatureAccess(
  * getCommunityIdsWithFeatureAccess (auto-injected with browser client)
  */
 export async function getCommunityIdsWithFeatureAccess(
-  ...args: Parameters<typeof getCommunityIdsWithFeatureAccess_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCommunityIdsWithFeatureAccess_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCommunityIdsWithFeatureAccess_core>>> {
   const client = createBrowserSupabaseClient();
   return getCommunityIdsWithFeatureAccess_core(client, ...args);
@@ -1360,7 +1818,12 @@ export async function getCommunityIdsWithFeatureAccess(
  * hasTeamBuilderAccess (auto-injected with browser client)
  */
 export async function hasTeamBuilderAccess(
-  ...args: Parameters<typeof hasTeamBuilderAccess_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof hasTeamBuilderAccess_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof hasTeamBuilderAccess_core>>> {
   const client = createBrowserSupabaseClient();
   return hasTeamBuilderAccess_core(client, ...args);
@@ -1370,7 +1833,12 @@ export async function hasTeamBuilderAccess(
  * listRecentImportRuns (auto-injected with browser client)
  */
 export async function listRecentImportRuns(
-  ...args: Parameters<typeof listRecentImportRuns_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listRecentImportRuns_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listRecentImportRuns_core>>> {
   const client = createBrowserSupabaseClient();
   return listRecentImportRuns_core(client, ...args);
@@ -1380,7 +1848,12 @@ export async function listRecentImportRuns(
  * getMatchGames (auto-injected with browser client)
  */
 export async function getMatchGames(
-  ...args: Parameters<typeof getMatchGames_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMatchGames_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMatchGames_core>>> {
   const client = createBrowserSupabaseClient();
   return getMatchGames_core(client, ...args);
@@ -1390,7 +1863,12 @@ export async function getMatchGames(
  * getMatchGamesForPlayer (auto-injected with browser client)
  */
 export async function getMatchGamesForPlayer(
-  ...args: Parameters<typeof getMatchGamesForPlayer_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMatchGamesForPlayer_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMatchGamesForPlayer_core>>> {
   const client = createBrowserSupabaseClient();
   return getMatchGamesForPlayer_core(client, ...args);
@@ -1400,7 +1878,12 @@ export async function getMatchGamesForPlayer(
  * getMatchMessages (auto-injected with browser client)
  */
 export async function getMatchMessages(
-  ...args: Parameters<typeof getMatchMessages_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMatchMessages_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMatchMessages_core>>> {
   const client = createBrowserSupabaseClient();
   return getMatchMessages_core(client, ...args);
@@ -1410,7 +1893,12 @@ export async function getMatchMessages(
  * getMatchGame (auto-injected with browser client)
  */
 export async function getMatchGame(
-  ...args: Parameters<typeof getMatchGame_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMatchGame_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMatchGame_core>>> {
   const client = createBrowserSupabaseClient();
   return getMatchGame_core(client, ...args);
@@ -1420,7 +1908,12 @@ export async function getMatchGame(
  * getNotificationPreferences (auto-injected with browser client)
  */
 export async function getNotificationPreferences(
-  ...args: Parameters<typeof getNotificationPreferences_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getNotificationPreferences_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getNotificationPreferences_core>>> {
   const client = createBrowserSupabaseClient();
   return getNotificationPreferences_core(client, ...args);
@@ -1430,7 +1923,12 @@ export async function getNotificationPreferences(
  * getNotifications (auto-injected with browser client)
  */
 export async function getNotifications(
-  ...args: Parameters<typeof getNotifications_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getNotifications_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getNotifications_core>>> {
   const client = createBrowserSupabaseClient();
   return getNotifications_core(client, ...args);
@@ -1440,7 +1938,12 @@ export async function getNotifications(
  * getNotificationCount (auto-injected with browser client)
  */
 export async function getNotificationCount(
-  ...args: Parameters<typeof getNotificationCount_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getNotificationCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getNotificationCount_core>>> {
   const client = createBrowserSupabaseClient();
   return getNotificationCount_core(client, ...args);
@@ -1450,7 +1953,12 @@ export async function getNotificationCount(
  * getUnreadNotificationCount (auto-injected with browser client)
  */
 export async function getUnreadNotificationCount(
-  ...args: Parameters<typeof getUnreadNotificationCount_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUnreadNotificationCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUnreadNotificationCount_core>>> {
   const client = createBrowserSupabaseClient();
   return getUnreadNotificationCount_core(client, ...args);
@@ -1460,7 +1968,12 @@ export async function getUnreadNotificationCount(
  * getActiveMatchNotifications (auto-injected with browser client)
  */
 export async function getActiveMatchNotifications(
-  ...args: Parameters<typeof getActiveMatchNotifications_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getActiveMatchNotifications_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getActiveMatchNotifications_core>>> {
   const client = createBrowserSupabaseClient();
   return getActiveMatchNotifications_core(client, ...args);
@@ -1470,27 +1983,27 @@ export async function getActiveMatchNotifications(
  * getMyOrganizationRequest (auto-injected with browser client)
  */
 export async function getMyOrganizationRequest(
-  ...args: Parameters<typeof getMyOrganizationRequest_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMyOrganizationRequest_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMyOrganizationRequest_core>>> {
   const client = createBrowserSupabaseClient();
   return getMyOrganizationRequest_core(client, ...args);
 }
 
 /**
- * listOrgRequestsAdmin (auto-injected with browser client)
- */
-export async function listOrgRequestsAdmin(
-  ...args: Parameters<typeof listOrgRequestsAdmin_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof listOrgRequestsAdmin_core>>> {
-  const client = createBrowserSupabaseClient();
-  return listOrgRequestsAdmin_core(client, ...args);
-}
-
-/**
  * getUserPermissions (auto-injected with browser client)
  */
 export async function getUserPermissions(
-  ...args: Parameters<typeof getUserPermissions_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserPermissions_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserPermissions_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserPermissions_core(client, ...args);
@@ -1500,7 +2013,12 @@ export async function getUserPermissions(
  * hasPermission (auto-injected with browser client)
  */
 export async function hasPermission(
-  ...args: Parameters<typeof hasPermission_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof hasPermission_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof hasPermission_core>>> {
   const client = createBrowserSupabaseClient();
   return hasPermission_core(client, ...args);
@@ -1510,7 +2028,12 @@ export async function hasPermission(
  * getPipelineMonitor (auto-injected with browser client)
  */
 export async function getPipelineMonitor(
-  ...args: Parameters<typeof getPipelineMonitor_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPipelineMonitor_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPipelineMonitor_core>>> {
   const client = createBrowserSupabaseClient();
   return getPipelineMonitor_core(client, ...args);
@@ -1520,7 +2043,12 @@ export async function getPipelineMonitor(
  * getImportExclusions (auto-injected with browser client)
  */
 export async function getImportExclusions(
-  ...args: Parameters<typeof getImportExclusions_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getImportExclusions_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getImportExclusions_core>>> {
   const client = createBrowserSupabaseClient();
   return getImportExclusions_core(client, ...args);
@@ -1530,7 +2058,12 @@ export async function getImportExclusions(
  * searchPlayers (auto-injected with browser client)
  */
 export async function searchPlayers(
-  ...args: Parameters<typeof searchPlayers_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof searchPlayers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof searchPlayers_core>>> {
   const client = createBrowserSupabaseClient();
   return searchPlayers_core(client, ...args);
@@ -1540,7 +2073,12 @@ export async function searchPlayers(
  * getLeaderboard (auto-injected with browser client)
  */
 export async function getLeaderboard(
-  ...args: Parameters<typeof getLeaderboard_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getLeaderboard_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getLeaderboard_core>>> {
   const client = createBrowserSupabaseClient();
   return getLeaderboard_core(client, ...args);
@@ -1550,7 +2088,12 @@ export async function getLeaderboard(
  * getRecentlyActivePlayers (auto-injected with browser client)
  */
 export async function getRecentlyActivePlayers(
-  ...args: Parameters<typeof getRecentlyActivePlayers_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getRecentlyActivePlayers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getRecentlyActivePlayers_core>>> {
   const client = createBrowserSupabaseClient();
   return getRecentlyActivePlayers_core(client, ...args);
@@ -1560,7 +2103,12 @@ export async function getRecentlyActivePlayers(
  * getNewMembers (auto-injected with browser client)
  */
 export async function getNewMembers(
-  ...args: Parameters<typeof getNewMembers_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getNewMembers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getNewMembers_core>>> {
   const client = createBrowserSupabaseClient();
   return getNewMembers_core(client, ...args);
@@ -1570,7 +2118,12 @@ export async function getNewMembers(
  * attachCoachBadges (auto-injected with browser client)
  */
 export async function attachCoachBadges(
-  ...args: Parameters<typeof attachCoachBadges_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof attachCoachBadges_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof attachCoachBadges_core>>> {
   const client = createBrowserSupabaseClient();
   return attachCoachBadges_core(client, ...args);
@@ -1580,7 +2133,12 @@ export async function attachCoachBadges(
  * getPlayerRatingsBulk (auto-injected with browser client)
  */
 export async function getPlayerRatingsBulk(
-  ...args: Parameters<typeof getPlayerRatingsBulk_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerRatingsBulk_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerRatingsBulk_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerRatingsBulk_core(client, ...args);
@@ -1590,7 +2148,12 @@ export async function getPlayerRatingsBulk(
  * getPlayerRating (auto-injected with browser client)
  */
 export async function getPlayerRating(
-  ...args: Parameters<typeof getPlayerRating_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerRating_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerRating_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerRating_core(client, ...args);
@@ -1600,7 +2163,12 @@ export async function getPlayerRating(
  * isSiteAdmin (auto-injected with browser client)
  */
 export async function isSiteAdmin(
-  ...args: Parameters<typeof isSiteAdmin_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof isSiteAdmin_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof isSiteAdmin_core>>> {
   const client = createBrowserSupabaseClient();
   return isSiteAdmin_core(client, ...args);
@@ -1610,7 +2178,12 @@ export async function isSiteAdmin(
  * getSiteRoles (auto-injected with browser client)
  */
 export async function getSiteRoles(
-  ...args: Parameters<typeof getSiteRoles_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getSiteRoles_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getSiteRoles_core>>> {
   const client = createBrowserSupabaseClient();
   return getSiteRoles_core(client, ...args);
@@ -1620,7 +2193,12 @@ export async function getSiteRoles(
  * getSiteAdmins (auto-injected with browser client)
  */
 export async function getSiteAdmins(
-  ...args: Parameters<typeof getSiteAdmins_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getSiteAdmins_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getSiteAdmins_core>>> {
   const client = createBrowserSupabaseClient();
   return getSiteAdmins_core(client, ...args);
@@ -1630,7 +2208,12 @@ export async function getSiteAdmins(
  * getUserSiteRoles (auto-injected with browser client)
  */
 export async function getUserSiteRoles(
-  ...args: Parameters<typeof getUserSiteRoles_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserSiteRoles_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserSiteRoles_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserSiteRoles_core(client, ...args);
@@ -1640,7 +2223,12 @@ export async function getUserSiteRoles(
  * grantSiteRole (auto-injected with browser client)
  */
 export async function grantSiteRole(
-  ...args: Parameters<typeof grantSiteRole_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof grantSiteRole_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof grantSiteRole_core>>> {
   const client = createBrowserSupabaseClient();
   return grantSiteRole_core(client, ...args);
@@ -1650,7 +2238,12 @@ export async function grantSiteRole(
  * revokeSiteRole (auto-injected with browser client)
  */
 export async function revokeSiteRole(
-  ...args: Parameters<typeof revokeSiteRole_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof revokeSiteRole_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof revokeSiteRole_core>>> {
   const client = createBrowserSupabaseClient();
   return revokeSiteRole_core(client, ...args);
@@ -1660,7 +2253,12 @@ export async function revokeSiteRole(
  * getActiveSudoSession (auto-injected with browser client)
  */
 export async function getActiveSudoSession(
-  ...args: Parameters<typeof getActiveSudoSession_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getActiveSudoSession_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getActiveSudoSession_core>>> {
   const client = createBrowserSupabaseClient();
   return getActiveSudoSession_core(client, ...args);
@@ -1670,7 +2268,12 @@ export async function getActiveSudoSession(
  * isSudoModeActive (auto-injected with browser client)
  */
 export async function isSudoModeActive(
-  ...args: Parameters<typeof isSudoModeActive_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof isSudoModeActive_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof isSudoModeActive_core>>> {
   const client = createBrowserSupabaseClient();
   return isSudoModeActive_core(client, ...args);
@@ -1680,7 +2283,12 @@ export async function isSudoModeActive(
  * getSudoSessions (auto-injected with browser client)
  */
 export async function getSudoSessions(
-  ...args: Parameters<typeof getSudoSessions_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getSudoSessions_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getSudoSessions_core>>> {
   const client = createBrowserSupabaseClient();
   return getSudoSessions_core(client, ...args);
@@ -1690,7 +2298,12 @@ export async function getSudoSessions(
  * startSudoSession (auto-injected with browser client)
  */
 export async function startSudoSession(
-  ...args: Parameters<typeof startSudoSession_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof startSudoSession_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof startSudoSession_core>>> {
   const client = createBrowserSupabaseClient();
   return startSudoSession_core(client, ...args);
@@ -1700,7 +2313,12 @@ export async function startSudoSession(
  * endSudoSession (auto-injected with browser client)
  */
 export async function endSudoSession(
-  ...args: Parameters<typeof endSudoSession_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof endSudoSession_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof endSudoSession_core>>> {
   const client = createBrowserSupabaseClient();
   return endSudoSession_core(client, ...args);
@@ -1710,7 +2328,12 @@ export async function endSudoSession(
  * getTeamsForAltList (auto-injected with browser client)
  */
 export async function getTeamsForAltList(
-  ...args: Parameters<typeof getTeamsForAltList_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTeamsForAltList_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTeamsForAltList_core>>> {
   const client = createBrowserSupabaseClient();
   return getTeamsForAltList_core(client, ...args);
@@ -1720,7 +2343,12 @@ export async function getTeamsForAltList(
  * getTeamsForAltFull (auto-injected with browser client)
  */
 export async function getTeamsForAltFull(
-  ...args: Parameters<typeof getTeamsForAltFull_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTeamsForAltFull_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTeamsForAltFull_core>>> {
   const client = createBrowserSupabaseClient();
   return getTeamsForAltFull_core(client, ...args);
@@ -1730,7 +2358,12 @@ export async function getTeamsForAltFull(
  * getTeamWithPokemon (auto-injected with browser client)
  */
 export async function getTeamWithPokemon(
-  ...args: Parameters<typeof getTeamWithPokemon_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTeamWithPokemon_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTeamWithPokemon_core>>> {
   const client = createBrowserSupabaseClient();
   return getTeamWithPokemon_core(client, ...args);
@@ -1740,7 +2373,12 @@ export async function getTeamWithPokemon(
  * getTeamsForUser (auto-injected with browser client)
  */
 export async function getTeamsForUser(
-  ...args: Parameters<typeof getTeamsForUser_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTeamsForUser_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTeamsForUser_core>>> {
   const client = createBrowserSupabaseClient();
   return getTeamsForUser_core(client, ...args);
@@ -1750,7 +2388,12 @@ export async function getTeamsForUser(
  * getTeamsForAltByFormatFull (auto-injected with browser client)
  */
 export async function getTeamsForAltByFormatFull(
-  ...args: Parameters<typeof getTeamsForAltByFormatFull_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTeamsForAltByFormatFull_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTeamsForAltByFormatFull_core>>> {
   const client = createBrowserSupabaseClient();
   return getTeamsForAltByFormatFull_core(client, ...args);
@@ -1760,7 +2403,12 @@ export async function getTeamsForAltByFormatFull(
  * getTournamentTeamSheets (auto-injected with browser client)
  */
 export async function getTournamentTeamSheets(
-  ...args: Parameters<typeof getTournamentTeamSheets_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentTeamSheets_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentTeamSheets_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentTeamSheets_core(client, ...args);
@@ -1770,7 +2418,12 @@ export async function getTournamentTeamSheets(
  * getTeamSheetByRegistration (auto-injected with browser client)
  */
 export async function getTeamSheetByRegistration(
-  ...args: Parameters<typeof getTeamSheetByRegistration_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTeamSheetByRegistration_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTeamSheetByRegistration_core>>> {
   const client = createBrowserSupabaseClient();
   return getTeamSheetByRegistration_core(client, ...args);
@@ -1780,7 +2433,12 @@ export async function getTeamSheetByRegistration(
  * getMatchTeamSheets (auto-injected with browser client)
  */
 export async function getMatchTeamSheets(
-  ...args: Parameters<typeof getMatchTeamSheets_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMatchTeamSheets_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMatchTeamSheets_core>>> {
   const client = createBrowserSupabaseClient();
   return getMatchTeamSheets_core(client, ...args);
@@ -1790,7 +2448,12 @@ export async function getMatchTeamSheets(
  * listTournamentsGrouped (auto-injected with browser client)
  */
 export async function listTournamentsGrouped(
-  ...args: Parameters<typeof listTournamentsGrouped_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listTournamentsGrouped_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listTournamentsGrouped_core>>> {
   const client = createBrowserSupabaseClient();
   return listTournamentsGrouped_core(client, ...args);
@@ -1800,7 +2463,12 @@ export async function listTournamentsGrouped(
  * listPublicTournaments (auto-injected with browser client)
  */
 export async function listPublicTournaments(
-  ...args: Parameters<typeof listPublicTournaments_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listPublicTournaments_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listPublicTournaments_core>>> {
   const client = createBrowserSupabaseClient();
   return listPublicTournaments_core(client, ...args);
@@ -1810,7 +2478,12 @@ export async function listPublicTournaments(
  * listTournaments (auto-injected with browser client)
  */
 export async function listTournaments(
-  ...args: Parameters<typeof listTournaments_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof listTournaments_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof listTournaments_core>>> {
   const client = createBrowserSupabaseClient();
   return listTournaments_core(client, ...args);
@@ -1820,7 +2493,12 @@ export async function listTournaments(
  * getTournamentByOrgAndSlug (auto-injected with browser client)
  */
 export async function getTournamentByOrgAndSlug(
-  ...args: Parameters<typeof getTournamentByOrgAndSlug_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentByOrgAndSlug_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentByOrgAndSlug_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentByOrgAndSlug_core(client, ...args);
@@ -1830,7 +2508,12 @@ export async function getTournamentByOrgAndSlug(
  * checkTournamentSlugAvailable (auto-injected with browser client)
  */
 export async function checkTournamentSlugAvailable(
-  ...args: Parameters<typeof checkTournamentSlugAvailable_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof checkTournamentSlugAvailable_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof checkTournamentSlugAvailable_core>>> {
   const client = createBrowserSupabaseClient();
   return checkTournamentSlugAvailable_core(client, ...args);
@@ -1840,7 +2523,12 @@ export async function checkTournamentSlugAvailable(
  * getTournamentBySlug (auto-injected with browser client)
  */
 export async function getTournamentBySlug(
-  ...args: Parameters<typeof getTournamentBySlug_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentBySlug_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentBySlug_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentBySlug_core(client, ...args);
@@ -1850,7 +2538,12 @@ export async function getTournamentBySlug(
  * getTournamentById (auto-injected with browser client)
  */
 export async function getTournamentById(
-  ...args: Parameters<typeof getTournamentById_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentById_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentById_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentById_core(client, ...args);
@@ -1860,7 +2553,12 @@ export async function getTournamentById(
  * getTournamentRegistrations (auto-injected with browser client)
  */
 export async function getTournamentRegistrations(
-  ...args: Parameters<typeof getTournamentRegistrations_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentRegistrations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentRegistrations_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentRegistrations_core(client, ...args);
@@ -1870,7 +2568,12 @@ export async function getTournamentRegistrations(
  * isRegisteredForTournament (auto-injected with browser client)
  */
 export async function isRegisteredForTournament(
-  ...args: Parameters<typeof isRegisteredForTournament_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof isRegisteredForTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof isRegisteredForTournament_core>>> {
   const client = createBrowserSupabaseClient();
   return isRegisteredForTournament_core(client, ...args);
@@ -1880,8 +2583,14 @@ export async function isRegisteredForTournament(
  * getCurrentUserRegisteredTournamentIds (auto-injected with browser client)
  */
 export async function getCurrentUserRegisteredTournamentIds(
-  ...args: Parameters<typeof getCurrentUserRegisteredTournamentIds_core> extends [first: infer _F, ...rest: infer R] ? R : never
-): Promise<Awaited<ReturnType<typeof getCurrentUserRegisteredTournamentIds_core>>> {
+  ...args: Parameters<
+    typeof getCurrentUserRegisteredTournamentIds_core
+  > extends [first: infer _F, ...rest: infer R]
+    ? R
+    : never
+): Promise<
+  Awaited<ReturnType<typeof getCurrentUserRegisteredTournamentIds_core>>
+> {
   const client = createBrowserSupabaseClient();
   return getCurrentUserRegisteredTournamentIds_core(client, ...args);
 }
@@ -1890,7 +2599,12 @@ export async function getCurrentUserRegisteredTournamentIds(
  * getUserRegistrationDetails (auto-injected with browser client)
  */
 export async function getUserRegistrationDetails(
-  ...args: Parameters<typeof getUserRegistrationDetails_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserRegistrationDetails_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserRegistrationDetails_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserRegistrationDetails_core(client, ...args);
@@ -1900,7 +2614,12 @@ export async function getUserRegistrationDetails(
  * getTournamentPhases (auto-injected with browser client)
  */
 export async function getTournamentPhases(
-  ...args: Parameters<typeof getTournamentPhases_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentPhases_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentPhases_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentPhases_core(client, ...args);
@@ -1910,7 +2629,12 @@ export async function getTournamentPhases(
  * getTournamentRounds (auto-injected with browser client)
  */
 export async function getTournamentRounds(
-  ...args: Parameters<typeof getTournamentRounds_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentRounds_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentRounds_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentRounds_core(client, ...args);
@@ -1920,7 +2644,12 @@ export async function getTournamentRounds(
  * getRoundMatches (auto-injected with browser client)
  */
 export async function getRoundMatches(
-  ...args: Parameters<typeof getRoundMatches_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getRoundMatches_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getRoundMatches_core>>> {
   const client = createBrowserSupabaseClient();
   return getRoundMatches_core(client, ...args);
@@ -1930,17 +2659,42 @@ export async function getRoundMatches(
  * getTournamentStandings (auto-injected with browser client)
  */
 export async function getTournamentStandings(
-  ...args: Parameters<typeof getTournamentStandings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentStandings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentStandings_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentStandings_core(client, ...args);
 }
 
 /**
+ * getPublicTournamentStandings (auto-injected with browser client)
+ */
+export async function getPublicTournamentStandings(
+  ...args: Parameters<typeof getPublicTournamentStandings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPublicTournamentStandings_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getPublicTournamentStandings_core(client, ...args);
+}
+
+/**
  * getPlayerTournamentStats (auto-injected with browser client)
  */
 export async function getPlayerTournamentStats(
-  ...args: Parameters<typeof getPlayerTournamentStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerTournamentStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerTournamentStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerTournamentStats_core(client, ...args);
@@ -1950,7 +2704,12 @@ export async function getPlayerTournamentStats(
  * getTournamentPlayerStats (auto-injected with browser client)
  */
 export async function getTournamentPlayerStats(
-  ...args: Parameters<typeof getTournamentPlayerStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentPlayerStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentPlayerStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentPlayerStats_core(client, ...args);
@@ -1960,7 +2719,12 @@ export async function getTournamentPlayerStats(
  * getPhaseRoundsWithStats (auto-injected with browser client)
  */
 export async function getPhaseRoundsWithStats(
-  ...args: Parameters<typeof getPhaseRoundsWithStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPhaseRoundsWithStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPhaseRoundsWithStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getPhaseRoundsWithStats_core(client, ...args);
@@ -1970,7 +2734,12 @@ export async function getPhaseRoundsWithStats(
  * getRoundMatchesWithStats (auto-injected with browser client)
  */
 export async function getRoundMatchesWithStats(
-  ...args: Parameters<typeof getRoundMatchesWithStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getRoundMatchesWithStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getRoundMatchesWithStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getRoundMatchesWithStats_core(client, ...args);
@@ -1980,17 +2749,57 @@ export async function getRoundMatchesWithStats(
  * getPhaseRoundsWithMatches (auto-injected with browser client)
  */
 export async function getPhaseRoundsWithMatches(
-  ...args: Parameters<typeof getPhaseRoundsWithMatches_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPhaseRoundsWithMatches_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPhaseRoundsWithMatches_core>>> {
   const client = createBrowserSupabaseClient();
   return getPhaseRoundsWithMatches_core(client, ...args);
 }
 
 /**
+ * getPublicPhaseRoundsWithMatches (auto-injected with browser client)
+ */
+export async function getPublicPhaseRoundsWithMatches(
+  ...args: Parameters<typeof getPublicPhaseRoundsWithMatches_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPublicPhaseRoundsWithMatches_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getPublicPhaseRoundsWithMatches_core(client, ...args);
+}
+
+/**
+ * getPublicTournamentPlayerStats (auto-injected with browser client)
+ */
+export async function getPublicTournamentPlayerStats(
+  ...args: Parameters<typeof getPublicTournamentPlayerStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPublicTournamentPlayerStats_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getPublicTournamentPlayerStats_core(client, ...args);
+}
+
+/**
  * getCheckInStatus (auto-injected with browser client)
  */
 export async function getCheckInStatus(
-  ...args: Parameters<typeof getCheckInStatus_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCheckInStatus_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCheckInStatus_core>>> {
   const client = createBrowserSupabaseClient();
   return getCheckInStatus_core(client, ...args);
@@ -2000,7 +2809,12 @@ export async function getCheckInStatus(
  * getCheckInStats (auto-injected with browser client)
  */
 export async function getCheckInStats(
-  ...args: Parameters<typeof getCheckInStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCheckInStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCheckInStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getCheckInStats_core(client, ...args);
@@ -2010,7 +2824,12 @@ export async function getCheckInStats(
  * getUserTeams (auto-injected with browser client)
  */
 export async function getUserTeams(
-  ...args: Parameters<typeof getUserTeams_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserTeams_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserTeams_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserTeams_core(client, ...args);
@@ -2020,7 +2839,12 @@ export async function getUserTeams(
  * getMatchDetails (auto-injected with browser client)
  */
 export async function getMatchDetails(
-  ...args: Parameters<typeof getMatchDetails_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMatchDetails_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMatchDetails_core>>> {
   const client = createBrowserSupabaseClient();
   return getMatchDetails_core(client, ...args);
@@ -2030,7 +2854,12 @@ export async function getMatchDetails(
  * getMatchByRoundAndTable (auto-injected with browser client)
  */
 export async function getMatchByRoundAndTable(
-  ...args: Parameters<typeof getMatchByRoundAndTable_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMatchByRoundAndTable_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMatchByRoundAndTable_core>>> {
   const client = createBrowserSupabaseClient();
   return getMatchByRoundAndTable_core(client, ...args);
@@ -2040,7 +2869,12 @@ export async function getMatchByRoundAndTable(
  * getPlayerMatches (auto-injected with browser client)
  */
 export async function getPlayerMatches(
-  ...args: Parameters<typeof getPlayerMatches_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerMatches_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerMatches_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerMatches_core(client, ...args);
@@ -2050,7 +2884,12 @@ export async function getPlayerMatches(
  * getTournamentMatchesForStaff (auto-injected with browser client)
  */
 export async function getTournamentMatchesForStaff(
-  ...args: Parameters<typeof getTournamentMatchesForStaff_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentMatchesForStaff_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentMatchesForStaff_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentMatchesForStaff_core(client, ...args);
@@ -2060,7 +2899,12 @@ export async function getTournamentMatchesForStaff(
  * getActiveMatch (auto-injected with browser client)
  */
 export async function getActiveMatch(
-  ...args: Parameters<typeof getActiveMatch_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getActiveMatch_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getActiveMatch_core>>> {
   const client = createBrowserSupabaseClient();
   return getActiveMatch_core(client, ...args);
@@ -2070,7 +2914,12 @@ export async function getActiveMatch(
  * getMyDashboardData (auto-injected with browser client)
  */
 export async function getMyDashboardData(
-  ...args: Parameters<typeof getMyDashboardData_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getMyDashboardData_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getMyDashboardData_core>>> {
   const client = createBrowserSupabaseClient();
   return getMyDashboardData_core(client, ...args);
@@ -2080,7 +2929,12 @@ export async function getMyDashboardData(
  * getRegistrationStatus (auto-injected with browser client)
  */
 export async function getRegistrationStatus(
-  ...args: Parameters<typeof getRegistrationStatus_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getRegistrationStatus_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getRegistrationStatus_core>>> {
   const client = createBrowserSupabaseClient();
   return getRegistrationStatus_core(client, ...args);
@@ -2090,7 +2944,12 @@ export async function getRegistrationStatus(
  * getTournamentInvitationsSent (auto-injected with browser client)
  */
 export async function getTournamentInvitationsSent(
-  ...args: Parameters<typeof getTournamentInvitationsSent_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentInvitationsSent_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentInvitationsSent_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentInvitationsSent_core(client, ...args);
@@ -2100,7 +2959,12 @@ export async function getTournamentInvitationsSent(
  * getTournamentInvitationsReceived (auto-injected with browser client)
  */
 export async function getTournamentInvitationsReceived(
-  ...args: Parameters<typeof getTournamentInvitationsReceived_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTournamentInvitationsReceived_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTournamentInvitationsReceived_core>>> {
   const client = createBrowserSupabaseClient();
   return getTournamentInvitationsReceived_core(client, ...args);
@@ -2110,7 +2974,12 @@ export async function getTournamentInvitationsReceived(
  * getTeamForRegistration (auto-injected with browser client)
  */
 export async function getTeamForRegistration(
-  ...args: Parameters<typeof getTeamForRegistration_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTeamForRegistration_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTeamForRegistration_core>>> {
   const client = createBrowserSupabaseClient();
   return getTeamForRegistration_core(client, ...args);
@@ -2120,7 +2989,12 @@ export async function getTeamForRegistration(
  * getUnpairedCheckedInPlayers (auto-injected with browser client)
  */
 export async function getUnpairedCheckedInPlayers(
-  ...args: Parameters<typeof getUnpairedCheckedInPlayers_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUnpairedCheckedInPlayers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUnpairedCheckedInPlayers_core>>> {
   const client = createBrowserSupabaseClient();
   return getUnpairedCheckedInPlayers_core(client, ...args);
@@ -2130,7 +3004,12 @@ export async function getUnpairedCheckedInPlayers(
  * getUserTournamentHistory (auto-injected with browser client)
  */
 export async function getUserTournamentHistory(
-  ...args: Parameters<typeof getUserTournamentHistory_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserTournamentHistory_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserTournamentHistory_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserTournamentHistory_core(client, ...args);
@@ -2140,7 +3019,12 @@ export async function getUserTournamentHistory(
  * getPlayerTournamentHistory (auto-injected with browser client)
  */
 export async function getPlayerTournamentHistory(
-  ...args: Parameters<typeof getPlayerTournamentHistory_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerTournamentHistory_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerTournamentHistory_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerTournamentHistory_core(client, ...args);
@@ -2150,7 +3034,12 @@ export async function getPlayerTournamentHistory(
  * getPlayerLifetimeStats (auto-injected with browser client)
  */
 export async function getPlayerLifetimeStats(
-  ...args: Parameters<typeof getPlayerLifetimeStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerLifetimeStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerLifetimeStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerLifetimeStats_core(client, ...args);
@@ -2160,7 +3049,12 @@ export async function getPlayerLifetimeStats(
  * getAltsBulkStats (auto-injected with browser client)
  */
 export async function getAltsBulkStats(
-  ...args: Parameters<typeof getAltsBulkStats_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getAltsBulkStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getAltsBulkStats_core>>> {
   const client = createBrowserSupabaseClient();
   return getAltsBulkStats_core(client, ...args);
@@ -2170,7 +3064,12 @@ export async function getAltsBulkStats(
  * getTeamsForAlt (auto-injected with browser client)
  */
 export async function getTeamsForAlt(
-  ...args: Parameters<typeof getTeamsForAlt_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getTeamsForAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getTeamsForAlt_core>>> {
   const client = createBrowserSupabaseClient();
   return getTeamsForAlt_core(client, ...args);
@@ -2180,7 +3079,12 @@ export async function getTeamsForAlt(
  * getLiveTournamentCommunityIds (auto-injected with browser client)
  */
 export async function getLiveTournamentCommunityIds(
-  ...args: Parameters<typeof getLiveTournamentCommunityIds_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getLiveTournamentCommunityIds_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getLiveTournamentCommunityIds_core>>> {
   const client = createBrowserSupabaseClient();
   return getLiveTournamentCommunityIds_core(client, ...args);
@@ -2190,7 +3094,12 @@ export async function getLiveTournamentCommunityIds(
  * getSpeciesUsageDetail (auto-injected with browser client)
  */
 export async function getSpeciesUsageDetail(
-  ...args: Parameters<typeof getSpeciesUsageDetail_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getSpeciesUsageDetail_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getSpeciesUsageDetail_core>>> {
   const client = createBrowserSupabaseClient();
   return getSpeciesUsageDetail_core(client, ...args);
@@ -2200,7 +3109,12 @@ export async function getSpeciesUsageDetail(
  * getSpeciesUsage (auto-injected with browser client)
  */
 export async function getSpeciesUsage(
-  ...args: Parameters<typeof getSpeciesUsage_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getSpeciesUsage_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getSpeciesUsage_core>>> {
   const client = createBrowserSupabaseClient();
   return getSpeciesUsage_core(client, ...args);
@@ -2210,7 +3124,12 @@ export async function getSpeciesUsage(
  * getFormatUsageTimeseries (auto-injected with browser client)
  */
 export async function getFormatUsageTimeseries(
-  ...args: Parameters<typeof getFormatUsageTimeseries_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getFormatUsageTimeseries_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getFormatUsageTimeseries_core>>> {
   const client = createBrowserSupabaseClient();
   return getFormatUsageTimeseries_core(client, ...args);
@@ -2220,7 +3139,12 @@ export async function getFormatUsageTimeseries(
  * getPipelineData (auto-injected with browser client)
  */
 export async function getPipelineData(
-  ...args: Parameters<typeof getPipelineData_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPipelineData_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPipelineData_core>>> {
   const client = createBrowserSupabaseClient();
   return getPipelineData_core(client, ...args);
@@ -2230,7 +3154,12 @@ export async function getPipelineData(
  * getFormatEvents (auto-injected with browser client)
  */
 export async function getFormatEvents(
-  ...args: Parameters<typeof getFormatEvents_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getFormatEvents_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getFormatEvents_core>>> {
   const client = createBrowserSupabaseClient();
   return getFormatEvents_core(client, ...args);
@@ -2240,7 +3169,12 @@ export async function getFormatEvents(
  * getUsageBySource (auto-injected with browser client)
  */
 export async function getUsageBySource(
-  ...args: Parameters<typeof getUsageBySource_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUsageBySource_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUsageBySource_core>>> {
   const client = createBrowserSupabaseClient();
   return getUsageBySource_core(client, ...args);
@@ -2250,7 +3184,12 @@ export async function getUsageBySource(
  * getUsageConversion (auto-injected with browser client)
  */
 export async function getUsageConversion(
-  ...args: Parameters<typeof getUsageConversion_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUsageConversion_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUsageConversion_core>>> {
   const client = createBrowserSupabaseClient();
   return getUsageConversion_core(client, ...args);
@@ -2260,7 +3199,12 @@ export async function getUsageConversion(
  * getSpeciesMoveCombos (auto-injected with browser client)
  */
 export async function getSpeciesMoveCombos(
-  ...args: Parameters<typeof getSpeciesMoveCombos_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getSpeciesMoveCombos_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getSpeciesMoveCombos_core>>> {
   const client = createBrowserSupabaseClient();
   return getSpeciesMoveCombos_core(client, ...args);
@@ -2270,7 +3214,12 @@ export async function getSpeciesMoveCombos(
  * getSpeciesTeammates (auto-injected with browser client)
  */
 export async function getSpeciesTeammates(
-  ...args: Parameters<typeof getSpeciesTeammates_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getSpeciesTeammates_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getSpeciesTeammates_core>>> {
   const client = createBrowserSupabaseClient();
   return getSpeciesTeammates_core(client, ...args);
@@ -2280,7 +3229,12 @@ export async function getSpeciesTeammates(
  * getUserPreferences (auto-injected with browser client)
  */
 export async function getUserPreferences(
-  ...args: Parameters<typeof getUserPreferences_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserPreferences_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserPreferences_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserPreferences_core(client, ...args);
@@ -2290,7 +3244,12 @@ export async function getUserPreferences(
  * getUserCount (auto-injected with browser client)
  */
 export async function getUserCount(
-  ...args: Parameters<typeof getUserCount_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserCount_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserCount_core(client, ...args);
@@ -2300,7 +3259,12 @@ export async function getUserCount(
  * getCurrentUser (auto-injected with browser client)
  */
 export async function getCurrentUser(
-  ...args: Parameters<typeof getCurrentUser_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCurrentUser_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCurrentUser_core>>> {
   const client = createBrowserSupabaseClient();
   return getCurrentUser_core(client, ...args);
@@ -2310,7 +3274,12 @@ export async function getCurrentUser(
  * getUserSpritePreference (auto-injected with browser client)
  */
 export async function getUserSpritePreference(
-  ...args: Parameters<typeof getUserSpritePreference_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserSpritePreference_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserSpritePreference_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserSpritePreference_core(client, ...args);
@@ -2320,7 +3289,12 @@ export async function getUserSpritePreference(
  * getUserById (auto-injected with browser client)
  */
 export async function getUserById(
-  ...args: Parameters<typeof getUserById_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserById_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserById_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserById_core(client, ...args);
@@ -2330,7 +3304,12 @@ export async function getUserById(
  * getUserWithAlt (auto-injected with browser client)
  */
 export async function getUserWithAlt(
-  ...args: Parameters<typeof getUserWithAlt_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserWithAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserWithAlt_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserWithAlt_core(client, ...args);
@@ -2340,7 +3319,12 @@ export async function getUserWithAlt(
  * getAltByUsername (auto-injected with browser client)
  */
 export async function getAltByUsername(
-  ...args: Parameters<typeof getAltByUsername_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getAltByUsername_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getAltByUsername_core>>> {
   const client = createBrowserSupabaseClient();
   return getAltByUsername_core(client, ...args);
@@ -2350,7 +3334,12 @@ export async function getAltByUsername(
  * getAltByUserId (auto-injected with browser client)
  */
 export async function getAltByUserId(
-  ...args: Parameters<typeof getAltByUserId_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getAltByUserId_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getAltByUserId_core>>> {
   const client = createBrowserSupabaseClient();
   return getAltByUserId_core(client, ...args);
@@ -2360,7 +3349,12 @@ export async function getAltByUserId(
  * getAltsByUserId (auto-injected with browser client)
  */
 export async function getAltsByUserId(
-  ...args: Parameters<typeof getAltsByUserId_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getAltsByUserId_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getAltsByUserId_core>>> {
   const client = createBrowserSupabaseClient();
   return getAltsByUserId_core(client, ...args);
@@ -2370,7 +3364,12 @@ export async function getAltsByUserId(
  * getCurrentUserAlts (auto-injected with browser client)
  */
 export async function getCurrentUserAlts(
-  ...args: Parameters<typeof getCurrentUserAlts_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getCurrentUserAlts_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getCurrentUserAlts_core>>> {
   const client = createBrowserSupabaseClient();
   return getCurrentUserAlts_core(client, ...args);
@@ -2380,7 +3379,12 @@ export async function getCurrentUserAlts(
  * getOwnedAlt (auto-injected with browser client)
  */
 export async function getOwnedAlt(
-  ...args: Parameters<typeof getOwnedAlt_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getOwnedAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getOwnedAlt_core>>> {
   const client = createBrowserSupabaseClient();
   return getOwnedAlt_core(client, ...args);
@@ -2390,7 +3394,12 @@ export async function getOwnedAlt(
  * searchAlts (auto-injected with browser client)
  */
 export async function searchAlts(
-  ...args: Parameters<typeof searchAlts_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof searchAlts_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof searchAlts_core>>> {
   const client = createBrowserSupabaseClient();
   return searchAlts_core(client, ...args);
@@ -2400,7 +3409,12 @@ export async function searchAlts(
  * getPlayerProfileByHandle (auto-injected with browser client)
  */
 export async function getPlayerProfileByHandle(
-  ...args: Parameters<typeof getPlayerProfileByHandle_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerProfileByHandle_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerProfileByHandle_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerProfileByHandle_core(client, ...args);
@@ -2410,7 +3424,12 @@ export async function getPlayerProfileByHandle(
  * getEmailByUsername (auto-injected with browser client)
  */
 export async function getEmailByUsername(
-  ...args: Parameters<typeof getEmailByUsername_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getEmailByUsername_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getEmailByUsername_core>>> {
   const client = createBrowserSupabaseClient();
   return getEmailByUsername_core(client, ...args);
@@ -2420,7 +3439,12 @@ export async function getEmailByUsername(
  * getFollowerCount (auto-injected with browser client)
  */
 export async function getFollowerCount(
-  ...args: Parameters<typeof getFollowerCount_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getFollowerCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getFollowerCount_core>>> {
   const client = createBrowserSupabaseClient();
   return getFollowerCount_core(client, ...args);
@@ -2430,7 +3454,12 @@ export async function getFollowerCount(
  * getFollowingCount (auto-injected with browser client)
  */
 export async function getFollowingCount(
-  ...args: Parameters<typeof getFollowingCount_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getFollowingCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getFollowingCount_core>>> {
   const client = createBrowserSupabaseClient();
   return getFollowingCount_core(client, ...args);
@@ -2440,7 +3469,12 @@ export async function getFollowingCount(
  * getPlayerTournamentHistoryFull (auto-injected with browser client)
  */
 export async function getPlayerTournamentHistoryFull(
-  ...args: Parameters<typeof getPlayerTournamentHistoryFull_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerTournamentHistoryFull_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerTournamentHistoryFull_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerTournamentHistoryFull_core(client, ...args);
@@ -2450,7 +3484,12 @@ export async function getPlayerTournamentHistoryFull(
  * getPlayerPublicTeams (auto-injected with browser client)
  */
 export async function getPlayerPublicTeams(
-  ...args: Parameters<typeof getPlayerPublicTeams_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getPlayerPublicTeams_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getPlayerPublicTeams_core>>> {
   const client = createBrowserSupabaseClient();
   return getPlayerPublicTeams_core(client, ...args);
@@ -2460,7 +3499,12 @@ export async function getPlayerPublicTeams(
  * getAltByHandle (auto-injected with browser client)
  */
 export async function getAltByHandle(
-  ...args: Parameters<typeof getAltByHandle_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getAltByHandle_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getAltByHandle_core>>> {
   const client = createBrowserSupabaseClient();
   return getAltByHandle_core(client, ...args);
@@ -2470,7 +3514,12 @@ export async function getAltByHandle(
  * getUserMainAltId (auto-injected with browser client)
  */
 export async function getUserMainAltId(
-  ...args: Parameters<typeof getUserMainAltId_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof getUserMainAltId_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof getUserMainAltId_core>>> {
   const client = createBrowserSupabaseClient();
   return getUserMainAltId_core(client, ...args);
@@ -2480,7 +3529,12 @@ export async function getUserMainAltId(
  * updateCoachProfile (auto-injected with browser client)
  */
 export async function updateCoachProfile(
-  ...args: Parameters<typeof updateCoachProfile_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updateCoachProfile_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updateCoachProfile_core>>> {
   const client = createBrowserSupabaseClient();
   return updateCoachProfile_core(client, ...args);
@@ -2490,7 +3544,12 @@ export async function updateCoachProfile(
  * createCommunity (auto-injected with browser client)
  */
 export async function createCommunity(
-  ...args: Parameters<typeof createCommunity_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createCommunity_core>>> {
   const client = createBrowserSupabaseClient();
   return createCommunity_core(client, ...args);
@@ -2500,7 +3559,12 @@ export async function createCommunity(
  * updateCommunity (auto-injected with browser client)
  */
 export async function updateCommunity(
-  ...args: Parameters<typeof updateCommunity_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updateCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updateCommunity_core>>> {
   const client = createBrowserSupabaseClient();
   return updateCommunity_core(client, ...args);
@@ -2510,7 +3574,12 @@ export async function updateCommunity(
  * inviteToCommunity (auto-injected with browser client)
  */
 export async function inviteToCommunity(
-  ...args: Parameters<typeof inviteToCommunity_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof inviteToCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof inviteToCommunity_core>>> {
   const client = createBrowserSupabaseClient();
   return inviteToCommunity_core(client, ...args);
@@ -2520,7 +3589,12 @@ export async function inviteToCommunity(
  * acceptCommunityInvitation (auto-injected with browser client)
  */
 export async function acceptCommunityInvitation(
-  ...args: Parameters<typeof acceptCommunityInvitation_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof acceptCommunityInvitation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof acceptCommunityInvitation_core>>> {
   const client = createBrowserSupabaseClient();
   return acceptCommunityInvitation_core(client, ...args);
@@ -2530,7 +3604,12 @@ export async function acceptCommunityInvitation(
  * declineCommunityInvitation (auto-injected with browser client)
  */
 export async function declineCommunityInvitation(
-  ...args: Parameters<typeof declineCommunityInvitation_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof declineCommunityInvitation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof declineCommunityInvitation_core>>> {
   const client = createBrowserSupabaseClient();
   return declineCommunityInvitation_core(client, ...args);
@@ -2540,7 +3619,12 @@ export async function declineCommunityInvitation(
  * leaveCommunity (auto-injected with browser client)
  */
 export async function leaveCommunity(
-  ...args: Parameters<typeof leaveCommunity_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof leaveCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof leaveCommunity_core>>> {
   const client = createBrowserSupabaseClient();
   return leaveCommunity_core(client, ...args);
@@ -2550,7 +3634,12 @@ export async function leaveCommunity(
  * removeStaff (auto-injected with browser client)
  */
 export async function removeStaff(
-  ...args: Parameters<typeof removeStaff_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof removeStaff_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof removeStaff_core>>> {
   const client = createBrowserSupabaseClient();
   return removeStaff_core(client, ...args);
@@ -2560,7 +3649,12 @@ export async function removeStaff(
  * addStaffMember (auto-injected with browser client)
  */
 export async function addStaffMember(
-  ...args: Parameters<typeof addStaffMember_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof addStaffMember_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof addStaffMember_core>>> {
   const client = createBrowserSupabaseClient();
   return addStaffMember_core(client, ...args);
@@ -2570,7 +3664,12 @@ export async function addStaffMember(
  * addStaffToGroup (auto-injected with browser client)
  */
 export async function addStaffToGroup(
-  ...args: Parameters<typeof addStaffToGroup_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof addStaffToGroup_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof addStaffToGroup_core>>> {
   const client = createBrowserSupabaseClient();
   return addStaffToGroup_core(client, ...args);
@@ -2580,7 +3679,12 @@ export async function addStaffToGroup(
  * removeStaffFromGroup (auto-injected with browser client)
  */
 export async function removeStaffFromGroup(
-  ...args: Parameters<typeof removeStaffFromGroup_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof removeStaffFromGroup_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof removeStaffFromGroup_core>>> {
   const client = createBrowserSupabaseClient();
   return removeStaffFromGroup_core(client, ...args);
@@ -2590,7 +3694,12 @@ export async function removeStaffFromGroup(
  * changeStaffRole (auto-injected with browser client)
  */
 export async function changeStaffRole(
-  ...args: Parameters<typeof changeStaffRole_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof changeStaffRole_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof changeStaffRole_core>>> {
   const client = createBrowserSupabaseClient();
   return changeStaffRole_core(client, ...args);
@@ -2600,7 +3709,12 @@ export async function changeStaffRole(
  * removeStaffCompletely (auto-injected with browser client)
  */
 export async function removeStaffCompletely(
-  ...args: Parameters<typeof removeStaffCompletely_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof removeStaffCompletely_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof removeStaffCompletely_core>>> {
   const client = createBrowserSupabaseClient();
   return removeStaffCompletely_core(client, ...args);
@@ -2610,7 +3724,12 @@ export async function removeStaffCompletely(
  * createDiscordServer (auto-injected with browser client)
  */
 export async function createDiscordServer(
-  ...args: Parameters<typeof createDiscordServer_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createDiscordServer_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createDiscordServer_core>>> {
   const client = createBrowserSupabaseClient();
   return createDiscordServer_core(client, ...args);
@@ -2620,7 +3739,12 @@ export async function createDiscordServer(
  * deleteDiscordServer (auto-injected with browser client)
  */
 export async function deleteDiscordServer(
-  ...args: Parameters<typeof deleteDiscordServer_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteDiscordServer_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteDiscordServer_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteDiscordServer_core(client, ...args);
@@ -2630,7 +3754,12 @@ export async function deleteDiscordServer(
  * deleteDiscordServerByGuildId (auto-injected with browser client)
  */
 export async function deleteDiscordServerByGuildId(
-  ...args: Parameters<typeof deleteDiscordServerByGuildId_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteDiscordServerByGuildId_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteDiscordServerByGuildId_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteDiscordServerByGuildId_core(client, ...args);
@@ -2640,7 +3769,12 @@ export async function deleteDiscordServerByGuildId(
  * upsertChannelMapping (auto-injected with browser client)
  */
 export async function upsertChannelMapping(
-  ...args: Parameters<typeof upsertChannelMapping_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof upsertChannelMapping_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof upsertChannelMapping_core>>> {
   const client = createBrowserSupabaseClient();
   return upsertChannelMapping_core(client, ...args);
@@ -2650,7 +3784,12 @@ export async function upsertChannelMapping(
  * deleteChannelMapping (auto-injected with browser client)
  */
 export async function deleteChannelMapping(
-  ...args: Parameters<typeof deleteChannelMapping_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteChannelMapping_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteChannelMapping_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteChannelMapping_core(client, ...args);
@@ -2660,7 +3799,12 @@ export async function deleteChannelMapping(
  * upsertDmSetting (auto-injected with browser client)
  */
 export async function upsertDmSetting(
-  ...args: Parameters<typeof upsertDmSetting_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof upsertDmSetting_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof upsertDmSetting_core>>> {
   const client = createBrowserSupabaseClient();
   return upsertDmSetting_core(client, ...args);
@@ -2670,7 +3814,12 @@ export async function upsertDmSetting(
  * deleteDmSetting (auto-injected with browser client)
  */
 export async function deleteDmSetting(
-  ...args: Parameters<typeof deleteDmSetting_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteDmSetting_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteDmSetting_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteDmSetting_core(client, ...args);
@@ -2680,7 +3829,12 @@ export async function deleteDmSetting(
  * setDmPreference (auto-injected with browser client)
  */
 export async function setDmPreference(
-  ...args: Parameters<typeof setDmPreference_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof setDmPreference_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof setDmPreference_core>>> {
   const client = createBrowserSupabaseClient();
   return setDmPreference_core(client, ...args);
@@ -2690,7 +3844,12 @@ export async function setDmPreference(
  * upsertRoleMapping (auto-injected with browser client)
  */
 export async function upsertRoleMapping(
-  ...args: Parameters<typeof upsertRoleMapping_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof upsertRoleMapping_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof upsertRoleMapping_core>>> {
   const client = createBrowserSupabaseClient();
   return upsertRoleMapping_core(client, ...args);
@@ -2700,7 +3859,12 @@ export async function upsertRoleMapping(
  * toggleRoleMapping (auto-injected with browser client)
  */
 export async function toggleRoleMapping(
-  ...args: Parameters<typeof toggleRoleMapping_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof toggleRoleMapping_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof toggleRoleMapping_core>>> {
   const client = createBrowserSupabaseClient();
   return toggleRoleMapping_core(client, ...args);
@@ -2710,7 +3874,12 @@ export async function toggleRoleMapping(
  * deleteRoleMapping (auto-injected with browser client)
  */
 export async function deleteRoleMapping(
-  ...args: Parameters<typeof deleteRoleMapping_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteRoleMapping_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteRoleMapping_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteRoleMapping_core(client, ...args);
@@ -2720,7 +3889,12 @@ export async function deleteRoleMapping(
  * recordChannelFailure (auto-injected with browser client)
  */
 export async function recordChannelFailure(
-  ...args: Parameters<typeof recordChannelFailure_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof recordChannelFailure_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof recordChannelFailure_core>>> {
   const client = createBrowserSupabaseClient();
   return recordChannelFailure_core(client, ...args);
@@ -2730,7 +3904,12 @@ export async function recordChannelFailure(
  * resetChannelFailures (auto-injected with browser client)
  */
 export async function resetChannelFailures(
-  ...args: Parameters<typeof resetChannelFailures_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof resetChannelFailures_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof resetChannelFailures_core>>> {
   const client = createBrowserSupabaseClient();
   return resetChannelFailures_core(client, ...args);
@@ -2740,7 +3919,12 @@ export async function resetChannelFailures(
  * markChannelEmailSent (auto-injected with browser client)
  */
 export async function markChannelEmailSent(
-  ...args: Parameters<typeof markChannelEmailSent_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof markChannelEmailSent_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof markChannelEmailSent_core>>> {
   const client = createBrowserSupabaseClient();
   return markChannelEmailSent_core(client, ...args);
@@ -2750,7 +3934,12 @@ export async function markChannelEmailSent(
  * recordDeliveryFailure (auto-injected with browser client)
  */
 export async function recordDeliveryFailure(
-  ...args: Parameters<typeof recordDeliveryFailure_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof recordDeliveryFailure_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof recordDeliveryFailure_core>>> {
   const client = createBrowserSupabaseClient();
   return recordDeliveryFailure_core(client, ...args);
@@ -2760,7 +3949,12 @@ export async function recordDeliveryFailure(
  * deleteSourceEvent (auto-injected with browser client)
  */
 export async function deleteSourceEvent(
-  ...args: Parameters<typeof deleteSourceEvent_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteSourceEvent_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteSourceEvent_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteSourceEvent_core(client, ...args);
@@ -2770,7 +3964,12 @@ export async function deleteSourceEvent(
  * excludeSourceEvent (auto-injected with browser client)
  */
 export async function excludeSourceEvent(
-  ...args: Parameters<typeof excludeSourceEvent_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof excludeSourceEvent_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof excludeSourceEvent_core>>> {
   const client = createBrowserSupabaseClient();
   return excludeSourceEvent_core(client, ...args);
@@ -2780,7 +3979,12 @@ export async function excludeSourceEvent(
  * clearExclusion (auto-injected with browser client)
  */
 export async function clearExclusion(
-  ...args: Parameters<typeof clearExclusion_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof clearExclusion_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof clearExclusion_core>>> {
   const client = createBrowserSupabaseClient();
   return clearExclusion_core(client, ...args);
@@ -2790,7 +3994,12 @@ export async function clearExclusion(
  * resetStuckEvents (auto-injected with browser client)
  */
 export async function resetStuckEvents(
-  ...args: Parameters<typeof resetStuckEvents_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof resetStuckEvents_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof resetStuckEvents_core>>> {
   const client = createBrowserSupabaseClient();
   return resetStuckEvents_core(client, ...args);
@@ -2800,7 +4009,12 @@ export async function resetStuckEvents(
  * requeueFailedEvents (auto-injected with browser client)
  */
 export async function requeueFailedEvents(
-  ...args: Parameters<typeof requeueFailedEvents_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof requeueFailedEvents_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof requeueFailedEvents_core>>> {
   const client = createBrowserSupabaseClient();
   return requeueFailedEvents_core(client, ...args);
@@ -2810,7 +4024,12 @@ export async function requeueFailedEvents(
  * forceImportEvent (auto-injected with browser client)
  */
 export async function forceImportEvent(
-  ...args: Parameters<typeof forceImportEvent_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof forceImportEvent_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof forceImportEvent_core>>> {
   const client = createBrowserSupabaseClient();
   return forceImportEvent_core(client, ...args);
@@ -2820,7 +4039,12 @@ export async function forceImportEvent(
  * recordImportRuns (auto-injected with browser client)
  */
 export async function recordImportRuns(
-  ...args: Parameters<typeof recordImportRuns_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof recordImportRuns_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof recordImportRuns_core>>> {
   const client = createBrowserSupabaseClient();
   return recordImportRuns_core(client, ...args);
@@ -2830,7 +4054,12 @@ export async function recordImportRuns(
  * submitGameSelection (auto-injected with browser client)
  */
 export async function submitGameSelection(
-  ...args: Parameters<typeof submitGameSelection_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof submitGameSelection_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof submitGameSelection_core>>> {
   const client = createBrowserSupabaseClient();
   return submitGameSelection_core(client, ...args);
@@ -2840,7 +4069,12 @@ export async function submitGameSelection(
  * sendMatchMessage (auto-injected with browser client)
  */
 export async function sendMatchMessage(
-  ...args: Parameters<typeof sendMatchMessage_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof sendMatchMessage_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof sendMatchMessage_core>>> {
   const client = createBrowserSupabaseClient();
   return sendMatchMessage_core(client, ...args);
@@ -2850,7 +4084,12 @@ export async function sendMatchMessage(
  * sendSystemMessage (auto-injected with browser client)
  */
 export async function sendSystemMessage(
-  ...args: Parameters<typeof sendSystemMessage_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof sendSystemMessage_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof sendSystemMessage_core>>> {
   const client = createBrowserSupabaseClient();
   return sendSystemMessage_core(client, ...args);
@@ -2860,7 +4099,12 @@ export async function sendSystemMessage(
  * createMatchGames (auto-injected with browser client)
  */
 export async function createMatchGames(
-  ...args: Parameters<typeof createMatchGames_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createMatchGames_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createMatchGames_core>>> {
   const client = createBrowserSupabaseClient();
   return createMatchGames_core(client, ...args);
@@ -2870,7 +4114,12 @@ export async function createMatchGames(
  * judgeOverrideGame (auto-injected with browser client)
  */
 export async function judgeOverrideGame(
-  ...args: Parameters<typeof judgeOverrideGame_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof judgeOverrideGame_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof judgeOverrideGame_core>>> {
   const client = createBrowserSupabaseClient();
   return judgeOverrideGame_core(client, ...args);
@@ -2880,7 +4129,12 @@ export async function judgeOverrideGame(
  * judgeResetGame (auto-injected with browser client)
  */
 export async function judgeResetGame(
-  ...args: Parameters<typeof judgeResetGame_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof judgeResetGame_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof judgeResetGame_core>>> {
   const client = createBrowserSupabaseClient();
   return judgeResetGame_core(client, ...args);
@@ -2890,7 +4144,12 @@ export async function judgeResetGame(
  * resetMatch (auto-injected with browser client)
  */
 export async function resetMatch(
-  ...args: Parameters<typeof resetMatch_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof resetMatch_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof resetMatch_core>>> {
   const client = createBrowserSupabaseClient();
   return resetMatch_core(client, ...args);
@@ -2900,7 +4159,12 @@ export async function resetMatch(
  * confirmMatchCheckIn (auto-injected with browser client)
  */
 export async function confirmMatchCheckIn(
-  ...args: Parameters<typeof confirmMatchCheckIn_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof confirmMatchCheckIn_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof confirmMatchCheckIn_core>>> {
   const client = createBrowserSupabaseClient();
   return confirmMatchCheckIn_core(client, ...args);
@@ -2910,7 +4174,12 @@ export async function confirmMatchCheckIn(
  * upsertNotificationPreferences (auto-injected with browser client)
  */
 export async function upsertNotificationPreferences(
-  ...args: Parameters<typeof upsertNotificationPreferences_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof upsertNotificationPreferences_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof upsertNotificationPreferences_core>>> {
   const client = createBrowserSupabaseClient();
   return upsertNotificationPreferences_core(client, ...args);
@@ -2920,7 +4189,12 @@ export async function upsertNotificationPreferences(
  * markNotificationRead (auto-injected with browser client)
  */
 export async function markNotificationRead(
-  ...args: Parameters<typeof markNotificationRead_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof markNotificationRead_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof markNotificationRead_core>>> {
   const client = createBrowserSupabaseClient();
   return markNotificationRead_core(client, ...args);
@@ -2930,7 +4204,12 @@ export async function markNotificationRead(
  * markAllNotificationsRead (auto-injected with browser client)
  */
 export async function markAllNotificationsRead(
-  ...args: Parameters<typeof markAllNotificationsRead_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof markAllNotificationsRead_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof markAllNotificationsRead_core>>> {
   const client = createBrowserSupabaseClient();
   return markAllNotificationsRead_core(client, ...args);
@@ -2940,7 +4219,12 @@ export async function markAllNotificationsRead(
  * deleteNotification (auto-injected with browser client)
  */
 export async function deleteNotification(
-  ...args: Parameters<typeof deleteNotification_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteNotification_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteNotification_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteNotification_core(client, ...args);
@@ -2950,7 +4234,12 @@ export async function deleteNotification(
  * submitCommunityRequest (auto-injected with browser client)
  */
 export async function submitCommunityRequest(
-  ...args: Parameters<typeof submitCommunityRequest_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof submitCommunityRequest_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof submitCommunityRequest_core>>> {
   const client = createBrowserSupabaseClient();
   return submitCommunityRequest_core(client, ...args);
@@ -2960,7 +4249,12 @@ export async function submitCommunityRequest(
  * runSyncStage (auto-injected with browser client)
  */
 export async function runSyncStage(
-  ...args: Parameters<typeof runSyncStage_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof runSyncStage_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof runSyncStage_core>>> {
   const client = createBrowserSupabaseClient();
   return runSyncStage_core(client, ...args);
@@ -2970,7 +4264,12 @@ export async function runSyncStage(
  * runImportStage (auto-injected with browser client)
  */
 export async function runImportStage(
-  ...args: Parameters<typeof runImportStage_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof runImportStage_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof runImportStage_core>>> {
   const client = createBrowserSupabaseClient();
   return runImportStage_core(client, ...args);
@@ -2980,7 +4279,12 @@ export async function runImportStage(
  * runCompileStage (auto-injected with browser client)
  */
 export async function runCompileStage(
-  ...args: Parameters<typeof runCompileStage_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof runCompileStage_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof runCompileStage_core>>> {
   const client = createBrowserSupabaseClient();
   return runCompileStage_core(client, ...args);
@@ -2990,7 +4294,12 @@ export async function runCompileStage(
  * compileEventTeamSlots (auto-injected with browser client)
  */
 export async function compileEventTeamSlots(
-  ...args: Parameters<typeof compileEventTeamSlots_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof compileEventTeamSlots_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof compileEventTeamSlots_core>>> {
   const client = createBrowserSupabaseClient();
   return compileEventTeamSlots_core(client, ...args);
@@ -3000,7 +4309,12 @@ export async function compileEventTeamSlots(
  * compileSourceTeamSlots (auto-injected with browser client)
  */
 export async function compileSourceTeamSlots(
-  ...args: Parameters<typeof compileSourceTeamSlots_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof compileSourceTeamSlots_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof compileSourceTeamSlots_core>>> {
   const client = createBrowserSupabaseClient();
   return compileSourceTeamSlots_core(client, ...args);
@@ -3010,7 +4324,12 @@ export async function compileSourceTeamSlots(
  * createTeam (auto-injected with browser client)
  */
 export async function createTeam(
-  ...args: Parameters<typeof createTeam_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createTeam_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createTeam_core>>> {
   const client = createBrowserSupabaseClient();
   return createTeam_core(client, ...args);
@@ -3020,7 +4339,12 @@ export async function createTeam(
  * updateTeam (auto-injected with browser client)
  */
 export async function updateTeam(
-  ...args: Parameters<typeof updateTeam_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updateTeam_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updateTeam_core>>> {
   const client = createBrowserSupabaseClient();
   return updateTeam_core(client, ...args);
@@ -3030,7 +4354,12 @@ export async function updateTeam(
  * deleteTeam (auto-injected with browser client)
  */
 export async function deleteTeam(
-  ...args: Parameters<typeof deleteTeam_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteTeam_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteTeam_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteTeam_core(client, ...args);
@@ -3040,7 +4369,12 @@ export async function deleteTeam(
  * forkTeam (auto-injected with browser client)
  */
 export async function forkTeam(
-  ...args: Parameters<typeof forkTeam_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof forkTeam_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof forkTeam_core>>> {
   const client = createBrowserSupabaseClient();
   return forkTeam_core(client, ...args);
@@ -3050,7 +4384,12 @@ export async function forkTeam(
  * addPokemonToTeam (auto-injected with browser client)
  */
 export async function addPokemonToTeam(
-  ...args: Parameters<typeof addPokemonToTeam_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof addPokemonToTeam_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof addPokemonToTeam_core>>> {
   const client = createBrowserSupabaseClient();
   return addPokemonToTeam_core(client, ...args);
@@ -3060,7 +4399,12 @@ export async function addPokemonToTeam(
  * updatePokemon (auto-injected with browser client)
  */
 export async function updatePokemon(
-  ...args: Parameters<typeof updatePokemon_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updatePokemon_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updatePokemon_core>>> {
   const client = createBrowserSupabaseClient();
   return updatePokemon_core(client, ...args);
@@ -3070,7 +4414,12 @@ export async function updatePokemon(
  * removePokemonFromTeam (auto-injected with browser client)
  */
 export async function removePokemonFromTeam(
-  ...args: Parameters<typeof removePokemonFromTeam_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof removePokemonFromTeam_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof removePokemonFromTeam_core>>> {
   const client = createBrowserSupabaseClient();
   return removePokemonFromTeam_core(client, ...args);
@@ -3080,7 +4429,12 @@ export async function removePokemonFromTeam(
  * reorderTeamPokemon (auto-injected with browser client)
  */
 export async function reorderTeamPokemon(
-  ...args: Parameters<typeof reorderTeamPokemon_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof reorderTeamPokemon_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof reorderTeamPokemon_core>>> {
   const client = createBrowserSupabaseClient();
   return reorderTeamPokemon_core(client, ...args);
@@ -3090,7 +4444,12 @@ export async function reorderTeamPokemon(
  * upsertUserPreferences (auto-injected with browser client)
  */
 export async function upsertUserPreferences(
-  ...args: Parameters<typeof upsertUserPreferences_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof upsertUserPreferences_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof upsertUserPreferences_core>>> {
   const client = createBrowserSupabaseClient();
   return upsertUserPreferences_core(client, ...args);
@@ -3100,7 +4459,12 @@ export async function upsertUserPreferences(
  * updateAlt (auto-injected with browser client)
  */
 export async function updateAlt(
-  ...args: Parameters<typeof updateAlt_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updateAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updateAlt_core>>> {
   const client = createBrowserSupabaseClient();
   return updateAlt_core(client, ...args);
@@ -3110,7 +4474,12 @@ export async function updateAlt(
  * updateUsername (auto-injected with browser client)
  */
 export async function updateUsername(
-  ...args: Parameters<typeof updateUsername_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updateUsername_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updateUsername_core>>> {
   const client = createBrowserSupabaseClient();
   return updateUsername_core(client, ...args);
@@ -3120,7 +4489,12 @@ export async function updateUsername(
  * ensureAlt (auto-injected with browser client)
  */
 export async function ensureAlt(
-  ...args: Parameters<typeof ensureAlt_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof ensureAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof ensureAlt_core>>> {
   const client = createBrowserSupabaseClient();
   return ensureAlt_core(client, ...args);
@@ -3130,7 +4504,12 @@ export async function ensureAlt(
  * createAlt (auto-injected with browser client)
  */
 export async function createAlt(
-  ...args: Parameters<typeof createAlt_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createAlt_core>>> {
   const client = createBrowserSupabaseClient();
   return createAlt_core(client, ...args);
@@ -3140,7 +4519,12 @@ export async function createAlt(
  * deleteAlt (auto-injected with browser client)
  */
 export async function deleteAlt(
-  ...args: Parameters<typeof deleteAlt_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteAlt_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteAlt_core(client, ...args);
@@ -3150,7 +4534,12 @@ export async function deleteAlt(
  * setMainAlt (auto-injected with browser client)
  */
 export async function setMainAlt(
-  ...args: Parameters<typeof setMainAlt_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof setMainAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof setMainAlt_core>>> {
   const client = createBrowserSupabaseClient();
   return setMainAlt_core(client, ...args);
@@ -3160,7 +4549,12 @@ export async function setMainAlt(
  * startMatch (auto-injected with browser client)
  */
 export async function startMatch(
-  ...args: Parameters<typeof startMatch_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof startMatch_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof startMatch_core>>> {
   const client = createBrowserSupabaseClient();
   return startMatch_core(client, ...args);
@@ -3170,7 +4564,12 @@ export async function startMatch(
  * reportMatchResult (auto-injected with browser client)
  */
 export async function reportMatchResult(
-  ...args: Parameters<typeof reportMatchResult_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof reportMatchResult_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof reportMatchResult_core>>> {
   const client = createBrowserSupabaseClient();
   return reportMatchResult_core(client, ...args);
@@ -3180,7 +4579,12 @@ export async function reportMatchResult(
  * updatePhase (auto-injected with browser client)
  */
 export async function updatePhase(
-  ...args: Parameters<typeof updatePhase_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updatePhase_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updatePhase_core>>> {
   const client = createBrowserSupabaseClient();
   return updatePhase_core(client, ...args);
@@ -3190,7 +4594,12 @@ export async function updatePhase(
  * createPhase (auto-injected with browser client)
  */
 export async function createPhase(
-  ...args: Parameters<typeof createPhase_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createPhase_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createPhase_core>>> {
   const client = createBrowserSupabaseClient();
   return createPhase_core(client, ...args);
@@ -3200,7 +4609,12 @@ export async function createPhase(
  * deletePhase (auto-injected with browser client)
  */
 export async function deletePhase(
-  ...args: Parameters<typeof deletePhase_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deletePhase_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deletePhase_core>>> {
   const client = createBrowserSupabaseClient();
   return deletePhase_core(client, ...args);
@@ -3210,7 +4624,12 @@ export async function deletePhase(
  * saveTournamentPhases (auto-injected with browser client)
  */
 export async function saveTournamentPhases(
-  ...args: Parameters<typeof saveTournamentPhases_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof saveTournamentPhases_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof saveTournamentPhases_core>>> {
   const client = createBrowserSupabaseClient();
   return saveTournamentPhases_core(client, ...args);
@@ -3220,7 +4639,12 @@ export async function saveTournamentPhases(
  * registerForTournament (auto-injected with browser client)
  */
 export async function registerForTournament(
-  ...args: Parameters<typeof registerForTournament_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof registerForTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof registerForTournament_core>>> {
   const client = createBrowserSupabaseClient();
   return registerForTournament_core(client, ...args);
@@ -3230,7 +4654,12 @@ export async function registerForTournament(
  * updateRegistrationPreferences (auto-injected with browser client)
  */
 export async function updateRegistrationPreferences(
-  ...args: Parameters<typeof updateRegistrationPreferences_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updateRegistrationPreferences_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updateRegistrationPreferences_core>>> {
   const client = createBrowserSupabaseClient();
   return updateRegistrationPreferences_core(client, ...args);
@@ -3240,7 +4669,12 @@ export async function updateRegistrationPreferences(
  * cancelRegistration (auto-injected with browser client)
  */
 export async function cancelRegistration(
-  ...args: Parameters<typeof cancelRegistration_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof cancelRegistration_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof cancelRegistration_core>>> {
   const client = createBrowserSupabaseClient();
   return cancelRegistration_core(client, ...args);
@@ -3250,7 +4684,12 @@ export async function cancelRegistration(
  * updateRegistrationStatus (auto-injected with browser client)
  */
 export async function updateRegistrationStatus(
-  ...args: Parameters<typeof updateRegistrationStatus_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updateRegistrationStatus_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updateRegistrationStatus_core>>> {
   const client = createBrowserSupabaseClient();
   return updateRegistrationStatus_core(client, ...args);
@@ -3260,7 +4699,12 @@ export async function updateRegistrationStatus(
  * checkIn (auto-injected with browser client)
  */
 export async function checkIn(
-  ...args: Parameters<typeof checkIn_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof checkIn_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof checkIn_core>>> {
   const client = createBrowserSupabaseClient();
   return checkIn_core(client, ...args);
@@ -3270,7 +4714,12 @@ export async function checkIn(
  * undoCheckIn (auto-injected with browser client)
  */
 export async function undoCheckIn(
-  ...args: Parameters<typeof undoCheckIn_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof undoCheckIn_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof undoCheckIn_core>>> {
   const client = createBrowserSupabaseClient();
   return undoCheckIn_core(client, ...args);
@@ -3280,7 +4729,12 @@ export async function undoCheckIn(
  * withdrawFromTournament (auto-injected with browser client)
  */
 export async function withdrawFromTournament(
-  ...args: Parameters<typeof withdrawFromTournament_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof withdrawFromTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof withdrawFromTournament_core>>> {
   const client = createBrowserSupabaseClient();
   return withdrawFromTournament_core(client, ...args);
@@ -3290,7 +4744,12 @@ export async function withdrawFromTournament(
  * sendTournamentInvitations (auto-injected with browser client)
  */
 export async function sendTournamentInvitations(
-  ...args: Parameters<typeof sendTournamentInvitations_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof sendTournamentInvitations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof sendTournamentInvitations_core>>> {
   const client = createBrowserSupabaseClient();
   return sendTournamentInvitations_core(client, ...args);
@@ -3300,7 +4759,12 @@ export async function sendTournamentInvitations(
  * respondToTournamentInvitation (auto-injected with browser client)
  */
 export async function respondToTournamentInvitation(
-  ...args: Parameters<typeof respondToTournamentInvitation_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof respondToTournamentInvitation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof respondToTournamentInvitation_core>>> {
   const client = createBrowserSupabaseClient();
   return respondToTournamentInvitation_core(client, ...args);
@@ -3310,7 +4774,12 @@ export async function respondToTournamentInvitation(
  * generateRoundPairings (auto-injected with browser client)
  */
 export async function generateRoundPairings(
-  ...args: Parameters<typeof generateRoundPairings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof generateRoundPairings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof generateRoundPairings_core>>> {
   const client = createBrowserSupabaseClient();
   return generateRoundPairings_core(client, ...args);
@@ -3320,7 +4789,12 @@ export async function generateRoundPairings(
  * startRound (auto-injected with browser client)
  */
 export async function startRound(
-  ...args: Parameters<typeof startRound_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof startRound_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof startRound_core>>> {
   const client = createBrowserSupabaseClient();
   return startRound_core(client, ...args);
@@ -3330,7 +4804,12 @@ export async function startRound(
  * completeRound (auto-injected with browser client)
  */
 export async function completeRound(
-  ...args: Parameters<typeof completeRound_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof completeRound_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof completeRound_core>>> {
   const client = createBrowserSupabaseClient();
   return completeRound_core(client, ...args);
@@ -3340,7 +4819,12 @@ export async function completeRound(
  * createRound (auto-injected with browser client)
  */
 export async function createRound(
-  ...args: Parameters<typeof createRound_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createRound_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createRound_core>>> {
   const client = createBrowserSupabaseClient();
   return createRound_core(client, ...args);
@@ -3350,7 +4834,12 @@ export async function createRound(
  * deleteRoundAndMatches (auto-injected with browser client)
  */
 export async function deleteRoundAndMatches(
-  ...args: Parameters<typeof deleteRoundAndMatches_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteRoundAndMatches_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteRoundAndMatches_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteRoundAndMatches_core(client, ...args);
@@ -3360,7 +4849,12 @@ export async function deleteRoundAndMatches(
  * recalculateStandings (auto-injected with browser client)
  */
 export async function recalculateStandings(
-  ...args: Parameters<typeof recalculateStandings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof recalculateStandings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof recalculateStandings_core>>> {
   const client = createBrowserSupabaseClient();
   return recalculateStandings_core(client, ...args);
@@ -3370,7 +4864,12 @@ export async function recalculateStandings(
  * dropPlayer (auto-injected with browser client)
  */
 export async function dropPlayer(
-  ...args: Parameters<typeof dropPlayer_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof dropPlayer_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof dropPlayer_core>>> {
   const client = createBrowserSupabaseClient();
   return dropPlayer_core(client, ...args);
@@ -3380,7 +4879,12 @@ export async function dropPlayer(
  * createTournamentTeamSheets (auto-injected with browser client)
  */
 export async function createTournamentTeamSheets(
-  ...args: Parameters<typeof createTournamentTeamSheets_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createTournamentTeamSheets_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createTournamentTeamSheets_core>>> {
   const client = createBrowserSupabaseClient();
   return createTournamentTeamSheets_core(client, ...args);
@@ -3390,7 +4894,12 @@ export async function createTournamentTeamSheets(
  * submitTeam (auto-injected with browser client)
  */
 export async function submitTeam(
-  ...args: Parameters<typeof submitTeam_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof submitTeam_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof submitTeam_core>>> {
   const client = createBrowserSupabaseClient();
   return submitTeam_core(client, ...args);
@@ -3400,7 +4909,12 @@ export async function submitTeam(
  * selectTeamForTournament (auto-injected with browser client)
  */
 export async function selectTeamForTournament(
-  ...args: Parameters<typeof selectTeamForTournament_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof selectTeamForTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof selectTeamForTournament_core>>> {
   const client = createBrowserSupabaseClient();
   return selectTeamForTournament_core(client, ...args);
@@ -3410,7 +4924,12 @@ export async function selectTeamForTournament(
  * createTournament (auto-injected with browser client)
  */
 export async function createTournament(
-  ...args: Parameters<typeof createTournament_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof createTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof createTournament_core>>> {
   const client = createBrowserSupabaseClient();
   return createTournament_core(client, ...args);
@@ -3420,7 +4939,12 @@ export async function createTournament(
  * updateTournament (auto-injected with browser client)
  */
 export async function updateTournament(
-  ...args: Parameters<typeof updateTournament_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof updateTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof updateTournament_core>>> {
   const client = createBrowserSupabaseClient();
   return updateTournament_core(client, ...args);
@@ -3430,7 +4954,12 @@ export async function updateTournament(
  * archiveTournament (auto-injected with browser client)
  */
 export async function archiveTournament(
-  ...args: Parameters<typeof archiveTournament_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof archiveTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof archiveTournament_core>>> {
   const client = createBrowserSupabaseClient();
   return archiveTournament_core(client, ...args);
@@ -3440,7 +4969,12 @@ export async function archiveTournament(
  * deleteTournament (auto-injected with browser client)
  */
 export async function deleteTournament(
-  ...args: Parameters<typeof deleteTournament_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof deleteTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof deleteTournament_core>>> {
   const client = createBrowserSupabaseClient();
   return deleteTournament_core(client, ...args);
@@ -3450,7 +4984,12 @@ export async function deleteTournament(
  * startTournamentEnhanced (auto-injected with browser client)
  */
 export async function startTournamentEnhanced(
-  ...args: Parameters<typeof startTournamentEnhanced_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof startTournamentEnhanced_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof startTournamentEnhanced_core>>> {
   const client = createBrowserSupabaseClient();
   return startTournamentEnhanced_core(client, ...args);
@@ -3460,7 +4999,12 @@ export async function startTournamentEnhanced(
  * advanceToTopCut (auto-injected with browser client)
  */
 export async function advanceToTopCut(
-  ...args: Parameters<typeof advanceToTopCut_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof advanceToTopCut_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof advanceToTopCut_core>>> {
   const client = createBrowserSupabaseClient();
   return advanceToTopCut_core(client, ...args);
@@ -3470,7 +5014,12 @@ export async function advanceToTopCut(
  * generateEliminationPairings (auto-injected with browser client)
  */
 export async function generateEliminationPairings(
-  ...args: Parameters<typeof generateEliminationPairings_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof generateEliminationPairings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof generateEliminationPairings_core>>> {
   const client = createBrowserSupabaseClient();
   return generateEliminationPairings_core(client, ...args);
@@ -3480,7 +5029,12 @@ export async function generateEliminationPairings(
  * completeTournament (auto-injected with browser client)
  */
 export async function completeTournament(
-  ...args: Parameters<typeof completeTournament_core> extends [first: infer _F, ...rest: infer R] ? R : never
+  ...args: Parameters<typeof completeTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
 ): Promise<Awaited<ReturnType<typeof completeTournament_core>>> {
   const client = createBrowserSupabaseClient();
   return completeTournament_core(client, ...args);
