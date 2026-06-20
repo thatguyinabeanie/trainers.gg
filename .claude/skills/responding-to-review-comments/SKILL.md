@@ -9,7 +9,7 @@ Fetch review comments, group them by theme, walk through each with the user, pos
 
 ## ⛔ Non-Negotiable: Reply Without Delay (Two-Reply Protocol)
 
-**Replying to review comments is the single highest-priority action in this skill. It is never delayed, never batched for "later", and never substituted with a status report.** Every comment gets **two** replies and then a resolve:
+**Replying to review comments is the single highest-priority action in this skill. It is never delayed, never batched for "later", and never substituted with a status report.** A *fix* comment gets **two** replies then a resolve; a *not-an-issue* comment gets **one** evidence-backed reply then a resolve (see the rules below):
 
 | Step | When | Reply content |
 | ---- | ---- | ------------- |
@@ -138,22 +138,21 @@ After all groups are reviewed with the user:
 
 1. Implement all approved fixes — **review comments AND any CI failures the orchestrator (`reviewing-pr-feedback`) surfaced this round — see `diagnosing-ci` for diagnosing those.** Fix both in the same round.
 2. Use parallel subagents for independent fix groups when possible
-3. Run verification:
+3. Verification is **optional locally — CI is authoritative** (per CLAUDE.md Push Policy). For fast iteration on a focused change you may run a scoped check, but never block the commit/push on it:
 
 ```bash
-pnpm lint && pnpm typecheck && pnpm test
+pnpm lint && pnpm typecheck && pnpm test   # optional — CI runs these regardless
 ```
 
-4. Fix any test/type failures caused by the changes
-5. Commit with a descriptive message referencing the review round
-6. **Re-check for new comments before pushing.** Between when the round's comments were fetched and now, the reviewer (or a human) may have posted more. Re-run the Copilot-review check from the orchestrator's Phase 0; if a newer review exists, fetch and fold its comments into this round before pushing rather than pushing and looping again:
+4. Commit with a descriptive message referencing the review round
+5. **Re-check for new comments before pushing.** Between when the round's comments were fetched and now, the reviewer (or a human) may have posted more. Re-run the Copilot-review check from the orchestrator's Phase 0; if a newer review exists, fetch and fold its comments into this round before pushing rather than pushing and looping again:
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/{pr}/reviews --paginate \
   | jq -r '[.[] | select(.user.login == "copilot-pull-request-reviewer[bot]")] | sort_by(.submitted_at) | last | .submitted_at'
 ```
 
-7. Push to the PR branch.
+6. Push to the PR branch.
 
 ## Reply #2 — Done (after push)
 

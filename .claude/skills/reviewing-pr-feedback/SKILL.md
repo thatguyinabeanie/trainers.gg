@@ -15,7 +15,7 @@ Run responding-to-review-comments (fetch → group → Reply #1 → fix → Repl
 Request Copilot re-review → Wait for review + CI again → Loop if new comments or red CI
 ```
 
-This loop repeats until a review cycle produces zero actionable comments **and** CI is green.
+This loop repeats until a review cycle produces zero actionable comments **and** CI is green. (Reply #1 → fix → Reply #2 → resolve is the path for *fix* comments; a *not-an-issue* comment gets one explanatory reply then resolve — see `responding-to-review-comments`.)
 
 ## Phase 0: Wait for review AND CI to settle
 
@@ -112,4 +112,5 @@ All of these must be true simultaneously:
 - [ ] Zero unreplied reviewer comments
 - [ ] Zero unresolved review threads
 - [ ] Latest Copilot review (waited for in Phase 4) has no new actionable comments
-- [ ] `pnpm lint && pnpm typecheck && pnpm test` all pass locally
+
+CI green is the authoritative gate — running `pnpm lint && pnpm typecheck && pnpm test` locally is optional (per CLAUDE.md Push Policy), never a blocker.
