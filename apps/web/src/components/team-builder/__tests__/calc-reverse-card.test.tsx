@@ -33,12 +33,6 @@ jest.mock("sonner", () => ({
   },
 }));
 
-// Mock useTeamLayoutMode
-let mockLayoutMode = "1x6";
-jest.mock("../use-team-layout", () => ({
-  useTeamLayoutMode: () => mockLayoutMode,
-}));
-
 // Mock TypeSymbolIcon
 jest.mock("../type-symbol-icon", () => ({
   TypeSymbolIcon: ({ type }: { type: string }) => (
@@ -163,7 +157,6 @@ function makePokemon(
 describe("CalcReverseColumn — no defender", () => {
   beforeEach(() => {
     mockCalcContext.defenderSpecies = "";
-    mockLayoutMode = "1x6";
   });
 
   afterEach(() => {
@@ -178,10 +171,9 @@ describe("CalcReverseColumn — no defender", () => {
   });
 });
 
-describe("CalcReverseColumn — horizontal (1x6) layout", () => {
+describe("CalcReverseColumn — vertical layout", () => {
   beforeEach(() => {
     mockCalcContext.defenderSpecies = "Garchomp";
-    mockLayoutMode = "1x6";
   });
 
   it("renders 'Incoming' label", () => {
@@ -214,28 +206,9 @@ describe("CalcReverseColumn — horizontal (1x6) layout", () => {
   });
 });
 
-describe("CalcReverseColumn — vertical layout", () => {
-  beforeEach(() => {
-    mockCalcContext.defenderSpecies = "Garchomp";
-    mockLayoutMode = "2x3";
-  });
-
-  it("renders 'Incoming' label in vertical mode", () => {
-    render(<CalcReverseColumn pokemon={makePokemon()} teammates={[]} />);
-    expect(screen.getByText("Incoming")).toBeInTheDocument();
-  });
-
-  it("renders move names in vertical layout", () => {
-    render(<CalcReverseColumn pokemon={makePokemon()} teammates={[]} />);
-    expect(screen.getByText("Thunderbolt")).toBeInTheDocument();
-    expect(screen.getByText("Earthquake")).toBeInTheDocument();
-  });
-});
-
 describe("CalcReverseColumn — status moves", () => {
   beforeEach(() => {
     mockCalcContext.defenderSpecies = "Garchomp";
-    mockLayoutMode = "1x6";
     mockEffectiveMoves[0] = "Will-O-Wisp";
     mockEffectiveMoves[1] = "";
     mockEffectiveMoves[2] = "";

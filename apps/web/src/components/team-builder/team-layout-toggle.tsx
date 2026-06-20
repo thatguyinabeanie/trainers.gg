@@ -10,12 +10,24 @@ import { type TeamLayoutMode, useTeamLayout } from "./use-team-layout";
 // Icons
 // =============================================================================
 
-function Icon1x6() {
+// single — one framed cell, full width (rounded rect outline + inner filled cell)
+function IconSingle() {
   return (
     <svg viewBox="0 0 16 16" aria-hidden className="size-3.5">
-      <rect x="2" y="3" width="12" height="2" fill="currentColor" />
-      <rect x="2" y="7" width="12" height="2" fill="currentColor" />
-      <rect x="2" y="11" width="12" height="2" fill="currentColor" />
+      {/* Outer rounded rect outline */}
+      <rect
+        x="2"
+        y="2"
+        width="12"
+        height="12"
+        rx="2"
+        ry="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      {/* Inner filled cell */}
+      <rect x="4" y="4" width="8" height="8" rx="1" fill="currentColor" />
     </svg>
   );
 }
@@ -48,7 +60,11 @@ interface ToggleButton {
 }
 
 const BUTTONS: readonly ToggleButton[] = [
-  { mode: "1x6", label: "1 × 6 — full row layout", icon: Icon1x6 },
+  {
+    mode: "single",
+    label: "Single — one Pokémon, full width",
+    icon: IconSingle,
+  },
   {
     mode: "2x3-vertical",
     label: "2 × 3 — stacked per cell",

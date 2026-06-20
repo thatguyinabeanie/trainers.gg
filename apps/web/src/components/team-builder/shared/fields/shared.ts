@@ -23,17 +23,17 @@ export const cellClasses = {
   formRow:
     "grid w-full cursor-pointer grid-cols-[56px_minmax(0,1fr)] items-center gap-1.5 rounded-sm border-0 bg-transparent px-1 py-[3px] text-left transition-colors hover:bg-muted",
   formLabel:
-    "shrink-0 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground",
+    "shrink-0 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground",
   formValue:
-    "min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[11.5px] text-foreground",
+    "min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs text-foreground",
   // rounded-[5px]: intentional 5px design value — midpoint between rounded (4px) and rounded-md (6px), no clean scale token
   midFormCell:
     "grid w-full min-w-0 cursor-pointer grid-cols-[56px_minmax(0,1fr)] items-baseline gap-2 rounded-[5px] border-0 bg-transparent px-1.5 py-1 text-left transition-colors hover:bg-muted",
   midFormLbl:
-    "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground",
+    "overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground",
   midFormVal:
     "flex min-w-0 items-baseline gap-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs text-foreground",
   // rounded-[3px]: intentional 3px hairline radius — between rounded-sm (2px) and rounded (4px), no clean scale token
   midMegaChip:
-    "shrink-0 cursor-pointer whitespace-nowrap rounded-[3px] border border-primary/50 bg-primary/[0.12] px-1 py-px text-[9px] font-bold tracking-[0.04em] text-primary transition-colors hover:bg-primary/[0.24]",
+    "shrink-0 cursor-pointer whitespace-nowrap rounded-[3px] border border-primary/50 bg-primary/[0.12] px-1 py-px text-xs font-bold tracking-[0.04em] text-primary transition-colors hover:bg-primary/[0.24]",
 } as const;

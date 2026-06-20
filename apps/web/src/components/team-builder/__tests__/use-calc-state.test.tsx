@@ -46,11 +46,22 @@ jest.mock("@smogon/calc", () => {
     Move: MockMove,
     Side: MockSide,
     Field: MockField,
-    Generations: { get: jest.fn(() => ({
-      species: { get: jest.fn(() => ({
-        baseStats: { hp: 78, atk: 84, def: 78, spa: 109, spd: 85, spe: 100 },
-      })) },
-    })) },
+    Generations: {
+      get: jest.fn(() => ({
+        species: {
+          get: jest.fn(() => ({
+            baseStats: {
+              hp: 78,
+              atk: 84,
+              def: 78,
+              spa: 109,
+              spd: 85,
+              spe: 100,
+            },
+          })),
+        },
+      })),
+    },
   };
 });
 
@@ -408,16 +419,13 @@ describe("setDefenderIv — clamping", () => {
     [32, 31],
     [50, 31],
     [15.7, 16],
-  ])(
-    "setDefenderIv('hp', %i) → stored value %s",
-    (input, expectedOrNaN) => {
-      const { result } = renderHook(() =>
-        useCalcState({ selectedPokemon: makePokemon() })
-      );
-      act(() => result.current.setDefenderIv("hp", input));
-      expect(result.current.defenderIvs.hp).toBe(expectedOrNaN);
-    }
-  );
+  ])("setDefenderIv('hp', %i) → stored value %s", (input, expectedOrNaN) => {
+    const { result } = renderHook(() =>
+      useCalcState({ selectedPokemon: makePokemon() })
+    );
+    act(() => result.current.setDefenderIv("hp", input));
+    expect(result.current.defenderIvs.hp).toBe(expectedOrNaN);
+  });
 
   it("NaN input: state becomes NaN (Math.round(NaN) = NaN)", () => {
     const { result } = renderHook(() =>
@@ -795,10 +803,11 @@ describe("computeReverseOutputsForRow — mega scoping", () => {
     jest.clearAllMocks();
   });
 
-  it("non-focused row builds with mega species even when attackerMegaActive is false", () => {
-    // Both rows are mega-capable Charizards (Charizardite Y → Charizard-Mega-Y).
-    // Same species + same item lets us isolate the megaActive flag as the only
-    // differentiator in effectiveSpecies between focused vs non-focused rows.
+  it("non-focused row uses the species as-is — no auto-mega from a held mega stone", () => {
+    // Species is the source of truth: the MEGA chip writes the mega species
+    // name explicitly. The calc no longer auto-upgrades a base species that
+    // merely holds its mega stone, so a base "Charizard" + Charizardite Y must
+    // build as base "Charizard" — never "Charizard-Mega-Y".
     const focusedCharizard = makePokemon({
       id: 1,
       species: "Charizard",
@@ -814,7 +823,6 @@ describe("computeReverseOutputsForRow — mega scoping", () => {
       useCalcState({ selectedPokemon: focusedCharizard })
     );
 
-    // Turn off the panel-level mega flag for the focused row.
     act(() => result.current.setAttackerMegaActive(false));
     // Reverse calc requires a defender species to engage.
     act(() => result.current.setDefenderSpecies("Garchomp"));
@@ -830,13 +838,11 @@ describe("computeReverseOutputsForRow — mega scoping", () => {
       "",
     ] as const);
 
-    // The non-focused row's defender Pokemon should be the Mega form because
-    // the fix passes `true` for non-focused rows regardless of the panel flag.
-    // Without the isFocused guard this would be base "Charizard" and the test
-    // would fail — that's the exact regression we're guarding against.
+    // Base species holding its stone builds as the BASE form (no auto-mega) —
+    // the exact regression guard for the species-is-source-of-truth fix.
     const speciesCalls = getPokemonSpeciesCalls();
-    expect(speciesCalls).toContain("Charizard-Mega-Y");
-    expect(speciesCalls).not.toContain("Charizard");
+    expect(speciesCalls).toContain("Charizard");
+    expect(speciesCalls).not.toContain("Charizard-Mega-Y");
   });
 
   it("focused row honors attackerMegaActive=false (builds as base species)", () => {

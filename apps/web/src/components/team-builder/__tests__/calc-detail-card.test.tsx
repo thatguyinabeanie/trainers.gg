@@ -1,25 +1,20 @@
 "use client";
 
 /**
- * Behavioral tests for CalcDetailCard.
+ * Behavioral tests for CalcDetailCard (read-only info panel).
  *
  * Covers:
- *   - KO tier verdict label (OHKO / 2HKO / 3HKO / 4HKO+)
- *   - Damage range % display
- *   - Effectiveness multiplier in metadata row
- *   - Crit toggle multiplies damage by 1.5
- *   - Screen toggle halves damage
- *   - Spread badge visibility for spread moves when foesAlive >= 2
- *   - Target kind label and description rendered
- *   - Attacker → move → defender identity row
- *   - Tera tag visible when format supports Tera and attacker has tera_type
- *   - onClose / onChangeMove callbacks fire
- *   - Field row only rendered for spread moves
- *   - Foes alive buttons toggle spread reduction
- *   - Ally alive buttons for all-others moves
+ *   - "DAMAGE CALC" eyebrow label
+ *   - Identity row: attacker → move → defender (names, BP)
+ *   - Result block: % range, KO verdict label, KO-chance display
+ *   - Meta row: dmg range, vs HP, effectiveness
+ *   - Recovery suffix in KO label
+ *   - Tera tag visibility
+ *   - Target classification label and description
+ *   - Empty rolls boundary condition
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import React from "react";
 
 import { type Tables } from "@trainers/supabase";
@@ -31,19 +26,16 @@ import { type GameFormat } from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-
-// Mock getMoveData and getSpeciesTypes from @trainers/pokemon
 const mockGetMoveData = jest.fn();
 const mockGetSpeciesTypes = jest.fn();
-const mockFormatHasTera = jest.fn();
 
 jest.mock("@trainers/pokemon", () => {
-  const actual = jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon");
+  const actual =
+    jest.requireActual<typeof TrainersPokemon>("@trainers/pokemon");
   return {
     ...actual,
     getMoveData: (...args: unknown[]) => mockGetMoveData(...args),
     getSpeciesTypes: (...args: unknown[]) => mockGetSpeciesTypes(...args),
-    formatHasTera: (...args: unknown[]) => mockFormatHasTera(...args),
   };
 });
 
@@ -72,15 +64,13 @@ jest.mock("../use-calc-state", () => ({
 
 // TypeDot stub
 jest.mock("../type-dot", () => ({
-  TypeDot: ({ t }: { t: string }) => (
-    <span data-testid={`type-dot-${t}`} />
-  ),
+  TypeDot: ({ t }: { t: string }) => <span data-testid={`type-dot-${t}`} />,
 }));
 
 // format-gating
 jest.mock("../format-gating", () => ({
-  formatSupportsTera: jest.fn((fmt: GameFormat | undefined) =>
-    fmt?.generation === 9
+  formatSupportsTera: jest.fn(
+    (fmt: GameFormat | undefined) => fmt?.generation === 9
   ),
 }));
 
@@ -160,15 +150,16 @@ function makePokemon(
   };
 }
 
-function makeBaseOutput(
-  overrides: Partial<CalcOutput> = {}
-): CalcOutput {
+function makeBaseOutput(overrides: Partial<CalcOutput> = {}): CalcOutput {
   return {
     minPercent: 50.0,
     maxPercent: 60.0,
     desc: "Test desc",
     rolls: [100, 105, 110, 115, 120],
     defenderMaxHP: 200,
+    recoverySuffix: "",
+    recoveryTier: null,
+    koChance: null,
     ...overrides,
   };
 }
@@ -182,16 +173,10 @@ interface RenderProps {
   defenderItem?: string;
   defenderNature?: string;
   format?: GameFormat | undefined;
-  foesAlive?: 1 | 2;
-  allyAlive?: boolean;
   weather?: string | null;
-  onClose?: jest.Mock;
-  onChangeMove?: jest.Mock;
 }
 
 function renderCard(props: RenderProps = {}) {
-  const onClose = props.onClose ?? jest.fn();
-  const onChangeMove = props.onChangeMove ?? jest.fn();
   return render(
     <CalcDetailCard
       attacker={props.attacker ?? makePokemon()}
@@ -203,12 +188,12 @@ function renderCard(props: RenderProps = {}) {
         item: props.defenderItem ?? "Sitrus Berry",
         nature: props.defenderNature ?? "Careful",
       }}
-      format={props.format === undefined && !("format" in props) ? VGC_FORMAT : props.format}
-      foesAlive={props.foesAlive ?? 2}
-      allyAlive={props.allyAlive ?? true}
+      format={
+        props.format === undefined && !("format" in props)
+          ? VGC_FORMAT
+          : props.format
+      }
       weather={props.weather ?? null}
-      onClose={onClose}
-      onChangeMove={onChangeMove}
     />
   );
 }
@@ -227,30 +212,40 @@ beforeEach(() => {
   });
   mockGetSpeciesTypes.mockReturnValue(["Psychic", "Fairy"]);
   mockGetMoveEffectiveness.mockReturnValue(1);
-  mockGetMoveTargetInfo.mockReturnValue({ kind: "single-foe", isSpread: false });
+  mockGetMoveTargetInfo.mockReturnValue({
+    kind: "single-foe",
+    isSpread: false,
+  });
   mockGetMoveTargetLabel.mockReturnValue("SINGLE-FOE");
   mockGetMoveTargetDesc.mockReturnValue("Single target — never spreads.");
   mockGetVerdict.mockReturnValue("2HKO");
-  mockFormatHasTera.mockReturnValue(false);
 });
 
 // =============================================================================
-// Tests — basic render
+// Tests — eyebrow
 // =============================================================================
 
-describe("CalcDetailCard — basic render", () => {
+describe("CalcDetailCard — eyebrow", () => {
   it("renders the DAMAGE CALC eyebrow", () => {
     renderCard();
     expect(screen.getByText("DAMAGE CALC")).toBeInTheDocument();
   });
+});
 
-  it("renders the move name in the identity row", () => {
+// =============================================================================
+// Tests — identity row
+// =============================================================================
+
+describe("CalcDetailCard — identity row", () => {
+  it("renders the move name", () => {
     renderCard({ moveName: "Moonblast" });
     expect(screen.getByText("Moonblast")).toBeInTheDocument();
   });
 
-  it("renders attacker species in the identity row", () => {
-    renderCard({ attacker: makePokemon({ species: "Gardevoir", nickname: null }) });
+  it("renders attacker species when no nickname", () => {
+    renderCard({
+      attacker: makePokemon({ species: "Gardevoir", nickname: null }),
+    });
     expect(screen.getByText("Gardevoir")).toBeInTheDocument();
   });
 
@@ -261,12 +256,12 @@ describe("CalcDetailCard — basic render", () => {
     expect(screen.getByText("Misty")).toBeInTheDocument();
   });
 
-  it("renders defender species in the identity row", () => {
+  it("renders defender species", () => {
     renderCard({ defenderSpecies: "Incineroar" });
     expect(screen.getByText("Incineroar")).toBeInTheDocument();
   });
 
-  it("renders the base power (BP) when moveData has basePower", () => {
+  it("renders BP when moveData has basePower", () => {
     renderCard();
     expect(screen.getByText("BP 95")).toBeInTheDocument();
   });
@@ -282,21 +277,10 @@ describe("CalcDetailCard — basic render", () => {
     expect(screen.queryByText(/BP/)).not.toBeInTheDocument();
   });
 
-  it("renders the target label from getMoveTargetLabel", () => {
+  it("renders arrow separators between attacker, move, and defender", () => {
     renderCard();
-    expect(screen.getByText("SINGLE-FOE")).toBeInTheDocument();
-  });
-
-  it("renders the target description from getMoveTargetDesc", () => {
-    renderCard();
-    expect(screen.getByText("Single target — never spreads.")).toBeInTheDocument();
-  });
-
-  it("renders the footer hint text", () => {
-    renderCard();
-    expect(
-      screen.getByText(/Click outside to close/i)
-    ).toBeInTheDocument();
+    const arrows = screen.getAllByText("→");
+    expect(arrows).toHaveLength(2);
   });
 });
 
@@ -309,7 +293,6 @@ describe("CalcDetailCard — damage range", () => {
     renderCard({
       baseOutput: makeBaseOutput({ minPercent: 45.2, maxPercent: 53.8 }),
     });
-    // The big-pct div renders as separate text nodes + sep span; match by container
     const bigPct = document.querySelector(".mvdetail-bigpct");
     expect(bigPct?.textContent).toContain("45.2");
     expect(bigPct?.textContent).toContain("53.8");
@@ -322,17 +305,27 @@ describe("CalcDetailCard — damage range", () => {
 
   it("renders raw damage range from rolls", () => {
     renderCard({
-      baseOutput: makeBaseOutput({ rolls: [80, 85, 90, 95, 100], defenderMaxHP: 200 }),
+      baseOutput: makeBaseOutput({
+        rolls: [80, 85, 90, 95, 100],
+        defenderMaxHP: 200,
+      }),
     });
     // dmgMin = rolls[0] = 80, dmgMax = rolls[4] = 100
     expect(screen.getByText(/80–100 dmg/)).toBeInTheDocument();
   });
 
-  it("renders vs defenderMaxHP", () => {
+  it("renders vs defenderMaxHP in meta row", () => {
     renderCard({
       baseOutput: makeBaseOutput({ defenderMaxHP: 200 }),
     });
     expect(screen.getByText(/vs 200 HP/)).toBeInTheDocument();
+  });
+
+  it("renders 0–0 dmg when rolls array is empty", () => {
+    renderCard({
+      baseOutput: makeBaseOutput({ rolls: [], defenderMaxHP: 200 }),
+    });
+    expect(screen.getByText(/0–0 dmg/)).toBeInTheDocument();
   });
 });
 
@@ -341,36 +334,28 @@ describe("CalcDetailCard — damage range", () => {
 // =============================================================================
 
 describe("CalcDetailCard — effectiveness", () => {
-  it("renders effectiveness from getMoveEffectiveness in meta row", () => {
-    mockGetMoveEffectiveness.mockReturnValue(2);
+  it.each([
+    [0, "0× eff"],
+    [0.5, "0.5× eff"],
+    [1, "1× eff"],
+    [2, "2× eff"],
+    [4, "4× eff"],
+  ])("renders %s× eff in meta row", (eff, expectedText) => {
+    mockGetMoveEffectiveness.mockReturnValue(eff);
     renderCard();
-    expect(screen.getByText(/2× eff/)).toBeInTheDocument();
-  });
-
-  it("renders 1× eff when effectiveness is neutral", () => {
-    mockGetMoveEffectiveness.mockReturnValue(1);
-    renderCard();
-    expect(screen.getByText(/1× eff/)).toBeInTheDocument();
-  });
-
-  it("renders 0× eff for immune", () => {
-    mockGetMoveEffectiveness.mockReturnValue(0);
-    renderCard();
-    expect(screen.getByText(/0× eff/)).toBeInTheDocument();
+    expect(
+      screen.getByText(new RegExp(expectedText.replace("×", "×")))
+    ).toBeInTheDocument();
   });
 });
 
 // =============================================================================
-// Tests — KO verdict
+// Tests — KO verdict label
 // =============================================================================
 
 describe("CalcDetailCard — KO verdict label", () => {
-  it.each([
-    ["OHKO"],
-    ["2HKO"],
-    ["3HKO"],
-  ] as const)(
-    "renders '%s' verdict label",
+  it.each([["OHKO"], ["2HKO"], ["3HKO"]] as const)(
+    "renders '%s' verdict from getVerdict",
     (verdict) => {
       mockGetVerdict.mockReturnValue(verdict);
       renderCard();
@@ -378,127 +363,78 @@ describe("CalcDetailCard — KO verdict label", () => {
     }
   );
 
-  it("does NOT render a KO label when verdict is null", () => {
+  it("does NOT render a KO label when verdict is null and no recoveryTier", () => {
     mockGetVerdict.mockReturnValue(null);
-    renderCard();
+    renderCard({ baseOutput: makeBaseOutput({ recoveryTier: null }) });
     expect(screen.queryByText(/HKO/)).not.toBeInTheDocument();
   });
-});
 
-// =============================================================================
-// Tests — crit toggle
-// =============================================================================
-
-describe("CalcDetailCard — crit toggle", () => {
-  it("renders the Crit checkbox unchecked by default", () => {
-    renderCard();
-    const critCheckbox = screen.getByRole("checkbox", { name: /Crit/i });
-    expect(critCheckbox).not.toBeChecked();
-  });
-
-  it("checking Crit multiplies damage range by 1.5", () => {
-    // baseOutput: min=40.0 max=50.0, factor=1.5 → min=60.0 max=75.0
-    renderCard({
-      baseOutput: makeBaseOutput({ minPercent: 40.0, maxPercent: 50.0 }),
-    });
-    const critCheckbox = screen.getByRole("checkbox", { name: /Crit/i });
-    fireEvent.click(critCheckbox);
-    const bigPct = document.querySelector(".mvdetail-bigpct");
-    expect(bigPct?.textContent).toContain("60.0");
-    expect(bigPct?.textContent).toContain("75.0");
-  });
-
-  it("unchecking Crit restores original damage range", () => {
-    renderCard({
-      baseOutput: makeBaseOutput({ minPercent: 40.0, maxPercent: 50.0 }),
-    });
-    const critCheckbox = screen.getByRole("checkbox", { name: /Crit/i });
-    fireEvent.click(critCheckbox);
-    fireEvent.click(critCheckbox);
-    const bigPct = document.querySelector(".mvdetail-bigpct");
-    expect(bigPct?.textContent).toContain("40.0");
-    expect(bigPct?.textContent).toContain("50.0");
-  });
-});
-
-// =============================================================================
-// Tests — screen toggle
-// =============================================================================
-
-describe("CalcDetailCard — screen toggle", () => {
-  it("renders the Screen up checkbox unchecked by default", () => {
-    renderCard();
-    const screenCheckbox = screen.getByRole("checkbox", { name: /Screen up/i });
-    expect(screenCheckbox).not.toBeChecked();
-  });
-
-  it("checking Screen halves the damage range", () => {
-    // baseOutput: min=60.0 max=80.0, factor=0.5 → min=30.0 max=40.0
-    renderCard({
-      baseOutput: makeBaseOutput({ minPercent: 60.0, maxPercent: 80.0 }),
-    });
-    const screenCheckbox = screen.getByRole("checkbox", { name: /Screen up/i });
-    fireEvent.click(screenCheckbox);
-    const bigPct = document.querySelector(".mvdetail-bigpct");
-    expect(bigPct?.textContent).toContain("30.0");
-    expect(bigPct?.textContent).toContain("40.0");
-  });
-});
-
-// =============================================================================
-// Tests — spread mechanics
-// =============================================================================
-
-describe("CalcDetailCard — spread badge", () => {
-  it("does NOT render the field row for single-target moves", () => {
-    mockGetMoveTargetInfo.mockReturnValue({ kind: "single-foe", isSpread: false });
-    renderCard();
-    expect(screen.queryByText("FIELD")).not.toBeInTheDocument();
-  });
-
-  it("renders the field row for spread (all-foes) moves", () => {
-    mockGetMoveTargetInfo.mockReturnValue({ kind: "all-foes", isSpread: true });
-    renderCard({ foesAlive: 2 });
-    expect(screen.getByText("FIELD")).toBeInTheDocument();
-  });
-
-  it("renders spread badge when foesAlive=2 for all-foes move", () => {
-    mockGetMoveTargetInfo.mockReturnValue({ kind: "all-foes", isSpread: true });
+  it("prefers recoveryTier over getVerdict when present", () => {
     mockGetVerdict.mockReturnValue("2HKO");
-    renderCard({ foesAlive: 2 });
-    expect(screen.getByText(/spread −25%/)).toBeInTheDocument();
+    renderCard({
+      baseOutput: makeBaseOutput({
+        recoveryTier: "3HKO",
+        recoverySuffix: "after Sitrus Berry",
+      }),
+    });
+    // recoveryTier = "3HKO" wins; getVerdict's "2HKO" should not be shown as sole label
+    expect(screen.getByText("3HKO")).toBeInTheDocument();
   });
 
-  it("does NOT render spread badge when foesAlive=1 for all-foes move", () => {
-    mockGetMoveTargetInfo.mockReturnValue({ kind: "all-foes", isSpread: true });
+  it("renders koChance text when koChance is between 0 and 100 exclusive", () => {
+    mockGetVerdict.mockReturnValue("OHKO");
+    renderCard({
+      baseOutput: makeBaseOutput({ koChance: 93.75 }),
+    });
+    expect(screen.getByText(/93\.8% chance to OHKO/)).toBeInTheDocument();
+  });
+
+  it("renders koChance as integer when it has no fractional part", () => {
+    mockGetVerdict.mockReturnValue("OHKO");
+    renderCard({
+      baseOutput: makeBaseOutput({ koChance: 75 }),
+    });
+    expect(screen.getByText(/75% chance to OHKO/)).toBeInTheDocument();
+  });
+
+  it("renders plain verdict when koChance is 0", () => {
+    mockGetVerdict.mockReturnValue("4HKO");
+    renderCard({
+      baseOutput: makeBaseOutput({ koChance: 0 }),
+    });
+    expect(screen.getByText("4HKO")).toBeInTheDocument();
+    expect(screen.queryByText(/chance to OHKO/)).not.toBeInTheDocument();
+  });
+
+  it("renders plain verdict when koChance is 100", () => {
+    mockGetVerdict.mockReturnValue("OHKO");
+    renderCard({
+      baseOutput: makeBaseOutput({ koChance: 100 }),
+    });
+    expect(screen.getByText("OHKO")).toBeInTheDocument();
+    expect(screen.queryByText(/chance to OHKO/)).not.toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// Tests — recovery suffix
+// =============================================================================
+
+describe("CalcDetailCard — recovery suffix", () => {
+  it("renders recoverySuffix appended to the KO label when present", () => {
     mockGetVerdict.mockReturnValue("2HKO");
-    renderCard({ foesAlive: 1 });
-    // "spread −25%" badge should not be shown; "spreads" in the target desc is fine
-    expect(screen.queryByText(/spread −25%/)).not.toBeInTheDocument();
+    renderCard({
+      baseOutput: makeBaseOutput({ recoverySuffix: "after Sitrus Berry" }),
+    });
+    expect(screen.getByText(/after Sitrus Berry/)).toBeInTheDocument();
   });
 
-  it("Foes buttons toggle spread application (1 vs 2)", () => {
-    mockGetMoveTargetInfo.mockReturnValue({ kind: "all-foes", isSpread: true });
-    renderCard({ foesAlive: 2 });
-    // Initially 2 foes — spread active
-    expect(screen.getByText(/spread −25%/)).toBeInTheDocument();
-    // Click "1" foes button
-    const foes1Btn = screen.getByRole("button", { name: "1" });
-    fireEvent.click(foes1Btn);
-    expect(screen.queryByText(/spread −25%/)).not.toBeInTheDocument();
-  });
-
-  it("renders Ally buttons for all-others moves", () => {
-    mockGetMoveTargetInfo.mockReturnValue({ kind: "all-others", isSpread: true });
-    renderCard({ foesAlive: 1, allyAlive: true });
-    expect(screen.getByRole("button", { name: "alive" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "fainted" })).toBeInTheDocument();
-  });
-
-  it("does NOT render Ally buttons for all-foes moves", () => {
-    mockGetMoveTargetInfo.mockReturnValue({ kind: "all-foes", isSpread: true });
-    renderCard({ foesAlive: 2 });
-    expect(screen.queryByRole("button", { name: "alive" })).not.toBeInTheDocument();
+  it("does NOT render recovery suffix element when recoverySuffix is empty", () => {
+    mockGetVerdict.mockReturnValue("2HKO");
+    renderCard({
+      baseOutput: makeBaseOutput({ recoverySuffix: "" }),
+    });
+    expect(screen.queryByText(/after/)).not.toBeInTheDocument();
   });
 });
 
@@ -508,7 +444,9 @@ describe("CalcDetailCard — spread badge", () => {
 
 describe("CalcDetailCard — Tera tag", () => {
   it("renders Tera tag when format supports Tera and attacker has tera_type", () => {
-    jest.requireMock("../format-gating").formatSupportsTera.mockReturnValue(true);
+    jest
+      .requireMock("../format-gating")
+      .formatSupportsTera.mockReturnValue(true);
     renderCard({
       attacker: makePokemon({ tera_type: "Fairy" }),
       format: VGC_FORMAT,
@@ -517,7 +455,9 @@ describe("CalcDetailCard — Tera tag", () => {
   });
 
   it("does NOT render Tera tag when attacker has no tera_type", () => {
-    jest.requireMock("../format-gating").formatSupportsTera.mockReturnValue(true);
+    jest
+      .requireMock("../format-gating")
+      .formatSupportsTera.mockReturnValue(true);
     renderCard({
       attacker: makePokemon({ tera_type: null }),
       format: VGC_FORMAT,
@@ -526,7 +466,9 @@ describe("CalcDetailCard — Tera tag", () => {
   });
 
   it("does NOT render Tera tag in Gen 8 format", () => {
-    jest.requireMock("../format-gating").formatSupportsTera.mockReturnValue(false);
+    jest
+      .requireMock("../format-gating")
+      .formatSupportsTera.mockReturnValue(false);
     renderCard({
       attacker: makePokemon({ tera_type: "Fire" }),
       format: GEN8_FORMAT,
@@ -536,34 +478,80 @@ describe("CalcDetailCard — Tera tag", () => {
 });
 
 // =============================================================================
-// Tests — callbacks
+// Tests — target classification row
 // =============================================================================
 
-describe("CalcDetailCard — callbacks", () => {
-  it("calls onClose when close button is clicked", () => {
-    const onClose = jest.fn();
-    renderCard({ onClose });
-    fireEvent.click(screen.getByRole("button", { name: /Close damage detail/i }));
-    expect(onClose).toHaveBeenCalledTimes(1);
+describe("CalcDetailCard — target classification", () => {
+  it("renders the target label from getMoveTargetLabel", () => {
+    renderCard();
+    expect(screen.getByText("SINGLE-FOE")).toBeInTheDocument();
   });
 
-  it("calls onChangeMove when 'Change move' button is clicked", () => {
-    const onChangeMove = jest.fn();
-    renderCard({ onChangeMove });
-    fireEvent.click(screen.getByRole("button", { name: /Change move/i }));
-    expect(onChangeMove).toHaveBeenCalledTimes(1);
+  it("renders the target description from getMoveTargetDesc", () => {
+    renderCard();
+    expect(
+      screen.getByText("Single target — never spreads.")
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      "ALL-FOES",
+      "Spread move — hits both opposing slots. −25% damage when 2 foes alive.",
+    ],
+    ["ALL-OTHERS", "Hits everyone but you. −25% damage when 2+ targets alive."],
+    ["SELF", "Self / status move."],
+  ])("renders '%s' label and its description", (label, desc) => {
+    mockGetMoveTargetLabel.mockReturnValue(label);
+    mockGetMoveTargetDesc.mockReturnValue(desc);
+    renderCard();
+    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(screen.getByText(desc)).toBeInTheDocument();
   });
 });
 
 // =============================================================================
-// Tests — empty state (empty rolls)
+// Tests — no removed interactive elements
 // =============================================================================
 
-describe("CalcDetailCard — empty rolls", () => {
-  it("renders 0–0 dmg when rolls array is empty", () => {
-    renderCard({
-      baseOutput: makeBaseOutput({ rolls: [], defenderMaxHP: 200 }),
-    });
-    expect(screen.getByText(/0–0 dmg/)).toBeInTheDocument();
+describe("CalcDetailCard — removed interactive elements are absent", () => {
+  it("does not render a Crit checkbox", () => {
+    renderCard();
+    expect(
+      screen.queryByRole("checkbox", { name: /Crit/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not render a Screen up checkbox", () => {
+    renderCard();
+    expect(
+      screen.queryByRole("checkbox", { name: /Screen/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not render a close button", () => {
+    renderCard();
+    expect(
+      screen.queryByRole("button", { name: /close/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not render a Change move button", () => {
+    renderCard();
+    expect(
+      screen.queryByRole("button", { name: /change move/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not render footer hint text", () => {
+    renderCard();
+    expect(
+      screen.queryByText(/Click outside to close/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not render FIELD spread controls", () => {
+    renderCard();
+    expect(screen.queryByText("FIELD")).not.toBeInTheDocument();
   });
 });

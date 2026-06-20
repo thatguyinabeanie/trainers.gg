@@ -60,8 +60,8 @@ export function MoveMobileRow({
       aria-pressed={isSelected}
       onClick={() => onPick(move.name)}
       className={cn(
-        "flex w-full items-start gap-2 border-b border-border px-3 py-2 text-left",
-        "transition-colors active:bg-muted/50 hover:bg-muted/30",
+        "border-border flex w-full items-start gap-2 border-b px-3 py-2 text-left",
+        "active:bg-muted/50 hover:bg-muted/30 transition-colors",
         isSelected && "bg-primary/5"
       )}
     >
@@ -85,8 +85,7 @@ export function MoveMobileRow({
             className="h-3.5 w-auto [image-rendering:pixelated]"
           />
         ) : (
-          // text-[10px]: sub-12px em-dash fallback; no Tailwind scale token
-          <span className="text-[10px] text-muted-foreground">—</span>
+          <span className="text-muted-foreground text-xs">—</span>
         )}
       </div>
 
@@ -94,21 +93,20 @@ export function MoveMobileRow({
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         {/* Line 1: name + BP + ACC + USG chip */}
         <span className="flex items-baseline justify-between gap-1">
-          <span className="grow min-w-0 truncate text-sm font-semibold text-foreground">
+          <span className="text-foreground min-w-0 grow truncate text-sm font-semibold">
             {move.name}
           </span>
           <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
             {/* BP */}
-            {/* text-[11px]/text-[9px]: sub-12px stat labels; no Tailwind scale tokens */}
-            <span className="text-[11px] text-muted-foreground">
-              <span className="font-semibold uppercase text-muted-foreground/60 text-[9px] mr-0.5">
+            <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground/60 mr-0.5 text-xs font-semibold uppercase">
                 BP
               </span>
               {bp}
             </span>
             {/* ACC */}
-            <span className="text-[11px] text-muted-foreground">
-              <span className="font-semibold uppercase text-muted-foreground/60 text-[9px] mr-0.5">
+            <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground/60 mr-0.5 text-xs font-semibold uppercase">
                 ACC
               </span>
               {acc}
@@ -116,7 +114,7 @@ export function MoveMobileRow({
             {/* USG chip — only when usage data exists and is non-zero */}
             {usagePct != null && usagePct > 0 && (
               <span
-                className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums" // text-[10px]: sub-12px usage chip; no Tailwind scale token
+                className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-xs font-semibold tabular-nums"
                 data-testid={`usg-move-${move.name}`}
               >
                 {usagePct.toFixed(1)}%
@@ -127,7 +125,7 @@ export function MoveMobileRow({
 
         {/* Line 2: short description */}
         {desc && (
-          <span className="min-w-0 truncate text-[11px] text-muted-foreground"> {/* text-[11px]: sub-12px description; no Tailwind scale token */}
+          <span className="text-muted-foreground min-w-0 truncate text-xs">
             {desc}
           </span>
         )}

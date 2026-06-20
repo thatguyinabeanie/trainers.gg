@@ -35,6 +35,7 @@ import {
   useCalcEnabled,
 } from "../calc/calc-state-context";
 import { CalcDetailCard } from "../calc/calc-detail-card";
+import { type CalcOutput } from "../use-calc-state";
 import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
 import { FieldErrors } from "../validation/field-error";
 import { DescriptionTooltip } from "./description-tooltip";
@@ -49,12 +50,49 @@ interface MovesLaneProps {
   onUpdate?: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   /** Validation errors scoped to move fields (move1–move4). */
   fieldErrors?: ValidationError[];
+  /**
+   * Direction of the damage calc displayed in each tile.
+   * - "outgoing" (default): this mon's moves vs the defender in calc context.
+   * - "incoming": opponent's moves vs this mon (for "versus" views).
+   */
+  direction?: "outgoing" | "incoming";
+  /**
+   * Pre-computed outputs for the 4 move slots. When provided, these are used
+   * directly instead of calling `calc.computeForwardOutputsForRow`. Required
+   * for "incoming" views where the parent has already computed the outputs.
+   */
+  outputs?: readonly (CalcOutput | null)[];
+  /**
+   * Popover descriptor for the opposing mon. When omitted, falls back to
+   * `calc.defenderSpecies / defenderAbility / defenderItem / defenderNature`.
+   */
+  opponent?: {
+    species: string;
+    ability: string;
+    item: string;
+    nature: string;
+  };
+  /**
+   * Presentation variant.
+   * - "list" (default): the existing single-column table with optional calc
+   *   columns. Calc-on always uses this path regardless of this prop.
+   * - "cards-2x2": a 2×2 grid of compact move cards showing type icon,
+   *   category icon, move name, BP, and ACC. Only active when calc is OFF;
+   *   when calc is ON the table path renders as usual.
+   */
+  presentation?: "list" | "cards-2x2";
+  /**
+   * When true, renders a tighter/denser move table for side-by-side layouts
+   * (e.g. the damage-calc versus view). Defaults to false — the solo
+   * single-focus view is unchanged.
+   */
+  compact?: boolean;
 }
 
 type MoveSlot = "move1" | "move2" | "move3" | "move4";
 
 /** Which popover panel is open for a tile. */
-type TilePanel = "detail" | "picker" | null;
+type TilePanel = "picker" | null;
 
 // =============================================================================
 // Helpers
@@ -234,6 +272,23 @@ interface MoveTileProps {
   onPick: (slotKey: MoveSlot, moveName: string) => void;
   /** Validation errors for this specific move slot. */
   slotErrors: ValidationError[];
+  /**
+   * Pre-computed outputs for all 4 slots. When provided, overrides forward
+   * calc computation — used for injecting incoming damage outputs.
+   */
+  rowOutputs?: readonly (CalcOutput | null)[];
+  /** When true, renders a denser row for two-up versus layouts. */
+  compact?: boolean;
+  /**
+   * Called when the row is hovered or un-hovered — lifted to lane level. Passes
+   * the row element so the lane can anchor the breakdown popover to it without
+   * reading a ref during render.
+   */
+  onHover: (
+    slotKey: MoveSlot,
+    el: HTMLTableRowElement | null,
+    isHovering: boolean
+  ) => void;
 }
 
 function MoveTile({
@@ -244,13 +299,18 @@ function MoveTile({
   attacker,
   onPick,
   slotErrors,
+  rowOutputs: injectedOutputs,
+  compact = false,
+  onHover,
 }: MoveTileProps) {
   const [panel, setPanel] = useState<TilePanel>(null);
-  const rowRef = useRef<HTMLTableRowElement>(null);
 
   const calc = useCalcStateContext();
   const moveIdx = SLOT_IDX[slotKey];
-  const rowOutputs = calc.computeForwardOutputsForRow(attacker);
+  // When injectedOutputs are provided (e.g. incoming direction), use them directly.
+  // Otherwise compute forward outputs as today (default behavior unchanged).
+  const rowOutputs =
+    injectedOutputs ?? calc.computeForwardOutputsForRow(attacker);
   const output = rowOutputs[moveIdx] ?? null;
 
   const moveData = moveName ? getMoveData(moveName, format?.id) : null;
@@ -270,201 +330,158 @@ function MoveTile({
 
   const hasError = slotErrors.some((e) => e.severity === "error");
 
-  function handleContextMenu(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    setPanel("picker");
-  }
-
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
-    if (moveName && hasCalc) {
-      setPanel("detail");
-    } else {
-      setPanel("picker");
-    }
+    setPanel("picker");
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       e.stopPropagation();
-      if (moveName && hasCalc) {
-        setPanel("detail");
-      } else {
-        setPanel("picker");
-      }
+      setPanel("picker");
     }
   }
 
-  const detailOpen = panel === "detail";
   const pickerOpen = panel === "picker";
   const isMobile = useIsMobile();
 
   return (
     <>
-      <Popover
-        open={detailOpen}
-        onOpenChange={(open) => {
-          if (!open && panel === "detail") setPanel(null);
-        }}
+      <TableRow
+        tabIndex={0}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        onMouseEnter={(e) => onHover(slotKey, e.currentTarget, true)}
+        onMouseLeave={(e) => onHover(slotKey, e.currentTarget, false)}
+        className={cn(
+          "cursor-pointer border-none transition-colors",
+          "[&_td]:border-y [&_td]:border-transparent [&_td]:transition-colors",
+          "[&_td:first-child]:rounded-l-md [&_td:first-child]:border-l",
+          "[&_td:last-child]:rounded-r-md [&_td:last-child]:border-r",
+          "hover:[&_td]:border-border hover:[&_td]:bg-muted",
+          koTier === "1" &&
+            "[&_td]:border-[color-mix(in_oklch,var(--ko-red)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-red)_8%,transparent)]",
+          koTier === "2" &&
+            "[&_td]:border-[color-mix(in_oklch,var(--ko-amber2-fg)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-amber2-fg)_8%,transparent)]",
+          koTier === "3" &&
+            "[&_td]:border-[color-mix(in_oklch,var(--ko-yellow-fg)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-yellow-fg)_8%,transparent)]",
+          koTier === "4" && "[&_td]:border-border/50 [&_td]:bg-muted/30",
+          hasError && "ring-destructive/50 ring-1"
+        )}
       >
-        <TableRow
-          ref={rowRef}
-          tabIndex={0}
-          onClick={handleClick}
-          onKeyDown={handleKeyDown}
-          onContextMenu={handleContextMenu}
-          className={cn(
-            "cursor-pointer border-none transition-colors",
-            "[&_td]:border-y [&_td]:border-transparent [&_td]:transition-colors",
-            "[&_td:first-child]:rounded-l-md [&_td:first-child]:border-l",
-            "[&_td:last-child]:rounded-r-md [&_td:last-child]:border-r",
-            "hover:[&_td]:border-border hover:[&_td]:bg-muted",
-            koTier === "1" &&
-              "[&_td]:border-[color-mix(in_oklch,var(--ko-red)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-red)_8%,transparent)]",
-            koTier === "2" &&
-              "[&_td]:border-[color-mix(in_oklch,var(--ko-amber2-fg)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-amber2-fg)_8%,transparent)]",
-            koTier === "3" &&
-              "[&_td]:border-[color-mix(in_oklch,var(--ko-yellow-fg)_50%,var(--border))] [&_td]:bg-[color-mix(in_oklch,var(--ko-yellow-fg)_8%,transparent)]",
-            koTier === "4" && "[&_td]:border-border/50 [&_td]:bg-muted/30",
-            hasError && "ring-destructive/50 ring-1"
-          )}
-        >
-          {/* Type icon */}
-          <TableCell className="w-6 p-1 align-middle">
-            {moveName && moveData?.type ? (
-              <TypeSymbolIcon
-                type={
-                  moveData.type as Parameters<typeof TypeSymbolIcon>[0]["type"]
-                }
-                size={20}
-              />
-            ) : null}
-          </TableCell>
-
-          {/* Category icon */}
-          <TableCell className="w-8 p-1 align-middle">
-            {moveName &&
-            moveData?.category &&
-            CATEGORY_ICON_URLS_MONO[moveData.category] ? (
-              <img
-                src={CATEGORY_ICON_URLS_MONO[moveData.category]}
-                alt={moveData.category}
-                className="h-6 w-6 shrink-0"
-              />
-            ) : null}
-          </TableCell>
-
-          {/* Move name */}
-          <TableCell className="max-w-36 p-1 align-middle">
-            <DescriptionTooltip
-              description={moveName ? moveData?.shortDesc : null}
-              showContent={panel === null}
-            >
-              <TooltipTrigger
-                render={<span />}
-                className={cn(
-                  "block max-w-36 truncate text-sm font-medium",
-                  !moveName && "text-muted-foreground/50"
-                )}
-              >
-                {moveName ?? "+ Add move"}
-              </TooltipTrigger>
-            </DescriptionTooltip>
-          </TableCell>
-
-          {/* Base Power */}
-          <TableCell className="text-muted-foreground p-1 align-middle font-mono text-xs tabular-nums">
-            {moveName && moveData?.basePower && moveData.basePower > 0
-              ? moveData.basePower
-              : moveName
-                ? "—"
-                : ""}
-          </TableCell>
-
-          {/* Accuracy */}
-          <TableCell className="text-muted-foreground p-1 align-middle font-mono text-xs tabular-nums">
-            {moveName
-              ? moveData?.accuracy === true || !moveData?.accuracy
-                ? "—"
-                : moveData.accuracy
-              : ""}
-          </TableCell>
-
-          {/* Calc damage (raw HP) */}
-          {calc.calcEnabled && (
-            <TableCell className="p-1 pl-2 whitespace-nowrap">
-              {hasCalc && koTier && output?.rolls.length ? (
-                <span className="text-muted-foreground text-xs tabular-nums">
-                  {output.rolls[0] ?? 0}–
-                  {output.rolls[output.rolls.length - 1] ?? 0}
-                </span>
-              ) : (
-                <span className="text-muted-foreground text-sm">—</span>
-              )}
-            </TableCell>
-          )}
-
-          {/* Calc percent */}
-          {calc.calcEnabled && (
-            <TableCell className="p-1 whitespace-nowrap">
-              {hasCalc && koTier ? (
-                <CalcRange min={displayMin} max={displayMax} />
-              ) : (
-                <span className="text-muted-foreground text-sm">—</span>
-              )}
-            </TableCell>
-          )}
-
-          {/* KO tier label */}
-          {calc.calcEnabled && (
-            <TableCell className="p-1 whitespace-nowrap">
-              {hasCalc && koTier ? (
-                <KoLabel tier={koTier} koChance={output?.koChance} />
-              ) : (
-                <span className="text-muted-foreground text-sm">—</span>
-              )}
-            </TableCell>
-          )}
-
-          {/* Copy calc description */}
-          {calc.calcEnabled && (
-            <TableCell className="w-6 p-0.5 align-middle">
-              {hasCalc && output?.desc ? (
-                <CalcCopyButton desc={output.desc} />
-              ) : null}
-            </TableCell>
-          )}
-        </TableRow>
-
-        <PopoverContent
-          side="bottom"
-          align="start"
-          anchor={rowRef}
-          className="w-auto p-0"
-        >
-          {detailOpen && moveName && output ? (
-            <CalcDetailCard
-              attacker={attacker}
-              moveName={moveName}
-              baseOutput={output}
-              defender={{
-                species: calc.defenderSpecies,
-                ability: calc.defenderAbility,
-                item: calc.defenderItem,
-                nature: calc.defenderNature,
-              }}
-              format={format}
-              foesAlive={foesAlive}
-              allyAlive={allyAlive}
-              weather={calc.weather || calc.inferredWeather}
-              onClose={() => setPanel(null)}
-              onChangeMove={() => setPanel("picker")}
+        {/* Type icon — invisible placeholder keeps row height when empty */}
+        <TableCell className="w-6 p-1 align-middle">
+          {moveName && moveData?.type ? (
+            <TypeSymbolIcon
+              type={
+                moveData.type as Parameters<typeof TypeSymbolIcon>[0]["type"]
+              }
+              size={20}
             />
-          ) : null}
-        </PopoverContent>
-      </Popover>
+          ) : (
+            <span className="block size-5" aria-hidden />
+          )}
+        </TableCell>
+
+        {/* Category icon — invisible placeholder keeps row height when empty */}
+        <TableCell className="w-8 p-1 align-middle">
+          {moveName &&
+          moveData?.category &&
+          CATEGORY_ICON_URLS_MONO[moveData.category] ? (
+            <img
+              src={CATEGORY_ICON_URLS_MONO[moveData.category]}
+              alt={moveData.category}
+              className="h-6 w-6 shrink-0"
+            />
+          ) : (
+            <span className="block size-6" aria-hidden />
+          )}
+        </TableCell>
+
+        {/* Move name */}
+        <TableCell className="max-w-36 p-1 align-middle">
+          <DescriptionTooltip
+            description={moveName ? moveData?.shortDesc : null}
+            showContent={panel === null}
+          >
+            <TooltipTrigger
+              render={<span />}
+              className={cn(
+                "block max-w-36 truncate font-medium",
+                /* compact: text-xs (12px) for denser rows; default: text-sm (14px) */
+                compact ? "text-xs" : "text-sm",
+                !moveName && "text-muted-foreground/50"
+              )}
+            >
+              {moveName ?? "+ Add move"}
+            </TooltipTrigger>
+          </DescriptionTooltip>
+        </TableCell>
+
+        {/* Base Power */}
+        <TableCell className="text-muted-foreground p-1 align-middle font-mono text-xs tabular-nums">
+          {moveName && moveData?.basePower && moveData.basePower > 0
+            ? moveData.basePower
+            : moveName
+              ? "—"
+              : ""}
+        </TableCell>
+
+        {/* Accuracy */}
+        <TableCell className="text-muted-foreground p-1 align-middle font-mono text-xs tabular-nums">
+          {moveName
+            ? moveData?.accuracy === true || !moveData?.accuracy
+              ? "—"
+              : moveData.accuracy
+            : ""}
+        </TableCell>
+
+        {/* Calc damage (raw HP) */}
+        {calc.calcEnabled && (
+          <TableCell className="p-1 pl-2 whitespace-nowrap">
+            {hasCalc && koTier && output?.rolls.length ? (
+              <span className="text-muted-foreground text-xs tabular-nums">
+                {output.rolls[0] ?? 0}–
+                {output.rolls[output.rolls.length - 1] ?? 0}
+              </span>
+            ) : (
+              <span className="text-muted-foreground text-sm">—</span>
+            )}
+          </TableCell>
+        )}
+
+        {/* Calc percent */}
+        {calc.calcEnabled && (
+          <TableCell className="p-1 whitespace-nowrap">
+            {hasCalc && koTier ? (
+              <CalcRange min={displayMin} max={displayMax} />
+            ) : (
+              <span className="text-muted-foreground text-sm">—</span>
+            )}
+          </TableCell>
+        )}
+
+        {/* KO tier label */}
+        {calc.calcEnabled && (
+          <TableCell className="p-1 whitespace-nowrap">
+            {hasCalc && koTier ? (
+              <KoLabel tier={koTier} koChance={output?.koChance} />
+            ) : (
+              <span className="text-muted-foreground text-sm">—</span>
+            )}
+          </TableCell>
+        )}
+
+        {/* Copy calc description */}
+        {calc.calcEnabled && (
+          <TableCell className="w-6 p-0.5 align-middle">
+            {hasCalc && output?.desc ? (
+              <CalcCopyButton desc={output.desc} />
+            ) : null}
+          </TableCell>
+        )}
+      </TableRow>
 
       {/* Move picker — mobile bottom drawer or desktop centered Dialog */}
       {isMobile ? (
@@ -577,7 +594,9 @@ function MovesLaneGhost() {
         "flex min-w-0 flex-1 flex-col px-6 py-1 transition-[padding,flex] duration-300 ease-in-out"
       )}
     >
-      <Table className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */>
+      <Table
+        className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */
+      >
         <MovesLaneTileGhost />
         <TableBody>
           {([0, 1, 2, 3] as const).map((i) => (
@@ -604,6 +623,155 @@ function MovesLaneGhost() {
 }
 
 // =============================================================================
+// MoveCard — compact card for the 2×2 grid (no calc, no table row)
+// =============================================================================
+
+interface MoveCardProps {
+  slotKey: MoveSlot;
+  moveName: string | null;
+  species: string;
+  format: GameFormat | undefined;
+  onPick: (slotKey: MoveSlot, moveName: string) => void;
+  slotErrors: ValidationError[];
+}
+
+function MoveCard({
+  slotKey,
+  moveName,
+  species,
+  format,
+  onPick,
+  slotErrors,
+}: MoveCardProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  const moveData = moveName ? getMoveData(moveName) : null;
+
+  const hasError = slotErrors.some((e) => e.severity === "error");
+
+  function handleClick() {
+    setPickerOpen(true);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setPickerOpen(true);
+    }
+  }
+
+  return (
+    <>
+      <div className="flex flex-col gap-1">
+        {/* Card button */}
+        <button
+          type="button"
+          tabIndex={0}
+          onClick={handleClick}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            "border-border bg-card hover:bg-muted flex cursor-pointer flex-col gap-1.5 rounded-md border p-2 text-left transition-colors",
+            hasError && "border-destructive/50 ring-destructive/30 ring-1"
+          )}
+        >
+          {/* Top row: type icon + category icon */}
+          <div className="flex items-center gap-1.5">
+            {moveName && moveData?.type ? (
+              <TypeSymbolIcon
+                type={
+                  moveData.type as Parameters<typeof TypeSymbolIcon>[0]["type"]
+                }
+                size={16}
+              />
+            ) : (
+              <span className="size-4 shrink-0" />
+            )}
+            {moveName &&
+            moveData?.category &&
+            CATEGORY_ICON_URLS_MONO[moveData.category] ? (
+              <img
+                src={CATEGORY_ICON_URLS_MONO[moveData.category]}
+                alt={moveData.category}
+                className="h-4 w-4 shrink-0"
+              />
+            ) : (
+              <span className="size-4 shrink-0" />
+            )}
+            {/* BP / ACC meta — small, right-aligned */}
+            <span className="text-muted-foreground ml-auto font-mono text-xs tabular-nums">
+              {moveName
+                ? moveData?.basePower && moveData.basePower > 0
+                  ? `${moveData.basePower} / ${
+                      moveData.accuracy === true || !moveData.accuracy
+                        ? "—"
+                        : moveData.accuracy
+                    }`
+                  : "— / —"
+                : ""}
+            </span>
+          </div>
+
+          {/* Move name */}
+          <span
+            className={cn(
+              "block truncate text-sm font-medium",
+              !moveName && "text-muted-foreground/50"
+            )}
+          >
+            {moveName ?? "+ Add move"}
+          </span>
+        </button>
+
+        {/* Inline error chips */}
+        {slotErrors.length > 0 && <FieldErrors errors={slotErrors} />}
+      </div>
+
+      {/* Move picker */}
+      {isMobile ? (
+        <MovePickerMobile
+          open={pickerOpen}
+          onOpenChange={(open) => {
+            if (!open) setPickerOpen(false);
+          }}
+          value={moveName}
+          species={species}
+          format={format}
+          onPick={(name) => {
+            onPick(slotKey, name);
+            setPickerOpen(false);
+          }}
+        />
+      ) : (
+        <Dialog
+          open={pickerOpen}
+          onOpenChange={(open) => {
+            if (!open) setPickerOpen(false);
+          }}
+        >
+          <DialogContent
+            showCloseButton={false}
+            className={SELECTOR_DIALOG_CONTENT_CLASS}
+          >
+            <DialogTitle className="sr-only">Choose move</DialogTitle>
+            <MovePicker
+              value={moveName}
+              species={species}
+              format={format}
+              onPick={(name) => {
+                onPick(slotKey, name);
+                setPickerOpen(false);
+              }}
+              onClose={() => setPickerOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+// =============================================================================
 // MovesLaneReal — calc-aware move tiles (requires pokemon)
 // =============================================================================
 
@@ -612,6 +780,13 @@ interface MovesLaneRealProps {
   format: GameFormat | undefined;
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
   fieldErrors: ValidationError[];
+  direction: "outgoing" | "incoming";
+  outputs: readonly (CalcOutput | null)[] | undefined;
+  opponent:
+    | { species: string; ability: string; item: string; nature: string }
+    | undefined;
+  presentation: "list" | "cards-2x2";
+  compact: boolean;
 }
 
 function MovesLaneReal({
@@ -619,19 +794,102 @@ function MovesLaneReal({
   format,
   onUpdate,
   fieldErrors,
+  direction: _direction,
+  outputs,
+  opponent,
+  presentation,
+  compact,
 }: MovesLaneRealProps) {
-  const _calc = useCalcStateContext();
+  const calc = useCalcStateContext();
+  // Hovered row → drives the lane-level breakdown popover. We store the row
+  // ELEMENT in state (not a ref) so the popover anchor is read from state during
+  // render — reading a ref's `.current` during render is forbidden
+  // (react-hooks/refs). The element arrives via the row's mouse handlers.
+  const [hovered, setHovered] = useState<{
+    slotKey: MoveSlot;
+    el: HTMLTableRowElement;
+  } | null>(null);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, []);
+
+  function handleRowHover(
+    slotKey: MoveSlot,
+    el: HTMLTableRowElement | null,
+    isHovering: boolean
+  ) {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    if (isHovering && el) {
+      const target = el;
+      hoverTimerRef.current = setTimeout(
+        () => setHovered({ slotKey, el: target }),
+        120
+      );
+    } else {
+      setHovered((prev) => (prev?.slotKey === slotKey ? null : prev));
+    }
+  }
+
   function handlePick(slotKey: MoveSlot, name: string) {
     onUpdate({ [slotKey]: name });
+  }
+
+  // Resolve the defender descriptor for popovers:
+  // - When `opponent` is explicitly provided, use it (e.g. for incoming views).
+  // - Otherwise fall back to the calc context's current defender values.
+  const popoverDefender = opponent ?? {
+    species: calc.defenderSpecies,
+    ability: calc.defenderAbility,
+    item: calc.defenderItem,
+    nature: calc.defenderNature,
+  };
+
+  // 2×2 card grid: only when presentation is "cards-2x2" AND calc is OFF.
+  // When calc is ON, always fall through to the standard table (direction seam
+  // and calc columns must remain intact).
+  if (presentation === "cards-2x2" && !calc.calcEnabled) {
+    return (
+      <div className="px-6 py-1">
+        <div className="grid grid-cols-2 gap-2">
+          {MOVE_SLOTS.map((slotKey) => {
+            const slotErrors = fieldErrors.filter((e) => e.field === slotKey);
+            return (
+              <MoveCard
+                key={slotKey}
+                slotKey={slotKey}
+                moveName={pokemon[slotKey] || null}
+                species={pokemon.species ?? ""}
+                format={format}
+                onPick={handlePick}
+                slotErrors={slotErrors}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-1 flex-col px-6 py-1 transition-[padding,flex] duration-300 ease-in-out"
+        "flex min-w-0 flex-1 flex-col transition-[padding,flex] duration-300 ease-in-out",
+        /* compact=true: tighter padding for two-up versus layout */
+        compact ? "px-2 py-0.5" : "px-6 py-1"
       )}
     >
-      <Table className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */>
+      <Table
+        className={cn(
+          "w-full border-separate",
+          /* border-spacing-y: hairline row gap — no Tailwind scale token for sub-4px values */
+          compact
+            ? "border-spacing-y-[2px]" /* 2px hairline when compact */
+            : "border-spacing-y-[3px]" /* 3px hairline default */
+        )}
+      >
         <MovesLaneTileGhost />
         <TableBody>
           {MOVE_SLOTS.map((slotKey) => {
@@ -646,11 +904,63 @@ function MovesLaneReal({
                 attacker={pokemon}
                 onPick={handlePick}
                 slotErrors={slotErrors}
+                rowOutputs={outputs}
+                compact={compact}
+                onHover={handleRowHover}
               />
             );
           })}
         </TableBody>
       </Table>
+
+      {/* Single lane-level breakdown Popover — anchored to the hovered row element.
+          Lives here (outside <Table>/<TableBody>) so Base UI focus-guard <span>s are
+          never injected inside <tbody>, which would be invalid HTML. */}
+      {(() => {
+        // Resolve outputs the same way MoveTile does: prefer injected outputs
+        // (incoming direction), else compute forward outputs from the attacker.
+        const resolvedOutputs =
+          outputs ?? calc.computeForwardOutputsForRow(pokemon);
+        const hoveredSlot = hovered?.slotKey ?? null;
+        const hoveredIdx = hoveredSlot ? SLOT_IDX[hoveredSlot] : -1;
+        const hoveredMove = hoveredSlot ? pokemon[hoveredSlot] || null : null;
+        const hoveredOutput =
+          hoveredIdx >= 0 ? (resolvedOutputs[hoveredIdx] ?? null) : null;
+        const hoveredStatus = hoveredMove
+          ? getMoveData(hoveredMove)?.category === "Status"
+          : false;
+        const showBreakdown =
+          calc.calcEnabled &&
+          !!hoveredMove &&
+          !!hoveredOutput &&
+          !hoveredStatus;
+        return (
+          <Popover
+            open={showBreakdown}
+            onOpenChange={(o) => {
+              if (!o) setHovered(null);
+            }}
+          >
+            <PopoverContent
+              side="bottom"
+              align="start"
+              anchor={hovered?.el ?? undefined}
+              className="w-auto p-0"
+            >
+              {showBreakdown && hoveredMove && hoveredOutput ? (
+                <CalcDetailCard
+                  attacker={pokemon}
+                  moveName={hoveredMove}
+                  baseOutput={hoveredOutput}
+                  defender={popoverDefender}
+                  format={format}
+                  weather={calc.weather || calc.inferredWeather}
+                />
+              ) : null}
+            </PopoverContent>
+          </Popover>
+        );
+      })()}
     </div>
   );
 }
@@ -666,15 +976,31 @@ function MovesLaneReal({
  * placeholder tiles) with no interactive elements and no hook calls.
  *
  * When `pokemon` is set:
- * - Left-click: opens CalcDetailCard when calc data is available, else picker.
- * - Right-click: always opens move picker.
+ * - Left-click / Enter / Space: always opens the move picker.
+ * - Hover: shows the CalcDetailCard breakdown popover when calc data is available.
  * - Renders inline FieldError chips for move-scoped validation issues.
+ *
+ * New optional props for direction-agnostic rendering (all default to today's
+ * forward-calc behavior so existing callers are unaffected):
+ * - `direction` — "outgoing" (default) or "incoming"
+ * - `outputs` — pre-computed outputs to inject; omit to compute forward as usual
+ * - `opponent` — popover defender descriptor; omit to use calc context defaults
+ *
+ * The computed direction-aware header label is:
+ *   "Outgoing — vs {opponentSpecies}" | "Incoming — from {opponentSpecies}"
+ * MovesLane does not render a standalone lane header today (the parent owns
+ * that DOM), so the label is a derivable string for callers that need it.
  */
 export function MovesLane({
   pokemon,
   format,
   onUpdate,
   fieldErrors = [],
+  direction = "outgoing",
+  outputs,
+  opponent,
+  presentation = "list",
+  compact = false,
 }: MovesLaneProps) {
   if (pokemon === null) return <MovesLaneGhost />;
   return (
@@ -683,6 +1009,11 @@ export function MovesLane({
       format={format}
       onUpdate={onUpdate ?? (() => {})}
       fieldErrors={fieldErrors}
+      direction={direction}
+      outputs={outputs}
+      opponent={opponent}
+      presentation={presentation}
+      compact={compact}
     />
   );
 }
