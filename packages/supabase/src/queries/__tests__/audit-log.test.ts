@@ -350,9 +350,9 @@ describe("audit-log queries", () => {
 
       // Verify base query chain
       expect(mockClient.from).toHaveBeenCalledWith("audit_log");
-      // select no longer embeds first_name/last_name
+      // explicit column allowlist (no wildcard); actor embed unchanged
       expect(mockClient._queryBuilder.select).toHaveBeenCalledWith(
-        "*, actor_user:users!audit_log_actor_user_id_fkey(id, username, image)",
+        "id, action, actor_user_id, actor_alt_id, community_id, tournament_id, match_id, game_id, metadata, created_at, actor_user:users!audit_log_actor_user_id_fkey(id, username, image)",
         { count: "exact", head: false }
       );
       expect(mockClient._queryBuilder.order).toHaveBeenCalledWith(
