@@ -64,17 +64,22 @@ function getWeatherBallType(weather: string | null | undefined): PokemonType {
  * @param weather - Active weather ("Sun", "Rain", "Sand", "Snow", etc.).
  *   Required to resolve the correct type for weather-dependent moves like
  *   Weather Ball (Normal under no weather → Fire/Water/Rock/Ice under weather).
+ * @param formatId - Optional Champions format ID (e.g. "gen9championsvgc2026regma").
+ *   When provided, Champions move-type overrides are applied (e.g. Snap Trap
+ *   Normal→Steel, Growth Normal→Grass) so effectiveness reflects the actual
+ *   in-format type rather than the vanilla type.
  *
  * If `defenderSpecies` is empty the function returns 1 (no information).
  */
 export function getMoveEffectiveness(
   moveName: string,
   defenderSpecies: string,
-  weather?: string | null
+  weather?: string | null,
+  formatId?: string | null
 ): number {
   if (!moveName || !defenderSpecies) return 1;
 
-  const moveData = getMoveData(moveName);
+  const moveData = getMoveData(moveName, formatId ?? undefined);
   if (!moveData) {
     warnUnknownMove(moveName);
     return 1;

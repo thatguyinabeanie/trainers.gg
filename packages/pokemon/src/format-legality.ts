@@ -22,6 +22,18 @@
 
 import { logError } from "@trainers/utils";
 
+import {
+  type ChampionsRegBundle,
+  type MegaSpeciesWithAbilityFromBundle,
+  type MegaSpeciesWithStoneFromBundle,
+  REG_MA_BUNDLE,
+} from "./champions-reg-ma";
+import {
+  type MegaSpeciesWithAbilityFromMBBundle,
+  type MegaSpeciesWithStoneFromMBBundle,
+  REG_MB_BUNDLE,
+} from "./champions-reg-mb";
+
 /**
  * Sentinel returned by `getLegal*` when the underlying validator threw
  * mid-iteration — distinct from `undefined` (format not registered) so
@@ -62,302 +74,31 @@ export function legalSetOrPermissive(
 }
 
 // =============================================================================
-// Champions: VGC 2026 Reg M-A
+// Format ID Constants
+// =============================================================================
+
+/** Format ID for Champions VGC 2026 Regulation M-A. */
+export const CHAMPIONS_MA_FORMAT_ID = "gen9championsvgc2026regma";
+
+/** Format ID for Champions VGC 2026 Regulation M-B. */
+export const CHAMPIONS_MB_FORMAT_ID = "gen9championsvgc2026regmb";
+
+// =============================================================================
+// Champions format registry
 // =============================================================================
 
 /**
- * Every species selectable in Champions: VGC 2026 Reg M-A.
+ * Registry mapping Champions format IDs to their legality bundles.
+ * Adding a new Champions regulation requires only: (1) a new bundle file
+ * (parallel to champions-reg-ma.ts), and (2) a new entry here.
  *
- * Ported from NCP calc (pokedex.js lines 18378–18409). Mega forms are
- * also selectable — the species picker auto-assigns the matching mega
- * stone on select. Distinct battle forms (Rotom-Heat,
- * Tauros-Paldea-Combat, Aegislash-Blade, etc.) are retained.
+ * Stored as a Map (not a plain Record) to prevent prototype-key collisions —
+ * a formatId like "constructor" or "toString" would resolve an inherited
+ * Object.prototype member and be mis-treated as a registered bundle.
  */
-const CHAMPIONS_MA_LEGAL_SPECIES: ReadonlySet<string> = new Set([
-  // Base forms — Pokemon available from launch of Champions
-  "Venusaur",
-  "Charizard",
-  "Blastoise",
-  "Beedrill",
-  "Pidgeot",
-  "Arbok",
-  "Pikachu",
-  "Raichu",
-  "Clefable",
-  "Ninetales",
-  "Arcanine",
-  "Alakazam",
-  "Machamp",
-  "Victreebel",
-  "Slowbro",
-  "Gengar",
-  "Kangaskhan",
-  "Starmie",
-  "Pinsir",
-  "Tauros",
-  "Gyarados",
-  "Ditto",
-  "Vaporeon",
-  "Jolteon",
-  "Flareon",
-  "Aerodactyl",
-  "Snorlax",
-  "Dragonite",
-  "Meganium",
-  "Typhlosion",
-  "Feraligatr",
-  "Ariados",
-  "Ampharos",
-  "Azumarill",
-  "Politoed",
-  "Espeon",
-  "Umbreon",
-  "Slowking",
-  "Forretress",
-  "Steelix",
-  "Scizor",
-  "Heracross",
-  "Skarmory",
-  "Houndoom",
-  "Tyranitar",
-  "Pelipper",
-  "Gardevoir",
-  "Sableye",
-  "Aggron",
-  "Medicham",
-  "Manectric",
-  "Sharpedo",
-  "Camerupt",
-  "Torkoal",
-  "Altaria",
-  "Milotic",
-  "Castform",
-  "Banette",
-  "Chimecho",
-  "Absol",
-  "Glalie",
-  "Torterra",
-  "Infernape",
-  "Empoleon",
-  "Luxray",
-  "Roserade",
-  "Rampardos",
-  "Bastiodon",
-  "Lopunny",
-  "Spiritomb",
-  "Garchomp",
-  "Lucario",
-  "Hippowdon",
-  "Toxicroak",
-  "Abomasnow",
-  "Weavile",
-  "Rhyperior",
-  "Leafeon",
-  "Glaceon",
-  "Gliscor",
-  "Mamoswine",
-  "Gallade",
-  "Froslass",
-  "Rotom",
-  "Serperior",
-  "Emboar",
-  "Samurott",
-  "Watchog",
-  "Liepard",
-  "Simisage",
-  "Simisear",
-  "Simipour",
-  "Excadrill",
-  "Audino",
-  "Conkeldurr",
-  "Whimsicott",
-  "Krookodile",
-  "Cofagrigus",
-  "Garbodor",
-  "Zoroark",
-  "Reuniclus",
-  "Vanilluxe",
-  "Emolga",
-  "Chandelure",
-  "Beartic",
-  "Stunfisk",
-  "Golurk",
-  "Hydreigon",
-  "Volcarona",
-  "Chesnaught",
-  "Delphox",
-  "Greninja",
-  "Diggersby",
-  "Talonflame",
-  "Vivillon",
-  "Floette-Eternal",
-  "Florges",
-  "Pangoro",
-  "Furfrou",
-  "Meowstic",
-  "Aegislash",
-  "Aromatisse",
-  "Slurpuff",
-  "Clawitzer",
-  "Heliolisk",
-  "Tyrantrum",
-  "Aurorus",
-  "Sylveon",
-  "Hawlucha",
-  "Dedenne",
-  "Goodra",
-  "Klefki",
-  "Trevenant",
-  "Gourgeist", // canonical base-form name (@pkmn/dex resolves Gourgeist-Average → Gourgeist)
-  "Avalugg",
-  "Noivern",
-  "Decidueye",
-  "Incineroar",
-  "Primarina",
-  "Toucannon",
-  "Crabominable",
-  "Lycanroc", // canonical base-form name (@pkmn/dex resolves Lycanroc-Midday → Lycanroc)
-  "Toxapex",
-  "Mudsdale",
-  "Araquanid",
-  "Tsareena",
-  "Oranguru",
-  "Passimian",
-  "Mimikyu",
-  "Drampa",
-  "Kommo-o",
-  "Corviknight",
-  "Flapple",
-  "Appletun",
-  "Sandaconda",
-  "Polteageist",
-  "Hatterene",
-  "Mr. Rime",
-  "Runerigus",
-  "Alcremie",
-  "Morpeko",
-  "Dragapult",
-  "Wyrdeer",
-  "Kleavor",
-  "Basculegion",
-  "Sneasler",
-  "Meowscarada",
-  "Skeledirge",
-  "Quaquaval",
-  "Maushold",
-  "Garganacl",
-  "Armarouge",
-  "Ceruledge",
-  "Bellibolt",
-  "Scovillain",
-  "Espathra",
-  "Tinkaton",
-  "Palafin",
-  "Orthworm",
-  "Glimmora",
-  "Farigiraf",
-  "Kingambit",
-  "Sinistcha",
-  "Archaludon",
-  "Hydrapple",
-  // Regional / battle-distinct alt forms
-  "Raichu-Alola",
-  "Ninetales-Alola",
-  "Arcanine-Hisui",
-  "Slowbro-Galar",
-  "Tauros-Paldea-Combat",
-  "Tauros-Paldea-Aqua",
-  "Tauros-Paldea-Blaze",
-  "Typhlosion-Hisui",
-  "Slowking-Galar",
-  "Samurott-Hisui",
-  "Zoroark-Hisui",
-  "Stunfisk-Galar",
-  "Meowstic-F",
-  // Aegislash-Shield resolves to "Aegislash" in @pkmn/dex (base form is Shield).
-  // "Aegislash" is already listed above in the base forms section, so it is
-  // intentionally omitted here to avoid a duplicate in the Set.
-  "Aegislash-Blade",
-  "Goodra-Hisui",
-  "Gourgeist-Small",
-  "Gourgeist-Large",
-  "Gourgeist-Super",
-  "Avalugg-Hisui",
-  "Decidueye-Hisui",
-  "Lycanroc-Midnight",
-  "Lycanroc-Dusk",
-  "Morpeko-Hangry",
-  "Basculegion-F",
-  // Maushold-Three resolves to "Maushold" in @pkmn/dex (base form = 3-person family).
-  // "Maushold" is already listed above in base forms, so omitted here.
-  "Maushold-Four",
-  "Palafin-Hero",
-  "Rotom-Heat",
-  "Rotom-Wash",
-  "Rotom-Frost",
-  "Rotom-Fan",
-  "Rotom-Mow",
-  // Mega forms — Champions-exclusive (custom — no @pkmn/dex entry)
-  "Chandelure-Mega",
-  "Chesnaught-Mega",
-  "Chimecho-Mega",
-  "Clefable-Mega",
-  "Crabominable-Mega",
-  "Delphox-Mega",
-  "Dragonite-Mega",
-  "Drampa-Mega",
-  "Emboar-Mega",
-  "Excadrill-Mega",
-  "Feraligatr-Mega",
-  "Floette-Mega",
-  "Froslass-Mega",
-  "Glimmora-Mega",
-  "Golurk-Mega",
-  "Greninja-Mega",
-  "Hawlucha-Mega",
-  "Meganium-Mega",
-  "Meowstic-Mega",
-  "Scovillain-Mega",
-  "Skarmory-Mega",
-  "Starmie-Mega",
-  "Victreebel-Mega",
-  // Standard Gen 6/7 mega forms (confirmed legal in Champions M-A)
-  "Abomasnow-Mega",
-  "Absol-Mega",
-  "Aerodactyl-Mega",
-  "Aggron-Mega",
-  "Alakazam-Mega",
-  "Altaria-Mega",
-  "Ampharos-Mega",
-  "Audino-Mega",
-  "Banette-Mega",
-  "Beedrill-Mega",
-  "Blastoise-Mega",
-  "Camerupt-Mega",
-  "Charizard-Mega-X",
-  "Charizard-Mega-Y",
-  "Gallade-Mega",
-  "Garchomp-Mega",
-  "Gardevoir-Mega",
-  "Gengar-Mega",
-  "Glalie-Mega",
-  "Gyarados-Mega",
-  "Heracross-Mega",
-  "Houndoom-Mega",
-  "Kangaskhan-Mega",
-  "Lopunny-Mega",
-  "Lucario-Mega",
-  "Manectric-Mega",
-  "Medicham-Mega",
-  "Pidgeot-Mega",
-  "Pinsir-Mega",
-  "Sableye-Mega",
-  "Scizor-Mega",
-  "Sharpedo-Mega",
-  "Slowbro-Mega",
-  "Steelix-Mega",
-  "Tyranitar-Mega",
-  "Venusaur-Mega",
+const CHAMPIONS_LEGALITY_BY_ID = new Map<string, ChampionsRegBundle>([
+  [CHAMPIONS_MA_FORMAT_ID, REG_MA_BUNDLE],
+  [CHAMPIONS_MB_FORMAT_ID, REG_MB_BUNDLE],
 ]);
 
 // =============================================================================
@@ -491,221 +232,45 @@ function computeLegalSpeciesFromSim(formatId: string): LegalityResult {
 }
 
 // =============================================================================
-// Items
+// Mega stone / ability maps (composed from all registered bundles)
 // =============================================================================
 
 /**
- * Every held item legal in Champions: VGC 2026 Reg M-A.
- *
- * Ported from Serebii's Champions items listing (serebii.net/pokemonchampions/items.shtml,
- * captured 2026-04-15). Champions has a curated item pool: 30 hold items,
- * 23 Mega Stones, and 28 Berries. Notably absent vs. gen-9 SV: Life Orb,
- * Choice Band, Choice Specs, Assault Vest, Rocky Helmet, Eviolite, Safety
- * Goggles, and most competitive staples beyond Choice Scarf.
+ * All mega species that appear in `MEGA_SPECIES_TO_STONE`.
+ * Re-exported under the original public name for backward compatibility.
  */
-const CHAMPIONS_MA_LEGAL_ITEMS: ReadonlySet<string> = new Set([
-  // Hold items (30)
-  "Black Belt",
-  "Black Glasses",
-  "Bright Powder",
-  "Charcoal",
-  "Choice Scarf",
-  "Dragon Fang",
-  "Fairy Feather",
-  "Focus Band",
-  "Focus Sash",
-  "Hard Stone",
-  "King's Rock",
-  "Leftovers",
-  "Light Ball",
-  "Magnet",
-  "Mental Herb",
-  "Metal Coat",
-  "Miracle Seed",
-  "Mystic Water",
-  "Never-Melt Ice",
-  "Poison Barb",
-  "Quick Claw",
-  "Scope Lens",
-  "Sharp Beak",
-  "Shell Bell",
-  "Silk Scarf",
-  "Silver Powder",
-  "Soft Sand",
-  "Spell Tag",
-  "Twisted Spoon",
-  "White Herb",
-  // Mega Stones (59)
-  "Chandelurite",
-  "Chesnaughtite",
-  "Chimechite",
-  "Clefablite",
-  "Crabominite",
-  "Delphoxite",
-  "Dragoninite",
-  "Drampanite",
-  "Emboarite",
-  "Excadrite",
-  "Feraligite",
-  "Floettite",
-  "Froslassite",
-  "Glimmoranite",
-  "Golurkite",
-  "Greninjite",
-  "Hawluchanite",
-  "Meganiumite",
-  "Meowsticite",
-  "Scovillainite",
-  "Skarmorite",
-  "Starminite",
-  "Victreebelite",
-  "Abomasite",
-  "Absolite",
-  "Aerodactylite",
-  "Aggronite",
-  "Alakazite",
-  "Altarianite",
-  "Ampharosite",
-  "Audinite",
-  "Banettite",
-  "Beedrillite",
-  "Blastoisinite",
-  "Cameruptite",
-  "Charizardite X",
-  "Charizardite Y",
-  "Galladite",
-  "Garchompite",
-  "Gardevoirite",
-  "Gengarite",
-  "Glalitite",
-  "Gyaradosite",
-  "Heracronite",
-  "Houndoominite",
-  "Kangaskhanite",
-  "Lopunnite",
-  "Lucarionite",
-  "Manectite",
-  "Medichamite",
-  "Pidgeotite",
-  "Pinsirite",
-  "Sablenite",
-  "Scizorite",
-  "Sharpedonite",
-  "Slowbronite",
-  "Steelixite",
-  "Tyranitarite",
-  "Venusaurite",
-  // Berries (28)
-  "Aspear Berry",
-  "Babiri Berry",
-  "Charti Berry",
-  "Cheri Berry",
-  "Chesto Berry",
-  "Chilan Berry",
-  "Chople Berry",
-  "Coba Berry",
-  "Colbur Berry",
-  "Haban Berry",
-  "Kasib Berry",
-  "Kebia Berry",
-  "Leppa Berry",
-  "Lum Berry",
-  "Occa Berry",
-  "Oran Berry",
-  "Passho Berry",
-  "Payapa Berry",
-  "Pecha Berry",
-  "Persim Berry",
-  "Rawst Berry",
-  "Rindo Berry",
-  "Roseli Berry",
-  "Shuca Berry",
-  "Sitrus Berry",
-  "Tanga Berry",
-  "Wacan Berry",
-  "Yache Berry",
-]);
+export type MegaSpeciesWithStone =
+  | MegaSpeciesWithStoneFromBundle
+  | MegaSpeciesWithStoneFromMBBundle;
 
 /**
- * Source-of-truth tuple-array for mega species → mega stone. Declared
- * `as const` so we can derive the literal-union of mega-species names
- * (`MegaSpeciesWithStone`) from the data — adding a row here widens the
- * type automatically.
+ * All mega species the calculator knows a post-evolution ability for.
+ * Strictly broader than `MegaSpeciesWithStone` (e.g. Rayquaza-Mega gates
+ * on Dragon Ascent rather than a stone item, so it appears here only).
+ * Re-exported under the original public name for backward compatibility.
  */
-const MEGA_STONE_ENTRIES = [
-  // Champions-exclusive megas
-  ["Chandelure-Mega", "Chandelurite"],
-  ["Chesnaught-Mega", "Chesnaughtite"],
-  ["Chimecho-Mega", "Chimechite"],
-  ["Clefable-Mega", "Clefablite"],
-  ["Crabominable-Mega", "Crabominite"],
-  ["Delphox-Mega", "Delphoxite"],
-  ["Dragonite-Mega", "Dragoninite"],
-  ["Drampa-Mega", "Drampanite"],
-  ["Emboar-Mega", "Emboarite"],
-  ["Excadrill-Mega", "Excadrite"],
-  ["Feraligatr-Mega", "Feraligite"],
-  ["Floette-Mega", "Floettite"],
-  ["Froslass-Mega", "Froslassite"],
-  ["Glimmora-Mega", "Glimmoranite"],
-  ["Golurk-Mega", "Golurkite"],
-  ["Greninja-Mega", "Greninjite"],
-  ["Hawlucha-Mega", "Hawluchanite"],
-  ["Meganium-Mega", "Meganiumite"],
-  ["Meowstic-Mega", "Meowsticite"],
-  ["Scovillain-Mega", "Scovillainite"],
-  ["Skarmory-Mega", "Skarmorite"],
-  ["Starmie-Mega", "Starminite"],
-  ["Victreebel-Mega", "Victreebelite"],
-  // Standard Gen 6/7 megas
-  ["Abomasnow-Mega", "Abomasite"],
-  ["Absol-Mega", "Absolite"],
-  ["Aerodactyl-Mega", "Aerodactylite"],
-  ["Aggron-Mega", "Aggronite"],
-  ["Alakazam-Mega", "Alakazite"],
-  ["Altaria-Mega", "Altarianite"],
-  ["Ampharos-Mega", "Ampharosite"],
-  ["Audino-Mega", "Audinite"],
-  ["Banette-Mega", "Banettite"],
-  ["Beedrill-Mega", "Beedrillite"],
-  ["Blastoise-Mega", "Blastoisinite"],
-  ["Camerupt-Mega", "Cameruptite"],
-  ["Charizard-Mega-X", "Charizardite X"],
-  ["Charizard-Mega-Y", "Charizardite Y"],
-  ["Gallade-Mega", "Galladite"],
-  ["Garchomp-Mega", "Garchompite"],
-  ["Gardevoir-Mega", "Gardevoirite"],
-  ["Gengar-Mega", "Gengarite"],
-  ["Glalie-Mega", "Glalitite"],
-  ["Gyarados-Mega", "Gyaradosite"],
-  ["Heracross-Mega", "Heracronite"],
-  ["Houndoom-Mega", "Houndoominite"],
-  ["Kangaskhan-Mega", "Kangaskhanite"],
-  ["Lopunny-Mega", "Lopunnite"],
-  ["Lucario-Mega", "Lucarionite"],
-  ["Manectric-Mega", "Manectite"],
-  ["Medicham-Mega", "Medichamite"],
-  ["Pidgeot-Mega", "Pidgeotite"],
-  ["Pinsir-Mega", "Pinsirite"],
-  ["Sableye-Mega", "Sablenite"],
-  ["Scizor-Mega", "Scizorite"],
-  ["Sharpedo-Mega", "Sharpedonite"],
-  ["Slowbro-Mega", "Slowbronite"],
-  ["Steelix-Mega", "Steelixite"],
-  ["Tyranitar-Mega", "Tyranitarite"],
-  ["Venusaur-Mega", "Venusaurite"],
-] as const;
+export type MegaSpeciesWithAbility =
+  | MegaSpeciesWithAbilityFromBundle
+  | MegaSpeciesWithAbilityFromMBBundle;
 
-/** All mega species that appear in `MEGA_SPECIES_TO_STONE`. */
-export type MegaSpeciesWithStone = (typeof MEGA_STONE_ENTRIES)[number][0];
+/**
+ * All registered Champions bundles, in order. When composing global mega maps,
+ * later bundles (M-B) override earlier ones (M-A) for any duplicate keys — but
+ * in practice the same mega never appears in two bundles with different data.
+ * M-B's stone/ability arrays already include all M-A entries (via spread).
+ */
+const ALL_CHAMPIONS_BUNDLES: readonly ChampionsRegBundle[] = [
+  REG_MA_BUNDLE,
+  REG_MB_BUNDLE,
+];
 
-/** Maps mega species names to their required mega stone (Champions M-A). */
+/**
+ * Maps mega species names to their required mega stone.
+ * Composed from ALL registered bundles — M-B is a superset of M-A so its
+ * megaStones array already covers both regulations.
+ */
 const MEGA_SPECIES_TO_STONE: ReadonlyMap<string, string> = new Map(
-  MEGA_STONE_ENTRIES
-);
-
-const MEGA_STONE_SPECIES_SET: ReadonlySet<string> = new Set(
-  MEGA_STONE_ENTRIES.map(([k]) => k)
+  ALL_CHAMPIONS_BUNDLES.flatMap((b) => b.megaStones)
 );
 
 /**
@@ -715,7 +280,22 @@ const MEGA_STONE_SPECIES_SET: ReadonlySet<string> = new Set(
 export function isMegaSpeciesWithStone(
   species: string | null | undefined
 ): species is MegaSpeciesWithStone {
-  return species != null && MEGA_STONE_SPECIES_SET.has(species);
+  return species != null && MEGA_SPECIES_TO_STONE.has(species);
+}
+
+/**
+ * Maps mega species → post-evolution ability.
+ * Composed from ALL registered bundles.
+ */
+const MEGA_SPECIES_TO_ABILITY: ReadonlyMap<string, string> = new Map(
+  ALL_CHAMPIONS_BUNDLES.flatMap((b) => b.megaAbilities)
+);
+
+/** Runtime guard: does the calculator know a mega ability for `species`? */
+export function isMegaSpeciesWithAbility(
+  species: string | null | undefined
+): species is MegaSpeciesWithAbility {
+  return species != null && MEGA_SPECIES_TO_ABILITY.has(species);
 }
 
 // Module-level cache — computed once per process (worker) lifetime, mirroring
@@ -793,29 +373,6 @@ function computeLegalItemsFromSim(formatId: string): LegalityResult {
 // Moves
 // =============================================================================
 
-// Champions M-A has no published format-level move bans (verified 2026-04-15
-// via serebii.net/pokemonchampions/rankedbattle/, Reg M-A rules page, and
-// serebii.net/pokemonchampions/moves.shtml — the game curates a ~500 move
-// pool per species but has no additional format-level bans on top). Empty
-// set means Champions goes through the sim-backed learnset path with gen-9
-// data; species in Champions are all gen-9 entries so learnsets resolve.
-const CHAMPIONS_MA_MOVE_BANLIST: ReadonlySet<string> = new Set();
-
-/**
- * Extra moves granted to specific Champions species beyond what @pkmn/sim
- * derives from Gen 9 learnsets. Needed for moves that are isNonstandard='Past'
- * in Gen 9 data and therefore skipped by the learnset validator.
- */
-const CHAMPIONS_SPECIES_MOVE_OVERRIDES: ReadonlyMap<
-  string,
-  ReadonlySet<string>
-> = new Map([
-  // Light of Ruin is Floette-Eternal's Gen 6 signature move — never released
-  // officially, marked Past in Gen 9, absent from Gen 9 learnsets.
-  ["Floette-Eternal", new Set(["Light of Ruin"])],
-  ["Floette-Mega", new Set(["Light of Ruin"])],
-]);
-
 // Cache key: `${species}::${formatId}`. Iterating the full move list per
 // species is expensive (~800 moves per call); cache on first request per
 // combination.
@@ -873,10 +430,14 @@ function computeLegalMovesFromSim(
   return legal;
 }
 
-// Champions move cache is keyed by species only — all Champions species
-// use the same gen-9 AG base validator and the same (currently empty)
-// format-level banlist.
-const championsMoveCache = new Map<string, ReadonlySet<string>>();
+// Champions move cache: outer key = bundle identity (WeakMap), inner key = species.
+// Using a WeakMap ensures different regulation bundles never share cached results —
+// previously a single Map keyed by species would return M-A results for M-B
+// queries (or vice versa) if both bundles share a species.
+const championsMoveCache = new WeakMap<
+  ChampionsRegBundle,
+  Map<string, ReadonlySet<string>>
+>();
 
 /**
  * Some Champions-exclusive megas derive from a base form whose canonical
@@ -889,7 +450,7 @@ const CHAMPIONS_MEGA_LEARNSET_BASE: Readonly<Record<string, string>> = {
 };
 
 /**
- * Compute the legal-move set for a Champions: VGC 2026 Reg M-A species.
+ * Compute the legal-move set for a Champions species using the given regulation bundle.
  *
  * All Champions-roster species exist in the gen-9 pokedex (including
  * Hisui/Paldea/Galar regional forms), so `checkCanLearn` works against
@@ -898,10 +459,21 @@ const CHAMPIONS_MEGA_LEARNSET_BASE: Readonly<Record<string, string>> = {
  * Uses Anything Goes as the base validator — it has an empty banlist,
  * so `checkCanLearn` operates purely on learnset data with no format-
  * level move bans leaking through. Champions-specific bans are applied
- * on top via `CHAMPIONS_MA_MOVE_BANLIST`.
+ * on top via the bundle's moveBanlist.
  */
-function computeLegalMovesForChampions(species: string): LegalityResult {
-  const cached = championsMoveCache.get(species);
+function computeLegalMovesForChampions(
+  species: string,
+  bundle: ChampionsRegBundle
+): LegalityResult {
+  // Two-level cache: bundle identity (WeakMap) → species (Map).
+  // This prevents a species shared between M-A and M-B from receiving the
+  // wrong cached set when the two bundles differ in moveBanlist.
+  let bundleMoveCache = championsMoveCache.get(bundle);
+  if (!bundleMoveCache) {
+    bundleMoveCache = new Map();
+    championsMoveCache.set(bundle, bundleMoveCache);
+  }
+  const cached = bundleMoveCache.get(species);
   if (cached) return cached;
 
   // For mega species, look up learnset from the base form.
@@ -922,7 +494,7 @@ function computeLegalMovesForChampions(species: string): LegalityResult {
   // aren't natively in the Gen 9 Paldea dex. "Min Source Gen = 9" would
   // incorrectly reject moves these mons learn via older-gen TMs/tutors that
   // are valid in Gen 9. No Min Source Gen restriction is applied — the Gen 9
-  // learnset data + CHAMPIONS_MA_MOVE_BANLIST is the source of truth.
+  // learnset data + bundle.moveBanlist is the source of truth.
   const format = SimDex.formats.get("[Gen 9] Anything Goes");
   if (!format?.exists) return undefined;
   const validator = new TeamValidator(format, SimDex);
@@ -933,7 +505,7 @@ function computeLegalMovesForChampions(species: string): LegalityResult {
     for (const move of gen.moves.all()) {
       if (!move.exists) continue;
       if (move.isNonstandard && move.isNonstandard !== "Unobtainable") continue;
-      if (CHAMPIONS_MA_MOVE_BANLIST.has(move.name)) continue;
+      if (bundle.moveBanlist.has(move.name)) continue;
       if (validator.checkCanLearn(move, speciesObj) === null) {
         legal.add(move.name);
       }
@@ -948,25 +520,20 @@ function computeLegalMovesForChampions(species: string): LegalityResult {
 
   // Append per-species overrides — moves that @pkmn/sim can't derive from
   // Gen 9 learnsets (e.g. Past-tagged moves like Light of Ruin).
-  const overrides = CHAMPIONS_SPECIES_MOVE_OVERRIDES.get(species);
+  const overrides = bundle.moveOverrides.get(species);
   if (overrides) {
     for (const moveName of overrides) {
       legal.add(moveName);
     }
   }
 
-  championsMoveCache.set(species, legal);
+  bundleMoveCache.set(species, legal);
   return legal;
 }
 
 // =============================================================================
 // Abilities
 // =============================================================================
-
-// Champions M-A has no format-level ability bans (verified 2026-04-15 via
-// serebii.net/pokemonchampions — Reg M-A rules page lists no ability restrictions;
-// the game assigns abilities per species with no additional format bans).
-const CHAMPIONS_MA_ABILITY_BANLIST: ReadonlySet<string> = new Set();
 
 // Cache key: `${species}::${formatId}`. Species have 1-3 abilities; cache on
 // first request per combination.
@@ -1038,16 +605,32 @@ function computeLegalAbilitiesFromSim(
   return legal;
 }
 
-/** Module-scope cache for Champions ability lookups. */
-const championsAbilityCache = new Map<string, ReadonlySet<string>>();
+/**
+ * Champions ability cache: outer key = bundle identity (WeakMap), inner key = species.
+ * Mirrors the move cache fix — different bundles may have different abilityBanlist
+ * values, so keying by species alone would return stale results across bundles.
+ */
+const championsAbilityCache = new WeakMap<
+  ChampionsRegBundle,
+  Map<string, ReadonlySet<string>>
+>();
 
 /**
- * Compute the legal-ability set for a Champions: VGC 2026 Reg M-A species.
- * Returns the species' own abilities filtered through the Champions ability
- * banlist (currently empty — all abilities legal).
+ * Compute the legal-ability set for a Champions species.
+ * Returns the species' own abilities filtered through the bundle's ability
+ * banlist (currently empty for all regulations — all abilities legal).
  */
-function computeLegalAbilitiesForChampions(species: string): LegalityResult {
-  const cached = championsAbilityCache.get(species);
+function computeLegalAbilitiesForChampions(
+  species: string,
+  bundle: ChampionsRegBundle
+): LegalityResult {
+  // Two-level cache: bundle identity (WeakMap) → species (Map).
+  let bundleAbilityCache = championsAbilityCache.get(bundle);
+  if (!bundleAbilityCache) {
+    bundleAbilityCache = new Map();
+    championsAbilityCache.set(bundle, bundleAbilityCache);
+  }
+  const cached = bundleAbilityCache.get(species);
   if (cached) return cached;
 
   const gen = SimDex.forGen(9);
@@ -1055,19 +638,12 @@ function computeLegalAbilitiesForChampions(species: string): LegalityResult {
   if (!speciesObj?.exists) return undefined;
   const legal: ReadonlySet<string> = new Set(
     speciesAbilityNames(speciesObj).filter(
-      (name) => !CHAMPIONS_MA_ABILITY_BANLIST.has(name)
+      (name) => !bundle.abilityBanlist.has(name)
     )
   );
-  championsAbilityCache.set(species, legal);
+  bundleAbilityCache.set(species, legal);
   return legal;
 }
-
-// =============================================================================
-// Format ID Constants
-// =============================================================================
-
-/** Format ID for Champions VGC 2026 Regulation M-A. */
-const CHAMPIONS_MA_FORMAT_ID = "gen9championsvgc2026regma";
 
 // =============================================================================
 // Tera Types
@@ -1125,9 +701,8 @@ function formatUsesTerastalClause(formatId: string): boolean {
  * if legality cannot be determined (treat as permissive).
  */
 export function getLegalSpecies(formatId: string): LegalityResult {
-  if (formatId === CHAMPIONS_MA_FORMAT_ID) {
-    return CHAMPIONS_MA_LEGAL_SPECIES;
-  }
+  const bundle = CHAMPIONS_LEGALITY_BY_ID.get(formatId);
+  if (bundle) return bundle.legalSpecies;
   return computeLegalSpeciesFromSim(formatId);
 }
 
@@ -1151,7 +726,8 @@ export function isLegalSpecies(species: string, formatId: string): boolean {
  * any item).
  */
 export function getLegalItems(formatId: string): LegalityResult {
-  if (formatId === CHAMPIONS_MA_FORMAT_ID) return CHAMPIONS_MA_LEGAL_ITEMS;
+  const bundle = CHAMPIONS_LEGALITY_BY_ID.get(formatId);
+  if (bundle) return bundle.legalItems;
   return computeLegalItemsFromSim(formatId);
 }
 
@@ -1179,9 +755,8 @@ export function getLegalMoves(
   species: string,
   formatId: string
 ): LegalityResult {
-  if (formatId === CHAMPIONS_MA_FORMAT_ID) {
-    return computeLegalMovesForChampions(species);
-  }
+  const bundle = CHAMPIONS_LEGALITY_BY_ID.get(formatId);
+  if (bundle) return computeLegalMovesForChampions(species, bundle);
   return computeLegalMovesFromSim(species, formatId);
 }
 
@@ -1212,9 +787,8 @@ export function getLegalAbilities(
   species: string,
   formatId: string
 ): LegalityResult {
-  if (formatId === CHAMPIONS_MA_FORMAT_ID) {
-    return computeLegalAbilitiesForChampions(species);
-  }
+  const bundle = CHAMPIONS_LEGALITY_BY_ID.get(formatId);
+  if (bundle) return computeLegalAbilitiesForChampions(species, bundle);
   return computeLegalAbilitiesFromSim(species, formatId);
 }
 
@@ -1253,8 +827,8 @@ export function isLegalAbility(
  * - Unknown formats → `undefined` (permissive).
  */
 export function getLegalTeraTypes(formatId: string): LegalityResult {
-  // Champions M-A has no Tera — only Mega Evolutions.
-  if (formatId === CHAMPIONS_MA_FORMAT_ID) {
+  // Champions formats have no Tera — only Mega Evolutions.
+  if (CHAMPIONS_LEGALITY_BY_ID.has(formatId)) {
     return EMPTY_TERA_SET;
   }
   // Unknown / unregistered formats → permissive.
@@ -1294,140 +868,6 @@ export function getMegaStoneForSpecies(species: string): string | null {
  * @smogon/calc species data (calc/src/data/species.ts) — each mega's
  * `abilities[0]` field is the source of truth.
  */
-const MEGA_ABILITY_ENTRIES = [
-  // Standard Gen 6/7 megas
-  ["Abomasnow-Mega", "Snow Warning"],
-  ["Absol-Mega", "Magic Bounce"],
-  ["Aerodactyl-Mega", "Tough Claws"],
-  ["Aggron-Mega", "Filter"],
-  ["Alakazam-Mega", "Trace"],
-  ["Altaria-Mega", "Pixilate"],
-  ["Ampharos-Mega", "Mold Breaker"],
-  ["Audino-Mega", "Healer"],
-  ["Banette-Mega", "Prankster"],
-  ["Beedrill-Mega", "Adaptability"],
-  ["Blastoise-Mega", "Mega Launcher"],
-  ["Blaziken-Mega", "Speed Boost"],
-  ["Camerupt-Mega", "Sheer Force"],
-  ["Charizard-Mega-X", "Tough Claws"],
-  ["Charizard-Mega-Y", "Drought"],
-  ["Diancie-Mega", "Magic Bounce"],
-  ["Gallade-Mega", "Inner Focus"],
-  ["Garchomp-Mega", "Sand Force"],
-  ["Gardevoir-Mega", "Pixilate"],
-  ["Gengar-Mega", "Shadow Tag"],
-  ["Glalie-Mega", "Refrigerate"],
-  ["Gyarados-Mega", "Mold Breaker"],
-  ["Heracross-Mega", "Skill Link"],
-  ["Houndoom-Mega", "Solar Power"],
-  ["Kangaskhan-Mega", "Parental Bond"],
-  ["Latias-Mega", "Levitate"],
-  ["Latios-Mega", "Levitate"],
-  ["Lopunny-Mega", "Scrappy"],
-  ["Lucario-Mega", "Adaptability"],
-  ["Manectric-Mega", "Intimidate"],
-  ["Mawile-Mega", "Huge Power"],
-  ["Medicham-Mega", "Pure Power"],
-  ["Metagross-Mega", "Tough Claws"],
-  ["Mewtwo-Mega-X", "Steadfast"],
-  ["Mewtwo-Mega-Y", "Insomnia"],
-  ["Pidgeot-Mega", "No Guard"],
-  ["Pinsir-Mega", "Aerilate"],
-  ["Rayquaza-Mega", "Delta Stream"],
-  ["Sableye-Mega", "Magic Bounce"],
-  ["Salamence-Mega", "Aerilate"],
-  ["Sceptile-Mega", "Lightning Rod"],
-  ["Scizor-Mega", "Technician"],
-  ["Sharpedo-Mega", "Strong Jaw"],
-  ["Slowbro-Mega", "Shell Armor"],
-  ["Steelix-Mega", "Sand Force"],
-  ["Swampert-Mega", "Swift Swim"],
-  ["Tyranitar-Mega", "Sand Stream"],
-  ["Venusaur-Mega", "Thick Fat"],
-  // Champions-exclusive megas
-  ["Barbaracle-Mega", "Tough Claws"],
-  ["Baxcalibur-Mega", "Thermal Exchange"],
-  ["Chandelure-Mega", "Infiltrator"],
-  ["Chesnaught-Mega", "Bulletproof"],
-  ["Chimecho-Mega", "Levitate"],
-  ["Clefable-Mega", "Magic Bounce"],
-  ["Crabominable-Mega", "Iron Fist"],
-  ["Darkrai-Mega", "Bad Dreams"],
-  ["Delphox-Mega", "Levitate"],
-  ["Dragalge-Mega", "Poison Point"],
-  ["Dragonite-Mega", "Multiscale"],
-  ["Drampa-Mega", "Berserk"],
-  ["Eelektross-Mega", "Levitate"],
-  ["Emboar-Mega", "Mold Breaker"],
-  ["Excadrill-Mega", "Piercing Drill"],
-  ["Falinks-Mega", "Battle Armor"],
-  ["Feraligatr-Mega", "Dragonize"],
-  ["Floette-Mega", "Fairy Aura"],
-  ["Froslass-Mega", "Snow Warning"],
-  ["Glimmora-Mega", "Adaptability"],
-  ["Golisopod-Mega", "Emergency Exit"],
-  ["Golurk-Mega", "Unseen Fist"],
-  ["Greninja-Mega", "Protean"],
-  ["Hawlucha-Mega", "Limber"],
-  ["Heatran-Mega", "Flash Fire"],
-  ["Magearna-Mega", "Soul-Heart"],
-  ["Magearna-Original-Mega", "Soul-Heart"],
-  ["Malamar-Mega", "Contrary"],
-  ["Meganium-Mega", "Mega Sol"],
-  ["Meowstic-F-Mega", "Trace"],
-  ["Meowstic-M-Mega", "Trace"],
-  ["Pyroar-Mega", "Rivalry"],
-  ["Raichu-Mega-X", "Surge Surfer"],
-  ["Raichu-Mega-Y", "Surge Surfer"],
-  ["Scolipede-Mega", "Poison Point"],
-  ["Scovillain-Mega", "Spicy Spray"],
-  ["Scrafty-Mega", "Shed Skin"],
-  ["Skarmory-Mega", "Keen Eye"],
-  ["Staraptor-Mega", "Intimidate"],
-  ["Starmie-Mega", "Huge Power"],
-  ["Tatsugiri-Curly-Mega", "Commander"],
-  ["Tatsugiri-Droopy-Mega", "Commander"],
-  ["Tatsugiri-Stretchy-Mega", "Commander"],
-  ["Victreebel-Mega", "Innards Out"],
-  ["Zeraora-Mega", "Volt Absorb"],
-  ["Zygarde-Mega", "Aura Break"],
-  // Misc / past-format
-  ["Crucibelle-Mega", "Magic Guard"],
-] as const;
-
-/**
- * All mega species the calculator knows a post-evolution ability for.
- * Strictly broader than `MegaSpeciesWithStone` (e.g. Rayquaza-Mega gates
- * on Dragon Ascent rather than a stone item, so it appears here only).
- */
-export type MegaSpeciesWithAbility = (typeof MEGA_ABILITY_ENTRIES)[number][0];
-
-const MEGA_SPECIES_TO_ABILITY: ReadonlyMap<string, string> = new Map(
-  MEGA_ABILITY_ENTRIES
-);
-
-const MEGA_ABILITY_SPECIES_SET: ReadonlySet<string> = new Set(
-  MEGA_ABILITY_ENTRIES.map(([k]) => k)
-);
-
-/** Runtime guard: does the calculator know a mega ability for `species`? */
-export function isMegaSpeciesWithAbility(
-  species: string | null | undefined
-): species is MegaSpeciesWithAbility {
-  return species != null && MEGA_ABILITY_SPECIES_SET.has(species);
-}
-
-/**
- * Returns the post-evolution ability for a mega species, or null if the
- * species is not a mega form.
- *
- * The base form's ability is what gets submitted on a tournament team
- * sheet (legality requirement). After mega evolution, the species's
- * intrinsic ability takes over — Drought for Mega Charizard Y, Tough
- * Claws for Mega Aerodactyl, etc. The damage calculator should compute
- * with the post-evolution ability while leaving the stored base ability
- * untouched.
- */
 export function getMegaAbilityForSpecies(species: string): string | null {
   return MEGA_SPECIES_TO_ABILITY.get(species) ?? null;
 }
@@ -1440,7 +880,9 @@ export function getMegaAbilityForSpecies(species: string): string | null {
  *          getMegaSpeciesForBaseAndItem("Charizard", "Charizardite Y") → "Charizard-Mega-Y"
  */
 const STONE_TO_MEGA: ReadonlyMap<string, string> = new Map(
-  MEGA_STONE_ENTRIES.map(([mega, stone]) => [stone, mega] as const)
+  ALL_CHAMPIONS_BUNDLES.flatMap((b) =>
+    b.megaStones.map(([mega, stone]) => [stone, mega] as const)
+  )
 );
 
 export function getMegaSpeciesForBaseAndItem(

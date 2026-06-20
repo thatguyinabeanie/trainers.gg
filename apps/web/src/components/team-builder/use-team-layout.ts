@@ -14,21 +14,23 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // Types
 // =============================================================================
 
-export type TeamLayoutMode = "1x6" | "2x3-vertical";
+export type TeamLayoutMode = "single" | "2x3-vertical";
 
 const STORAGE_KEY = "tg.team-layout";
 const URL_PARAM = "layout";
-const DEFAULT_MODE: TeamLayoutMode = "1x6";
-const VALID_MODES: readonly TeamLayoutMode[] = ["1x6", "2x3-vertical"];
+const DEFAULT_MODE: TeamLayoutMode = "single";
+const VALID_MODES: readonly TeamLayoutMode[] = ["single", "2x3-vertical"];
 
-// URL-friendly aliases. We expose `compact` / `grid` in shareable links
+// URL-friendly aliases. We expose `single` / `grid` in shareable links
 // rather than the internal mode names, which are an implementation detail.
+// Legacy `compact` alias maps to `single` for back-compat with old shared links.
 const MODE_TO_URL: Record<TeamLayoutMode, string> = {
-  "1x6": "compact",
+  single: "single",
   "2x3-vertical": "grid",
 };
 const URL_TO_MODE: Partial<Record<string, TeamLayoutMode>> = {
-  compact: "1x6",
+  single: "single",
+  compact: "single", // legacy alias — old shared links used `compact` for the 1x6 mode
   grid: "2x3-vertical",
 };
 
@@ -68,10 +70,11 @@ function getSnapshot(): TeamLayoutMode {
       window.localStorage.setItem(STORAGE_KEY, "2x3-vertical");
       return "2x3-vertical";
     }
-    // Old 2-column mode was removed — collapse to 1x6.
-    if (raw === "2x3") {
-      window.localStorage.setItem(STORAGE_KEY, "1x6");
-      return "1x6";
+    // Old 2-column mode was removed — collapsed to 1x6 in a prior migration.
+    // "1x6" is now retired in favour of "single" (same single-focus layout, new name).
+    if (raw === "2x3" || raw === "1x6") {
+      window.localStorage.setItem(STORAGE_KEY, "single");
+      return "single";
     }
     if (raw && (VALID_MODES as readonly string[]).includes(raw)) {
       return raw as TeamLayoutMode;
@@ -96,19 +99,20 @@ interface UseTeamLayoutResult {
   setMode: (next: TeamLayoutMode) => void;
   /** The user's persisted preference, regardless of mobile lock. */
   persisted: TeamLayoutMode;
-  /** True when mobile viewport is forcing 1x6 regardless of preference. */
+  /** True when mobile viewport is forcing "single" mode regardless of preference. */
   isMobileLocked: boolean;
 }
 
 /**
  * Returns the user's team layout preference and a setter that persists to
  * localStorage and mirrors to the `?layout=` URL parameter. On phone
- * viewports the effective mode is forced to `1x6`; the persisted value is
+ * viewports the effective mode is forced to `single`; the persisted value is
  * preserved so widening the viewport restores the user's pick.
  *
- * URL precedence: when `?layout=compact|grid` is present it wins over
+ * URL precedence: when `?layout=single|grid` is present it wins over
  * localStorage and is mirrored back to storage so the choice survives a
- * subsequent visit without the param.
+ * subsequent visit without the param. The legacy `?layout=compact` alias
+ * maps to `single` for back-compat with old shared links.
  */
 export function useTeamLayout(): UseTeamLayoutResult {
   const router = useRouter();
@@ -138,7 +142,7 @@ export function useTeamLayout(): UseTeamLayoutResult {
   }, [urlMode, persistedFromStorage]);
 
   const persisted: TeamLayoutMode = urlMode ?? persistedFromStorage;
-  const mode: TeamLayoutMode = isMobile ? "1x6" : persisted;
+  const mode: TeamLayoutMode = isMobile ? "single" : persisted;
 
   function setMode(next: TeamLayoutMode) {
     try {
@@ -164,14 +168,14 @@ export function useTeamLayout(): UseTeamLayoutResult {
 // TeamLayoutContext — consumed by IdentityLane (and any other component that
 // needs to know the effective grid layout mode without prop-drilling).
 //
-// Default value: "1x6". Tests that mount components directly without a
+// Default value: "single". Tests that mount components directly without a
 // provider get this default, which matches the persisted-default constant.
 // =============================================================================
 
 export const TeamLayoutContext = createContext<TeamLayoutMode>(DEFAULT_MODE);
 
 /**
- * Read the effective team-layout mode from context. Returns "1x6" when no
+ * Read the effective team-layout mode from context. Returns "single" when no
  * provider is mounted (the default that matches the persisted default).
  */
 export function useTeamLayoutMode(): TeamLayoutMode {

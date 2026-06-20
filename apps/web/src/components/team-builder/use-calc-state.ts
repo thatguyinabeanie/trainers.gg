@@ -78,6 +78,9 @@ export interface BaseSideState {
   stealthRock: boolean;
   spikes: SpikesCount;
   saltCure: boolean;
+  leechSeed: boolean;
+  crit: boolean;
+  singleTarget: boolean;
 }
 export type AttackerSideState = BaseSideState;
 
@@ -435,27 +438,24 @@ function buildAttackerFromDb(
     // mega's species + post-evolution ability. When OFF, simulate as the
     // base form (pre-mega turn 1, or two-megas scenario where THIS Pokemon
     // doesn't mega this match).
+    // Mega handling: the species itself is the source of truth — the builder's
+    // MEGA chip sets the mega form explicitly. When the species is a mega form
+    // and the per-calc mega toggle is OFF, simulate the base form (pre-mega
+    // turn 1 / two-megas scenario). We do NOT auto-upgrade a base species that
+    // merely holds its mega stone — toggling the MEGA chip must drive the calc.
     const isMegaForm = getMegaAbilityForSpecies(db.species) !== null;
-    const megaFromItem = !isMegaForm
-      ? getMegaSpeciesForBaseAndItem(db.species, db.held_item ?? "")
-      : null;
-    const canMega = isMegaForm || megaFromItem !== null;
-    const megaSpecies = isMegaForm ? db.species : megaFromItem;
     const effectiveSpecies =
-      canMega && megaActive && megaSpecies
-        ? megaSpecies
-        : canMega && !megaActive && isMegaForm
-          ? getCanonicalBaseSpecies(db.species)
-          : db.species;
-    // Verify the effective species (which may differ from db.species after mega
-    // resolution) also has known base stats before constructing.
+      isMegaForm && !megaActive
+        ? getCanonicalBaseSpecies(db.species)
+        : db.species;
+    // Verify the effective species has known base stats before constructing.
     if (!getBaseStats(effectiveSpecies)) return null;
     // Also verify the species exists in @smogon/calc's gen data — @pkmn/dex
     // and @smogon/calc have different species coverage per gen.
     if (!calcGenKnowsSpecies(gen, effectiveSpecies)) return null;
     const calcAbility =
-      canMega && megaActive && megaSpecies
-        ? (getMegaAbilityForSpecies(megaSpecies) ?? db.ability ?? null)
+      isMegaForm && megaActive
+        ? (getMegaAbilityForSpecies(db.species) ?? db.ability ?? null)
         : (db.ability ?? null);
     return new Pokemon(gen, effectiveSpecies, {
       level: db.level ?? 50,
@@ -497,24 +497,26 @@ function buildDefenderPokemon(
 ): Pokemon | null {
   if (!species) return null;
   try {
-    // Per-calc mega toggle (see buildAttackerFromDb).
+    // Mega handling — species is the source of truth (see buildAttackerFromDb).
     const isMegaForm = getMegaAbilityForSpecies(species) !== null;
-    // Also handle base species holding its mega stone
-    const megaFromItem = !isMegaForm
-      ? getMegaSpeciesForBaseAndItem(species, item)
-      : null;
-    const canMega = isMegaForm || megaFromItem !== null;
-    const megaSpecies = isMegaForm ? species : megaFromItem;
+    // When a base species holds its mega stone, resolve the mega form so the
+    // calc uses mega stats — matching what calc-defender-header.tsx displays.
+    const megaFromItem =
+      !isMegaForm && megaActive
+        ? getMegaSpeciesForBaseAndItem(species, item)
+        : null;
     const effectiveSpecies =
-      canMega && megaActive && megaSpecies
-        ? megaSpecies
-        : canMega && !megaActive && isMegaForm
-          ? getCanonicalBaseSpecies(species)
+      isMegaForm && !megaActive
+        ? getCanonicalBaseSpecies(species)
+        : megaFromItem
+          ? megaFromItem
           : species;
     const calcAbility =
-      canMega && megaActive && megaSpecies
-        ? (getMegaAbilityForSpecies(megaSpecies) ?? ability)
-        : ability;
+      isMegaForm && megaActive
+        ? (getMegaAbilityForSpecies(species) ?? ability)
+        : megaFromItem
+          ? (getMegaAbilityForSpecies(megaFromItem) ?? ability)
+          : ability;
     // Bail if the species has no base stats in @pkmn/dex.
     if (!getBaseStats(effectiveSpecies)) return null;
     // Bail if the species is unknown to @smogon/calc's gen data.
@@ -562,6 +564,8 @@ function buildField(
   terrain: string,
   gravity: boolean,
   fairyAura: boolean,
+  magicRoom: boolean,
+  wonderRoom: boolean,
   attackerSide: BaseSideState,
   defenderSide: BaseSideState,
   direction: CalcDirection
@@ -580,6 +584,7 @@ function buildField(
     isSR: aSide.stealthRock,
     spikes: aSide.spikes,
     isSaltCured: aSide.saltCure,
+    isSeeded: aSide.leechSeed,
   });
 
   const dSmogon = new Side({
@@ -593,6 +598,7 @@ function buildField(
     isSR: dSide.stealthRock,
     spikes: dSide.spikes,
     isSaltCured: dSide.saltCure,
+    isSeeded: dSide.leechSeed,
   });
 
   return new Field({
@@ -601,6 +607,8 @@ function buildField(
     terrain: asSmogon(terrain || null),
     isGravity: gravity,
     isFairyAura: fairyAura,
+    isMagicRoom: magicRoom,
+    isWonderRoom: wonderRoom,
     attackerSide: aSmogon,
     defenderSide: dSmogon,
   });
@@ -629,7 +637,9 @@ function runCalc(
   isCrit: boolean,
   field: Field,
   faintedForMove?: number,
-  weather?: string
+  weather?: string,
+  singleTarget?: boolean,
+  formatId?: string | null
 ): CalcOutput | null {
   try {
     const basePowerOverride =
@@ -641,6 +651,10 @@ function runCalc(
         ? { isCrit, basePower: basePowerOverride }
         : { isCrit };
     const move = new Move(gen, moveName, moveOpts);
+    // Single Target: override the move's target so the Doubles spread-move
+    // reduction (×0.75) is not applied. The engine gates that on
+    // move.target being allAdjacent/allAdjacentFoes (gen789).
+    if (singleTarget) move.target = "normal";
     const result = calculate(gen, attacker, defender, move, field);
     const damage = result.damage;
     // Distinguish "calc failed" (damage is undefined/null) from "damage is 0"
@@ -690,7 +704,7 @@ function runCalc(
     // like Weather Ball resolve to the correct type (e.g. Fire under Sun).
     const moveEffectiveness = isImmune
       ? 0
-      : getMoveEffectiveness(moveName, defenderSpeciesName, weather);
+      : getMoveEffectiveness(moveName, defenderSpeciesName, weather, formatId);
     const isSuperEffective = moveEffectiveness > 1;
     const recoveryVerdict = isImmune
       ? { tier: null, suffix: "" }
@@ -842,6 +856,10 @@ export interface UseCalcStateReturn {
   setGravity: (v: boolean) => void;
   fairyAura: boolean;
   setFairyAura: (v: boolean) => void;
+  magicRoom: boolean;
+  setMagicRoom: (v: boolean) => void;
+  wonderRoom: boolean;
+  setWonderRoom: (v: boolean) => void;
   // Sides
   attackerSide: AttackerSideState;
   defenderSide: BaseSideState;
@@ -1029,6 +1047,8 @@ export function useCalcState({
   const [terrain, setTerrain] = useState("");
   const [gravity, setGravity] = useState(false);
   const [fairyAura, setFairyAura] = useState(false);
+  const [magicRoom, setMagicRoom] = useState(false);
+  const [wonderRoom, setWonderRoom] = useState(false);
   const [attackerSide, setAttackerSideState] = useState<AttackerSideState>({
     reflect: false,
     lightScreen: false,
@@ -1040,6 +1060,9 @@ export function useCalcState({
     stealthRock: false,
     spikes: 0,
     saltCure: false,
+    leechSeed: false,
+    crit: false,
+    singleTarget: false,
   });
   const [defenderSide, setDefenderSideState] = useState<BaseSideState>({
     reflect: false,
@@ -1052,6 +1075,9 @@ export function useCalcState({
     stealthRock: false,
     spikes: 0,
     saltCure: false,
+    leechSeed: false,
+    crit: false,
+    singleTarget: false,
   });
 
   // --- Helpers exposed to consumers ---
@@ -1176,6 +1202,8 @@ export function useCalcState({
     effectiveTerrain,
     gravity,
     fairyAura,
+    magicRoom,
+    wonderRoom,
     attackerSide,
     defenderSide,
     direction
@@ -1242,6 +1270,8 @@ export function useCalcState({
     effectiveTerrain,
     gravity,
     fairyAura,
+    magicRoom,
+    wonderRoom,
     attackerSide,
     defenderSide,
     "defense"
@@ -1262,10 +1292,12 @@ export function useCalcState({
         sharedAttacker,
         sharedDefender,
         moveName,
-        isCrit,
+        isCrit || attackerSide.crit,
         sharedOffenseField,
         faintedYours,
-        effectiveWeather
+        effectiveWeather,
+        attackerSide.singleTarget,
+        format?.id
       );
     }
 
@@ -1277,10 +1309,12 @@ export function useCalcState({
       sharedDefenderAsAttacker,
       sharedOurPokemonAsDefender,
       moveName,
-      isCrit,
+      isCrit || defenderSide.crit,
       sharedDefenseField,
       faintedTheirs,
-      effectiveWeather
+      effectiveWeather,
+      defenderSide.singleTarget,
+      format?.id
     );
   }
 
@@ -1317,7 +1351,8 @@ export function useCalcState({
     ] as const;
     return rowMoves.map((moveName, idx) => {
       if (!moveName) return null;
-      const isCrit = isFocused ? (critMoves[idx] ?? false) : false;
+      const isCrit =
+        (isFocused ? (critMoves[idx] ?? false) : false) || attackerSide.crit;
       return runCalc(
         gen,
         attacker,
@@ -1326,7 +1361,9 @@ export function useCalcState({
         isCrit,
         sharedOffenseField,
         faintedYours,
-        effectiveWeather
+        effectiveWeather,
+        attackerSide.singleTarget,
+        format?.id
       );
     });
   }
@@ -1347,10 +1384,12 @@ export function useCalcState({
       sharedDefenderAsAttacker,
       sharedOurPokemonAsDefender,
       moveName,
-      false,
+      defenderSide.crit,
       sharedDefenseField,
       faintedTheirs,
-      effectiveWeather
+      effectiveWeather,
+      defenderSide.singleTarget,
+      format?.id
     );
   }
 
@@ -1396,10 +1435,12 @@ export function useCalcState({
         sharedDefenderAsAttacker,
         ourDefender,
         moveName,
-        false,
+        defenderSide.crit,
         sharedDefenseField,
         faintedTheirs,
-        effectiveWeather
+        effectiveWeather,
+        defenderSide.singleTarget,
+        format?.id
       );
     });
   }
@@ -1452,6 +1493,10 @@ export function useCalcState({
     setGravity,
     fairyAura,
     setFairyAura,
+    magicRoom,
+    setMagicRoom,
+    wonderRoom,
+    setWonderRoom,
     attackerSide,
     defenderSide,
     setAttackerSide,

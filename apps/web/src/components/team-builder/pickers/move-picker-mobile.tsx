@@ -26,11 +26,7 @@ import {
   type MoveData,
 } from "@trainers/pokemon";
 
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
 import { useUsageData } from "../use-usage-data";
 import { normalizeMoveKey } from "./move-list-shared";
@@ -111,7 +107,7 @@ export function MovePickerMobile({
   const lower = query.toLowerCase();
   const filtered: MoveEntry[] = [];
   for (const name of legalMoves) {
-    const data = getMoveData(name);
+    const data = getMoveData(name, format?.id);
     // Skip moves with no data — excluding here keeps the counter accurate
     // (a null entry counted in filtered.length but skipped in the render
     // would show a mismatch between the "X/Y" chip and visible rows).
@@ -145,20 +141,20 @@ export function MovePickerMobile({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         showHandle={false}
-        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-2xl p-0"
+        className="h-[95dvh] overflow-hidden rounded-t-2xl p-0 data-[vaul-drawer-direction=bottom]:max-h-[95dvh]"
       >
         <DrawerTitle className="sr-only">Choose move</DrawerTitle>
 
         {/* Drag handle */}
         <div
           aria-hidden="true"
-          className="mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full bg-muted-foreground/20"
+          className="bg-muted-foreground/20 mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full"
         />
 
         {/* Bounded container — flex-1 fills the remaining drawer height */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Search header — sticky at the top of the drawer */}
-          <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3">
+          <div className="border-border flex h-11 shrink-0 items-center gap-2 border-b px-3">
             <Search className="text-muted-foreground size-4 shrink-0" />
             <input
               type="text"
@@ -166,7 +162,7 @@ export function MovePickerMobile({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search moves"
-              className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-[16px] leading-tight focus:outline-none sm:text-sm" // text-[16px]: prevents iOS auto-zoom on focus (zoom triggers below 16px)
+              className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-base leading-tight focus:outline-none sm:text-sm" // text-base (1rem = 16px): prevents iOS auto-zoom on focus (zoom triggers below 16px)
             />
             <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
               {filtered.length}/{legalMoves.length}

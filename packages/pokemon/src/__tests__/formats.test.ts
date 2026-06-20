@@ -7,6 +7,9 @@ import {
   getActiveFormats,
   getAvailableGames,
   getFormatsByGame,
+  isChampionsFormat,
+  isChampionsFormatId,
+  formatHasTera,
 } from "../formats";
 
 describe("getFormatById", () => {
@@ -32,7 +35,8 @@ describe("getFormatById", () => {
     // Waves). Champions-specific behaviors discriminate on gameShort.
     expect(format?.generation).toBe(9);
     expect(format?.gameShort).toBe("Champions");
-    expect(format?.active).toBe(true);
+    // Reg M-A was superseded by Reg M-B on 2026-06-17, so it is now inactive.
+    expect(format?.active).toBe(false);
   });
 
   it("returns undefined for an unknown ID", () => {
@@ -81,12 +85,14 @@ describe("getActiveFormats", () => {
     expect(activeIds.has("gen8vgc2022")).toBe(false);
   });
 
-  it("includes gen9vgc2026regi and gen9championsvgc2026regma as active", () => {
+  it("includes gen9vgc2026regi and gen9championsvgc2026regmb as active", () => {
     const activeFormats = getActiveFormats();
     const activeIds = activeFormats.map((f) => f.id);
 
     expect(activeIds).toContain("gen9vgc2026regi");
-    expect(activeIds).toContain("gen9championsvgc2026regma");
+    // Champions Reg M-B superseded Reg M-A on 2026-06-17.
+    expect(activeIds).toContain("gen9championsvgc2026regmb");
+    expect(activeIds).not.toContain("gen9championsvgc2026regma");
   });
 
   it("active formats count matches the number of active=true entries in VGC_FORMATS", () => {
@@ -248,7 +254,8 @@ describe("VGC_FORMATS registry", () => {
     const entry = VGC_FORMATS.find((f) => f.id === "gen9championsvgc2026regma");
 
     expect(entry).toBeDefined();
-    expect(entry?.active).toBe(true);
+    // Reg M-A is retained in the registry but inactive after the M-B cutover.
+    expect(entry?.active).toBe(false);
     expect(entry?.doubles).toBe(true);
     expect(entry?.generation).toBe(9);
     expect(entry?.gameShort).toBe("Champions");
@@ -277,5 +284,108 @@ describe("VGC_FORMATS registry", () => {
 
   it("all formats have doubles=true (VGC is a doubles format)", () => {
     expect(VGC_FORMATS.every((f) => f.doubles)).toBe(true);
+  });
+});
+
+// =============================================================================
+// Champions M-B format registration tests
+// =============================================================================
+
+describe("getFormatById — Champions M-B", () => {
+  const MB_ID = "gen9championsvgc2026regmb";
+  const MA_ID = "gen9championsvgc2026regma";
+
+  it("returns a defined entry for gen9championsvgc2026regmb", () => {
+    expect(getFormatById(MB_ID)).toBeDefined();
+  });
+
+  it("M-B format has active: true", () => {
+    expect(getFormatById(MB_ID)?.active).toBe(true);
+  });
+
+  it("M-B format has regulation: 'M-B'", () => {
+    expect(getFormatById(MB_ID)?.regulation).toBe("M-B");
+  });
+
+  it("M-B format has label 'Champions: Reg M-B'", () => {
+    expect(getFormatById(MB_ID)?.label).toBe("Champions: Reg M-B");
+  });
+
+  it("M-B format is a Pokemon Champions format (gameShort === 'Champions')", () => {
+    const format = getFormatById(MB_ID);
+    expect(format?.gameShort).toBe("Champions");
+  });
+
+  it("M-B format has generation 9 (runs on SV mechanics)", () => {
+    expect(getFormatById(MB_ID)?.generation).toBe(9);
+  });
+
+  it("M-B format has game 'Pokemon Champions'", () => {
+    expect(getFormatById(MB_ID)?.game).toBe("Pokemon Champions");
+  });
+
+  it("M-B format has doubles: true", () => {
+    expect(getFormatById(MB_ID)?.doubles).toBe(true);
+  });
+
+  it("M-A format is now active: false (superseded by M-B)", () => {
+    expect(getFormatById(MA_ID)?.active).toBe(false);
+  });
+
+  it("isChampionsFormat returns true for M-B format object", () => {
+    const format = getFormatById(MB_ID);
+    expect(isChampionsFormat(format)).toBe(true);
+  });
+
+  it("isChampionsFormatId returns true for M-B format ID string", () => {
+    expect(isChampionsFormatId(MB_ID)).toBe(true);
+  });
+
+  it("formatHasTera returns false for M-B (Champions does not support Tera)", () => {
+    const format = getFormatById(MB_ID);
+    expect(formatHasTera(format)).toBe(false);
+  });
+});
+
+describe("getActiveFormats — Champions M-B", () => {
+  const MB_ID = "gen9championsvgc2026regmb";
+  const MA_ID = "gen9championsvgc2026regma";
+
+  it("includes M-B in active formats", () => {
+    const activeIds = getActiveFormats().map((f) => f.id);
+    expect(activeIds).toContain(MB_ID);
+  });
+
+  it("does NOT include M-A in active formats (superseded by M-B)", () => {
+    const activeIds = getActiveFormats().map((f) => f.id);
+    expect(activeIds).not.toContain(MA_ID);
+  });
+});
+
+describe("getFormatLabel — Champions M-B", () => {
+  it("returns 'Champions: Reg M-B' for the M-B format ID", () => {
+    expect(getFormatLabel("gen9championsvgc2026regmb")).toBe("Champions: Reg M-B");
+  });
+});
+
+describe("VGC_FORMATS registry — Champions M-B", () => {
+  it("contains gen9championsvgc2026regmb entry", () => {
+    const entry = VGC_FORMATS.find((f) => f.id === "gen9championsvgc2026regmb");
+    expect(entry).toBeDefined();
+    expect(entry?.active).toBe(true);
+    expect(entry?.regulation).toBe("M-B");
+    expect(entry?.gameShort).toBe("Champions");
+  });
+
+  it("M-B appears before M-A in VGC_FORMATS (newest first)", () => {
+    const mbIdx = VGC_FORMATS.findIndex((f) => f.id === "gen9championsvgc2026regmb");
+    const maIdx = VGC_FORMATS.findIndex((f) => f.id === "gen9championsvgc2026regma");
+    expect(mbIdx).toBeGreaterThanOrEqual(0);
+    expect(maIdx).toBeGreaterThanOrEqual(0);
+    expect(mbIdx).toBeLessThan(maIdx);
+  });
+
+  it("ALL_FORMAT_IDS contains gen9championsvgc2026regmb", () => {
+    expect(ALL_FORMAT_IDS).toContain("gen9championsvgc2026regmb");
   });
 });

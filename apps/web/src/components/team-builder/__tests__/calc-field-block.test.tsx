@@ -37,7 +37,6 @@ import {
 // Mocks
 // =============================================================================
 
-
 // =============================================================================
 // Import after mocks
 // =============================================================================
@@ -60,6 +59,9 @@ function makeSideState(overrides: Partial<BaseSideState> = {}): BaseSideState {
     stealthRock: false,
     spikes: 0,
     saltCure: false,
+    leechSeed: false,
+    crit: false,
+    singleTarget: false,
     ...overrides,
   };
 }
@@ -355,7 +357,9 @@ describe("CalcFieldBlock — terrain chips", () => {
 describe("CalcFieldBlock — gravity toggle", () => {
   it("renders the Gravity toggle button with full label", () => {
     renderBlock();
-    expect(screen.getByRole("button", { name: /^gravity$/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^gravity$/i })
+    ).toBeInTheDocument();
   });
 
   it("gravity button is NOT pressed by default", () => {
@@ -434,7 +438,9 @@ describe("CalcFieldBlock — Yours side toggles", () => {
       attackerSide: makeSideState({ lightScreen: false }),
       setAttackerSide,
     });
-    fireEvent.click(screen.getByRole("switch", { name: /light screen \(ours\)/i }));
+    fireEvent.click(
+      screen.getByRole("switch", { name: /light screen \(ours\)/i })
+    );
     expect(setAttackerSide).toHaveBeenCalledWith({ lightScreen: true });
   });
 
@@ -444,7 +450,9 @@ describe("CalcFieldBlock — Yours side toggles", () => {
       attackerSide: makeSideState({ helpingHand: false }),
       setAttackerSide,
     });
-    fireEvent.click(screen.getByRole("switch", { name: /helping hand \(ours\)/i }));
+    fireEvent.click(
+      screen.getByRole("switch", { name: /helping hand \(ours\)/i })
+    );
     expect(setAttackerSide).toHaveBeenCalledWith({ helpingHand: true });
   });
 });
@@ -456,7 +464,9 @@ describe("CalcFieldBlock — Theirs side toggles", () => {
       defenderSide: makeSideState({ reflect: false }),
       setDefenderSide,
     });
-    fireEvent.click(screen.getByRole("switch", { name: /reflect \(theirs\)/i }));
+    fireEvent.click(
+      screen.getByRole("switch", { name: /reflect \(theirs\)/i })
+    );
     expect(setDefenderSide).toHaveBeenCalledWith({ reflect: true });
   });
 
@@ -466,7 +476,9 @@ describe("CalcFieldBlock — Theirs side toggles", () => {
       defenderSide: makeSideState({ stealthRock: false }),
       setDefenderSide,
     });
-    fireEvent.click(screen.getByRole("switch", { name: /stealth rock \(theirs\)/i }));
+    fireEvent.click(
+      screen.getByRole("switch", { name: /stealth rock \(theirs\)/i })
+    );
     expect(setDefenderSide).toHaveBeenCalledWith({ stealthRock: true });
   });
 });
@@ -478,20 +490,30 @@ describe("CalcFieldBlock — Theirs side toggles", () => {
 describe("CalcFieldBlock — symmetric side card fields", () => {
   it("renders Reflect on both sides", () => {
     renderBlock();
-    expect(screen.getByRole("switch", { name: /reflect \(ours\)/i })).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: /reflect \(theirs\)/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: /reflect \(ours\)/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: /reflect \(theirs\)/i })
+    ).toBeInTheDocument();
   });
 
   it("renders Light Screen on both sides", () => {
     renderBlock();
-    expect(screen.getByRole("switch", { name: /light screen \(ours\)/i })).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: /light screen \(theirs\)/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: /light screen \(ours\)/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: /light screen \(theirs\)/i })
+    ).toBeInTheDocument();
   });
 
   it("renders Aurora Veil on both sides", () => {
     renderBlock({ attackerSide: makeSideState({ auroraVeil: true }) });
     const ours = screen.getByRole("switch", { name: /aurora veil \(ours\)/i });
-    const theirs = screen.getByRole("switch", { name: /aurora veil \(theirs\)/i });
+    const theirs = screen.getByRole("switch", {
+      name: /aurora veil \(theirs\)/i,
+    });
     expect(ours).toBeChecked();
     expect(theirs).not.toBeChecked();
   });
@@ -504,7 +526,9 @@ describe("CalcFieldBlock — symmetric side card fields", () => {
 
   it("renders Helping Hand on both sides", () => {
     renderBlock({ defenderSide: makeSideState({ helpingHand: true }) });
-    const theirs = screen.getByRole("switch", { name: /helping hand \(theirs\)/i });
+    const theirs = screen.getByRole("switch", {
+      name: /helping hand \(theirs\)/i,
+    });
     expect(theirs).toBeChecked();
   });
 });
@@ -556,7 +580,10 @@ describe("CalcFieldBlock — ally alive toggle", () => {
   });
 
   it("clicking ally Alive toggle calls setAllyAlive(false)", () => {
-    const { setAllyAlive } = renderBlock({ gameType: "Doubles", allyAlive: true });
+    const { setAllyAlive } = renderBlock({
+      gameType: "Doubles",
+      allyAlive: true,
+    });
     fireEvent.click(screen.getByRole("button", { name: "Alive" }));
     expect(setAllyAlive).toHaveBeenCalledWith(false);
   });
@@ -577,9 +604,9 @@ describe("CalcFieldBlock — fainted stepper", () => {
     const { setFaintedYours } = renderBlock({ faintedYours: 0 });
     // Fainted stepper options: 0,1,2,3,4,5. "5" only appears in Fainted
     // steppers (Spikes only goes 0-3), so the first "5" is Yours fainted.
-    const fives = screen.getAllByRole("button").filter(
-      (btn) => btn.textContent === "5"
-    );
+    const fives = screen
+      .getAllByRole("button")
+      .filter((btn) => btn.textContent === "5");
     fireEvent.click(fives[0]);
     expect(setFaintedYours).toHaveBeenCalledWith(5);
   });
@@ -613,7 +640,9 @@ describe("CalcFieldBlock — active state aria-checked", () => {
     "stealthRock=%s → Stealth Rock switch checked=%s on Theirs side",
     (stealthRock, expected) => {
       renderBlock({ defenderSide: makeSideState({ stealthRock }) });
-      const sw = screen.getByRole("switch", { name: /stealth rock \(theirs\)/i });
+      const sw = screen.getByRole("switch", {
+        name: /stealth rock \(theirs\)/i,
+      });
       if (expected) {
         expect(sw).toBeChecked();
       } else {

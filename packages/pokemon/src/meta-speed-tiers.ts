@@ -320,12 +320,33 @@ const CHAMPIONS_REGMA_SPEED_TIERS: MetaSpeedEntry[] = [
 ];
 
 // =============================================================================
+// Champions Reg M-B meta speed tiers (June 2026+)
+// =============================================================================
+
+/**
+ * Reg M-B is a superset of Reg M-A that adds Mega Evolutions to the legal
+ * pool. The M-A speed benchmarks remain valid for all species they cover.
+ * Mega-specific entries will be added here as usage data accumulates.
+ *
+ * NOTE: Mega Evolutions have different base Speed stats than their base forms
+ * (e.g. Mega Garchomp is base 92 vs Garchomp's 102). Add entries for the
+ * most-played Megas once the M-B meta develops.
+ */
+const CHAMPIONS_REGMB_SPEED_TIERS: MetaSpeedEntry[] = [
+  // Inherits all M-A entries — M-A is a strict subset of M-B
+  ...CHAMPIONS_REGMA_SPEED_TIERS,
+  // TODO: add Mega Evolution entries once M-B usage data is available
+];
+
+// =============================================================================
 // Format dispatch
 // =============================================================================
 
 const TIERS_BY_FORMAT: Record<string, MetaSpeedEntry[]> = {
-  // Champions Reg M-A — April 8 through June 17 2026
+  // Champions Reg M-A — 2026-05-01 through 2026-06-16 (see regulation-calendar.ts)
   gen9championsvgc2026regma: CHAMPIONS_REGMA_SPEED_TIERS,
+  // Champions Reg M-B — 2026-06-17 through 2026-09-02; M-A subset + Mega Evolutions (see regulation-calendar.ts)
+  gen9championsvgc2026regmb: CHAMPIONS_REGMB_SPEED_TIERS,
 };
 
 // =============================================================================

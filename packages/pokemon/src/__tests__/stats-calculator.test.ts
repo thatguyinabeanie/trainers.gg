@@ -242,6 +242,69 @@ describe("getBaseStats", () => {
   });
 });
 
+// =============================================================================
+// Champions Reg M-B — mega base stats
+// =============================================================================
+
+describe("getBaseStats — Champions Reg M-B synthetic megas", () => {
+  it.each([
+    // Brand-new M-B megas with custom stat entries
+    [
+      "Eelektross-Mega",
+      {
+        hp: 85,
+        attack: 145,
+        defense: 80,
+        specialAttack: 135,
+        specialDefense: 90,
+        speed: 80,
+      },
+    ],
+    [
+      "Falinks-Mega",
+      {
+        hp: 65,
+        attack: 135,
+        defense: 135,
+        specialAttack: 70,
+        specialDefense: 65,
+        speed: 100,
+      },
+    ],
+    [
+      "Dragalge-Mega",
+      {
+        hp: 65,
+        attack: 85,
+        defense: 105,
+        specialAttack: 132,
+        specialDefense: 163,
+        speed: 44,
+      },
+    ],
+  ])(
+    "returns correct base stats for brand-new M-B mega: %s",
+    (species, expected) => {
+      expect(getBaseStats(species)).toEqual(expected);
+    }
+  );
+
+  it("resolves Metagross-Mega via @pkmn/dex Gen 6 (returning mega — no custom entry needed)", () => {
+    // Metagross-Mega is a standard Gen 6/7 mega present in @pkmn/dex; it must
+    // resolve without a custom CHAMPIONS_EXCLUSIVE_MEGA_STATS entry.
+    const stats = getBaseStats("Metagross-Mega");
+    expect(stats).not.toBeNull();
+    expect(stats).toEqual({
+      hp: 80,
+      attack: 145,
+      defense: 150,
+      specialAttack: 105,
+      specialDefense: 110,
+      speed: 110,
+    });
+  });
+});
+
 describe("calculateBulk", () => {
   it("calculates physical, special, and overall bulk", () => {
     const result = calculateBulk(200, 100, 120);

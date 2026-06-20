@@ -52,7 +52,7 @@ function DefenderMoveTile({
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const isEmpty = !moveName;
-  const moveData = moveName ? getMoveData(moveName) : null;
+  const moveData = moveName ? getMoveData(moveName, format?.id) : null;
   const moveType = moveData?.type ?? null;
 
   // Accuracy note

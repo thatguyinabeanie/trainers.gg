@@ -12,11 +12,7 @@ import {
 } from "@trainers/pokemon";
 
 import { Button } from "@/components/ui/button";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
 import { type FormatUsageRow } from "@trainers/supabase";
@@ -24,11 +20,7 @@ import { type FormatUsageRow } from "@trainers/supabase";
 import { useFormatUsageData } from "../use-format-usage-data";
 import { TypeSymbolIcon } from "../type-symbol-icon";
 import { RolePresetsPanel } from "./role-presets-panel";
-import {
-  getRolesForSpecies,
-  ROLE_PRESETS,
-  type RoleId,
-} from "./role-registry";
+import { getRolesForSpecies, ROLE_PRESETS, type RoleId } from "./role-registry";
 import {
   DEFAULT_SPECIES_FILTERS,
   type SpeciesFilterState,
@@ -144,7 +136,7 @@ export function SpeciesPickerMobile({
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         showHandle={false}
-        className="h-[95dvh] data-[vaul-drawer-direction=bottom]:max-h-[95dvh] overflow-hidden rounded-t-2xl p-0"
+        className="h-[95dvh] overflow-hidden rounded-t-2xl p-0 data-[vaul-drawer-direction=bottom]:max-h-[95dvh]"
       >
         <DrawerTitle className="sr-only">
           {view === "list" ? "Choose species" : "Filters"}
@@ -153,7 +145,7 @@ export function SpeciesPickerMobile({
         {/* Drag handle */}
         <div
           aria-hidden="true"
-          className="mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full bg-muted-foreground/20"
+          className="bg-muted-foreground/20 mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full"
         />
 
         {/* Bounded container — flex-1 fills the remaining drawer height */}
@@ -228,7 +220,7 @@ function ListView({
   return (
     <>
       {/* Search header */}
-      <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3">
+      <div className="border-border flex h-11 shrink-0 items-center gap-2 border-b px-3">
         <Search className="text-muted-foreground size-4 shrink-0" />
         <input
           type="text"
@@ -236,15 +228,14 @@ function ListView({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           aria-label="Search species"
-          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-[16px] leading-tight focus:outline-none sm:text-sm" // text-[16px]: prevents iOS auto-zoom on focus (zoom triggers below 16px)
+          className="placeholder:text-muted-foreground/60 min-w-0 flex-1 bg-transparent text-base leading-tight focus:outline-none sm:text-sm" // text-base (1rem = 16px): prevents iOS auto-zoom on focus (zoom triggers below 16px)
         />
         <button
           type="button"
           onClick={onOpenFilters}
           aria-label={`Open filters${activeFilterCount > 0 ? `, ${activeFilterCount} active` : ""}`}
           className={cn(
-            // text-[11px]: sub-12px filter button label; no Tailwind scale token
-            "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
+            "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors",
             activeFilterCount > 0
               ? "bg-primary/5 border-primary/30 text-primary hover:bg-primary/10"
               : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -253,7 +244,7 @@ function ListView({
           <Filter className="size-3" />
           Filters
           {activeFilterCount > 0 && (
-            <span className="bg-primary text-primary-foreground rounded-sm px-1 text-[9px]"> {/* text-[9px]: sub-12px badge counter; no Tailwind scale token */}
+            <span className="bg-primary text-primary-foreground rounded-sm px-1 text-xs">
               {activeFilterCount}
             </span>
           )}
@@ -277,7 +268,9 @@ function ListView({
             onPick={onPick}
             isSelected={entry.species === currentSpecies}
             formatId={formatId}
-            usagePct={usageMap.get(normalizeSpeciesSlug(entry.species))?.usagePct}
+            usagePct={
+              usageMap.get(normalizeSpeciesSlug(entry.species))?.usagePct
+            }
           />
         ))}
         {matched.length === 0 && (
@@ -301,11 +294,10 @@ interface ChipStripProps {
 
 function ChipStrip({ filters, onFiltersChange }: ChipStripProps) {
   const chipClass =
-    // text-[11px]: sub-12px chip label; no Tailwind scale token
-    "bg-primary/5 border-primary/30 text-primary flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium";
+    "bg-primary/5 border-primary/30 text-primary flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium";
 
   return (
-    <div className="flex gap-1.5 overflow-x-auto border-b border-border px-3 py-1.5 [scrollbar-width:none]">
+    <div className="border-border flex gap-1.5 overflow-x-auto border-b px-3 py-1.5 [scrollbar-width:none]">
       {filters.types.map((type) => (
         <button
           key={type}
@@ -431,7 +423,7 @@ function FiltersView({
   return (
     <>
       {/* Header — back · title · clear all */}
-      <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3">
+      <div className="border-border flex h-11 shrink-0 items-center gap-2 border-b px-3">
         <button
           type="button"
           onClick={onBack}
@@ -440,7 +432,9 @@ function FiltersView({
         >
           <span aria-hidden="true">‹</span> Back
         </button>
-        <span className="flex-1 text-center text-sm font-semibold">Filters</span>
+        <span className="flex-1 text-center text-sm font-semibold">
+          Filters
+        </span>
         <button
           type="button"
           onClick={onClearAll}
@@ -466,7 +460,7 @@ function FiltersView({
       </div>
 
       {/* Show N results footer — always visible, pinned above keyboard */}
-      <div className="shrink-0 border-t border-border p-3">
+      <div className="border-border shrink-0 border-t p-3">
         <Button className="w-full" onClick={onBack}>
           Show {matchedCount} results
         </Button>

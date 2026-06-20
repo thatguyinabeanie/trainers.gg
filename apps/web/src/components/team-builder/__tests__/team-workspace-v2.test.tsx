@@ -213,10 +213,92 @@ jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => mockUseIsMobile(),
 }));
 
+// Force grid mode so the PokeRow loop renders on desktop (default changed from
+// "1x6" to "single" in the layout-mode refactor; tests assert on poke-row-{idx}
+// testids which only exist in the grid path).
+jest.mock("../use-team-layout", () => {
+  const React = jest.requireActual("react");
+  const MockTeamLayoutContext = React.createContext("2x3-vertical");
+  return {
+    useTeamLayout: () => ({
+      mode: "2x3-vertical",
+      setMode: jest.fn(),
+      persisted: "2x3-vertical",
+      isMobileLocked: false,
+    }),
+    useTeamLayoutMode: () => "2x3-vertical",
+    TeamLayoutContext: MockTeamLayoutContext,
+  };
+});
+
+// SingleFocusView stub — renders poke-row-{idx} elements so mobile-layout tests
+// (which always use SingleFocusView regardless of layoutMode) find the expected
+// testids. Exposes the same add/remove/update buttons as the PokeRow mock so
+// interaction tests work on both desktop (PokeRow loop) and mobile paths.
+jest.mock("../layouts/single-focus-view", () => ({
+  SingleFocusView: ({
+    slots,
+    itemIds,
+    onAdd,
+    onRemove,
+    onPokemonUpdate,
+  }: {
+    slots: Tables<"pokemon">[];
+    activeIdx: number;
+    onActivate: (idx: number) => void;
+    itemIds: string[];
+    format: unknown;
+    onAdd: (idx: number, speciesId: string) => void;
+    onRemove: (idx: number) => void;
+    onPokemonUpdate?: (
+      pokemonId: number,
+      fields: Partial<TablesUpdate<"pokemon">>
+    ) => void;
+    errorsBySlot?: Map<number, unknown[]>;
+  }) => (
+    <div data-testid="single-focus-view">
+      {Array.from({ length: 6 }, (_, i) => {
+        const p = slots[i] ?? null;
+        return (
+          <div
+            key={itemIds[i] ?? `__empty__${i}`}
+            data-testid={`poke-row-${i}`}
+            data-sortable-id={itemIds[i] ?? `__empty__${i}`}
+          >
+            <span data-testid={`species-${i}`}>{p?.species ?? "empty"}</span>
+            <span data-testid={`nickname-${i}`}>{p?.nickname ?? ""}</span>
+            <button
+              data-testid={`add-${i}`}
+              onClick={() => onAdd(i, "Pikachu")}
+            >
+              Add
+            </button>
+            <button data-testid={`remove-${i}`} onClick={() => onRemove(i)}>
+              Remove
+            </button>
+            <button
+              data-testid={`update-${i}`}
+              onClick={() =>
+                p && onPokemonUpdate?.(p.id, { nickname: "Sparky" })
+              }
+            >
+              Update nickname
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  ),
+}));
+
 const mockRouterRefresh = jest.fn();
 const mockRouterPush = jest.fn();
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: mockRouterRefresh, push: mockRouterPush, replace: jest.fn() }),
+  useRouter: () => ({
+    refresh: mockRouterRefresh,
+    push: mockRouterPush,
+    replace: jest.fn(),
+  }),
   useSearchParams: () => new URLSearchParams(),
 }));
 
@@ -246,7 +328,10 @@ jest.mock("@/actions/teams", () => ({
 // Import AFTER mocks
 // =============================================================================
 
-import { TeamWorkspaceV2, type WorkspaceHeaderActions } from "../team-workspace";
+import {
+  TeamWorkspaceV2,
+  type WorkspaceHeaderActions,
+} from "../team-workspace";
 import { type BuilderPersistence } from "../persistence/types";
 
 // =============================================================================
@@ -1085,9 +1170,13 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
     const { mockTransferTeam } = renderWithTransfer();
 
     // Find the alt select dropdown (contains alt usernames, not formats)
-    const altSelect = screen.getAllByRole("combobox").find((el) =>
-      el.querySelector('option[value="1"]')?.textContent?.includes("ash_ketchum")
-    )!;
+    const altSelect = screen
+      .getAllByRole("combobox")
+      .find((el) =>
+        el
+          .querySelector('option[value="1"]')
+          ?.textContent?.includes("ash_ketchum")
+      )!;
     await user.selectOptions(altSelect, "2");
 
     expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);
@@ -1126,9 +1215,13 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
       />
     );
 
-    const altSelect = screen.getAllByRole("combobox").find((el) =>
-      el.querySelector('option[value="1"]')?.textContent?.includes("ash_ketchum")
-    )!;
+    const altSelect = screen
+      .getAllByRole("combobox")
+      .find((el) =>
+        el
+          .querySelector('option[value="1"]')
+          ?.textContent?.includes("ash_ketchum")
+      )!;
     await user.selectOptions(altSelect, "2");
 
     expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);

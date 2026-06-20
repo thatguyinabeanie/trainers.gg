@@ -30,15 +30,21 @@ import {
 import { StatBumpsOverlay, StatVizBar } from "../stat-viz-bar";
 import { StageDropdown } from "./stage-dropdown";
 import { Slider } from "@/components/ui/slider";
+import { cycleNature } from "../nature-cycle";
 // Grid tracks expressed in rem (scale-mapped). 30px has no clean Tailwind token (between w-7=28px and w-8=32px)
 // and is kept as 30px because rounding would shift the finely-tuned stat-panel column alignment.
-const spreadRowClass = "grid grid-cols-[2.5rem_30px_minmax(30px,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
-const spreadRowWithStageClass = "grid grid-cols-[2.5rem_30px_minmax(30px,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2rem_2.25rem] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
-const spreadLabelClass = "text-xs font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px";
-const spreadBaseClass = "font-mono text-xs text-muted-foreground text-right tabular-nums";
+const spreadRowClass =
+  "grid grid-cols-[2.5rem_30px_minmax(30px,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2.25rem] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
+const spreadRowWithStageClass =
+  "grid grid-cols-[2.5rem_30px_minmax(30px,0.8fr)_2.5rem_minmax(3.75rem,1.6fr)_2rem_2.25rem] gap-1.5 items-center px-1 py-0.5 rounded hover:bg-muted";
+const spreadLabelClass =
+  "text-xs font-semibold uppercase tracking-[0.06em] font-mono text-left whitespace-nowrap flex items-center gap-px";
+const spreadBaseClass =
+  "font-mono text-xs text-muted-foreground text-right tabular-nums";
 const spreadSliderWrapClass = "relative h-3.5";
 // h-[3px]: intentional hairline track height (1–3px range — no scale token)
-const spreadSliderTrackClass = "absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none";
+const spreadSliderTrackClass =
+  "absolute top-1/2 left-0 right-0 h-[3px] bg-muted-foreground/40 rounded-full -translate-y-1/2 pointer-events-none";
 const spreadFinalClass = "font-mono text-xs font-bold text-right tabular-nums";
 
 // =============================================================================
@@ -82,11 +88,41 @@ const DEFENDER_STAT_ROWS: {
   label: string;
 }[] = [
   { evKey: "hp", ivKey: "hp", boostKey: null, statKey: "hp", label: "HP" },
-  { evKey: "atk", ivKey: "atk", boostKey: "atk", statKey: "attack", label: "Atk" },
-  { evKey: "def", ivKey: "def", boostKey: "def", statKey: "defense", label: "Def" },
-  { evKey: "spa", ivKey: "spa", boostKey: "spa", statKey: "specialAttack", label: "SpA" },
-  { evKey: "spd", ivKey: "spd", boostKey: "spd", statKey: "specialDefense", label: "SpD" },
-  { evKey: "spe", ivKey: "spe", boostKey: "spe", statKey: "speed", label: "Spe" },
+  {
+    evKey: "atk",
+    ivKey: "atk",
+    boostKey: "atk",
+    statKey: "attack",
+    label: "Atk",
+  },
+  {
+    evKey: "def",
+    ivKey: "def",
+    boostKey: "def",
+    statKey: "defense",
+    label: "Def",
+  },
+  {
+    evKey: "spa",
+    ivKey: "spa",
+    boostKey: "spa",
+    statKey: "specialAttack",
+    label: "SpA",
+  },
+  {
+    evKey: "spd",
+    ivKey: "spd",
+    boostKey: "spd",
+    statKey: "specialDefense",
+    label: "SpD",
+  },
+  {
+    evKey: "spe",
+    ivKey: "spe",
+    boostKey: "spe",
+    statKey: "speed",
+    label: "Spe",
+  },
 ];
 
 // =============================================================================
@@ -96,109 +132,6 @@ const DEFENDER_STAT_ROWS: {
 /** Total EVs across all 6 stats. */
 function totalDefenderEvs(evs: DefenderEvs): number {
   return evs.hp + evs.atk + evs.def + evs.spa + evs.spd + evs.spe;
-}
-
-// =============================================================================
-// Nature cycling helpers
-// =============================================================================
-
-type NatureStat =
-  | "attack"
-  | "defense"
-  | "specialAttack"
-  | "specialDefense"
-  | "speed";
-
-const SHORT_TO_LONG: Record<string, NatureStat> = {
-  atk: "attack",
-  def: "defense",
-  spa: "specialAttack",
-  spd: "specialDefense",
-  spe: "speed",
-};
-
-/** Default − stat when user clicks to boost. */
-const DEFAULT_REDUCE_FOR_BOOST: Record<NatureStat, NatureStat> = {
-  attack: "specialAttack",
-  defense: "specialAttack",
-  specialAttack: "attack",
-  specialDefense: "attack",
-  speed: "specialAttack",
-};
-
-/** Default + stat when user clicks to reduce. */
-const DEFAULT_BOOST_FOR_REDUCE: Record<NatureStat, NatureStat> = {
-  attack: "specialAttack",
-  defense: "specialAttack",
-  specialAttack: "attack",
-  specialDefense: "attack",
-  speed: "attack",
-};
-
-const ALL_NATURE_STATS: NatureStat[] = [
-  "attack",
-  "defense",
-  "specialAttack",
-  "specialDefense",
-  "speed",
-];
-
-const NEUTRAL_NATURE = "Serious";
-
-function findNatureFor(boost: NatureStat, reduce: NatureStat): string | null {
-  for (const [name, eff] of Object.entries(NATURE_EFFECTS)) {
-    if (eff.boost === boost && eff.reduce === reduce) return name;
-  }
-  return null;
-}
-
-function pickFreshPartner(
-  mover: NatureStat,
-  avoid: NatureStat | null,
-  defaults: Record<NatureStat, NatureStat>
-): NatureStat {
-  const def = defaults[mover];
-  if (def !== avoid) return def;
-  return ALL_NATURE_STATS.find((s) => s !== mover && s !== avoid) ?? def;
-}
-
-/**
- * Cycle a stat's nature influence on click:
- * neutral → boosted → reduced → neutral
- *
- * HP cannot have nature effects — returns null (no change).
- */
-function cycleNature(
-  currentNature: string,
-  statKey: string
-): string | null {
-  if (statKey === "hp") return null;
-  const longStat = SHORT_TO_LONG[statKey] ?? (statKey as NatureStat);
-  if (!ALL_NATURE_STATS.includes(longStat)) return null;
-
-  const current = NATURE_EFFECTS[currentNature] ?? {};
-  const currentBoost = current.boost ?? null;
-  const currentReduce = current.reduce ?? null;
-
-  // Currently boosted → switch to reduced
-  if (currentBoost === longStat) {
-    const boost = pickFreshPartner(longStat, currentReduce, DEFAULT_BOOST_FOR_REDUCE);
-    return findNatureFor(boost, longStat);
-  }
-
-  // Currently reduced → switch to neutral
-  if (currentReduce === longStat) {
-    return NEUTRAL_NATURE;
-  }
-
-  // Currently neutral → switch to boosted
-  let reduce: NatureStat;
-  if (currentReduce && currentReduce !== longStat) {
-    reduce = currentReduce;
-  } else {
-    reduce = pickFreshPartner(longStat, currentBoost, DEFAULT_REDUCE_FOR_BOOST);
-  }
-  return findNatureFor(longStat, reduce);
 }
 
 // =============================================================================
@@ -250,7 +183,8 @@ function DefenderStatRow({
   setDefenderBoost,
   onNatureClick,
 }: DefenderStatRowProps) {
-  const colorClass = STAT_COLOR_CLASS[statKey as keyof typeof STAT_COLOR_CLASS] ?? "";
+  const colorClass =
+    STAT_COLOR_CLASS[statKey as keyof typeof STAT_COLOR_CLASS] ?? "";
 
   // --- Stage-adjusted final stat ---
   const finalStat = boostKey ? applyStage(rawFinal, boost) : rawFinal;
@@ -262,12 +196,19 @@ function DefenderStatRow({
   const budget = getStatBudget(isChampions);
 
   // --- EV slider budget ---
-  const investBudget = computeInvestBudget(totalEv, ev, budget.total, budget.perStat);
+  const investBudget = computeInvestBudget(
+    totalEv,
+    ev,
+    budget.total,
+    budget.perStat
+  );
 
   // --- Breakpoint ticks (only for +nature stat) ---
   const breakpoints = isNatureBoosted
     ? findStatBreakpoints({
-        statKey: statKey as Parameters<typeof findStatBreakpoints>[0]["statKey"],
+        statKey: statKey as Parameters<
+          typeof findStatBreakpoints
+        >[0]["statKey"],
         base,
         iv,
         level,
@@ -287,8 +228,7 @@ function DefenderStatRow({
 
   // True when the current EV lands exactly on a breakpoint — drives the
   // hollow-ring thumb state on the slider primitive.
-  const isAtBump =
-    isNatureBoosted && breakpoints.includes(ev) && ev > 0;
+  const isAtBump = isNatureBoosted && breakpoints.includes(ev) && ev > 0;
 
   // --- Input buffer for text EV entry ---
   const [inputBuffer, setInputBuffer] = useState<string | null>(null);
@@ -299,7 +239,10 @@ function DefenderStatRow({
   function handleSliderChange(raw: number) {
     const clamped = Math.min(raw, investBudget);
     const snapped = Math.round(clamped / budget.step) * budget.step;
-    setDefenderEv(evKey, snapped);
+    // Re-clamp after snap: snapping up to the nearest step can exceed the budget
+    // when the remaining headroom is smaller than the step (e.g. 2 EVs left → snaps to 4).
+    const finalEv = Math.min(investBudget, budget.perStat, snapped);
+    setDefenderEv(evKey, finalEv);
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -316,8 +259,12 @@ function DefenderStatRow({
     const parsed = numStr === "" ? 0 : parseInt(numStr, 10);
     const val = Number.isNaN(parsed) ? 0 : parsed;
     const clamped = Math.min(val, investBudget, budget.perStat);
-    const snapped = Math.round(Math.max(0, clamped) / budget.step) * budget.step;
-    setDefenderEv(evKey, snapped);
+    const snapped =
+      Math.round(Math.max(0, clamped) / budget.step) * budget.step;
+    // Re-clamp after snap: snapping up to the nearest step can exceed the budget
+    // when the remaining headroom is smaller than the step (e.g. 2 EVs left → snaps to 4).
+    const finalEv = Math.min(investBudget, budget.perStat, snapped);
+    setDefenderEv(evKey, finalEv);
     setInputBuffer(null);
   }
 
@@ -348,7 +295,10 @@ function DefenderStatRow({
         onClick={onNatureClick}
         disabled={statKey === "hp"}
         aria-label={statKey !== "hp" ? `Cycle nature for ${label}` : undefined}
-        className={cn(spreadLabelClass, statKey !== "hp" && "cursor-pointer hover:opacity-70")}
+        className={cn(
+          spreadLabelClass,
+          statKey !== "hp" && "cursor-pointer hover:opacity-70"
+        )}
       >
         {label}
         <span className="inline-block w-3 text-xs leading-none">
@@ -380,8 +330,7 @@ function DefenderStatRow({
         className={cn(
           "focus:ring-primary h-5 w-full rounded border bg-transparent text-center font-mono text-xs outline-none focus:ring-1",
           isNatureBoosted && "border-red-400/70 text-red-600 dark:text-red-400",
-          isNatureReduced &&
-            "border-sky-400/70 text-sky-600 dark:text-sky-400",
+          isNatureReduced && "border-sky-400/70 text-sky-600 dark:text-sky-400",
           !isNatureBoosted &&
             !isNatureReduced &&
             "border-border text-foreground"
@@ -486,7 +435,9 @@ export function CalcDefenderStats({
   const natDownLong = natureEffect?.reduce ?? null;
 
   const natUpShort = natUpLong ? (LONG_TO_SHORT[natUpLong] ?? null) : null;
-  const natDownShort = natDownLong ? (LONG_TO_SHORT[natDownLong] ?? null) : null;
+  const natDownShort = natDownLong
+    ? (LONG_TO_SHORT[natDownLong] ?? null)
+    : null;
 
   const totalEv = totalDefenderEvs(defenderEvs);
 
@@ -508,7 +459,7 @@ export function CalcDefenderStats({
     <div className="flex min-w-0 flex-col gap-2">
       {/* ── Stats lane header ─────────────────────────────────────── */}
       <div className="flex items-baseline justify-between">
-        <span className="font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <span className="text-muted-foreground font-mono text-xs font-semibold tracking-widest uppercase">
           {isChampions ? "Stat points" : "Spread"}
         </span>
         <span
@@ -534,8 +485,24 @@ export function CalcDefenderStats({
           const ev = defenderEvs[row.evKey];
           const base = baseByEvKey[row.evKey];
 
-          const rawFinal = computeStat({ statKey: row.statKey, base, iv, ev, nature, level, isChampions });
-          const rawFinalNoEv = computeStat({ statKey: row.statKey, base, iv, ev: 0, nature, level, isChampions });
+          const rawFinal = computeStat({
+            statKey: row.statKey,
+            base,
+            iv,
+            ev,
+            nature,
+            level,
+            isChampions,
+          });
+          const rawFinalNoEv = computeStat({
+            statKey: row.statKey,
+            base,
+            iv,
+            ev: 0,
+            nature,
+            level,
+            isChampions,
+          });
 
           return (
             <DefenderStatRow
@@ -583,14 +550,13 @@ export function CalcDefenderStats({
           className="flex-1 accent-rose-500"
           style={{ height: 6 }}
         />
-        <span className="w-18 text-right font-mono text-xs text-muted-foreground">
+        <span className="text-muted-foreground w-18 text-right font-mono text-xs">
           {currentHP}/{maxHP}
         </span>
-        <span className="w-8 text-right font-mono text-xs font-semibold text-muted-foreground">
+        <span className="text-muted-foreground w-8 text-right font-mono text-xs font-semibold">
           {defenderHpPercent}%
         </span>
       </div>
-
     </div>
   );
 }

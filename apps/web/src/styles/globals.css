@@ -65,6 +65,19 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /*
+   * Fluid root font-size — the single scaler that makes every rem-based
+   * Tailwind text primitive (text-xs / text-sm / …) responsive. Text grows
+   * gently on large / high-resolution viewports (e.g. a 13" laptop run at a
+   * high "More Space" scaled resolution reports a wide CSS width) and stays
+   * at the 16px default on smaller widths — bounded min/max so it never
+   * over- or under-shoots. This is the only place a concrete px/vw size is
+   * defined; element-level sizes must use Tailwind primitives, never text-[Npx].
+   *   ≤~830px → 16px · ~1280px → ~18.4px · ~1680px → ~20.4px · caps at 22px
+   */
+  html {
+    font-size: clamp(16px, 12px + 0.5vw, 22px);
+  }
   body {
     @apply bg-background text-foreground;
   }
