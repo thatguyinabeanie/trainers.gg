@@ -303,6 +303,32 @@ describe("getSpeciesTypes", () => {
   });
 });
 
+// =============================================================================
+// Champions Reg M-B — synthetic-mega type overrides
+// =============================================================================
+
+describe("getSpeciesTypes — Champions Reg M-B mega type overrides", () => {
+  it("returns Fighting/Flying for Staraptor-Mega (override: Normal→Fighting)", () => {
+    // Base Staraptor is Normal/Flying; the M-B override changes Normal → Fighting.
+    expect(getSpeciesTypes("Staraptor-Mega")).toEqual(["Fighting", "Flying"]);
+  });
+
+  it("returns Rock/Fighting for Barbaracle-Mega (override: Water→Fighting)", () => {
+    // Base Barbaracle is Rock/Water; the M-B override changes Water → Fighting.
+    expect(getSpeciesTypes("Barbaracle-Mega")).toEqual(["Rock", "Fighting"]);
+  });
+
+  it("does not apply a spurious type override to Eelektross-Mega (no megaTypes entry)", () => {
+    // Eelektross-Mega has no megaTypes override, so getChampionsMegaTypeOverride
+    // returns null and type resolution falls through to the dex. The synthetic mega
+    // form may not exist in the dex (so getSpeciesTypes can return []), so we assert
+    // only that NO incorrect override (Fighting/Rock) is applied — not a positive type.
+    const types = getSpeciesTypes("Eelektross-Mega");
+    expect(types).not.toContain("Fighting");
+    expect(types).not.toContain("Rock");
+  });
+});
+
 describe("getTypeColor", () => {
   it("returns a valid hex color for every type", () => {
     for (const type of ALL_TYPES) {

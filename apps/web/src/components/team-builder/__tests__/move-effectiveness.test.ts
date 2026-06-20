@@ -88,11 +88,15 @@ describe("getMoveEffectiveness — Weather Ball", () => {
   });
 
   it("under Harsh Sunshine becomes Fire → same as Sun", () => {
-    expect(getMoveEffectiveness("Weather Ball", "Bulbasaur", "Harsh Sunshine")).toBe(2);
+    expect(
+      getMoveEffectiveness("Weather Ball", "Bulbasaur", "Harsh Sunshine")
+    ).toBe(2);
   });
 
   it("under Heavy Rain becomes Water → same as Rain", () => {
-    expect(getMoveEffectiveness("Weather Ball", "Charizard", "Heavy Rain")).toBe(2);
+    expect(
+      getMoveEffectiveness("Weather Ball", "Charizard", "Heavy Rain")
+    ).toBe(2);
   });
 
   it("with null weather falls back to Normal type", () => {
@@ -101,7 +105,9 @@ describe("getMoveEffectiveness — Weather Ball", () => {
   });
 
   it("with unrecognised weather falls back to Normal type", () => {
-    expect(getMoveEffectiveness("Weather Ball", "Charizard", "FoggyDay")).toBe(1);
+    expect(getMoveEffectiveness("Weather Ball", "Charizard", "FoggyDay")).toBe(
+      1
+    );
   });
 
   it("does NOT affect non-weather-dependent moves (Flamethrower stays Fire under Rain)", () => {
@@ -132,14 +138,87 @@ describe("getMoveEffectiveness — Weather Ball vs Garchomp (Dragon/Ground) matr
     ["", 1],
     [null, 1],
     [undefined, 1],
-  ])(
-    "Weather Ball under weather=%p vs Garchomp → %d×",
-    (weather, expected) => {
+  ])("Weather Ball under weather=%p vs Garchomp → %d×", (weather, expected) => {
+    expect(
+      getMoveEffectiveness("Weather Ball", "Garchomp", weather)
+    ).toBeCloseTo(expected, 5);
+  });
+});
+
+// =============================================================================
+// getMoveEffectiveness — Champions format-aware type overrides
+// =============================================================================
+// Regression tests for the bug where getMoveData was called without formatId,
+// causing Champions move-type changes to be silently ignored.
+//
+// Type chart reference:
+//   Steel vs Fairy  = 2×  (Steel is super-effective vs Fairy, Ice, Rock)
+//   Grass vs Fairy  = 1×  (no interaction)
+//   Normal vs Fairy = 1×  (no interaction)
+//   Grass vs Grass  = 0.5×
+//   Normal vs Grass = 1×
+
+const CHAMPIONS_MA_FORMAT = "gen9championsvgc2026regma";
+
+describe("getMoveEffectiveness — Champions format-aware type overrides", () => {
+  // Hatterene is a pure Fairy-type — clean target for Steel effectiveness.
+  describe("Snap Trap (Grass → Steel in Champions M-A)", () => {
+    it("with formatId: Steel type → 2× vs Hatterene (pure Fairy)", () => {
+      // Steel is super-effective vs Fairy
       expect(
-        getMoveEffectiveness("Weather Ball", "Garchomp", weather)
-      ).toBeCloseTo(expected, 5);
-    }
-  );
+        getMoveEffectiveness(
+          "Snap Trap",
+          "Hatterene",
+          null,
+          CHAMPIONS_MA_FORMAT
+        )
+      ).toBe(2);
+    });
+
+    it("without formatId: vanilla Grass type → 1× vs Hatterene (Grass neutral vs Fairy)", () => {
+      // Without the format context, Snap Trap stays Grass (vanilla @pkmn/dex type)
+      // Grass has no modifier vs Fairy → 1×
+      const vanillaResult = getMoveEffectiveness("Snap Trap", "Hatterene");
+      expect(vanillaResult).toBe(1);
+      // Contrast: the Champions-aware result must differ
+      const championsResult = getMoveEffectiveness(
+        "Snap Trap",
+        "Hatterene",
+        null,
+        CHAMPIONS_MA_FORMAT
+      );
+      expect(championsResult).not.toBe(vanillaResult);
+    });
+
+    it.each<[string, number]>([
+      // Steel type chart for a pure Fairy defender
+      // Hatterene (Fairy): Steel 2×
+      ["Hatterene", 2],
+      // Flutter Mane (Ghost/Fairy): Steel vs Ghost = 1, Steel vs Fairy = 2 → 2
+      ["Flutter Mane", 2],
+    ])(
+      "Snap Trap with Champions formatId is 2× vs %s (Fairy-type)",
+      (defender, expected) => {
+        expect(
+          getMoveEffectiveness("Snap Trap", defender, null, CHAMPIONS_MA_FORMAT)
+        ).toBe(expected);
+      }
+    );
+  });
+
+  // Growth changes type Normal → Grass in Champions M-A, but Growth is a
+  // Status move in both vanilla and Champions (only type/pp fields change, not
+  // category). getMoveEffectiveness returns 1 for Status moves regardless of
+  // type or formatId — no effectiveness assertion is meaningful here.
+  describe("Growth (Normal → Grass in Champions M-A) — Status move, no effectiveness", () => {
+    it("returns 1 regardless of formatId because Growth is a Status move", () => {
+      // Confirm the Status-move guard fires in both paths
+      expect(getMoveEffectiveness("Growth", "Hatterene")).toBe(1);
+      expect(
+        getMoveEffectiveness("Growth", "Hatterene", null, CHAMPIONS_MA_FORMAT)
+      ).toBe(1);
+    });
+  });
 });
 
 // =============================================================================

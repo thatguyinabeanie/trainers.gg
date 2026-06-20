@@ -638,7 +638,8 @@ function runCalc(
   field: Field,
   faintedForMove?: number,
   weather?: string,
-  singleTarget?: boolean
+  singleTarget?: boolean,
+  formatId?: string | null
 ): CalcOutput | null {
   try {
     const basePowerOverride =
@@ -703,7 +704,7 @@ function runCalc(
     // like Weather Ball resolve to the correct type (e.g. Fire under Sun).
     const moveEffectiveness = isImmune
       ? 0
-      : getMoveEffectiveness(moveName, defenderSpeciesName, weather);
+      : getMoveEffectiveness(moveName, defenderSpeciesName, weather, formatId);
     const isSuperEffective = moveEffectiveness > 1;
     const recoveryVerdict = isImmune
       ? { tier: null, suffix: "" }
@@ -1295,7 +1296,8 @@ export function useCalcState({
         sharedOffenseField,
         faintedYours,
         effectiveWeather,
-        attackerSide.singleTarget
+        attackerSide.singleTarget,
+        format?.id
       );
     }
 
@@ -1311,7 +1313,8 @@ export function useCalcState({
       sharedDefenseField,
       faintedTheirs,
       effectiveWeather,
-      defenderSide.singleTarget
+      defenderSide.singleTarget,
+      format?.id
     );
   }
 
@@ -1359,7 +1362,8 @@ export function useCalcState({
         sharedOffenseField,
         faintedYours,
         effectiveWeather,
-        attackerSide.singleTarget
+        attackerSide.singleTarget,
+        format?.id
       );
     });
   }
@@ -1384,7 +1388,8 @@ export function useCalcState({
       sharedDefenseField,
       faintedTheirs,
       effectiveWeather,
-      defenderSide.singleTarget
+      defenderSide.singleTarget,
+      format?.id
     );
   }
 
@@ -1434,7 +1439,8 @@ export function useCalcState({
         sharedDefenseField,
         faintedTheirs,
         effectiveWeather,
-        defenderSide.singleTarget
+        defenderSide.singleTarget,
+        format?.id
       );
     });
   }

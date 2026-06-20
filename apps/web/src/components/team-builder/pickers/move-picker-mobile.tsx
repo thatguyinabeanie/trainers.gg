@@ -107,7 +107,7 @@ export function MovePickerMobile({
   const lower = query.toLowerCase();
   const filtered: MoveEntry[] = [];
   for (const name of legalMoves) {
-    const data = getMoveData(name);
+    const data = getMoveData(name, format?.id);
     // Skip moves with no data — excluding here keeps the counter accurate
     // (a null entry counted in filtered.length but skipped in the render
     // would show a mismatch between the "X/Y" chip and visible rows).

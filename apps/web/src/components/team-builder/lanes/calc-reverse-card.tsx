@@ -65,7 +65,7 @@ export function CalcReverseColumn({
     // so the activeMoves filter below excludes blank bullets/rows.
     const moveName = effectiveMoves[idx] || null;
     const output = outputs[idx] ?? null;
-    const moveData = moveName ? getMoveData(moveName) : null;
+    const moveData = moveName ? getMoveData(moveName, calc.format?.id) : null;
     const isStatus = moveData?.category === "Status";
     const hasCalc =
       hasPokemon && moveName !== null && output !== null && !isStatus;

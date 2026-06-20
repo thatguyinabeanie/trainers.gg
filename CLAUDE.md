@@ -41,6 +41,10 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `deciding-data-access`           | Deciding where a read/route should live — SSR vs /api/v1 vs direct; anon vs authed; caching + rate-limit requirements       |
 | `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure                                                   |
 | `tracking-deferred-work`         | Log/update/complete an agreed-but-parked improvement in `docs/deferred-improvements.md` ("small fix now, bigger one later") |
+| `adding-a-regulation`            | A new Champions regulation has dropped — full data-file → registration → flip → test pipeline                               |
+| `reconciling-pkmn-overrides`     | After bumping `@pkmn/*` or `vendor/damage-calc` — audit and prune hardcoded Champions overrides that upstream now provides   |
+| `applying-move-rebalances`       | Applying Champions move/ability mechanic changes to the @smogon/calc fork (CHAMPIONS_LIST, ability effects, move patches, dist rebuild + submodule bump) |
+| `syncing-calc-fork-upstream`     | Syncing upstream smogon/damage-calc into our fork; checking if upstream now ships our customizations                         |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
 

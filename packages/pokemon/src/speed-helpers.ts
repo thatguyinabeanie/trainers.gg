@@ -8,7 +8,9 @@
  * given format.
  */
 
-import { type GameFormat } from "./formats";
+import { type GameFormat, isChampionsFormatId } from "./formats";
+import { REG_MA_BUNDLE } from "./champions-reg-ma";
+import { REG_MB_BUNDLE } from "./champions-reg-mb";
 
 // =============================================================================
 // Types
@@ -105,8 +107,36 @@ const SPEED_ITEMS: Record<string, SpeedAffectingItem> = {
   },
 };
 
-/** Items that are legal in modern competitive (Reg M-A flavored). Conservative list. */
-const MODERN_LEGAL_ITEM_IDS = new Set<string>(["choice-scarf"]);
+/**
+ * Convert a display-name item string (as stored in the Champions reg bundles)
+ * to its Showdown kebab-case ID (as used in SPEED_ITEMS keys).
+ *
+ * Examples: "Iron Ball" → "iron-ball", "Choice Scarf" → "choice-scarf"
+ */
+function itemDisplayNameToId(name: string): string {
+  return name.toLowerCase().replace(/[\s']+/g, "-");
+}
+
+/**
+ * Showdown-ID-keyed legal item sets derived from the authoritative reg bundles.
+ * Each value is a Set<string> of Showdown kebab-case item IDs legal for that
+ * format, filtered to only include items present in SPEED_ITEMS.
+ *
+ * Built lazily once at module load from the reg bundles so there is no
+ * dual-maintenance risk: adding an item to a bundle automatically includes it
+ * here if it also has a SPEED_ITEMS entry.
+ */
+const CHAMPIONS_FORMAT_SPEED_ITEMS: ReadonlyMap<
+  string,
+  ReadonlySet<string>
+> = (() => {
+  const toIdSet = (bundle: { legalItems: ReadonlySet<string> }) =>
+    new Set(Array.from(bundle.legalItems).map(itemDisplayNameToId));
+  return new Map<string, ReadonlySet<string>>([
+    ["gen9championsvgc2026regma", toIdSet(REG_MA_BUNDLE)],
+    ["gen9championsvgc2026regmb", toIdSet(REG_MB_BUNDLE)],
+  ]);
+})();
 
 /** Weather → ability id that doubles speed under that weather. */
 const WEATHER_SPEED_ABILITIES: Record<
@@ -249,20 +279,30 @@ export function groupBySpeed<T extends { speed: number }>(
 /**
  * Speed-affecting items legal in a given format.
  *
- * Pulls from the curated catalogue above. For modern Champions Reg M-A this
- * returns just `choice-scarf`. For older / classic formats (currently anything
- * pre-Champions) it returns the full set so calculations and pickers reflect
- * what the format actually allows.
+ * For Champions formats (M-A and M-B) the returned set is derived from the
+ * authoritative per-regulation bundle (`REG_MA_BUNDLE.legalItems` /
+ * `REG_MB_BUNDLE.legalItems`), intersected with the speed-relevant catalogue
+ * above. This means:
+ *   - M-A: only `choice-scarf` — Iron Ball is absent from the M-A item pool
+ *   - M-B: `choice-scarf` + `iron-ball` — Iron Ball was added in M-B
+ *
+ * For non-Champions formats the full catalogue is returned so pickers reflect
+ * everything a classic format may allow.
  */
 export function getSpeedAffectingItems(
   format: GameFormat
 ): SpeedAffectingItem[] {
-  const useModernSet = format.id === "gen9championsvgc2026regma";
-  const legalIds = useModernSet
-    ? MODERN_LEGAL_ITEM_IDS
-    : new Set(Object.keys(SPEED_ITEMS));
+  const championsBundleIds = CHAMPIONS_FORMAT_SPEED_ITEMS.get(format.id);
 
-  return Array.from(legalIds)
-    .map((id) => SPEED_ITEMS[id])
-    .filter((item): item is SpeedAffectingItem => item !== undefined);
+  if (isChampionsFormatId(format.id)) {
+    // Champions format: filter to items present in both the speed catalogue and
+    // the format's authoritative legal-item set. Fall back to an empty set if
+    // the format ID is somehow missing from CHAMPIONS_FORMAT_SPEED_ITEMS (e.g.
+    // a future regulation not yet registered here).
+    const legalIds = championsBundleIds ?? new Set<string>();
+    return Object.values(SPEED_ITEMS).filter((item) => legalIds.has(item.id));
+  }
+
+  // Non-Champions format: return the full speed-affecting item catalogue.
+  return Object.values(SPEED_ITEMS);
 }

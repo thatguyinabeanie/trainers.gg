@@ -36,6 +36,8 @@ interface CalcStateContextValue extends UseCalcStateReturn {
    * while the calc drawer is closed or the showCalc tweak is off.
    */
   calcEnabled: boolean;
+  /** Active game format — lets calc consumers fetch format-aware move data. */
+  format: GameFormat | undefined;
 }
 
 const CalcStateContext = createContext<CalcStateContextValue | null>(null);
@@ -90,6 +92,7 @@ export function CalcStateProvider({
     field,
     setField,
     calcEnabled,
+    format,
   };
 
   return (

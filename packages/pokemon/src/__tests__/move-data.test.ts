@@ -4,6 +4,12 @@ import {
   getMoveBP,
   getMoveData,
 } from "../move-data";
+import { REG_MA_BUNDLE } from "../champions-reg-ma";
+import { REG_MB_BUNDLE } from "../champions-reg-mb";
+
+// Champions format IDs used in tests
+const CHAMPIONS_MA_ID = "gen9championsvgc2026regma";
+const CHAMPIONS_MB_ID = "gen9championsvgc2026regmb";
 
 describe("getMoveType", () => {
   it("returns the type of a known move", () => {
@@ -180,4 +186,176 @@ describe("getMoveData", () => {
       expect(data?.basePower).toBe(basePower);
     }
   );
+});
+
+// =============================================================================
+// Champions format-aware getMoveData
+// =============================================================================
+
+describe("getMoveData — Champions format overrides", () => {
+  // -------------------------------------------------------------------------
+  // basePower overrides — (moveName, vanillaBasePower, championsBasePower)
+  // -------------------------------------------------------------------------
+  it.each<[string, number, number]>([
+    ["First Impression", 90, 100],
+    ["Beak Blast", 100, 120],
+    ["Mountain Gale", 100, 120],
+    ["Bone Rush", 25, 30],
+  ])(
+    "%s: basePower %d→%d in Champions M-B",
+    (moveName, vanillaValue, championsValue) => {
+      expect(getMoveData(moveName)?.basePower).toBe(vanillaValue);
+      expect(getMoveData(moveName, CHAMPIONS_MB_ID)?.basePower).toBe(
+        championsValue
+      );
+    }
+  );
+
+  it("First Impression: basePower 90→100 in Champions M-A", () => {
+    expect(getMoveData("First Impression", CHAMPIONS_MA_ID)?.basePower).toBe(
+      100
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // type overrides — (moveName, vanillaType, championsType)
+  // -------------------------------------------------------------------------
+  it.each<[string, string, string]>([
+    ["Snap Trap", "Grass", "Steel"],
+    ["Growth", "Normal", "Grass"],
+  ])(
+    "%s: type %s→%s in Champions M-B",
+    (moveName, vanillaValue, championsValue) => {
+      expect(getMoveData(moveName)?.type).toBe(vanillaValue);
+      expect(getMoveData(moveName, CHAMPIONS_MB_ID)?.type).toBe(championsValue);
+    }
+  );
+
+  it("Snap Trap: type Grass→Steel in Champions M-A", () => {
+    expect(getMoveData("Snap Trap", CHAMPIONS_MA_ID)?.type).toBe("Steel");
+  });
+
+  // -------------------------------------------------------------------------
+  // accuracy overrides — (moveName, vanillaAccuracy, championsAccuracy)
+  // -------------------------------------------------------------------------
+  it.each<[string, number, number]>([
+    ["Make It Rain", 100, 95],
+    ["Crabhammer", 90, 95],
+    ["Syrup Bomb", 85, 90],
+  ])(
+    "%s: accuracy %d→%d in Champions M-B",
+    (moveName, vanillaValue, championsValue) => {
+      expect(getMoveData(moveName)?.accuracy).toBe(vanillaValue);
+      expect(getMoveData(moveName, CHAMPIONS_MB_ID)?.accuracy).toBe(
+        championsValue
+      );
+    }
+  );
+
+  // -------------------------------------------------------------------------
+  // Non-Champions formats: vanilla values unchanged
+  // -------------------------------------------------------------------------
+  it("First Impression: basePower stays 90 in non-Champions format", () => {
+    const sv = getMoveData("First Impression", "gen9vgc2026regi");
+    expect(sv?.basePower).toBe(90);
+  });
+
+  it("Snap Trap: type stays Grass (vanilla) in non-Champions format", () => {
+    // Vanilla @pkmn/dex Gen 9 type for Snap Trap is Grass
+    const sv = getMoveData("Snap Trap", "gen9vgc2026regi");
+    expect(sv?.type).toBe("Grass");
+  });
+
+  it("Make It Rain: accuracy stays 100 in non-Champions format", () => {
+    const sv = getMoveData("Make It Rain", "gen9vgc2026regi");
+    expect(sv?.accuracy).toBe(100);
+  });
+
+  it("getMoveData with null formatId behaves like no format", () => {
+    const noFormat = getMoveData("First Impression");
+    const nullFormat = getMoveData("First Impression", null);
+    expect(nullFormat?.basePower).toBe(noFormat?.basePower);
+    expect(nullFormat?.type).toBe(noFormat?.type);
+  });
+
+  it("getMoveData with unknown format ID returns vanilla values", () => {
+    const unknown = getMoveData("First Impression", "gen9unknownformat");
+    expect(unknown?.basePower).toBe(90); // vanilla
+  });
+
+  it("getMoveData returns null for unknown move even with Champions format", () => {
+    expect(getMoveData("NotARealMove", CHAMPIONS_MB_ID)).toBeNull();
+  });
+
+  // -------------------------------------------------------------------------
+  // Unchanged moves: Champions format doesn't alter unregistered moves
+  // -------------------------------------------------------------------------
+  it("Thunderbolt: unchanged in Champions M-B (no override entry)", () => {
+    const vanilla = getMoveData("Thunderbolt");
+    const champions = getMoveData("Thunderbolt", CHAMPIONS_MB_ID);
+    expect(champions?.basePower).toBe(vanilla?.basePower);
+    expect(champions?.type).toBe(vanilla?.type);
+    expect(champions?.accuracy).toBe(vanilla?.accuracy);
+  });
+});
+
+// =============================================================================
+// Bundle inheritance: M-B ⊇ M-A moveChanges
+// =============================================================================
+
+describe("Champions regulation bundles — moveChanges inheritance", () => {
+  it("REG_MB_BUNDLE.moveChanges contains all keys from REG_MA_BUNDLE.moveChanges", () => {
+    for (const key of REG_MA_BUNDLE.moveChanges.keys()) {
+      expect(REG_MB_BUNDLE.moveChanges.has(key)).toBe(true);
+    }
+  });
+
+  it("REG_MB_BUNDLE.moveChanges is reference-equal to REG_MA_BUNDLE.moveChanges (no extra M-B changes)", () => {
+    // M-B has no new move changes — it should reuse the same map object
+    expect(REG_MB_BUNDLE.moveChanges).toBe(REG_MA_BUNDLE.moveChanges);
+  });
+
+  it("REG_MA_BUNDLE.moveChanges includes expected Champions-wide entries", () => {
+    expect(REG_MA_BUNDLE.moveChanges.has("First Impression")).toBe(true);
+    expect(REG_MA_BUNDLE.moveChanges.has("Snap Trap")).toBe(true);
+    expect(REG_MA_BUNDLE.moveChanges.has("Make It Rain")).toBe(true);
+    expect(REG_MA_BUNDLE.moveChanges.has("Beak Blast")).toBe(true);
+    expect(REG_MA_BUNDLE.moveChanges.has("Mountain Gale")).toBe(true);
+  });
+
+  it("First Impression entry has correct Champions values", () => {
+    const change = REG_MA_BUNDLE.moveChanges.get("First Impression");
+    expect(change?.basePower).toBe(100);
+    expect(change?.pp).toBe(12);
+  });
+
+  it("Snap Trap entry reflects the Steel type change", () => {
+    const change = REG_MA_BUNDLE.moveChanges.get("Snap Trap");
+    expect(change?.type).toBe("Steel");
+  });
+
+  it("Make It Rain entry reflects accuracy decrease", () => {
+    const change = REG_MA_BUNDLE.moveChanges.get("Make It Rain");
+    expect(change?.accuracy).toBe(95);
+  });
+
+  it("Dire Claw entry includes Slicing flag", () => {
+    const change = REG_MA_BUNDLE.moveChanges.get("Dire Claw");
+    expect(change?.flags).toContain("Slicing");
+  });
+
+  it("Dragon Cheer entry includes Sound flag", () => {
+    const change = REG_MA_BUNDLE.moveChanges.get("Dragon Cheer");
+    expect(change?.flags).toContain("Sound");
+  });
+
+  it("Growth entry includes source note", () => {
+    const change = REG_MA_BUNDLE.moveChanges.get("Growth");
+    expect(change?.note).toMatch(/Serebii/);
+  });
+
+  it("Poltergeist entry includes source note", () => {
+    const change = REG_MA_BUNDLE.moveChanges.get("Poltergeist");
+    expect(change?.note).toMatch(/Smogon/);
+  });
 });

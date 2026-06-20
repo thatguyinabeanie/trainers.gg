@@ -206,7 +206,7 @@ export function MovePicker({
   const lower = filters.search.toLowerCase();
   const rows: MoveRow[] = [];
   for (const name of legalMoves) {
-    const data = getMoveData(name);
+    const data = getMoveData(name, format?.id);
 
     // types: multi-select OR — skip only when array is non-empty and no match
     if (filters.types.length > 0 && !filters.types.includes(data?.type ?? ""))

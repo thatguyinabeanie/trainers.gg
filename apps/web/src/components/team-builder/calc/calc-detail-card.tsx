@@ -63,7 +63,7 @@ export function CalcDetailCard({
 }: CalcDetailCardProps) {
   const showTera = formatSupportsTera(format);
 
-  const moveData = getMoveData(moveName);
+  const moveData = getMoveData(moveName, format?.id);
   const targetInfo = getMoveTargetInfo(moveName);
 
   // Render directly from baseOutput — no local override state
@@ -81,7 +81,12 @@ export function CalcDetailCard({
   const verdict: string | null =
     baseOutput.recoveryTier ?? getVerdict(minPct, maxPct);
 
-  const eff = getMoveEffectiveness(moveName, defender.species, weather);
+  const eff = getMoveEffectiveness(
+    moveName,
+    defender.species,
+    weather,
+    format?.id
+  );
 
   // Raw damage range from rolls
   const rolls = baseOutput.rolls;

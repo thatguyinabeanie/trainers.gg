@@ -77,10 +77,10 @@ export function SpeciesExpandedPanel({
     );
   }
 
-  // Build move data list
+  // Build move data list — pass formatId so Champions moves show correct stats
   const allMoves: MoveData[] = [];
   for (const moveName of legalMovesResult) {
-    const data = getMoveData(moveName);
+    const data = getMoveData(moveName, formatId);
     if (data) allMoves.push(data);
   }
 
