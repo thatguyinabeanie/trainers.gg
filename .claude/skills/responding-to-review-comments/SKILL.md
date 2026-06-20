@@ -9,13 +9,13 @@ Fetch review comments, group them by theme, walk through each with the user, pos
 
 ## ⛔ Non-Negotiable: Reply Without Delay (Two-Reply Protocol)
 
-**Replying to review comments is the single highest-priority action in this skill. It is never delayed, never batched for "later", and never substituted with a status report.** A *fix* comment gets **two** replies then a resolve; a *not-an-issue* comment gets **one** evidence-backed reply then a resolve (see the rules below):
+**Replying to review comments is the single highest-priority action in this skill. It is never delayed, never batched for "later", and never substituted with a status report.** A _fix_ comment gets **two** replies then a resolve; a _not-an-issue_ comment gets **one** evidence-backed reply then a resolve (see the rules below):
 
-| Step | When | Reply content |
-| ---- | ---- | ------------- |
+| Step                    | When                                                                                                                              | Reply content                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | **Reply #1 — Decision** | The moment the fix is decided (end of Group and Present, as soon as the user picks an approach — or immediately for not-an-issue) | What is going to be done: "Adopting X — <change>. Implementing in this round." |
-| **Reply #2 — Done** | Right after the fix is committed + pushed (Reply #2 — Done section) | "Fixed in `<sha>` — <one-line of what changed>." |
-| **Resolve** | Once Reply #2 is posted and the fix is verified | Resolve the thread. |
+| **Reply #2 — Done**     | Right after the fix is committed + pushed (Reply #2 — Done section)                                                               | "Fixed in `<sha>` — <one-line of what changed>."                               |
+| **Resolve**             | Once Reply #2 is posted and the fix is verified                                                                                   | Resolve the thread.                                                            |
 
 Rules that make this non-negotiable:
 

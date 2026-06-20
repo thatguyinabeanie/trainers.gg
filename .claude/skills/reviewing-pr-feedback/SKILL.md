@@ -15,7 +15,7 @@ Run responding-to-review-comments (fetch → group → Reply #1 → fix → Repl
 Request Copilot re-review → Wait for review + CI again → Loop if new comments or red CI
 ```
 
-This loop repeats until a review cycle produces zero actionable comments **and** CI is green. (Reply #1 → fix → Reply #2 → resolve is the path for *fix* comments; a *not-an-issue* comment gets one explanatory reply then resolve — see `responding-to-review-comments`.)
+This loop repeats until a review cycle produces zero actionable comments **and** CI is green. (Reply #1 → fix → Reply #2 → resolve is the path for _fix_ comments; a _not-an-issue_ comment gets one explanatory reply then resolve — see `responding-to-review-comments`.)
 
 ## Phase 0: Wait for review AND CI to settle
 
