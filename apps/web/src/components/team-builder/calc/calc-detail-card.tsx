@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import {
   getMoveData,
   getSpeciesTypes,
@@ -10,7 +8,6 @@ import {
 import { type Tables } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { getVerdict, type CalcOutput } from "../use-calc-state";
 import { formatSupportsTera } from "../format-gating";
@@ -41,40 +38,8 @@ interface CalcDetailCardProps {
   baseOutput: CalcOutput;
   defender: CalcDetailDefender;
   format: GameFormat | undefined;
-  /** foesAlive from the workspace field state. */
-  foesAlive: 1 | 2;
-  /** allyAlive from the workspace field state. */
-  allyAlive: boolean;
   /** Active or weather-ability-inferred weather, used to resolve Weather Ball type. */
   weather: string | null;
-  onClose: () => void;
-  /** Opens the move picker for this slot — keyboard / affordance shortcut. */
-  onChangeMove: () => void;
-}
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/**
- * Apply local override modifiers to a calc output.
- * Crit multiplies damage by 1.5; screen halves it.
- * The verdict is recomputed from the modified percentages.
- */
-function applyOverrides(
-  output: CalcOutput,
-  opts: { crit: boolean; screen: boolean; spreadApplied: boolean }
-): { minPct: number; maxPct: number; factor: number } {
-  const factor =
-    (opts.crit ? 1.5 : 1) *
-    (opts.screen ? 0.5 : 1) *
-    (opts.spreadApplied ? 0.75 : 1);
-
-  return {
-    minPct: output.minPercent * factor,
-    maxPct: output.maxPercent * factor,
-    factor,
-  };
 }
 
 // =============================================================================
@@ -82,14 +47,11 @@ function applyOverrides(
 // =============================================================================
 
 /**
- * Detailed per-move calc popover content.
+ * Read-only per-move calc hover panel.
  *
  * Shows attacker → move → defender identity, damage % range, KO label,
- * raw damage / HP, effectiveness, target classification, and local override
- * toggles (crit / terastallized / screen up).  When the move is a spread move
- * a field row is also shown.
- *
- * All toggles are LOCAL — they don't mutate workspace state.
+ * raw damage / HP, effectiveness, and target classification. Shown on row
+ * hover — no interactive toggles (Crit lives in the Sides field controls).
  */
 export function CalcDetailCard({
   attacker,
@@ -97,36 +59,16 @@ export function CalcDetailCard({
   baseOutput,
   defender,
   format,
-  foesAlive,
-  allyAlive,
   weather,
-  onClose,
-  onChangeMove,
 }: CalcDetailCardProps) {
-  const [crit, setCrit] = useState(false);
-  const [screen, setScreen] = useState(false);
   const showTera = formatSupportsTera(format);
-  const [localFoesAlive, setLocalFoesAlive] = useState<1 | 2>(foesAlive);
-  const [localAllyAlive, setLocalAllyAlive] = useState(allyAlive);
 
   const moveData = getMoveData(moveName);
   const targetInfo = getMoveTargetInfo(moveName);
-  const isSpread = targetInfo.isSpread;
 
-  // Spread reduction applies when: doubles + spread move + ≥2 foes alive
-  // (or for all-others: ≥2 targets alive, which includes the ally)
-  const spreadApplied =
-    isSpread &&
-    (targetInfo.kind === "all-foes"
-      ? localFoesAlive >= 2
-      : // all-others: 2 targets when ally is alive, or still 2 foes
-        localFoesAlive >= 2 || localAllyAlive);
-
-  const { minPct, maxPct, factor } = applyOverrides(baseOutput, {
-    crit,
-    screen,
-    spreadApplied,
-  });
+  // Render directly from baseOutput — no local override state
+  const minPct = baseOutput.minPercent;
+  const maxPct = baseOutput.maxPercent;
 
   // Tera type display for attacker header
   const attackerSpeciesTypes = getSpeciesTypes(attacker.species ?? "");
@@ -135,24 +77,16 @@ export function CalcDetailCard({
       ? attacker.tera_type
       : (attackerSpeciesTypes[0] ?? "Normal");
 
-  // Prefer the recovery-aware tier when no local overrides are active (crit /
-  // screen / spread). When overrides modify the damage, the recovery simulation
-  // is no longer valid since it was computed from raw rolls.
-  const baseVerdict = getVerdict(minPct, maxPct);
+  // Use recovery-aware tier when available, fall back to computed verdict
   const verdict: string | null =
-    factor === 1 && baseOutput.recoveryTier
-      ? baseOutput.recoveryTier
-      : baseVerdict;
+    baseOutput.recoveryTier ?? getVerdict(minPct, maxPct);
 
   const eff = getMoveEffectiveness(moveName, defender.species, weather);
 
-  // Raw damage range from rolls — scaled by the same override factor used
-  // for the percentages so the two readouts stay consistent.
+  // Raw damage range from rolls
   const rolls = baseOutput.rolls;
-  const rawMin = rolls.length > 0 ? (rolls[0] ?? 0) : 0;
-  const rawMax = rolls.length > 0 ? (rolls[rolls.length - 1] ?? 0) : 0;
-  const dmgMin = Math.round(rawMin * factor);
-  const dmgMax = Math.round(rawMax * factor);
+  const dmgMin = rolls.length > 0 ? (rolls[0] ?? 0) : 0;
+  const dmgMax = rolls.length > 0 ? (rolls[rolls.length - 1] ?? 0) : 0;
   const defHp = baseOutput.defenderMaxHP;
 
   // KO tier styling
@@ -169,24 +103,6 @@ export function CalcDetailCard({
     <div className="mvdetail-card">
       <div className="mvdetail-head">
         <span className="mvdetail-eyebrow">DAMAGE CALC</span>
-        <div className="mvdetail-head-r">
-          <button
-            type="button"
-            className="mvdetail-change-btn hover:bg-[color-mix(in_oklch,var(--primary)_10%,transparent)]"
-            onClick={onChangeMove}
-            title="Change move"
-          >
-            Change move ▾
-          </button>
-          <button
-            type="button"
-            className="mvdetail-close"
-            onClick={onClose}
-            aria-label="Close damage detail"
-          >
-            ×
-          </button>
-        </div>
       </div>
 
       {/* Identity row: attacker → move → defender */}
@@ -234,8 +150,7 @@ export function CalcDetailCard({
           <div className={cn("mvdetail-ko", koClass)}>
             {baseOutput.koChance != null &&
             baseOutput.koChance > 0 &&
-            baseOutput.koChance < 100 &&
-            factor === 1
+            baseOutput.koChance < 100
               ? `${baseOutput.koChance % 1 === 0 ? baseOutput.koChance.toFixed(0) : baseOutput.koChance.toFixed(1)}% chance to OHKO`
               : verdict}
             {baseOutput.recoverySuffix && (
@@ -243,9 +158,6 @@ export function CalcDetailCard({
                 {" "}
                 · {baseOutput.recoverySuffix}
               </span>
-            )}
-            {spreadApplied && (
-              <span className="mvdetail-spread-tag"> · spread −25%</span>
             )}
           </div>
         )}
@@ -263,104 +175,6 @@ export function CalcDetailCard({
         <span className="mvdetail-target-desc">
           {getMoveTargetDesc(targetInfo.kind)}
         </span>
-      </div>
-
-      {/* Toggle row: Crit / Terastallized / Screen up */}
-      <div className="mvdetail-toggles">
-        <div className="mvdetail-tog flex items-center gap-1.5">
-          <Checkbox
-            aria-label="Crit"
-            checked={crit}
-            onCheckedChange={(v) => setCrit(v === true)}
-          />
-          <button
-            type="button"
-            className="cursor-pointer text-xs"
-            onClick={() => setCrit(!crit)}
-          >
-            Crit
-          </button>
-        </div>
-        <div className="mvdetail-tog flex items-center gap-1.5">
-          <Checkbox
-            aria-label="Screen up"
-            checked={screen}
-            onCheckedChange={(v) => setScreen(v === true)}
-          />
-          <button
-            type="button"
-            className="cursor-pointer text-xs"
-            onClick={() => setScreen(!screen)}
-          >
-            Screen up
-          </button>
-        </div>
-      </div>
-
-      {/* Field row — only for spread moves */}
-      {isSpread && (
-        <div className="mvdetail-field-row">
-          <span className="mvdetail-field-l">FIELD</span>
-
-          <span className="mvdetail-field-grp">
-            <span className="mvdetail-field-lbl">Foes</span>
-            <button
-              type="button"
-              className={cn(
-                "mvdetail-tog-btn",
-                localFoesAlive === 1 &&
-                  "border-primary text-primary bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] font-semibold"
-              )}
-              onClick={() => setLocalFoesAlive(1)}
-            >
-              1
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "mvdetail-tog-btn",
-                localFoesAlive === 2 &&
-                  "border-primary text-primary bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] font-semibold"
-              )}
-              onClick={() => setLocalFoesAlive(2)}
-            >
-              2
-            </button>
-          </span>
-
-          {targetInfo.kind === "all-others" && (
-            <span className="mvdetail-field-grp">
-              <span className="mvdetail-field-lbl">Ally</span>
-              <button
-                type="button"
-                className={cn(
-                  "mvdetail-tog-btn",
-                  localAllyAlive &&
-                    "border-primary text-primary bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] font-semibold"
-                )}
-                onClick={() => setLocalAllyAlive(true)}
-              >
-                alive
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  "mvdetail-tog-btn",
-                  !localAllyAlive &&
-                    "border-primary text-primary bg-[color-mix(in_oklch,var(--primary)_15%,var(--background))] font-semibold"
-                )}
-                onClick={() => setLocalAllyAlive(false)}
-              >
-                fainted
-              </button>
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Footer hint */}
-      <div className="mvdetail-foot">
-        Click outside to close. Right-click move cell to pick a different move.
       </div>
     </div>
   );

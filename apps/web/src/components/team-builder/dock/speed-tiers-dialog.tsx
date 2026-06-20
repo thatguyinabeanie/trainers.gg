@@ -90,7 +90,7 @@ export function SpeedTiersDialog(props: SpeedTiersDialogProps) {
         <DrawerContent
           showHandle={false}
           // rounded-t-[20px]: 20px sits between rounded-2xl (16px) and rounded-3xl (24px) — no clean scale token
-          className="data-[vaul-drawer-direction=bottom]:max-h-[95dvh] h-[95dvh] overflow-hidden rounded-t-[20px] p-0"
+          className="h-[95dvh] overflow-hidden rounded-t-[20px] p-0 data-[vaul-drawer-direction=bottom]:max-h-[95dvh]"
         >
           <DrawerTitle className="sr-only">Speed tiers</DrawerTitle>
 
@@ -132,7 +132,7 @@ export function SpeedTiersDialog(props: SpeedTiersDialogProps) {
               <button
                 type="button"
                 onClick={props.onCollapseToSidepane}
-                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] transition-colors"
+                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs transition-colors"
               >
                 <PanelRightClose className="size-3.5" />
                 Collapse to sidepane

@@ -299,7 +299,10 @@ jest.mock("../validation/field-error", () => ({
 
 import { MovesLane } from "../lanes/moves-lane";
 import { type ValidationError } from "../validation-hooks";
-import { useCalcStateContext } from "../calc/calc-state-context";
+import {
+  useCalcStateContext,
+  useCalcEnabled,
+} from "../calc/calc-state-context";
 import { getMoveData } from "@trainers/pokemon";
 
 // =============================================================================
@@ -663,7 +666,9 @@ describe("MovesLane — table headers", () => {
 
 describe("MovesLane — inline calc display", () => {
   beforeEach(() => {
-    (useCalcStateContext as jest.Mock).mockImplementation(() => mockCalcContext);
+    (useCalcStateContext as jest.Mock).mockImplementation(
+      () => mockCalcContext
+    );
     mockCalcContext.calcEnabled = false;
     mockCalcContext.rowOutputs = [null, null, null, null];
   });
@@ -705,5 +710,378 @@ describe("MovesLane — inline calc display", () => {
     // Status move: hasCalc = false → percentage cell shows "—" not a range
     expect(screen.queryByText("50.0–60.0%")).not.toBeInTheDocument();
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+  });
+});
+
+// =============================================================================
+// MovesLane — cards-2x2 presentation variant
+// =============================================================================
+
+describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
+  beforeEach(() => {
+    (useCalcStateContext as jest.Mock).mockImplementation(() => ({
+      ...mockCalcContext,
+      calcEnabled: false,
+    }));
+    mockCalcContext.calcEnabled = false;
+    mockCalcContext.rowOutputs = [null, null, null, null];
+  });
+
+  afterEach(() => {
+    mockCalcContext.calcEnabled = false;
+    mockCalcContext.rowOutputs = [null, null, null, null];
+  });
+
+  // -------------------------------------------------------------------------
+  // 1. Renders a 2×2 grid of MoveCard buttons when calc is OFF
+  // -------------------------------------------------------------------------
+  it("renders 4 card buttons (one per slot) when presentation='cards-2x2' and calc is OFF", () => {
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: "Moonblast",
+          move2: "Psychic",
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="cards-2x2"
+      />
+    );
+    // MoveCard renders a <button type="button"> for each slot. The Dialog stub
+    // always renders its children (including picker stub buttons), so we filter to
+    // only card buttons — those with type="button" and not containing picker-stub text.
+    const cardButtons = screen
+      .getAllByRole("button")
+      .filter(
+        (b) =>
+          b.getAttribute("type") === "button" &&
+          !b.textContent?.includes("pick-") &&
+          !b.textContent?.includes("close-") &&
+          !b.textContent?.includes("change-move")
+      );
+    expect(cardButtons).toHaveLength(4);
+  });
+
+  // -------------------------------------------------------------------------
+  // 2. Move names appear in card buttons (not table rows)
+  // -------------------------------------------------------------------------
+  it("renders set move names as card button text", () => {
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: "Moonblast",
+          move2: "Psychic",
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="cards-2x2"
+      />
+    );
+    expect(screen.getByText("Moonblast")).toBeInTheDocument();
+    expect(screen.getByText("Psychic")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 3. Empty slots show '+ Add move' inside card buttons
+  // -------------------------------------------------------------------------
+  it("renders '+ Add move' for empty slots in cards-2x2 mode", () => {
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: "Moonblast",
+          move2: null,
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="cards-2x2"
+      />
+    );
+    expect(screen.getAllByText("+ Add move").length).toBe(3);
+  });
+
+  // -------------------------------------------------------------------------
+  // 4. Type icon renders for each set move in card mode
+  // -------------------------------------------------------------------------
+  it("renders type icon for each set move (role=img) in cards-2x2 mode", () => {
+    // Default mock returns type: "Dragon" for every move
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: "Moonblast",
+          move2: "Psychic",
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="cards-2x2"
+      />
+    );
+    const icons = screen.getAllByRole("img", { name: "Dragon" });
+    expect(icons.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // -------------------------------------------------------------------------
+  // 5. Category icon renders for each set move in card mode
+  // -------------------------------------------------------------------------
+  it("renders category icon img for each set move in cards-2x2 mode", () => {
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: "Moonblast",
+          move2: "Psychic",
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="cards-2x2"
+      />
+    );
+    const catImgs = screen.getAllByAltText("Physical");
+    expect(catImgs.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // -------------------------------------------------------------------------
+  // 6. BP / ACC meta appears in each card for a damaging move
+  // -------------------------------------------------------------------------
+  it("renders '80 / 100' BP/ACC meta for a move with basePower=80 and accuracy=100", () => {
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: "Moonblast",
+          move2: null,
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="cards-2x2"
+      />
+    );
+    // The MoveCard renders "${basePower} / ${accuracy}" inline
+    expect(screen.getByText("80 / 100")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 7. Clicking a card button opens the move picker (Dialog or MovePickerMobile)
+  // -------------------------------------------------------------------------
+  it("renders the MovePicker (inside a Dialog stub) when a card button is clicked", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: null,
+          move2: null,
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="cards-2x2"
+      />
+    );
+    // All 4 cards show "+ Add move" — click the first one
+    const addButtons = screen.getAllByRole("button");
+    await user.click(addButtons[0]!);
+    // After click, the picker Dialog should open
+    expect(screen.getAllByTestId("move-picker").length).toBeGreaterThan(0);
+  });
+
+  // -------------------------------------------------------------------------
+  // 8. Picking a move via the picker calls onUpdate with the right slot key
+  // -------------------------------------------------------------------------
+  it("calls onUpdate with move1 when a move is picked from the first card slot", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const onUpdate = jest.fn();
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: null,
+          move2: null,
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={onUpdate}
+        presentation="cards-2x2"
+      />
+    );
+    const addButtons = screen.getAllByRole("button");
+    await user.click(addButtons[0]!);
+    // Click the pick-moonblast button inside the picker stub
+    const pickBtns = screen.getAllByText("pick-moonblast");
+    await user.click(pickBtns[0]!);
+    expect(onUpdate).toHaveBeenCalledWith({ move1: "Moonblast" });
+  });
+
+  // -------------------------------------------------------------------------
+  // 9. Validation error ring applies to a card when the slot has an error
+  // -------------------------------------------------------------------------
+  it("renders a validation alert for a move1 error in cards-2x2 mode", () => {
+    render(
+      <MovesLane
+        pokemon={makePokemon({ move1: null })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="cards-2x2"
+        fieldErrors={[makeError("move1", "error", "Move 1 required")]}
+      />
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Move 1 required");
+  });
+
+  // -------------------------------------------------------------------------
+  // 10. All 4 slots render in cards-2x2 mode (structural coverage)
+  // -------------------------------------------------------------------------
+  it.each([
+    ["move1", "Moonblast"],
+    ["move2", "Psychic"],
+    ["move3", "Thunderbolt"],
+    ["move4", "Protect"],
+  ] as const)(
+    "renders %s slot name '%s' in cards-2x2 mode",
+    (slot, moveName) => {
+      render(
+        <MovesLane
+          pokemon={makePokemon({ [slot]: moveName })}
+          format={VGC_FORMAT}
+          onUpdate={jest.fn()}
+          presentation="cards-2x2"
+        />
+      );
+      expect(screen.getByText(moveName)).toBeInTheDocument();
+    }
+  );
+});
+
+describe("MovesLane — cards-2x2 presentation (calc ON → table path)", () => {
+  beforeEach(() => {
+    mockCalcContext.calcEnabled = true;
+    (useCalcStateContext as jest.Mock).mockImplementation(() => ({
+      ...mockCalcContext,
+      calcEnabled: true,
+    }));
+    (useCalcEnabled as jest.Mock).mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    mockCalcContext.calcEnabled = false;
+    mockCalcContext.rowOutputs = [null, null, null, null];
+    (useCalcEnabled as jest.Mock).mockReturnValue(false);
+  });
+
+  // -------------------------------------------------------------------------
+  // 11. presentation="cards-2x2" + calc ON falls through to the table path
+  // -------------------------------------------------------------------------
+  it("renders table rows (not card buttons) when presentation='cards-2x2' but calc is ON", () => {
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: "Moonblast",
+          move2: null,
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="cards-2x2"
+      />
+    );
+    // Table path renders <tr> elements — ghost header row + 4 move rows
+    expect(screen.getAllByRole("row").length).toBeGreaterThanOrEqual(4);
+    // No standalone card buttons (MoveCard is NOT rendered in table path)
+    // The only buttons are inside the picker stub (pick-moonblast / pick-flamethrower)
+    // — not the card-button-per-slot shape
+    const buttons = screen.getAllByRole("button");
+    // In table path the picker stubs render buttons; card buttons wouldn't have
+    // these specific labels. The table renders 4 pickers with pick-moonblast buttons.
+    const pickButtons = buttons.filter((b) =>
+      b.textContent?.includes("pick-moonblast")
+    );
+    expect(pickButtons.length).toBeGreaterThan(0);
+  });
+
+  // -------------------------------------------------------------------------
+  // 12. Calc columns (damage, percent, KO) are rendered when calc is ON
+  // -------------------------------------------------------------------------
+  it("renders damage/percent/KO columns when calc is ON and presentation='cards-2x2'", () => {
+    mockCalcContext.rowOutputs = [
+      { minPercent: 50.0, maxPercent: 60.0, rolls: [80, 90] },
+      null,
+      null,
+      null,
+    ];
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: "Moonblast",
+          move2: null,
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="cards-2x2"
+      />
+    );
+    // Damage range and KO tier render in calc columns
+    expect(screen.getByText("50.0–60.0%")).toBeInTheDocument();
+  });
+});
+
+describe("MovesLane — default presentation='list' unchanged", () => {
+  beforeEach(() => {
+    mockCalcContext.calcEnabled = false;
+    (useCalcStateContext as jest.Mock).mockImplementation(() => ({
+      ...mockCalcContext,
+      calcEnabled: false,
+    }));
+  });
+
+  // -------------------------------------------------------------------------
+  // 13. Default (no presentation prop) renders the standard table
+  // -------------------------------------------------------------------------
+  it("renders table rows by default (presentation='list') with calc OFF", () => {
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: "Moonblast",
+          move2: null,
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+      />
+    );
+    // Table renders role="row" elements
+    expect(screen.getAllByRole("row").length).toBeGreaterThanOrEqual(4);
+  });
+
+  // -------------------------------------------------------------------------
+  // 14. presentation="list" explicit: same table output
+  // -------------------------------------------------------------------------
+  it("renders table rows for presentation='list' explicitly", () => {
+    render(
+      <MovesLane
+        pokemon={makePokemon({
+          move1: "Moonblast",
+          move2: null,
+          move3: null,
+          move4: null,
+        })}
+        format={VGC_FORMAT}
+        onUpdate={jest.fn()}
+        presentation="list"
+      />
+    );
+    expect(screen.getAllByRole("row").length).toBeGreaterThanOrEqual(4);
   });
 });

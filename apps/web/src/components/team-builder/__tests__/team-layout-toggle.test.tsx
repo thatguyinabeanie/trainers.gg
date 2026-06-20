@@ -17,18 +17,45 @@ describe("TeamLayoutToggle", () => {
     expect(screen.getAllByRole("button")).toHaveLength(2);
   });
 
-  it("marks the persisted mode as pressed", () => {
+  it("marks the persisted mode as pressed — 'single' by default", () => {
+    render(<TeamLayoutToggle />);
+    const btn = screen.getByLabelText("Single — one Pokémon, full width");
+    expect(btn).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("marks 2x3-vertical as pressed when stored", () => {
     window.localStorage.setItem("tg.team-layout", "2x3-vertical");
     render(<TeamLayoutToggle />);
     const btn = screen.getByLabelText("2 × 3 — stacked per cell");
     expect(btn).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("single button is not pressed when 2x3-vertical is stored", () => {
+    window.localStorage.setItem("tg.team-layout", "2x3-vertical");
+    render(<TeamLayoutToggle />);
+    const btn = screen.getByLabelText("Single — one Pokémon, full width");
+    expect(btn).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("clicking 'Single' button sets mode to 'single'", () => {
+    // Start from grid so the single button click triggers a change.
+    window.localStorage.setItem("tg.team-layout", "2x3-vertical");
+    render(<TeamLayoutToggle />);
+    fireEvent.click(screen.getByLabelText("Single — one Pokémon, full width"));
+    expect(window.localStorage.getItem("tg.team-layout")).toBe("single");
+  });
+
+  it("clicking '2 × 3' button sets mode to '2x3-vertical'", () => {
+    render(<TeamLayoutToggle />);
+    fireEvent.click(screen.getByLabelText("2 × 3 — stacked per cell"));
+    expect(window.localStorage.getItem("tg.team-layout")).toBe("2x3-vertical");
+  });
+
   it.each([
-    ["1 × 6 — full row layout", "1x6", "2x3-vertical"],
-    ["2 × 3 — stacked per cell", "2x3-vertical", "1x6"],
+    ["Single — one Pokémon, full width", "single", "2x3-vertical"] as const,
+    ["2 × 3 — stacked per cell", "2x3-vertical", "single"] as const,
   ])(
-    "changes the persisted mode to %s on click",
+    "clicking '%s' persists mode '%s'",
     (ariaLabel, expectedValue, startingMode) => {
       window.localStorage.setItem("tg.team-layout", startingMode);
       render(<TeamLayoutToggle />);

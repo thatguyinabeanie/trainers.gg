@@ -1,16 +1,11 @@
 "use client";
 
 /**
- * Tests for the PokeRow layout-router component.
+ * Tests for the PokeRow component.
  *
- * After the layout-router refactor, PokeRow is a thin dispatcher:
- *   - empty slot → inline EmptyPokeRow (legacy ghost UI)
- *   - filled + layoutMode "1x6"          → <CompactRow />
- *   - filled + layoutMode "2x3-vertical" → <GridRow />
- *
- * These tests mock CompactRow + GridRow + useTeamLayoutMode so we can verify
- * the routing decision and that props are forwarded with the expected
- * adapted signatures (onUpdate(fields), onRemove()).
+ * PokeRow always renders GridRow for filled slots and GridRowGhost for empty
+ * slots. The legacy CompactRow/1×6 layout has been retired; single-focus mode
+ * renders via the workspace branch, not through PokeRow.
  */
 
 import { render, screen, within } from "@testing-library/react";
@@ -23,45 +18,9 @@ import { type Tables } from "@trainers/supabase";
 // Mocks
 // =============================================================================
 
-// useTeamLayoutMode — toggle per-test via the mock fn below.
-const mockLayoutMode = jest.fn<"1x6" | "2x3-vertical", []>(() => "1x6");
-jest.mock("../use-team-layout", () => ({
-  useTeamLayoutMode: () => mockLayoutMode(),
-}));
-
 // Layout variant components — captured props per render so we can assert
 // forwarding behaviour without exercising their internal logic.
-const compactRowProps = jest.fn();
 const gridRowProps = jest.fn();
-
-jest.mock("../layouts/compact-row", () => ({
-  CompactRow: (props: Record<string, unknown>) => {
-    compactRowProps(props);
-    return (
-      <div data-testid="compact-row" data-idx={String(props.idx)}>
-        compact:{(props.pokemon as { species?: string } | null)?.species ?? ""}
-        <button
-          type="button"
-          data-testid="compact-row-remove"
-          onClick={() => (props.onRemove as () => void)()}
-        >
-          remove
-        </button>
-        <button
-          type="button"
-          data-testid="compact-row-update"
-          onClick={() =>
-            (props.onUpdate as (f: Record<string, unknown>) => void)({
-              nickname: "Chompy",
-            })
-          }
-        >
-          update
-        </button>
-      </div>
-    );
-  },
-}));
 
 jest.mock("../layouts/grid-row", () => ({
   GridRow: (props: Record<string, unknown>) => {
@@ -90,21 +49,6 @@ jest.mock("../layouts/grid-row", () => ({
       </div>
     );
   },
-}));
-
-// Lane component ghost mocks — used only by EmptyPokeRow.
-jest.mock("../layouts/compact-row-ghost", () => ({
-  CompactRowGhost: ({ idx }: { idx: number }) => (
-    <div data-testid="compact-row-ghost" data-idx={String(idx)}>
-      <span>{String(idx + 1).padStart(2, "0")}</span>
-      <span>+ Add Pokémon</span>
-      <span>HP</span>
-      <span>+ Add move</span>
-      <span>+ Add move</span>
-      <span>+ Add move</span>
-      <span>+ Add move</span>
-    </div>
-  ),
 }));
 
 jest.mock("../layouts/grid-row-ghost", () => ({
@@ -215,8 +159,6 @@ function makePokemon(
 
 describe("PokeRow — empty slot", () => {
   beforeEach(() => {
-    mockLayoutMode.mockReturnValue("1x6");
-    compactRowProps.mockClear();
     gridRowProps.mockClear();
   });
 
@@ -233,7 +175,7 @@ describe("PokeRow — empty slot", () => {
     expect(screen.getByText(/\+ Add Pokémon/i)).toBeInTheDocument();
   });
 
-  it("renders the slot number (01) in the rib", () => {
+  it("renders the slot number (01) in the ghost", () => {
     render(
       <PokeRow
         idx={0}
@@ -294,24 +236,7 @@ describe("PokeRow — empty slot", () => {
     expect(onAdd).toHaveBeenCalledWith(2, "Togekiss");
   });
 
-  it("composes identity, stats, and moves ghost lanes", () => {
-    render(
-      <PokeRow
-        idx={0}
-        sortableId="__empty__0"
-        pokemon={null}
-        isActive={false}
-        onActivate={jest.fn()}
-      />
-    );
-    // Default layoutMode is "1x6" → CompactRowGhost is rendered.
-    expect(screen.getByTestId("compact-row-ghost")).toBeInTheDocument();
-    expect(screen.getByText("HP")).toBeInTheDocument();
-    expect(screen.getAllByText(/\+ Add move/i)).toHaveLength(4);
-  });
-
-  it("renders GridRowGhost when layoutMode is '2x3-vertical'", () => {
-    mockLayoutMode.mockReturnValue("2x3-vertical");
+  it("renders GridRowGhost for empty slots", () => {
     render(
       <PokeRow
         idx={0}
@@ -322,7 +247,6 @@ describe("PokeRow — empty slot", () => {
       />
     );
     expect(screen.getByTestId("grid-row-ghost")).toBeInTheDocument();
-    expect(screen.queryByTestId("compact-row-ghost")).not.toBeInTheDocument();
   });
 
   it("outer button has w-full to fill its grid cell", () => {
@@ -353,7 +277,7 @@ describe("PokeRow — empty slot", () => {
     expect(within(button).queryAllByRole("button")).toHaveLength(0);
   });
 
-  it("does NOT render a CompactRow or GridRow for empty slots", () => {
+  it("does NOT render a GridRow for empty slots", () => {
     render(
       <PokeRow
         idx={0}
@@ -363,39 +287,20 @@ describe("PokeRow — empty slot", () => {
         onActivate={jest.fn()}
       />
     );
-    expect(screen.queryByTestId("compact-row")).not.toBeInTheDocument();
     expect(screen.queryByTestId("grid-row")).not.toBeInTheDocument();
   });
 });
 
 // =============================================================================
-// Tests — filled slot, layout routing
+// Tests — filled slot
 // =============================================================================
 
-describe("PokeRow — filled slot routes by layoutMode", () => {
+describe("PokeRow — filled slot always renders GridRow", () => {
   beforeEach(() => {
-    compactRowProps.mockClear();
     gridRowProps.mockClear();
   });
 
-  it("renders CompactRow when layoutMode is '1x6'", () => {
-    mockLayoutMode.mockReturnValue("1x6");
-    render(
-      <PokeRow
-        idx={0}
-        sortableId="10"
-        pokemon={makePokemon()}
-        isActive={false}
-        onActivate={jest.fn()}
-        teamPokemon={[]}
-      />
-    );
-    expect(screen.getByTestId("compact-row")).toBeInTheDocument();
-    expect(screen.queryByTestId("grid-row")).not.toBeInTheDocument();
-  });
-
-  it("renders GridRow when layoutMode is '2x3-vertical'", () => {
-    mockLayoutMode.mockReturnValue("2x3-vertical");
+  it("renders GridRow for a filled slot", () => {
     render(
       <PokeRow
         idx={0}
@@ -407,7 +312,20 @@ describe("PokeRow — filled slot routes by layoutMode", () => {
       />
     );
     expect(screen.getByTestId("grid-row")).toBeInTheDocument();
-    expect(screen.queryByTestId("compact-row")).not.toBeInTheDocument();
+  });
+
+  it("does NOT render GridRowGhost for a filled slot", () => {
+    render(
+      <PokeRow
+        idx={0}
+        sortableId="10"
+        pokemon={makePokemon()}
+        isActive={false}
+        onActivate={jest.fn()}
+        teamPokemon={[]}
+      />
+    );
+    expect(screen.queryByTestId("grid-row-ghost")).not.toBeInTheDocument();
   });
 });
 
@@ -415,10 +333,8 @@ describe("PokeRow — filled slot routes by layoutMode", () => {
 // Tests — filled slot, prop forwarding
 // =============================================================================
 
-describe("PokeRow — filled slot forwards props to variant", () => {
+describe("PokeRow — filled slot forwards props to GridRow", () => {
   beforeEach(() => {
-    mockLayoutMode.mockReturnValue("1x6");
-    compactRowProps.mockClear();
     gridRowProps.mockClear();
   });
 
@@ -445,8 +361,8 @@ describe("PokeRow — filled slot forwards props to variant", () => {
         slotErrors={errors}
       />
     );
-    expect(compactRowProps).toHaveBeenCalledTimes(1);
-    const props = compactRowProps.mock.calls[0]![0] as Record<string, unknown>;
+    expect(gridRowProps).toHaveBeenCalledTimes(1);
+    const props = gridRowProps.mock.calls[0]![0] as Record<string, unknown>;
     expect(props.idx).toBe(3);
     expect((props.pokemon as Tables<"pokemon">).species).toBe("Garchomp");
     expect(props.teamPokemon).toBe(teamPokemon);
@@ -463,7 +379,7 @@ describe("PokeRow — filled slot forwards props to variant", () => {
         onActivate={jest.fn()}
       />
     );
-    const props = compactRowProps.mock.calls[0]![0] as Record<string, unknown>;
+    const props = gridRowProps.mock.calls[0]![0] as Record<string, unknown>;
     expect(Array.isArray(props.teamPokemon)).toBe(true);
     expect((props.teamPokemon as unknown[]).length).toBe(0);
   });
@@ -478,7 +394,7 @@ describe("PokeRow — filled slot forwards props to variant", () => {
         onActivate={jest.fn()}
       />
     );
-    const props = compactRowProps.mock.calls[0]![0] as Record<string, unknown>;
+    const props = gridRowProps.mock.calls[0]![0] as Record<string, unknown>;
     expect(props.dragAttributes).toBeDefined();
     expect(props.dragListeners).toBeDefined();
     expect(props.isDragging).toBe(false);
@@ -497,7 +413,7 @@ describe("PokeRow — filled slot forwards props to variant", () => {
         onPokemonUpdate={onPokemonUpdate}
       />
     );
-    await user.click(screen.getByTestId("compact-row-update"));
+    await user.click(screen.getByTestId("grid-row-update"));
     expect(onPokemonUpdate).toHaveBeenCalledWith(10, { nickname: "Chompy" });
   });
 
@@ -514,29 +430,7 @@ describe("PokeRow — filled slot forwards props to variant", () => {
         onRemove={onRemove}
       />
     );
-    await user.click(screen.getByTestId("compact-row-remove"));
-    expect(onRemove).toHaveBeenCalledWith(4);
-  });
-
-  it("adapts the same handlers correctly when routed to GridRow", async () => {
-    mockLayoutMode.mockReturnValue("2x3-vertical");
-    const user = userEvent.setup();
-    const onPokemonUpdate = jest.fn();
-    const onRemove = jest.fn();
-    render(
-      <PokeRow
-        idx={2}
-        sortableId="10"
-        pokemon={makePokemon()}
-        isActive={false}
-        onActivate={jest.fn()}
-        onPokemonUpdate={onPokemonUpdate}
-        onRemove={onRemove}
-      />
-    );
-    await user.click(screen.getByTestId("grid-row-update"));
     await user.click(screen.getByTestId("grid-row-remove"));
-    expect(onPokemonUpdate).toHaveBeenCalledWith(10, { nickname: "Chompy" });
-    expect(onRemove).toHaveBeenCalledWith(2);
+    expect(onRemove).toHaveBeenCalledWith(4);
   });
 });

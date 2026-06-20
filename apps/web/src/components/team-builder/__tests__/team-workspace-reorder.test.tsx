@@ -167,6 +167,29 @@ jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => false,
 }));
 
+// Force grid mode so the PokeRow loop renders (default changed from "1x6"
+// to "single" in the layout-mode refactor; tests assert on poke-row-{idx}
+// testids which only exist in the grid path).
+jest.mock("../use-team-layout", () => {
+  const React = jest.requireActual("react");
+  const MockTeamLayoutContext = React.createContext("2x3-vertical");
+  return {
+    useTeamLayout: () => ({
+      mode: "2x3-vertical",
+      setMode: jest.fn(),
+      persisted: "2x3-vertical",
+      isMobileLocked: false,
+    }),
+    useTeamLayoutMode: () => "2x3-vertical",
+    TeamLayoutContext: MockTeamLayoutContext,
+  };
+});
+
+// Stub SingleFocusView — not exercised in reorder tests (grid mode active).
+jest.mock("../layouts/single-focus-view", () => ({
+  SingleFocusView: () => <div data-testid="single-focus-view-stub" />,
+}));
+
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: jest.fn(), replace: jest.fn() }),
   useSearchParams: () => new URLSearchParams(),
