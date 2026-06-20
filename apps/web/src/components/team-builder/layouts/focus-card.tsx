@@ -328,7 +328,12 @@ export function FocusCard({
           {/* Incoming damage strip — only when calc is ON */}
           {calcEnabled && (
             <div className="border-border/30 border-t">
-              <CalcReverseColumn pokemon={pokemon} teammates={[]} />
+              <CalcReverseColumn
+                pokemon={pokemon}
+                teammates={(slots ?? []).filter(
+                  (s): s is Tables<"pokemon"> => s !== null
+                )}
+              />
             </div>
           )}
         </div>

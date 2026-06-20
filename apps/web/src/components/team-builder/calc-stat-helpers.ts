@@ -21,8 +21,9 @@ import { type StatValues } from "./stat-types";
  * Display cap for total EVs. Set to 510 — the full legal EV cap — so the
  * editor allows allocating to the complete legal limit. Previously this was
  * 508 (the "useful max" of 252+252+4), but that prevented users from reaching
- * the legal cap. Note: with step=4 the highest reachable multiple is 508 in
- * practice; the budget reads 510 so the UI does not block at 508.
+ * the legal cap. With step=4 the highest on-step multiple is 508; however,
+ * when the remaining budget is 1–3 EVs, the UI re-clamps after snapping so
+ * the final 2 EVs are still allocatable (non-step-aligned but legal).
  * Validators in @trainers/pokemon enforce 510 as the hard limit.
  */
 export const EV_TOTAL_DISPLAY_MAX = 510;
