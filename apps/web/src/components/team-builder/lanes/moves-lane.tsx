@@ -671,55 +671,49 @@ function MoveCard({
           onClick={handleClick}
           onKeyDown={handleKeyDown}
           className={cn(
-            "border-border bg-card hover:bg-muted flex cursor-pointer flex-col gap-1.5 rounded-md border p-2 text-left transition-colors",
+            "border-border bg-card hover:bg-muted flex cursor-pointer items-center gap-2 rounded-md border px-2 py-3 text-left transition-colors",
             hasError && "border-destructive/50 ring-destructive/30 ring-1"
           )}
         >
-          {/* Top row: type icon + category icon */}
-          <div className="flex items-center gap-1.5">
-            {moveName && moveData?.type ? (
-              <TypeSymbolIcon
-                type={
-                  moveData.type as Parameters<typeof TypeSymbolIcon>[0]["type"]
-                }
-                size={16}
-              />
-            ) : (
-              <span className="size-4 shrink-0" />
-            )}
-            {moveName &&
-            moveData?.category &&
-            CATEGORY_ICON_URLS_MONO[moveData.category] ? (
-              <img
-                src={CATEGORY_ICON_URLS_MONO[moveData.category]}
-                alt={moveData.category}
-                className="h-4 w-4 shrink-0"
-              />
-            ) : (
-              <span className="size-4 shrink-0" />
-            )}
-            {/* BP / ACC meta — small, right-aligned */}
-            <span className="text-muted-foreground ml-auto font-mono text-xs tabular-nums">
-              {moveName
-                ? moveData?.basePower && moveData.basePower > 0
-                  ? `${moveData.basePower} / ${
-                      moveData.accuracy === true || !moveData.accuracy
-                        ? "—"
-                        : moveData.accuracy
-                    }`
-                  : "— / —"
-                : ""}
-            </span>
-          </div>
-
-          {/* Move name */}
+          {moveName && moveData?.type ? (
+            <TypeSymbolIcon
+              type={
+                moveData.type as Parameters<typeof TypeSymbolIcon>[0]["type"]
+              }
+              size={16}
+            />
+          ) : (
+            <span className="size-4 shrink-0" />
+          )}
+          {moveName &&
+          moveData?.category &&
+          CATEGORY_ICON_URLS_MONO[moveData.category] ? (
+            <img
+              src={CATEGORY_ICON_URLS_MONO[moveData.category]}
+              alt={moveData.category}
+              className="h-4 w-4 shrink-0"
+            />
+          ) : (
+            <span className="size-4 shrink-0" />
+          )}
           <span
             className={cn(
-              "block truncate text-sm font-medium",
+              "flex-1 truncate text-sm font-medium",
               !moveName && "text-muted-foreground/50"
             )}
           >
             {moveName ?? "+ Add move"}
+          </span>
+          <span className="text-muted-foreground font-mono text-xs tabular-nums">
+            {moveName
+              ? moveData?.basePower && moveData.basePower > 0
+                ? `${moveData.basePower} / ${
+                    moveData.accuracy === true || !moveData.accuracy
+                      ? "—"
+                      : moveData.accuracy
+                  }`
+                : "— / —"
+              : ""}
           </span>
         </button>
 
@@ -853,7 +847,7 @@ function MovesLaneReal({
   if (presentation === "cards-2x2" && !calc.calcEnabled) {
     return (
       <div className="px-6 py-1">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2">
           {MOVE_SLOTS.map((slotKey) => {
             const slotErrors = fieldErrors.filter((e) => e.field === slotKey);
             return (
