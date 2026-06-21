@@ -268,8 +268,7 @@ interface DockbarConnectedProps {
 }
 
 /**
- * Wraps Dockbar with calc state read from CalcStateContext.
- * Must be mounted inside a CalcStateProvider.
+ * Passes builder drawer state into Dockbar.
  */
 function DockbarConnected({
   onOpen,

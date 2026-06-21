@@ -96,6 +96,7 @@ jest.mock("../calc/move-target-info", () => ({
 }));
 
 jest.mock("../lanes/calc-display-helpers", () => ({
+  ...jest.requireActual("../lanes/calc-display-helpers"),
   getDisplayRangeAndKoTier: (args: unknown) =>
     mockGetDisplayRangeAndKoTier(args),
 }));

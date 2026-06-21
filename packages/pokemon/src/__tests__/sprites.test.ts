@@ -120,28 +120,15 @@ describe("getPokemonSprite", () => {
 });
 
 describe("Champions-exclusive Mega sprite fallbacks", () => {
-  it("returns Legends Z-A sprite URL for custom M-A Megas", () => {
-    expect(getPokemonSprite("Dragonite-Mega").url).toBe(
-      "https://www.serebii.net/legendsz-a/pokemon/149-m.png"
-    );
-    expect(getPokemonSprite("Starmie-Mega").url).toBe(
-      "https://www.serebii.net/legendsz-a/pokemon/121-m.png"
-    );
-    expect(getPokemonSprite("Delphox-Mega").url).toBe(
-      "https://www.serebii.net/legendsz-a/pokemon/655-m.png"
-    );
-  });
-
-  it("returns Legends Z-A sprite URL for custom M-B Megas", () => {
-    expect(getPokemonSprite("Raichu-Mega-X").url).toBe(
-      "https://www.serebii.net/legendsz-a/pokemon/026-mx.png"
-    );
-    expect(getPokemonSprite("Staraptor-Mega").url).toBe(
-      "https://www.serebii.net/legendsz-a/pokemon/398-m.png"
-    );
-    expect(getPokemonSprite("Falinks-Mega").url).toBe(
-      "https://www.serebii.net/legendsz-a/pokemon/870-m.png"
-    );
+  it.each([
+    ["Dragonite-Mega", "https://www.serebii.net/legendsz-a/pokemon/149-m.png"],
+    ["Starmie-Mega", "https://www.serebii.net/legendsz-a/pokemon/121-m.png"],
+    ["Delphox-Mega", "https://www.serebii.net/legendsz-a/pokemon/655-m.png"],
+    ["Raichu-Mega-X", "https://www.serebii.net/legendsz-a/pokemon/026-mx.png"],
+    ["Staraptor-Mega", "https://www.serebii.net/legendsz-a/pokemon/398-m.png"],
+    ["Falinks-Mega", "https://www.serebii.net/legendsz-a/pokemon/870-m.png"],
+  ])("returns Legends Z-A sprite URL for %s", (species, expectedUrl) => {
+    expect(getPokemonSprite(species).url).toBe(expectedUrl);
   });
 
   it("does NOT override official Gen 6/7 Megas", () => {
