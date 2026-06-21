@@ -36,45 +36,50 @@ const SPECIES_SLUG_OVERRIDES: Record<string, string> = {
   "zacian-crowned-sword": "zacian-crowned",
   "zamazenta-crowned-shield": "zamazenta-crowned",
   "giratina-origin-forme": "giratina-origin",
-  // Champions-exclusive Mega forms → fall back to base form.
-  // Official Gen 6/7 Megas (Garchomp-Mega, Charizard-Mega-X, etc.) are NOT listed —
-  // they have real sprites on the Showdown CDN.
-  // Reg M-A custom Megas
-  "Chandelure-Mega": "Chandelure",
-  "Chesnaught-Mega": "Chesnaught",
-  "Chimecho-Mega": "Chimecho",
-  "Clefable-Mega": "Clefable",
-  "Crabominable-Mega": "Crabominable",
-  "Delphox-Mega": "Delphox",
-  "Dragonite-Mega": "Dragonite",
-  "Drampa-Mega": "Drampa",
-  "Emboar-Mega": "Emboar",
-  "Excadrill-Mega": "Excadrill",
-  "Feraligatr-Mega": "Feraligatr",
-  "Floette-Mega": "Floette",
-  "Froslass-Mega": "Froslass",
-  "Glimmora-Mega": "Glimmora",
-  "Golurk-Mega": "Golurk",
-  "Greninja-Mega": "Greninja",
-  "Hawlucha-Mega": "Hawlucha",
-  "Meganium-Mega": "Meganium",
-  "Meowstic-Mega": "Meowstic",
-  "Scovillain-Mega": "Scovillain",
-  "Skarmory-Mega": "Skarmory",
-  "Starmie-Mega": "Starmie",
-  "Victreebel-Mega": "Victreebel",
-  // Reg M-B custom Megas
-  "Raichu-Mega-X": "Raichu",
-  "Raichu-Mega-Y": "Raichu",
-  "Staraptor-Mega": "Staraptor",
-  "Scolipede-Mega": "Scolipede",
-  "Scrafty-Mega": "Scrafty",
-  "Eelektross-Mega": "Eelektross",
-  "Pyroar-Mega": "Pyroar",
-  "Malamar-Mega": "Malamar",
-  "Barbaracle-Mega": "Barbaracle",
-  "Dragalge-Mega": "Dragalge",
-  "Falinks-Mega": "Falinks",
+};
+
+/**
+ * Champions-exclusive Mega forms use official Pokémon Legends: Z-A sprites from Serebii.
+ * Showdown's CDN has no sprites for these — they only exist in Legends Z-A / Champions.
+ * Returns { url, w: 96, h: 96, pixelated: false } when matched.
+ */
+const CHAMPIONS_MEGA_SPRITE_URLS: Record<string, string> = {
+  // Reg M-A — Pokémon Legends: Z-A / Champions-exclusive Megas
+  "Clefable-Mega": "https://www.serebii.net/legendsz-a/pokemon/036-m.png",
+  "Victreebel-Mega": "https://www.serebii.net/legendsz-a/pokemon/071-m.png",
+  "Starmie-Mega": "https://www.serebii.net/legendsz-a/pokemon/121-m.png",
+  "Dragonite-Mega": "https://www.serebii.net/legendsz-a/pokemon/149-m.png",
+  "Meganium-Mega": "https://www.serebii.net/legendsz-a/pokemon/154-m.png",
+  "Feraligatr-Mega": "https://www.serebii.net/legendsz-a/pokemon/160-m.png",
+  "Skarmory-Mega": "https://www.serebii.net/legendsz-a/pokemon/227-m.png",
+  "Chimecho-Mega": "https://www.serebii.net/legendsz-a/pokemon/358-m.png",
+  "Froslass-Mega": "https://www.serebii.net/legendsz-a/pokemon/478-m.png",
+  "Emboar-Mega": "https://www.serebii.net/legendsz-a/pokemon/500-m.png",
+  "Excadrill-Mega": "https://www.serebii.net/legendsz-a/pokemon/530-m.png",
+  "Chandelure-Mega": "https://www.serebii.net/legendsz-a/pokemon/609-m.png",
+  "Golurk-Mega": "https://www.serebii.net/legendsz-a/pokemon/623-m.png",
+  "Chesnaught-Mega": "https://www.serebii.net/legendsz-a/pokemon/652-m.png",
+  "Delphox-Mega": "https://www.serebii.net/legendsz-a/pokemon/655-m.png",
+  "Greninja-Mega": "https://www.serebii.net/legendsz-a/pokemon/658-m.png",
+  "Floette-Mega": "https://www.serebii.net/legendsz-a/pokemon/670-m.png",
+  "Meowstic-Mega": "https://www.serebii.net/legendsz-a/pokemon/678-m.png",
+  "Hawlucha-Mega": "https://www.serebii.net/legendsz-a/pokemon/701-m.png",
+  "Crabominable-Mega": "https://www.serebii.net/legendsz-a/pokemon/740-m.png",
+  "Drampa-Mega": "https://www.serebii.net/legendsz-a/pokemon/780-m.png",
+  "Scovillain-Mega": "https://www.serebii.net/legendsz-a/pokemon/952-m.png",
+  "Glimmora-Mega": "https://www.serebii.net/legendsz-a/pokemon/970-m.png",
+  // Reg M-B — Champions-exclusive Megas
+  "Raichu-Mega-X": "https://www.serebii.net/legendsz-a/pokemon/026-mx.png",
+  "Raichu-Mega-Y": "https://www.serebii.net/legendsz-a/pokemon/026-my.png",
+  "Staraptor-Mega": "https://www.serebii.net/legendsz-a/pokemon/398-m.png",
+  "Scolipede-Mega": "https://www.serebii.net/legendsz-a/pokemon/545-m.png",
+  "Scrafty-Mega": "https://www.serebii.net/legendsz-a/pokemon/560-m.png",
+  "Eelektross-Mega": "https://www.serebii.net/legendsz-a/pokemon/604-m.png",
+  "Pyroar-Mega": "https://www.serebii.net/legendsz-a/pokemon/668-m.png",
+  "Malamar-Mega": "https://www.serebii.net/legendsz-a/pokemon/687-m.png",
+  "Barbaracle-Mega": "https://www.serebii.net/legendsz-a/pokemon/689-m.png",
+  "Dragalge-Mega": "https://www.serebii.net/legendsz-a/pokemon/691-m.png",
+  "Falinks-Mega": "https://www.serebii.net/legendsz-a/pokemon/870-m.png",
 };
 
 /**
@@ -90,6 +95,11 @@ export function getPokemonSprite(
     spriteStyle?: SpritePreference;
   }
 ): SpriteData {
+  const championsMegaUrl = CHAMPIONS_MEGA_SPRITE_URLS[species];
+  if (championsMegaUrl) {
+    return { url: championsMegaUrl, w: 96, h: 96, pixelated: false };
+  }
+
   const normalized = SPECIES_SLUG_OVERRIDES[species] ?? species;
   const sprite = Sprites.getPokemon(normalized, {
     gen: options?.spriteStyle ?? "gen5",

@@ -120,36 +120,38 @@ describe("getPokemonSprite", () => {
 });
 
 describe("Champions-exclusive Mega sprite fallbacks", () => {
-  it("falls back to base form for custom M-A Megas", () => {
+  it("returns Legends Z-A sprite URL for custom M-A Megas", () => {
     expect(getPokemonSprite("Dragonite-Mega").url).toBe(
-      getPokemonSprite("Dragonite").url
+      "https://www.serebii.net/legendsz-a/pokemon/149-m.png"
     );
     expect(getPokemonSprite("Starmie-Mega").url).toBe(
-      getPokemonSprite("Starmie").url
+      "https://www.serebii.net/legendsz-a/pokemon/121-m.png"
     );
     expect(getPokemonSprite("Delphox-Mega").url).toBe(
-      getPokemonSprite("Delphox").url
+      "https://www.serebii.net/legendsz-a/pokemon/655-m.png"
     );
   });
 
-  it("falls back to base form for custom M-B Megas", () => {
+  it("returns Legends Z-A sprite URL for custom M-B Megas", () => {
     expect(getPokemonSprite("Raichu-Mega-X").url).toBe(
-      getPokemonSprite("Raichu").url
+      "https://www.serebii.net/legendsz-a/pokemon/026-mx.png"
     );
     expect(getPokemonSprite("Staraptor-Mega").url).toBe(
-      getPokemonSprite("Staraptor").url
+      "https://www.serebii.net/legendsz-a/pokemon/398-m.png"
     );
     expect(getPokemonSprite("Falinks-Mega").url).toBe(
-      getPokemonSprite("Falinks").url
+      "https://www.serebii.net/legendsz-a/pokemon/870-m.png"
     );
   });
 
   it("does NOT override official Gen 6/7 Megas", () => {
-    expect(getPokemonSprite("Garchomp-Mega").url).not.toBe(
-      getPokemonSprite("Garchomp").url
-    );
-    expect(getPokemonSprite("Charizard-Mega-X").url).not.toBe(
-      getPokemonSprite("Charizard").url
-    );
+    expect(getPokemonSprite("Garchomp-Mega").url).not.toContain("serebii");
+    expect(getPokemonSprite("Charizard-Mega-X").url).not.toContain("serebii");
+  });
+
+  it("returns non-pixelated sprite data for Champions Megas", () => {
+    expect(getPokemonSprite("Dragonite-Mega").pixelated).toBe(false);
+    expect(getPokemonSprite("Dragonite-Mega").w).toBe(96);
+    expect(getPokemonSprite("Dragonite-Mega").h).toBe(96);
   });
 });
