@@ -714,10 +714,10 @@ describe("MovesLane — inline calc display", () => {
 });
 
 // =============================================================================
-// MovesLane — cards-2x2 presentation variant
+// MovesLane — card-list presentation variant
 // =============================================================================
 
-describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
+describe("MovesLane — card-list presentation (calc OFF)", () => {
   beforeEach(() => {
     (useCalcStateContext as jest.Mock).mockImplementation(() => ({
       ...mockCalcContext,
@@ -733,9 +733,9 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 1. Renders a 2×2 grid of MoveCard buttons when calc is OFF
+  // 1. Renders a single-column card list of MoveCard buttons when calc is OFF
   // -------------------------------------------------------------------------
-  it("renders 4 card buttons (one per slot) when presentation='cards-2x2' and calc is OFF", () => {
+  it("renders 4 card buttons (one per slot) when presentation='card-list' and calc is OFF", () => {
     render(
       <MovesLane
         pokemon={makePokemon({
@@ -746,7 +746,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
         })}
         format={VGC_FORMAT}
         onUpdate={jest.fn()}
-        presentation="cards-2x2"
+        presentation="card-list"
       />
     );
     // MoveCard renders a <button type="button"> for each slot. The Dialog stub
@@ -778,7 +778,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
         })}
         format={VGC_FORMAT}
         onUpdate={jest.fn()}
-        presentation="cards-2x2"
+        presentation="card-list"
       />
     );
     expect(screen.getByText("Moonblast")).toBeInTheDocument();
@@ -788,7 +788,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
   // -------------------------------------------------------------------------
   // 3. Empty slots show '+ Add move' inside card buttons
   // -------------------------------------------------------------------------
-  it("renders '+ Add move' for empty slots in cards-2x2 mode", () => {
+  it("renders '+ Add move' for empty slots in card-list mode", () => {
     render(
       <MovesLane
         pokemon={makePokemon({
@@ -799,7 +799,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
         })}
         format={VGC_FORMAT}
         onUpdate={jest.fn()}
-        presentation="cards-2x2"
+        presentation="card-list"
       />
     );
     expect(screen.getAllByText("+ Add move").length).toBe(3);
@@ -808,7 +808,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
   // -------------------------------------------------------------------------
   // 4. Type icon renders for each set move in card mode
   // -------------------------------------------------------------------------
-  it("renders type icon for each set move (role=img) in cards-2x2 mode", () => {
+  it("renders type icon for each set move (role=img) in card-list mode", () => {
     // Default mock returns type: "Dragon" for every move
     render(
       <MovesLane
@@ -820,7 +820,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
         })}
         format={VGC_FORMAT}
         onUpdate={jest.fn()}
-        presentation="cards-2x2"
+        presentation="card-list"
       />
     );
     const icons = screen.getAllByRole("img", { name: "Dragon" });
@@ -830,7 +830,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
   // -------------------------------------------------------------------------
   // 5. Category icon renders for each set move in card mode
   // -------------------------------------------------------------------------
-  it("renders category icon img for each set move in cards-2x2 mode", () => {
+  it("renders category icon img for each set move in card-list mode", () => {
     render(
       <MovesLane
         pokemon={makePokemon({
@@ -841,7 +841,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
         })}
         format={VGC_FORMAT}
         onUpdate={jest.fn()}
-        presentation="cards-2x2"
+        presentation="card-list"
       />
     );
     const catImgs = screen.getAllByAltText("Physical");
@@ -862,7 +862,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
         })}
         format={VGC_FORMAT}
         onUpdate={jest.fn()}
-        presentation="cards-2x2"
+        presentation="card-list"
       />
     );
     // The MoveCard renders "${basePower} / ${accuracy}" inline
@@ -884,7 +884,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
         })}
         format={VGC_FORMAT}
         onUpdate={jest.fn()}
-        presentation="cards-2x2"
+        presentation="card-list"
       />
     );
     // All 4 cards show "+ Add move" — click the first one
@@ -910,7 +910,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
         })}
         format={VGC_FORMAT}
         onUpdate={onUpdate}
-        presentation="cards-2x2"
+        presentation="card-list"
       />
     );
     const addButtons = screen.getAllByRole("button");
@@ -924,13 +924,13 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
   // -------------------------------------------------------------------------
   // 9. Validation error ring applies to a card when the slot has an error
   // -------------------------------------------------------------------------
-  it("renders a validation alert for a move1 error in cards-2x2 mode", () => {
+  it("renders a validation alert for a move1 error in card-list mode", () => {
     render(
       <MovesLane
         pokemon={makePokemon({ move1: null })}
         format={VGC_FORMAT}
         onUpdate={jest.fn()}
-        presentation="cards-2x2"
+        presentation="card-list"
         fieldErrors={[makeError("move1", "error", "Move 1 required")]}
       />
     );
@@ -938,7 +938,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 10. All 4 slots render in cards-2x2 mode (structural coverage)
+  // 10. All 4 slots render in card-list mode (structural coverage)
   // -------------------------------------------------------------------------
   it.each([
     ["move1", "Moonblast"],
@@ -946,14 +946,14 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
     ["move3", "Thunderbolt"],
     ["move4", "Protect"],
   ] as const)(
-    "renders %s slot name '%s' in cards-2x2 mode",
+    "renders %s slot name '%s' in card-list mode",
     (slot, moveName) => {
       render(
         <MovesLane
           pokemon={makePokemon({ [slot]: moveName })}
           format={VGC_FORMAT}
           onUpdate={jest.fn()}
-          presentation="cards-2x2"
+          presentation="card-list"
         />
       );
       expect(screen.getByText(moveName)).toBeInTheDocument();
@@ -961,7 +961,7 @@ describe("MovesLane — cards-2x2 presentation (calc OFF)", () => {
   );
 });
 
-describe("MovesLane — cards-2x2 presentation (calc ON → table path)", () => {
+describe("MovesLane — card-list presentation (calc ON → table path)", () => {
   beforeEach(() => {
     mockCalcContext.calcEnabled = true;
     (useCalcStateContext as jest.Mock).mockImplementation(() => ({
@@ -978,9 +978,9 @@ describe("MovesLane — cards-2x2 presentation (calc ON → table path)", () => 
   });
 
   // -------------------------------------------------------------------------
-  // 11. presentation="cards-2x2" + calc ON falls through to the table path
+  // 11. presentation="card-list" + calc ON falls through to the table path
   // -------------------------------------------------------------------------
-  it("renders table rows (not card buttons) when presentation='cards-2x2' but calc is ON", () => {
+  it("renders table rows (not card buttons) when presentation='card-list' but calc is ON", () => {
     render(
       <MovesLane
         pokemon={makePokemon({
@@ -991,7 +991,7 @@ describe("MovesLane — cards-2x2 presentation (calc ON → table path)", () => 
         })}
         format={VGC_FORMAT}
         onUpdate={jest.fn()}
-        presentation="cards-2x2"
+        presentation="card-list"
       />
     );
     // Table path renders <tr> elements — ghost header row + 4 move rows
@@ -1011,7 +1011,7 @@ describe("MovesLane — cards-2x2 presentation (calc ON → table path)", () => 
   // -------------------------------------------------------------------------
   // 12. Calc columns (damage, percent, KO) are rendered when calc is ON
   // -------------------------------------------------------------------------
-  it("renders damage/percent/KO columns when calc is ON and presentation='cards-2x2'", () => {
+  it("renders damage/percent/KO columns when calc is ON and presentation='card-list'", () => {
     mockCalcContext.rowOutputs = [
       { minPercent: 50.0, maxPercent: 60.0, rolls: [80, 90] },
       null,
@@ -1028,7 +1028,7 @@ describe("MovesLane — cards-2x2 presentation (calc ON → table path)", () => 
         })}
         format={VGC_FORMAT}
         onUpdate={jest.fn()}
-        presentation="cards-2x2"
+        presentation="card-list"
       />
     );
     // Damage range and KO tier render in calc columns

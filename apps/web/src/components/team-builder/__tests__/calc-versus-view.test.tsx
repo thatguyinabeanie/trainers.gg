@@ -80,7 +80,7 @@ jest.mock("@trainers/pokemon", () => ({
   getLegalAbilities: jest.fn(() => null),
   getValidAbilities: jest.fn(() => []),
   formatHasTera: jest.fn(() => true),
-  // MobileMoveRow calls getMoveData to determine if a move is a Status move
+  // MonMovesCard calls getMoveData once per slot to pre-compute isStatus
   getMoveData: jest.fn(() => ({
     type: "Dragon",
     category: "Physical",
@@ -88,6 +88,26 @@ jest.mock("@trainers/pokemon", () => ({
     accuracy: 100,
     shortDesc: "",
   })),
+}));
+
+// MobileMoveRow — stub the extracted component so the mobile-moves stack
+// renders testable rows without mounting live MovePickerMobile Drawers.
+jest.mock("../lanes/moves-lane-mobile", () => ({
+  MobileMoveRow: ({
+    moveName,
+    slotKey,
+    isStatus,
+  }: {
+    moveName: string | null;
+    slotKey: string;
+    isStatus: boolean;
+  }) => (
+    <div
+      data-testid={`mobile-move-row-${slotKey}`}
+      data-move={moveName ?? ""}
+      data-is-status={String(isStatus)}
+    />
+  ),
 }));
 
 // useTargetAsPokemon — controlled stub

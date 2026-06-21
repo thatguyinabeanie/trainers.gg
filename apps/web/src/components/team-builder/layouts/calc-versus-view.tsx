@@ -28,13 +28,13 @@ import { StatBoostsRow } from "../calc/stat-boosts-row";
 import { MovesLane } from "../lanes/moves-lane";
 import { RadialStatEditor } from "../stats/radial-stat-editor";
 import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
-import { MovePickerMobile } from "../pickers/move-picker-mobile";
 import { AbilityCell } from "../shared/fields/ability";
 import { ItemCell } from "../shared/fields/item";
 import { SpriteSection } from "../shared/sprite-section";
 import { useIdentityState } from "../shared/use-identity-state";
-import { type UseCalcStateReturn, type CalcOutput } from "../use-calc-state";
-import { getDisplayRangeAndKoTier } from "../lanes/calc-display-helpers";
+import { type UseCalcStateReturn } from "../use-calc-state";
+import { MOVE_SLOTS, type MoveSlot } from "../lanes/calc-display-helpers";
+import { MobileMoveRow } from "../lanes/moves-lane-mobile";
 
 // =============================================================================
 // Types
@@ -313,145 +313,6 @@ function MonStatsCard({
 }
 
 // =============================================================================
-// MobileMoveRow — compact single-move row for the mobile moves stack
-// =============================================================================
-
-/**
- * KO colors used on mobile move rows — mirrors the values in moves-lane.tsx
- * so the two layouts stay visually consistent.
- */
-const MOBILE_KO_COLORS: Record<string, string> = {
-  "1": "text-[var(--ko-red)]",
-  "2": "text-[var(--ko-amber2-fg)]",
-  "3": "text-[var(--ko-yellow-fg)]",
-  "4": "text-muted-foreground",
-};
-
-const MOBILE_KO_LABELS: Record<string, string> = {
-  "1": "OHKO",
-  "2": "2HKO",
-  "3": "3HKO",
-  "4": "4HKO+",
-};
-
-type MoveSlotKey = (typeof MOVE_SLOTS_KEYS)[number];
-
-interface MobileMoveRowProps {
-  moveName: string | null;
-  output: CalcOutput | null;
-  format: GameFormat | undefined;
-  calcEnabled: boolean;
-  foesAlive: number;
-  allyAlive: boolean;
-  species: string;
-  slotKey: MoveSlotKey;
-  onPick: (slotKey: MoveSlotKey, moveName: string) => void;
-}
-
-function MobileMoveRow({
-  moveName,
-  output,
-  format,
-  calcEnabled,
-  foesAlive,
-  allyAlive,
-  species,
-  slotKey,
-  onPick,
-}: MobileMoveRowProps) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const moveData = moveName ? getMoveData(moveName, format?.id) : null;
-  const isStatus = moveData?.category === "Status";
-  const hasCalc = calcEnabled && output !== null && !isStatus && !!moveName;
-
-  const { koTier, displayMin, displayMax } = getDisplayRangeAndKoTier({
-    moveName,
-    output,
-    hasCalc,
-    foesAlive,
-    allyAlive,
-  });
-
-  const koChance = output?.koChance ?? null;
-  const showChance = koChance != null && koChance > 0 && koChance < 100;
-
-  return (
-    <>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setPickerOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setPickerOpen(true);
-          }
-        }}
-        className={cn(
-          "flex cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-1.5",
-          koTier === "1" &&
-            "bg-[color-mix(in_oklch,var(--ko-red)_8%,transparent)]",
-          koTier === "2" &&
-            "bg-[color-mix(in_oklch,var(--ko-amber2-fg)_8%,transparent)]",
-          koTier === "3" &&
-            "bg-[color-mix(in_oklch,var(--ko-yellow-fg)_8%,transparent)]",
-          koTier === "4" && "bg-muted/30",
-          !koTier && "bg-transparent"
-        )}
-      >
-        {/* Move name — left side */}
-        <span
-          className={cn(
-            "min-w-0 flex-1 truncate text-xs font-medium",
-            !moveName && "text-muted-foreground/50"
-          )}
-        >
-          {moveName ?? "+ Add move"}
-        </span>
-
-        {/* Calc results — right side (only when calc is on and move exists) */}
-        {hasCalc && koTier ? (
-          <div className="flex shrink-0 items-center gap-2">
-            {/* Damage % range */}
-            <span className="text-muted-foreground font-mono text-xs tabular-nums">
-              {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
-            </span>
-            {/* KO tier */}
-            <span
-              className={cn(
-                "font-mono text-xs font-extrabold tracking-wide uppercase",
-                MOBILE_KO_COLORS[koTier] ?? "text-muted-foreground"
-              )}
-            >
-              {showChance
-                ? `${koChance % 1 === 0 ? koChance.toFixed(0) : koChance.toFixed(1)}% ${MOBILE_KO_LABELS[koTier] ?? "4HKO+"}`
-                : (MOBILE_KO_LABELS[koTier] ?? "4HKO+")}
-            </span>
-          </div>
-        ) : moveName && isStatus ? (
-          <span className="text-muted-foreground shrink-0 font-mono text-xs">
-            Status
-          </span>
-        ) : null}
-      </div>
-      <MovePickerMobile
-        open={pickerOpen}
-        onOpenChange={(open) => {
-          if (!open) setPickerOpen(false);
-        }}
-        value={moveName}
-        species={species}
-        format={format}
-        onPick={(name) => {
-          onPick(slotKey, name);
-          setPickerOpen(false);
-        }}
-      />
-    </>
-  );
-}
-
-// =============================================================================
 // MonMovesCard — moves card with directional label
 // =============================================================================
 
@@ -475,13 +336,6 @@ interface MonMovesCardProps {
   allyAlive: boolean;
 }
 
-const MOVE_SLOTS_KEYS = [
-  "move1",
-  "move2",
-  "move3",
-  "move4",
-] as const satisfies ReadonlyArray<keyof Tables<"pokemon">>;
-
 function MonMovesCard({
   pokemon,
   format,
@@ -501,6 +355,24 @@ function MonMovesCard({
   // On mobile (post-hydration), render a compact stacked-row layout instead
   // of the full multi-column table, which overflows a 390px viewport.
   const showMobileLayout = isClient && isMobile;
+
+  // Pre-compute isStatus per slot once per card render. getMoveData is called
+  // once here for all 4 slots rather than inside every MobileMoveRow on every
+  // render (fix #10 — avoid per-row redundant calls).
+  const isStatusBySlot: Record<MoveSlot, boolean> = {
+    move1:
+      !!pokemon.move1 &&
+      getMoveData(pokemon.move1, format?.id)?.category === "Status",
+    move2:
+      !!pokemon.move2 &&
+      getMoveData(pokemon.move2, format?.id)?.category === "Status",
+    move3:
+      !!pokemon.move3 &&
+      getMoveData(pokemon.move3, format?.id)?.category === "Status",
+    move4:
+      !!pokemon.move4 &&
+      getMoveData(pokemon.move4, format?.id)?.category === "Status",
+  };
 
   return (
     <div
@@ -524,8 +396,7 @@ function MonMovesCard({
       {!isClient && (
         <div
           aria-hidden
-          className="bg-muted/30 animate-pulse rounded-lg"
-          style={{ height: "116px" }}
+          className="bg-muted/30 h-28 animate-pulse rounded-lg"
         />
       )}
 
@@ -535,7 +406,7 @@ function MonMovesCard({
           data-testid={`mobile-moves-${direction}`}
           className="flex flex-col gap-0.5"
         >
-          {MOVE_SLOTS_KEYS.map((slot, idx) => (
+          {MOVE_SLOTS.map((slot, idx) => (
             <MobileMoveRow
               key={slot}
               moveName={(pokemon[slot] as string | null) || null}
@@ -546,6 +417,7 @@ function MonMovesCard({
               allyAlive={allyAlive}
               species={pokemon.species ?? ""}
               slotKey={slot}
+              isStatus={isStatusBySlot[slot]}
               onPick={(slotKey, name) => onUpdate({ [slotKey]: name })}
             />
           ))}

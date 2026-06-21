@@ -21,6 +21,7 @@ import {
 
 import Image from "next/image";
 import { formatSupportsTera } from "../format-gating";
+import { MOVE_SLOTS } from "../lanes/calc-display-helpers";
 import { effectiveDefensiveMult } from "./heatmap-effects";
 import { effectiveOffensiveMult } from "./move-type-overrides";
 
@@ -115,8 +116,6 @@ function buildDefensiveRows(
     return { pokemon: p, multipliers, weakCount, resistCount, immuneCount };
   });
 }
-
-const MOVE_SLOTS = ["move1", "move2", "move3", "move4"] as const;
 
 /**
  * Build transposed offensive matrix: rows = Pokemon, columns = 18 types.
@@ -507,7 +506,11 @@ export function HeatmapPanel({ team, format, onClose }: HeatmapPanelProps) {
               {/* Row summary — net score */}
               {(() => {
                 const net = netScore(
-                  { wk: row.weakCount, rs: row.resistCount, im: row.immuneCount },
+                  {
+                    wk: row.weakCount,
+                    rs: row.resistCount,
+                    im: row.immuneCount,
+                  },
                   mode
                 );
                 return (

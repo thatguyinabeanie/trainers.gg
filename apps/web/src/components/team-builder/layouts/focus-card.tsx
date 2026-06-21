@@ -10,6 +10,7 @@ import {
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
+import { useIsClient } from "@/hooks/use-is-client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import { useCalcEnabled } from "../calc/calc-state-context";
@@ -34,7 +35,7 @@ import { FieldErrors } from "../validation/field-error";
 //   │  [LEFT PANEL]          [CENTER COLUMN]           [RIGHT PANEL]          │
 //   │  RadialStatEditor      SpriteSection (hero)      MovesLane              │
 //   │  (translucent,         identity cluster:         presentation=          │
-//   │   blur backdrop)         nickname · gender ·       "cards-2x2"          │
+//   │   blur backdrop)         nickname · gender ·       "card-list"           │
 //   │                          shiny · level                                  │
 //   │                          item · ability           When calc ON:         │
 //   │                                                   table + CalcReverse   │
@@ -106,6 +107,7 @@ export function FocusCard({
   const id = useIdentityState(pokemon, format, identityErrors, onUpdate);
   const [speciesOpen, setSpeciesOpen] = useState(false);
   const calcEnabled = useCalcEnabled();
+  const isClient = useIsClient();
   const isMobile = useIsMobile();
 
   // ── Type-derived chrome ────────────────────────────────────────────────────
@@ -217,7 +219,7 @@ export function FocusCard({
               speciesHasError={id.speciesErrors.length > 0}
               types={id.types}
               isShiny={id.isShiny}
-              size={isMobile ? 160 : 240}
+              size={isClient && isMobile ? 160 : 240}
             />
             <FieldErrors errors={id.speciesErrors} />
           </div>
@@ -323,7 +325,7 @@ export function FocusCard({
               format={format}
               onUpdate={onUpdate}
               fieldErrors={movesErrors}
-              presentation={isMobile ? "cards-2x2" : "list"}
+              presentation={isClient && isMobile ? "card-list" : "list"}
             />
           </div>
 

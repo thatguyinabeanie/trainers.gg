@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useCalcStateContext } from "../calc/calc-state-context";
 import { getMoveEffectiveness } from "../calc/move-effectiveness";
 import { type CalcOutput } from "../use-calc-state";
-import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
+import { getDisplayRangeAndKoTier, MOVE_SLOTS } from "./calc-display-helpers";
 
 // =============================================================================
 // Types
@@ -21,8 +21,6 @@ interface CalcColumnProps {
 // =============================================================================
 // Helpers
 // =============================================================================
-
-const MOVE_SLOTS = ["move1", "move2", "move3", "move4"] as const;
 
 // =============================================================================
 // CalcRow — one result row aligned to a MoveTile
