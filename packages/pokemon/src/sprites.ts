@@ -95,8 +95,11 @@ export function getPokemonSprite(
     spriteStyle?: SpritePreference;
   }
 ): SpriteData {
+  // Only use the Champions Mega override for the non-shiny case. The Serebii
+  // URLs have no shiny variant, so fall through to Sprites.getPokemon when
+  // shiny is requested — it will return the best available shiny sprite.
   const championsMegaUrl = CHAMPIONS_MEGA_SPRITE_URLS[species];
-  if (championsMegaUrl) {
+  if (championsMegaUrl && !options?.shiny) {
     return { url: championsMegaUrl, w: 96, h: 96, pixelated: false };
   }
 
