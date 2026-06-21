@@ -46,7 +46,7 @@ import { MobileMoveRow } from "../lanes/moves-lane-mobile";
  * CalcStateContextValue (which extends UseCalcStateReturn with these fields),
  * so the intersection is safe without importing CalcStateContext here.
  */
-interface CalcFieldExtras {
+export interface CalcFieldExtras {
   calcEnabled: boolean;
   field: { foesAlive: number; allyAlive: boolean };
 }

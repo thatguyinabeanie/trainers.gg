@@ -379,6 +379,7 @@ jest.mock("@/components/ui/sheet", () => ({
 // =============================================================================
 
 import { CalcVersusView } from "../layouts/calc-versus-view";
+import type { CalcFieldExtras } from "../layouts/calc-versus-view";
 import type {
   UseCalcStateReturn,
   CalcOutput,
@@ -474,8 +475,8 @@ const defaultDefenderBoosts: StatBoosts = {
 
 /** Build a complete calc stub with sensible defaults */
 function makeCalcStub(
-  overrides: Partial<UseCalcStateReturn> = {}
-): UseCalcStateReturn {
+  overrides: Partial<UseCalcStateReturn & CalcFieldExtras> = {}
+): UseCalcStateReturn & CalcFieldExtras {
   const forwardOutputs = [makeCalcOutput(50, 70), null, null, null] as const;
   const reverseOutputs = [makeCalcOutput(20, 30), null, null, null] as const;
 
@@ -582,12 +583,12 @@ function makeCalcStub(
     field: { foesAlive: 2, allyAlive: true },
     setField: jest.fn(),
     ...overrides,
-  } as unknown as UseCalcStateReturn;
+  } as unknown as UseCalcStateReturn & CalcFieldExtras;
 }
 
 function renderView(
   pokemonOverrides: Partial<Tables<"pokemon">> = {},
-  calcOverrides: Partial<UseCalcStateReturn> = {}
+  calcOverrides: Partial<UseCalcStateReturn & CalcFieldExtras> = {}
 ) {
   const pokemon = makeGarchomp(pokemonOverrides);
   const calc = makeCalcStub(calcOverrides);
