@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   getSpeciesTypes,
   getTypeColor,
+  getMoveData,
   type GameFormat,
 } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
@@ -17,6 +18,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { useTargetAsPokemon } from "../calc/use-target-as-pokemon";
 import { FieldControlSurface } from "../calc/field-control-surface";
@@ -29,7 +32,12 @@ import { AbilityCell } from "../shared/fields/ability";
 import { ItemCell } from "../shared/fields/item";
 import { SpriteSection } from "../shared/sprite-section";
 import { useIdentityState } from "../shared/use-identity-state";
-import { type UseCalcStateReturn } from "../use-calc-state";
+import { type UseCalcStateReturn, type CalcOutput } from "../use-calc-state";
+import {
+  useCalcEnabled,
+  useCalcStateContext,
+} from "../calc/calc-state-context";
+import { getDisplayRangeAndKoTier } from "../lanes/calc-display-helpers";
 
 // =============================================================================
 // Types
@@ -266,6 +274,112 @@ function MonStatsCard({
 }
 
 // =============================================================================
+// MobileMoveRow — compact single-move row for the mobile moves stack
+// =============================================================================
+
+/**
+ * KO colors used on mobile move rows — mirrors the values in moves-lane.tsx
+ * so the two layouts stay visually consistent.
+ */
+const MOBILE_KO_COLORS: Record<string, string> = {
+  "1": "text-[var(--ko-red)]",
+  "2": "text-[var(--ko-amber2-fg)]",
+  "3": "text-[var(--ko-yellow-fg)]",
+  "4": "text-muted-foreground",
+};
+
+const MOBILE_KO_LABELS: Record<string, string> = {
+  "1": "OHKO",
+  "2": "2HKO",
+  "3": "3HKO",
+  "4": "4HKO+",
+};
+
+interface MobileMoveRowProps {
+  moveName: string | null;
+  output: CalcOutput | null;
+  format: GameFormat | undefined;
+  calcEnabled: boolean;
+  foesAlive: number;
+  allyAlive: boolean;
+}
+
+function MobileMoveRow({
+  moveName,
+  output,
+  format,
+  calcEnabled,
+  foesAlive,
+  allyAlive,
+}: MobileMoveRowProps) {
+  const moveData = moveName ? getMoveData(moveName, format?.id) : null;
+  const isStatus = moveData?.category === "Status";
+  const hasCalc = calcEnabled && output !== null && !isStatus && !!moveName;
+
+  const { koTier, displayMin, displayMax } = getDisplayRangeAndKoTier({
+    moveName,
+    output,
+    hasCalc,
+    foesAlive,
+    allyAlive,
+  });
+
+  const koChance = output?.koChance ?? null;
+  const showChance = koChance != null && koChance > 0 && koChance < 100;
+
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-2 rounded-md px-2 py-1.5",
+        koTier === "1" &&
+          "bg-[color-mix(in_oklch,var(--ko-red)_8%,transparent)]",
+        koTier === "2" &&
+          "bg-[color-mix(in_oklch,var(--ko-amber2-fg)_8%,transparent)]",
+        koTier === "3" &&
+          "bg-[color-mix(in_oklch,var(--ko-yellow-fg)_8%,transparent)]",
+        koTier === "4" && "bg-muted/30",
+        !koTier && "bg-transparent"
+      )}
+    >
+      {/* Move name — left side */}
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate text-xs font-medium",
+          !moveName && "text-muted-foreground/50"
+        )}
+      >
+        {moveName ?? "+ Add move"}
+      </span>
+
+      {/* Calc results — right side (only when calc is on and move exists) */}
+      {hasCalc && koTier ? (
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Damage % range */}
+          <span className="text-muted-foreground font-mono text-xs tabular-nums">
+            {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
+          </span>
+          {/* KO tier */}
+          <span
+            className={cn(
+              "font-mono text-xs font-extrabold tracking-wide uppercase",
+              MOBILE_KO_COLORS[koTier] ?? "text-muted-foreground"
+            )}
+          >
+            {showChance
+              ? `${koChance % 1 === 0 ? koChance.toFixed(0) : koChance.toFixed(1)}% ${MOBILE_KO_LABELS[koTier] ?? "4HKO+"}`
+              : (MOBILE_KO_LABELS[koTier] ?? "4HKO+")}
+          </span>
+        </div>
+      ) : moveName && isStatus ? (
+        <span className="text-muted-foreground shrink-0 font-mono text-xs">
+          Status
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+// =============================================================================
 // MonMovesCard — moves card with directional label
 // =============================================================================
 
@@ -283,6 +397,13 @@ interface MonMovesCardProps {
   compact?: boolean;
 }
 
+const MOVE_SLOTS_KEYS = [
+  "move1",
+  "move2",
+  "move3",
+  "move4",
+] as const satisfies ReadonlyArray<keyof Tables<"pokemon">>;
+
 function MonMovesCard({
   pokemon,
   format,
@@ -293,6 +414,20 @@ function MonMovesCard({
   headerLabel,
   compact = false,
 }: MonMovesCardProps) {
+  const isClient = useIsClient();
+  const isMobile = useIsMobile();
+  const calcEnabled = useCalcEnabled();
+  // foesAlive / allyAlive live on the context-extended field state.
+  // Read from context the same way MovesLane does, so spread-damage
+  // numbers stay consistent between desktop and mobile layouts.
+  const calcCtx = useCalcStateContext();
+  const foesAlive = calcCtx.field.foesAlive;
+  const allyAlive = calcCtx.field.allyAlive;
+
+  // On mobile (post-hydration), render a compact stacked-row layout instead
+  // of the full multi-column table, which overflows a 390px viewport.
+  const showMobileLayout = isClient && isMobile;
+
   return (
     <div
       className={cn(
@@ -304,17 +439,51 @@ function MonMovesCard({
         <span className="text-muted-foreground font-mono text-xs font-semibold tracking-[0.08em] uppercase">
           {headerLabel}
         </span>
-        <span className="text-muted-foreground font-mono text-xs">% · KO</span>
+        {!showMobileLayout && (
+          <span className="text-muted-foreground font-mono text-xs">
+            % · KO
+          </span>
+        )}
       </div>
-      <MovesLane
-        pokemon={pokemon}
-        format={format}
-        onUpdate={onUpdate}
-        direction={direction}
-        outputs={outputs}
-        opponent={opponent}
-        compact={compact}
-      />
+
+      {/* Skeleton while client hydrates — prevents layout shift */}
+      {!isClient && (
+        <div
+          aria-hidden
+          className="bg-muted/30 animate-pulse rounded-lg"
+          style={{ height: "116px" }}
+        />
+      )}
+
+      {/* Mobile: compact stacked rows, one per move — fits a 390px viewport */}
+      {showMobileLayout && (
+        <div className="flex flex-col gap-0.5">
+          {MOVE_SLOTS_KEYS.map((slot, idx) => (
+            <MobileMoveRow
+              key={slot}
+              moveName={(pokemon[slot] as string | null) || null}
+              output={outputs[idx] ?? null}
+              format={format}
+              calcEnabled={calcEnabled}
+              foesAlive={foesAlive}
+              allyAlive={allyAlive}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Desktop: full moves table (unchanged) */}
+      {isClient && !isMobile && (
+        <MovesLane
+          pokemon={pokemon}
+          format={format}
+          onUpdate={onUpdate}
+          direction={direction}
+          outputs={outputs}
+          opponent={opponent}
+          compact={compact}
+        />
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { useCalcEnabled } from "../calc/calc-state-context";
 import { CalcReverseColumn } from "../lanes/calc-reverse-card";
@@ -105,6 +106,7 @@ export function FocusCard({
   const id = useIdentityState(pokemon, format, identityErrors, onUpdate);
   const [speciesOpen, setSpeciesOpen] = useState(false);
   const calcEnabled = useCalcEnabled();
+  const isMobile = useIsMobile();
 
   // ── Type-derived chrome ────────────────────────────────────────────────────
   const types = getSpeciesTypes(pokemon.species ?? "");
@@ -321,7 +323,7 @@ export function FocusCard({
               format={format}
               onUpdate={onUpdate}
               fieldErrors={movesErrors}
-              presentation="list"
+              presentation={isMobile ? "cards-2x2" : "list"}
             />
           </div>
 
