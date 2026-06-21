@@ -230,7 +230,7 @@ export function SingleFocusView({
           // was clipped by the parent's overflow-hidden instead of scrolling.
           // The inner my-auto wrapper still centers the stage when it's shorter
           // than the viewport.
-          "flex h-full flex-col items-center overflow-y-auto p-4",
+          "flex h-full flex-col items-center overflow-y-auto p-2 sm:p-4",
           // No dotted texture here — the builder shell already renders a global
           // fixed -z-10 dotted grid behind the whole page. Adding one here
           // double-stacked the grid (24px over the shell's 28px → moiré).
