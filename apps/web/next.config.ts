@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "www.serebii.net",
+        pathname: "/legendsz-a/pokemon/**",
+      },
+      {
+        protocol: "https",
         hostname: "**.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
