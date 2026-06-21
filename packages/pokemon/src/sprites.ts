@@ -36,6 +36,45 @@ const SPECIES_SLUG_OVERRIDES: Record<string, string> = {
   "zacian-crowned-sword": "zacian-crowned",
   "zamazenta-crowned-shield": "zamazenta-crowned",
   "giratina-origin-forme": "giratina-origin",
+  // Champions-exclusive Mega forms → fall back to base form.
+  // Official Gen 6/7 Megas (Garchomp-Mega, Charizard-Mega-X, etc.) are NOT listed —
+  // they have real sprites on the Showdown CDN.
+  // Reg M-A custom Megas
+  "Chandelure-Mega": "Chandelure",
+  "Chesnaught-Mega": "Chesnaught",
+  "Chimecho-Mega": "Chimecho",
+  "Clefable-Mega": "Clefable",
+  "Crabominable-Mega": "Crabominable",
+  "Delphox-Mega": "Delphox",
+  "Dragonite-Mega": "Dragonite",
+  "Drampa-Mega": "Drampa",
+  "Emboar-Mega": "Emboar",
+  "Excadrill-Mega": "Excadrill",
+  "Feraligatr-Mega": "Feraligatr",
+  "Floette-Mega": "Floette",
+  "Froslass-Mega": "Froslass",
+  "Glimmora-Mega": "Glimmora",
+  "Golurk-Mega": "Golurk",
+  "Greninja-Mega": "Greninja",
+  "Hawlucha-Mega": "Hawlucha",
+  "Meganium-Mega": "Meganium",
+  "Meowstic-Mega": "Meowstic",
+  "Scovillain-Mega": "Scovillain",
+  "Skarmory-Mega": "Skarmory",
+  "Starmie-Mega": "Starmie",
+  "Victreebel-Mega": "Victreebel",
+  // Reg M-B custom Megas
+  "Raichu-Mega-X": "Raichu",
+  "Raichu-Mega-Y": "Raichu",
+  "Staraptor-Mega": "Staraptor",
+  "Scolipede-Mega": "Scolipede",
+  "Scrafty-Mega": "Scrafty",
+  "Eelektross-Mega": "Eelektross",
+  "Pyroar-Mega": "Pyroar",
+  "Malamar-Mega": "Malamar",
+  "Barbaracle-Mega": "Barbaracle",
+  "Dragalge-Mega": "Dragalge",
+  "Falinks-Mega": "Falinks",
 };
 
 /**

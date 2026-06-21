@@ -118,3 +118,38 @@ describe("getPokemonSprite", () => {
     });
   });
 });
+
+describe("Champions-exclusive Mega sprite fallbacks", () => {
+  it("falls back to base form for custom M-A Megas", () => {
+    expect(getPokemonSprite("Dragonite-Mega").url).toBe(
+      getPokemonSprite("Dragonite").url
+    );
+    expect(getPokemonSprite("Starmie-Mega").url).toBe(
+      getPokemonSprite("Starmie").url
+    );
+    expect(getPokemonSprite("Delphox-Mega").url).toBe(
+      getPokemonSprite("Delphox").url
+    );
+  });
+
+  it("falls back to base form for custom M-B Megas", () => {
+    expect(getPokemonSprite("Raichu-Mega-X").url).toBe(
+      getPokemonSprite("Raichu").url
+    );
+    expect(getPokemonSprite("Staraptor-Mega").url).toBe(
+      getPokemonSprite("Staraptor").url
+    );
+    expect(getPokemonSprite("Falinks-Mega").url).toBe(
+      getPokemonSprite("Falinks").url
+    );
+  });
+
+  it("does NOT override official Gen 6/7 Megas", () => {
+    expect(getPokemonSprite("Garchomp-Mega").url).not.toBe(
+      getPokemonSprite("Garchomp").url
+    );
+    expect(getPokemonSprite("Charizard-Mega-X").url).not.toBe(
+      getPokemonSprite("Charizard").url
+    );
+  });
+});

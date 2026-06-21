@@ -20,6 +20,7 @@ All touch-points are in `packages/pokemon/` unless noted. Work top-to-bottom; do
 Do NOT use fan/news/aggregator/forum sites (e.g. game8, op.gg, pokebase, thegamehaus, insider-gaming, comicbook, gamesradar, nintendoeverything, rotomlabs, Threads, Reddit, YouTube). If a fact appears only off-allowlist, treat it as **UNCONFIRMED** rather than encoding it.
 
 **Workflow**:
+
 1. Open the new reg's page AND the previous reg's page side-by-side.
 2. Diff them to isolate the delta (new species, new megas, new items, new abilities).
 3. Cross-ref Bulbapedia (`https://bulbapedia.bulbagarden.net/`) for exact spelling of new Megas, stone names, and ability names.
@@ -141,13 +142,13 @@ export const REG_M{X}_BUNDLE: ChampionsRegBundle = {
 
 **Key rules for bundle fields**:
 
-| Field | Rule |
-| --- | --- |
-| `megaStones` / `megaAbilities` | Spread previous bundle first, then new entries. The `as const` declaration makes TypeScript widen the union types automatically — adding a row is the only change needed. |
-| `megaStats` | Brand-new Champions-exclusive megas only. Standard Gen 6/7 megas (Sceptile-Mega, Swampert-Mega, etc.) are NOT listed — `getBaseStats()` in `stats-calculator.ts` falls through to `Dex.forGen(6)`. |
-| `megaTypes` | Only megas whose typing differs from the base AND is absent from `@pkmn/dex`. Standard Gen 6/7 megas already have correct types in the dex. |
-| `abilityDescs` | Only brand-new ability names not in `@pkmn/dex` (Champions-exclusive synthetic abilities). Ability *effects* in the calc are a separate change to the `@smogon/calc` submodule — the bundle only needs names/stats/types/descs. |
-| `moveOverrides` | Moves tagged `isNonstandard='Past'` in Gen 9 that the format explicitly grants. Inherit from previous bundle unless a new Past-move is introduced. |
+| Field                          | Rule                                                                                                                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `megaStones` / `megaAbilities` | Spread previous bundle first, then new entries. The `as const` declaration makes TypeScript widen the union types automatically — adding a row is the only change needed.                                                       |
+| `megaStats`                    | Brand-new Champions-exclusive megas only. Standard Gen 6/7 megas (Sceptile-Mega, Swampert-Mega, etc.) are NOT listed — `getBaseStats()` in `stats-calculator.ts` falls through to `Dex.forGen(6)`.                              |
+| `megaTypes`                    | Only megas whose typing differs from the base AND is absent from `@pkmn/dex`. Standard Gen 6/7 megas already have correct types in the dex.                                                                                     |
+| `abilityDescs`                 | Only brand-new ability names not in `@pkmn/dex` (Champions-exclusive synthetic abilities). Ability _effects_ in the calc are a separate change to the `@smogon/calc` submodule — the bundle only needs names/stats/types/descs. |
+| `moveOverrides`                | Moves tagged `isNonstandard='Past'` in Gen 9 that the format explicitly grants. Inherit from previous bundle unless a new Past-move is introduced.                                                                              |
 
 ## 3. Register in format-legality.ts
 
@@ -287,14 +288,14 @@ export const CHAMPIONS_CALENDAR: readonly RegulationPeriod[] = [
   },
   {
     start: "2026-06-17",
-    end: "2026-MM-DD",            // ← close M-B the day before M-{X} starts
+    end: "2026-MM-DD", // ← close M-B the day before M-{X} starts
     formatId: "gen9championsvgc2026regmb",
     regulation: "M-B",
     label: "Champions: Reg M-B",
   },
   {
-    start: "2026-MM-DD",          // ← M-{X} start date (from official announcement)
-    end: "2099-12-31",            // ← open-ended until next reg is announced
+    start: "2026-MM-DD", // ← M-{X} start date (from official announcement)
+    end: "2099-12-31", // ← open-ended until next reg is announced
     formatId: "gen9championsvgc2026regm{x}",
     regulation: "M-{X}",
     label: "Champions: Reg M-{X}",
@@ -353,12 +354,12 @@ The legality bundle (the `@trainers/pokemon` package side) does **NOT** make the
 
 ### Files to edit in `vendor/damage-calc/calc/src/`
 
-| File | What to add |
-| --- | --- |
-| `data/species.ts` | Add every new base species AND each of its new Mega formes to `CHAMPIONS_LIST`. A forme definition alone is NOT enough — `otherFormes` are filtered to `CHAMPIONS_LIST`, so both the base and the Mega must appear as explicit entries. |
-| `data/abilities.ts` | Add new ability names to the `CHAMPIONS` array (the names list used for validation and UI). |
-| `mechanics/champions.ts` | Implement calc-relevant ability effects (damage multipliers, type-changing effects, etc.) for any brand-new Champions ability (e.g. Eelevate, Fire Mane). |
-| `data/moves.ts` | Add move stat patches to `CHAMPIONS_PATCH` for any move rebalances the new reg introduces. |
+| File                     | What to add                                                                                                                                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/species.ts`        | Add every new base species AND each of its new Mega formes to `CHAMPIONS_LIST`. A forme definition alone is NOT enough — `otherFormes` are filtered to `CHAMPIONS_LIST`, so both the base and the Mega must appear as explicit entries. |
+| `data/abilities.ts`      | Add new ability names to the `CHAMPIONS` array (the names list used for validation and UI).                                                                                                                                             |
+| `mechanics/champions.ts` | Implement calc-relevant ability effects (damage multipliers, type-changing effects, etc.) for any brand-new Champions ability (e.g. Eelevate, Fire Mane).                                                                               |
+| `data/moves.ts`          | Add move stat patches to `CHAMPIONS_PATCH` for any move rebalances the new reg introduces.                                                                                                                                              |
 
 For the detailed how-to on each file — including the exact shape of a `CHAMPIONS_PATCH` entry, how ability effect hooks work, and how to run the fork test suite — see the `applying-move-rebalances` skill. This step is a checklist pointer; that skill is the implementation guide.
 
@@ -437,6 +438,7 @@ it("accepts a valid M-{X} Champions team", () => {
 ```
 
 Run with:
+
 ```bash
 pnpm test --filter @trainers/pokemon
 pnpm test --filter @trainers/validators
@@ -464,3 +466,5 @@ After adding a new regulation, run the `reconciling-pkmn-overrides` skill — so
 - **Calendar end dates must be day-before.** Close the previous regulation's calendar entry the day before the new one starts (e.g. M-B closes `"2026-MM-DD"` and M-{X} opens the next day). Overlapping date ranges cause `getChampionsFormatForDate()` to return the first match, masking the new reg.
 
 - **`SIM_UNSUPPORTED_FORMAT_IDS` must include every Champions reg.** Without this, `buildVgcShowdownNameMap()` would include the new format ID in the sim-backed map, and `computeLegalSpeciesFromSim()` would silently return `undefined` for it (no matching Showdown format) instead of routing to the bundle.
+
+- **Champions-exclusive Megas need a sprite fallback.** If any new Megas are Champions-exclusive (marked `// Champions-exclusive (custom — no @pkmn/dex entry)` in the reg file), add them to `SPECIES_SLUG_OVERRIDES` in `packages/pokemon/src/sprites.ts` mapping to the base form — otherwise sprites render as gray boxes on the Showdown CDN (the CDN only hosts sprites for real-game species).
