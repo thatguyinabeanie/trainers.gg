@@ -278,8 +278,6 @@ function DockbarConnected({
   bottomDrawer,
   fastest,
 }: DockbarConnectedProps) {
-  const calc = useCalcStateContext();
-
   return (
     <Dockbar
       onOpen={onOpen}
@@ -287,8 +285,6 @@ function DockbarConnected({
       rightDrawer={rightDrawer}
       bottomDrawer={bottomDrawer}
       fastest={fastest}
-      defenderSpecies={calc.defenderSpecies}
-      moveCalcOutputs={calc.moveCalcOutputs}
     />
   );
 }
