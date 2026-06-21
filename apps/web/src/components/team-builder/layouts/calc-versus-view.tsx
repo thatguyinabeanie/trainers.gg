@@ -100,8 +100,7 @@ function MonHeroContent({
 
   return (
     <div className="flex items-start gap-3">
-      {/* SpriteSection returns a fragment, so wrap it to keep sprite + pill
-          together as a single flex item (left column). */}
+      {/* Sprite only — showPill=false so the species pill lives in the right column */}
       <div className="flex shrink-0 flex-col items-center">
         <SpriteSection
           pokemon={pokemon}
@@ -110,11 +109,38 @@ function MonHeroContent({
           types={types}
           isShiny={isShiny}
           size={size}
+          showPill={false}
         />
       </div>
 
-      {/* Right column: type chips + item + ability */}
-      <div className="flex min-w-0 flex-1 flex-col gap-2 pt-1">
+      {/* Right column: species selector → type chips → item → ability */}
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        {/* Species selector pill */}
+        <button
+          type="button"
+          aria-label={`Change species (${pokemon.species ?? "none"})`}
+          className={cn(
+            "border-border bg-background hover:border-primary focus-visible:border-primary",
+            "flex w-full min-w-0 cursor-pointer items-center justify-between gap-1",
+            "rounded-md border px-2.5 py-1 font-mono text-xs font-semibold",
+            "transition-colors focus-visible:outline-none"
+          )}
+          onClick={onSpeciesClick}
+        >
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              pokemon.species ? "font-semibold" : "text-muted-foreground"
+            )}
+            title={pokemon.species ?? undefined}
+          >
+            {pokemon.species ?? "Choose species…"}
+          </span>
+          <span aria-hidden className="text-muted-foreground text-xs">
+            ▾
+          </span>
+        </button>
+
         {/* Type + Tera chips */}
         <div className="flex flex-wrap items-center gap-1.5">
           {types.map((t) => (
@@ -758,7 +784,7 @@ export function CalcVersusView({
 
           {/* ── (b) HERO BAND ───────────────────────────────────────────── */}
           {/* Left: your mon sprite + chips */}
-          <div className="flex h-72 items-center justify-center">
+          <div className="flex h-56 items-center justify-center">
             <MonHeroContent
               pokemon={pokemon}
               onSpeciesClick={() => setYourSpeciesOpen(true)}
@@ -771,7 +797,7 @@ export function CalcVersusView({
             />
           </div>
           {/* Center: VS badge — same h-56 so it aligns with the hero band */}
-          <div className="flex h-72 items-center justify-center">
+          <div className="flex h-56 items-center justify-center">
             <div className="border-border bg-card/60 flex size-12 items-center justify-center rounded-full border backdrop-blur-sm">
               <span className="text-muted-foreground font-mono text-sm font-extrabold">
                 VS
@@ -779,7 +805,7 @@ export function CalcVersusView({
             </div>
           </div>
           {/* Right: target sprite + chips */}
-          <div className="flex h-72 items-center justify-center">
+          <div className="flex h-56 items-center justify-center">
             <MonHeroContent
               pokemon={target.pokemon}
               onSpeciesClick={() => setTargetSpeciesOpen(true)}
