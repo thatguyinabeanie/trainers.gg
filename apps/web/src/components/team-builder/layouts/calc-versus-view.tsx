@@ -99,7 +99,7 @@ function MonHeroContent({
   const showTera = formatSupportsTera(format);
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex items-start gap-3">
       {/* Sprite — size driven by caller (large on desktop versus, default on mobile) */}
       <SpriteSection
         pokemon={pokemon}
@@ -110,45 +110,46 @@ function MonHeroContent({
         size={size}
       />
 
-      {/* Type + Tera chips */}
-      <div className="flex flex-wrap items-center justify-center gap-1.5">
-        {types.map((t) => (
-          <span
-            key={t}
-            className="rounded px-2 py-0.5 font-mono text-xs font-semibold text-white"
-            style={{ background: getTypeColor(t) }}
-          >
-            {t}
-          </span>
-        ))}
-        {showTera && pokemon.tera_type && (
-          <span className="border-primary/50 bg-primary/14 text-primary rounded border px-2 py-0.5 font-mono text-xs font-semibold">
-            <span className="text-primary/70">T·</span>
-            {pokemon.tera_type}
-          </span>
-        )}
-      </div>
+      {/* Right column: type chips + item + ability */}
+      <div className="flex min-w-0 flex-1 flex-col gap-2 pt-1">
+        {/* Type + Tera chips */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {types.map((t) => (
+            <span
+              key={t}
+              className="rounded px-2 py-0.5 font-mono text-xs font-semibold text-white"
+              style={{ background: getTypeColor(t) }}
+            >
+              {t}
+            </span>
+          ))}
+          {showTera && pokemon.tera_type && (
+            <span className="border-primary/50 bg-primary/14 text-primary rounded border px-2 py-0.5 font-mono text-xs font-semibold">
+              <span className="text-primary/70">T·</span>
+              {pokemon.tera_type}
+            </span>
+          )}
+        </div>
 
-      {/* Item + Ability — editable (grid variant, same as the solo FocusCard
-          loadout strip). Edits route through onUpdate; for the target,
-          useTargetAsPokemon maps held_item/ability to the calc-state setters. */}
-      <div className="w-full max-w-56 space-y-1">
-        <ItemCell
-          pokemon={pokemon}
-          format={format}
-          teamItems={teamItems}
-          errors={[]}
-          isMegaStone={isMegaStone}
-          onUpdate={onUpdate}
-          variant="grid"
-        />
-        <AbilityCell
-          pokemon={pokemon}
-          format={format}
-          errors={[]}
-          onUpdate={onUpdate}
-          variant="grid"
-        />
+        {/* Item + Ability */}
+        <div className="w-full space-y-1">
+          <ItemCell
+            pokemon={pokemon}
+            format={format}
+            teamItems={teamItems}
+            errors={[]}
+            isMegaStone={isMegaStone}
+            onUpdate={onUpdate}
+            variant="grid"
+          />
+          <AbilityCell
+            pokemon={pokemon}
+            format={format}
+            errors={[]}
+            onUpdate={onUpdate}
+            variant="grid"
+          />
+        </div>
       </div>
     </div>
   );
