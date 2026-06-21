@@ -943,13 +943,18 @@ describe("CalcVersusView — mobile layout", () => {
   it("renders the outgoing moves stack (not the table) in mobile layout", () => {
     renderView();
     // Mobile swaps the MovesLane table for the stacked MobileMoveRow cards.
-    expect(screen.getByTestId("mobile-moves-outgoing")).toBeInTheDocument();
+    // Multiple elements expected: both outgoing and incoming sides render in JSDOM.
+    expect(
+      screen.getAllByTestId("mobile-moves-outgoing").length
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.queryByTestId("moves-lane-outgoing")).not.toBeInTheDocument();
   });
 
   it("renders the incoming moves stack (not the table) in mobile layout", () => {
     renderView();
-    expect(screen.getByTestId("mobile-moves-incoming")).toBeInTheDocument();
+    expect(
+      screen.getAllByTestId("mobile-moves-incoming").length
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.queryByTestId("moves-lane-incoming")).not.toBeInTheDocument();
   });
 });
