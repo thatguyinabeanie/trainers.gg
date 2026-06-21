@@ -80,6 +80,14 @@ jest.mock("@trainers/pokemon", () => ({
   getLegalAbilities: jest.fn(() => null),
   getValidAbilities: jest.fn(() => []),
   formatHasTera: jest.fn(() => true),
+  // MobileMoveRow calls getMoveData to determine if a move is a Status move
+  getMoveData: jest.fn(() => ({
+    type: "Dragon",
+    category: "Physical",
+    basePower: 80,
+    accuracy: 100,
+    shortDesc: "",
+  })),
 }));
 
 // useTargetAsPokemon — controlled stub
@@ -911,18 +919,21 @@ describe("CalcVersusView — mobile layout", () => {
     expect(triggers.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders outgoing MovesLane in mobile layout", () => {
+  it("renders the outgoing moves stack (not the table) in mobile layout", () => {
     renderView();
+    // Mobile swaps the MovesLane table for the stacked MobileMoveRow cards.
     expect(
-      screen.getAllByTestId("moves-lane-outgoing").length
+      screen.getAllByTestId("mobile-moves-outgoing").length
     ).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByTestId("moves-lane-outgoing")).not.toBeInTheDocument();
   });
 
-  it("renders incoming MovesLane in mobile layout", () => {
+  it("renders the incoming moves stack (not the table) in mobile layout", () => {
     renderView();
     expect(
-      screen.getAllByTestId("moves-lane-incoming").length
+      screen.getAllByTestId("mobile-moves-incoming").length
     ).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByTestId("moves-lane-incoming")).not.toBeInTheDocument();
   });
 });
 

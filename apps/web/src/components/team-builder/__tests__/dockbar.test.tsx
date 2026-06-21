@@ -32,8 +32,6 @@ function makeProps(overrides: Partial<DockbarProps> = {}): DockbarProps {
     rightDrawer: null,
     bottomDrawer: null,
     fastest: 0,
-    defenderSpecies: "",
-    moveCalcOutputs: [null, null, null, null],
     ...overrides,
   };
 }
@@ -157,17 +155,16 @@ describe("Dockbar — chevron direction", () => {
 });
 
 // =============================================================================
-// Tests — defender species sublabel
+// Tests — calc pill has no defender sub-label
 // =============================================================================
 
-describe("Dockbar — defender species sublabel", () => {
-  it("shows 'vs <species>' when defenderSpecies is set", () => {
-    render(<Dockbar {...makeProps({ defenderSpecies: "Incineroar" })} />);
-    expect(screen.getByText("vs Incineroar")).toBeInTheDocument();
-  });
-
-  it("shows 'no target' when defenderSpecies is empty", () => {
-    render(<Dockbar {...makeProps({ defenderSpecies: "" })} />);
-    expect(screen.getByText("no target")).toBeInTheDocument();
+describe("Dockbar — calc pill label", () => {
+  it("shows only 'Damage calc' with no 'vs <defender>' sub-label", () => {
+    render(<Dockbar {...makeProps()} />);
+    expect(screen.getByText("Damage calc")).toBeInTheDocument();
+    // The "vs <defender>" / "no target" sub-label was removed — the pill is
+    // just the label + chevron now.
+    expect(screen.queryByText(/vs\s/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("no target")).not.toBeInTheDocument();
   });
 });

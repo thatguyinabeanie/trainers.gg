@@ -33,15 +33,22 @@ import { ItemCell } from "../shared/fields/item";
 import { SpriteSection } from "../shared/sprite-section";
 import { useIdentityState } from "../shared/use-identity-state";
 import { type UseCalcStateReturn, type CalcOutput } from "../use-calc-state";
-import {
-  useCalcEnabled,
-  useCalcStateContext,
-} from "../calc/calc-state-context";
 import { getDisplayRangeAndKoTier } from "../lanes/calc-display-helpers";
 
 // =============================================================================
 // Types
 // =============================================================================
+
+/**
+ * The subset of CalcStateContext fields that CalcVersusView reads beyond the
+ * base UseCalcStateReturn. In production the `calc` prop is always a full
+ * CalcStateContextValue (which extends UseCalcStateReturn with these fields),
+ * so the intersection is safe without importing CalcStateContext here.
+ */
+interface CalcFieldExtras {
+  calcEnabled: boolean;
+  field: { foesAlive: number; allyAlive: boolean };
+}
 
 export interface CalcVersusViewProps {
   /** Your active Pokémon (left side — the attacker). */
@@ -50,7 +57,7 @@ export interface CalcVersusViewProps {
   /** Sibling item names — for item deduplication hint in ItemCell. */
   teamItems?: string[];
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
-  calc: UseCalcStateReturn;
+  calc: UseCalcStateReturn & CalcFieldExtras;
 }
 
 // =============================================================================
@@ -395,6 +402,12 @@ interface MonMovesCardProps {
   headerLabel: string;
   /** Pass compact=true to tighten move rows for two-up layouts. */
   compact?: boolean;
+  /** Whether calc-derived info should be surfaced in move rows. */
+  calcEnabled: boolean;
+  /** Number of live foes — drives spread-damage halving in mobile rows. */
+  foesAlive: number;
+  /** Whether an ally is alive — affects spread-damage halving in mobile rows. */
+  allyAlive: boolean;
 }
 
 const MOVE_SLOTS_KEYS = [
@@ -413,16 +426,12 @@ function MonMovesCard({
   opponent,
   headerLabel,
   compact = false,
+  calcEnabled,
+  foesAlive,
+  allyAlive,
 }: MonMovesCardProps) {
   const isClient = useIsClient();
   const isMobile = useIsMobile();
-  const calcEnabled = useCalcEnabled();
-  // foesAlive / allyAlive live on the context-extended field state.
-  // Read from context the same way MovesLane does, so spread-damage
-  // numbers stay consistent between desktop and mobile layouts.
-  const calcCtx = useCalcStateContext();
-  const foesAlive = calcCtx.field.foesAlive;
-  const allyAlive = calcCtx.field.allyAlive;
 
   // On mobile (post-hydration), render a compact stacked-row layout instead
   // of the full multi-column table, which overflows a 390px viewport.
@@ -457,7 +466,10 @@ function MonMovesCard({
 
       {/* Mobile: compact stacked rows, one per move — fits a 390px viewport */}
       {showMobileLayout && (
-        <div className="flex flex-col gap-0.5">
+        <div
+          data-testid={`mobile-moves-${direction}`}
+          className="flex flex-col gap-0.5"
+        >
           {MOVE_SLOTS_KEYS.map((slot, idx) => (
             <MobileMoveRow
               key={slot}
@@ -676,6 +688,14 @@ export function CalcVersusView({
   const yourNatureLabel = pokemon.nature ?? "";
   const targetNatureLabel = target.pokemon.nature ?? "";
 
+  // ── Field extras (from CalcStateContext superset) ─────────────────────────
+  // CalcVersusView is always rendered with a full CalcStateContextValue (which
+  // extends UseCalcStateReturn with calcEnabled + field). Read them here so
+  // MonMovesCard stays context-free and test-friendly.
+  const { calcEnabled, field } = calc;
+  const foesAlive = field.foesAlive;
+  const allyAlive = field.allyAlive;
+
   return (
     <>
       {/* ── Species pickers ──────────────────────────────────────────────── */}
@@ -808,6 +828,9 @@ export function CalcVersusView({
             opponent={targetDescriptor}
             headerLabel="Moves → damage dealt"
             compact
+            calcEnabled={calcEnabled}
+            foesAlive={foesAlive}
+            allyAlive={allyAlive}
           />
           {/* Right: incoming moves — compact=true for denser rows in two-up layout */}
           <MonMovesCard
@@ -819,6 +842,9 @@ export function CalcVersusView({
             opponent={yourDescriptor}
             headerLabel="Moves → damage taken"
             compact
+            calcEnabled={calcEnabled}
+            foesAlive={foesAlive}
+            allyAlive={allyAlive}
           />
         </div>
       </div>
@@ -858,6 +884,9 @@ export function CalcVersusView({
             outputs={outgoingOutputs}
             opponent={targetDescriptor}
             headerLabel="Moves → damage dealt"
+            calcEnabled={calcEnabled}
+            foesAlive={foesAlive}
+            allyAlive={allyAlive}
           />
         </div>
 
@@ -906,6 +935,9 @@ export function CalcVersusView({
             outputs={incomingOutputs}
             opponent={yourDescriptor}
             headerLabel="Moves → damage taken"
+            calcEnabled={calcEnabled}
+            foesAlive={foesAlive}
+            allyAlive={allyAlive}
           />
         </div>
       </div>
