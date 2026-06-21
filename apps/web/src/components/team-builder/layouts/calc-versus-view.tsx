@@ -28,6 +28,7 @@ import { StatBoostsRow } from "../calc/stat-boosts-row";
 import { MovesLane } from "../lanes/moves-lane";
 import { RadialStatEditor } from "../stats/radial-stat-editor";
 import { SpeciesPickerDialog } from "../pickers/species-picker-dialog";
+import { MovePickerMobile } from "../pickers/move-picker-mobile";
 import { AbilityCell } from "../shared/fields/ability";
 import { ItemCell } from "../shared/fields/item";
 import { SpriteSection } from "../shared/sprite-section";
@@ -333,6 +334,8 @@ const MOBILE_KO_LABELS: Record<string, string> = {
   "4": "4HKO+",
 };
 
+type MoveSlotKey = (typeof MOVE_SLOTS_KEYS)[number];
+
 interface MobileMoveRowProps {
   moveName: string | null;
   output: CalcOutput | null;
@@ -340,6 +343,9 @@ interface MobileMoveRowProps {
   calcEnabled: boolean;
   foesAlive: number;
   allyAlive: boolean;
+  species: string;
+  slotKey: MoveSlotKey;
+  onPick: (slotKey: MoveSlotKey, moveName: string) => void;
 }
 
 function MobileMoveRow({
@@ -349,7 +355,11 @@ function MobileMoveRow({
   calcEnabled,
   foesAlive,
   allyAlive,
+  species,
+  slotKey,
+  onPick,
 }: MobileMoveRowProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
   const moveData = moveName ? getMoveData(moveName, format?.id) : null;
   const isStatus = moveData?.category === "Status";
   const hasCalc = calcEnabled && output !== null && !isStatus && !!moveName;
@@ -366,54 +376,78 @@ function MobileMoveRow({
   const showChance = koChance != null && koChance > 0 && koChance < 100;
 
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-2 rounded-md px-2 py-1.5",
-        koTier === "1" &&
-          "bg-[color-mix(in_oklch,var(--ko-red)_8%,transparent)]",
-        koTier === "2" &&
-          "bg-[color-mix(in_oklch,var(--ko-amber2-fg)_8%,transparent)]",
-        koTier === "3" &&
-          "bg-[color-mix(in_oklch,var(--ko-yellow-fg)_8%,transparent)]",
-        koTier === "4" && "bg-muted/30",
-        !koTier && "bg-transparent"
-      )}
-    >
-      {/* Move name — left side */}
-      <span
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setPickerOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setPickerOpen(true);
+          }
+        }}
         className={cn(
-          "min-w-0 flex-1 truncate text-xs font-medium",
-          !moveName && "text-muted-foreground/50"
+          "flex cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-1.5",
+          koTier === "1" &&
+            "bg-[color-mix(in_oklch,var(--ko-red)_8%,transparent)]",
+          koTier === "2" &&
+            "bg-[color-mix(in_oklch,var(--ko-amber2-fg)_8%,transparent)]",
+          koTier === "3" &&
+            "bg-[color-mix(in_oklch,var(--ko-yellow-fg)_8%,transparent)]",
+          koTier === "4" && "bg-muted/30",
+          !koTier && "bg-transparent"
         )}
       >
-        {moveName ?? "+ Add move"}
-      </span>
-
-      {/* Calc results — right side (only when calc is on and move exists) */}
-      {hasCalc && koTier ? (
-        <div className="flex shrink-0 items-center gap-2">
-          {/* Damage % range */}
-          <span className="text-muted-foreground font-mono text-xs tabular-nums">
-            {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
-          </span>
-          {/* KO tier */}
-          <span
-            className={cn(
-              "font-mono text-xs font-extrabold tracking-wide uppercase",
-              MOBILE_KO_COLORS[koTier] ?? "text-muted-foreground"
-            )}
-          >
-            {showChance
-              ? `${koChance % 1 === 0 ? koChance.toFixed(0) : koChance.toFixed(1)}% ${MOBILE_KO_LABELS[koTier] ?? "4HKO+"}`
-              : (MOBILE_KO_LABELS[koTier] ?? "4HKO+")}
-          </span>
-        </div>
-      ) : moveName && isStatus ? (
-        <span className="text-muted-foreground shrink-0 font-mono text-xs">
-          Status
+        {/* Move name — left side */}
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate text-xs font-medium",
+            !moveName && "text-muted-foreground/50"
+          )}
+        >
+          {moveName ?? "+ Add move"}
         </span>
-      ) : null}
-    </div>
+
+        {/* Calc results — right side (only when calc is on and move exists) */}
+        {hasCalc && koTier ? (
+          <div className="flex shrink-0 items-center gap-2">
+            {/* Damage % range */}
+            <span className="text-muted-foreground font-mono text-xs tabular-nums">
+              {displayMin.toFixed(1)}–{displayMax.toFixed(1)}%
+            </span>
+            {/* KO tier */}
+            <span
+              className={cn(
+                "font-mono text-xs font-extrabold tracking-wide uppercase",
+                MOBILE_KO_COLORS[koTier] ?? "text-muted-foreground"
+              )}
+            >
+              {showChance
+                ? `${koChance % 1 === 0 ? koChance.toFixed(0) : koChance.toFixed(1)}% ${MOBILE_KO_LABELS[koTier] ?? "4HKO+"}`
+                : (MOBILE_KO_LABELS[koTier] ?? "4HKO+")}
+            </span>
+          </div>
+        ) : moveName && isStatus ? (
+          <span className="text-muted-foreground shrink-0 font-mono text-xs">
+            Status
+          </span>
+        ) : null}
+      </div>
+      <MovePickerMobile
+        open={pickerOpen}
+        onOpenChange={(open) => {
+          if (!open) setPickerOpen(false);
+        }}
+        value={moveName}
+        species={species}
+        format={format}
+        onPick={(name) => {
+          onPick(slotKey, name);
+          setPickerOpen(false);
+        }}
+      />
+    </>
   );
 }
 
@@ -510,6 +544,9 @@ function MonMovesCard({
               calcEnabled={calcEnabled}
               foesAlive={foesAlive}
               allyAlive={allyAlive}
+              species={pokemon.species ?? ""}
+              slotKey={slot}
+              onPick={(slotKey, name) => onUpdate({ [slotKey]: name })}
             />
           ))}
         </div>
