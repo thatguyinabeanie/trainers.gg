@@ -392,10 +392,10 @@ function MoveTile({
             <img
               src={CATEGORY_ICON_URLS_MONO[moveData.category]}
               alt={moveData.category}
-              className="h-6 w-6 shrink-0"
+              className="h-4 w-4 shrink-0"
             />
           ) : (
-            <span className="block size-6" aria-hidden />
+            <span className="block size-4" aria-hidden />
           )}
         </TableCell>
 

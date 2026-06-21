@@ -654,7 +654,7 @@ function MobileStatsSheet({
  *
  * Desktop (≥md): three fixed-height bands so rows align across all three columns:
  *   (a) label band  — "Your Pokémon" (teal/muted) | empty spacer | "Calc Target · click to edit ▾" (rose)
- *   (b) hero band   — sprite + chips | VS badge (same h-56 height) | sprite + chips
+ *   (b) hero band   — sprite + chips | VS badge (auto-height, grid row syncs all three) | sprite + chips
  *   (c) content row — stats card | FieldControlSurface | stats card (all tops aligned)
  *   (d) moves row   — outgoing moves | empty | incoming moves
  *
@@ -755,7 +755,7 @@ export function CalcVersusView({
         Three-column grid: 1fr | 18rem center | 1fr
         Four row-bands so columns align:
           (a) label band   h-3.5  — labels + empty center spacer
-          (b) hero band    h-56   — sprites + VS badge (same height keeps VS centered)
+          (b) hero band    auto   — sprites + VS badge (grid row auto-sizes to sprite height)
           (c) content row         — stats cards + field panel (tops aligned by grid)
           (d) moves row           — moves cards + empty center cell
         The whole arena is vertically centered within the canvas to avoid a dead
@@ -765,7 +765,7 @@ export function CalcVersusView({
         {/* Side columns capped at 28rem (≈ mock's 440px) and the whole grid
             centered, so the compact cards don't stretch across the full 1fr
             width and leave the small hexagon floating in a too-wide card. */}
-        <div className="grid w-full grid-cols-[minmax(0,28rem)_18rem_minmax(0,28rem)] items-start justify-center gap-4">
+        <div className="grid w-full grid-cols-[minmax(0,28rem)_18rem_minmax(0,28rem)] items-start justify-center gap-x-4 gap-y-3">
           {/* ── (a) LABEL BAND ──────────────────────────────────────────── */}
           {/* Left: "Your Pokémon" */}
           <div className="flex h-3.5 items-center justify-center">
@@ -784,7 +784,7 @@ export function CalcVersusView({
 
           {/* ── (b) HERO BAND ───────────────────────────────────────────── */}
           {/* Left: your mon sprite + chips */}
-          <div className="flex h-56 items-center justify-center">
+          <div className="flex items-center justify-center">
             <MonHeroContent
               pokemon={pokemon}
               onSpeciesClick={() => setYourSpeciesOpen(true)}
@@ -796,8 +796,8 @@ export function CalcVersusView({
               isMegaStone={yourIdentity.isMegaStone}
             />
           </div>
-          {/* Center: VS badge — same h-56 so it aligns with the hero band */}
-          <div className="flex h-56 items-center justify-center">
+          {/* Center: VS badge — auto-height; grid row matches the hero cells */}
+          <div className="flex items-center justify-center">
             <div className="border-border bg-card/60 flex size-12 items-center justify-center rounded-full border backdrop-blur-sm">
               <span className="text-muted-foreground font-mono text-sm font-extrabold">
                 VS
@@ -805,7 +805,7 @@ export function CalcVersusView({
             </div>
           </div>
           {/* Right: target sprite + chips */}
-          <div className="flex h-56 items-center justify-center">
+          <div className="flex items-center justify-center">
             <MonHeroContent
               pokemon={target.pokemon}
               onSpeciesClick={() => setTargetSpeciesOpen(true)}
