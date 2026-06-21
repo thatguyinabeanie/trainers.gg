@@ -195,7 +195,7 @@ export function FocusCard({
         */}
         <div
           className={cn(
-            "relative flex flex-col items-center justify-center gap-3",
+            "relative flex flex-col items-center justify-center gap-1.5 sm:gap-3",
             "md:order-2"
           )}
         >
@@ -217,7 +217,7 @@ export function FocusCard({
               speciesHasError={id.speciesErrors.length > 0}
               types={id.types}
               isShiny={id.isShiny}
-              size={240}
+              size={isMobile ? 160 : 240}
             />
             <FieldErrors errors={id.speciesErrors} />
           </div>
