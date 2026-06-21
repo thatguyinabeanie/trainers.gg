@@ -100,15 +100,18 @@ function MonHeroContent({
 
   return (
     <div className="flex items-start gap-3">
-      {/* Sprite — size driven by caller (large on desktop versus, default on mobile) */}
-      <SpriteSection
-        pokemon={pokemon}
-        onSpeciesClick={onSpeciesClick}
-        variant="pill-bottom"
-        types={types}
-        isShiny={isShiny}
-        size={size}
-      />
+      {/* SpriteSection returns a fragment, so wrap it to keep sprite + pill
+          together as a single flex item (left column). */}
+      <div className="flex shrink-0 flex-col items-center">
+        <SpriteSection
+          pokemon={pokemon}
+          onSpeciesClick={onSpeciesClick}
+          variant="pill-bottom"
+          types={types}
+          isShiny={isShiny}
+          size={size}
+        />
+      </div>
 
       {/* Right column: type chips + item + ability */}
       <div className="flex min-w-0 flex-1 flex-col gap-2 pt-1">
