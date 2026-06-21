@@ -89,7 +89,7 @@ function MonHeroContent({
   pokemon,
   onSpeciesClick,
   isShiny = false,
-  size = 136,
+  size = 96,
   format,
   onUpdate,
   teamItems = [],
@@ -184,7 +184,7 @@ function MonHero({
   isMegaStone = false,
 }: MonHeroProps) {
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-1">
       {/* Side label */}
       <div className="flex h-3.5 items-center justify-center">
         <span
@@ -850,7 +850,7 @@ export function CalcVersusView({
       </div>
 
       {/* ═══════════════════ MOBILE LAYOUT (< md) ═══════════════════════ */}
-      <div className="flex flex-col gap-4 md:hidden">
+      <div className="flex flex-col gap-3 md:hidden">
         {/* YOUR MON */}
         <div className="flex flex-col gap-3">
           <MonHero
