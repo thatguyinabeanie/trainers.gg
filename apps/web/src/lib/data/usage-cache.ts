@@ -6,9 +6,13 @@
  * cache-key arrays needed. All callers must resolve defaults BEFORE calling
  * so the params object is fully populated and the runtime can key correctly.
  *
- * All functions use createStaticClient() (anonymous, cookie-less) — required
- * inside cache scopes to avoid per-user cookie variance. Output is public
- * aggregate data; no PII is cached.
+ * All functions use createServiceRoleClient() inside the cache scope. The
+ * underlying usage RPCs are SECURITY INVOKER and read public.team_slots, whose
+ * anon/authenticated SELECT was revoked in Phase 2 — so an anon client gets
+ * "permission denied for table team_slots". Service-role is cookie-less (safe
+ * inside a cache scope, no per-user variance) and the output is public
+ * aggregate data only (no PII read or cached). Same pattern as
+ * communities-endpoints.ts.
  *
  * Invalidation: invalidateUsageStatsCaches(formats) via @/lib/cache-invalidation.
  */
@@ -36,7 +40,7 @@ import {
   type MoveComboRow,
   type SpeciesTeammatesResult,
 } from "@trainers/supabase";
-import { createStaticClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { CacheTags } from "@/lib/cache";
 
 // =============================================================================
@@ -57,7 +61,7 @@ export async function getCachedSpeciesUsageDetail(
   cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
   cacheLife("hours");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getSpeciesUsageDetail(supabase, params);
 }
 
@@ -86,7 +90,7 @@ export async function getCachedFormatUsage(
   cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
   cacheLife("hours");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getSpeciesUsage(supabase, params);
 }
 
@@ -117,7 +121,7 @@ export async function getCachedFormatUsageTimeseries(
   cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
   cacheLife("hours");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getFormatUsageTimeseries(supabase, params);
 }
 
@@ -146,7 +150,7 @@ export async function getCachedPipelineData(
   cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
   cacheLife("hours");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getPipelineData(supabase, params);
 }
 
@@ -167,7 +171,7 @@ export async function getCachedFormatEvents(
   cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(format));
   cacheLife("hours");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getFormatEvents(supabase, format);
 }
 
@@ -196,7 +200,7 @@ export async function getCachedUsageBySource(
   cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
   cacheLife("hours");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getUsageBySource(supabase, params);
 }
 
@@ -227,7 +231,7 @@ export async function getCachedUsageConversion(
   cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
   cacheLife("hours");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getUsageConversion(supabase, params);
 }
 
@@ -263,7 +267,7 @@ export async function getCachedSpeciesMoveCombos(
   cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
   cacheLife("hours");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getSpeciesMoveCombos(supabase, params);
 }
 
@@ -298,6 +302,6 @@ export async function getCachedSpeciesTeammates(
   cacheTag(CacheTags.USAGE_STATS, CacheTags.usageStats(params.format));
   cacheLife("hours");
 
-  const supabase = createStaticClient();
+  const supabase = createServiceRoleClient();
   return getSpeciesTeammates(supabase, params);
 }
