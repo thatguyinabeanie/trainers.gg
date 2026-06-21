@@ -231,6 +231,7 @@ function MonHero({
         pokemon={pokemon}
         onSpeciesClick={onSpeciesClick}
         isShiny={isShiny}
+        size={120}
         format={format}
         onUpdate={onUpdate}
         teamItems={teamItems}
