@@ -106,7 +106,46 @@ export function getDisplayRangeAndKoTier({
     !spreadApplied && output?.recoveryTier
       ? recoveryTierToKoTier(output.recoveryTier)
       : null;
-  const koTier = hasCalc ? (recoveryKoTier ?? getKoTier(displayMin, displayMax)) : null;
+  const koTier = hasCalc
+    ? (recoveryKoTier ?? getKoTier(displayMin, displayMax))
+    : null;
 
   return { spreadApplied, displayMin, displayMax, koTier };
 }
+
+// =============================================================================
+// Shared move-slot constants
+// Used by MovesLane, MovePickerMobile, and any component that iterates moves.
+// =============================================================================
+
+export type MoveSlot = "move1" | "move2" | "move3" | "move4";
+
+export const MOVE_SLOTS: MoveSlot[] = ["move1", "move2", "move3", "move4"];
+
+// =============================================================================
+// KO-tier display maps
+// Source of truth for labels and CSS color classes across all calc views.
+// Centralised here so MovesLane, CalcColumn, and mobile variants stay in sync.
+// =============================================================================
+
+/**
+ * Maps a KO-tier numeric key to the user-facing label string.
+ * Keys are the string form of `KoTierNumeric` (never null).
+ */
+export const KO_LABELS: Record<string, string> = {
+  "1": "OHKO",
+  "2": "2HKO",
+  "3": "3HKO",
+  "4": "4HKO+",
+};
+
+/**
+ * Maps a KO-tier numeric key to its Tailwind CSS color class.
+ * Keys are the string form of `KoTierNumeric` (never null).
+ */
+export const KO_COLORS: Record<string, string> = {
+  "1": "text-[var(--ko-red)]",
+  "2": "text-[var(--ko-amber2-fg)]",
+  "3": "text-[var(--ko-yellow-fg)]",
+  "4": "text-muted-foreground",
+};

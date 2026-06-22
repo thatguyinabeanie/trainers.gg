@@ -7,7 +7,7 @@
  * Coverage targets:
  *  • Renders species identity: sprite section + meta bar
  *  • Renders the RadialStatEditor and MovesLane panels
- *  • calc OFF → MovesLane receives presentation="cards-2x2"
+ *  • calc OFF → MovesLane receives presentation="list" (desktop) or "card-list" (mobile, post-hydration)
  *  • calc ON → CalcReverseColumn is visible; calc OFF → hidden
  *  • onRemove prop: remove button rendered and fires callback
  *  • slotErrors flow: stat errors, move errors reach child panels
@@ -23,6 +23,18 @@ import { type Tables } from "@trainers/supabase";
 // =============================================================================
 // Mocks
 // =============================================================================
+
+// useIsClient / useIsMobile — default to hydrated desktop so existing tests
+// stay on the desktop path (presentation="list")
+const mockUseIsClient = jest.fn();
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
+}));
+
+const mockUseIsMobile = jest.fn();
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
 
 // Heavy pokemon helpers — stubs only
 jest.mock("@trainers/pokemon", () => ({
@@ -305,6 +317,9 @@ function renderFocusCard(
 
 beforeEach(() => {
   mockCalcEnabled.value = false;
+  // Default: hydrated desktop — presentation="list" (the desktop path)
+  mockUseIsClient.mockReturnValue(true);
+  mockUseIsMobile.mockReturnValue(false);
 });
 
 describe("FocusCard — basic structure", () => {
@@ -400,7 +415,29 @@ describe("FocusCard — calc OFF: list presentation", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 10. CalcReverseColumn is NOT rendered when calc is OFF
+  // 10. MovesLane receives presentation="card-list" on mobile (post-hydration)
+  // -------------------------------------------------------------------------
+  it("passes presentation='card-list' to MovesLane on mobile (post-hydration)", () => {
+    mockUseIsClient.mockReturnValue(true);
+    mockUseIsMobile.mockReturnValue(true);
+    renderFocusCard();
+    const lane = screen.getByTestId("moves-lane");
+    expect(lane).toHaveAttribute("data-presentation", "card-list");
+  });
+
+  // -------------------------------------------------------------------------
+  // 11. MovesLane receives presentation="list" before client hydration (isClient=false)
+  // -------------------------------------------------------------------------
+  it("passes presentation='list' to MovesLane before client hydration", () => {
+    mockUseIsClient.mockReturnValue(false);
+    mockUseIsMobile.mockReturnValue(true);
+    renderFocusCard();
+    const lane = screen.getByTestId("moves-lane");
+    expect(lane).toHaveAttribute("data-presentation", "list");
+  });
+
+  // -------------------------------------------------------------------------
+  // 12. CalcReverseColumn is NOT rendered when calc is OFF
   // -------------------------------------------------------------------------
   it("does NOT render CalcReverseColumn when calc is OFF", () => {
     renderFocusCard();

@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   getSpeciesTypes,
   getTypeColor,
+  getMoveData,
   type GameFormat,
 } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
@@ -17,6 +18,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { useTargetAsPokemon } from "../calc/use-target-as-pokemon";
 import { FieldControlSurface } from "../calc/field-control-surface";
@@ -30,10 +33,23 @@ import { ItemCell } from "../shared/fields/item";
 import { SpriteSection } from "../shared/sprite-section";
 import { useIdentityState } from "../shared/use-identity-state";
 import { type UseCalcStateReturn } from "../use-calc-state";
+import { MOVE_SLOTS, type MoveSlot } from "../lanes/calc-display-helpers";
+import { MobileMoveRow } from "../lanes/moves-lane-mobile";
 
 // =============================================================================
 // Types
 // =============================================================================
+
+/**
+ * The subset of CalcStateContext fields that CalcVersusView reads beyond the
+ * base UseCalcStateReturn. In production the `calc` prop is always a full
+ * CalcStateContextValue (which extends UseCalcStateReturn with these fields),
+ * so the intersection is safe without importing CalcStateContext here.
+ */
+export interface CalcFieldExtras {
+  calcEnabled: boolean;
+  field: { foesAlive: number; allyAlive: boolean };
+}
 
 export interface CalcVersusViewProps {
   /** Your active Pokémon (left side — the attacker). */
@@ -42,7 +58,7 @@ export interface CalcVersusViewProps {
   /** Sibling item names — for item deduplication hint in ItemCell. */
   teamItems?: string[];
   onUpdate: (fields: Partial<TablesUpdate<"pokemon">>) => void;
-  calc: UseCalcStateReturn;
+  calc: UseCalcStateReturn & CalcFieldExtras;
 }
 
 // =============================================================================
@@ -74,7 +90,7 @@ function MonHeroContent({
   pokemon,
   onSpeciesClick,
   isShiny = false,
-  size = 136,
+  size = 96,
   format,
   onUpdate,
   teamItems = [],
@@ -84,56 +100,86 @@ function MonHeroContent({
   const showTera = formatSupportsTera(format);
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      {/* Sprite — size driven by caller (large on desktop versus, default on mobile) */}
-      <SpriteSection
-        pokemon={pokemon}
-        onSpeciesClick={onSpeciesClick}
-        variant="pill-bottom"
-        types={types}
-        isShiny={isShiny}
-        size={size}
-      />
-
-      {/* Type + Tera chips */}
-      <div className="flex flex-wrap items-center justify-center gap-1.5">
-        {types.map((t) => (
-          <span
-            key={t}
-            className="rounded px-2 py-0.5 font-mono text-xs font-semibold text-white"
-            style={{ background: getTypeColor(t) }}
-          >
-            {t}
-          </span>
-        ))}
-        {showTera && pokemon.tera_type && (
-          <span className="border-primary/50 bg-primary/14 text-primary rounded border px-2 py-0.5 font-mono text-xs font-semibold">
-            <span className="text-primary/70">T·</span>
-            {pokemon.tera_type}
-          </span>
-        )}
+    <div className="flex items-start gap-3">
+      {/* Sprite only — showPill=false so the species pill lives in the right column */}
+      <div className="flex shrink-0 flex-col items-center">
+        <SpriteSection
+          pokemon={pokemon}
+          onSpeciesClick={onSpeciesClick}
+          variant="pill-bottom"
+          types={types}
+          isShiny={isShiny}
+          size={size}
+          showPill={false}
+        />
       </div>
 
-      {/* Item + Ability — editable (grid variant, same as the solo FocusCard
-          loadout strip). Edits route through onUpdate; for the target,
-          useTargetAsPokemon maps held_item/ability to the calc-state setters. */}
-      <div className="w-full max-w-56 space-y-1">
-        <ItemCell
-          pokemon={pokemon}
-          format={format}
-          teamItems={teamItems}
-          errors={[]}
-          isMegaStone={isMegaStone}
-          onUpdate={onUpdate}
-          variant="grid"
-        />
-        <AbilityCell
-          pokemon={pokemon}
-          format={format}
-          errors={[]}
-          onUpdate={onUpdate}
-          variant="grid"
-        />
+      {/* Right column: species selector → type chips → item → ability */}
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        {/* Species selector pill */}
+        <button
+          type="button"
+          aria-label={`Change species (${pokemon.species ?? "none"})`}
+          className={cn(
+            "border-border bg-background hover:border-primary focus-visible:border-primary",
+            "flex w-full min-w-0 cursor-pointer items-center justify-between gap-1",
+            "rounded-md border px-2.5 py-1 font-mono text-xs font-semibold",
+            "transition-colors focus-visible:outline-none"
+          )}
+          onClick={onSpeciesClick}
+        >
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              pokemon.species ? "font-semibold" : "text-muted-foreground"
+            )}
+            title={pokemon.species ?? undefined}
+          >
+            {pokemon.species ?? "Choose species…"}
+          </span>
+          <span aria-hidden className="text-muted-foreground text-xs">
+            ▾
+          </span>
+        </button>
+
+        {/* Type + Tera chips */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {types.map((t) => (
+            <span
+              key={t}
+              className="rounded px-2 py-0.5 font-mono text-xs font-semibold text-white"
+              style={{ background: getTypeColor(t) }}
+            >
+              {t}
+            </span>
+          ))}
+          {showTera && pokemon.tera_type && (
+            <span className="border-primary/50 bg-primary/14 text-primary rounded border px-2 py-0.5 font-mono text-xs font-semibold">
+              <span className="text-primary/70">T·</span>
+              {pokemon.tera_type}
+            </span>
+          )}
+        </div>
+
+        {/* Item + Ability */}
+        <div className="w-full space-y-1">
+          <ItemCell
+            pokemon={pokemon}
+            format={format}
+            teamItems={teamItems}
+            errors={[]}
+            isMegaStone={isMegaStone}
+            onUpdate={onUpdate}
+            variant="grid"
+          />
+          <AbilityCell
+            pokemon={pokemon}
+            format={format}
+            errors={[]}
+            onUpdate={onUpdate}
+            variant="grid"
+          />
+        </div>
       </div>
     </div>
   );
@@ -169,7 +215,7 @@ function MonHero({
   isMegaStone = false,
 }: MonHeroProps) {
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-1">
       {/* Side label */}
       <div className="flex h-3.5 items-center justify-center">
         <span
@@ -186,6 +232,7 @@ function MonHero({
         pokemon={pokemon}
         onSpeciesClick={onSpeciesClick}
         isShiny={isShiny}
+        size={120}
         format={format}
         onUpdate={onUpdate}
         teamItems={teamItems}
@@ -281,6 +328,12 @@ interface MonMovesCardProps {
   headerLabel: string;
   /** Pass compact=true to tighten move rows for two-up layouts. */
   compact?: boolean;
+  /** Whether calc-derived info should be surfaced in move rows. */
+  calcEnabled: boolean;
+  /** Number of live foes — drives spread-damage halving in mobile rows. */
+  foesAlive: number;
+  /** Whether an ally is alive — affects spread-damage halving in mobile rows. */
+  allyAlive: boolean;
 }
 
 function MonMovesCard({
@@ -292,7 +345,33 @@ function MonMovesCard({
   opponent,
   headerLabel,
   compact = false,
+  calcEnabled,
+  foesAlive,
+  allyAlive,
 }: MonMovesCardProps) {
+  const isClient = useIsClient();
+  const isMobile = useIsMobile();
+
+  // On mobile (post-hydration), render a compact stacked-row layout instead
+  // of the full multi-column table, which overflows a 390px viewport.
+  const showMobileLayout = isClient && isMobile;
+
+  // Pre-compute isStatus per slot once per card render — avoids redundant getMoveData calls.
+  const isStatusBySlot: Record<MoveSlot, boolean> = {
+    move1:
+      !!pokemon.move1 &&
+      getMoveData(pokemon.move1, format?.id)?.category === "Status",
+    move2:
+      !!pokemon.move2 &&
+      getMoveData(pokemon.move2, format?.id)?.category === "Status",
+    move3:
+      !!pokemon.move3 &&
+      getMoveData(pokemon.move3, format?.id)?.category === "Status",
+    move4:
+      !!pokemon.move4 &&
+      getMoveData(pokemon.move4, format?.id)?.category === "Status",
+  };
+
   return (
     <div
       className={cn(
@@ -304,17 +383,57 @@ function MonMovesCard({
         <span className="text-muted-foreground font-mono text-xs font-semibold tracking-[0.08em] uppercase">
           {headerLabel}
         </span>
-        <span className="text-muted-foreground font-mono text-xs">% · KO</span>
+        {!showMobileLayout && (
+          <span className="text-muted-foreground font-mono text-xs">
+            % · KO
+          </span>
+        )}
       </div>
-      <MovesLane
-        pokemon={pokemon}
-        format={format}
-        onUpdate={onUpdate}
-        direction={direction}
-        outputs={outputs}
-        opponent={opponent}
-        compact={compact}
-      />
+
+      {/* Skeleton while client hydrates — prevents layout shift */}
+      {!isClient && (
+        <div
+          aria-hidden
+          className="bg-muted/30 h-28 animate-pulse rounded-lg"
+        />
+      )}
+
+      {/* Mobile: compact stacked rows, one per move — fits a 390px viewport */}
+      {showMobileLayout && (
+        <div
+          data-testid={`mobile-moves-${direction}`}
+          className="flex flex-col gap-0.5"
+        >
+          {MOVE_SLOTS.map((slot, idx) => (
+            <MobileMoveRow
+              key={slot}
+              moveName={(pokemon[slot] as string | null) || null}
+              output={outputs[idx] ?? null}
+              format={format}
+              calcEnabled={calcEnabled}
+              foesAlive={foesAlive}
+              allyAlive={allyAlive}
+              species={pokemon.species ?? ""}
+              slotKey={slot}
+              isStatus={isStatusBySlot[slot]}
+              onPick={(slotKey, name) => onUpdate({ [slotKey]: name })}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Desktop: full moves table (unchanged) */}
+      {isClient && !isMobile && (
+        <MovesLane
+          pokemon={pokemon}
+          format={format}
+          onUpdate={onUpdate}
+          direction={direction}
+          outputs={outputs}
+          opponent={opponent}
+          compact={compact}
+        />
+      )}
     </div>
   );
 }
@@ -443,7 +562,7 @@ function MobileStatsSheet({
  *
  * Desktop (≥md): three fixed-height bands so rows align across all three columns:
  *   (a) label band  — "Your Pokémon" (teal/muted) | empty spacer | "Calc Target · click to edit ▾" (rose)
- *   (b) hero band   — sprite + chips | VS badge (same h-56 height) | sprite + chips
+ *   (b) hero band   — sprite + chips | VS badge (auto-height, grid row syncs all three) | sprite + chips
  *   (c) content row — stats card | FieldControlSurface | stats card (all tops aligned)
  *   (d) moves row   — outgoing moves | empty | incoming moves
  *
@@ -507,6 +626,14 @@ export function CalcVersusView({
   const yourNatureLabel = pokemon.nature ?? "";
   const targetNatureLabel = target.pokemon.nature ?? "";
 
+  // ── Field extras (from CalcStateContext superset) ─────────────────────────
+  // CalcVersusView is always rendered with a full CalcStateContextValue (which
+  // extends UseCalcStateReturn with calcEnabled + field). Read them here so
+  // MonMovesCard stays context-free and test-friendly.
+  const { calcEnabled, field } = calc;
+  const foesAlive = field.foesAlive;
+  const allyAlive = field.allyAlive;
+
   return (
     <>
       {/* ── Species pickers ──────────────────────────────────────────────── */}
@@ -536,7 +663,7 @@ export function CalcVersusView({
         Three-column grid: 1fr | 18rem center | 1fr
         Four row-bands so columns align:
           (a) label band   h-3.5  — labels + empty center spacer
-          (b) hero band    h-56   — sprites + VS badge (same height keeps VS centered)
+          (b) hero band    auto   — sprites + VS badge (grid row auto-sizes to sprite height)
           (c) content row         — stats cards + field panel (tops aligned by grid)
           (d) moves row           — moves cards + empty center cell
         The whole arena is vertically centered within the canvas to avoid a dead
@@ -546,7 +673,7 @@ export function CalcVersusView({
         {/* Side columns capped at 28rem (≈ mock's 440px) and the whole grid
             centered, so the compact cards don't stretch across the full 1fr
             width and leave the small hexagon floating in a too-wide card. */}
-        <div className="grid w-full grid-cols-[minmax(0,28rem)_18rem_minmax(0,28rem)] items-start justify-center gap-4">
+        <div className="grid w-full grid-cols-[minmax(0,28rem)_18rem_minmax(0,28rem)] items-start justify-center gap-x-4 gap-y-3">
           {/* ── (a) LABEL BAND ──────────────────────────────────────────── */}
           {/* Left: "Your Pokémon" */}
           <div className="flex h-3.5 items-center justify-center">
@@ -565,7 +692,7 @@ export function CalcVersusView({
 
           {/* ── (b) HERO BAND ───────────────────────────────────────────── */}
           {/* Left: your mon sprite + chips */}
-          <div className="flex h-72 items-center justify-center">
+          <div className="flex items-center justify-center">
             <MonHeroContent
               pokemon={pokemon}
               onSpeciesClick={() => setYourSpeciesOpen(true)}
@@ -577,8 +704,8 @@ export function CalcVersusView({
               isMegaStone={yourIdentity.isMegaStone}
             />
           </div>
-          {/* Center: VS badge — same h-56 so it aligns with the hero band */}
-          <div className="flex h-72 items-center justify-center">
+          {/* Center: VS badge — auto-height; grid row matches the hero cells */}
+          <div className="flex items-center justify-center">
             <div className="border-border bg-card/60 flex size-12 items-center justify-center rounded-full border backdrop-blur-sm">
               <span className="text-muted-foreground font-mono text-sm font-extrabold">
                 VS
@@ -586,7 +713,7 @@ export function CalcVersusView({
             </div>
           </div>
           {/* Right: target sprite + chips */}
-          <div className="flex h-72 items-center justify-center">
+          <div className="flex items-center justify-center">
             <MonHeroContent
               pokemon={target.pokemon}
               onSpeciesClick={() => setTargetSpeciesOpen(true)}
@@ -639,6 +766,9 @@ export function CalcVersusView({
             opponent={targetDescriptor}
             headerLabel="Moves → damage dealt"
             compact
+            calcEnabled={calcEnabled}
+            foesAlive={foesAlive}
+            allyAlive={allyAlive}
           />
           {/* Right: incoming moves — compact=true for denser rows in two-up layout */}
           <MonMovesCard
@@ -650,12 +780,15 @@ export function CalcVersusView({
             opponent={yourDescriptor}
             headerLabel="Moves → damage taken"
             compact
+            calcEnabled={calcEnabled}
+            foesAlive={foesAlive}
+            allyAlive={allyAlive}
           />
         </div>
       </div>
 
       {/* ═══════════════════ MOBILE LAYOUT (< md) ═══════════════════════ */}
-      <div className="flex flex-col gap-4 md:hidden">
+      <div className="flex flex-col gap-3 md:hidden">
         {/* YOUR MON */}
         <div className="flex flex-col gap-3">
           <MonHero
@@ -689,6 +822,9 @@ export function CalcVersusView({
             outputs={outgoingOutputs}
             opponent={targetDescriptor}
             headerLabel="Moves → damage dealt"
+            calcEnabled={calcEnabled}
+            foesAlive={foesAlive}
+            allyAlive={allyAlive}
           />
         </div>
 
@@ -737,6 +873,9 @@ export function CalcVersusView({
             outputs={incomingOutputs}
             opponent={yourDescriptor}
             headerLabel="Moves → damage taken"
+            calcEnabled={calcEnabled}
+            foesAlive={foesAlive}
+            allyAlive={allyAlive}
           />
         </div>
       </div>

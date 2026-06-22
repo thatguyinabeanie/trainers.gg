@@ -94,8 +94,8 @@ export function sortMoveData(
         break;
       }
       case "acc": {
-        const aa = a.accuracy === true ? 101 : (a.accuracy || 0);
-        const ba = b.accuracy === true ? 101 : (b.accuracy || 0);
+        const aa = a.accuracy === true ? 101 : a.accuracy || 0;
+        const ba = b.accuracy === true ? 101 : b.accuracy || 0;
         cmp = aa - ba;
         break;
       }
@@ -109,13 +109,7 @@ export function sortMoveData(
 // SortArrow
 // =============================================================================
 
-function SortArrow({
-  active,
-  dir,
-}: {
-  active: boolean;
-  dir: MoveListSortDir;
-}) {
+function SortArrow({ active, dir }: { active: boolean; dir: MoveListSortDir }) {
   if (!active) return null;
   return (
     <span aria-hidden="true" className="ml-0.5 inline-block leading-none">
@@ -134,7 +128,11 @@ interface MoveListHeaderProps {
   className?: string;
 }
 
-export function MoveListHeader({ sort, onSort, className }: MoveListHeaderProps) {
+export function MoveListHeader({
+  sort,
+  onSort,
+  className,
+}: MoveListHeaderProps) {
   function headerBtnClass(col: MoveListSortCol) {
     return sort.col === col
       ? "text-foreground"
@@ -332,7 +330,7 @@ export function MoveListRow({
               width={32}
               height={14}
               unoptimized
-              className="h-6 w-auto [image-rendering:pixelated]"
+              className="h-4 w-auto [image-rendering:pixelated]"
             />
           </button>
         ) : (
@@ -343,7 +341,7 @@ export function MoveListRow({
               width={32}
               height={14}
               unoptimized
-              className="h-6 w-auto [image-rendering:pixelated]"
+              className="h-4 w-auto [image-rendering:pixelated]"
             />
           </div>
         )
@@ -371,9 +369,7 @@ export function MoveListRow({
 
       {/* Accuracy */}
       <span className="text-muted-foreground text-right font-mono text-xs tabular-nums">
-        {move.accuracy === true || !move.accuracy
-          ? "—"
-          : `${move.accuracy}%`}
+        {move.accuracy === true || !move.accuracy ? "—" : `${move.accuracy}%`}
       </span>
 
       {/* Usage % + sparkline */}
@@ -411,11 +407,7 @@ export function MoveListRow({
         className="flex min-w-0 gap-1 overflow-x-auto"
       >
         {roles.map((roleId) => (
-          <RoleChip
-            key={roleId}
-            roleId={roleId}
-            onClick={onRoleFilter}
-          />
+          <RoleChip key={roleId} roleId={roleId} onClick={onRoleFilter} />
         ))}
       </div>
     </div>

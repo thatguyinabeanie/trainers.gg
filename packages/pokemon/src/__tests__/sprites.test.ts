@@ -118,3 +118,44 @@ describe("getPokemonSprite", () => {
     });
   });
 });
+
+describe("Champions-exclusive Mega sprite fallbacks", () => {
+  it.each([
+    ["Dragonite-Mega", "https://www.serebii.net/legendsz-a/pokemon/149-m.png"],
+    ["Starmie-Mega", "https://www.serebii.net/legendsz-a/pokemon/121-m.png"],
+    ["Delphox-Mega", "https://www.serebii.net/legendsz-a/pokemon/655-m.png"],
+    ["Raichu-Mega-X", "https://www.serebii.net/legendsz-a/pokemon/026-mx.png"],
+    ["Staraptor-Mega", "https://www.serebii.net/legendsz-a/pokemon/398-m.png"],
+    ["Falinks-Mega", "https://www.serebii.net/legendsz-a/pokemon/870-m.png"],
+  ])("returns Legends Z-A sprite URL for %s", (species, expectedUrl) => {
+    expect(getPokemonSprite(species).url).toBe(expectedUrl);
+  });
+
+  it("does NOT override official Gen 6/7 Megas", () => {
+    expect(getPokemonSprite("Garchomp-Mega").url).not.toContain("serebii");
+    expect(getPokemonSprite("Charizard-Mega-X").url).not.toContain("serebii");
+  });
+
+  it("returns non-pixelated sprite data for Champions Megas", () => {
+    expect(getPokemonSprite("Dragonite-Mega").pixelated).toBe(false);
+    expect(getPokemonSprite("Dragonite-Mega").w).toBe(96);
+    expect(getPokemonSprite("Dragonite-Mega").h).toBe(96);
+  });
+
+  it("returns the override URL for a Champions Mega with no shiny option", () => {
+    const overrideUrl = "https://www.serebii.net/legendsz-a/pokemon/149-m.png";
+    expect(getPokemonSprite("Dragonite-Mega").url).toBe(overrideUrl);
+    expect(getPokemonSprite("Dragonite-Mega", { shiny: false }).url).toBe(
+      overrideUrl
+    );
+  });
+
+  it("does NOT return the non-shiny override URL for a Champions Mega with shiny: true", () => {
+    const nonShinyOverrideUrl =
+      "https://www.serebii.net/legendsz-a/pokemon/149-m.png";
+    const shinySprite = getPokemonSprite("Dragonite-Mega", { shiny: true });
+    expect(shinySprite.url).not.toBe(nonShinyOverrideUrl);
+    // Should fall through to Sprites.getPokemon, which produces a shiny URL
+    expect(shinySprite.url).toContain("shiny");
+  });
+});

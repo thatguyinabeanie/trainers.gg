@@ -36,7 +36,13 @@ import {
 } from "../calc/calc-state-context";
 import { CalcDetailCard } from "../calc/calc-detail-card";
 import { type CalcOutput } from "../use-calc-state";
-import { getDisplayRangeAndKoTier } from "./calc-display-helpers";
+import {
+  getDisplayRangeAndKoTier,
+  type MoveSlot,
+  MOVE_SLOTS,
+  KO_COLORS,
+  KO_LABELS,
+} from "./calc-display-helpers";
 import { FieldErrors } from "../validation/field-error";
 import { DescriptionTooltip } from "./description-tooltip";
 
@@ -76,11 +82,11 @@ interface MovesLaneProps {
    * Presentation variant.
    * - "list" (default): the existing single-column table with optional calc
    *   columns. Calc-on always uses this path regardless of this prop.
-   * - "cards-2x2": a 2×2 grid of compact move cards showing type icon,
-   *   category icon, move name, BP, and ACC. Only active when calc is OFF;
+   * - "card-list": a single-column card list showing type icon, category icon,
+   *   move name, BP, and ACC. Only active when calc is OFF;
    *   when calc is ON the table path renders as usual.
    */
-  presentation?: "list" | "cards-2x2";
+  presentation?: "list" | "card-list";
   /**
    * When true, renders a tighter/denser move table for side-by-side layouts
    * (e.g. the damage-calc versus view). Defaults to false — the solo
@@ -89,16 +95,12 @@ interface MovesLaneProps {
   compact?: boolean;
 }
 
-type MoveSlot = "move1" | "move2" | "move3" | "move4";
-
 /** Which popover panel is open for a tile. */
 type TilePanel = "picker" | null;
 
 // =============================================================================
 // Helpers
 // =============================================================================
-
-const MOVE_SLOTS: MoveSlot[] = ["move1", "move2", "move3", "move4"];
 
 /** Map move slot key to parallel array index. */
 const SLOT_IDX: Record<MoveSlot, number> = {
@@ -131,20 +133,6 @@ function CalcRange({
 // =============================================================================
 // KoLabel — displays the KO tier badge (OHKO, 2HKO, 3HKO, 4HKO+)
 // =============================================================================
-
-const KO_LABELS: Record<string, string> = {
-  "1": "OHKO",
-  "2": "2HKO",
-  "3": "3HKO",
-  "4": "4HKO+",
-};
-
-const KO_COLORS: Record<string, string> = {
-  "1": "text-[var(--ko-red)]",
-  "2": "text-[var(--ko-amber2-fg)]",
-  "3": "text-[var(--ko-yellow-fg)]",
-  "4": "text-muted-foreground",
-};
 
 function KoLabel({
   tier,
@@ -392,10 +380,10 @@ function MoveTile({
             <img
               src={CATEGORY_ICON_URLS_MONO[moveData.category]}
               alt={moveData.category}
-              className="h-6 w-6 shrink-0"
+              className="h-4 w-4 shrink-0"
             />
           ) : (
-            <span className="block size-6" aria-hidden />
+            <span className="block size-4" aria-hidden />
           )}
         </TableCell>
 
@@ -671,55 +659,49 @@ function MoveCard({
           onClick={handleClick}
           onKeyDown={handleKeyDown}
           className={cn(
-            "border-border bg-card hover:bg-muted flex cursor-pointer flex-col gap-1.5 rounded-md border p-2 text-left transition-colors",
+            "border-border bg-card hover:bg-muted flex cursor-pointer items-center gap-2 rounded-md border px-2 py-3 text-left transition-colors",
             hasError && "border-destructive/50 ring-destructive/30 ring-1"
           )}
         >
-          {/* Top row: type icon + category icon */}
-          <div className="flex items-center gap-1.5">
-            {moveName && moveData?.type ? (
-              <TypeSymbolIcon
-                type={
-                  moveData.type as Parameters<typeof TypeSymbolIcon>[0]["type"]
-                }
-                size={16}
-              />
-            ) : (
-              <span className="size-4 shrink-0" />
-            )}
-            {moveName &&
-            moveData?.category &&
-            CATEGORY_ICON_URLS_MONO[moveData.category] ? (
-              <img
-                src={CATEGORY_ICON_URLS_MONO[moveData.category]}
-                alt={moveData.category}
-                className="h-4 w-4 shrink-0"
-              />
-            ) : (
-              <span className="size-4 shrink-0" />
-            )}
-            {/* BP / ACC meta — small, right-aligned */}
-            <span className="text-muted-foreground ml-auto font-mono text-xs tabular-nums">
-              {moveName
-                ? moveData?.basePower && moveData.basePower > 0
-                  ? `${moveData.basePower} / ${
-                      moveData.accuracy === true || !moveData.accuracy
-                        ? "—"
-                        : moveData.accuracy
-                    }`
-                  : "— / —"
-                : ""}
-            </span>
-          </div>
-
-          {/* Move name */}
+          {moveName && moveData?.type ? (
+            <TypeSymbolIcon
+              type={
+                moveData.type as Parameters<typeof TypeSymbolIcon>[0]["type"]
+              }
+              size={16}
+            />
+          ) : (
+            <span className="size-4 shrink-0" />
+          )}
+          {moveName &&
+          moveData?.category &&
+          CATEGORY_ICON_URLS_MONO[moveData.category] ? (
+            <img
+              src={CATEGORY_ICON_URLS_MONO[moveData.category]}
+              alt={moveData.category}
+              className="h-4 w-4 shrink-0"
+            />
+          ) : (
+            <span className="size-4 shrink-0" />
+          )}
           <span
             className={cn(
-              "block truncate text-sm font-medium",
+              "flex-1 truncate text-sm font-medium",
               !moveName && "text-muted-foreground/50"
             )}
           >
             {moveName ?? "+ Add move"}
+          </span>
+          <span className="text-muted-foreground font-mono text-xs tabular-nums">
+            {moveName
+              ? moveData?.basePower && moveData.basePower > 0
+                ? `${moveData.basePower} / ${
+                    moveData.accuracy === true || !moveData.accuracy
+                      ? "—"
+                      : moveData.accuracy
+                  }`
+                : "— / —"
+              : ""}
           </span>
         </button>
 
@@ -785,7 +767,7 @@ interface MovesLaneRealProps {
   opponent:
     | { species: string; ability: string; item: string; nature: string }
     | undefined;
-  presentation: "list" | "cards-2x2";
+  presentation: "list" | "card-list";
   compact: boolean;
 }
 
@@ -847,13 +829,13 @@ function MovesLaneReal({
     nature: calc.defenderNature,
   };
 
-  // 2×2 card grid: only when presentation is "cards-2x2" AND calc is OFF.
+  // Single-column card list: only when presentation is "card-list" AND calc is OFF.
   // When calc is ON, always fall through to the standard table (direction seam
   // and calc columns must remain intact).
-  if (presentation === "cards-2x2" && !calc.calcEnabled) {
+  if (presentation === "card-list" && !calc.calcEnabled) {
     return (
       <div className="px-6 py-1">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2">
           {MOVE_SLOTS.map((slotKey) => {
             const slotErrors = fieldErrors.filter((e) => e.field === slotKey);
             return (
@@ -881,37 +863,42 @@ function MovesLaneReal({
         compact ? "px-2 py-0.5" : "px-6 py-1"
       )}
     >
-      <Table
-        className={cn(
-          "w-full border-separate",
-          /* border-spacing-y: hairline row gap — no Tailwind scale token for sub-4px values */
-          compact
-            ? "border-spacing-y-[2px]" /* 2px hairline when compact */
-            : "border-spacing-y-[3px]" /* 3px hairline default */
-        )}
-      >
-        <MovesLaneTileGhost />
-        <TableBody>
-          {MOVE_SLOTS.map((slotKey) => {
-            const slotErrors = fieldErrors.filter((e) => e.field === slotKey);
-            return (
-              <MoveTile
-                key={slotKey}
-                slotKey={slotKey}
-                moveName={pokemon[slotKey] || null}
-                species={pokemon.species ?? ""}
-                format={format}
-                attacker={pokemon}
-                onPick={handlePick}
-                slotErrors={slotErrors}
-                rowOutputs={outputs}
-                compact={compact}
-                onHover={handleRowHover}
-              />
-            );
-          })}
-        </TableBody>
-      </Table>
+      {/* overflow-x-auto: prevents the multi-column table from bleeding on ~390px
+          mobile viewports when calc is ON. min-w-0 ensures the wrapper shrinks
+          rather than expanding its flex parent. */}
+      <div className="min-w-0 overflow-x-auto">
+        <Table
+          className={cn(
+            "w-full border-separate",
+            /* border-spacing-y: hairline row gap — no Tailwind scale token for sub-4px values */
+            compact
+              ? "border-spacing-y-[2px]" /* 2px hairline when compact */
+              : "border-spacing-y-[3px]" /* 3px hairline default */
+          )}
+        >
+          <MovesLaneTileGhost />
+          <TableBody>
+            {MOVE_SLOTS.map((slotKey) => {
+              const slotErrors = fieldErrors.filter((e) => e.field === slotKey);
+              return (
+                <MoveTile
+                  key={slotKey}
+                  slotKey={slotKey}
+                  moveName={pokemon[slotKey] || null}
+                  species={pokemon.species ?? ""}
+                  format={format}
+                  attacker={pokemon}
+                  onPick={handlePick}
+                  slotErrors={slotErrors}
+                  rowOutputs={outputs}
+                  compact={compact}
+                  onHover={handleRowHover}
+                />
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Single lane-level breakdown Popover — anchored to the hovered row element.
           Lives here (outside <Table>/<TableBody>) so Base UI focus-guard <span>s are

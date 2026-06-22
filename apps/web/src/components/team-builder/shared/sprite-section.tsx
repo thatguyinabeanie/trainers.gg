@@ -34,6 +34,13 @@ interface SpriteSectionProps {
    * not apply here. Defaults to 144 so all existing callers are unchanged.
    */
   size?: number;
+  /**
+   * When false, renders only the sprite button — no species pill.
+   * Use when the caller renders the pill elsewhere (e.g. in a right column).
+   * Callers MUST provide an accessible species-change control when showPill=false,
+   * since the sprite button is aria-hidden and excluded from the tab order.
+   */
+  showPill?: boolean;
 }
 
 export function SpriteSection({
@@ -44,6 +51,7 @@ export function SpriteSection({
   types,
   isShiny = false,
   size = 144,
+  showPill = true,
 }: SpriteSectionProps) {
   // ── pill-top (compact / SingleRow) ────────────────────────────────────────
   if (variant === "pill-top") {
@@ -95,7 +103,7 @@ export function SpriteSection({
 
     return (
       <>
-        {pill}
+        {showPill && pill}
         {spriteBtn}
       </>
     );
@@ -147,7 +155,7 @@ export function SpriteSection({
   return (
     <>
       {spriteBtn}
-      {pill}
+      {showPill && pill}
     </>
   );
 }

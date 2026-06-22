@@ -80,6 +80,34 @@ jest.mock("@trainers/pokemon", () => ({
   getLegalAbilities: jest.fn(() => null),
   getValidAbilities: jest.fn(() => []),
   formatHasTera: jest.fn(() => true),
+  // MonMovesCard calls getMoveData once per slot to pre-compute isStatus
+  getMoveData: jest.fn(() => ({
+    type: "Dragon",
+    category: "Physical",
+    basePower: 80,
+    accuracy: 100,
+    shortDesc: "",
+  })),
+}));
+
+// MobileMoveRow — stub the extracted component so the mobile-moves stack
+// renders testable rows without mounting live MovePickerMobile Drawers.
+jest.mock("../lanes/moves-lane-mobile", () => ({
+  MobileMoveRow: ({
+    moveName,
+    slotKey,
+    isStatus,
+  }: {
+    moveName: string | null;
+    slotKey: string;
+    isStatus: boolean;
+  }) => (
+    <div
+      data-testid={`mobile-move-row-${slotKey}`}
+      data-move={moveName ?? ""}
+      data-is-status={String(isStatus)}
+    />
+  ),
 }));
 
 // useTargetAsPokemon — controlled stub
@@ -351,6 +379,7 @@ jest.mock("@/components/ui/sheet", () => ({
 // =============================================================================
 
 import { CalcVersusView } from "../layouts/calc-versus-view";
+import type { CalcFieldExtras } from "../layouts/calc-versus-view";
 import type {
   UseCalcStateReturn,
   CalcOutput,
@@ -446,8 +475,8 @@ const defaultDefenderBoosts: StatBoosts = {
 
 /** Build a complete calc stub with sensible defaults */
 function makeCalcStub(
-  overrides: Partial<UseCalcStateReturn> = {}
-): UseCalcStateReturn {
+  overrides: Partial<UseCalcStateReturn & CalcFieldExtras> = {}
+): UseCalcStateReturn & CalcFieldExtras {
   const forwardOutputs = [makeCalcOutput(50, 70), null, null, null] as const;
   const reverseOutputs = [makeCalcOutput(20, 30), null, null, null] as const;
 
@@ -554,12 +583,12 @@ function makeCalcStub(
     field: { foesAlive: 2, allyAlive: true },
     setField: jest.fn(),
     ...overrides,
-  } as unknown as UseCalcStateReturn;
+  } as unknown as UseCalcStateReturn & CalcFieldExtras;
 }
 
 function renderView(
   pokemonOverrides: Partial<Tables<"pokemon">> = {},
-  calcOverrides: Partial<UseCalcStateReturn> = {}
+  calcOverrides: Partial<UseCalcStateReturn & CalcFieldExtras> = {}
 ) {
   const pokemon = makeGarchomp(pokemonOverrides);
   const calc = makeCalcStub(calcOverrides);
@@ -911,18 +940,22 @@ describe("CalcVersusView — mobile layout", () => {
     expect(triggers.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders outgoing MovesLane in mobile layout", () => {
+  it("renders the outgoing moves stack (not the table) in mobile layout", () => {
     renderView();
+    // Mobile swaps the MovesLane table for the stacked MobileMoveRow cards.
+    // Multiple elements expected: both outgoing and incoming sides render in JSDOM.
     expect(
-      screen.getAllByTestId("moves-lane-outgoing").length
+      screen.getAllByTestId("mobile-moves-outgoing").length
     ).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByTestId("moves-lane-outgoing")).not.toBeInTheDocument();
   });
 
-  it("renders incoming MovesLane in mobile layout", () => {
+  it("renders the incoming moves stack (not the table) in mobile layout", () => {
     renderView();
     expect(
-      screen.getAllByTestId("moves-lane-incoming").length
+      screen.getAllByTestId("mobile-moves-incoming").length
     ).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByTestId("moves-lane-incoming")).not.toBeInTheDocument();
   });
 });
 

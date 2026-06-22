@@ -10,6 +10,8 @@ import {
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
+import { useIsClient } from "@/hooks/use-is-client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { useCalcEnabled } from "../calc/calc-state-context";
 import { CalcReverseColumn } from "../lanes/calc-reverse-card";
@@ -33,7 +35,7 @@ import { FieldErrors } from "../validation/field-error";
 //   │  [LEFT PANEL]          [CENTER COLUMN]           [RIGHT PANEL]          │
 //   │  RadialStatEditor      SpriteSection (hero)      MovesLane              │
 //   │  (translucent,         identity cluster:         presentation=          │
-//   │   blur backdrop)         nickname · gender ·       "cards-2x2"          │
+//   │   blur backdrop)         nickname · gender ·       "list"                │
 //   │                          shiny · level                                  │
 //   │                          item · ability           When calc ON:         │
 //   │                                                   table + CalcReverse   │
@@ -105,6 +107,8 @@ export function FocusCard({
   const id = useIdentityState(pokemon, format, identityErrors, onUpdate);
   const [speciesOpen, setSpeciesOpen] = useState(false);
   const calcEnabled = useCalcEnabled();
+  const isClient = useIsClient();
+  const isMobile = useIsMobile();
 
   // ── Type-derived chrome ────────────────────────────────────────────────────
   const types = getSpeciesTypes(pokemon.species ?? "");
@@ -193,7 +197,7 @@ export function FocusCard({
         */}
         <div
           className={cn(
-            "relative flex flex-col items-center justify-center gap-3",
+            "relative flex flex-col items-center justify-center gap-1.5 sm:gap-3",
             "md:order-2"
           )}
         >
@@ -215,7 +219,7 @@ export function FocusCard({
               speciesHasError={id.speciesErrors.length > 0}
               types={id.types}
               isShiny={id.isShiny}
-              size={240}
+              size={isClient && isMobile ? 160 : 240}
             />
             <FieldErrors errors={id.speciesErrors} />
           </div>
@@ -321,7 +325,7 @@ export function FocusCard({
               format={format}
               onUpdate={onUpdate}
               fieldErrors={movesErrors}
-              presentation="list"
+              presentation={isClient && isMobile ? "card-list" : "list"}
             />
           </div>
 

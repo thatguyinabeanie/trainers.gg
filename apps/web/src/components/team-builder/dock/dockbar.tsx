@@ -52,10 +52,6 @@ export interface DockbarProps {
   bottomDrawer: "matchups" | null;
   /** Pre-computed fastest speed for the speed pill. */
   fastest: number;
-  /** Active attacker's defender name, for the calc pill label. */
-  defenderSpecies: string;
-  /** Calc outputs for all 4 attacker moves, for the calc pill verdict. */
-  moveCalcOutputs: readonly (CalcOutput | null)[];
 }
 
 // =============================================================================
@@ -84,11 +80,6 @@ export function getWorstCaseVerdict(
  * Bottom dock toolbar with three pill buttons: Type matchups, Speed tiers,
  * and Damage calc.
  *
- * Each pill shows live mini-stats derived from the current team:
- *   - Matchups: "<weakCount> weak · <coveredCount> covered"
- *   - Speed: "<fastest> fastest · vs format"
- *   - Calc: "vs <defender> · <verdict>"
- *
  * The active pill is highlighted.
  */
 export function Dockbar({
@@ -97,15 +88,10 @@ export function Dockbar({
   rightDrawer,
   bottomDrawer,
   fastest: _fastest,
-  defenderSpecies,
-  moveCalcOutputs,
 }: DockbarProps) {
   const isMatchupsActive = bottomDrawer === "matchups";
   const isSpeedActive = sideDrawer === "speed";
   const isCalcActive = rightDrawer === "calc";
-
-  const _calcVerdict = getWorstCaseVerdict(moveCalcOutputs);
-  const calcSubLabel = defenderSpecies ? `vs ${defenderSpecies}` : "no target";
 
   return (
     <div className="bg-background relative w-full rounded-b-lg border-t">
@@ -168,13 +154,8 @@ export function Dockbar({
           <span className="shrink-0 text-base leading-none" aria-hidden>
             🎯
           </span>
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="text-xs leading-none font-semibold">
-              Damage calc
-            </span>
-            <span className="text-muted-foreground flex min-w-0 items-center gap-1 font-mono text-xs leading-none">
-              <span className="truncate">{calcSubLabel}</span>
-            </span>
+          <span className="text-xs leading-none font-semibold">
+            Damage calc
           </span>
           <span
             className="text-muted-foreground ml-1 shrink-0 text-xs"

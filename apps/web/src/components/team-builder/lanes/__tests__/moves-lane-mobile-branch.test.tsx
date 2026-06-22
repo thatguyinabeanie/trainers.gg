@@ -39,6 +39,7 @@ jest.mock("../../calc/calc-state-context", () => ({
 
 // ── Heavy calc helpers ───────────────────────────────────────────────────────
 jest.mock("../calc-display-helpers", () => ({
+  ...jest.requireActual("../calc-display-helpers"),
   getDisplayRangeAndKoTier: jest.fn().mockReturnValue({
     koTier: null,
     displayMin: 0,
@@ -48,13 +49,8 @@ jest.mock("../calc-display-helpers", () => ({
 
 // ── UI primitives — keep them lightweight ────────────────────────────────────
 jest.mock("@/components/ui/dialog", () => ({
-  Dialog: ({
-    children,
-    open,
-  }: {
-    children: React.ReactNode;
-    open: boolean;
-  }) => open ? <div data-testid="dialog">{children}</div> : null,
+  Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
+    open ? <div data-testid="dialog">{children}</div> : null,
   DialogContent: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -242,7 +238,9 @@ describe("MoveTile — conditional picker mount", () => {
       }
 
       expect(screen.getByTestId("mobile-move-picker")).toBeInTheDocument();
-      expect(screen.queryByTestId("desktop-move-picker")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("desktop-move-picker")
+      ).not.toBeInTheDocument();
     });
 
     it("does NOT render the desktop Dialog when on mobile", async () => {
@@ -291,7 +289,9 @@ describe("MoveTile — conditional picker mount", () => {
       }
 
       expect(screen.getByTestId("desktop-move-picker")).toBeInTheDocument();
-      expect(screen.queryByTestId("mobile-move-picker")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("mobile-move-picker")
+      ).not.toBeInTheDocument();
     });
   });
 });

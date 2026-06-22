@@ -268,8 +268,7 @@ interface DockbarConnectedProps {
 }
 
 /**
- * Wraps Dockbar with calc state read from CalcStateContext.
- * Must be mounted inside a CalcStateProvider.
+ * Passes builder drawer state into Dockbar.
  */
 function DockbarConnected({
   onOpen,
@@ -278,8 +277,6 @@ function DockbarConnected({
   bottomDrawer,
   fastest,
 }: DockbarConnectedProps) {
-  const calc = useCalcStateContext();
-
   return (
     <Dockbar
       onOpen={onOpen}
@@ -287,8 +284,6 @@ function DockbarConnected({
       rightDrawer={rightDrawer}
       bottomDrawer={bottomDrawer}
       fastest={fastest}
-      defenderSpecies={calc.defenderSpecies}
-      moveCalcOutputs={calc.moveCalcOutputs}
     />
   );
 }
@@ -873,7 +868,7 @@ export function TeamWorkspaceV2({
           })}
 
           <div
-            className="flex min-w-0 flex-1 flex-col overflow-hidden"
+            className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             ref={worklaneRef}
           >
             {/* Horizontal split: true flex layout with ghost resize handles */}
