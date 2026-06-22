@@ -91,26 +91,40 @@ infra/
 
 ```bash
 # Development
-pnpm dev                       # Web + Supabase (auto-configures local Supabase)
-pnpm dev:all                   # All apps (web + mobile + Supabase)
-pnpm dev:web / dev:mobile / dev:backend
-SKIP_LOCAL_SUPABASE=1 pnpm dev # Use remote Supabase instead of local
+pnpm dev                       # web + Supabase (auto-configures local Supabase)
+pnpm dev:all                   # all apps (web + mobile + Supabase)
+pnpm dev:web                   # web only
+pnpm dev:mobile                # mobile only
+pnpm dev:backend               # Supabase only
+SKIP_LOCAL_SUPABASE=1 pnpm dev # use remote Supabase instead of local
 
-# Database (always from repo root)
-pnpm db:start / db:stop / db:reset / db:migrate / db:diff / db:seed
-pnpm generate-types            # Regenerate TS types from schema
+# Database (always run from repo root)
+pnpm db:start                  # start local Supabase
+pnpm db:stop                   # stop local Supabase
+pnpm db:reset                  # reset + reseed local DB
+pnpm db:migrate                # apply pending migrations
+pnpm db:diff                   # diff schema into a new migration
+pnpm db:seed                   # run seed scripts
+pnpm generate-types            # regenerate TS types from schema
 
 # Testing
-pnpm test / test:watch / test:e2e
+pnpm test                      # run unit tests
+pnpm test:watch                # watch mode
+pnpm test:e2e                  # Playwright E2E
 
 # Quality
-pnpm lint / typecheck / format / format:check
+pnpm lint                      # ESLint
+pnpm typecheck                 # tsc --noEmit
+pnpm format                    # Prettier write
+pnpm format:check              # Prettier check
 
 # Build
-pnpm build / build:web / build:mobile
+pnpm build                     # build all
+pnpm build:web                 # web only
+pnpm build:mobile              # mobile only
 
 # Edge Functions
-pnpm functions:serve
+pnpm functions:serve           # serve edge functions locally
 ```
 
 **Test users** (after `pnpm db:reset`, password `Password123!`):
@@ -148,7 +162,7 @@ Multiple agents and humans work on this codebase simultaneously. If you encounte
 
 ### Scope Discipline
 
-**Only modify files explicitly in scope for the current task.** Do NOT run `pnpm format`, `pnpm lint --fix`, or repo-wide formatters unless explicitly asked. When dispatching subagents, pass an explicit file allowlist. Revert unrelated changes before committing.
+**Only modify files explicitly in scope for the current task.** Do NOT run `pnpm format`, `pnpm lint --fix`, or repo-wide formatters unless explicitly asked. When dispatching subagents, pass an explicit file allowlist. Revert unrelated changes you introduced before committing (never touch changes made by others — see Parallel Work & Unexpected Changes).
 
 ### Destructive Actions
 
@@ -165,7 +179,7 @@ Multiple agents and humans work on this codebase simultaneously. If you encounte
 
 ### Data Access
 
-Split model — no open anon Data API. S-bucket client reads go through cached `/api/v1` routes (`createServiceRoleClient` + column allowlist + `resolveApiAuth` + `enforceRateLimit`); authenticated reads go direct via the browser Supabase client + RLS; SSR pages query the DB server-side. See `deciding-data-access` for routing and client selection.
+Split model — no open anon Data API. S-bucket client reads go through cached `/api/v1` routes (`createServiceRoleClient()` + column allowlist + `resolveApiAuth()` + `enforceRateLimit()`); authenticated reads go direct via the browser Supabase client + RLS; SSR pages query the DB server-side. See `deciding-data-access` for routing and client selection.
 
 ### Styling
 
