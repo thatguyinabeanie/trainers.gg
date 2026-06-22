@@ -373,6 +373,43 @@ export type Database = {
       [_ in never]: never
     }
   }
+  private: {
+    Tables: {
+      user_pii: {
+        Row: {
+          birth_date: string | null
+          first_name: string | null
+          last_name: string | null
+          user_id: string
+        }
+        Insert: {
+          birth_date?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          user_id: string
+        }
+        Update: {
+          birth_date?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       alts: {
@@ -5196,6 +5233,9 @@ export const Constants = {
     Enums: {},
   },
   limitless: {
+    Enums: {},
+  },
+  private: {
     Enums: {},
   },
   public: {
