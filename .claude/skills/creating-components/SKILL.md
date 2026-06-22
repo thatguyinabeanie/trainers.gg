@@ -9,7 +9,7 @@ Add or create a UI component in the trainers.gg web app following project conven
 
 ## First: Check the Catalog
 
-When the `web-ui-catalog.md` rule is loaded, it lists all existing UI components by category. Before creating a new component:
+Invoke the `web-ui-catalog` skill — it lists all existing UI components by category. Before creating a new component:
 
 1. Check the catalog for something similar
 2. If a similar component exists, read the file — you may be able to extend it
