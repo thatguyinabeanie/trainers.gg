@@ -297,7 +297,7 @@ function SpokeInput({
       aria-label={`${STAT_SHORT_LABELS[statKey]} investment`}
       className={cn(
         /* Transparent at rest — ring on focus. 4 chars wide, mono, tiny, teal. */
-        "focus:ring-primary h-5 w-8 rounded bg-transparent text-center font-mono text-xs outline-none focus:ring-1",
+        "focus:ring-primary text-s h-5 w-8 rounded bg-transparent font-mono outline-none focus:ring-1",
         "border border-transparent focus:border-transparent",
         "text-primary",
         inputBuffer !== null && "bg-background/80",
@@ -784,7 +784,7 @@ export function RadialStatEditor({
                     <span
                       aria-hidden
                       className={cn(
-                        "font-mono text-xs font-semibold uppercase",
+                        "text-s font-mono font-semibold uppercase",
                         colorClass,
                         isNatureBoosted &&
                           "text-emerald-500 dark:text-emerald-400",
@@ -801,7 +801,7 @@ export function RadialStatEditor({
                       aria-hidden
                       className={cn(
                         "text-foreground ml-0.5 font-mono font-bold tabular-nums",
-                        "text-xs"
+                        "text-s"
                       )}
                     >
                       {liveFinalStat}
@@ -810,7 +810,7 @@ export function RadialStatEditor({
                     {/* Separator — decorative */}
                     <span
                       aria-hidden
-                      className="text-muted-foreground/60 mx-0.5 font-mono text-xs"
+                      className="text-muted-foreground/60 text-s mx-0.5 font-mono"
                     >
                       ·
                     </span>

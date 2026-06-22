@@ -86,7 +86,7 @@ export function StatBoostsRow({
             {/* Stat label — same per-stat color as the hexagon spoke labels */}
             <span
               className={cn(
-                "font-mono text-xs leading-none font-semibold tracking-[0.06em] uppercase",
+                "pb-2 font-mono text-xs leading-none font-semibold tracking-[0.06em] uppercase",
                 STAT_COLOR_CLASS[statKey]
               )}
             >
