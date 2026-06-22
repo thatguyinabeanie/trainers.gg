@@ -63,13 +63,13 @@ pnpm dev              # starts everything (auto-configures local Supabase + ngro
 > If you already cloned without `--recurse-submodules`, run:
 > `git submodule update --init --recursive`
 
-`pnpm dev` handles local Supabase startup, env var configuration, and ngrok tunneling automatically. Set `SKIP_LOCAL_SUPABASE=1` to use remote Supabase instead.
+`pnpm dev` handles local Supabase startup and env var configuration automatically. Set `SKIP_LOCAL_SUPABASE=1` to use remote Supabase instead. For the Bluesky/AT-Proto OAuth tunnel, run `pnpm setup:pds` (see `docs/setup/bluesky-oauth.md`); it is not started by `pnpm dev`.
 
 ## Commands
 
 Run `pnpm run` to see every script (the source of truth). The ones you'll reach for most:
 
-- `pnpm dev` — web app + local Supabase (auto-configures env + ngrok tunnel)
+- `pnpm dev` — web app + local Supabase (auto-configures `.env.local`)
 - `SKIP_LOCAL_SUPABASE=1 pnpm dev` — use remote Supabase instead of local
 - `pnpm dev:mobile` — Expo dev server for the mobile app
 - `pnpm db:reset` — reset + reseed the local database (test users below)
