@@ -97,6 +97,31 @@ const SLOT_IDX: Record<MoveSlot, number> = {
   move4: 3,
 };
 
+/**
+ * Per-column width + horizontal padding classNames, shared between header
+ * (`MovesLaneTileGhost`) and body (`MoveTile` / `MovesLaneGhost`) so that
+ * header labels are always horizontally aligned with their data cells.
+ *
+ * In compact mode (versus view) the NAME column is greedy (`w-full`) so each
+ * row fills the full card width. In default mode NAME keeps its `max-w-36` cap.
+ * Only width and horizontal padding (px-*) come from here — vertical padding
+ * and other classes remain per-renderer.
+ */
+function getMoveColClasses(compact: boolean) {
+  return {
+    type: "w-6 px-1",
+    category: "w-8 px-1",
+    name: cn("px-1", compact ? "w-full" : "max-w-36"),
+    bp: cn("px-1", compact ? "w-9" : "w-11"),
+    acc: cn("px-1", compact ? "w-10" : "w-12"),
+    // pl-2 preserves the visual gap between the move-info group and the calc group
+    damage: "pr-1 pl-2",
+    percent: "px-1",
+    hits: "px-1",
+    copy: "w-6 px-0.5",
+  };
+}
+
 // =============================================================================
 // CalcRange — displays the damage percentage range (e.g., "41.5–49.0%")
 // =============================================================================
@@ -294,6 +319,9 @@ function MoveTile({
 
   const hasError = slotErrors.some((e) => e.severity === "error");
 
+  // Shared per-column width + horizontal padding — must match MovesLaneTileGhost
+  const cols = getMoveColClasses(compact);
+
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
     setPanel("picker");
@@ -333,7 +361,7 @@ function MoveTile({
         )}
       >
         {/* Type icon — invisible placeholder keeps row height when empty */}
-        <TableCell className="w-6 p-1 align-middle">
+        <TableCell className={cn(cols.type, "py-1 align-middle")}>
           {moveName && moveData?.type ? (
             <TypeSymbolIcon
               type={
@@ -347,7 +375,7 @@ function MoveTile({
         </TableCell>
 
         {/* Category icon — invisible placeholder keeps row height when empty */}
-        <TableCell className="w-8 p-1 align-middle">
+        <TableCell className={cn(cols.category, "py-1 align-middle")}>
           {moveName &&
           moveData?.category &&
           CATEGORY_ICON_URLS_MONO[moveData.category] ? (
@@ -361,13 +389,15 @@ function MoveTile({
           )}
         </TableCell>
 
-        {/* Move name */}
-        <TableCell className="max-w-36 p-1 align-middle">
+        {/* Move name — greedy (w-full) in compact so the row fills the card width */}
+        <TableCell className={cn(cols.name, "py-1 align-middle")}>
           <span
             className={cn(
-              "block max-w-36 truncate font-medium",
+              "block truncate font-medium",
               /* compact: text-xs (12px) for denser rows; default: text-sm (14px) */
               compact ? "text-xs" : "text-sm",
+              /* compact: w-full absorbs slack; default: max-w-36 caps long names */
+              compact ? "w-full" : "max-w-36",
               !moveName && "text-muted-foreground/50"
             )}
           >
@@ -376,7 +406,12 @@ function MoveTile({
         </TableCell>
 
         {/* Base Power */}
-        <TableCell className="text-muted-foreground p-1 align-middle font-mono text-xs tabular-nums">
+        <TableCell
+          className={cn(
+            cols.bp,
+            "text-muted-foreground py-1 align-middle font-mono text-xs tabular-nums"
+          )}
+        >
           {moveName && moveData?.basePower && moveData.basePower > 0
             ? moveData.basePower
             : moveName
@@ -385,7 +420,12 @@ function MoveTile({
         </TableCell>
 
         {/* Accuracy */}
-        <TableCell className="text-muted-foreground p-1 align-middle font-mono text-xs tabular-nums">
+        <TableCell
+          className={cn(
+            cols.acc,
+            "text-muted-foreground py-1 align-middle font-mono text-xs tabular-nums"
+          )}
+        >
           {moveName
             ? moveData?.accuracy === true || !moveData?.accuracy
               ? "—"
@@ -395,7 +435,7 @@ function MoveTile({
 
         {/* Calc damage (raw HP) */}
         {calc.calcEnabled && (
-          <TableCell className="p-1 pl-2 whitespace-nowrap">
+          <TableCell className={cn(cols.damage, "py-1 whitespace-nowrap")}>
             {hasCalc && koTier && output?.rolls.length ? (
               <span className="text-muted-foreground text-xs tabular-nums">
                 {output.rolls[0] ?? 0}–
@@ -409,7 +449,7 @@ function MoveTile({
 
         {/* Calc percent */}
         {calc.calcEnabled && (
-          <TableCell className="p-1 whitespace-nowrap">
+          <TableCell className={cn(cols.percent, "py-1 whitespace-nowrap")}>
             {hasCalc && koTier ? (
               <CalcRange min={displayMin} max={displayMax} />
             ) : (
@@ -420,7 +460,7 @@ function MoveTile({
 
         {/* KO tier label */}
         {calc.calcEnabled && (
-          <TableCell className="p-1 whitespace-nowrap">
+          <TableCell className={cn(cols.hits, "py-1 whitespace-nowrap")}>
             {hasCalc && koTier ? (
               <KoLabel tier={koTier} koChance={output?.koChance} />
             ) : (
@@ -431,7 +471,7 @@ function MoveTile({
 
         {/* Copy calc description */}
         {calc.calcEnabled && (
-          <TableCell className="w-6 p-0.5 align-middle">
+          <TableCell className={cn(cols.copy, "py-1 align-middle")}>
             {hasCalc && output?.desc ? (
               <CalcCopyButton desc={output.desc} />
             ) : null}
@@ -495,43 +535,75 @@ function MoveTile({
   );
 }
 
-function MovesLaneTileGhost() {
+function MovesLaneTileGhost({ compact = false }: { compact?: boolean }) {
   const calcEnabled = useCalcEnabled();
+  // Shared per-column layout — must match MoveTile body cells
+  const cols = getMoveColClasses(compact);
   return (
     <TableHeader>
       <TableRow className="border-none">
-        <TableHead className="!h-auto w-6 border-none p-0 pb-0.5">
+        <TableHead className={cn(cols.type, "!h-auto border-none pb-0.5")}>
           <span className="sr-only">Type</span>
         </TableHead>
-        <TableHead className="!h-auto w-8 border-none p-0 pb-0.5">
+        <TableHead className={cn(cols.category, "!h-auto border-none pb-0.5")}>
           <span className="sr-only">Category</span>
         </TableHead>
-        <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5 text-xs font-medium tracking-[0.04em] uppercase">
+        <TableHead
+          className={cn(
+            cols.name,
+            "text-muted-foreground/30 !h-auto border-none pb-0.5 text-xs font-medium tracking-[0.04em] uppercase"
+          )}
+        >
           NAME
         </TableHead>
-        <TableHead className="text-muted-foreground/30 !h-auto w-11 border-none p-0 pb-0.5 text-xs font-medium tracking-[0.04em] uppercase">
+        <TableHead
+          className={cn(
+            cols.bp,
+            "text-muted-foreground/30 !h-auto border-none pb-0.5 text-xs font-medium tracking-[0.04em] uppercase"
+          )}
+        >
           BP
         </TableHead>
-        <TableHead className="text-muted-foreground/30 !h-auto w-12 border-none p-0 pb-0.5 text-xs font-medium tracking-[0.04em] uppercase">
+        <TableHead
+          className={cn(
+            cols.acc,
+            "text-muted-foreground/30 !h-auto border-none pb-0.5 text-xs font-medium tracking-[0.04em] uppercase"
+          )}
+        >
           ACC
         </TableHead>
         {calcEnabled && (
-          <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5">
+          <TableHead
+            className={cn(
+              cols.damage,
+              "text-muted-foreground/30 !h-auto border-none pb-0.5"
+            )}
+          >
             DAMAGE
           </TableHead>
         )}
         {calcEnabled && (
-          <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5">
+          <TableHead
+            className={cn(
+              cols.percent,
+              "text-muted-foreground/30 !h-auto border-none pb-0.5"
+            )}
+          >
             %
           </TableHead>
         )}
         {calcEnabled && (
-          <TableHead className="text-muted-foreground/30 !h-auto border-none p-0 pb-0.5">
+          <TableHead
+            className={cn(
+              cols.hits,
+              "text-muted-foreground/30 !h-auto border-none pb-0.5"
+            )}
+          >
             HITS
           </TableHead>
         )}
         {calcEnabled && (
-          <TableHead className="!h-auto w-6 border-none p-0 pb-0.5" />
+          <TableHead className={cn(cols.copy, "!h-auto border-none pb-0.5")} />
         )}
       </TableRow>
     </TableHeader>
@@ -544,6 +616,8 @@ function MovesLaneTileGhost() {
 
 function MovesLaneGhost() {
   const calcEnabled = useCalcEnabled();
+  // Ghost is always non-compact (the placeholder renders outside of versus view)
+  const cols = getMoveColClasses(false);
   return (
     <div
       className={cn(
@@ -553,23 +627,29 @@ function MovesLaneGhost() {
       <Table
         className="w-full border-separate border-spacing-y-[3px]" /* border-spacing-y-[3px]: 3px hairline row gap — no Tailwind scale token */
       >
-        <MovesLaneTileGhost />
+        <MovesLaneTileGhost compact={false} />
         <TableBody>
           {([0, 1, 2, 3] as const).map((i) => (
             <TableRow key={i} className="border-none">
-              <TableCell className="w-6 p-1" />
-              <TableCell className="w-8 p-1" />
-              <TableCell className="p-1">
+              <TableCell className={cn(cols.type, "py-1")} />
+              <TableCell className={cn(cols.category, "py-1")} />
+              <TableCell className={cn(cols.name, "py-1")}>
                 <span className="text-muted-foreground/30 text-sm font-medium">
                   + Add move
                 </span>
               </TableCell>
-              <TableCell className="w-11 p-1 font-mono text-xs tabular-nums" />
-              <TableCell className="w-12 p-1 font-mono text-xs tabular-nums" />
-              {calcEnabled && <TableCell className="p-1 pl-3" />}
-              {calcEnabled && <TableCell className="p-1" />}
-              {calcEnabled && <TableCell className="p-1" />}
-              {calcEnabled && <TableCell className="w-6 p-0.5" />}
+              <TableCell
+                className={cn(cols.bp, "py-1 font-mono text-xs tabular-nums")}
+              />
+              <TableCell
+                className={cn(cols.acc, "py-1 font-mono text-xs tabular-nums")}
+              />
+              {calcEnabled && <TableCell className={cn(cols.damage, "py-1")} />}
+              {calcEnabled && (
+                <TableCell className={cn(cols.percent, "py-1")} />
+              )}
+              {calcEnabled && <TableCell className={cn(cols.hits, "py-1")} />}
+              {calcEnabled && <TableCell className={cn(cols.copy, "py-1")} />}
             </TableRow>
           ))}
         </TableBody>
@@ -786,41 +866,39 @@ function MovesLaneReal({
         compact ? "px-2 py-0.5" : "px-6 py-1"
       )}
     >
-      {/* overflow-x-auto: prevents the multi-column table from bleeding on ~390px
-          mobile viewports when calc is ON. min-w-0 ensures the wrapper shrinks
-          rather than expanding its flex parent. */}
-      <div className="min-w-0 overflow-x-auto">
-        <Table
-          className={cn(
-            "w-full border-separate",
-            /* border-spacing-y: hairline row gap — no Tailwind scale token for sub-4px values */
-            compact
-              ? "border-spacing-y-[2px]" /* 2px hairline when compact */
-              : "border-spacing-y-[3px]" /* 3px hairline default */
-          )}
-        >
-          <MovesLaneTileGhost />
-          <TableBody>
-            {MOVE_SLOTS.map((slotKey) => {
-              const slotErrors = fieldErrors.filter((e) => e.field === slotKey);
-              return (
-                <MoveTile
-                  key={slotKey}
-                  slotKey={slotKey}
-                  moveName={pokemon[slotKey] || null}
-                  species={pokemon.species ?? ""}
-                  format={format}
-                  attacker={pokemon}
-                  onPick={handlePick}
-                  slotErrors={slotErrors}
-                  rowOutputs={outputs}
-                  compact={compact}
-                />
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      {/* The Table primitive already wraps in overflow-x-auto — no inner wrapper needed.
+          Removing the redundant wrapper lets the table's w-full propagate cleanly so
+          the greedy NAME column can fill the card width. */}
+      <Table
+        className={cn(
+          "w-full border-separate",
+          /* border-spacing-y: hairline row gap — no Tailwind scale token for sub-4px values */
+          compact
+            ? "border-spacing-y-[2px]" /* 2px hairline when compact */
+            : "border-spacing-y-[3px]" /* 3px hairline default */
+        )}
+      >
+        <MovesLaneTileGhost compact={compact} />
+        <TableBody>
+          {MOVE_SLOTS.map((slotKey) => {
+            const slotErrors = fieldErrors.filter((e) => e.field === slotKey);
+            return (
+              <MoveTile
+                key={slotKey}
+                slotKey={slotKey}
+                moveName={pokemon[slotKey] || null}
+                species={pokemon.species ?? ""}
+                format={format}
+                attacker={pokemon}
+                onPick={handlePick}
+                slotErrors={slotErrors}
+                rowOutputs={outputs}
+                compact={compact}
+              />
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }
