@@ -67,22 +67,13 @@ pnpm dev              # starts everything (auto-configures local Supabase + ngro
 
 ## Commands
 
-| Command                | Description                      |
-| ---------------------- | -------------------------------- |
-| `pnpm dev`             | Start all apps in development    |
-| `pnpm dev:web`         | Start web app only               |
-| `pnpm dev:mobile`      | Start mobile app only            |
-| `pnpm dev:backend`     | Start Supabase backend only      |
-| `pnpm dev:web+backend` | Start web + Supabase in parallel |
-| `pnpm build`           | Build all packages               |
-| `pnpm lint`            | Lint all packages                |
-| `pnpm typecheck`       | TypeScript check all packages    |
-| `pnpm test`            | Run all tests                    |
-| `pnpm test:e2e`        | Run Playwright E2E tests         |
-| `pnpm format`          | Format with Prettier             |
-| `pnpm db:start`        | Start local Supabase             |
-| `pnpm db:stop`         | Stop local Supabase              |
-| `pnpm db:reset`        | Reset and re-seed local database |
+Run `pnpm run` to see every script (the source of truth). The ones you'll reach for most:
+
+- `pnpm dev` — web app + local Supabase (auto-configures env + ngrok tunnel)
+- `SKIP_LOCAL_SUPABASE=1 pnpm dev` — use remote Supabase instead of local
+- `pnpm dev:mobile` — Expo dev server for the mobile app
+- `pnpm db:reset` — reset + reseed the local database (test users below)
+- `pnpm test` / `pnpm test:e2e` — unit tests / Playwright E2E
 
 ## Test Users (Local Development)
 

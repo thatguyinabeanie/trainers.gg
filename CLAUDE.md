@@ -89,43 +89,13 @@ infra/
 
 ## Commands
 
-```bash
-# Development
-pnpm dev                       # web + Supabase (auto-configures local Supabase)
-pnpm dev:all                   # all apps (web + mobile + Supabase)
-pnpm dev:web                   # web only
-pnpm dev:mobile                # mobile only
-pnpm dev:backend               # Supabase only
-SKIP_LOCAL_SUPABASE=1 pnpm dev # use remote Supabase instead of local
+Scripts live in `package.json` — run `pnpm run` for the current list. Notes on the non-obvious ones:
 
-# Database (always run from repo root)
-pnpm db:start                  # start local Supabase
-pnpm db:stop                   # stop local Supabase
-pnpm db:reset                  # reset + reseed local DB
-pnpm db:migrate                # apply pending migrations
-pnpm db:diff                   # diff schema into a new migration
-pnpm db:seed                   # run seed scripts
-pnpm generate-types            # regenerate TS types from schema
-
-# Testing
-pnpm test                      # run unit tests
-pnpm test:watch                # watch mode
-pnpm test:e2e                  # Playwright E2E
-
-# Quality
-pnpm lint                      # ESLint
-pnpm typecheck                 # tsc --noEmit
-pnpm format                    # Prettier write
-pnpm format:check              # Prettier check
-
-# Build
-pnpm build                     # build all
-pnpm build:web                 # web only
-pnpm build:mobile              # mobile only
-
-# Edge Functions
-pnpm functions:serve           # serve edge functions locally
-```
+- `pnpm dev` — web + Supabase (auto-configures local Supabase)
+- `SKIP_LOCAL_SUPABASE=1 pnpm dev` — use remote Supabase instead of local
+- `pnpm db:*` — always run from the repo root
+- `pnpm db:reset` — resets + reseeds the test users below
+- `pnpm generate-types` — regenerate TS types after a schema change
 
 **Test users** (after `pnpm db:reset`, password `Password123!`):
 
