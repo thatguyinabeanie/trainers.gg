@@ -2,115 +2,50 @@
 
 All-in-one integrated platform for Pokemon fans. Current focus: competitive battling (VGC, Showdown, Pokemon Champions). Monorepo: Next.js 16 web, Expo 55 mobile, Supabase backend, Bluesky PDS integration.
 
+Domain knowledge lives in on-demand skills. **Invoke the relevant skill before working in an area** — skills are auto-discovered (their descriptions are provided to you automatically), so this file lists names only.
+
 ## Workspace Skills
 
-Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill before working in an area.
-
-| Skill                            | When to Use                                                                                                                                                                                                |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `building-web-app`               | Web routes, components, Server Actions, data fetching, proxy.ts                                                                                                                                            |
-| `building-mobile-app`            | Mobile screens, Tamagui UI, Expo Router, SecureStore                                                                                                                                                       |
-| `querying-supabase`              | DB queries/mutations, client selection, Edge Functions                                                                                                                                                     |
-| `using-realtime`                 | Supabase Realtime — presence, broadcast, postgres_changes subscriptions                                                                                                                                    |
-| `validating-input`               | Zod schemas, Server Action return types, profanity filter                                                                                                                                                  |
-| `creating-components`            | UI components, design tokens, design principles                                                                                                                                                            |
-| `checking-mobile-parity`         | After developing web features, check for mobile parity tickets                                                                                                                                             |
-| `implementing-tournaments`       | Swiss pairings, standings, brackets, adapters                                                                                                                                                              |
-| `parsing-pokemon`                | Team parsing, legality validation, type effectiveness                                                                                                                                                      |
-| `using-utils`                    | `getLabel()`, `getErrorMessage()`, permissions, formatting                                                                                                                                                 |
-| `working-with-usage-data`        | team_slots, usage RPCs, per-source tournament data, /data page                                                                                                                                             |
-| `building-charts`                | recharts charts, d3-sankey flows, usage-over-time lines (/data, dashboards)                                                                                                                                |
-| `tracking-analytics`             | PostHog event constants, adding new events                                                                                                                                                                 |
-| `integrating-bluesky`            | Bluesky/AT Protocol, DID resolution, public agent                                                                                                                                                          |
-| `writing-tests`                  | Fishery factories, Supabase/AT Protocol mocks, Jest config                                                                                                                                                 |
-| `writing-e2e-tests`              | Playwright E2E — fixtures, auth setup, tournament-runner in apps/web/e2e/                                                                                                                                  |
-| `managing-infrastructure`        | PDS on Fly.io, ngrok tunnel for local dev                                                                                                                                                                  |
-| `troubleshooting-local-env`      | Local dev breakage — Supabase, stale types, env symlinks, calc submodule                                                                                                                                   |
-| `creating-edge-functions`        | Creating/updating Supabase edge functions                                                                                                                                                                  |
-| `managing-edge-imports`          | Deno import maps, `deno.json` management                                                                                                                                                                   |
-| `auditing-code`                  | Codebase audits for type safety, architecture, maintainability                                                                                                                                             |
-| `auditing-mobile-responsiveness` | Mobile-viewport audit — overflow probes, tap targets, table→cards punch list                                                                                                                               |
-| `writing-skills`                 | Creating/editing skills, agents, maintaining the architecture                                                                                                                                              |
-| `design-system`                  | Elevation, typography hierarchy, transitions, layout conventions                                                                                                                                           |
-| `product-vision`                 | Product vision, feature roadmap, differentiators, user types                                                                                                                                               |
-| `competitive-landscape`          | Competitive landscape, positioning, alternatives by category                                                                                                                                               |
-| `reviewing-pr`                   | PR review orchestrator: dispatches domain-specific checks                                                                                                                                                  |
-| `reviewing-database`             | Before pushing migrations; when adding/modifying tables, RLS policies, functions, or indexes; when writing query functions in `packages/supabase/src/`; after `pnpm db:lint` or `pnpm db:advisor` findings |
-| `reviewing-caching`              | Next.js `'use cache'` (Cache Components), TanStack Query, cache invalidation                                                                                                                               |
-| `reviewing-pr-feedback`          | Orchestrate PR feedback: wait for review+CI, enumerate CI, delegate comments, re-review loop                                                                                                               |
-| `responding-to-review-comments`  | Address PR review comments: fetch, group, two-reply protocol (decision + done), resolve threads                                                                                                            |
-| `deciding-data-access`           | Deciding where a read/route should live — SSR vs /api/v1 vs direct; anon vs authed; caching + rate-limit requirements                                                                                      |
-| `diagnosing-ci`                  | A CI check failed — map check→workflow, fetch logs, flake vs real failure                                                                                                                                  |
-| `tracking-deferred-work`         | Log/update/complete an agreed-but-parked improvement in `docs/deferred-improvements.md` ("small fix now, bigger one later")                                                                                |
-| `adding-a-regulation`            | A new Champions regulation has dropped — full data-file → registration → flip → test pipeline                                                                                                              |
-| `reconciling-pkmn-overrides`     | After bumping `@pkmn/*` or `vendor/damage-calc` — audit and prune hardcoded Champions overrides that upstream now provides                                                                                 |
-| `applying-move-rebalances`       | Applying Champions move/ability mechanic changes to the @smogon/calc fork (CHAMPIONS_LIST, ability effects, move patches, dist rebuild + submodule bump)                                                   |
-| `syncing-calc-fork-upstream`     | Syncing upstream smogon/damage-calc into our fork; checking if upstream now ships our customizations                                                                                                       |
-
-Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
+- **Build:** building-web-app, building-mobile-app, creating-components, creating-edge-functions, managing-edge-imports
+- **Data & DB:** querying-supabase, deciding-data-access, reviewing-database, reviewing-caching, using-realtime, working-with-usage-data, building-charts, validating-input, using-utils
+- **Pokémon & tournaments:** parsing-pokemon, implementing-tournaments, adding-a-regulation, applying-move-rebalances, reconciling-pkmn-overrides, syncing-calc-fork-upstream
+- **Integrations & infra:** integrating-bluesky, managing-infrastructure, troubleshooting-local-env, tracking-analytics
+- **Review & CI:** reviewing-pr, reviewing-pr-feedback, responding-to-review-comments, diagnosing-ci, auditing-code, auditing-mobile-responsiveness
+- **Tests:** writing-tests, writing-e2e-tests
+- **Mobile parity:** checking-mobile-parity
+- **Design & product:** design-system, product-vision, competitive-landscape
+- **Meta:** writing-skills, tracking-deferred-work
+- **Slash-commands (invoked directly):** commit, create-migration, finish-branch, ticket
 
 ## Project Rules
 
-Path-scoped rules in `.claude/rules/` load automatically when working with matching files.
-
-| Rule                       | Applies To                                                                                                                                                                                                                                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `code-style.md`            | All TypeScript/TSX files (`**/*.{ts,tsx}`)                                                                                                                                                                                                                                                             |
-| `react-patterns.md`        | All TSX files (`**/*.tsx`)                                                                                                                                                                                                                                                                             |
-| `mobile-responsiveness.md` | Web app TSX files (`apps/web/src/**/*.tsx`)                                                                                                                                                                                                                                                            |
-| `architecture.md`          | All shared packages (`packages/**/*`)                                                                                                                                                                                                                                                                  |
-| `nextjs-conventions.md`    | Web app files (`apps/web/**/*`)                                                                                                                                                                                                                                                                        |
-| `mobile-conventions.md`    | Mobile app files (`apps/mobile/**/*`)                                                                                                                                                                                                                                                                  |
-| `supabase-patterns.md`     | Supabase client code (`packages/supabase/**/*`, `supabase/**/*`)                                                                                                                                                                                                                                       |
-| `testing-philosophy.md`    | All test files (`**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`, `**/e2e/**`)                                                                                                                                                                                                                          |
-| `shadcn-ui-primitives.md`  | shadcn/ui component files (`apps/web/src/components/ui/**`)                                                                                                                                                                                                                                            |
-| `web-ui-catalog.md`        | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                                                                                                                                                                                                                                                |
-| `web-hooks-and-helpers.md` | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                                                                                                                                                                                                                                                |
-| `supabase-migrations.md`   | All migration files (`packages/supabase/supabase/migrations/**`)                                                                                                                                                                                                                                       |
-| `usage-data-sources.md`    | data-sources package, supabase usage queries/mutations, /data components (`packages/data-sources/**`, `packages/supabase/src/usage/**`, `packages/supabase/src/queries/usage.ts`, `packages/supabase/src/mutations/team-slots.ts`, `apps/web/src/components/data/**`, `apps/web/src/actions/usage.ts`) |
+Path-scoped rules in `.claude/rules/` auto-load via hooks (each file's `paths:` frontmatter declares its globs): code-style, react-patterns, mobile-responsiveness, architecture, nextjs-conventions, mobile-conventions, supabase-patterns, testing-philosophy, shadcn-ui-primitives, web-ui-catalog, web-hooks-and-helpers, supabase-migrations, usage-data-sources.
 
 ## Workspace Agents
 
-Custom agents in `.claude/agents/`. Invoke for isolated, focused work.
-
-| Agent                    | Model  | Purpose                                                                           |
-| ------------------------ | ------ | --------------------------------------------------------------------------------- |
-| `planner`                | opus   | Brainstorming, design, architecture, planning                                     |
-| `feature-implementer`    | sonnet | Implement features with domain skill patterns                                     |
-| `qa-engineer`            | sonnet | Write tests — aim 80%+ coverage                                                   |
-| `code-reviewer`          | sonnet | Review changes for style, architecture, correctness                               |
-| `pre-push-checker`       | haiku  | Run lint/typecheck/test/format, report pass/fail                                  |
-| `migration-reviewer`     | sonnet | Review SQL migrations for correctness, RLS, safety                                |
-| `security-reviewer`      | sonnet | Security review: RLS, auth, route protection                                      |
-| `edge-function-reviewer` | sonnet | Review edge functions for CORS, auth, validation                                  |
-| `ci-monitor`             | haiku  | Watch CI after a push (background), report per-check status                       |
-| `background-checker`     | haiku  | Scoped lint/typecheck on changed packages after a push (background, never blocks) |
-| `ui-verifier`            | sonnet | Playwright visual + design-system check before "done"                             |
-| `parity-checker`         | haiku  | Check Linear for mobile-parity tickets on web changes                             |
+Custom agents in `.claude/agents/` (model + purpose in each file's frontmatter): planner (opus), feature-implementer (sonnet), qa-engineer (sonnet), code-reviewer (sonnet), pre-push-checker (haiku), migration-reviewer (sonnet), security-reviewer (sonnet), edge-function-reviewer (sonnet), ci-monitor (haiku), background-checker (haiku), ui-verifier (sonnet), parity-checker (haiku).
 
 ## Auto-Delegation
 
-The orchestrator's job is routing and review — not inline execution. For each task type below, dispatch the listed agent **without being asked**. Inline execution is the exception and needs an explicit user request.
+The orchestrator's job is routing and review — not inline execution. Dispatch the listed agent **without being asked**:
 
-| When the task is…                                                   | Dispatch                 | Mode                         |
-| ------------------------------------------------------------------- | ------------------------ | ---------------------------- |
-| Feature design, architecture, UI/UX exploration, "how should we…"   | `planner`                | foreground                   |
-| Implementing a planned feature or fix (any non-trivial code change) | `feature-implementer`    | foreground                   |
-| Writing or extending tests (unit, integration, e2e)                 | `qa-engineer`            | foreground                   |
-| A diff exists and is about to be committed                          | `code-reviewer`          | foreground, before commit    |
-| A new file landed in `packages/supabase/supabase/migrations/`       | `migration-reviewer`     | foreground, before push      |
-| Diff touches auth, RLS policies, `proxy.ts`, or session handling    | `security-reviewer`      | foreground, before push      |
-| Diff touches `packages/supabase/supabase/functions/`                | `edge-function-reviewer` | foreground, before push      |
-| Diff changed `apps/web/src/**/*.tsx` presentation/layout            | `ui-verifier`            | foreground, before push      |
-| A `git push` just landed on a branch with an open PR                | `ci-monitor`             | **background — never block** |
-| A git push just landed (any branch)                                 | `background-checker`     | **background — never block** |
-| Creating a PR / the parity hook fired on `apps/web/` changes        | `parity-checker`         | background                   |
-| Local quality checks explicitly requested                           | `pre-push-checker`       | foreground                   |
+| When the task is…                                               | Dispatch                 | Mode                         |
+| --------------------------------------------------------------- | ------------------------ | ---------------------------- |
+| Feature design, architecture, UI/UX, "how should we…"           | `planner`                | foreground                   |
+| Implementing a planned feature or fix (non-trivial code change) | `feature-implementer`    | foreground                   |
+| Writing or extending tests                                      | `qa-engineer`            | foreground                   |
+| A diff exists and is about to be committed                      | `code-reviewer`          | foreground, before commit    |
+| New file in `packages/supabase/supabase/migrations/`            | `migration-reviewer`     | foreground, before push      |
+| Diff touches auth, RLS, `proxy.ts`, or session handling         | `security-reviewer`      | foreground, before push      |
+| Diff touches `packages/supabase/supabase/functions/`            | `edge-function-reviewer` | foreground, before push      |
+| Diff changed `apps/web/src/**/*.tsx` presentation/layout        | `ui-verifier`            | foreground, before push      |
+| A `git push` landed on a branch with an open PR                 | `ci-monitor`             | **background — never block** |
+| A `git push` landed (any branch)                                | `background-checker`     | **background — never block** |
+| Creating a PR / parity hook fired on `apps/web/` changes        | `parity-checker`         | background                   |
+| Local quality checks explicitly requested                       | `pre-push-checker`       | foreground                   |
 
-Rules:
-
-- Multiple triggers can fire on one diff (a migration + web UI dispatches `migration-reviewer` AND `ui-verifier`) — run reviewers in parallel.
-- `ci-monitor` is dispatched after **every** push, in the background, in the same turn as the push. Do not poll CI inline.
+- Multiple triggers can fire on one diff — run reviewers in parallel.
+- `ci-monitor` is dispatched after **every** push, in the same turn, in the background. Do not poll CI inline.
 - Reviewer findings are fixed in the current session (no deferrals), then the relevant reviewer re-runs.
 
 ## Monorepo Structure
@@ -119,7 +54,6 @@ Rules:
 apps/
   web/          # Next.js 16 (React 19.2) - @trainers/web
   mobile/       # Expo 55 (React Native 0.83) - @trainers/mobile
-
 packages/
   pokemon/      # Pokemon data, validation, parsing
   posthog/      # Shared PostHog event name constants
@@ -130,7 +64,6 @@ packages/
   theme/        # Shared OKLCH color tokens
   validators/   # Zod schemas + team parsing
   data-sources/ # External tournament data sources (RK9, Limitless)
-
 tooling/        # eslint, prettier, tailwind, typescript, test-utils configs
 infra/
   pds/          # Bluesky PDS on Fly.io
@@ -139,213 +72,132 @@ infra/
 
 ## Tech Stack
 
-| Layer              | Technology                     | Notes                                                                |
-| ------------------ | ------------------------------ | -------------------------------------------------------------------- |
-| Auth               | Supabase Auth                  | Email/password + OAuth (X, Discord, Twitch, Bluesky)                 |
-| Database           | Supabase (PostgreSQL)          | Row Level Security with auth.uid()                                   |
-| Edge Functions     | Supabase Edge Functions        | Deno runtime                                                         |
-| Social/Identity    | AT Protocol (Bluesky)          | Decentralized identity (handles, PDS); social features deprioritized |
-| React Compiler     | React Compiler                 | Auto-memoization — do NOT manually use useMemo/useCallback/memo      |
-| Validation         | Zod via `@trainers/validators` | Shared schemas for forms, Server Actions, edge functions             |
-| Client State (Web) | TanStack Query v5              | Cache, mutations, optimistic updates                                 |
-| Web                | Next.js 16                     | React 19.2, App Router, Server Components                            |
-| Mobile             | Expo 55                        | React Native 0.83 with Tamagui                                       |
-| UI (Web)           | shadcn/ui + Base UI            | Base UI primitives (NOT Radix), no `asChild`                         |
-| Styling (Web)      | Tailwind CSS 4                 | @tailwindcss/postcss                                                 |
-| Styling (Mobile)   | Tamagui                        | Theme tokens from @trainers/theme                                    |
+| Layer              | Technology                     | Notes                                                  |
+| ------------------ | ------------------------------ | ------------------------------------------------------ |
+| Auth               | Supabase Auth                  | Email/password + OAuth (X, Discord, Twitch, Bluesky)   |
+| Database           | Supabase (PostgreSQL)          | Row Level Security with `auth.uid()`                   |
+| Edge Functions     | Supabase Edge Functions        | Deno runtime                                           |
+| Social/Identity    | AT Protocol (Bluesky)          | Decentralized identity; social features deprioritized  |
+| React Compiler     | React Compiler                 | Auto-memoization — do NOT use useMemo/useCallback/memo |
+| Validation         | Zod via `@trainers/validators` | Shared schemas for forms, Server Actions, edge fns     |
+| Client State (Web) | TanStack Query v5              | Cache, mutations, optimistic updates                   |
+| Web                | Next.js 16                     | React 19.2, App Router, Server Components              |
+| Mobile             | Expo 55                        | React Native 0.83 with Tamagui                         |
+| UI (Web)           | shadcn/ui + Base UI            | Base UI primitives (NOT Radix), no `asChild`           |
+| Styling (Web)      | Tailwind CSS 4                 | @tailwindcss/postcss                                   |
+| Styling (Mobile)   | Tamagui                        | Theme tokens from @trainers/theme                      |
 
 ## Commands
 
-### Quick Reference
-
 ```bash
 # Development
-pnpm dev                              # Start web + Supabase (auto-configures local Supabase)
-pnpm dev:all                          # Start all apps (web + mobile + Supabase)
-pnpm dev:web                          # Web only
-pnpm dev:mobile                       # Mobile only
-pnpm dev:backend                      # Supabase only
-SKIP_LOCAL_SUPABASE=1 pnpm dev        # Use remote Supabase instead of local
+pnpm dev                       # Web + Supabase (auto-configures local Supabase)
+pnpm dev:all                   # All apps (web + mobile + Supabase)
+pnpm dev:web / dev:mobile / dev:backend
+SKIP_LOCAL_SUPABASE=1 pnpm dev # Use remote Supabase instead of local
 
 # Database (always from repo root)
-pnpm db:start                         # Start local Supabase
-pnpm db:stop                          # Stop local Supabase
-pnpm db:reset                         # Reset DB + replay migrations + seed
-pnpm db:migrate                       # Apply pending migrations
-pnpm db:diff                          # Generate migration from schema changes
-pnpm db:seed                          # Run seed files
-pnpm generate-types                   # Regenerate TypeScript types from schema
+pnpm db:start / db:stop / db:reset / db:migrate / db:diff / db:seed
+pnpm generate-types            # Regenerate TS types from schema
 
 # Testing
-pnpm test                             # Run all tests (Turbo-cached)
-pnpm test:watch                       # Watch mode
-pnpm test:e2e                         # Playwright E2E tests (web)
+pnpm test / test:watch / test:e2e
 
 # Quality
-pnpm lint                             # ESLint across all packages
-pnpm typecheck                        # TypeScript type checking
-pnpm format                           # Prettier auto-fix
-pnpm format:check                     # Check formatting without fixing
+pnpm lint / typecheck / format / format:check
 
 # Build
-pnpm build                            # Build all packages
-pnpm build:web                        # Build web app
-pnpm build:mobile                     # Export mobile app
-
-# Theme
-pnpm --filter @trainers/theme build         # Generate design tokens
+pnpm build / build:web / build:mobile
 
 # Edge Functions
-pnpm functions:serve                  # Serve edge functions locally
+pnpm functions:serve
 ```
 
-### Test Users (Local Development)
-
-After `pnpm db:reset`, these test users are available (password: `Password123!`):
+**Test users** (after `pnpm db:reset`, password `Password123!`):
 
 | Email                   | Username      | Role                             |
 | ----------------------- | ------------- | -------------------------------- |
 | `admin@trainers.local`  | admin_trainer | Site admin, VGC League org owner |
 | `player@trainers.local` | ash_ketchum   | Player, Pallet Town org owner    |
 
-### Playwright Screenshots
-
-Store all Playwright MCP screenshots in `.playwright-mcp/screenshots/`. This directory is gitignored.
-
-### Dev Server Logs
-
-Dev server logs (Next.js + Supabase edge functions) are written to `.dev-logs/` when `pnpm dev` or `pnpm dev:web` starts. Each run creates a timestamped file (e.g. `dev-20260606-143022.log`); `.dev-logs/dev.log` is a symlink to the latest.
-
-- `tail -200 .dev-logs/dev.log` — recent output
-- `grep -a "error\|Error\|failed" .dev-logs/dev.log` — find issues
-
-The file contains ANSI color codes; grep still works fine.
-
-### Gotchas
-
-- **Always run `pnpm supabase` from `packages/supabase`** — never from the repo root. The Supabase CLI writes its linked-project cache to a `supabase/.temp/` subdirectory in the current working directory; running from root pollutes the repo root with an untracked `supabase/.temp/linked-project.json`. The package-level path is already gitignored at `packages/supabase/supabase/.temp/`.
-- `pnpm dev` always reconfigures `.env.local` for local Supabase — set `SKIP_LOCAL_SUPABASE=1` to use remote instead
-- All env vars live in root `.env.local`, symlinked into apps/packages via `postinstall.sh`
-- When adding build-time env vars, declare them in `turbo.json` under the task's `env` array (cache invalidation)
-- **`@smogon/calc` is a git submodule — do NOT re-pin it to a git tarball** — `apps/web` depends on `@smogon/calc` via `file:../../vendor/damage-calc/calc`, a git submodule of the fork `thatguyinabeanie/damage-calc` (`vendor/damage-calc`, pinned to a commit that **commits the built `calc/dist/`**). Never change it back to `github:thatguyinabeanie/damage-calc#<sha>&path:/calc`. That git-tarball form **cannot be resolved by pnpm 11 under `--frozen-lockfile`** in CI/Vercel: it lands with no `dist/` (`Cannot find module '@smogon/calc'`) or as the fork's private monorepo root (`undefined@0.0.0` store mismatch). It only works in non-frozen local installs that build it, which masks the failure. The submodule + `file:` makes pnpm **symlink** the committed `dist/` deterministically. Requirements: all GitHub Actions `actions/checkout` steps use `submodules: recursive`; keep the Vercel project's "Git submodules" setting enabled; a root `preinstall` runs `git submodule update --init --recursive`; `@smogon/calc` is **absent** from `allowBuilds` in `pnpm-workspace.yaml`. To update calc: bump the submodule pointer (keep `dist/` committed in the fork).
-- **pnpm config lives in `pnpm-workspace.yaml`, not `package.json`** — pnpm 11 **does not read** the `pnpm` field in `package.json` (prints `[WARN]` and silently ignores `overrides`, `packageExtensions`, `onlyBuiltDependencies`, `ignoredBuiltDependencies`). Never add a `pnpm` field back to `package.json`. Put `overrides:`, `packageExtensions:`, and `allowBuilds:` directly in `pnpm-workspace.yaml`.
-- **Chunk unbounded Supabase `.in()` filters** — A `.in("col", ids)` with hundreds of ids builds a PostgREST URL that overflows the server URI limit and returns `{ error: "URI too long" }`. If that error is ignored, `data` is null and downstream logic silently drops every row. Use `fetchInChunks()` in `packages/supabase/src/queries/players.ts` as the reference: split into ≤100-id chunks, merge, and **throw** on chunk error. Always `.error`-check `.in()` queries that fan out over an unbounded id list. **The bug only reproduces at scale** — a few-row seed hides it.
-- **Anon SELECT revoked on 19 S-bucket base tables — with a realtime-six carve-out** — Phase 2 revoked anon (and public) SELECT on 19 core tables. Six tables kept authenticated SELECT to allow Supabase Realtime subscriptions for logged-in users: `notifications`, `match_games`, `match_messages`, `tournament_matches`, `tournament_registrations`, `tournament_rounds`. Spectators and logged-out users get SSR/ISR snapshots — no realtime. Any new table that needs realtime must go through the same carve-out process (migration + RLS policy). Using `createStaticClient()` (anon key) on a revoked table returns an empty result set, not an error — silent data loss. Use `createServiceRoleClient()` with `resolveApiAuth` + `enforceRateLimit` for anon-reachable `/api/v1` routes that read from revoked tables.
+- Dev server logs: `.dev-logs/dev.log` (symlink to latest run). MCP screenshots: `.playwright-mcp/screenshots/` (gitignored).
+- Local-env gotchas (`@smogon/calc` submodule, `pnpm-workspace.yaml` config, `pnpm supabase` CWD, unbounded `.in()` chunking) → `troubleshooting-local-env` skill.
 
 ## Critical Rules
 
 ### Push Policy
 
-**You do NOT need to run lint, typecheck, tests, or E2E locally before committing or pushing.** CI runs all of them — offload these checks to CI rather than blocking the commit/push on a local run. Running them locally is optional (fine for fast iteration on a focused change), never required.
+You do NOT need to run lint, typecheck, tests, or E2E locally before committing or pushing — CI runs all of them. Offload these checks to CI rather than blocking on a local run.
 
-- Implementing agents never run lint/typecheck/tests inline — not before commit, not before push.
-- The orchestrator commits and pushes freely and frequently. Subagents never commit or push — they report changed files plus a suggested commit message.
-- In the same turn as every push, dispatch BOTH in the background: `background-checker` (haiku — scoped `pnpm typecheck --filter` / `pnpm lint --filter` on changed packages) and `ci-monitor` (haiku — watches CI).
-- Fix reported failures in follow-up commits; never leave red CI unaddressed.
-
-**After every push, check CI.** Once the push lands, monitor the CI run and enumerate each check by name with its status:
-
-1. `pnpm lint` — ESLint across all packages
-2. `pnpm typecheck` — TypeScript type checking
-3. `pnpm test` — Full unit test suite
-4. `pnpm test:e2e` — Playwright E2E tests
-
-Use `gh pr checks <branch>` (or the Actions UI). If any CI check fails, fix the issue and push again — don't leave a red CI unaddressed. See "Completion Claims" below for enumerating checks before declaring CI green.
+- Implementing subagents never run lint/typecheck/tests inline, and never commit or push — they report changed files plus a suggested commit message.
+- The orchestrator commits and pushes freely and frequently (commit between logical chunks; commit messages carry the _why_, not just the _what_).
+- In the same turn as every push, dispatch BOTH in the background: `background-checker` (scoped typecheck/lint on changed packages) and `ci-monitor` (watches CI). Never block on them.
+- After every push, enumerate each CI check by name (Lint, Typecheck, Tests, E2E) with pass/fail/pending — "CI looks good" is not evidence. Fix failures in follow-up commits; never leave red CI. Detail → `diagnosing-ci`.
 
 ### Parallel Work & Unexpected Changes
 
-Multiple agents and humans may work on this codebase simultaneously. If you encounter code changes, new files, or modified files that you did not make — they were either made manually by the developer or by another parallel agent. **Never delete, revert, overwrite, or undo changes you did not make.** Treat unfamiliar changes as intentional. If they conflict with your work, stop and ask rather than discarding them.
+Multiple agents and humans work on this codebase simultaneously. If you encounter code or files you did not create or modify, treat them as intentional. **Never delete, revert, overwrite, or undo changes you did not make.** If they conflict with your work, stop and ask.
 
 ### Error Visibility
 
-**Never suppress errors with `2>/dev/null`, `|| true`, or `|| exit 0`.** If a command can fail, the failure must be visible. Guard against expected empty inputs (e.g., check `[ -n "$VAR" ]` before using it), but never hide real errors. Silent failures waste hours of debugging.
-
-**Never merge stderr into stdout with `2>&1`.** Keep stdout and stderr as separate streams. Merging them makes it impossible to distinguish errors from normal output when inspecting subagent processes.
-
-### Styling: Tailwind Over CSS Modules
-
-**Always use Tailwind CSS utility classes instead of writing or editing CSS module files.** Do not add new rules to `.module.css` files — express all styling via Tailwind classes in the component JSX. Existing CSS module rules may remain for legacy reasons, but new work should never introduce more. If a design requires something Tailwind cannot express (e.g., complex selectors, animations with multiple keyframes), use inline `style` props or a `<style>` tag scoped to the component before reaching for a CSS module.
-
-**Never use arbitrary pixel values** (`w-[Npx]`, `min-w-[Npx]`, `max-w-[Npx]`, `h-[Npx]`, etc.) — new or pre-existing. Use Tailwind's built-in spacing/sizing scale (`w-96` = 384px, `w-80` = 320px, `max-w-lg`, etc.). Remove any `[Npx]` values encountered while working in a file.
+**Never suppress errors with `2>/dev/null`, `|| true`, or `|| exit 0`.** Guard against expected empty inputs (e.g. `[ -n "$VAR" ]` before use), but never hide real errors. **Never merge stderr into stdout with `2>&1`** — keep the streams separate.
 
 ### React Compiler
 
-**Do NOT write `useMemo`, `useCallback`, or `React.memo`** — React Compiler handles memoization across all packages automatically. Manual memoization conflicts with compiler optimizations.
-
-### Database Migrations
-
-**Never apply migrations via MCP tools or the Supabase dashboard.** All schema changes via migration files. Never edit or rename a committed migration file. See `create-migration` skill for full conventions.
-
-### Edge Function Deployments
-
-**Never deploy edge functions manually.** They deploy automatically during the Vercel build. Never declare in `config.toml`. See `creating-edge-functions` skill for details.
+**Do NOT write `useMemo`, `useCallback`, or `React.memo`** — React Compiler handles memoization automatically across all packages. Manual memoization conflicts with compiler optimizations.
 
 ### Scope Discipline
 
-**Only modify files explicitly in scope for the current task.** Do NOT run `pnpm format`, `pnpm lint --fix`, or other repo-wide formatters unless explicitly asked. When dispatching subagents, pass an explicit file allowlist and forbid edits outside it. If unrelated changes sneak in, revert them before committing.
-
-### Data Access
-
-**Split model — no open anon Data API.** Phase 2 revoked anon SELECT on 19 S-bucket base tables; authenticated SELECT was kept.
-
-- **S-bucket client reads** → cached `/api/v1` routes (`createServiceRoleClient` + column allowlist + `resolveApiAuth` + `enforceRateLimit`).
-- **Authenticated direct reads** → browser Supabase client + RLS (`createClient`, `authenticated` role).
-- **SSR pages** → query DB directly server-side (no round-trip through `/api/v1`).
-- **Mobile (hybrid)** → authed reads stay direct Supabase (RLS via SecureStore session); public/unauth reads use cached `/api/v1`. Full cutover deferred until mobile dev resumes.
-
-See `deciding-data-access`, `querying-supabase`, and `reviewing-caching` skills for routing decisions and client selection.
+**Only modify files explicitly in scope for the current task.** Do NOT run `pnpm format`, `pnpm lint --fix`, or repo-wide formatters unless explicitly asked. When dispatching subagents, pass an explicit file allowlist. Revert unrelated changes before committing.
 
 ### Destructive Actions
 
-**Words like "clean up", "reorganize", "fix up", or "sort out" are ambiguous — never default to delete.** When the request could mean move/merge/archive/rename, confirm the user's intended semantics before running any bulk-delete (rm -rf, mass DELETE in a loop, dropping tables, wiping directories). Default to the least destructive interpretation and present destructive options via `AskUserQuestion` with a non-destructive first option.
-
-### Subagent Model Selection
-
-| Model                 | Use for                                                                                                                                                                 |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **haiku**             | Mechanical work: scoped lint/typecheck/test runs (`background-checker`), CI status fetch (`ci-monitor`), log/grep reading, Playwright measure-and-report, parity checks |
-| **sonnet**            | Implementation, fixes, test writing, code review                                                                                                                        |
-| **opus / main agent** | Orchestration, design, and final review only — never inline execution, never ingesting raw logs or snapshots                                                            |
-
-Pass `model` explicitly on every Agent dispatch. Anything that produces large output (test runs, CI logs, Playwright snapshots, grep dumps) runs inside a subagent that returns a concise report — the orchestrator's context stays lean.
+**"Clean up", "reorganize", "fix up", "sort out" are ambiguous — never default to delete.** When a request could mean move/merge/archive/rename, confirm the intended semantics before any bulk-delete (`rm -rf`, mass `DELETE`, dropping tables, wiping directories). Default to the least-destructive interpretation; present destructive options via `AskUserQuestion` with a non-destructive first option.
 
 ### Completion Claims
 
-**Never declare a PR "ready to merge" before every review thread is resolved and CI is green.** For PR-feedback work, use the `reviewing-pr-feedback` skill — it enforces fetch-all-comments → group → fix → reply → resolve → re-review before completion.
+**No "deferred"/"follow-up"/"for future" buckets** — address every review/audit finding in the current session unless the user explicitly says to defer. **Never declare a PR "ready to merge"** before every review thread is resolved and CI is green (enumerate each check by name). PR-feedback work uses the `reviewing-pr-feedback` skill.
 
-**No "deferred" / "follow-up" / "for future" buckets.** When reviewing PRs, databases, caching, or code, address every finding in the current session. Only label something as deferred if the user explicitly tells you to. Review skills (`reviewing-pr-feedback`, `responding-to-review-comments`, `reviewing-pr`, `reviewing-database`, `reviewing-caching`) all share this rule — see the "No Deferrals" section in each.
+### Database & Edge Functions
 
-**Enumerate every CI check by name with pass/fail/pending before declaring CI green.** "CI is running" or "CI looks good" is not evidence — list each check (Lint, Typecheck, Tests, codecov/patch, E2E, preview deploys) and its current status. See Phase 1 of `reviewing-pr-feedback` and the report format in the `pre-push-checker` agent.
+- **Never apply migrations via MCP tools or the dashboard.** All schema changes via migration files; never edit or rename a committed migration file. See `create-migration`.
+- **Never deploy edge functions manually** — they deploy automatically during the Vercel build. See `creating-edge-functions`.
 
-## Product Vision
+### Data Access
 
-Community-first, not an esports site. See `product-vision` and `competitive-landscape` skills for vision, roadmap, differentiators, and positioning.
+Split model — no open anon Data API. S-bucket client reads go through cached `/api/v1` routes (`createServiceRoleClient` + column allowlist + `resolveApiAuth` + `enforceRateLimit`); authenticated reads go direct via the browser Supabase client + RLS; SSR pages query the DB server-side. See `deciding-data-access` for routing and client selection.
 
-## Design Principles
+### Styling
 
-- **Personality:** Clean, Playful, Community-driven — data-rich and precise where it matters, but warm, friendly, and never cold or intimidating
-- **Anti-reference:** NOT an esports/gaming site — no dark aggressive "gamer" aesthetic, no neon accents, no angular/militaristic UI
-- **Audience:** All ages, mixed tech comfort, equal desktop/mobile priority
-- Teal primary (OKLCH tokens from `@trainers/theme`): single accent across all interactive elements
-- Minimal flat design: no borders, subtle background differentiation, consistent spacing
-- `StatusBadge` for semantic status colors (emerald=active, blue=upcoming, amber=draft, gray=completed, red=cancelled)
-- WCAG AA minimum accessibility
+Use Tailwind utility classes, not CSS module files; never use arbitrary pixel values (`w-[Npx]`, `min-w-[Npx]`, etc.) — use the built-in spacing/sizing scale. Full rules in the `code-style` rule (auto-loads on `**/*.{ts,tsx}`).
+
+### Subagent Model Selection
+
+Pass `model` explicitly on every dispatch: **haiku** for mechanical work (status checks, log/grep reading, measure-and-report, parity checks), **sonnet** for implementation/review/test-writing, **opus / main agent** for orchestration, design, and final review only — never inline execution. Full matrix in `writing-skills`.
 
 ## Development Workflow
 
-When executing implementation plans, always use **subagent-driven development** (`superpowers:subagent-driven-development`). Do not use inline execution unless explicitly asked.
+- **Subagent-driven development** for plan execution — not inline, unless explicitly asked (`superpowers:subagent-driven-development`).
+- **Parallel waves**: plans end with a dependency/parallelism map. Dispatch all tasks in a wave in one message (multiple Agent calls), each with a disjoint file allowlist. Sequence only true dependencies.
+- The orchestrator commits between waves; subagents never commit/push (one committer avoids git races). See `superpowers:dispatching-parallel-agents`.
 
-### Parallel Execution
+## Design Principles
 
-- Implementation plans end with a **Dependency & parallelism map**: tasks grouped into waves; tasks in the same wave touch disjoint file sets and have no data dependency.
-- When executing a plan, dispatch ALL tasks in the current wave in a single message (multiple Agent calls — they run concurrently), one subagent per task, each with an explicit disjoint file allowlist.
-- Sequence only true dependencies. The orchestrator commits between waves — subagents never commit or push; they return changed files plus a suggested commit message, and one committer avoids git races between parallel agents.
-- If a plan lacks a parallelism map, derive one before dispatching — never default to sequential out of convenience.
-- See `superpowers:dispatching-parallel-agents` for mechanics.
+- **Personality:** Clean, Playful, Community-driven — data-rich and precise where it matters, but warm and friendly, never cold or intimidating.
+- **Anti-reference:** NOT an esports/gamer aesthetic — no dark aggressive UI, no neon accents, no angular/militaristic styling.
+- **Audience:** All ages, mixed tech comfort, equal desktop/mobile priority.
+- Teal primary (OKLCH tokens from `@trainers/theme`): single accent across all interactive elements.
+- Minimal flat design: no borders, subtle background differentiation, consistent spacing.
+- `StatusBadge` for semantic status (emerald=active, blue=upcoming, amber=draft, gray=completed, red=cancelled).
+- WCAG AA minimum. See `design-system` and `creating-components` for detail.
+
+## Product Vision
+
+Community-first, not an esports site. See `product-vision` and `competitive-landscape` for vision, roadmap, differentiators, and positioning.
 
 ## Project Management
 
-Linear for issue tracking (MCP server available). **Team**: `trainers-gg`. **Default Project**: `Private Beta MVP`.
+Linear for issue tracking (MCP server available). **Team:** `trainers-gg`. **Default project:** `Private Beta MVP`.
 
 ## Glossary
 
@@ -357,32 +209,6 @@ Linear for issue tracking (MCP server available). **Team**: `trainers-gg`. **Def
 | **DID**              | Decentralized Identifier — AT Protocol identity (`did:plc:abc123`).               |
 | **PDS**              | Personal Data Server — self-hosted Bluesky at `pds.trainers.gg`.                  |
 | **Handle**           | Human-readable Bluesky identity (`@username.trainers.gg`).                        |
-| **RLS**              | Row Level Security — PostgreSQL access control via `auth.uid()`.                  |
 | **Team Sheet**       | Player's Pokemon team for a tournament. Parsed via `@trainers/validators`.        |
+| **RLS**              | Row Level Security — PostgreSQL access control via `auth.uid()`.                  |
 | **Protected Route**  | Route requiring auth regardless of maintenance mode. Enforced in `proxy.ts`.      |
-
-<!-- VERCEL BEST PRACTICES START -->
-
-## Best practices for developing on Vercel
-
-These defaults are optimized for AI coding agents (and humans) working on apps that deploy to Vercel.
-
-- Treat Vercel Functions as stateless + ephemeral (no durable RAM/FS, no background daemons), use Blob or marketplace integrations for preserving state
-- Edge Functions (standalone) are deprecated; prefer Vercel Functions
-- Don't start new projects on Vercel KV/Postgres (both discontinued); use Marketplace Redis/Postgres instead
-- Store secrets in Vercel Env Variables; not in git or `NEXT_PUBLIC_*`
-- Provision Marketplace native integrations with `vercel integration add` (CI/agent-friendly)
-- Sync env + project settings with `vercel env pull` / `vercel pull` when you need local/offline parity
-- Use `waitUntil` for post-response work; avoid the deprecated Function `context` parameter
-- Set Function regions near your primary data source; avoid cross-region DB/service roundtrips
-- Tune Fluid Compute knobs (e.g., `maxDuration`, memory/CPU) for long I/O-heavy calls (LLMs, APIs)
-- Use Runtime Cache for fast **regional** caching + tag invalidation (don't treat it as global KV)
-- Use Cron Jobs for schedules; cron runs in UTC and triggers your production URL via HTTP GET
-- Use Vercel Blob for uploads/media; Use Edge Config for small, globally-read config
-- If Enable Deployment Protection is enabled, use a bypass secret to directly access them
-- Add OpenTelemetry via `@vercel/otel` on Node; don't expect OTEL support on the Edge runtime
-- Enable Web Analytics + Speed Insights early
-- Use AI Gateway for model routing, set AI_GATEWAY_API_KEY, using a model string (e.g. 'anthropic/claude-sonnet-4.6'), Gateway is already default in AI SDK
-  needed. Always curl https://ai-gateway.vercel.sh/v1/models first; never trust model IDs from memory
-- For durable agent loops or untrusted code: use Workflow (pause/resume/state) + Sandbox; use Vercel MCP for secure infra access
-<!-- VERCEL BEST PRACTICES END -->
