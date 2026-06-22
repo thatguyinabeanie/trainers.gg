@@ -44,7 +44,7 @@ Don't drop a route from scope because your test user can't see it. Either:
 
 ```bash
 # In one terminal
-pnpm dev:web
+pnpm dev
 
 # Then via Playwright MCP
 browser_resize { width: 393, height: 852 }     # iPhone 14 Pro

@@ -41,7 +41,7 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo
 If DOWN, start it per project conventions:
 
 ```bash
-pnpm dev:web > /tmp/ui-verifier-dev.log 2>&1 &
+pnpm dev > /tmp/ui-verifier-dev.log 2>&1 &
 ```
 
 Wait up to 30 seconds for it to respond on port 3000. If it does not start, report: "Dev server failed to start. Check /tmp/ui-verifier-dev.log." and stop.
