@@ -8,7 +8,6 @@ import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Popover, PopoverContent } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Table,
@@ -34,7 +33,6 @@ import {
   useCalcStateContext,
   useCalcEnabled,
 } from "../calc/calc-state-context";
-import { CalcDetailCard } from "../calc/calc-detail-card";
 import { type CalcOutput } from "../use-calc-state";
 import {
   getDisplayRangeAndKoTier,
@@ -44,7 +42,6 @@ import {
   KO_LABELS,
 } from "./calc-display-helpers";
 import { FieldErrors } from "../validation/field-error";
-import { DescriptionTooltip } from "./description-tooltip";
 
 // =============================================================================
 // Types
@@ -68,16 +65,6 @@ interface MovesLaneProps {
    * for "incoming" views where the parent has already computed the outputs.
    */
   outputs?: readonly (CalcOutput | null)[];
-  /**
-   * Popover descriptor for the opposing mon. When omitted, falls back to
-   * `calc.defenderSpecies / defenderAbility / defenderItem / defenderNature`.
-   */
-  opponent?: {
-    species: string;
-    ability: string;
-    item: string;
-    nature: string;
-  };
   /**
    * Presentation variant.
    * - "list" (default): the existing single-column table with optional calc
@@ -267,16 +254,6 @@ interface MoveTileProps {
   rowOutputs?: readonly (CalcOutput | null)[];
   /** When true, renders a denser row for two-up versus layouts. */
   compact?: boolean;
-  /**
-   * Called when the row is hovered or un-hovered — lifted to lane level. Passes
-   * the row element so the lane can anchor the breakdown popover to it without
-   * reading a ref during render.
-   */
-  onHover: (
-    slotKey: MoveSlot,
-    el: HTMLTableRowElement | null,
-    isHovering: boolean
-  ) => void;
 }
 
 function MoveTile({
@@ -289,7 +266,6 @@ function MoveTile({
   slotErrors,
   rowOutputs: injectedOutputs,
   compact = false,
-  onHover,
 }: MoveTileProps) {
   const [panel, setPanel] = useState<TilePanel>(null);
 
@@ -340,8 +316,6 @@ function MoveTile({
         tabIndex={0}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
-        onMouseEnter={(e) => onHover(slotKey, e.currentTarget, true)}
-        onMouseLeave={(e) => onHover(slotKey, e.currentTarget, false)}
         className={cn(
           "cursor-pointer border-none transition-colors",
           "[&_td]:border-y [&_td]:border-transparent [&_td]:transition-colors",
@@ -389,22 +363,16 @@ function MoveTile({
 
         {/* Move name */}
         <TableCell className="max-w-36 p-1 align-middle">
-          <DescriptionTooltip
-            description={moveName ? moveData?.shortDesc : null}
-            showContent={panel === null}
+          <span
+            className={cn(
+              "block max-w-36 truncate font-medium",
+              /* compact: text-xs (12px) for denser rows; default: text-sm (14px) */
+              compact ? "text-xs" : "text-sm",
+              !moveName && "text-muted-foreground/50"
+            )}
           >
-            <TooltipTrigger
-              render={<span />}
-              className={cn(
-                "block max-w-36 truncate font-medium",
-                /* compact: text-xs (12px) for denser rows; default: text-sm (14px) */
-                compact ? "text-xs" : "text-sm",
-                !moveName && "text-muted-foreground/50"
-              )}
-            >
-              {moveName ?? "+ Add move"}
-            </TooltipTrigger>
-          </DescriptionTooltip>
+            {moveName ?? "+ Add move"}
+          </span>
         </TableCell>
 
         {/* Base Power */}
@@ -764,9 +732,6 @@ interface MovesLaneRealProps {
   fieldErrors: ValidationError[];
   direction: "outgoing" | "incoming";
   outputs: readonly (CalcOutput | null)[] | undefined;
-  opponent:
-    | { species: string; ability: string; item: string; nature: string }
-    | undefined;
   presentation: "list" | "card-list";
   compact: boolean;
 }
@@ -778,56 +743,14 @@ function MovesLaneReal({
   fieldErrors,
   direction: _direction,
   outputs,
-  opponent,
   presentation,
   compact,
 }: MovesLaneRealProps) {
   const calc = useCalcStateContext();
-  // Hovered row → drives the lane-level breakdown popover. We store the row
-  // ELEMENT in state (not a ref) so the popover anchor is read from state during
-  // render — reading a ref's `.current` during render is forbidden
-  // (react-hooks/refs). The element arrives via the row's mouse handlers.
-  const [hovered, setHovered] = useState<{
-    slotKey: MoveSlot;
-    el: HTMLTableRowElement;
-  } | null>(null);
-  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    return () => {
-      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-    };
-  }, []);
-
-  function handleRowHover(
-    slotKey: MoveSlot,
-    el: HTMLTableRowElement | null,
-    isHovering: boolean
-  ) {
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-    if (isHovering && el) {
-      const target = el;
-      hoverTimerRef.current = setTimeout(
-        () => setHovered({ slotKey, el: target }),
-        120
-      );
-    } else {
-      setHovered((prev) => (prev?.slotKey === slotKey ? null : prev));
-    }
-  }
 
   function handlePick(slotKey: MoveSlot, name: string) {
     onUpdate({ [slotKey]: name });
   }
-
-  // Resolve the defender descriptor for popovers:
-  // - When `opponent` is explicitly provided, use it (e.g. for incoming views).
-  // - Otherwise fall back to the calc context's current defender values.
-  const popoverDefender = opponent ?? {
-    species: calc.defenderSpecies,
-    ability: calc.defenderAbility,
-    item: calc.defenderItem,
-    nature: calc.defenderNature,
-  };
 
   // Single-column card list: only when presentation is "card-list" AND calc is OFF.
   // When calc is ON, always fall through to the standard table (direction seam
@@ -892,62 +815,12 @@ function MovesLaneReal({
                   slotErrors={slotErrors}
                   rowOutputs={outputs}
                   compact={compact}
-                  onHover={handleRowHover}
                 />
               );
             })}
           </TableBody>
         </Table>
       </div>
-
-      {/* Single lane-level breakdown Popover — anchored to the hovered row element.
-          Lives here (outside <Table>/<TableBody>) so Base UI focus-guard <span>s are
-          never injected inside <tbody>, which would be invalid HTML. */}
-      {(() => {
-        // Resolve outputs the same way MoveTile does: prefer injected outputs
-        // (incoming direction), else compute forward outputs from the attacker.
-        const resolvedOutputs =
-          outputs ?? calc.computeForwardOutputsForRow(pokemon);
-        const hoveredSlot = hovered?.slotKey ?? null;
-        const hoveredIdx = hoveredSlot ? SLOT_IDX[hoveredSlot] : -1;
-        const hoveredMove = hoveredSlot ? pokemon[hoveredSlot] || null : null;
-        const hoveredOutput =
-          hoveredIdx >= 0 ? (resolvedOutputs[hoveredIdx] ?? null) : null;
-        const hoveredStatus = hoveredMove
-          ? getMoveData(hoveredMove)?.category === "Status"
-          : false;
-        const showBreakdown =
-          calc.calcEnabled &&
-          !!hoveredMove &&
-          !!hoveredOutput &&
-          !hoveredStatus;
-        return (
-          <Popover
-            open={showBreakdown}
-            onOpenChange={(o) => {
-              if (!o) setHovered(null);
-            }}
-          >
-            <PopoverContent
-              side="bottom"
-              align="start"
-              anchor={hovered?.el ?? undefined}
-              className="w-auto p-0"
-            >
-              {showBreakdown && hoveredMove && hoveredOutput ? (
-                <CalcDetailCard
-                  attacker={pokemon}
-                  moveName={hoveredMove}
-                  baseOutput={hoveredOutput}
-                  defender={popoverDefender}
-                  format={format}
-                  weather={calc.weather || calc.inferredWeather}
-                />
-              ) : null}
-            </PopoverContent>
-          </Popover>
-        );
-      })()}
     </div>
   );
 }
@@ -964,14 +837,12 @@ function MovesLaneReal({
  *
  * When `pokemon` is set:
  * - Left-click / Enter / Space: always opens the move picker.
- * - Hover: shows the CalcDetailCard breakdown popover when calc data is available.
  * - Renders inline FieldError chips for move-scoped validation issues.
  *
  * New optional props for direction-agnostic rendering (all default to today's
  * forward-calc behavior so existing callers are unaffected):
  * - `direction` — "outgoing" (default) or "incoming"
  * - `outputs` — pre-computed outputs to inject; omit to compute forward as usual
- * - `opponent` — popover defender descriptor; omit to use calc context defaults
  *
  * The computed direction-aware header label is:
  *   "Outgoing — vs {opponentSpecies}" | "Incoming — from {opponentSpecies}"
@@ -985,7 +856,6 @@ export function MovesLane({
   fieldErrors = [],
   direction = "outgoing",
   outputs,
-  opponent,
   presentation = "list",
   compact = false,
 }: MovesLaneProps) {
@@ -998,7 +868,6 @@ export function MovesLane({
       fieldErrors={fieldErrors}
       direction={direction}
       outputs={outputs}
-      opponent={opponent}
       presentation={presentation}
       compact={compact}
     />

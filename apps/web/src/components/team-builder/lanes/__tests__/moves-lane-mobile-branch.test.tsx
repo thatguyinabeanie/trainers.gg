@@ -59,13 +59,6 @@ jest.mock("@/components/ui/dialog", () => ({
   ),
 }));
 
-jest.mock("@/components/ui/popover", () => ({
-  Popover: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  PopoverContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
-
 jest.mock("@/components/ui/table", () => ({
   Table: ({ children }: { children: React.ReactNode }) => (
     <table>{children}</table>
@@ -147,18 +140,8 @@ jest.mock("../../type-symbol-icon", () => ({
   TypeSymbolIcon: ({ type }: { type: string }) => <span>{type}</span>,
 }));
 
-jest.mock("../../calc/calc-detail-card", () => ({
-  CalcDetailCard: () => <div data-testid="calc-detail-card" />,
-}));
-
 jest.mock("../../validation/field-error", () => ({
   FieldErrors: () => <div data-testid="field-errors" />,
-}));
-
-jest.mock("../description-tooltip", () => ({
-  DescriptionTooltip: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
 }));
 
 jest.mock("../../validation-hooks", () => ({}));

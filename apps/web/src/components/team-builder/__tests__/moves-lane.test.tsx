@@ -17,47 +17,6 @@ import { type GameFormat } from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-// Popover — render content inline so popover contents are always queryable
-jest.mock("@/components/ui/popover", () => ({
-  Popover: ({
-    children,
-    open,
-    onOpenChange,
-  }: {
-    children: React.ReactNode;
-    open?: boolean;
-    onOpenChange?: (open: boolean) => void;
-  }) => (
-    <div
-      data-testid="popover"
-      data-open={String(!!open)}
-      onClick={() => onOpenChange?.(!open)}
-    >
-      {children}
-    </div>
-  ),
-  PopoverTrigger: ({
-    children,
-    render: renderProp,
-  }: {
-    children?: React.ReactNode;
-    render?: React.ReactElement;
-  }) => {
-    if (renderProp) {
-      return (
-        <div data-testid="popover-trigger">
-          {renderProp}
-          {children}
-        </div>
-      );
-    }
-    return <div data-testid="popover-trigger">{children}</div>;
-  },
-  PopoverContent: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="popover-content">{children}</div>
-  ),
-}));
-
 // Dialog — render content inline so picker contents are always queryable
 jest.mock("@/components/ui/dialog", () => ({
   Dialog: ({
@@ -152,24 +111,6 @@ jest.mock("../pickers/move-picker", () => ({
       <button onClick={() => onPick("Moonblast")}>pick-moonblast</button>
       <button onClick={() => onPick("Flamethrower")}>pick-flamethrower</button>
       <button onClick={onClose}>close-picker</button>
-    </div>
-  ),
-}));
-
-// CalcDetailCard stub
-jest.mock("../calc/calc-detail-card", () => ({
-  CalcDetailCard: ({
-    moveName,
-    onClose,
-    onChangeMove,
-  }: {
-    moveName: string;
-    onClose: () => void;
-    onChangeMove: () => void;
-  }) => (
-    <div data-testid="calc-detail-card" data-move={moveName}>
-      <button onClick={onClose}>close-detail</button>
-      <button onClick={onChangeMove}>change-move</button>
     </div>
   ),
 }));
@@ -468,43 +409,6 @@ describe("MovesLane — move tile display", () => {
     // accuracy=true → rendered as "—"
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
-
-  it("renders the move's short description in a Tooltip when a move is set", () => {
-    // Default mock returns shortDesc: "High critical-hit ratio." for any move.
-    // The tooltip is mocked to render content inline; verify the short
-    // description is wired to the trigger so the new hover affordance
-    // doesn't silently regress.
-    renderLane({ move1: "Stone Edge", move2: null, move3: null, move4: null });
-    expect(screen.getAllByText("High critical-hit ratio.").length).toBe(1);
-  });
-
-  it("does NOT render a tooltip body for empty move slots", () => {
-    renderLane({ move1: null, move2: null, move3: null, move4: null });
-    // No move name → moveData?.shortDesc is undefined → the conditional
-    // `{moveName && moveData?.shortDesc && <TooltipContent>...}` short-circuits.
-    expect(screen.queryByTestId("tooltip-content")).toBeNull();
-  });
-
-  it("does NOT render a description tooltip when getMoveData has no shortDesc", () => {
-    (getMoveData as jest.Mock).mockReturnValueOnce({
-      type: "Normal",
-      category: "Physical",
-      basePower: 40,
-      accuracy: 100,
-      shortDesc: undefined,
-    });
-    renderLane({ move1: "Tackle", move2: null, move3: null, move4: null });
-    // The type icon (wordless TypeSymbolIcon) renders its own tooltip with
-    // the type name ("Normal") — that's expected. We only need to confirm
-    // the *description* tooltip with the (missing) shortDesc text is gone.
-    const tooltipBodies = screen
-      .queryAllByTestId("tooltip-content")
-      .map((el) => el.textContent);
-    expect(tooltipBodies).not.toContain(undefined);
-    expect(tooltipBodies).not.toContain("");
-    // TypeSymbolIcon no longer renders a tooltip, so array is empty.
-    expect(tooltipBodies).toEqual([]);
-  });
 });
 
 describe("MovesLane — picking a move", () => {
@@ -572,14 +476,13 @@ describe("MovesLane — click behaviour (no calc)", () => {
 
   it("opens the picker panel when clicking an empty slot", () => {
     renderLane({ move1: null });
-    // With calc disabled, clicking should show MovePicker (it's always shown since no CalcDetailCard)
+    // With calc disabled, clicking should show MovePicker
     const pickButtons = screen.getAllByText("pick-moonblast");
     expect(pickButtons.length).toBeGreaterThan(0);
   });
 
-  it("shows MovePicker (not CalcDetailCard) when calc is disabled", () => {
+  it("shows MovePicker when calc is disabled", () => {
     renderLane({ move1: "Moonblast" });
-    expect(screen.queryByTestId("calc-detail-card")).not.toBeInTheDocument();
     expect(screen.getAllByTestId("move-picker").length).toBeGreaterThan(0);
   });
 });
