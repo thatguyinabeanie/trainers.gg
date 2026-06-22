@@ -6,7 +6,7 @@ Domain knowledge lives in on-demand skills. **Invoke the relevant skill before w
 
 ## Workspace Skills
 
-- **Build:** building-web-app, building-mobile-app, creating-components, creating-edge-functions, managing-edge-imports
+- **Build:** building-web-app, building-mobile-app, creating-components, creating-edge-functions, managing-edge-imports, web-ui-catalog, web-hooks-and-helpers
 - **Data & DB:** querying-supabase, deciding-data-access, reviewing-database, reviewing-caching, using-realtime, working-with-usage-data, building-charts, validating-input, using-utils
 - **Pokémon & tournaments:** parsing-pokemon, implementing-tournaments, adding-a-regulation, applying-move-rebalances, reconciling-pkmn-overrides, syncing-calc-fork-upstream
 - **Integrations & infra:** integrating-bluesky, managing-infrastructure, troubleshooting-local-env, tracking-analytics
@@ -19,7 +19,7 @@ Domain knowledge lives in on-demand skills. **Invoke the relevant skill before w
 
 ## Project Rules
 
-Path-scoped rules in `.claude/rules/` auto-load via hooks (each file's `paths:` frontmatter declares its globs): code-style, react-patterns, mobile-responsiveness, architecture, nextjs-conventions, mobile-conventions, supabase-patterns, testing-philosophy, shadcn-ui-primitives, web-ui-catalog, web-hooks-and-helpers, supabase-migrations, usage-data-sources.
+Path-scoped rules in `.claude/rules/` auto-load via hooks (each file's `paths:` frontmatter declares its globs): code-style, react-patterns, mobile-responsiveness, architecture, nextjs-conventions, mobile-conventions, supabase-patterns, testing-philosophy, shadcn-ui-primitives, supabase-migrations, usage-data-sources.
 
 ## Workspace Agents
 
