@@ -37,6 +37,8 @@ interface SpriteSectionProps {
   /**
    * When false, renders only the sprite button — no species pill.
    * Use when the caller renders the pill elsewhere (e.g. in a right column).
+   * Callers MUST provide an accessible species-change control when showPill=false,
+   * since the sprite button is aria-hidden and excluded from the tab order.
    */
   showPill?: boolean;
 }

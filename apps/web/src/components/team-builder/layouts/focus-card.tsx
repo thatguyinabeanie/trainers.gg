@@ -35,7 +35,7 @@ import { FieldErrors } from "../validation/field-error";
 //   │  [LEFT PANEL]          [CENTER COLUMN]           [RIGHT PANEL]          │
 //   │  RadialStatEditor      SpriteSection (hero)      MovesLane              │
 //   │  (translucent,         identity cluster:         presentation=          │
-//   │   blur backdrop)         nickname · gender ·       "card-list"           │
+//   │   blur backdrop)         nickname · gender ·       "list"                │
 //   │                          shiny · level                                  │
 //   │                          item · ability           When calc ON:         │
 //   │                                                   table + CalcReverse   │

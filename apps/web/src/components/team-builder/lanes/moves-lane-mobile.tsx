@@ -84,18 +84,11 @@ export function MobileMoveRow({
 
   return (
     <>
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={() => setPickerOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setPickerOpen(true);
-          }
-        }}
         className={cn(
-          "flex cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-1.5",
+          "flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-1.5",
           koTier === "1" &&
             "bg-[color-mix(in_oklch,var(--ko-red)_8%,transparent)]",
           koTier === "2" &&
@@ -140,7 +133,7 @@ export function MobileMoveRow({
             Status
           </span>
         ) : null}
-      </div>
+      </button>
       {pickerOpen && (
         <MovePickerMobile
           open={pickerOpen}

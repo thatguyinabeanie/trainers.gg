@@ -356,9 +356,7 @@ function MonMovesCard({
   // of the full multi-column table, which overflows a 390px viewport.
   const showMobileLayout = isClient && isMobile;
 
-  // Pre-compute isStatus per slot once per card render. getMoveData is called
-  // once here for all 4 slots rather than inside every MobileMoveRow on every
-  // render (fix #10 — avoid per-row redundant calls).
+  // Pre-compute isStatus per slot once per card render — avoids redundant getMoveData calls.
   const isStatusBySlot: Record<MoveSlot, boolean> = {
     move1:
       !!pokemon.move1 &&
