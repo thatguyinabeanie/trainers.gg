@@ -1,6 +1,6 @@
 # Team Builder Landing — Full Design Spec
 
-**Status:** Design complete, pending implementation plan
+**Status:** Design complete + implementation gaps resolved (2026-06-23); pending implementation plan
 **Date:** 2026-06-22 · **Expanded:** 2026-06-23 (added Quick-look, List controls, Bulk actions, Archive & safety; flipped row anatomy to name-first)
 **Companion docs:** [`README.md`](./README.md) (overview + mockup gallery) · `docs/builder-single-focus-redesign/` (the editor middle-section work — separate, non-overlapping)
 
@@ -431,6 +431,14 @@ The design was built one decision at a time with a live visual companion. Full i
 
 ## 20. Implementation Considerations
 
+> **Implementation gaps resolved 2026-06-23** (closing the open data/architecture choices that this section previously left as "either/or"):
+> - **Data bucket — teams are P-bucket (per-user, RLS).** Reads use a **direct authenticated browser client + RLS**, with **SSR in the user's context** (`createClientReadOnly()`) for first paint — never `/api/v1`, never public/`'use cache'` caching. Mandated by the `deciding-data-access` / architecture rules (teams are explicitly listed P-bucket).
+> - **Search + quick-look share one enriched list.** Load per-Pokémon species / item / ability / four moves / tera / nature for all 6 **once**; both the smart search and the quick-look peek filter/read that **in-memory** set. No dedicated search RPC, no per-row hover fetch, no N+1.
+> - **Smart Folder criteria = `criteria jsonb`, flat AND-only (v1).** A versioned predicate list — predicate types `text` / `field` (move·item·ability·species·nickname·nature·tera) / `flag` (incomplete·illegal·legal) / `format` / `updated_within`. **One client-side evaluator powers both live search and folder population**; "Save as Smart Folder" just serializes the current query. OR / nested groups deferred (schema is versioned, so additive later).
+> - **Delete Undo = deferred-commit (client-side).** Hold the delete during the toast window (single or bulk); Undo cancels it, otherwise the real delete fires; a pending delete is flushed on navigate-away. **No soft-delete column / trash subsystem** (consistent with D19).
+> - **Scope = responsive web only.** The §18 patterns are responsive-web. Expo parity is tracked via a Linear ticket and built when mobile dev resumes.
+> - **Routing coordination.** The editor-redesign effort (`builder-single-focus-redesign`) is in flight in a separate worktree; its work is internal to the editor's middle section and does **not** touch routing. The one shared touchpoint is the `/builder` page entry / `local-builder-workspace.tsx` — so the routing split (§17) should land as one atomic early-phase PR.
+
 **Reuse (already exists):**
 - Components: `apps/web/src/components/team-builder/` — `team-card.tsx`, `all-teams-client.tsx`, `teams-list-client.tsx`, `local-builder-workspace.tsx`, `NewTeamDialog`.
 - Queries: `packages/supabase/src/queries/teams.ts` — `getTeamsForUser(userId)`, `getTeamsForAltList`, `getTeamWithPokemon`.
@@ -439,14 +447,14 @@ The design was built one decision at a time with a live visual companion. Full i
 - Sprites: `getPokemonSprite(species)` → `{ url, w, h, pixelated }`.
 
 **New capabilities needed:**
-1. **Folders schema** — manual folders (folder rows + team↔folder membership) and Smart Folders (stored criteria/query). Auto-folders are derived (no storage). RLS scoped to the owning user.
+1. **Folders schema** — manual folders (folder rows + team↔folder membership) and Smart Folders (stored as `criteria jsonb` — a versioned, flat AND-only predicate list; see the resolved note above). Auto-folders are derived (no storage). RLS scoped to the owning user — membership rows must also verify the team is owned by the same user.
 2. **Move-to-alt (owner reassign)** mutation/RPC — reassign `teams.created_by`; RLS must verify the user owns *both* source and target alts. (`updateTeam` does not permit owner changes today; `forkTeam` only copies.)
-3. **Rich-search data path** — `getTeamsForUser` is intentionally lightweight (species + `is_shiny`). Searching moves/items/abilities needs fuller per-Pokémon data: a heavier list query or a dedicated search RPC (see `deciding-data-access`).
-4. **Quick-look data path** — the peek needs item/ability/tera/moves for all 6 per team. Either reuse the richer search payload, fetch `getTeamWithPokemon` lazily on hover/tap (cache it), or include the fields in the list query. Avoid an N+1 across the whole list.
+3. **Rich-search data path (resolved → enriched list, client-side).** `getTeamsForUser` is intentionally lightweight (species + `is_shiny`). The landing instead loads **one enriched per-user list** (item / ability / four moves / tera / nature for all 6) via the authenticated client + RLS, and search filters that set **client-side**. No dedicated search RPC. Per-user data is bounded, so payload size is a non-issue; paginate only if a user ever holds thousands of teams.
+4. **Quick-look data path (resolved → reuse the enriched list).** The peek reads item / ability / tera / moves for all 6 straight from the **same enriched in-memory list** as search — no lazy per-row fetch, no N+1.
 5. **Routing split** — landing route + `/builder/t/[id]` editor route; local-draft id scheme.
 6. **Unified list merge** — reconcile localStorage drafts with `getTeamsForUser` into one badged list; the login-reconcile banner flow.
 7. **Per-team flags & ordering** — `pinned` (bool), `archived` (bool), and an explicit `sort_order` (for Custom order); all scoped/RLS'd to the owner. Local drafts mirror these in localStorage.
-8. **Bulk mutations** — batch move-to-folder / move-to-alt / archive / delete / export over a set of ids (single round-trip where possible); the Undo toast implies a soft window or a client-side restore buffer for delete.
+8. **Bulk mutations** — batch move-to-folder / move-to-alt / archive / delete / export over a set of ids (single round-trip where possible). **Delete Undo = deferred-commit:** the delete is held during the toast window (single or bulk) and only committed if Undo isn't pressed; a pending delete is flushed on navigate-away. No soft-delete column.
 9. **Preference storage** — last alt/folder/sort/density/rail-collapsed (localStorage is sufficient; per-device is acceptable).
 10. **Loading/error states** — skeleton rows, optimistic create, inline retry on fetch failure.
 
@@ -534,9 +542,9 @@ Explored during the 2026-06-23 expansion, then set aside:
 | Teams source | Unified list: local drafts + account teams, badged |
 | Layout | Two-pane: collapsible rail + collapsible sections of rich row-cards (not flat) |
 | Alts | "Viewing" pills + overflow dropdown; account avatar separate; alts not in the rail |
-| Search | Smart field (fuzzy + grouped suggestions + predicates); match reasons + sprite highlight |
+| Search | Smart field (fuzzy + grouped suggestions + predicates); match reasons + sprite highlight. **Data path:** one enriched authenticated P-bucket list, filtered client-side (no `/api/v1`, no RPC) |
 | Folders | Auto (🧬 Gen 9→format) + Manual (⭐) + Smart (⚡); 🗄 Archived system view |
-| Smart Folders | Save-from-search **and** criteria builder; seeded defaults (Incomplete/Illegal/Recently edited) |
+| Smart Folders | Save-from-search **and** criteria builder; seeded defaults (Incomplete/Illegal/Recently edited). **Stored as** `criteria jsonb` — flat AND-only versioned predicate list; one client-side evaluator shared with live search |
 | Sync | Local = pre-save scratch (auto-sync once saved) **plus** deliberate Local-only; login reconcile banner |
 | Row anatomy | **Name-first everywhere**: name (📌) → sprites → format → sync → ⋯; fixed-width name column, sprites aligned, long names truncate |
 | Quick-look | Hovercard (desktop) + bottom-sheet (mobile); full 6 with item/ability/tera/moves |
@@ -546,11 +554,11 @@ Explored during the 2026-06-23 expansion, then set aside:
 | Keyboard | ⌘K search · ↑↓/jk move · ↵ open · Space select · ⌘\ toggle rail |
 | Bulk actions | Hover checkbox + mobile long-press (+ ⇧/⌘-click); action bar: Move folder/alt · Export · Archive · Delete |
 | Export / backup | Bulk export of a selection + a top-level "export/back up all" (mitigates local-draft loss) |
-| Safety / lifecycle | Archive (keep-but-hide → 🗄 Archived, restorable) + Undo toast on delete |
+| Safety / lifecycle | Archive (keep-but-hide → 🗄 Archived, restorable) + Undo toast on delete. **Undo = deferred-commit** (hold during toast, flush on navigate-away; row preserved exactly; no soft-delete column) |
 | States | Loading skeletons · inline fetch-error + retry · remembered UI prefs (alt/folder/sort/density/rail) |
 | Move between alts | ⋯ "Move to alt" (reassign owner) + "Duplicate to alt" (copy); drag onto alt pill |
 | Row interactions | Menus (always) + drag-and-drop (enhancement) |
 | Empty/first-run | Full shell renders; welcome + 3 on-ramps inside main area; guest variant |
 | Routing | Route per team: `/builder` landing + `/builder/t/[id]` editor |
-| Mobile | Single column; alt dropdown; Folders → bottom sheet; quick-look + actions → bottom sheets; long-press multi-select; `+ New` FAB |
+| Mobile | **Scope: responsive web only** (Expo parity tracked via a Linear ticket, built when mobile dev resumes). Single column; alt dropdown; Folders → bottom sheet; quick-look + actions → bottom sheets; long-press multi-select; `+ New` FAB |
 | Parked / dropped | Tournament usage + meta-fit (parked, notes only); legal-for-event + per-card health badge (dropped, redundant) |
