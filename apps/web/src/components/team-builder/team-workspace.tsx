@@ -842,19 +842,18 @@ export function TeamWorkspaceV2({
     }
   }
 
-  // needsCalc is true whenever any view is open that reads live calc state.
-  // Bias toward inclusion — missing a case gives stale data; an extra case
-  // costs a slightly-earlier dynamic import but preserves correctness.
-  //
-  //   rightDrawer === "calc"   — the damage-calc side panel
-  //   speedView !== null       — SpeedTiersPanelConnected / SpeedTiersDialogConnected
-  //                              both call useCalcStateContext() for weather state
-  //   layoutMode === "single"  — SingleFocusView contains CalcVersusView (matchup
-  //                              panel rendered in-stage), which reads calc state
+  // needsCalc gates mounting the heavy (lazy) engine provider — mount it only
+  // when a view actually renders live calc results:
+  //   rightDrawer === "calc"  — the damage-calc side panel
+  //   speedView !== null      — speed-tiers panel/dialog reads live weather state
+  // Single-focus does NOT need it by default: SingleFocusView renders
+  // CalcVersusView only when calc.calcEnabled (=== rightDrawer === "calc"),
+  // otherwise a plain FocusCard (single-focus-view.tsx:267) — so the rightDrawer
+  // check already covers it. Including layoutMode === "single" here would load
+  // the engine on every editor open (single-focus is the default), defeating
+  // the split.
   const needsCalc =
-    state.rightDrawer === "calc" ||
-    state.speedView !== null ||
-    layoutMode === "single";
+    state.rightDrawer === "calc" || state.speedView !== null;
 
   const calcProviderProps = {
     selectedPokemon: slots[calcAttackerIdx] ?? null,

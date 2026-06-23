@@ -40,10 +40,8 @@ jest.mock("@smogon/calc", () => {
 // Import AFTER mocks are in place
 // =============================================================================
 
-import {
-  CalcStateProvider,
-  useCalcStateContext,
-} from "../calc/calc-state-context";
+import { CalcStateProvider } from "../calc/calc-state-provider";
+import { useCalcStateContext } from "../calc/calc-state-context";
 
 // =============================================================================
 // Fixtures

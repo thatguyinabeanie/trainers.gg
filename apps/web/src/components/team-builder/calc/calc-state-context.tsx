@@ -1,16 +1,17 @@
 "use client";
 
 /**
- * Thin barrel — re-exports everything callers depend on so existing import
- * sites continue to work unchanged.
+ * Thin barrel — re-exports only the LIGHT calc-context surface (hooks, the
+ * no-op default, the value type) so existing always-on import sites keep
+ * working unchanged WITHOUT pulling in the engine.
  *
- * The heavy @smogon/calc engine now lives exclusively in:
- *   ./calc-state-provider  (loaded lazily via next/dynamic in team-workspace.tsx)
- *   ../use-calc-state      (imported only by calc-state-provider)
- *
- * Context objects, hooks, and the no-op default live in ./calc-context (no
- * engine import), so any component that just reads calc state doesn't pull
- * in the engine bundle.
+ * IMPORTANT: this barrel must NOT re-export `CalcStateProvider`. The provider
+ * lives in ./calc-state-provider, which imports ../use-calc-state →
+ * @smogon/calc. A static re-export here would drag the engine into every
+ * always-on consumer that imports a hook from this barrel (dev bundlers don't
+ * tree-shake the unused re-export), defeating the code-split. The provider is
+ * imported directly: lazily via next/dynamic in team-workspace.tsx, and
+ * directly from ./calc-state-provider in tests.
  */
 
 export {
@@ -19,6 +20,3 @@ export {
   DEFAULT_CALC_CONTEXT,
   type CalcStateContextValue,
 } from "./calc-context";
-
-export { CalcStateProvider } from "./calc-state-provider";
-export type { CalcStateProviderProps } from "./calc-state-provider";
