@@ -6,9 +6,12 @@ test.describe("Dashboard alt switcher", () => {
   }) => {
     await page.goto("/dashboard");
 
-    const sidebar = page.locator(
-      "[data-sidebar='sidebar']:not([data-mobile='true'])"
-    );
+    // `.first()`: the shadcn sidebar can transiently mount more than one
+    // desktop `data-sidebar="sidebar"` node during navigation/hydration, which
+    // tripped Playwright strict mode. We only need to confirm one is visible.
+    const sidebar = page
+      .locator("[data-sidebar='sidebar']:not([data-mobile='true'])")
+      .first();
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // The sidebar should render without errors

@@ -187,7 +187,10 @@ generate_types() {
   local tmp_types stderr_file
   tmp_types=$(mktemp /tmp/supabase-types.XXXXXX)
   stderr_file=$(mktemp /tmp/supabase-types-stderr.XXXXXX)
-  if $SUPABASE_CMD gen types typescript --local > "$tmp_types" 2>"$stderr_file"; then
+  # Must match the schema list in package.json's `generate-types` script — without
+  # --schema, gen types only emits config.toml's API-exposed schemas and silently
+  # drops the non-exposed `private` schema (PII) on every `pnpm dev`.
+  if $SUPABASE_CMD gen types typescript --local --schema public,limitless,rk9,graphql_public,private > "$tmp_types" 2>"$stderr_file"; then
     mv "$tmp_types" src/types.ts
     echo -e "${GREEN}Types generated successfully${NC}"
     rm -f "$stderr_file"

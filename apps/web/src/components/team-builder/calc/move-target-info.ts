@@ -141,39 +141,3 @@ export function getMoveTargetInfo(moveName: string): MoveTargetInfo {
   }
   return { kind: "single-foe", isSpread: false };
 }
-
-/**
- * Human-readable label for a target kind.
- */
-export function getMoveTargetLabel(kind: MoveTargetKind): string {
-  switch (kind) {
-    case "all-foes":
-      return "ALL-FOES";
-    case "all-others":
-      return "ALL-OTHERS";
-    case "single-foe":
-      return "SINGLE-FOE";
-    case "single":
-      return "SINGLE";
-    case "self":
-      return "SELF";
-  }
-}
-
-/**
- * One-line description for a target kind.
- */
-export function getMoveTargetDesc(kind: MoveTargetKind): string {
-  switch (kind) {
-    case "all-foes":
-      return "Spread move — hits both opposing slots. −25% damage when 2 foes alive.";
-    case "all-others":
-      return "Hits everyone but you. −25% damage when 2+ targets alive.";
-    case "single-foe":
-      return "Single target — never spreads.";
-    case "single":
-      return "Single target (any side) — never spreads.";
-    case "self":
-      return "Self / status move.";
-  }
-}

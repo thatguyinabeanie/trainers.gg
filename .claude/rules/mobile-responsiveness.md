@@ -109,7 +109,10 @@ Icon buttons that live in PageHeader, navigation rows, or card headers must be �
 For a 14×14 icon (close ✕, drag handle), wrap it in a 40×40 invisible button:
 
 ```tsx
-<button className="flex size-10 items-center justify-center sm:size-7" aria-label="...">
+<button
+  className="flex size-10 items-center justify-center sm:size-7"
+  aria-label="..."
+>
   <X className="size-3.5" />
 </button>
 ```
@@ -152,23 +155,9 @@ Add a `describe("conditional mount")` block whenever you introduce a wrapper tha
 
 ## Preventing flash of wrong initial state on mobile
 
-SSR renders with `useIsMobile() === false` (desktop assumption). When React hydrates on mobile, it re-renders to the mobile layout — but any state initialized to "desktop-open" values will still be open, and the user sees them before JavaScript can correct it.
+SSR renders with `useIsMobile() === false` (desktop assumption), so any state initialized to a "desktop-open" value (open panels, side drawers) stays open through hydration and the user sees it flash before JS corrects it on a phone.
 
-**Use `useLayoutEffect` to close panels/UI that should be hidden on mobile before the first browser paint:**
-
-```tsx
-useLayoutEffect(() => {
-  /* eslint-disable react-hooks/set-state-in-effect */
-  if (window.innerWidth < 768) {
-    setPanelOpen(false);   // or setSideDrawer(null), etc.
-  }
-  /* eslint-enable react-hooks/set-state-in-effect */
-}, []);
-```
-
-`useLayoutEffect` fires synchronously after React's DOM mutations but before the browser paints — so users never see the panel open. `useEffect` fires after paint, causing a visible flash of the panel closing.
-
-This is the correct approach for any piece of state that defaults to "open/visible" for desktop but should be "closed/hidden" on mobile. See `use-builder-state.ts` for a real example (Speed Tiers and Damage Calc panels).
+Close such state **before first paint** using the `useLayoutEffect` pre-paint pattern documented in `react-patterns.md` ("Pre-paint state correction (no-flash)") — gate on `window.innerWidth < 768` and call `setPanelOpen(false)` / `setSideDrawer(null)`. `useLayoutEffect` is no-op'd on the server, so no SSR crash. See `use-builder-state.ts` for a real example (Speed Tiers and Damage Calc panels).
 
 ## What NOT to do
 

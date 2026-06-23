@@ -1,6 +1,6 @@
 ---
-paths:
-  - "apps/web/src/**/*.{ts,tsx}"
+name: web-ui-catalog
+description: Use when creating or choosing a web UI component in apps/web — catalog of available shadcn/Base UI primitives and custom components; check before building a new one.
 ---
 
 # Web UI Component Catalog

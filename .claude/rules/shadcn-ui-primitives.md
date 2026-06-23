@@ -44,4 +44,4 @@ These files in `components/ui/` are NOT from shadcn — they are project-specifi
 
 ## Keeping Catalogs in Sync
 
-When you **add, rename, or delete** a component in this directory, update the corresponding catalog rule (`web-ui-catalog.md`) and the custom components table above so future agents see accurate information.
+When you **add, rename, or delete** a component in this directory, update the corresponding catalog (the `web-ui-catalog` skill) and the custom components table above so future agents see accurate information.

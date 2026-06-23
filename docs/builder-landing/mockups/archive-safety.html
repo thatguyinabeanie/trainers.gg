@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+
+    /*
+     * BRAINSTORM COMPANION FRAME TEMPLATE
+     *
+     * This template provides a consistent frame with:
+     * - OS-aware light/dark theming
+     * - Header branding and connection status
+     * - Scrollable main content area
+     * - CSS helpers for common UI patterns
+     *
+     * Content is injected via placeholder comment in #frame-content.
+     */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    /* ===== THEME VARIABLES ===== */
+    :root {
+      --bg-primary: #f5f5f7;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e5e5e7;
+      --border: #d1d1d6;
+      --text-primary: #1d1d1f;
+      --text-secondary: #86868b;
+      --text-tertiary: #aeaeb2;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --success: #34c759;
+      --warning: #ff9f0a;
+      --error: #ff3b30;
+      --selected-bg: #e8f4fd;
+      --selected-border: #0071e3;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1d1d1f;
+        --bg-secondary: #2d2d2f;
+        --bg-tertiary: #3d3d3f;
+        --border: #424245;
+        --text-primary: #f5f5f7;
+        --text-secondary: #86868b;
+        --text-tertiary: #636366;
+        --accent: #0a84ff;
+        --accent-hover: #409cff;
+        --selected-bg: rgba(10, 132, 255, 0.15);
+        --selected-border: #0a84ff;
+      }
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* ===== FRAME STRUCTURE ===== */
+    .brand { display: flex; align-items: center; min-width: 0; overflow: hidden; color: var(--text-secondary); line-height: 1; }
+    .brand a { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; min-width: 0; max-width: 100%; line-height: 1; }
+    .brand-copy { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1; transform: translateY(-1px); }
+    .brand-logo { display: block; height: 1em; width: auto; max-width: 180px; flex-shrink: 0; filter: invert(1); }
+    @media (prefers-color-scheme: dark) {
+      .brand-logo { filter: none; }
+    }
+    .status { font-size: 0.7rem; color: var(--status-color, var(--success)); display: flex; align-items: center; gap: 0.4rem; justify-self: end; white-space: nowrap; line-height: 1; }
+    .status::before { content: ''; width: 6px; height: 6px; background: var(--status-color, var(--success)); border-radius: 50%; }
+
+    .main { flex: 1; overflow-y: auto; }
+    #frame-content { padding: 2rem; min-height: 100%; }
+
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1.5rem;
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 1rem;
+      min-height: 42px;
+    }
+    .header .brand { justify-self: start; width: 100%; font-size: 0.75rem; line-height: 1; }
+    .header .status { grid-column: 2; line-height: 1; }
+    .header span {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .header .selected-text {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .section { margin-bottom: 2rem; }
+    .label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+
+    /* ===== OPTIONS (for A/B/C choices) ===== */
+    .options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .option {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .option:hover { border-color: var(--accent); }
+    .option.selected { background: var(--selected-bg); border-color: var(--selected-border); }
+    .option .letter {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      width: 1.75rem; height: 1.75rem;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .option.selected .letter { background: var(--accent); color: white; }
+    .option .content { flex: 1; }
+    .option .content h3 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+    .option .content p { color: var(--text-secondary); font-size: 0.85rem; margin: 0; }
+
+    /* ===== CARDS (for showing designs/mockups) ===== */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card.selected { border-color: var(--selected-border); border-width: 2px; }
+    .card-image { background: var(--bg-tertiary); aspect-ratio: 16/10; display: flex; align-items: center; justify-content: center; }
+    .card-body { padding: 1rem; }
+    .card-body h3 { margin-bottom: 0.25rem; }
+    .card-body p { color: var(--text-secondary); font-size: 0.85rem; }
+
+    /* ===== MOCKUP CONTAINER ===== */
+    .mockup {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .mockup-header {
+      background: var(--bg-tertiary);
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .mockup-body { padding: 1.5rem; }
+
+    /* ===== SPLIT VIEW (side-by-side comparison) ===== */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+
+    /* ===== PROS/CONS ===== */
+    .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .pros, .cons { background: var(--bg-secondary); border-radius: 8px; padding: 1rem; }
+    .pros h4 { color: var(--success); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .cons h4 { color: var(--error); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .pros ul, .cons ul { margin-left: 1.25rem; font-size: 0.85rem; color: var(--text-secondary); }
+    .pros li, .cons li { margin-bottom: 0.25rem; }
+
+    /* ===== PLACEHOLDER (for mockup areas) ===== */
+    .placeholder {
+      background: var(--bg-tertiary);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+
+    /* ===== INLINE MOCKUP ELEMENTS ===== */
+    .mock-nav { background: var(--accent); color: white; padding: 0.75rem 1rem; display: flex; gap: 1.5rem; font-size: 0.9rem; }
+    .mock-sidebar { background: var(--bg-tertiary); padding: 1rem; min-width: 180px; }
+    .mock-content { padding: 1.5rem; flex: 1; }
+    .mock-button { background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; }
+    .mock-input { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; width: 100%; }
+  
+body{margin:0}
+main.content{max-width:880px;margin:0 auto;padding:32px}
+</style></head>
+<body><main class="content">
+<style>html,body{height:auto!important;overflow:visible!important}</style>
+<style>
+  .stage { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px; margin:8px 0 6px; }
+
+  .menu { width:210px; background:#fff; border:1px solid #e2e8f0; border-radius:11px; box-shadow:0 8px 24px rgba(15,23,42,.12); padding:5px; font-size:12px; }
+  .mi { display:flex; align-items:center; gap:9px; padding:7px 9px; border-radius:7px; color:#334155; }
+  .mi .k { margin-left:auto; color:#cbd5e1; font-size:11px; }
+  .mi.arch { color:#0f766e; font-weight:600; }
+  .mi.danger { color:#dc2626; }
+  .msep { height:1px; background:#f1f5f9; margin:4px 6px; }
+
+  .rail { width:170px; background:#f8fafc; border:1px solid #eef2f6; border-radius:11px; padding:10px; font-size:11px; }
+  .railitem { display:flex; align-items:center; gap:6px; padding:4px 7px; border-radius:7px; color:#475569; }
+  .railitem.on { background:#ccfbf1; color:#0f766e; font-weight:600; }
+  .railitem .ct { margin-left:auto; color:#94a3b8; font-size:10px; }
+  .railsec { font-size:9px; text-transform:uppercase; letter-spacing:.05em; color:#94a3b8; font-weight:700; margin:10px 0 3px; }
+  .railitem.sys { color:#64748b; }
+
+  .col { display:flex; flex-direction:column; gap:9px; }
+  .toast { display:flex; align-items:center; gap:11px; background:#1e293b; color:#fff; border-radius:10px; padding:9px 13px; font-size:12px; box-shadow:0 8px 22px rgba(15,23,42,.28); }
+  .toast .undo { margin-left:auto; color:#5eead4; font-weight:700; }
+  .legend { font-size:10px; color:#94a3b8; }
+
+  .option .content h3 { margin-bottom:3px; }
+  .leanline { margin-top:18px; }
+</style>
+
+<h2>Theme D — making "remove a team" safe</h2>
+<p class="subtitle">Today the only removal is a permanent <b>Delete</b>. Below is the mechanics of my lean (Archive + an Undo on delete); the fork underneath is which safety model to commit to. Rows elsewhere now read name-first, per the change you approved.</p>
+
+<div class="stage">
+  <div class="col">
+    <div class="legend">⋯ row menu (tail)</div>
+    <div class="menu">
+      <div class="mi">📤 Export (Showdown paste)</div>
+      <div class="mi">🌐 Share / Make public</div>
+      <div class="msep"></div>
+      <div class="mi arch">🗄 Archive <span class="k">keep, hide</span></div>
+      <div class="mi danger">🗑 Delete <span class="k">permanent</span></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="legend">rail (tail)</div>
+    <div class="rail">
+      <div class="railitem on">🏠 All teams <span class="ct">16</span></div>
+      <div class="railsec">⭐ My folders</div>
+      <div class="railitem">Spicy Tech <span class="ct">4</span></div>
+      <div class="railsec">System</div>
+      <div class="railitem sys">🗄 Archived <span class="ct">3</span></div>
+    </div>
+  </div>
+
+  <div class="col" style="flex:1;min-width:220px">
+    <div class="legend">after a delete</div>
+    <div class="toast">🗑 "Rain Core" deleted <span class="undo">Undo</span></div>
+    <div class="legend" style="margin-top:4px">Brief, dismissible — the safety net on the one destructive action.</div>
+  </div>
+</div>
+
+<h3 style="margin-top:14px">Which safety model?</h3>
+<div class="options">
+
+  <div class="option" data-choice="archive-undo" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Archive (keep-but-hide) + Undo toast on delete &nbsp;·&nbsp; my lean</h3>
+      <p><b>Archive</b> tucks a team into a 🗄 Archived view you can restore from anytime — for stuff you want to keep but not see. <b>Delete</b> stays permanent, but a short <b>Undo</b> toast catches accidents. Two clear intents (keep vs gone), with a net on the dangerous one. Works as a bulk action too.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="trash" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Trash / recycle bin (auto-purge after ~30 days)</h3>
+      <p>No separate Archive — <b>Delete</b> sends to a Trash that's recoverable for ~30 days, then auto-empties. One familiar concept (Drive/Gmail). But everything you remove lingers in Trash, and there's no distinct "keep long-term, out of my way" state.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="archive-only" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Archive only — Delete stays a confirm dialog</h3>
+      <p>Add 🗄 Archive; keep <b>Delete</b> behind a "Are you sure?" confirm, permanent, no undo/trash. Simplest to build. But a confirmed delete is gone for good — one mis-click past the dialog and it's lost.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle leanline">My lean is <b>A</b>: archive for "keep but hide," and an Undo toast so a stray Delete isn't fatal — without a whole Trash subsystem to manage. Also part of D (no debate, just building): 💀 loading skeletons, ⚠️ fetch-error + retry states, and 💾 remembered UI prefs (last alt/folder/sort/density/rail).</p>
+</main></body></html>

@@ -324,7 +324,6 @@ interface MonMovesCardProps {
   outputs: readonly ReturnType<
     UseCalcStateReturn["computeForwardOutputsForRow"]
   >[0][];
-  opponent: { species: string; ability: string; item: string; nature: string };
   headerLabel: string;
   /** Pass compact=true to tighten move rows for two-up layouts. */
   compact?: boolean;
@@ -342,7 +341,6 @@ function MonMovesCard({
   onUpdate,
   direction,
   outputs,
-  opponent,
   headerLabel,
   compact = false,
   calcEnabled,
@@ -430,7 +428,6 @@ function MonMovesCard({
           onUpdate={onUpdate}
           direction={direction}
           outputs={outputs}
-          opponent={opponent}
           compact={compact}
         />
       )}
@@ -607,21 +604,6 @@ export function CalcVersusView({
     targetMovesTuple
   );
 
-  // ── Opponent descriptors for popovers ─────────────────────────────────────
-  const yourDescriptor = {
-    species: pokemon.species ?? "",
-    ability: pokemon.ability ?? "",
-    item: pokemon.held_item ?? "",
-    nature: pokemon.nature ?? "Hardy",
-  };
-
-  const targetDescriptor = {
-    species: calc.defenderSpecies,
-    ability: calc.defenderAbility,
-    item: calc.defenderItem,
-    nature: calc.defenderNature,
-  };
-
   // ── Nature labels ─────────────────────────────────────────────────────────
   const yourNatureLabel = pokemon.nature ?? "";
   const targetNatureLabel = target.pokemon.nature ?? "";
@@ -763,7 +745,6 @@ export function CalcVersusView({
             onUpdate={onUpdate}
             direction="outgoing"
             outputs={outgoingOutputs}
-            opponent={targetDescriptor}
             headerLabel="Moves → damage dealt"
             compact
             calcEnabled={calcEnabled}
@@ -777,7 +758,6 @@ export function CalcVersusView({
             onUpdate={target.onUpdate}
             direction="incoming"
             outputs={incomingOutputs}
-            opponent={yourDescriptor}
             headerLabel="Moves → damage taken"
             compact
             calcEnabled={calcEnabled}
@@ -820,7 +800,6 @@ export function CalcVersusView({
             onUpdate={onUpdate}
             direction="outgoing"
             outputs={outgoingOutputs}
-            opponent={targetDescriptor}
             headerLabel="Moves → damage dealt"
             calcEnabled={calcEnabled}
             foesAlive={foesAlive}
@@ -871,7 +850,6 @@ export function CalcVersusView({
             onUpdate={target.onUpdate}
             direction="incoming"
             outputs={incomingOutputs}
-            opponent={yourDescriptor}
             headerLabel="Moves → damage taken"
             calcEnabled={calcEnabled}
             foesAlive={foesAlive}

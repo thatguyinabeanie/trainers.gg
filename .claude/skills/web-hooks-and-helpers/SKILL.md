@@ -1,6 +1,6 @@
 ---
-paths:
-  - "apps/web/src/**/*.{ts,tsx}"
+name: web-hooks-and-helpers
+description: Use when writing a web hook or utility in apps/web — catalog of existing hooks (apps/web/src/hooks), lib helpers, and @trainers/utils functions; check before adding a new one.
 ---
 
 # Web Hooks & Helpers Catalog

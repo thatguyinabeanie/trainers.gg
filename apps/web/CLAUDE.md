@@ -16,7 +16,8 @@ Next.js 16 app with React 19.2, App Router, and Server Components.
 ## Notes
 
 - Route interception uses `src/proxy.ts` — `middleware.ts` is NOT used
-- Auto-loaded rules: `nextjs-conventions`, `react-patterns`, `web-ui-catalog`, `web-hooks-and-helpers`, `mobile-responsiveness`
+- Auto-loaded rules: `nextjs-conventions`, `react-patterns`, `mobile-responsiveness`
+- On-demand catalogs (skills, invoke before creating new): `web-ui-catalog`, `web-hooks-and-helpers`
 
 ## Skills
 

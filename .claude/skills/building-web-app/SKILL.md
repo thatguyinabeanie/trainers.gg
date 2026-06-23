@@ -178,18 +178,19 @@ Destructure `error` and `isError`, and render an error UI **before** the empty-s
 // Reference: apps/web/src/components/admin/usage-inspector.tsx
 const { data, isLoading, isError, error } = useApiQuery<MyData[]>(
   ["my-key"],
-  fetchMyData,
+  fetchMyData
 );
 
 if (isLoading) return <Spinner />;
-if (isError) return (
-  <Alert variant="destructive">
-    <AlertTriangle className="size-4" />
-    <AlertDescription>
-      {error instanceof Error ? error.message : "Unexpected error"}
-    </AlertDescription>
-  </Alert>
-);
+if (isError)
+  return (
+    <Alert variant="destructive">
+      <AlertTriangle className="size-4" />
+      <AlertDescription>
+        {error instanceof Error ? error.message : "Unexpected error"}
+      </AlertDescription>
+    </Alert>
+  );
 if (!data?.length) return <EmptyState />;
 return <MyDataList data={data} />;
 
@@ -202,9 +203,9 @@ return <MyDataList data={data} />;
 
 ## Component & Helper Awareness
 
-When editing web app files, path-scoped rules automatically load:
+Two on-demand skills catalog what already exists — invoke them before creating new components or utilities:
 
-- **`web-ui-catalog.md`** — categorized index of all UI components in `components/ui/`
-- **`web-hooks-and-helpers.md`** — index of available hooks, lib helpers, and `@trainers/utils` exports
+- **`web-ui-catalog`** skill — categorized index of all UI components in `components/ui/`
+- **`web-hooks-and-helpers`** skill — index of available hooks, lib helpers, and `@trainers/utils` exports
 
-Check these catalogs before creating new components or utilities. Always render an explicit error state (see above) — `Alert` (destructive variant) is in the UI catalog. See `creating-components` skill for component creation patterns.
+Always render an explicit error state (see above) — `Alert` (destructive variant) is in the UI catalog. See `creating-components` skill for component creation patterns.
