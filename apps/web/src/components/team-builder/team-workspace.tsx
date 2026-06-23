@@ -12,6 +12,7 @@ import {
   useState,
   useTransition,
 } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -68,10 +69,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { CalcBottomPanel } from "./calc/calc-bottom-panel";
-import {
-  CalcStateProvider,
-  useCalcStateContext,
-} from "./calc/calc-state-context";
+import { useCalcStateContext } from "./calc/calc-state-context";
 import { Dockbar } from "./dock/dockbar";
 import { SpeedTiersDialog } from "./dock/speed-tiers-dialog";
 import { UNINITIALIZED_FORMAT_ID } from "./dock/speed-tiers-content";
@@ -88,6 +86,14 @@ import { useBuilderState } from "./use-builder-state";
 import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
 import { TeamLayoutToggle } from "./team-layout-toggle";
 import { SingleFocusView } from "./layouts/single-focus-view";
+
+// Lazily load the calc engine provider so @smogon/calc stays out of the editor's
+// initial chunk. Mounted only when a calc-consuming view is open (see needsCalc).
+// ssr:false is valid — this is a Client Component and calc is browser-only.
+const CalcStateProviderDynamic = dynamic(
+  () => import("./calc/calc-state-provider").then((m) => m.CalcStateProvider),
+  { ssr: false }
+);
 
 // =============================================================================
 // KO-tier semantic tokens (migrated from .builderApp's CSS-module rule).
@@ -836,41 +842,59 @@ export function TeamWorkspaceV2({
     }
   }
 
-  return (
-    <TeamLayoutContext.Provider value={layoutMode}>
-      <CalcStateProvider
-        selectedPokemon={slots[calcAttackerIdx] ?? null}
-        format={format}
-        field={state.field}
-        setField={state.setField}
-        calcEnabled={state.rightDrawer === "calc"}
-        faintedYours={state.faintedYours}
-        faintedTheirs={state.faintedTheirs}
-      >
-        <div
-          className="flex h-full flex-col overflow-hidden"
-          style={builderTokenStyle}
-        >
-          {renderHeader({
-            onOpenImport: () => setImportOpen(true),
-            validationErrors,
-            onValidate: validate,
-            onJumpToPokemon: handleJumpToPokemon,
-            onNameChange: async (name) => {
-              const result = await persistence.updateTeam(team.id, { name });
-              if (!result.success) {
-                toast.error(result.error ?? "Failed to rename team.");
-                return;
-              }
-              persistence.onMutationSuccess();
-            },
-            onOpenSettings: () => setSettingsOpen(true),
-          })}
+  // needsCalc is true whenever any view is open that reads live calc state.
+  // Bias toward inclusion — missing a case gives stale data; an extra case
+  // costs a slightly-earlier dynamic import but preserves correctness.
+  //
+  //   rightDrawer === "calc"   — the damage-calc side panel
+  //   speedView !== null       — SpeedTiersPanelConnected / SpeedTiersDialogConnected
+  //                              both call useCalcStateContext() for weather state
+  //   layoutMode === "single"  — SingleFocusView contains CalcVersusView (matchup
+  //                              panel rendered in-stage), which reads calc state
+  const needsCalc =
+    state.rightDrawer === "calc" ||
+    state.speedView !== null ||
+    layoutMode === "single";
 
-          <div
-            className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-            ref={worklaneRef}
-          >
+  const calcProviderProps = {
+    selectedPokemon: slots[calcAttackerIdx] ?? null,
+    format,
+    field: state.field,
+    setField: state.setField,
+    calcEnabled: state.rightDrawer === "calc",
+    faintedYours: state.faintedYours,
+    faintedTheirs: state.faintedTheirs,
+  };
+
+  // The workspace body — rendered unconditionally. CalcStateProviderDynamic
+  // wraps it only when needsCalc is true; otherwise DEFAULT_CALC_CONTEXT
+  // satisfies reads (calcEnabled=false, all setters no-ops).
+  const workspaceBody = (
+    <>
+      <div
+        className="flex h-full flex-col overflow-hidden"
+        style={builderTokenStyle}
+      >
+        {renderHeader({
+          onOpenImport: () => setImportOpen(true),
+          validationErrors,
+          onValidate: validate,
+          onJumpToPokemon: handleJumpToPokemon,
+          onNameChange: async (name) => {
+            const result = await persistence.updateTeam(team.id, { name });
+            if (!result.success) {
+              toast.error(result.error ?? "Failed to rename team.");
+              return;
+            }
+            persistence.onMutationSuccess();
+          },
+          onOpenSettings: () => setSettingsOpen(true),
+        })}
+
+        <div
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+          ref={worklaneRef}
+        >
             {/* Horizontal split: true flex layout with ghost resize handles */}
             {!isMobile ? (
               <ResizablePanelGroup
@@ -1368,7 +1392,18 @@ export function TeamWorkspaceV2({
           setToggle={setSpeedToggle}
           onCollapseToSidepane={() => state.setSpeedView("sidepane")}
         />
-      </CalcStateProvider>
+    </>
+  );
+
+  return (
+    <TeamLayoutContext.Provider value={layoutMode}>
+      {needsCalc ? (
+        <CalcStateProviderDynamic {...calcProviderProps}>
+          {workspaceBody}
+        </CalcStateProviderDynamic>
+      ) : (
+        workspaceBody
+      )}
     </TeamLayoutContext.Provider>
   );
 }

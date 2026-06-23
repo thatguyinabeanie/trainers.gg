@@ -752,16 +752,10 @@ function runCalc(
   }
 }
 
-/** Verdict label for a calc result. */
-export type Verdict = "OHKO" | "2HKO" | "3HKO" | null;
-
-export function getVerdict(minPercent: number, maxPercent: number): Verdict {
-  if (minPercent >= 100) return "OHKO";
-  if (maxPercent >= 100) return "OHKO";
-  if (maxPercent >= 50) return "2HKO";
-  if (maxPercent >= 34) return "3HKO";
-  return null;
-}
+// `Verdict` + `getVerdict` live in ./calc/calc-verdict (engine-free) so always-on
+// consumers (dockbar, calc-display-helpers) can use them without pulling
+// @smogon/calc into the initial bundle. Re-exported here for back-compat.
+export { type Verdict, getVerdict } from "./calc/calc-verdict";
 
 // =============================================================================
 // Hook
