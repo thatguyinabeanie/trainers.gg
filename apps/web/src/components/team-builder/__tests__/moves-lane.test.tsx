@@ -312,7 +312,8 @@ function makeError(
 function renderLane(
   pokemonOverrides: Partial<Tables<"pokemon">> = {},
   format: GameFormat | undefined = VGC_FORMAT,
-  fieldErrors?: ValidationError[]
+  fieldErrors?: ValidationError[],
+  options: { compact?: boolean } = {}
 ) {
   const onUpdate = jest.fn();
   const result = render(
@@ -321,6 +322,7 @@ function renderLane(
       format={format}
       onUpdate={onUpdate}
       fieldErrors={fieldErrors}
+      compact={options.compact}
     />
   );
   return { ...result, onUpdate };
@@ -936,6 +938,133 @@ describe("MovesLane — card-list presentation (calc ON → table path)", () => 
     );
     // Damage range and KO tier render in calc columns
     expect(screen.getByText("50.0–60.0%")).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// MovesLane — compact mode (versus view)
+// =============================================================================
+
+describe("MovesLane — compact mode (versus view)", () => {
+  beforeEach(() => {
+    (useCalcStateContext as jest.Mock).mockImplementation(() => ({
+      ...mockCalcContext,
+      calcEnabled: false,
+    }));
+    mockCalcContext.calcEnabled = false;
+    mockCalcContext.rowOutputs = [null, null, null, null];
+  });
+
+  afterEach(() => {
+    mockCalcContext.calcEnabled = false;
+    mockCalcContext.rowOutputs = [null, null, null, null];
+  });
+
+  // -------------------------------------------------------------------------
+  // 1. Compact move-name element has text-xs class (not text-sm)
+  //    — exercises the `compact ? "text-xs" : "text-sm"` branch in MoveTile
+  // -------------------------------------------------------------------------
+  it("renders the move-name span with text-xs in compact mode", () => {
+    renderLane(
+      { move1: "Moonblast", move2: null, move3: null, move4: null },
+      VGC_FORMAT,
+      undefined,
+      { compact: true }
+    );
+    const nameEl = screen.getByText("Moonblast");
+    expect(nameEl.className).toContain("text-xs");
+  });
+
+  // -------------------------------------------------------------------------
+  // 2. Compact move-name element has w-full (greedy) not max-w-36 (capped)
+  //    — exercises `compact ? "w-full" : "max-w-36"` in MoveTile
+  // -------------------------------------------------------------------------
+  it("renders the move-name span with w-full in compact mode (not max-w-36)", () => {
+    renderLane(
+      { move1: "Moonblast", move2: null, move3: null, move4: null },
+      VGC_FORMAT,
+      undefined,
+      { compact: true }
+    );
+    const nameEl = screen.getByText("Moonblast");
+    expect(nameEl.className).toContain("w-full");
+    expect(nameEl.className).not.toContain("max-w-36");
+  });
+
+  // -------------------------------------------------------------------------
+  // 3. Column headers NAME / BP / ACC still render in compact mode
+  //    — exercises MovesLaneTileGhost({ compact: true }) path
+  // -------------------------------------------------------------------------
+  it("renders column headers NAME, BP, and ACC in compact mode", () => {
+    renderLane(
+      { move1: "Moonblast", move2: null, move3: null, move4: null },
+      VGC_FORMAT,
+      undefined,
+      { compact: true }
+    );
+    expect(screen.getByText("NAME")).toBeInTheDocument();
+    expect(screen.getByText("BP")).toBeInTheDocument();
+    expect(screen.getByText("ACC")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 4. Non-compact (default) render gives text-sm, not text-xs
+  //    — proves the branch divergence so the compact assertions above are meaningful
+  // -------------------------------------------------------------------------
+  it("renders the move-name span with text-sm in default (non-compact) mode", () => {
+    renderLane({ move1: "Moonblast", move2: null, move3: null, move4: null });
+    const nameEl = screen.getByText("Moonblast");
+    expect(nameEl.className).toContain("text-sm");
+    expect(nameEl.className).not.toContain("text-xs");
+  });
+
+  // -------------------------------------------------------------------------
+  // 5. Non-compact render caps name column with max-w-36 (not w-full greedy)
+  //    — explicit contrast to test 2 above
+  // -------------------------------------------------------------------------
+  it("renders the move-name span with max-w-36 in default (non-compact) mode", () => {
+    renderLane({ move1: "Moonblast", move2: null, move3: null, move4: null });
+    const nameEl = screen.getByText("Moonblast");
+    expect(nameEl.className).toContain("max-w-36");
+    expect(nameEl.className).not.toContain("w-full");
+  });
+
+  // -------------------------------------------------------------------------
+  // 6. All 4 move slots render in compact mode (getMoveColClasses(true) used
+  //    for every row, not just the first one)
+  // -------------------------------------------------------------------------
+  it.each([
+    ["move1", "Moonblast"],
+    ["move2", "Psychic"],
+    ["move3", "Thunderbolt"],
+    ["move4", "Protect"],
+  ] as const)(
+    "renders %s slot name '%s' in compact mode",
+    (slot, moveName) => {
+      renderLane(
+        { [slot]: moveName },
+        VGC_FORMAT,
+        undefined,
+        { compact: true }
+      );
+      const nameEl = screen.getByText(moveName);
+      expect(nameEl).toBeInTheDocument();
+      expect(nameEl.className).toContain("text-xs");
+    }
+  );
+
+  // -------------------------------------------------------------------------
+  // 7. Empty slots render '+ Add move' placeholder in compact mode
+  //    — confirms the empty-slot branch inside MoveTile still fires when compact
+  // -------------------------------------------------------------------------
+  it("renders '+ Add move' for empty slots in compact mode", () => {
+    renderLane(
+      { move1: "Moonblast", move2: null, move3: null, move4: null },
+      VGC_FORMAT,
+      undefined,
+      { compact: true }
+    );
+    expect(screen.getAllByText("+ Add move").length).toBe(3);
   });
 });
 
