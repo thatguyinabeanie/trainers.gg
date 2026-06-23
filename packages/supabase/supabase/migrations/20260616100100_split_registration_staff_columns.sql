@@ -346,6 +346,24 @@ CREATE TRIGGER audit_registration_status_change_trigger
   EXECUTE FUNCTION public.audit_registration_status_change();
 
 -- ---------------------------------------------------------------------------
+-- 5b. Drop storage policy that depends on rental_team_photo_key
+-- ---------------------------------------------------------------------------
+-- The storage.objects policy "Staff read managed rental photos" (created in
+-- 20260611040000_registrations_view_private_photos.sql) references
+-- tournament_registrations.rental_team_photo_key in its USING clause.
+-- It must be dropped before step 6 or PostgreSQL refuses the DROP COLUMN.
+-- It is recreated in step 7 below, referencing the staff table instead.
+-- DO/EXCEPTION matches the pattern in 20260611040000 for local dev compat.
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Staff read managed rental photos" ON storage.objects;
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Staff read managed rental photos policy drop skipped (insufficient privileges in local dev).';
+END;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- 6. Drop the moved columns from the base table
 -- ---------------------------------------------------------------------------
 -- The public_tournament_registrations view (20260615195810) only selects the
@@ -375,3 +393,35 @@ ALTER TABLE public.tournament_registrations
 -- table (created by 20260220233417). The equivalent index is now on the staff
 -- table (idx_registration_staff_dropped_by, step 3 above).
 DROP INDEX IF EXISTS public.idx_tournament_registrations_dropped_by;
+
+-- ---------------------------------------------------------------------------
+-- 7. Recreate storage policy for staff rental-photo read
+-- ---------------------------------------------------------------------------
+-- rental_team_photo_key was moved from tournament_registrations to
+-- tournament_registration_staff earlier in this migration. The old storage
+-- policy referenced the base-table column — recreate it to join through the
+-- staff table instead. DO/EXCEPTION handles local dev compatibility.
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Staff read managed rental photos" ON storage.objects;
+  CREATE POLICY "Staff read managed rental photos"
+    ON storage.objects FOR SELECT
+    TO authenticated
+    USING (
+      bucket_id = 'rental-photos'
+      AND EXISTS (
+        SELECT 1
+        FROM public.tournament_registration_staff trs
+        JOIN public.tournament_registrations tr ON tr.id = trs.registration_id
+        JOIN public.tournaments t ON t.id = tr.tournament_id
+        JOIN public.alts a ON a.id = tr.alt_id
+        WHERE trs.rental_team_photo_key IS NOT NULL
+          AND a.user_id::text = (storage.foldername(name))[1]
+          AND public.has_community_permission(t.community_id, 'tournament.manage')
+      )
+    );
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Staff read managed rental photos policy recreation skipped (insufficient privileges in local dev).';
+END;
+$$;
