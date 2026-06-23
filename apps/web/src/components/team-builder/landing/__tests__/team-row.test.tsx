@@ -125,11 +125,49 @@ jest.mock("@/components/ui/dropdown-menu", () => {
     );
   }
 
+  function DropdownMenuSub({ children }: { children: React.ReactNode }) {
+    return <div data-testid="dropdown-sub">{children}</div>;
+  }
+
+  function DropdownMenuSubTrigger({
+    children,
+    onClick,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+  }) {
+    return (
+      <button
+        role="menuitem"
+        data-testid="submenu-trigger"
+        onClick={onClick}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  function DropdownMenuSubContent({
+    children,
+  }: {
+    children: React.ReactNode;
+  }) {
+    return <div data-testid="submenu-content">{children}</div>;
+  }
+
+  function DropdownMenuSeparator() {
+    return <hr data-testid="dropdown-separator" />;
+  }
+
   return {
     DropdownMenu,
     DropdownMenuTrigger,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
+    DropdownMenuSeparator,
   };
 });
 
@@ -453,9 +491,331 @@ describe("TeamRow", () => {
       await user.click(screen.getByRole("button", { name: "Team options" }));
 
       const items = screen.getAllByRole("menuitem");
-      // First item should be Peek, second Delete
-      expect(items[0]).toHaveTextContent(/peek/i);
-      expect(items[1]).toHaveTextContent(/delete/i);
+      // Peek should come before Delete
+      const peekIndex = items.findIndex((el) => /peek/i.test(el.textContent ?? ""));
+      const deleteIndex = items.findIndex((el) => /delete/i.test(el.textContent ?? ""));
+      expect(peekIndex).toBeLessThan(deleteIndex);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 9. Pin / Unpin menu item (Milestone B)
+  // ---------------------------------------------------------------------------
+
+  describe("onTogglePin prop", () => {
+    it("renders 'Pin' item when onTogglePin is provided and pinned=false", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          onTogglePin={jest.fn()}
+          pinned={false}
+        />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.getByRole("menuitem", { name: /^pin$/i })).toBeInTheDocument();
+    });
+
+    it("renders 'Unpin' item when onTogglePin is provided and pinned=true", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          onTogglePin={jest.fn()}
+          pinned={true}
+        />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.getByRole("menuitem", { name: /unpin/i })).toBeInTheDocument();
+    });
+
+    it("calls onTogglePin with summary.id when Pin is clicked", async () => {
+      const onTogglePin = jest.fn();
+      const user = userEvent.setup();
+      const summary = buildSummary({ id: "local-pin01" });
+      render(
+        <TeamRow summary={summary} onTogglePin={onTogglePin} pinned={false} />
+      );
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      await user.click(screen.getByRole("menuitem", { name: /^pin$/i }));
+
+      expect(onTogglePin).toHaveBeenCalledTimes(1);
+      expect(onTogglePin).toHaveBeenCalledWith("local-pin01");
+    });
+
+    it("calls onTogglePin with summary.id when Unpin is clicked", async () => {
+      const onTogglePin = jest.fn();
+      const user = userEvent.setup();
+      const summary = buildSummary({ id: "local-pin02" });
+      render(
+        <TeamRow summary={summary} onTogglePin={onTogglePin} pinned={true} />
+      );
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      await user.click(screen.getByRole("menuitem", { name: /unpin/i }));
+
+      expect(onTogglePin).toHaveBeenCalledTimes(1);
+      expect(onTogglePin).toHaveBeenCalledWith("local-pin02");
+    });
+
+    it("does NOT render Pin/Unpin item when onTogglePin is absent", async () => {
+      const user = userEvent.setup();
+      render(<TeamRow summary={buildSummary()} onDelete={jest.fn()} />);
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.queryByRole("menuitem", { name: /^pin$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("menuitem", { name: /unpin/i })).not.toBeInTheDocument();
+    });
+
+    it("Pin item appears above Delete", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          onTogglePin={jest.fn()}
+          pinned={false}
+          onDelete={jest.fn()}
+        />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+
+      const items = screen.getAllByRole("menuitem");
+      const pinIndex = items.findIndex((el) => /^pin$/i.test(el.textContent ?? ""));
+      const deleteIndex = items.findIndex((el) => /delete/i.test(el.textContent ?? ""));
+      expect(pinIndex).toBeLessThan(deleteIndex);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 10. Archive / Unarchive menu item (Milestone B)
+  // ---------------------------------------------------------------------------
+
+  describe("onToggleArchive prop", () => {
+    it("renders 'Archive' item when onToggleArchive is provided and archived=false", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          onToggleArchive={jest.fn()}
+          archived={false}
+        />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.getByRole("menuitem", { name: /^archive$/i })).toBeInTheDocument();
+    });
+
+    it("renders 'Unarchive' item when onToggleArchive is provided and archived=true", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          onToggleArchive={jest.fn()}
+          archived={true}
+        />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.getByRole("menuitem", { name: /unarchive/i })).toBeInTheDocument();
+    });
+
+    it("calls onToggleArchive with summary.id when Archive is clicked", async () => {
+      const onToggleArchive = jest.fn();
+      const user = userEvent.setup();
+      const summary = buildSummary({ id: "local-arch01" });
+      render(
+        <TeamRow summary={summary} onToggleArchive={onToggleArchive} archived={false} />
+      );
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      await user.click(screen.getByRole("menuitem", { name: /^archive$/i }));
+
+      expect(onToggleArchive).toHaveBeenCalledTimes(1);
+      expect(onToggleArchive).toHaveBeenCalledWith("local-arch01");
+    });
+
+    it("calls onToggleArchive with summary.id when Unarchive is clicked", async () => {
+      const onToggleArchive = jest.fn();
+      const user = userEvent.setup();
+      const summary = buildSummary({ id: "local-arch02" });
+      render(
+        <TeamRow summary={summary} onToggleArchive={onToggleArchive} archived={true} />
+      );
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      await user.click(screen.getByRole("menuitem", { name: /unarchive/i }));
+
+      expect(onToggleArchive).toHaveBeenCalledTimes(1);
+      expect(onToggleArchive).toHaveBeenCalledWith("local-arch02");
+    });
+
+    it("does NOT render Archive/Unarchive item when onToggleArchive is absent", async () => {
+      const user = userEvent.setup();
+      render(<TeamRow summary={buildSummary()} onDelete={jest.fn()} />);
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(
+        screen.queryByRole("menuitem", { name: /^archive$/i })
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 11. Move to folder submenu (Milestone B)
+  // ---------------------------------------------------------------------------
+
+  describe("onToggleFolder / manualFolders prop", () => {
+    const folders = [
+      { id: "folder-1", name: "VGC Teams" },
+      { id: "folder-2", name: "Drafts" },
+    ];
+
+    it("renders 'Move to folder' submenu trigger when onToggleFolder + manualFolders provided", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          onToggleFolder={jest.fn()}
+          manualFolders={folders}
+          memberFolderIds={[]}
+        />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.getByTestId("submenu-trigger")).toBeInTheDocument();
+      expect(screen.getByTestId("submenu-trigger").textContent).toContain(
+        "Move to folder"
+      );
+    });
+
+    it("lists all folders in the submenu", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          onToggleFolder={jest.fn()}
+          manualFolders={folders}
+          memberFolderIds={[]}
+        />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.getByText("VGC Teams")).toBeInTheDocument();
+      expect(screen.getByText("Drafts")).toBeInTheDocument();
+    });
+
+    it("calls onToggleFolder with (id, folderId) when a folder item is clicked", async () => {
+      const onToggleFolder = jest.fn();
+      const user = userEvent.setup();
+      const summary = buildSummary({ id: "local-mv01" });
+      render(
+        <TeamRow
+          summary={summary}
+          onToggleFolder={onToggleFolder}
+          manualFolders={folders}
+          memberFolderIds={[]}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      await user.click(screen.getByText("VGC Teams"));
+
+      expect(onToggleFolder).toHaveBeenCalledTimes(1);
+      expect(onToggleFolder).toHaveBeenCalledWith("local-mv01", "folder-1");
+    });
+
+    it("shows a checkmark for folders the draft already belongs to", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          onToggleFolder={jest.fn()}
+          manualFolders={folders}
+          memberFolderIds={["folder-1"]}
+        />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+
+      // The "VGC Teams" item should have a Check icon (mocked to svg)
+      const submenuContent = screen.getByTestId("submenu-content");
+      // "VGC Teams" folder-1 is a member — its menuitem should have the checkmark svg
+      // We verify by finding the menuitem for VGC Teams and checking it contains an svg
+      const vgcItem = Array.from(
+        submenuContent.querySelectorAll("[role=menuitem]")
+      ).find((el) => el.textContent?.includes("VGC Teams"));
+      expect(vgcItem).toBeTruthy();
+      // Member folders have a check icon (svg element from the mocked lucide)
+      expect(vgcItem?.querySelector("svg")).toBeTruthy();
+    });
+
+    it("does NOT render the submenu when onToggleFolder is absent", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          manualFolders={folders}
+          memberFolderIds={[]}
+          onDelete={jest.fn()}
+        />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.queryByTestId("submenu-trigger")).not.toBeInTheDocument();
+    });
+
+    it("does NOT render the submenu when manualFolders is empty", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          onToggleFolder={jest.fn()}
+          manualFolders={[]}
+          memberFolderIds={[]}
+          onDelete={jest.fn()}
+        />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.queryByTestId("submenu-trigger")).not.toBeInTheDocument();
+    });
+
+    it("calls onToggleFolder for the second folder correctly", async () => {
+      const onToggleFolder = jest.fn();
+      const user = userEvent.setup();
+      const summary = buildSummary({ id: "local-mv02" });
+      render(
+        <TeamRow
+          summary={summary}
+          onToggleFolder={onToggleFolder}
+          manualFolders={folders}
+          memberFolderIds={["folder-1"]}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      await user.click(screen.getByText("Drafts"));
+
+      expect(onToggleFolder).toHaveBeenCalledWith("local-mv02", "folder-2");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 12. Row is additive — no Milestone B items when callbacks absent
+  // ---------------------------------------------------------------------------
+
+  describe("additive safety — no callbacks provided", () => {
+    it("renders exactly one menuitem (Delete) when no optional callbacks are passed", async () => {
+      const user = userEvent.setup();
+      render(<TeamRow summary={buildSummary()} onDelete={jest.fn()} />);
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      const items = screen.getAllByRole("menuitem");
+      // Only Delete should be present
+      expect(items).toHaveLength(1);
+      expect(items[0]).toHaveTextContent(/delete/i);
+    });
+
+    it("renders no separator when no optional callbacks are provided", async () => {
+      const user = userEvent.setup();
+      render(<TeamRow summary={buildSummary()} onDelete={jest.fn()} />);
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.queryByTestId("dropdown-separator")).not.toBeInTheDocument();
     });
   });
 });

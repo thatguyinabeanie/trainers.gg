@@ -68,4 +68,30 @@ export interface TeamRowProps {
    * The mobile quick-look sheet is opened from here.
    */
   onPeek?: (id: string) => void;
+  // ---------------------------------------------------------------------------
+  // Milestone B — optional context actions (all additive; row unchanged when absent)
+  // ---------------------------------------------------------------------------
+  /** Whether this draft is currently pinned. */
+  pinned?: boolean;
+  /** Whether this draft is currently archived. */
+  archived?: boolean;
+  /**
+   * When provided, adds a Pin/Unpin item to the row's overflow menu.
+   * Label derives from `pinned`.
+   */
+  onTogglePin?: (id: string) => void;
+  /**
+   * When provided, adds an Archive/Unarchive item to the row's overflow menu.
+   * Label derives from `archived`.
+   */
+  onToggleArchive?: (id: string) => void;
+  /** Manual folders available for the "Move to folder" submenu. */
+  manualFolders?: { id: string; name: string }[];
+  /** IDs of the folders this draft already belongs to (drives checkmarks). */
+  memberFolderIds?: string[];
+  /**
+   * When provided alongside `manualFolders`, adds a "Move to folder" submenu.
+   * Toggles membership: adds if absent, removes if present.
+   */
+  onToggleFolder?: (id: string, folderId: string) => void;
 }

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2, Pin, PinOff, Archive, ArchiveX, FolderOpen, Check } from "lucide-react";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { getFormatLabel } from "@trainers/pokemon";
@@ -13,6 +13,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -74,9 +78,31 @@ function Sprite({ slot, index, highlighted }: SpriteProps) {
  * Optional props (additive — existing behaviour preserved when unset):
  * - `highlightSpecies` — species strings to highlight with a teal ring/bg
  * - `onPeek` — adds a "Peek" item to the overflow menu above Delete
+ * - `pinned` / `onTogglePin` — adds Pin/Unpin item when callback is provided
+ * - `archived` / `onToggleArchive` — adds Archive/Unarchive item when callback is provided
+ * - `manualFolders` / `memberFolderIds` / `onToggleFolder` — adds "Move to folder" submenu
  */
-export function TeamRow({ summary, onDelete, highlightSpecies, onPeek }: TeamRowProps) {
+export function TeamRow({
+  summary,
+  onDelete,
+  highlightSpecies,
+  onPeek,
+  pinned,
+  archived,
+  onTogglePin,
+  onToggleArchive,
+  manualFolders,
+  memberFolderIds,
+  onToggleFolder,
+}: TeamRowProps) {
   const highlightSet = new Set(highlightSpecies ?? []);
+  const memberSet = new Set(memberFolderIds ?? []);
+
+  // Determine whether the "Move to folder" submenu should appear
+  const showFolderMenu =
+    onToggleFolder !== undefined &&
+    manualFolders !== undefined &&
+    manualFolders.length > 0;
 
   return (
     <div className="group flex items-center gap-2 rounded-lg py-1.5 transition-colors hover:bg-accent/40 sm:gap-3">
@@ -138,6 +164,71 @@ export function TeamRow({ summary, onDelete, highlightSpecies, onPeek }: TeamRow
               Peek
             </DropdownMenuItem>
           )}
+
+          {/* Pin / Unpin — shown when onTogglePin is provided */}
+          {onTogglePin && (
+            <DropdownMenuItem onClick={() => onTogglePin(summary.id)}>
+              {pinned ? (
+                <>
+                  <PinOff className="size-4" />
+                  Unpin
+                </>
+              ) : (
+                <>
+                  <Pin className="size-4" />
+                  Pin
+                </>
+              )}
+            </DropdownMenuItem>
+          )}
+
+          {/* Archive / Unarchive — shown when onToggleArchive is provided */}
+          {onToggleArchive && (
+            <DropdownMenuItem onClick={() => onToggleArchive(summary.id)}>
+              {archived ? (
+                <>
+                  <ArchiveX className="size-4" />
+                  Unarchive
+                </>
+              ) : (
+                <>
+                  <Archive className="size-4" />
+                  Archive
+                </>
+              )}
+            </DropdownMenuItem>
+          )}
+
+          {/* Move to folder submenu — shown when onToggleFolder + manualFolders are provided */}
+          {showFolderMenu && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <FolderOpen className="size-4" />
+                Move to folder
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {manualFolders!.map((folder) => (
+                  <DropdownMenuItem
+                    key={folder.id}
+                    onClick={() => onToggleFolder!(summary.id, folder.id)}
+                  >
+                    {memberSet.has(folder.id) && (
+                      <Check className="size-3.5 text-teal-600" aria-hidden />
+                    )}
+                    <span className={cn(!memberSet.has(folder.id) && "pl-5")}>
+                      {folder.name}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+
+          {/* Separator before Delete when there are extra actions */}
+          {(onPeek || onTogglePin || onToggleArchive || showFolderMenu) && (
+            <DropdownMenuSeparator />
+          )}
+
           <DropdownMenuItem
             variant="destructive"
             onClick={() => onDelete?.(summary.id)}
