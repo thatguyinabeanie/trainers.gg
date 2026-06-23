@@ -33,9 +33,9 @@ const DEFAULT_FORMAT = "gen9championsvgc2026regma";
 
 /**
  * Build a fresh empty TeamWithPokemon with synthetic negative IDs.
- * Mirrors createEmptyTeam() from use-local-team-storage.ts.
+ * Canonical empty-team factory for local drafts — imported by use-local-drafts.ts.
  */
-function createEmptyTeam(): TeamWithPokemon {
+export function createEmptyTeam(): TeamWithPokemon {
   return {
     id: -1,
     name: "Untitled Team",

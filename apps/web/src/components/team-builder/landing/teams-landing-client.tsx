@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 import { useLocalDrafts } from "../persistence/use-local-drafts";
@@ -91,7 +90,7 @@ export function TeamsLandingClient() {
         <Button
           onClick={handleNewTeam}
           size="lg"
-          className={cn("min-h-10 shrink-0")}
+          className="min-h-10 shrink-0"
           aria-label="Create a new team"
         >
           <Plus className="size-4" />

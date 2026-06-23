@@ -20,6 +20,7 @@ import {
   createLocalDraft,
   saveLocalDraftTeam,
   deleteLocalDraft,
+  createEmptyTeam,
 } from "./local-drafts-store";
 import { type LocalDraftId, type LocalDraftRecord } from "./local-drafts-types";
 
@@ -28,29 +29,6 @@ import { type LocalDraftId, type LocalDraftRecord } from "./local-drafts-types";
 // =============================================================================
 
 const DEBOUNCE_MS = 300;
-
-// =============================================================================
-// Internal helpers
-// =============================================================================
-
-/** Build a fresh empty TeamWithPokemon placeholder for unknown-id drafts. */
-function createEmptyTeam(): TeamWithPokemon {
-  return {
-    id: -1,
-    name: "Untitled Team",
-    format: "gen9championsvgc2026regma",
-    format_legal: null,
-    description: null,
-    notes: null,
-    tags: null,
-    is_public: null,
-    parent_team_id: null,
-    created_by: -1,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    team_pokemon: [],
-  };
-}
 
 // =============================================================================
 // useLocalDrafts
