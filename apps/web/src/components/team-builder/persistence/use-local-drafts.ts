@@ -102,6 +102,12 @@ export function useLocalDrafts(): UseLocalDraftsReturn {
     setDrafts((prev) => prev.filter((d) => d.id !== id));
   }
 
+  // The attribute mutators below call setDrafts with a direct value (not a
+  // functional updater). This is intentional and safe: the store write is
+  // synchronous, so listLocalDrafts() immediately reflects the change.
+  // createDraft/deleteDraft use functional updaters because they already hold
+  // the new record/id in hand and can compute next state without re-reading.
+
   function pinDraft(id: LocalDraftId, pinned: boolean): void {
     setDraftPinned(id, pinned);
     setDrafts(listLocalDrafts());

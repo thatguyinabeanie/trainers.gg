@@ -27,7 +27,7 @@ import { type LocalTeamData } from "./types";
 // =============================================================================
 
 /** localStorage key for the v3 multi-draft store. */
-export const LOCAL_DRAFTS_STORAGE_KEY = "trainersgg.builder.localDrafts.v2";
+export const LOCAL_DRAFTS_STORAGE_KEY = "trainersgg.builder.localDrafts.v3";
 
 /** localStorage key for the legacy single-slot v1 store (migration source). */
 export const LEGACY_LOCAL_TEAM_KEY = "trainersgg.builder.localTeam.v1";
@@ -151,6 +151,18 @@ function maybeMigrateFromLegacy(): LocalDraftStoreV3 | null {
 function readStore(): LocalDraftStoreV3 {
   if (typeof window === "undefined") {
     return { version: 3, drafts: [] };
+  }
+
+  // One-time storage-key migration: if the old v2 key exists but the new v3 key
+  // is absent, copy the raw value over and delete the stale key. The in-payload
+  // version upgrade (v2 → v3) runs below after the raw value is parsed.
+  const OLD_KEY = "trainersgg.builder.localDrafts.v2";
+  if (!localStorage.getItem(LOCAL_DRAFTS_STORAGE_KEY)) {
+    const oldRaw = localStorage.getItem(OLD_KEY);
+    if (oldRaw) {
+      localStorage.setItem(LOCAL_DRAFTS_STORAGE_KEY, oldRaw);
+      localStorage.removeItem(OLD_KEY);
+    }
   }
 
   const raw = localStorage.getItem(LOCAL_DRAFTS_STORAGE_KEY);

@@ -321,7 +321,7 @@ export function FolderRail({
             onDeleteManualFolder ? (
               <DropdownMenu>
                 <DropdownMenuTrigger
-                  className="text-muted-foreground hover:text-foreground flex size-7 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  className="text-muted-foreground hover:text-foreground flex min-h-10 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:size-7 sm:min-h-8"
                   aria-label={`Options for ${folder.name}`}
                 >
                   <MoreHorizontal className="size-3.5" aria-hidden />

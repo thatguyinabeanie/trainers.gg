@@ -133,8 +133,8 @@ export function QuickLookContent({ data, className }: QuickLookContentProps) {
 
   return (
     <div className={cn("space-y-1", className)}>
-      {data.slots.map((slot) => (
-        <SlotCard key={`${slot.species ?? "empty"}-${slot.species}`} slot={slot} />
+      {data.slots.map((slot, i) => (
+        <SlotCard key={i} slot={slot} />
       ))}
       {Array.from({ length: emptyCount }).map((_, i) => (
         <EmptySlotCard key={`empty-${i}`} />

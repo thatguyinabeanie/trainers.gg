@@ -15,7 +15,7 @@
  *   updated_within — recency gate (N days)
  */
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { X, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -87,12 +87,7 @@ type RowState =
 // Helpers
 // =============================================================================
 
-let _rowCounter = 0;
-function nextId(): string {
-  return `row-${++_rowCounter}`;
-}
-
-function defaultRow(kind: RowKind): RowState {
+function defaultRow(kind: RowKind, nextId: () => string): RowState {
   switch (kind) {
     case "text":
       return { id: nextId(), kind: "text", value: "" };
@@ -134,10 +129,6 @@ function rowToPredicate(row: RowState): Predicate | null {
   }
 }
 
-function isRowValid(row: RowState): boolean {
-  return rowToPredicate(row) !== null;
-}
-
 // =============================================================================
 // CriteriaBuilderRow
 // =============================================================================
@@ -146,17 +137,19 @@ interface CriteriaBuilderRowProps {
   row: RowState;
   onChange: (next: RowState) => void;
   onRemove: () => void;
+  nextId: () => string;
 }
 
 function CriteriaBuilderRow({
   row,
   onChange,
   onRemove,
+  nextId,
 }: CriteriaBuilderRowProps) {
   function handleKindChange(newKind: string | null) {
     if (!newKind) return;
     // Preserve the id, reset the rest based on the new kind.
-    const next = defaultRow(newKind as RowKind);
+    const next = defaultRow(newKind as RowKind, nextId);
     next.id = row.id;
     onChange(next);
   }
@@ -312,6 +305,13 @@ export function CriteriaBuilder({
 }: CriteriaBuilderProps) {
   const [name, setName] = useState(initialName);
 
+  // Instance-scoped row-id counter — avoids cross-instance/render leakage from
+  // a module-level counter. Each CriteriaBuilder mount gets its own sequence.
+  const counterRef = useRef(0);
+  function nextId(): string {
+    return `row-${++counterRef.current}`;
+  }
+
   // Seed rows from initialCriteria when provided.
   const [rows, setRows] = useState<RowState[]>(() => {
     if (initialCriteria && initialCriteria.length > 0) {
@@ -339,7 +339,7 @@ export function CriteriaBuilder({
         }
       });
     }
-    return [defaultRow("text")];
+    return [defaultRow("text", nextId)];
   });
 
   const validPredicates = rows
@@ -349,7 +349,7 @@ export function CriteriaBuilder({
   const canSave = name.trim().length > 0 && validPredicates.length > 0;
 
   function handleAddRow() {
-    setRows((prev) => [...prev, defaultRow("text")]);
+    setRows((prev) => [...prev, defaultRow("text", nextId)]);
   }
 
   function handleChangeRow(id: string, next: RowState) {
@@ -400,6 +400,7 @@ export function CriteriaBuilder({
                   row={row}
                   onChange={(next) => handleChangeRow(row.id, next)}
                   onRemove={() => handleRemoveRow(row.id)}
+                  nextId={nextId}
                 />
               </div>
             ))}
