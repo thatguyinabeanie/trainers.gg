@@ -233,11 +233,6 @@ export function TeamsLandingClient() {
   const query = parseSearchInput(search);
   const allMatches = filterDrafts(visibleDrafts, query);
 
-  // Build a Map<id, matchedSpecies[]> for highlight lookups in renderRow
-  const matchMap = new Map<string, string[]>(
-    allMatches.map((m) => [m.id, m.matchedSpecies])
-  );
-
   // Matched records (full objects) for grouping
   const matchedIds = new Set(allMatches.map((m) => m.id));
   const matchedRecords = visibleDrafts.filter((d) => matchedIds.has(d.id));
@@ -407,7 +402,8 @@ export function TeamsLandingClient() {
     rowProps: { tabIndex: number; ref: (el: HTMLElement | null) => void }
   ) {
     const summary = toDraftSummary(record);
-    const highlightSpecies = matchMap.get(record.id) ?? [];
+    const highlightSpecies =
+      allMatches.find((m) => m.id === record.id)?.matchedSpecies ?? [];
 
     const row = (
       // The outer div carries the tabIndex and ref so TeamSections can manage
@@ -488,7 +484,7 @@ export function TeamsLandingClient() {
   // ==========================================================================
 
   return (
-    <div className="mx-auto w-full max-w-screen-lg px-4 py-6 sm:px-6">
+    <div className="w-full px-4 py-6 sm:px-6">
       <div className="flex gap-4">
         {/* Desktop rail — rendered inline */}
         {isClient && !isMobile && (
