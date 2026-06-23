@@ -29,13 +29,20 @@ import {
 interface SpriteProps {
   slot: DraftSpeciesSlot;
   index: number;
+  highlighted: boolean;
 }
 
-function Sprite({ slot, index }: SpriteProps) {
+function Sprite({ slot, index, highlighted }: SpriteProps) {
   const sprite = getPokemonSprite(slot.species ?? "", { shiny: slot.isShiny });
 
   return (
-    <div className="relative size-8 shrink-0 sm:size-9">
+    <div
+      className={cn(
+        "relative size-8 shrink-0 rounded sm:size-9",
+        // Subtle teal highlight ring+bg when this species is a search match
+        highlighted && "bg-teal-500/10 ring-2 ring-teal-500/40"
+      )}
+    >
       <Image
         src={sprite.url}
         alt={slot.species ?? `Slot ${index + 1}`}
@@ -63,8 +70,14 @@ function Sprite({ slot, index }: SpriteProps) {
  * The main area is a Next.js Link to the draft editor. The overflow menu
  * is a sibling (not nested inside the link) to avoid nested interactive
  * elements.
+ *
+ * Optional props (additive — existing behaviour preserved when unset):
+ * - `highlightSpecies` — species strings to highlight with a teal ring/bg
+ * - `onPeek` — adds a "Peek" item to the overflow menu above Delete
  */
-export function TeamRow({ summary, onDelete }: TeamRowProps) {
+export function TeamRow({ summary, onDelete, highlightSpecies, onPeek }: TeamRowProps) {
+  const highlightSet = new Set(highlightSpecies ?? []);
+
   return (
     <div className="group flex items-center gap-2 rounded-lg py-1.5 transition-colors hover:bg-accent/40 sm:gap-3">
       {/* Main clickable area */}
@@ -89,6 +102,7 @@ export function TeamRow({ summary, onDelete }: TeamRowProps) {
                 key={`${slot.species ?? "empty"}-${i}`}
                 slot={slot}
                 index={i}
+                highlighted={slot.species !== null && highlightSet.has(slot.species)}
               />
             ))
           )}
@@ -118,6 +132,12 @@ export function TeamRow({ summary, onDelete }: TeamRowProps) {
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={4}>
+          {/* Peek item — shown only when onPeek is provided */}
+          {onPeek && (
+            <DropdownMenuItem onClick={() => onPeek(summary.id)}>
+              Peek
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             variant="destructive"
             onClick={() => onDelete?.(summary.id)}

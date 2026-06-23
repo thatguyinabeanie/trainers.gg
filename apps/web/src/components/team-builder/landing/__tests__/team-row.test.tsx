@@ -336,4 +336,126 @@ describe("TeamRow", () => {
       expect(screen.getByText("Test Team")).toBeInTheDocument();
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // 7. highlightSpecies — teal ring/bg applied to matched sprites
+  // ---------------------------------------------------------------------------
+
+  describe("highlightSpecies prop", () => {
+    it("adds highlight classes to a matched sprite's wrapper", () => {
+      const summary = buildSummary({
+        filledCount: 2,
+        species: [
+          { species: "Incineroar", isShiny: false },
+          { species: "Rillaboom", isShiny: false },
+        ],
+      });
+      render(
+        <TeamRow
+          summary={summary}
+          highlightSpecies={["Incineroar"]}
+        />
+      );
+
+      // The Incineroar image's parent wrapper should carry the highlight class
+      const incineroarImg = screen.getByAltText("Incineroar");
+      const wrapper = incineroarImg.parentElement;
+      expect(wrapper?.className).toContain("ring-2");
+    });
+
+    it("does NOT add highlight classes to non-matched sprites", () => {
+      const summary = buildSummary({
+        filledCount: 2,
+        species: [
+          { species: "Incineroar", isShiny: false },
+          { species: "Rillaboom", isShiny: false },
+        ],
+      });
+      render(
+        <TeamRow
+          summary={summary}
+          highlightSpecies={["Incineroar"]}
+        />
+      );
+
+      const rillaboomImg = screen.getByAltText("Rillaboom");
+      const wrapper = rillaboomImg.parentElement;
+      expect(wrapper?.className).not.toContain("ring-2");
+    });
+
+    it("adds no highlight when highlightSpecies is an empty array", () => {
+      const summary = buildSummary({
+        filledCount: 1,
+        species: [{ species: "Incineroar", isShiny: false }],
+      });
+      render(
+        <TeamRow summary={summary} highlightSpecies={[]} />
+      );
+
+      const img = screen.getByAltText("Incineroar");
+      const wrapper = img.parentElement;
+      expect(wrapper?.className).not.toContain("ring-2");
+    });
+
+    it("adds no highlight when highlightSpecies is omitted", () => {
+      const summary = buildSummary({
+        filledCount: 1,
+        species: [{ species: "Incineroar", isShiny: false }],
+      });
+      render(<TeamRow summary={summary} />);
+
+      const img = screen.getByAltText("Incineroar");
+      const wrapper = img.parentElement;
+      expect(wrapper?.className).not.toContain("ring-2");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 8. onPeek — Peek menu item
+  // ---------------------------------------------------------------------------
+
+  describe("onPeek prop", () => {
+    it("renders a 'Peek' menu item when onPeek is provided", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow summary={buildSummary()} onPeek={jest.fn()} onDelete={jest.fn()} />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.getByRole("menuitem", { name: /peek/i })).toBeInTheDocument();
+    });
+
+    it("calls onPeek with the summary id when Peek is clicked", async () => {
+      const onPeek = jest.fn();
+      const user = userEvent.setup();
+      const summary = buildSummary({ id: "local-peek01" });
+      render(<TeamRow summary={summary} onPeek={onPeek} />);
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      await user.click(screen.getByRole("menuitem", { name: /peek/i }));
+
+      expect(onPeek).toHaveBeenCalledTimes(1);
+      expect(onPeek).toHaveBeenCalledWith("local-peek01");
+    });
+
+    it("does NOT render the Peek item when onPeek is undefined", async () => {
+      const user = userEvent.setup();
+      render(<TeamRow summary={buildSummary()} onDelete={jest.fn()} />);
+
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+      expect(screen.queryByRole("menuitem", { name: /peek/i })).not.toBeInTheDocument();
+    });
+
+    it("Peek item appears above Delete in the menu", async () => {
+      const user = userEvent.setup();
+      render(
+        <TeamRow summary={buildSummary()} onPeek={jest.fn()} onDelete={jest.fn()} />
+      );
+      await user.click(screen.getByRole("button", { name: "Team options" }));
+
+      const items = screen.getAllByRole("menuitem");
+      // First item should be Peek, second Delete
+      expect(items[0]).toHaveTextContent(/peek/i);
+      expect(items[1]).toHaveTextContent(/delete/i);
+    });
+  });
 });

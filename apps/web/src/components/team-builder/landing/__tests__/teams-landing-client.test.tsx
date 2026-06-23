@@ -7,6 +7,18 @@ import React from "react";
 // Module-level mocks
 // =============================================================================
 
+// Controlled mobile/client state
+const mockUseIsMobile = jest.fn();
+const mockUseIsClient = jest.fn();
+
+jest.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mockUseIsMobile(),
+}));
+
+jest.mock("@/hooks/use-is-client", () => ({
+  useIsClient: () => mockUseIsClient(),
+}));
+
 // Mock useLocalDrafts so we can control state
 jest.mock("../../persistence/use-local-drafts", () => ({
   useLocalDrafts: jest.fn(),
@@ -22,17 +34,24 @@ jest.mock("next/navigation", () => ({
 const mockToast = { success: jest.fn(), error: jest.fn() };
 jest.mock("sonner", () => ({ toast: mockToast }));
 
-// Stub TeamRow to a simple accessible element — keeps tests focused on
-// TeamsLandingClient logic rather than re-testing TeamRow internals.
+// Stub TeamRow — keeps tests focused on TeamsLandingClient logic.
+// Accepts all props including the new highlightSpecies and onPeek.
 jest.mock("../team-row", () => ({
   TeamRow: ({
     summary,
     onDelete,
+    highlightSpecies,
+    onPeek,
   }: {
     summary: { id: string; name: string };
     onDelete?: (id: string) => void;
+    highlightSpecies?: string[];
+    onPeek?: (id: string) => void;
   }) => (
-    <div data-testid={`team-row-${summary.id}`}>
+    <div
+      data-testid={`team-row-${summary.id}`}
+      data-highlight={highlightSpecies?.join(",") ?? ""}
+    >
       <span>{summary.name}</span>
       {onDelete && (
         <button
@@ -42,12 +61,82 @@ jest.mock("../team-row", () => ({
           Delete
         </button>
       )}
+      {onPeek && (
+        <button
+          onClick={() => onPeek(summary.id)}
+          aria-label={`Peek ${summary.name}`}
+        >
+          Peek
+        </button>
+      )}
     </div>
   ),
 }));
 
-// Mock toDraftSummary to be a passthrough — our LocalDraftRecord fixtures
-// already carry enough shape for the stub TeamRow (id + name).
+// Stub SmartSearch — renders a plain input so tests can type queries.
+jest.mock("../smart-search", () => ({
+  SmartSearch: ({
+    value,
+    onValueChange,
+  }: {
+    value: string;
+    onValueChange: (v: string) => void;
+    suggestions: unknown[];
+  }) => (
+    <input
+      data-testid="smart-search"
+      value={value}
+      onChange={(e) => onValueChange(e.target.value)}
+      placeholder="Search teams…"
+      aria-label="Search teams"
+    />
+  ),
+}));
+
+// Stub QuickLook — render children + a marker
+jest.mock("../quick-look", () => ({
+  QuickLook: ({
+    children,
+    data,
+  }: {
+    children: React.ReactNode;
+    data: { name: string };
+  }) => (
+    <div data-testid="quick-look" data-name={data.name}>
+      {children}
+    </div>
+  ),
+}));
+
+// Stub QuickLookSheet
+jest.mock("../quick-look-sheet", () => ({
+  QuickLookSheet: ({
+    open,
+    data,
+    onOpenChange,
+  }: {
+    open: boolean;
+    data: { name: string };
+    onOpenChange: (open: boolean) => void;
+  }) =>
+    open ? (
+      <div data-testid="quick-look-sheet" data-name={data.name}>
+        <button onClick={() => onOpenChange(false)}>Close sheet</button>
+      </div>
+    ) : null,
+}));
+
+// Stub toQuickLookData
+jest.mock("../quick-look-shared", () => ({
+  toQuickLookData: jest.fn((record: { id: string; team: { name: string } }) => ({
+    id: record.id,
+    name: record.team.name || "Untitled Team",
+    format: null,
+    slots: [],
+  })),
+}));
+
+// Mock toDraftSummary to be a passthrough
 jest.mock("../team-landing-shared", () => ({
   toDraftSummary: jest.fn((record: { id: string; team: { name: string } }) => ({
     id: record.id,
@@ -69,9 +158,11 @@ jest.mock("@/components/ui/button", () => ({
     className,
     "aria-label": ariaLabel,
     size: _size,
+    variant: _variant,
     ...rest
   }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
     size?: string;
+    variant?: string;
     "aria-label"?: string;
   }) => (
     <button
@@ -110,7 +201,11 @@ import { useLocalDrafts } from "../../persistence/use-local-drafts";
 
 type MockUseLocalDrafts = jest.MockedFunction<typeof useLocalDrafts>;
 
-function makeRecord(id: string, name = "Test Team") {
+function makeRecord(
+  id: string,
+  name = "Test Team",
+  teamPokemon: unknown[] = []
+) {
   return {
     id,
     team: {
@@ -126,7 +221,7 @@ function makeRecord(id: string, name = "Test Team") {
       created_by: -1,
       created_at: "2026-06-23T00:00:00Z",
       updated_at: "2026-06-23T00:00:00Z",
-      team_pokemon: [],
+      team_pokemon: teamPokemon,
     },
     createdAt: "2026-06-23T00:00:00Z",
     updatedAt: "2026-06-23T00:00:00Z",
@@ -143,6 +238,9 @@ describe("TeamsLandingClient", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default to desktop + hydrated
+    mockUseIsClient.mockReturnValue(true);
+    mockUseIsMobile.mockReturnValue(false);
   });
 
   // ---------------------------------------------------------------------------
@@ -419,6 +517,231 @@ describe("TeamsLandingClient", () => {
       expect(
         screen.getByRole("button", { name: /create a new team/i })
       ).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 7. Search — filtering
+  // ---------------------------------------------------------------------------
+
+  describe("search filtering", () => {
+    it("shows the SmartSearch input when there are drafts", () => {
+      (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+        drafts: [makeRecord("local-s01", "Rain Team")],
+        hydrated: true,
+        createDraft: mockCreateDraft,
+        deleteDraft: mockDeleteDraft,
+      });
+
+      render(<TeamsLandingClient />);
+      expect(screen.getByTestId("smart-search")).toBeInTheDocument();
+    });
+
+    it("does not show the SmartSearch when there are no drafts", () => {
+      (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+        drafts: [],
+        hydrated: true,
+        createDraft: mockCreateDraft,
+        deleteDraft: mockDeleteDraft,
+      });
+
+      render(<TeamsLandingClient />);
+      expect(screen.queryByTestId("smart-search")).not.toBeInTheDocument();
+    });
+
+    it("typing a query filters rows — matching draft is shown", async () => {
+      const user = userEvent.setup();
+      (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+        drafts: [
+          makeRecord("local-s01", "Rain Team"),
+          makeRecord("local-s02", "Trick Room"),
+        ],
+        hydrated: true,
+        createDraft: mockCreateDraft,
+        deleteDraft: mockDeleteDraft,
+      });
+
+      render(<TeamsLandingClient />);
+      await user.type(screen.getByTestId("smart-search"), "Rain");
+
+      // Rain Team matches; Trick Room does not
+      expect(screen.getByTestId("team-row-local-s01")).toBeInTheDocument();
+      expect(screen.queryByTestId("team-row-local-s02")).not.toBeInTheDocument();
+    });
+
+    it("shows 'no matches' state when search yields no results", async () => {
+      const user = userEvent.setup();
+      (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+        drafts: [makeRecord("local-s03", "Rain Team")],
+        hydrated: true,
+        createDraft: mockCreateDraft,
+        deleteDraft: mockDeleteDraft,
+      });
+
+      render(<TeamsLandingClient />);
+      await user.type(screen.getByTestId("smart-search"), "xyzzy");
+
+      expect(screen.getByText(/no teams matched/i)).toBeInTheDocument();
+    });
+
+    it("clear-search button in no-matches state resets filter", async () => {
+      const user = userEvent.setup();
+      (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+        drafts: [makeRecord("local-s04", "Rain Team")],
+        hydrated: true,
+        createDraft: mockCreateDraft,
+        deleteDraft: mockDeleteDraft,
+      });
+
+      render(<TeamsLandingClient />);
+      await user.type(screen.getByTestId("smart-search"), "xyzzy");
+      expect(screen.getByText(/no teams matched/i)).toBeInTheDocument();
+
+      // Click the clear button in the no-matches state
+      await user.click(screen.getByRole("button", { name: /clear search/i }));
+      // The row should reappear
+      expect(screen.getByTestId("team-row-local-s04")).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 8. Quick-look — desktop vs mobile conditional mount
+  // ---------------------------------------------------------------------------
+
+  describe("quick-look conditional mount", () => {
+    describe("desktop (isClient=true, isMobile=false)", () => {
+      beforeEach(() => {
+        mockUseIsClient.mockReturnValue(true);
+        mockUseIsMobile.mockReturnValue(false);
+      });
+
+      it("wraps each row in a QuickLook hovercard on desktop", () => {
+        (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+          drafts: [makeRecord("local-ql01", "Rain Team")],
+          hydrated: true,
+          createDraft: mockCreateDraft,
+          deleteDraft: mockDeleteDraft,
+        });
+
+        render(<TeamsLandingClient />);
+        expect(screen.getByTestId("quick-look")).toBeInTheDocument();
+      });
+
+      it("does NOT render a QuickLookSheet on desktop", () => {
+        (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+          drafts: [makeRecord("local-ql02", "Rain Team")],
+          hydrated: true,
+          createDraft: mockCreateDraft,
+          deleteDraft: mockDeleteDraft,
+        });
+
+        render(<TeamsLandingClient />);
+        expect(screen.queryByTestId("quick-look-sheet")).not.toBeInTheDocument();
+      });
+
+      it("rows do NOT receive onPeek on desktop", () => {
+        (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+          drafts: [makeRecord("local-ql03", "Rain Team")],
+          hydrated: true,
+          createDraft: mockCreateDraft,
+          deleteDraft: mockDeleteDraft,
+        });
+
+        render(<TeamsLandingClient />);
+        // No "Peek" button rendered in the stubbed TeamRow
+        expect(
+          screen.queryByRole("button", { name: /peek/i })
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    describe("mobile (isClient=true, isMobile=true)", () => {
+      beforeEach(() => {
+        mockUseIsClient.mockReturnValue(true);
+        mockUseIsMobile.mockReturnValue(true);
+      });
+
+      it("does NOT wrap rows in QuickLook on mobile", () => {
+        (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+          drafts: [makeRecord("local-mob01", "Rain Team")],
+          hydrated: true,
+          createDraft: mockCreateDraft,
+          deleteDraft: mockDeleteDraft,
+        });
+
+        render(<TeamsLandingClient />);
+        expect(screen.queryByTestId("quick-look")).not.toBeInTheDocument();
+      });
+
+      it("renders a QuickLookSheet (initially closed) on mobile", () => {
+        (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+          drafts: [makeRecord("local-mob02", "Rain Team")],
+          hydrated: true,
+          createDraft: mockCreateDraft,
+          deleteDraft: mockDeleteDraft,
+        });
+
+        render(<TeamsLandingClient />);
+        // Sheet is closed by default — the stub renders null when open=false
+        expect(screen.queryByTestId("quick-look-sheet")).not.toBeInTheDocument();
+      });
+
+      it("rows receive onPeek on mobile, clicking it opens the sheet", async () => {
+        const user = userEvent.setup();
+        (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+          drafts: [makeRecord("local-mob03", "Rain Team")],
+          hydrated: true,
+          createDraft: mockCreateDraft,
+          deleteDraft: mockDeleteDraft,
+        });
+
+        render(<TeamsLandingClient />);
+
+        // The stubbed TeamRow renders a "Peek" button when onPeek is provided
+        const peekBtn = screen.getByRole("button", { name: /peek rain team/i });
+        await user.click(peekBtn);
+
+        // Sheet should now be open
+        expect(screen.getByTestId("quick-look-sheet")).toBeInTheDocument();
+      });
+
+      it("closing the sheet clears peekId", async () => {
+        const user = userEvent.setup();
+        (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+          drafts: [makeRecord("local-mob04", "Rain Team")],
+          hydrated: true,
+          createDraft: mockCreateDraft,
+          deleteDraft: mockDeleteDraft,
+        });
+
+        render(<TeamsLandingClient />);
+        await user.click(screen.getByRole("button", { name: /peek rain team/i }));
+        expect(screen.getByTestId("quick-look-sheet")).toBeInTheDocument();
+
+        // Close via the stub's close button
+        await user.click(screen.getByRole("button", { name: /close sheet/i }));
+        expect(screen.queryByTestId("quick-look-sheet")).not.toBeInTheDocument();
+      });
+    });
+
+    describe("SSR / pre-hydration (isClient=false)", () => {
+      beforeEach(() => {
+        mockUseIsClient.mockReturnValue(false);
+        mockUseIsMobile.mockReturnValue(false);
+      });
+
+      it("does not render QuickLook or QuickLookSheet when not client", () => {
+        (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+          drafts: [makeRecord("local-ssr01", "Rain Team")],
+          hydrated: true,
+          createDraft: mockCreateDraft,
+          deleteDraft: mockDeleteDraft,
+        });
+
+        render(<TeamsLandingClient />);
+        expect(screen.queryByTestId("quick-look")).not.toBeInTheDocument();
+        expect(screen.queryByTestId("quick-look-sheet")).not.toBeInTheDocument();
+      });
     });
   });
 });

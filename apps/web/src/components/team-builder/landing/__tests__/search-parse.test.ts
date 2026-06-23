@@ -447,6 +447,87 @@ describe("getSuggestions — determinism", () => {
   });
 });
 
+// =============================================================================
+// getSuggestions — input-aware filtering (last token)
+// =============================================================================
+
+describe("getSuggestions — input-aware filtering by last token", () => {
+  const records = [
+    makeRecord({
+      id: "local-1",
+      team: makeTeam({
+        format: "gen9vgc2025regg",
+        teamPokemon: [
+          makePokemonSlot(1, 0, "Miraidon"),
+          makePokemonSlot(2, 1, "Incineroar"),
+        ],
+      }),
+    }),
+  ];
+
+  it("returns all suggestions when input is empty string", () => {
+    const all = getSuggestions("", records);
+    const filtered = getSuggestions("   ", records);
+    // Empty and whitespace-only should both return all
+    expect(all.length).toBeGreaterThan(0);
+    expect(filtered).toEqual(all);
+  });
+
+  it("returns all suggestions when input ends with a space (last token is empty)", () => {
+    const all = getSuggestions("", records);
+    const afterSpace = getSuggestions("species:Miraidon ", records);
+    expect(afterSpace).toEqual(all);
+  });
+
+  it("filters to Fields group when last token is 'spec' (prefix of 'species:')", () => {
+    const suggestions = getSuggestions("spec", records);
+    const inserts = suggestions.map((s) => s.insert);
+    expect(inserts).toContain("species:");
+    // Should NOT contain flags or formats
+    expect(inserts.every((i) => i.toLowerCase().startsWith("spec"))).toBe(true);
+  });
+
+  it("filters to Flags when last token is 'is:'", () => {
+    const suggestions = getSuggestions("is:", records);
+    const inserts = suggestions.map((s) => s.insert);
+    expect(inserts).toContain("is:complete");
+    expect(inserts).toContain("is:incomplete");
+    // No fields or species
+    expect(inserts.every((i) => i.toLowerCase().startsWith("is:"))).toBe(true);
+  });
+
+  it("filters to only 'is:complete' when last token is 'is:comp'", () => {
+    // 'is:comp' is a prefix of 'is:complete' only — NOT 'is:incomplete'
+    const suggestions = getSuggestions("is:comp", records);
+    const inserts = suggestions.map((s) => s.insert);
+    expect(inserts).toContain("is:complete");
+    expect(inserts).not.toContain("is:incomplete");
+    expect(inserts).not.toContain("is:legal");
+    expect(inserts).not.toContain("is:illegal");
+  });
+
+  it("filters by last token after multiple tokens (respects only last token)", () => {
+    // Input has two tokens: "name:sun species" → last token is "species"
+    const suggestions = getSuggestions("name:sun species", records);
+    const inserts = suggestions.map((s) => s.insert);
+    // Should include "species:" field entry
+    expect(inserts).toContain("species:");
+    // All filtered results start with "species"
+    expect(inserts.every((i) => i.toLowerCase().startsWith("species"))).toBe(true);
+  });
+
+  it("returns empty array when no suggestion matches the last token prefix", () => {
+    const suggestions = getSuggestions("zzzzunknown", records);
+    expect(suggestions).toHaveLength(0);
+  });
+
+  it("is case-insensitive when filtering", () => {
+    const lower = getSuggestions("spe", records);
+    const upper = getSuggestions("SPE", records);
+    expect(lower).toEqual(upper);
+  });
+});
+
 describe("getSuggestions — ignores null species slots", () => {
   it("does not add null species to Species group", () => {
     const records = [

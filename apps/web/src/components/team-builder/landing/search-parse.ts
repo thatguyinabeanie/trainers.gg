@@ -192,21 +192,36 @@ export function parseSearchInput(input: string): ParsedQuery {
  * 3. "Formats" — distinct format values present in the drafts (sorted, capped)
  * 4. "Species" — distinct species present in any slot of any draft (sorted, capped)
  *
- * The suggestions are deterministic and sorted within each group.
- * Each group is capped at `MAX_PER_GROUP` entries.
+ * The suggestions are filtered and ranked by the **last whitespace-delimited
+ * token** of `input`. For example:
+ * - last token = "spec"   → surfaces suggestions whose label starts with "spec"
+ * - last token = "is:"    → surfaces only Flags group entries
+ * - last token = "format" → surfaces Formats entries that start with "format"
+ * - last token = ""       → all suggestions (empty input or trailing space)
  *
- * @param input - The current raw search input (used to determine the last token for context)
+ * The suggestions are deterministic and sorted within each group.
+ * Each group is capped at `MAX_PER_GROUP` entries before filtering.
+ *
+ * @param input - The current raw search input (last token used for filtering)
  * @param records - The current set of local draft records
  */
 export function getSuggestions(
   input: string,
   records: readonly LocalDraftRecord[]
 ): SearchSuggestion[] {
-  const suggestions: SearchSuggestion[] = [];
+  // Determine the last whitespace token from the raw input.
+  // If input ends with a space (user just completed a token), last token is "".
+  const rawTokens = input.split(/\s+/);
+  const lastToken =
+    input.endsWith(" ") || input.trim().length === 0
+      ? ""
+      : (rawTokens[rawTokens.length - 1] ?? "").toLowerCase();
+
+  const all: SearchSuggestion[] = [];
 
   // --- Fields group ---
   for (const field of FIELD_KEYS.slice(0, MAX_PER_GROUP)) {
-    suggestions.push({
+    all.push({
       group: "Fields",
       label: `${field}:`,
       insert: `${field}:`,
@@ -215,7 +230,7 @@ export function getSuggestions(
 
   // --- Flags group ---
   for (const flag of FLAG_KEYS.slice(0, MAX_PER_GROUP)) {
-    suggestions.push({
+    all.push({
       group: "Flags",
       label: `is:${flag}`,
       insert: `is:${flag}`,
@@ -231,7 +246,7 @@ export function getSuggestions(
   }
   const formats = Array.from(formatSet).sort().slice(0, MAX_PER_GROUP);
   for (const fmt of formats) {
-    suggestions.push({
+    all.push({
       group: "Formats",
       label: `format:${fmt}`,
       insert: `format:${fmt}`,
@@ -249,12 +264,20 @@ export function getSuggestions(
   }
   const speciesList = Array.from(speciesSet).sort().slice(0, MAX_PER_GROUP);
   for (const species of speciesList) {
-    suggestions.push({
+    all.push({
       group: "Species",
       label: `species:${species}`,
       insert: `species:${species}`,
     });
   }
 
-  return suggestions;
+  // Filter by the last token: keep entries whose insert value starts with the
+  // last token (case-insensitive prefix match). When the last token is empty
+  // (no input yet, or trailing space), return all suggestions unchanged.
+  if (lastToken === "") {
+    return all;
+  }
+  return all.filter((s) =>
+    s.insert.toLowerCase().startsWith(lastToken)
+  );
 }

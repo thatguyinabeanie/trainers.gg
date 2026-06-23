@@ -58,4 +58,14 @@ export interface TeamRowProps {
   summary: LocalDraftSummary;
   /** Delete this draft (handled by the row's overflow menu). */
   onDelete?: (id: string) => void;
+  /**
+   * Species strings whose sprites should receive a subtle teal highlight.
+   * Used to surface search-matched pokemon in search results.
+   */
+  highlightSpecies?: string[];
+  /**
+   * When provided, adds a "Peek" item to the row's overflow menu.
+   * The mobile quick-look sheet is opened from here.
+   */
+  onPeek?: (id: string) => void;
 }
