@@ -17,8 +17,8 @@ export const metadata: Metadata = {
  * Component.
  */
 const siteFooter = (
-  <footer className="border-border/40 w-full border-t py-6">
-    <div className="text-muted-foreground container mx-auto flex flex-col items-center justify-between px-4 text-sm md:flex-row md:px-6">
+  <footer className="border-border/40 w-full border-t py-4">
+    <div className="text-muted-foreground mx-auto flex max-w-screen-2xl flex-col items-center justify-between px-4 text-sm md:flex-row md:px-6">
       <p className="font-semibold whitespace-nowrap">
         Built for competitors, by competitors.
       </p>

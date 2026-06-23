@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, FolderOpen, Zap } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsClient } from "@/hooks/use-is-client";
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { PageContainer } from "@/components/layout/page-container";
+import { cn } from "@/lib/utils";
 
 import { useLocalDrafts } from "../persistence/use-local-drafts";
 import { useFolders } from "../persistence/use-folders";
@@ -176,7 +177,15 @@ function SmartFolderDialog({
  *
  * Phase 1: local-drafts-only, additive (no DB, no auth required).
  */
-export function TeamsLandingClient() {
+interface TeamsLandingClientProps {
+  /**
+   * Site footer node, rendered at the bottom of the scrolling main column so
+   * the full-height left sidebar sits beside (not above) it.
+   */
+  footer?: ReactNode;
+}
+
+export function TeamsLandingClient({ footer }: TeamsLandingClientProps) {
   const {
     drafts,
     hydrated,
@@ -574,22 +583,31 @@ export function TeamsLandingClient() {
   // ==========================================================================
 
   return (
-    <PageContainer>
-      {/* Empty state: suppress the rail — it's noisy when folders are all empty */}
-      {hydrated && drafts.length === 0 ? (
-        <LandingEmptyState
-          variant={isAuthenticated ? "authed" : "guest"}
-          onNewTeam={handleNewTeam}
-        />
-      ) : (
-        <div className="flex gap-0">
-          {/* Desktop rail — rendered inline; gap-0 + rail border provides separation */}
-          {isClient && !isMobile && (
-            <div className="shrink-0">{rail}</div>
+    <div className="flex min-h-0 w-full flex-1">
+      {/* Flush-left, full-height sidebar — desktop only, hidden when there are no drafts */}
+      {isClient && !isMobile && !(hydrated && drafts.length === 0) && (
+        <aside
+          className={cn(
+            "bg-muted/30 shrink-0 self-stretch overflow-y-auto border-r border-border/40",
+            // Slim icon-strip padding when collapsed; roomier when expanded
+            prefs.railCollapsed ? "px-1 py-3" : "p-3"
           )}
+        >
+          {rail}
+        </aside>
+      )}
 
-          {/* Main content pane */}
-          <div className="min-w-0 flex-1">
+      {/* Main column — scrolls vertically; centered content, footer pinned to the bottom */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+        <div className="flex-1">
+          <PageContainer>
+            {hydrated && drafts.length === 0 ? (
+              <LandingEmptyState
+                variant={isAuthenticated ? "authed" : "guest"}
+                onNewTeam={handleNewTeam}
+              />
+            ) : (
+              <div className="min-w-0">
             {/* Page header — tournaments pattern: title left, actions right */}
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <h1 className="text-3xl font-bold">Your Teams</h1>
@@ -714,9 +732,12 @@ export function TeamsLandingClient() {
                 )}
               </>
             )}
-          </div>
+              </div>
+            )}
+          </PageContainer>
         </div>
-      )}
+        <div className="mt-auto">{footer}</div>
+      </div>
 
       {/* Bulk-action bar — fixed at bottom, shown when ≥1 row is selected */}
       <BulkActionBar
@@ -776,7 +797,6 @@ export function TeamsLandingClient() {
         }
         onSave={handleSmartFolderSave}
       />
-
-    </PageContainer>
+    </div>
   );
 }

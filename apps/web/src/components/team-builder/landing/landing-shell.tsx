@@ -33,14 +33,14 @@ export function LandingShell({ footer }: LandingShellProps) {
       {/* Top bar — identical chrome to the workspace editor */}
       <BuilderNav />
 
-      {/* Scrollable content area: landing list + site footer */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
-        {/* flex-1 lets the content grow, pushing the footer to the bottom */}
-        <div className="flex-1">
-          <TeamsLandingClient />
-        </div>
-        {/* mt-auto pins the footer to the viewport bottom on short pages */}
-        <div className="mt-auto">{footer}</div>
+      {/*
+        Horizontal split below the top bar. TeamsLandingClient owns the
+        sidebar + scrolling-main layout so the full-height left sidebar sits
+        beside the content (and footer), dashboard-01 style. The footer is
+        threaded through so it lands at the bottom of the scrolling column.
+      */}
+      <div className="flex min-h-0 flex-1">
+        <TeamsLandingClient footer={footer} />
       </div>
     </div>
   );

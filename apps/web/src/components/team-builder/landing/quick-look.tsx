@@ -43,7 +43,14 @@ export interface QuickLookProps {
 export function QuickLook({ data, children }: QuickLookProps) {
   return (
     <HoverCard>
-      <HoverCardTrigger className="block w-full">
+      {/*
+        Render the trigger as a <div>, not its default <a>. The row passed as
+        `children` already contains a Next.js <Link> (an <a>); a default-anchor
+        trigger would nest <a> inside <a>, which is invalid HTML and throws a
+        hydration error. A <div> trigger keeps hover/peek working — keyboard
+        users reach the editor via the row's own Link and the "Peek" menu item.
+      */}
+      <HoverCardTrigger render={<div className="block w-full" />}>
         {children}
       </HoverCardTrigger>
       <HoverCardContent

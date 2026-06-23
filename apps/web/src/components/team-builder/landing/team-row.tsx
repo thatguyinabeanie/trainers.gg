@@ -618,10 +618,9 @@ export function TeamRow({
           )}
         </div>
 
-        {/* Flex spacer — pushes right group to the far edge */}
-        <div className="flex-1" />
-
-        {/* Right group: format badge · legal status · local badge */}
+        {/* Right group: format badge · legal status · local badge —
+            sits directly after the sprites (no flex spacer) so the team's
+            identity reads as one tight cluster instead of name···void···badges */}
         <div className="flex shrink-0 items-center gap-2">
           {summary.format && (
             <Badge variant="secondary" className="text-xs">
