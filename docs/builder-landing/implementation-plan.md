@@ -73,6 +73,26 @@
 - **Tests:** Jest for the multi-draft store + id helper (create/list/get/update/delete + migration); RTL for `team-row` + landing client + the `NewTeamDialog` nav prop; Playwright E2E for landing↔editor↔back, deep-link, and new-team→editor.
 - **Reviewers:** code-reviewer, ui-verifier, parity-checker (bg).
 
+### Local-first re-sequencing (2026-06-23) — built ahead of Phase 2
+
+Phase 1's "local-drafts-only + additive" decision was extended: the **entire rich landing was built client-side against localStorage**, ahead of (and without) the Phase 2 schema. The DB, account-team enrichment, and dashboard consolidation stay **deferred**. Built on `feat/builder-landing-phase1` (PR #374→ impl PR #376) as three milestones:
+
+| Milestone (this branch) | Maps to | Built |
+| --- | --- | --- |
+| **A** | Phase 3 (client part) | smart search (predicate evaluator + parser, `⌘K`), match highlight, quick-look hovercard/sheet |
+| **B** | Phase 4 + Phase 5 controls | folder rail + collapsible sections, auto (gen→format) / manual / smart folders (seeded + criteria-builder + save-from-search), sort + density (persisted), pin / archive / move-to-folder, roving keyboard nav |
+| **C** | Phase 5 bulk + Phase 6 (client) | bulk select + action bar (move/export/archive/delete), deferred-commit delete + Undo, empty/first-run (guest + authed; sample on-ramp stubbed), mobile FAB, **drag-reorder** (Custom-order gated) |
+
+**Local substitutions for the deferred DB:** `pinned`/`archived`/`sortOrder`/`folderIds` live on the local draft record (store **v3**); `local-folders-store` holds manual + smart folder defs; `landing-prefs-store` holds sort/density/rail/selected-folder. One `Predicate` evaluator powers live search **and** smart folders.
+
+**Chrome fix (2026-06-23):** the landing now renders **full-width** with the `BuilderNav` top bar + the site footer (it had been a narrow centered column with no chrome).
+
+**Execution approach for this push (user-directed):** tests were **deferred to a final hardening pass** — build all features first. Per-feature work ran source-typecheck-only inline; CI is the safety net. The hardening pass owes: a green Jest suite (migrate fixtures to the shared `makeDraftRecord`; add Milestone C tests), E2E extension (search / folders / bulk-undo / archive-restore / drag), and a **production-build** UI verification (dev can't render the editor — ~90s `@smogon/calc` compile). A code review of Milestones A+B was run; its source findings (storage-key v2→v3, mobile tap target, non-unique keys, instance-scoped counter, `use client` hook directive) are fixed.
+
+**Still deferred (later phases) — the Phase 2–6 specs below remain the source of truth for the DB-backed work:** Phase 2 schema + RLS, `getEnrichedTeamsForUser` + account-team enrichment (the account side of Phase 3), `move_team_to_alt`, login-reconcile/sync (Phase 6), and the dashboard consolidation (pull team-builder out of `/dashboard/*`).
+
+---
+
 ### Phase 2 — Schema + data layer
 
 **Goal:** every DB capability the later phases need, with RLS and regenerated types.
