@@ -3,13 +3,15 @@
 /**
  * LocalBuilderWorkspace
  *
- * Wrapper component for the public /builder page. Creates a local team backed
- * by localStorage and wires up the TeamWorkspaceV2 with LocalPersistence.
+ * Wrapper component for the per-draft editor route /builder/t/[id].
+ * Reads a single local draft from localStorage and wires up TeamWorkspaceV2
+ * with LocalPersistence.
  *
  * Features:
  * - Anonymous team building (no account required)
- * - Automatic localStorage persistence (debounced)
- * - Hydrates from previous session on page load
+ * - Automatic localStorage persistence (debounced, per-draft)
+ * - Hydrates from the draft identified by `draftId` on page load
+ * - Redirects to /builder if the draft does not exist after hydration
  * - "Sign in to save" CTA → auth → return with ?action=save → auto-persist
  * - "Save to account" button for users already authenticated
  * - Alt selector for choosing which alt to save under
@@ -40,23 +42,29 @@ import { BuilderNav } from "@/components/builder-nav";
 import { BuilderTopbar } from "./builder-topbar";
 import { PersistenceProvider } from "./persistence/context";
 import { createLocalPersistence } from "./persistence/local-persistence";
-import {
-  useLocalTeamStorage,
-  clearLocalTeamStorage,
-} from "./persistence/use-local-team-storage";
+import { deleteLocalDraft } from "./persistence/local-drafts-store";
+import { useLocalDraft } from "./persistence/use-local-drafts";
 import { TeamWorkspaceV2 } from "./team-workspace";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface LocalBuilderWorkspaceProps {
+  draftId: string;
+}
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export function LocalBuilderWorkspace() {
+export function LocalBuilderWorkspace({ draftId }: LocalBuilderWorkspaceProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, loading: authLoading, user } = useAuthContext();
   const supabase = useSupabase();
 
-  const { team, setTeam, hydrated } = useLocalTeamStorage();
+  const { team, setTeam, hydrated, exists } = useLocalDraft(draftId);
   const [isSaving, setIsSaving] = useState(false);
 
   // Eagerly fetched alts + teams for authenticated users
@@ -70,6 +78,14 @@ export function LocalBuilderWorkspace() {
   });
 
   const format = team.format ? getFormatById(team.format) : undefined;
+
+  // Redirect to /builder if the draft does not exist after hydration.
+  // This is the approved imperative-in-effect pattern for router.replace.
+  useEffect(() => {
+    if (hydrated && !exists) {
+      router.replace("/builder");
+    }
+  }, [hydrated, exists, router]);
 
   // Fetch alts and teams when authenticated. Uses user.id from context
   // directly to avoid a redundant supabase.auth.getUser() call that races
@@ -186,8 +202,8 @@ export function LocalBuilderWorkspace() {
         return;
       }
 
-      // Success — clear localStorage and redirect to the new team
-      clearLocalTeamStorage();
+      // Success — delete this local draft and redirect to the new team
+      deleteLocalDraft(draftId);
       toast.success("Team saved to your account!");
       router.push(result.data.redirectUrl);
     } catch (error) {
@@ -207,7 +223,7 @@ export function LocalBuilderWorkspace() {
         return;
       }
 
-      // Load the team data into local storage (replaces current workspace)
+      // Load the team data into this draft's slot (replaces current workspace)
       setTeam(
         () =>
           ({
@@ -226,8 +242,9 @@ export function LocalBuilderWorkspace() {
     }
   }
 
-  // Show minimal loading skeleton while hydrating from localStorage
-  if (!hydrated) {
+  // Show minimal loading skeleton while hydrating from localStorage,
+  // or while redirecting away from a non-existent draft.
+  if (!hydrated || (hydrated && !exists)) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-muted-foreground text-sm">Loading builder...</div>

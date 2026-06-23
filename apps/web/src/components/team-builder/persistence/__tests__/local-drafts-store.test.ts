@@ -349,38 +349,46 @@ describe("saveLocalDraftTeam", () => {
 
   it("deduplicates team_pokemon on save (defense-in-depth)", () => {
     const record = createLocalDraft();
-    const tp = {
+    // Correct team_pokemon element shape: { id, pokemon_id, team_position, pokemon }
+    // where pokemon matches Tables<"pokemon"> columns from local-persistence.ts
+    const tp: TeamWithPokemon["team_pokemon"][number] = {
       id: 1,
       pokemon_id: 7,
-      team_id: -1,
-      position: 0,
-      species: "squirtle",
-      nickname: null,
-      ability: null,
-      item: null,
-      tera_type: null,
-      nature: null,
-      ev_hp: 0,
-      ev_atk: 0,
-      ev_def: 0,
-      ev_spa: 0,
-      ev_spd: 0,
-      ev_spe: 0,
-      iv_hp: 31,
-      iv_atk: 31,
-      iv_def: 31,
-      iv_spa: 31,
-      iv_spd: 31,
-      iv_spe: 31,
-      move_1: null,
-      move_2: null,
-      move_3: null,
-      move_4: null,
-      created_at: "2025-01-01T00:00:00Z",
-      updated_at: "2025-01-01T00:00:00Z",
+      team_position: 0,
+      pokemon: {
+        id: 7,
+        species: "squirtle",
+        ability: "",
+        move1: "",
+        move2: null,
+        move3: null,
+        move4: null,
+        nature: "Serious",
+        nickname: null,
+        notes: null,
+        held_item: null,
+        tera_type: null,
+        gender: null,
+        is_shiny: false,
+        level: 50,
+        format_legal: null,
+        created_at: "2025-01-01T00:00:00Z",
+        ev_hp: 0,
+        ev_attack: 0,
+        ev_defense: 0,
+        ev_special_attack: 0,
+        ev_special_defense: 0,
+        ev_speed: 0,
+        iv_hp: 31,
+        iv_attack: 31,
+        iv_defense: 31,
+        iv_special_attack: 31,
+        iv_special_defense: 31,
+        iv_speed: 31,
+      },
     };
     const teamWithDupes = makeTeam({
-      team_pokemon: [tp, { ...tp, id: 2 }], // same pokemon_id twice
+      team_pokemon: [tp, { ...tp, id: 2 }], // same pokemon_id twice, different entry id
     });
 
     saveLocalDraftTeam(record.id, teamWithDupes);

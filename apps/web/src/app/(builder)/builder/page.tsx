@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { type Metadata } from "next";
 
-import { LocalBuilderWorkspace } from "@/components/team-builder/local-builder-workspace";
+import { TeamsLandingClient } from "@/components/team-builder/landing/teams-landing-client";
 
 export const metadata: Metadata = {
   title: "Team Builder — trainers.gg",
@@ -11,17 +11,17 @@ export const metadata: Metadata = {
 
 export default function BuilderPage() {
   return (
-    <div className="h-full overflow-hidden">
+    <div className="h-full overflow-auto">
       <Suspense
         fallback={
           <div className="flex h-full items-center justify-center">
             <div className="text-muted-foreground text-sm">
-              Loading builder...
+              Loading teams...
             </div>
           </div>
         }
       >
-        <LocalBuilderWorkspace />
+        <TeamsLandingClient />
       </Suspense>
     </div>
   );
