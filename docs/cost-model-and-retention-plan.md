@@ -30,6 +30,7 @@ The remaining risks are slow and quiet:
 | Data-retention policy (3 tiers)                                            | `docs/cost-model.md` → Data-retention policy                                                 | ✅     |
 | `import_runs` 30-day retention janitor (pg_cron)                           | `packages/supabase/supabase/migrations/20260623003335_schedule_import_runs_retention_cron.sql` | ✅     |
 | Cross-link to the marquee runbook                                          | `docs/runbooks/marquee-events.md` → Related docs                                             | ✅     |
+| Ads / monetization strategy doc (revenue side — ads, compliance, rollout)  | `docs/monetization.md`                                                                       | ✅     |
 
 ## Open decisions (owner action)
 

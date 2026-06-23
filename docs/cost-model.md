@@ -4,6 +4,7 @@ The single home for "how does trainers.gg accrue hosting cost, what's already mi
 
 - `docs/decisions/2026-06-11-data-access-and-rls-decisions.md` — the original cost/architecture analysis (the _why_ behind the split model).
 - `docs/runbooks/marquee-events.md` — the operational runbook for 1,000+ player events (the spike scenario).
+- `docs/monetization.md` — the **revenue** (money-_in_) side: ads and other streams that can offset the cost below.
 
 This doc covers the **ongoing / slow-accumulation** side: the cost surface, billing alerts, and data retention. The marquee runbook covers the **event-time spike** side. Read both.
 
@@ -170,6 +171,7 @@ The edge functions **already degrade gracefully** when the admin password is abs
 
 ## Related docs
 
+- `docs/monetization.md` — revenue side (ads + other streams) that can offset the cost surface above.
 - `docs/decisions/2026-06-11-data-access-and-rls-decisions.md` — cost/architecture analysis, the split-model rationale.
 - `docs/runbooks/marquee-events.md` — event-time spike runbook (quota raises, DB-tier bumps, incident levers).
 - `.claude/skills/reviewing-caching/SKILL.md` — caching playbook (S-bucket routes, tag invalidation).
