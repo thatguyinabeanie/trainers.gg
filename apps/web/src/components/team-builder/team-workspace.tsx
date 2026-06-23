@@ -52,6 +52,7 @@ import {
 
 import type { BuilderPersistence } from "./persistence/types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsClient } from "@/hooks/use-is-client";
 import { cn } from "@/lib/utils";
 import {
   ResizablePanelGroup,
@@ -86,6 +87,7 @@ import { useBuilderState } from "./use-builder-state";
 import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
 import { TeamLayoutToggle } from "./team-layout-toggle";
 import { SingleFocusView } from "./layouts/single-focus-view";
+import { EditorTeamRail } from "./editor/editor-team-rail";
 
 // Lazily load the calc engine provider so @smogon/calc stays out of the editor's
 // initial chunk. Mounted only when a calc-consuming view is open (see needsCalc).
@@ -143,6 +145,12 @@ interface TeamWorkspaceV2Props {
    * own header chrome (standalone vs dashboard PageHeader).
    */
   renderHeader: (actions: WorkspaceHeaderActions) => ReactNode;
+  /**
+   * Route-level draft id (e.g. "local-ab12") for local drafts. When present,
+   * the editor team rail mounts (sandwiched between the topbar and dock) and
+   * highlights this draft. Undefined for account-backed teams.
+   */
+  draftId?: string;
 }
 
 /**
@@ -474,6 +482,7 @@ export function TeamWorkspaceV2({
   onAltSelect,
   isAuthenticated,
   renderHeader,
+  draftId,
 }: TeamWorkspaceV2Props) {
   const router = useRouter();
   const state = useBuilderState();
@@ -723,6 +732,7 @@ export function TeamWorkspaceV2({
   }
 
   const isMobile = useIsMobile();
+  const isClient = useIsClient();
   const { mode: layoutMode } = useTeamLayout();
 
   // ---------------------------------------------------------------------------
@@ -890,10 +900,19 @@ export function TeamWorkspaceV2({
           onOpenSettings: () => setSettingsOpen(true),
         })}
 
-        <div
-          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-          ref={worklaneRef}
-        >
+        {/* Middle row: editor team rail (desktop) + content. Sandwiched between
+            the full-width topbar (above) and the full-width dock (below). */}
+        <div className="flex min-h-0 flex-1">
+          {isClient && !isMobile && draftId && (
+            <aside className="bg-muted/40 w-56 shrink-0 overflow-y-auto border-r border-border/40 p-2">
+              <EditorTeamRail currentDraftId={draftId} />
+            </aside>
+          )}
+
+          <div
+            className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+            ref={worklaneRef}
+          >
             {/* Horizontal split: true flex layout with ghost resize handles */}
             {!isMobile ? (
               <ResizablePanelGroup
@@ -1338,6 +1357,8 @@ export function TeamWorkspaceV2({
               </div>
             )}
           </div>
+        </div>
+        {/* End middle row — the full-width dock below sandwiches the rail */}
 
           <DockbarConnected
             onOpen={(key) => {

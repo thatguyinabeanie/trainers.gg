@@ -273,6 +273,7 @@ export function LocalBuilderWorkspace({ draftId }: LocalBuilderWorkspaceProps) {
         selectedAltId={selectedAltId}
         onAltSelect={setSelectedAltId}
         isAuthenticated={isAuthenticated}
+        draftId={draftId}
         renderHeader={(actions) => (
           <BuilderNav>
             <BuilderTopbar
