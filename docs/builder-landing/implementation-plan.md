@@ -30,6 +30,7 @@
 - Queries: `packages/supabase/src/queries/teams.ts` — `getTeamsForUser`, `getTeamsForAltList/Full`, `getTeamWithPokemon`, `getTeamsForAltByFormatFull`.
 - Mutations: `packages/supabase/src/mutations/teams.ts` — `createTeam`, `updateTeam`, `deleteTeam`, `forkTeam`, `reorderTeamPokemon`, …
 - Server actions: `apps/web/src/actions/teams.ts`. Editor-redesign branch is active in a **separate worktree** (no shared-tree conflict).
+- **Map correction (2026-06-23):** there are actually **two** editors today. `/builder` mounts the **local** (logged-out, localStorage) editor; the **account-team** editor already lives in the **dashboard** at `/dashboard/alts/[username]/teams/[teamId]` (`DashboardBuilderWrapper` → `TeamWorkspaceV2`). Both wrap the persistence-agnostic `TeamWorkspaceV2`. The local store is **single-draft** today (one key `trainersgg.builder.localTeam.v1` → one `LocalTeamData`, team `id: -1`) — there is no multi-draft id scheme yet. Other dashboard team surfaces: `/dashboard/teams` (`AllTeamsClient`), `/dashboard/alts/[username]/teams` (`TeamsListClient`), dashboard-home `TeamsSubTable`. The public `/user/[handle]` teams tab is **viewing**, not management.
 
 ---
 
@@ -57,15 +58,19 @@
 
 > Phases define **what ships and its done-when** (the acceptance criteria). The **Parallel Execution Model** below defines **how it's built** — and deliberately builds later-phase components early, in parallel, against locked contracts. Each phase still ends with working, testable software. Reviewers listed are dispatched **before push** per the auto-delegation table.
 
-### Phase 1 — Routing split + editor relocation (foundation)
+### Phase 1 — Local-builder routing split (foundation) · **scope revised 2026-06-23**
 
-**Goal:** `/builder/t/[id]` hosts today's editor; `/builder` renders a minimal unified list. Back button, deep links, and local-draft ids all work. **No schema change.**
+**Decision (2026-06-23):** Phase 1 is **local-drafts-only and purely additive** — it builds the new `/builder` landing + `/builder/t/[id]` editor for the **local (logged-out) builder** and **touches nothing in `/dashboard/*`**. Account teams do **not** appear in the landing yet (they arrive with the Phase 3 enriched unified list), and `/builder/t/[id]` hosts **local drafts only** in this phase.
 
-- **Scope:** extract the editor into the `[id]` route; introduce a stable local-draft id scheme (`local-ab12`); `NewTeamDialog` routes to `/builder/t/[id]` after create; landing lists teams as plain name-first rows + `+ New Team`.
-- **Files:** create `builder/t/[id]/page.tsx`; modify `builder/page.tsx`, `local-builder-workspace.tsx`, `team-workspace.tsx`, `new-team-dialog.tsx`; create `landing/teams-landing-client.tsx` (minimal), `landing/team-row.tsx`.
-- **Done-when:** navigate landing → editor → browser-back returns to list; reload an editor URL hydrates that team; logged-out local drafts open by local id.
+> **Eventual direction (later phase, not this PR):** pull team-builder *out of the dashboard* entirely — `/builder/t/[id]` becomes the single editor for account teams too, and the dashboard team routes (`/dashboard/teams`, `/dashboard/alts/[username]/teams`, `…/teams/[teamId]`, home `TeamsSubTable`) **redirect** into `/builder`. The user confirmed this end-state; it is sequenced **after** the rich landing exists so the list UX is never downgraded. The public `/user/[handle]` teams tab stays.
+
+**Goal:** `/builder` renders a minimal landing listing the user's **local drafts** (name-first rows + `New Team`); `/builder/t/[id]` hosts the local-draft editor. Multi-draft local storage replaces the single-slot store. Back button, deep links, and local-draft ids all work. **No schema change. No dashboard change.**
+
+- **Scope:** introduce a **multi-draft** local store keyed by a stable string id (`local-ab12`), migrating today's single `…localTeam.v1` draft into it; refactor the local editor so `/builder/t/[id]` edits the draft named in the URL; `/builder` lists those drafts; `NewTeamDialog` gets an optional post-create navigation-target prop so the **builder context** routes to `/builder/t/[id]` while its **dashboard usage is unchanged**.
+- **Files:** create `builder/t/[id]/page.tsx`, `landing/teams-landing-client.tsx` (minimal), `landing/team-row.tsx`, `persistence/local-drafts-store.ts`, `persistence/use-local-drafts.ts`, `landing/team-landing-shared.ts` (contract types); modify `builder/page.tsx`, `local-builder-workspace.tsx`, `new-team-dialog.tsx`. **Do not modify** `team-workspace.tsx` beyond what mounting per-draft requires, and **do not touch** any `(dashboard)` file.
+- **Done-when:** navigate landing → editor → browser-back returns to the list; reloading `/builder/t/local-xxxx` hydrates that draft; creating a team lands in its editor; multiple local drafts coexist and the old single draft is migrated on first load; `/dashboard/*` is byte-for-byte unchanged.
 - **Depends on:** nothing. **Atomic PR** (shared `/builder` entry touchpoint with the editor worktree).
-- **Tests:** Jest for the merge/id helpers; Playwright E2E for landing↔editor↔back + deep-link.
+- **Tests:** Jest for the multi-draft store + id helper (create/list/get/update/delete + migration); RTL for `team-row` + landing client + the `NewTeamDialog` nav prop; Playwright E2E for landing↔editor↔back, deep-link, and new-team→editor.
 - **Reviewers:** code-reviewer, ui-verifier, parity-checker (bg).
 
 ### Phase 2 — Schema + data layer
