@@ -14,7 +14,7 @@ import {
   renameSmartFolder,
   deleteSmartFolder,
 } from "../local-folders-store";
-import { type LocalFoldersStoreV1, type ManualFolder, type SmartFolder } from "../local-folders-types";
+import { type LocalFoldersStoreV1 } from "../local-folders-types";
 
 // =============================================================================
 // localStorage mock (matches local-drafts-store.test.ts pattern)

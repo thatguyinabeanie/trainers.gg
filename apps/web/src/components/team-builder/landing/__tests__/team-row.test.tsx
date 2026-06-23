@@ -182,6 +182,29 @@ jest.mock("@/components/ui/badge", () => ({
   }) => <span data-testid="badge" className={className}>{children}</span>,
 }));
 
+// Mock the Checkbox component — Base UI uses portals/context that don't work in JSDOM
+jest.mock("@/components/ui/checkbox", () => ({
+  Checkbox: ({
+    checked,
+    "aria-label": ariaLabel,
+    onClick,
+    "data-testid": testId,
+  }: {
+    checked?: boolean;
+    "aria-label"?: string;
+    onClick?: (e: React.MouseEvent) => void;
+    "data-testid"?: string;
+  }) => (
+    <button
+      role="checkbox"
+      aria-checked={checked ?? false}
+      aria-label={ariaLabel}
+      data-testid={testId}
+      onClick={onClick}
+    />
+  ),
+}));
+
 import { TeamRow } from "../team-row";
 import { type LocalDraftSummary, draftEditorHref } from "../team-landing-shared";
 
@@ -816,6 +839,119 @@ describe("TeamRow", () => {
 
       await user.click(screen.getByRole("button", { name: "Team options" }));
       expect(screen.queryByTestId("dropdown-separator")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 13. Bulk selection checkbox (Milestone C)
+  // ---------------------------------------------------------------------------
+
+  describe("selectable / onToggleSelect prop", () => {
+    it("does NOT render a checkbox when selectable is absent", () => {
+      render(<TeamRow summary={buildSummary()} />);
+      expect(
+        screen.queryByRole("checkbox")
+      ).not.toBeInTheDocument();
+    });
+
+    it("does NOT render a checkbox when selectable is false", () => {
+      render(<TeamRow summary={buildSummary()} selectable={false} />);
+      expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    });
+
+    it("renders a checkbox when selectable is true", () => {
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          selectable
+          selected={false}
+          onToggleSelect={jest.fn()}
+        />
+      );
+      expect(screen.getByRole("checkbox")).toBeInTheDocument();
+    });
+
+    it("checkbox has aria-checked=false when selected is false", () => {
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          selectable
+          selected={false}
+          onToggleSelect={jest.fn()}
+        />
+      );
+      expect(screen.getByRole("checkbox")).toHaveAttribute(
+        "aria-checked",
+        "false"
+      );
+    });
+
+    it("checkbox has aria-checked=true when selected is true", () => {
+      render(
+        <TeamRow
+          summary={buildSummary()}
+          selectable
+          selected={true}
+          onToggleSelect={jest.fn()}
+        />
+      );
+      expect(screen.getByRole("checkbox")).toHaveAttribute(
+        "aria-checked",
+        "true"
+      );
+    });
+
+    it("clicking the checkbox calls onToggleSelect(id, { shift: false }) on plain click", async () => {
+      const onToggleSelect = jest.fn();
+      const user = userEvent.setup();
+      const summary = buildSummary({ id: "local-sel01" });
+
+      render(
+        <TeamRow
+          summary={summary}
+          selectable
+          selected={false}
+          onToggleSelect={onToggleSelect}
+        />
+      );
+
+      await user.click(screen.getByRole("checkbox"));
+
+      expect(onToggleSelect).toHaveBeenCalledTimes(1);
+      expect(onToggleSelect).toHaveBeenCalledWith("local-sel01", {
+        shift: false,
+      });
+    });
+
+    it("checkbox has the correct aria-label", () => {
+      const summary = buildSummary({ name: "My Team" });
+      render(
+        <TeamRow
+          summary={summary}
+          selectable
+          selected={false}
+          onToggleSelect={jest.fn()}
+        />
+      );
+      expect(
+        screen.getByRole("checkbox", { name: /select my team/i })
+      ).toBeInTheDocument();
+    });
+
+    it("the main Link still has its href when checkbox is visible", () => {
+      const summary = buildSummary({ id: "local-sel02" });
+      render(
+        <TeamRow
+          summary={summary}
+          selectable
+          selected={false}
+          onToggleSelect={jest.fn()}
+        />
+      );
+
+      // The Link should still navigate to the editor href
+      const link = screen.getByText(summary.name).closest("a");
+      expect(link).toHaveAttribute("href", draftEditorHref("local-sel02"));
     });
   });
 });

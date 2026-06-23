@@ -9,6 +9,7 @@ import { getFormatLabel } from "@trainers/pokemon";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,11 +70,12 @@ function Sprite({ slot, index, highlighted }: SpriteProps) {
 /**
  * Name-first row for the /builder landing draft list.
  *
- * Layout: [name] → [sprites] → [format badge] … [⋯ overflow menu]
+ * Layout: [checkbox?] → [name] → [sprites] → [format badge] … [⋯ overflow menu]
  *
  * The main area is a Next.js Link to the draft editor. The overflow menu
  * is a sibling (not nested inside the link) to avoid nested interactive
- * elements.
+ * elements. The optional leading Checkbox is also a sibling — it intercepts
+ * its own click (with shift-key detection) without hijacking the Link.
  *
  * Optional props (additive — existing behaviour preserved when unset):
  * - `highlightSpecies` — species strings to highlight with a teal ring/bg
@@ -81,6 +83,7 @@ function Sprite({ slot, index, highlighted }: SpriteProps) {
  * - `pinned` / `onTogglePin` — adds Pin/Unpin item when callback is provided
  * - `archived` / `onToggleArchive` — adds Archive/Unarchive item when callback is provided
  * - `manualFolders` / `memberFolderIds` / `onToggleFolder` — adds "Move to folder" submenu
+ * - `selectable` / `selected` / `onToggleSelect` — bulk-selection checkbox (Milestone C)
  */
 export function TeamRow({
   summary,
@@ -94,6 +97,9 @@ export function TeamRow({
   manualFolders,
   memberFolderIds,
   onToggleFolder,
+  selectable,
+  selected,
+  onToggleSelect,
 }: TeamRowProps) {
   const highlightSet = new Set(highlightSpecies ?? []);
   const memberSet = new Set(memberFolderIds ?? []);
@@ -106,6 +112,34 @@ export function TeamRow({
 
   return (
     <div className="group flex items-center gap-2 rounded-lg py-1.5 transition-colors hover:bg-accent/40 sm:gap-3">
+      {/* Bulk-selection checkbox — sibling of Link, never nested inside it */}
+      {selectable && (
+        // Wrapper gives a ≥40px tap target on mobile without inflating layout
+        <div
+          // On desktop: hidden by default, revealed on group-hover or when selected.
+          // On mobile: always visible (the group-hover reveal is a pointer-hover
+          // concept; mobile users long-press to enter select-mode first).
+          className={cn(
+            "flex shrink-0 items-center justify-center size-10 sm:size-6",
+            // Desktop: hide until hover/selected; mobile always visible
+            "sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100",
+            selected && "sm:opacity-100"
+          )}
+          // Stop the click from bubbling to the row's Link wrapper
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Checkbox
+            data-testid={`checkbox-${summary.id}`}
+            checked={selected ?? false}
+            aria-label={`Select ${summary.name}`}
+            // Read shiftKey on the native click event to support range-select
+            onClick={(e: React.MouseEvent) => {
+              onToggleSelect?.(summary.id, { shift: e.shiftKey });
+            }}
+          />
+        </div>
+      )}
+
       {/* Main clickable area */}
       <Link
         href={draftEditorHref(summary.id)}

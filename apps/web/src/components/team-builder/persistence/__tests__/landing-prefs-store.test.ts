@@ -191,7 +191,7 @@ describe("readLandingPrefs — partial stored prefs", () => {
     // Known fields are preserved
     expect(result.density).toBe("compact");
     // Unknown keys are not present in the returned object
-    expect((result as Record<string, unknown>)["unknownFutureField"]).toBeUndefined();
+    expect((result as unknown as Record<string, unknown>)["unknownFutureField"]).toBeUndefined();
   });
 
   it("handles an empty prefs object by returning all defaults", () => {

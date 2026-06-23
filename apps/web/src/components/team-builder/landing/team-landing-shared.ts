@@ -94,4 +94,21 @@ export interface TeamRowProps {
    * Toggles membership: adds if absent, removes if present.
    */
   onToggleFolder?: (id: string, folderId: string) => void;
+  // ---------------------------------------------------------------------------
+  // Milestone C — bulk selection (all additive; row unchanged when absent)
+  // ---------------------------------------------------------------------------
+  /**
+   * When true, a leading Checkbox is rendered for bulk selection.
+   * Desktop: revealed on group-hover or when any selection is active.
+   * Mobile: always tappable (≥40px tap target).
+   */
+  selectable?: boolean;
+  /** Whether this draft is currently selected in the bulk selection set. */
+  selected?: boolean;
+  /**
+   * Called when the row's checkbox is toggled.
+   * `opts.shift` is true when the user held Shift while clicking —
+   * the parent should treat this as a range selection.
+   */
+  onToggleSelect?: (id: string, opts: { shift: boolean }) => void;
 }

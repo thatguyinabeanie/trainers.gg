@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
+import { describe, it, expect, beforeEach } from "@jest/globals";
 import { renderHook, act } from "@testing-library/react";
 import { useFolders } from "../use-folders";
 import {

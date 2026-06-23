@@ -1,8 +1,8 @@
 import { describe, it, expect } from "@jest/globals";
 import { type TeamWithPokemon } from "@trainers/supabase";
-import { type LocalDraftRecord } from "../../persistence/local-drafts-types";
 import { evaluateDraft, filterDrafts } from "../predicate-eval";
 import { type ParsedQuery } from "../search-types";
+import { makeDraftRecord } from "./fixtures";
 
 // =============================================================================
 // Fixture helpers
@@ -106,13 +106,14 @@ function makeRecord(
     createdAt: string;
     updatedAt: string;
   }> = {}
-): LocalDraftRecord {
-  return {
-    id: overrides.id ?? "local-ab12",
-    team: overrides.team ?? makeTeam(),
-    createdAt: overrides.createdAt ?? "2024-01-01T00:00:00Z",
-    updatedAt: overrides.updatedAt ?? "2024-06-01T00:00:00Z",
-  };
+) {
+  const { team_pokemon, ...restTeam } = overrides.team ?? makeTeam();
+  return makeDraftRecord({
+    id: overrides.id,
+    team: { ...restTeam, team_pokemon },
+    createdAt: overrides.createdAt,
+    updatedAt: overrides.updatedAt,
+  });
 }
 
 /** Build a ParsedQuery with a single predicate. */
@@ -132,7 +133,7 @@ const EMPTY_QUERY: ParsedQuery = { predicates: [], text: "" };
  * Build a record with exactly 6 filled, complete slots
  * (each has a truthy ability and move1).
  */
-function makeCompleteRecord(id = "local-complete"): LocalDraftRecord {
+function makeCompleteRecord(id = "local-complete") {
   return makeRecord({
     id,
     team: makeTeam({

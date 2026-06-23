@@ -19,6 +19,12 @@ jest.mock("@/hooks/use-is-client", () => ({
   useIsClient: () => mockUseIsClient(),
 }));
 
+// Mock useAuthContext — controls the empty-state variant
+const mockUseAuthContext = jest.fn();
+jest.mock("@/components/auth/auth-provider", () => ({
+  useAuthContext: () => mockUseAuthContext(),
+}));
+
 // Mock useLocalDrafts so we can control state
 const mockCreateDraft = jest.fn();
 const mockDeleteDraft = jest.fn();
@@ -49,8 +55,12 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-// Mock sonner toast
-const mockToast = { success: jest.fn(), error: jest.fn() };
+// Mock sonner toast — must be callable as a function AND expose .success / .error
+const mockToastFn = jest.fn();
+const mockToast = Object.assign(mockToastFn, {
+  success: jest.fn(),
+  error: jest.fn(),
+});
 jest.mock("sonner", () => ({ toast: mockToast }));
 
 // ---------------------------------------------------------------------------
@@ -292,7 +302,7 @@ jest.mock("../team-landing-shared", () => ({
   UNTITLED_DRAFT_NAME: "Untitled Team",
 }));
 
-// TeamRow stub — accepts all props including Milestone B additions
+// TeamRow stub — accepts all props including Milestone B + C additions
 jest.mock("../team-row", () => ({
   TeamRow: ({
     summary,
@@ -303,6 +313,9 @@ jest.mock("../team-row", () => ({
     onPeek,
     pinned,
     archived,
+    selectable,
+    selected,
+    onToggleSelect,
   }: {
     summary: { id: string; name: string };
     onDelete?: (id: string) => void;
@@ -312,11 +325,16 @@ jest.mock("../team-row", () => ({
     onPeek?: (id: string) => void;
     pinned?: boolean;
     archived?: boolean;
+    selectable?: boolean;
+    selected?: boolean;
+    onToggleSelect?: (id: string, opts: { shift: boolean }) => void;
   }) => (
     <div
       data-testid={`team-row-${summary.id}`}
       data-pinned={pinned ? "true" : "false"}
       data-archived={archived ? "true" : "false"}
+      data-selectable={selectable ? "true" : "false"}
+      data-selected={selected ? "true" : "false"}
     >
       <span>{summary.name}</span>
       {onDelete && (
@@ -359,6 +377,84 @@ jest.mock("../team-row", () => ({
           Peek
         </button>
       )}
+      {selectable && onToggleSelect && (
+        <button
+          role="checkbox"
+          aria-checked={selected ?? false}
+          onClick={() => onToggleSelect(summary.id, { shift: false })}
+          aria-label={`Select ${summary.name}`}
+          data-testid={`row-checkbox-${summary.id}`}
+        >
+          Select
+        </button>
+      )}
+    </div>
+  ),
+}));
+
+// BulkActionBar stub — exposes selectedCount + action callbacks
+jest.mock("../bulk-action-bar", () => ({
+  BulkActionBar: ({
+    selectedCount,
+    onMoveToFolder,
+    onExport,
+    onArchive,
+    onDelete,
+    onClear,
+  }: {
+    selectedCount: number;
+    manualFolders: unknown[];
+    onMoveToFolder: (folderId: string) => void;
+    onExport: () => void;
+    onArchive: () => void;
+    onDelete: () => void;
+    onClear: () => void;
+  }) => {
+    if (selectedCount === 0) return null;
+    return (
+      <div
+        data-testid="bulk-action-bar"
+        aria-label="Bulk actions"
+        data-count={selectedCount}
+      >
+        <span>{selectedCount} selected</span>
+        <button onClick={() => onMoveToFolder("folder-1")} aria-label="Move to folder">
+          Move to folder
+        </button>
+        <button onClick={onExport} aria-label="Export selected">
+          Export
+        </button>
+        <button onClick={onArchive} aria-label="Archive selected">
+          Archive
+        </button>
+        <button onClick={onDelete} aria-label="Delete selected">
+          Delete
+        </button>
+        <button onClick={onClear} aria-label="Clear selection">
+          Clear
+        </button>
+      </div>
+    );
+  },
+}));
+
+// LandingEmptyState stub — exposes variant + onNewTeam
+jest.mock("../empty-state", () => ({
+  LandingEmptyState: ({
+    variant,
+    onNewTeam,
+  }: {
+    variant: "guest" | "authed";
+    onNewTeam: () => void;
+    onImport?: () => void;
+  }) => (
+    <div data-testid="landing-empty-state" data-variant={variant}>
+      <button
+        onClick={onNewTeam}
+        aria-label="Create your first team"
+      >
+        Start from scratch
+      </button>
     </div>
   ),
 }));
@@ -589,6 +685,14 @@ describe("TeamsLandingClient", () => {
     // Default to desktop + hydrated
     mockUseIsClient.mockReturnValue(true);
     mockUseIsMobile.mockReturnValue(false);
+    // Default to unauthenticated guest
+    mockUseAuthContext.mockReturnValue({
+      user: null,
+      loading: false,
+      isAuthenticated: false,
+      signOut: jest.fn(),
+      refetchUser: jest.fn(),
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -652,20 +756,43 @@ describe("TeamsLandingClient", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 3. Empty state
+  // 3. Empty state — LandingEmptyState (Milestone C)
   // ---------------------------------------------------------------------------
 
   describe("empty state", () => {
-    it("shows empty state message when drafts is empty and hydrated", () => {
+    it("renders LandingEmptyState with guest variant when drafts is empty and unauthenticated", () => {
+      mockUseAuthContext.mockReturnValue({
+        user: null,
+        loading: false,
+        isAuthenticated: false,
+        signOut: jest.fn(),
+        refetchUser: jest.fn(),
+      });
       setupDefaultMocks([]);
       render(<TeamsLandingClient />);
-      expect(screen.getByText(/no teams yet.*start building/i)).toBeInTheDocument();
+      const emptyState = screen.getByTestId("landing-empty-state");
+      expect(emptyState).toBeInTheDocument();
+      expect(emptyState).toHaveAttribute("data-variant", "guest");
     });
 
-    it("does NOT show empty state when there are drafts", () => {
+    it("renders LandingEmptyState with authed variant when authenticated and no drafts", () => {
+      mockUseAuthContext.mockReturnValue({
+        user: { id: "user-1" },
+        loading: false,
+        isAuthenticated: true,
+        signOut: jest.fn(),
+        refetchUser: jest.fn(),
+      });
+      setupDefaultMocks([]);
+      render(<TeamsLandingClient />);
+      const emptyState = screen.getByTestId("landing-empty-state");
+      expect(emptyState).toHaveAttribute("data-variant", "authed");
+    });
+
+    it("does NOT show LandingEmptyState when there are drafts", () => {
       setupDefaultMocks([makeRecord("local-cc01", "Existing Team")]);
       render(<TeamsLandingClient />);
-      expect(screen.queryByText(/no teams yet/i)).not.toBeInTheDocument();
+      expect(screen.queryByTestId("landing-empty-state")).not.toBeInTheDocument();
     });
   });
 
@@ -702,26 +829,45 @@ describe("TeamsLandingClient", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 5. Delete calls deleteDraft + toast
+  // 5. Single-row delete routes through undoable delete
+  //    (immediate UI removal via pendingIds; actual deleteDraft is deferred)
   // ---------------------------------------------------------------------------
 
   describe("delete interaction", () => {
-    it("calls deleteDraft with id when Delete is triggered", async () => {
-      setupDefaultMocks([makeRecord("local-del01", "Delete Me")]);
-      const user = userEvent.setup();
-      render(<TeamsLandingClient />);
-
-      await user.click(screen.getByRole("button", { name: "Delete Delete Me" }));
-      expect(mockDeleteDraft).toHaveBeenCalledWith("local-del01");
+    beforeEach(() => {
+      // Use real timers to control the undoable-delete window
+      jest.useFakeTimers();
     });
 
-    it("fires toast.success('Team deleted') when a draft is deleted", async () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("row disappears immediately when Delete is triggered (pendingIds filtering)", async () => {
+      setupDefaultMocks([makeRecord("local-del01", "Delete Me")]);
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      render(<TeamsLandingClient />);
+
+      expect(screen.getByTestId("team-row-local-del01")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Delete Delete Me" }));
+
+      // The row should be gone from the rendered list immediately
+      expect(screen.queryByTestId("team-row-local-del01")).not.toBeInTheDocument();
+    });
+
+    it("calls deleteDraft after the undo window expires", async () => {
       setupDefaultMocks([makeRecord("local-del02", "Bye Team")]);
-      const user = userEvent.setup();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<TeamsLandingClient />);
 
       await user.click(screen.getByRole("button", { name: "Delete Bye Team" }));
-      expect(mockToast.success).toHaveBeenCalledWith("Team deleted");
+
+      // Not yet called — still within the 5s undo window
+      expect(mockDeleteDraft).not.toHaveBeenCalled();
+
+      // Fast-forward past the undo window
+      jest.runAllTimers();
+      expect(mockDeleteDraft).toHaveBeenCalledWith("local-del02");
     });
   });
 
@@ -1232,6 +1378,182 @@ describe("TeamsLandingClient", () => {
       const toolbar = screen.getByTestId("landing-toolbar");
       expect(toolbar.getAttribute("data-sort")).toBe("name");
       expect(toolbar.getAttribute("data-density")).toBe("compact");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 20. Bulk selection — BulkActionBar appears / hides (Milestone C)
+  // ---------------------------------------------------------------------------
+
+  describe("bulk selection and BulkActionBar", () => {
+    it("BulkActionBar is NOT rendered when no rows are selected", () => {
+      setupDefaultMocks([makeRecord("local-bs01", "Team A")]);
+      render(<TeamsLandingClient />);
+      expect(screen.queryByTestId("bulk-action-bar")).not.toBeInTheDocument();
+    });
+
+    it("BulkActionBar appears with correct count after selecting a row", async () => {
+      setupDefaultMocks([makeRecord("local-bs02", "Team A")]);
+      const user = userEvent.setup();
+      render(<TeamsLandingClient />);
+
+      // Click the row's checkbox (rendered by the stub when selectable)
+      await user.click(screen.getByRole("checkbox", { name: /select team a/i }));
+
+      const bar = screen.getByTestId("bulk-action-bar");
+      expect(bar).toBeInTheDocument();
+      expect(bar).toHaveAttribute("data-count", "1");
+    });
+
+    it("Clear button empties the selection and hides the BulkActionBar", async () => {
+      setupDefaultMocks([makeRecord("local-bs03", "Team B")]);
+      const user = userEvent.setup();
+      render(<TeamsLandingClient />);
+
+      // Select a row
+      await user.click(screen.getByRole("checkbox", { name: /select team b/i }));
+      expect(screen.getByTestId("bulk-action-bar")).toBeInTheDocument();
+
+      // Clear selection
+      await user.click(screen.getByRole("button", { name: /clear selection/i }));
+      expect(screen.queryByTestId("bulk-action-bar")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 21. Bulk Archive — calls archiveDraft for each selected id (Milestone C)
+  // ---------------------------------------------------------------------------
+
+  describe("bulk archive", () => {
+    it("Archive button calls archiveDraft for each selected draft and clears selection", async () => {
+      setupDefaultMocks([
+        makeRecord("local-ba01", "Team A"),
+        makeRecord("local-ba02", "Team B"),
+      ]);
+      const user = userEvent.setup();
+      render(<TeamsLandingClient />);
+
+      await user.click(screen.getByRole("checkbox", { name: /select team a/i }));
+      await user.click(screen.getByRole("checkbox", { name: /select team b/i }));
+
+      expect(screen.getByTestId("bulk-action-bar")).toHaveAttribute("data-count", "2");
+
+      await user.click(screen.getByRole("button", { name: /archive selected/i }));
+
+      expect(mockArchiveDraft).toHaveBeenCalledWith("local-ba01", true);
+      expect(mockArchiveDraft).toHaveBeenCalledWith("local-ba02", true);
+      expect(mockToast.success).toHaveBeenCalledWith(expect.stringMatching(/archived/i));
+
+      // Selection cleared after archive
+      expect(screen.queryByTestId("bulk-action-bar")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 22. Bulk Move-to-folder — calls toggleDraftFolder for each selected (Milestone C)
+  // ---------------------------------------------------------------------------
+
+  describe("bulk move to folder", () => {
+    it("Move to folder calls toggleDraftFolder for each selected draft", async () => {
+      setupDefaultMocks([
+        makeRecord("local-bm01", "Team C"),
+        makeRecord("local-bm02", "Team D"),
+      ]);
+      const user = userEvent.setup();
+      render(<TeamsLandingClient />);
+
+      await user.click(screen.getByRole("checkbox", { name: /select team c/i }));
+      await user.click(screen.getByRole("checkbox", { name: /select team d/i }));
+
+      await user.click(screen.getByRole("button", { name: /move to folder/i }));
+
+      expect(mockToggleDraftFolder).toHaveBeenCalledWith("local-bm01", "folder-1");
+      expect(mockToggleDraftFolder).toHaveBeenCalledWith("local-bm02", "folder-1");
+
+      // Selection cleared after move
+      expect(screen.queryByTestId("bulk-action-bar")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 23. Bulk Delete routes through undoable delete (Milestone C)
+  // ---------------------------------------------------------------------------
+
+  describe("bulk delete", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("Delete button removes rows immediately (pendingIds) and defers deleteDraft", async () => {
+      setupDefaultMocks([
+        makeRecord("local-bd01", "Team E"),
+        makeRecord("local-bd02", "Team F"),
+      ]);
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      render(<TeamsLandingClient />);
+
+      await user.click(screen.getByRole("checkbox", { name: /select team e/i }));
+      await user.click(screen.getByRole("checkbox", { name: /select team f/i }));
+
+      await user.click(screen.getByRole("button", { name: /delete selected/i }));
+
+      // Rows are gone immediately
+      expect(screen.queryByTestId("team-row-local-bd01")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("team-row-local-bd02")).not.toBeInTheDocument();
+
+      // deleteDraft not yet called (still in undo window)
+      expect(mockDeleteDraft).not.toHaveBeenCalled();
+
+      // After the undo window
+      jest.runAllTimers();
+      expect(mockDeleteDraft).toHaveBeenCalledWith("local-bd01");
+      expect(mockDeleteDraft).toHaveBeenCalledWith("local-bd02");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 24. Mobile FAB — only shown on mobile (Milestone C)
+  // ---------------------------------------------------------------------------
+
+  describe("mobile FAB", () => {
+    it("renders a '+New' FAB on mobile", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(true);
+      setupDefaultMocks([makeRecord("local-fab01")]);
+      render(<TeamsLandingClient />);
+
+      // The FAB has aria-label "New team" (lowercase t); the header button is "Create a new team"
+      expect(screen.getByRole("button", { name: "New team" })).toBeInTheDocument();
+    });
+
+    it("does NOT render the FAB on desktop", () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(false);
+      setupDefaultMocks([makeRecord("local-fab02")]);
+      render(<TeamsLandingClient />);
+
+      // No button with exact label "New team" (the FAB) — only "Create a new team" (header)
+      expect(screen.queryByRole("button", { name: "New team" })).not.toBeInTheDocument();
+    });
+
+    it("FAB creates a draft and navigates on click", async () => {
+      mockUseIsClient.mockReturnValue(true);
+      mockUseIsMobile.mockReturnValue(true);
+      const returnedRecord = makeRecord("local-fab03");
+      mockCreateDraft.mockReturnValue(returnedRecord);
+      setupDefaultMocks([]);
+
+      const user = userEvent.setup();
+      render(<TeamsLandingClient />);
+
+      // Use the FAB (aria-label "New team") — the empty-state also has a button but different label
+      await user.click(screen.getByRole("button", { name: "New team" }));
+      expect(mockCreateDraft).toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith("/builder/t/local-fab03");
     });
   });
 });

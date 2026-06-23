@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsClient } from "@/hooks/use-is-client";
+import { useAuthContext } from "@/components/auth/auth-provider";
 
 import { useLocalDrafts } from "../persistence/use-local-drafts";
 import { useFolders } from "../persistence/use-folders";
@@ -37,10 +38,14 @@ import { TeamSections } from "./team-sections";
 import { CriteriaBuilder } from "./criteria-builder";
 import { QuickLook } from "./quick-look";
 import { QuickLookSheet } from "./quick-look-sheet";
+import { BulkActionBar } from "./bulk-action-bar";
+import { LandingEmptyState } from "./empty-state";
 import { toQuickLookData } from "./quick-look-shared";
 import { parseSearchInput, getSuggestions } from "./search-parse";
 import { filterDrafts } from "./predicate-eval";
 import { groupDrafts, countDrafts, ARCHIVED_VIEW_ID } from "./group-drafts";
+import { useDraftSelection } from "./use-draft-selection";
+import { useUndoableDelete } from "./use-undoable-delete";
 import { type Predicate } from "./search-types";
 
 // =============================================================================
@@ -56,33 +61,6 @@ function LandingSkeleton() {
           className="animate-pulse rounded-lg bg-muted/50 h-10"
         />
       ))}
-    </div>
-  );
-}
-
-// =============================================================================
-// Empty state
-// =============================================================================
-
-interface EmptyStateProps {
-  onNewTeam: () => void;
-}
-
-function EmptyState({ onNewTeam }: EmptyStateProps) {
-  return (
-    <div className="flex flex-col items-center gap-4 py-16 text-center">
-      <p className="text-muted-foreground text-sm">
-        No teams yet — start building!
-      </p>
-      <Button
-        onClick={onNewTeam}
-        size="lg"
-        className="min-h-10"
-        aria-label="Create your first team"
-      >
-        <Plus className="size-4" />
-        New Team
-      </Button>
     </div>
   );
 }
@@ -179,9 +157,16 @@ function SmartFolderDialog({
  *
  * Data pipeline:
  * 1. Raw drafts from useLocalDrafts
- * 2. Search: filterDrafts(drafts, parseSearchInput(search)) → DraftMatch[]
- * 3. Group: groupDrafts(matchedRecords, { sort, selectedFolderId, manualFolders, smartFolders }) → DraftSection[]
- * 4. Rail counts: countDrafts(ALL drafts, manualFolders, smartFolders) (always over all drafts)
+ * 2. Pending-delete exclusion: pendingIds filtered out BEFORE search/group
+ * 3. Search: filterDrafts(drafts, parseSearchInput(search)) → DraftMatch[]
+ * 4. Group: groupDrafts(matchedRecords, { sort, selectedFolderId, manualFolders, smartFolders }) → DraftSection[]
+ * 5. Rail counts: countDrafts(ALL drafts, manualFolders, smartFolders) (always over all drafts)
+ *
+ * Bulk-selection (Milestone C):
+ * - useDraftSelection(orderedIds) manages which ids are selected
+ * - BulkActionBar appears when count > 0, wires Move/Export/Archive/Delete
+ * - Delete routes through useUndoableDelete for undo support
+ * - selectMode boolean auto-enables when count > 0
  *
  * Quick-look wiring (conditional on useIsClient / useIsMobile):
  * - Desktop: each row is wrapped in a <QuickLook> hovercard
@@ -196,8 +181,8 @@ export function TeamsLandingClient() {
     hydrated,
     createDraft,
     deleteDraft,
-    pinDraft,
     archiveDraft,
+    pinDraft,
     toggleDraftFolder,
   } = useLocalDrafts();
 
@@ -210,6 +195,8 @@ export function TeamsLandingClient() {
   } = useFolders();
 
   const { prefs, setPrefs } = useLandingPrefs();
+
+  const { isAuthenticated } = useAuthContext();
 
   const router = useRouter();
   const isClient = useIsClient();
@@ -229,11 +216,22 @@ export function TeamsLandingClient() {
   >(null);
 
   // ==========================================================================
+  // Undoable delete
+  // ==========================================================================
+
+  const { pendingIds, scheduleDelete } = useUndoableDelete({
+    onCommit: (items) => items.forEach((item) => deleteDraft(item.id)),
+  });
+
+  // ==========================================================================
   // Data pipeline
   // ==========================================================================
 
+  // Filter out pending-delete drafts BEFORE search/group so they vanish immediately
+  const visibleDrafts = drafts.filter((d) => !pendingIds.has(d.id));
+
   const query = parseSearchInput(search);
-  const allMatches = filterDrafts(drafts, query);
+  const allMatches = filterDrafts(visibleDrafts, query);
 
   // Build a Map<id, matchedSpecies[]> for highlight lookups in renderRow
   const matchMap = new Map<string, string[]>(
@@ -242,7 +240,7 @@ export function TeamsLandingClient() {
 
   // Matched records (full objects) for grouping
   const matchedIds = new Set(allMatches.map((m) => m.id));
-  const matchedRecords = drafts.filter((d) => matchedIds.has(d.id));
+  const matchedRecords = visibleDrafts.filter((d) => matchedIds.has(d.id));
 
   // Group the matched records into sections
   const sections = groupDrafts(matchedRecords, {
@@ -252,15 +250,23 @@ export function TeamsLandingClient() {
     smartFolders,
   });
 
-  // Rail counts are always over ALL drafts (not search-filtered)
+  // Rail counts are always over ALL drafts (not search-filtered, not pending-filtered)
   const counts = countDrafts(drafts, manualFolders, smartFolders);
 
   // Suggestions for SmartSearch
-  const suggestions = getSuggestions(search, drafts);
+  const suggestions = getSuggestions(search, visibleDrafts);
 
   // Peek record for mobile sheet
   const peekRecord =
     peekId !== null ? drafts.find((d) => d.id === peekId) ?? null : null;
+
+  // ==========================================================================
+  // Bulk selection — ordered ids from the currently visible rows
+  // ==========================================================================
+
+  const orderedIds = matchedRecords.map((d) => d.id);
+  const { selected, isSelected, count, toggle, toggleRange, clear } =
+    useDraftSelection(orderedIds);
 
   // ==========================================================================
   // Event handlers
@@ -272,8 +278,9 @@ export function TeamsLandingClient() {
   }
 
   function handleDelete(id: string) {
-    deleteDraft(id);
-    toast.success("Team deleted");
+    const record = drafts.find((d) => d.id === id);
+    if (!record) return;
+    scheduleDelete([record]);
     if (peekId === id) setPeekId(null);
   }
 
@@ -336,6 +343,61 @@ export function TeamsLandingClient() {
     setSmartFolderDialog(null);
   }
 
+  // --------------------------------------------------------------------------
+  // Row toggle-select: shift-click → toggleRange, plain click → toggle
+  // --------------------------------------------------------------------------
+
+  function handleToggleSelect(id: string, opts: { shift: boolean }) {
+    if (opts.shift) {
+      toggleRange(id);
+    } else {
+      toggle(id);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Bulk action handlers
+  // --------------------------------------------------------------------------
+
+  function handleBulkMoveToFolder(folderId: string) {
+    for (const id of selected) {
+      toggleDraftFolder(id, folderId);
+    }
+    toast.success(`Moved ${count} team${count === 1 ? "" : "s"} to folder`);
+    clear();
+  }
+
+  function handleBulkArchive() {
+    for (const id of selected) {
+      archiveDraft(id, true);
+    }
+    toast.success(`Archived ${count} team${count === 1 ? "" : "s"}`);
+    clear();
+  }
+
+  function handleBulkDelete() {
+    const records = drafts.filter((d) => selected.has(d.id));
+    if (records.length === 0) return;
+    scheduleDelete(records);
+    clear();
+  }
+
+  function handleBulkExport() {
+    // Serialize selected drafts to JSON and trigger a browser download
+    const records = drafts.filter((d) => selected.has(d.id));
+    const blob = new Blob([JSON.stringify(records, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `teams-export-${Date.now()}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${count} team${count === 1 ? "" : "s"}`);
+    clear();
+  }
+
   // ==========================================================================
   // renderRow — the render prop passed to TeamSections
   // ==========================================================================
@@ -368,6 +430,11 @@ export function TeamsLandingClient() {
           onToggleFolder={handleToggleFolder}
           onDelete={handleDelete}
           onPeek={isClient && isMobile ? (id) => setPeekId(id) : undefined}
+          // Desktop: always render checkbox (CSS hover-reveal handles visibility).
+          // Mobile: always render checkbox in select-mode (isMobile) so tap targets are there.
+          selectable={isClient}
+          selected={isSelected(record.id)}
+          onToggleSelect={handleToggleSelect}
         />
       </div>
     );
@@ -388,7 +455,7 @@ export function TeamsLandingClient() {
   // Derived display state
   // ==========================================================================
 
-  const showSearch = hydrated && (drafts.length > 0 || search.length > 0);
+  const showSearch = hydrated && (visibleDrafts.length > 0 || search.length > 0);
   const isArchiveView = prefs.selectedFolderId === ARCHIVED_VIEW_ID;
   const hasSearchQuery = search.length > 0;
   const hasNoMatches = hasSearchQuery && allMatches.length === 0;
@@ -496,7 +563,10 @@ export function TeamsLandingClient() {
           {!hydrated ? (
             <LandingSkeleton />
           ) : isNoDrafts ? (
-            <EmptyState onNewTeam={handleNewTeam} />
+            <LandingEmptyState
+              variant={isAuthenticated ? "authed" : "guest"}
+              onNewTeam={handleNewTeam}
+            />
           ) : isNoSearchMatches ? (
             <NoMatchesState onClear={handleClearSearch} />
           ) : (
@@ -537,6 +607,30 @@ export function TeamsLandingClient() {
         </div>
       </div>
 
+      {/* Bulk-action bar — fixed at bottom, shown when ≥1 row is selected */}
+      <BulkActionBar
+        selectedCount={count}
+        manualFolders={manualFolders}
+        onMoveToFolder={handleBulkMoveToFolder}
+        onExport={handleBulkExport}
+        onArchive={handleBulkArchive}
+        onDelete={handleBulkDelete}
+        onClear={clear}
+      />
+
+      {/* Mobile FAB — only after hydration on mobile */}
+      {isClient && isMobile && (
+        <button
+          type="button"
+          onClick={handleNewTeam}
+          aria-label="New team"
+          className="fixed bottom-6 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg transition-colors hover:bg-teal-700 active:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+        >
+          <Plus className="size-6" aria-hidden />
+          <span className="sr-only">New team</span>
+        </button>
+      )}
+
       {/* Mobile quick-look sheet — one instance shared by all rows */}
       {isClient && isMobile && (
         <QuickLookSheet
@@ -572,7 +666,7 @@ export function TeamsLandingClient() {
         onSave={handleSmartFolderSave}
       />
 
-      {/* TODO Milestone C: drag reorder, bulk-select, undo-delete, FAB */}
+      {/* TODO Milestone C: drag reorder */}
     </div>
   );
 }

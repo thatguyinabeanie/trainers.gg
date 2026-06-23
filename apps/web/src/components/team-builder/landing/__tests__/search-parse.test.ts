@@ -1,7 +1,8 @@
 import { describe, it, expect } from "@jest/globals";
 import { type TeamWithPokemon } from "@trainers/supabase";
-import { type LocalDraftRecord } from "../../persistence/local-drafts-types";
 import { parseSearchInput, getSuggestions } from "../search-parse";
+import { type LocalDraftRecord } from "../../persistence/local-drafts-types";
+import { makeDraftRecord } from "./fixtures";
 
 // =============================================================================
 // Fixture helpers
@@ -81,13 +82,13 @@ function makeRecord(
     team: TeamWithPokemon;
     updatedAt: string;
   }> = {}
-): LocalDraftRecord {
-  return {
-    id: overrides.id ?? "local-ab12",
-    team: overrides.team ?? makeTeam(),
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: overrides.updatedAt ?? "2024-06-01T00:00:00Z",
-  };
+) {
+  const { team_pokemon, ...restTeam } = overrides.team ?? makeTeam();
+  return makeDraftRecord({
+    id: overrides.id,
+    team: { ...restTeam, team_pokemon },
+    updatedAt: overrides.updatedAt,
+  });
 }
 
 // =============================================================================

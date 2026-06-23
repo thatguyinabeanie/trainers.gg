@@ -143,8 +143,8 @@ import {
 import { QuickLookContent } from "../quick-look-content";
 import { QuickLook } from "../quick-look";
 import { QuickLookSheet } from "../quick-look-sheet";
-import { type LocalDraftRecord } from "../../persistence/local-drafts-types";
 import { type TeamWithPokemon } from "@trainers/supabase";
+import { makeDraftRecord } from "./fixtures";
 
 // =============================================================================
 // Fixture helpers
@@ -229,27 +229,17 @@ function makeRecord(
     format: string | null;
     teamPokemon: TeamWithPokemon["team_pokemon"];
   }> = {}
-): LocalDraftRecord {
-  return {
-    id: overrides.id ?? "local-ab12",
+) {
+  return makeDraftRecord({
+    id: overrides.id,
     team: {
-      id: -1,
       name: overrides.name !== undefined ? overrides.name : "My Team",
-      format: overrides.format !== undefined ? overrides.format : "gen9vgc2026regi",
-      format_legal: null,
-      description: null,
-      notes: null,
-      tags: null,
-      is_public: null,
-      parent_team_id: null,
-      created_by: -1,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-      team_pokemon: overrides.teamPokemon ?? [],
+      ...(overrides.format !== undefined ? { format: overrides.format } : {}),
+      ...(overrides.teamPokemon !== undefined
+        ? { team_pokemon: overrides.teamPokemon }
+        : {}),
     },
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: "2024-06-01T00:00:00Z",
-  };
+  });
 }
 
 /** Build a minimal QuickLookData fixture directly (for rendering tests). */
