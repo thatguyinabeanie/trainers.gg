@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, FolderOpen, Zap } from "lucide-react";
 import { toast } from "sonner";
@@ -177,15 +177,7 @@ function SmartFolderDialog({
  *
  * Phase 1: local-drafts-only, additive (no DB, no auth required).
  */
-interface TeamsLandingClientProps {
-  /**
-   * Site footer node, rendered at the bottom of the scrolling main column so
-   * the full-height left sidebar sits beside (not above) it.
-   */
-  footer?: ReactNode;
-}
-
-export function TeamsLandingClient({ footer }: TeamsLandingClientProps) {
+export function TeamsLandingClient() {
   const {
     drafts,
     hydrated,
@@ -736,7 +728,6 @@ export function TeamsLandingClient({ footer }: TeamsLandingClientProps) {
             )}
           </PageContainer>
         </div>
-        <div className="mt-auto">{footer}</div>
       </div>
 
       {/* Bulk-action bar — fixed at bottom, shown when ≥1 row is selected */}

@@ -33,15 +33,15 @@ export function LandingShell({ footer }: LandingShellProps) {
       {/* Top bar — identical chrome to the workspace editor */}
       <BuilderNav />
 
-      {/*
-        Horizontal split below the top bar. TeamsLandingClient owns the
-        sidebar + scrolling-main layout so the full-height left sidebar sits
-        beside the content (and footer), dashboard-01 style. The footer is
-        threaded through so it lands at the bottom of the scrolling column.
-      */}
+      {/* Middle row: full-height rail + scrolling content. TeamsLandingClient
+          owns the [rail | content] split. */}
       <div className="flex min-h-0 flex-1">
-        <TeamsLandingClient footer={footer} />
+        <TeamsLandingClient />
       </div>
+
+      {/* Footer — full-width along the bottom, BELOW the rail + content
+          (sandwiched under the full-width top bar). */}
+      <div className="shrink-0">{footer}</div>
     </div>
   );
 }
