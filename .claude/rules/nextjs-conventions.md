@@ -1,6 +1,6 @@
 ---
 paths:
-  - "apps/web/**/*"
+  - "apps/web/src/**/*.{ts,tsx}"
 ---
 
 # Next.js Conventions
@@ -96,12 +96,12 @@ Function arguments + closures are the cache key — no manual key arrays needed.
 
 ### Supabase Client Selection
 
-| Function                    | Use Case                                                                                           |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| `createStaticClient()`      | Public data, no cookies — only for tables with anon SELECT still granted                          |
-| `createClient()`            | Authenticated, read-write cookies                                                                  |
-| `createClientReadOnly()`    | Authenticated, read-only cookies                                                                   |
-| `createServiceRoleClient()` | Bypass RLS: admin ops, and anon-reachable routes reading Phase 2 revoke-set tables (with guards)  |
+| Function                    | Use Case                                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------ |
+| `createStaticClient()`      | Public data, no cookies — only for tables with anon SELECT still granted                         |
+| `createClient()`            | Authenticated, read-write cookies                                                                |
+| `createClientReadOnly()`    | Authenticated, read-only cookies                                                                 |
+| `createServiceRoleClient()` | Bypass RLS: admin ops, and anon-reachable routes reading Phase 2 revoke-set tables (with guards) |
 
 For anon-reachable routes that read revoke-set tables: use `createServiceRoleClient()` with an explicit column allowlist (never `select('*')`), `resolveApiAuth` on the request, and `enforceRateLimit`. See `deciding-data-access` skill for the full decision tree and guard requirements.
 
@@ -278,6 +278,7 @@ Never pass unvalidated external input directly to database queries — a `NaN` o
 **Default for auth-gated `/api/v1` routes (any route calling `resolveApiAuth` that returns 401 for anon): `Cache-Control: private, no-store`.**
 
 **Carve-out — `public, s-maxage=…` is allowed** when ALL of these hold (Architecture decision #2, `docs/decisions/2026-06-11-data-access-and-rls-decisions.md`):
+
 1. Every column in the response is public — no PII, no per-viewer/scoped fields (e.g. no `drop_notes`, no emails, nothing not already visible on SSR pages), AND
 2. The cache entry is tag-invalidated via `revalidateTag(CacheTags.x, 'max')` on every relevant mutation.
 

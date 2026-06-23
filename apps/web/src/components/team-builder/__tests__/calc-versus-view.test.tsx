@@ -260,19 +260,16 @@ jest.mock("../lanes/moves-lane", () => ({
     pokemon,
     direction,
     outputs,
-    opponent,
   }: {
     pokemon: Tables<"pokemon">;
     direction: "outgoing" | "incoming";
     outputs: readonly unknown[];
-    opponent: { species: string };
   }) => (
     <div
       data-testid={`moves-lane-${direction}`}
       data-direction={direction}
       data-outputs-len={outputs?.length ?? 0}
       data-species={pokemon.species}
-      data-opponent={opponent?.species}
     />
   ),
 }));
@@ -956,24 +953,6 @@ describe("CalcVersusView — mobile layout", () => {
       screen.getAllByTestId("mobile-moves-incoming").length
     ).toBeGreaterThanOrEqual(1);
     expect(screen.queryByTestId("moves-lane-incoming")).not.toBeInTheDocument();
-  });
-});
-
-// =============================================================================
-// Opponent descriptor wiring
-// =============================================================================
-
-describe("CalcVersusView — opponent descriptors", () => {
-  it("outgoing MovesLane opponent is the target's species (Incineroar)", () => {
-    renderView();
-    const outgoing = screen.getAllByTestId("moves-lane-outgoing")[0]!;
-    expect(outgoing).toHaveAttribute("data-opponent", "Incineroar");
-  });
-
-  it("incoming MovesLane opponent is your mon's species (Garchomp)", () => {
-    renderView();
-    const incoming = screen.getAllByTestId("moves-lane-incoming")[0]!;
-    expect(incoming).toHaveAttribute("data-opponent", "Garchomp");
   });
 });
 

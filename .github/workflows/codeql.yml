@@ -1,28 +1,35 @@
 name: CodeQL
 
+# DISABLED 2026-06-22: the repo is now private, and CodeQL / GitHub Advanced
+# Security is not free on private repos. The automatic triggers below are
+# commented out (not deleted) so this can be re-enabled by restoring them if
+# Advanced Security is purchased or the repo goes public again. Only
+# workflow_dispatch remains, so CodeQL never auto-runs on push/PR/schedule but
+# can still be triggered manually if needed.
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - "**.md"
-      - ".vscode/**"
-      - "LICENSE"
-      - ".gitignore"
-      - "infra/**"
-      - ".claude/**"
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    branches: [main]
-    paths-ignore:
-      - "**.md"
-      - ".vscode/**"
-      - "LICENSE"
-      - ".gitignore"
-      - "infra/**"
-      - ".claude/**"
-  schedule:
-    # Run weekly on Sundays at 3 AM UTC
-    - cron: "0 3 * * 0"
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths-ignore:
+  #     - "**.md"
+  #     - ".vscode/**"
+  #     - "LICENSE"
+  #     - ".gitignore"
+  #     - "infra/**"
+  #     - ".claude/**"
+  # pull_request:
+  #   types: [opened, synchronize, reopened, ready_for_review]
+  #   branches: [main]
+  #   paths-ignore:
+  #     - "**.md"
+  #     - ".vscode/**"
+  #     - "LICENSE"
+  #     - ".gitignore"
+  #     - "infra/**"
+  #     - ".claude/**"
+  # schedule:
+  #   # Run weekly on Sundays at 3 AM UTC
+  #   - cron: "0 3 * * 0"
 
 # Cancel in-progress runs for the same PR/branch
 concurrency:

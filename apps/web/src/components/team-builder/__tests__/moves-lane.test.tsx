@@ -17,47 +17,6 @@ import { type GameFormat } from "@trainers/pokemon";
 // Mocks
 // =============================================================================
 
-// Popover — render content inline so popover contents are always queryable
-jest.mock("@/components/ui/popover", () => ({
-  Popover: ({
-    children,
-    open,
-    onOpenChange,
-  }: {
-    children: React.ReactNode;
-    open?: boolean;
-    onOpenChange?: (open: boolean) => void;
-  }) => (
-    <div
-      data-testid="popover"
-      data-open={String(!!open)}
-      onClick={() => onOpenChange?.(!open)}
-    >
-      {children}
-    </div>
-  ),
-  PopoverTrigger: ({
-    children,
-    render: renderProp,
-  }: {
-    children?: React.ReactNode;
-    render?: React.ReactElement;
-  }) => {
-    if (renderProp) {
-      return (
-        <div data-testid="popover-trigger">
-          {renderProp}
-          {children}
-        </div>
-      );
-    }
-    return <div data-testid="popover-trigger">{children}</div>;
-  },
-  PopoverContent: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="popover-content">{children}</div>
-  ),
-}));
-
 // Dialog — render content inline so picker contents are always queryable
 jest.mock("@/components/ui/dialog", () => ({
   Dialog: ({
@@ -152,24 +111,6 @@ jest.mock("../pickers/move-picker", () => ({
       <button onClick={() => onPick("Moonblast")}>pick-moonblast</button>
       <button onClick={() => onPick("Flamethrower")}>pick-flamethrower</button>
       <button onClick={onClose}>close-picker</button>
-    </div>
-  ),
-}));
-
-// CalcDetailCard stub
-jest.mock("../calc/calc-detail-card", () => ({
-  CalcDetailCard: ({
-    moveName,
-    onClose,
-    onChangeMove,
-  }: {
-    moveName: string;
-    onClose: () => void;
-    onChangeMove: () => void;
-  }) => (
-    <div data-testid="calc-detail-card" data-move={moveName}>
-      <button onClick={onClose}>close-detail</button>
-      <button onClick={onChangeMove}>change-move</button>
     </div>
   ),
 }));
@@ -371,7 +312,8 @@ function makeError(
 function renderLane(
   pokemonOverrides: Partial<Tables<"pokemon">> = {},
   format: GameFormat | undefined = VGC_FORMAT,
-  fieldErrors?: ValidationError[]
+  fieldErrors?: ValidationError[],
+  options: { compact?: boolean } = {}
 ) {
   const onUpdate = jest.fn();
   const result = render(
@@ -380,6 +322,7 @@ function renderLane(
       format={format}
       onUpdate={onUpdate}
       fieldErrors={fieldErrors}
+      compact={options.compact}
     />
   );
   return { ...result, onUpdate };
@@ -468,43 +411,6 @@ describe("MovesLane — move tile display", () => {
     // accuracy=true → rendered as "—"
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
-
-  it("renders the move's short description in a Tooltip when a move is set", () => {
-    // Default mock returns shortDesc: "High critical-hit ratio." for any move.
-    // The tooltip is mocked to render content inline; verify the short
-    // description is wired to the trigger so the new hover affordance
-    // doesn't silently regress.
-    renderLane({ move1: "Stone Edge", move2: null, move3: null, move4: null });
-    expect(screen.getAllByText("High critical-hit ratio.").length).toBe(1);
-  });
-
-  it("does NOT render a tooltip body for empty move slots", () => {
-    renderLane({ move1: null, move2: null, move3: null, move4: null });
-    // No move name → moveData?.shortDesc is undefined → the conditional
-    // `{moveName && moveData?.shortDesc && <TooltipContent>...}` short-circuits.
-    expect(screen.queryByTestId("tooltip-content")).toBeNull();
-  });
-
-  it("does NOT render a description tooltip when getMoveData has no shortDesc", () => {
-    (getMoveData as jest.Mock).mockReturnValueOnce({
-      type: "Normal",
-      category: "Physical",
-      basePower: 40,
-      accuracy: 100,
-      shortDesc: undefined,
-    });
-    renderLane({ move1: "Tackle", move2: null, move3: null, move4: null });
-    // The type icon (wordless TypeSymbolIcon) renders its own tooltip with
-    // the type name ("Normal") — that's expected. We only need to confirm
-    // the *description* tooltip with the (missing) shortDesc text is gone.
-    const tooltipBodies = screen
-      .queryAllByTestId("tooltip-content")
-      .map((el) => el.textContent);
-    expect(tooltipBodies).not.toContain(undefined);
-    expect(tooltipBodies).not.toContain("");
-    // TypeSymbolIcon no longer renders a tooltip, so array is empty.
-    expect(tooltipBodies).toEqual([]);
-  });
 });
 
 describe("MovesLane — picking a move", () => {
@@ -572,14 +478,13 @@ describe("MovesLane — click behaviour (no calc)", () => {
 
   it("opens the picker panel when clicking an empty slot", () => {
     renderLane({ move1: null });
-    // With calc disabled, clicking should show MovePicker (it's always shown since no CalcDetailCard)
+    // With calc disabled, clicking should show MovePicker
     const pickButtons = screen.getAllByText("pick-moonblast");
     expect(pickButtons.length).toBeGreaterThan(0);
   });
 
-  it("shows MovePicker (not CalcDetailCard) when calc is disabled", () => {
+  it("shows MovePicker when calc is disabled", () => {
     renderLane({ move1: "Moonblast" });
-    expect(screen.queryByTestId("calc-detail-card")).not.toBeInTheDocument();
     expect(screen.getAllByTestId("move-picker").length).toBeGreaterThan(0);
   });
 });
@@ -1033,6 +938,133 @@ describe("MovesLane — card-list presentation (calc ON → table path)", () => 
     );
     // Damage range and KO tier render in calc columns
     expect(screen.getByText("50.0–60.0%")).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// MovesLane — compact mode (versus view)
+// =============================================================================
+
+describe("MovesLane — compact mode (versus view)", () => {
+  beforeEach(() => {
+    (useCalcStateContext as jest.Mock).mockImplementation(() => ({
+      ...mockCalcContext,
+      calcEnabled: false,
+    }));
+    mockCalcContext.calcEnabled = false;
+    mockCalcContext.rowOutputs = [null, null, null, null];
+  });
+
+  afterEach(() => {
+    mockCalcContext.calcEnabled = false;
+    mockCalcContext.rowOutputs = [null, null, null, null];
+  });
+
+  // -------------------------------------------------------------------------
+  // 1. Compact move-name element has text-xs class (not text-sm)
+  //    — exercises the `compact ? "text-xs" : "text-sm"` branch in MoveTile
+  // -------------------------------------------------------------------------
+  it("renders the move-name span with text-xs in compact mode", () => {
+    renderLane(
+      { move1: "Moonblast", move2: null, move3: null, move4: null },
+      VGC_FORMAT,
+      undefined,
+      { compact: true }
+    );
+    const nameEl = screen.getByText("Moonblast");
+    expect(nameEl.className).toContain("text-xs");
+  });
+
+  // -------------------------------------------------------------------------
+  // 2. Compact move-name element has w-full (greedy) not max-w-36 (capped)
+  //    — exercises `compact ? "w-full" : "max-w-36"` in MoveTile
+  // -------------------------------------------------------------------------
+  it("renders the move-name span with w-full in compact mode (not max-w-36)", () => {
+    renderLane(
+      { move1: "Moonblast", move2: null, move3: null, move4: null },
+      VGC_FORMAT,
+      undefined,
+      { compact: true }
+    );
+    const nameEl = screen.getByText("Moonblast");
+    expect(nameEl.className).toContain("w-full");
+    expect(nameEl.className).not.toContain("max-w-36");
+  });
+
+  // -------------------------------------------------------------------------
+  // 3. Column headers NAME / BP / ACC still render in compact mode
+  //    — exercises MovesLaneTileGhost({ compact: true }) path
+  // -------------------------------------------------------------------------
+  it("renders column headers NAME, BP, and ACC in compact mode", () => {
+    renderLane(
+      { move1: "Moonblast", move2: null, move3: null, move4: null },
+      VGC_FORMAT,
+      undefined,
+      { compact: true }
+    );
+    expect(screen.getByText("NAME")).toBeInTheDocument();
+    expect(screen.getByText("BP")).toBeInTheDocument();
+    expect(screen.getByText("ACC")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 4. Non-compact (default) render gives text-sm, not text-xs
+  //    — proves the branch divergence so the compact assertions above are meaningful
+  // -------------------------------------------------------------------------
+  it("renders the move-name span with text-sm in default (non-compact) mode", () => {
+    renderLane({ move1: "Moonblast", move2: null, move3: null, move4: null });
+    const nameEl = screen.getByText("Moonblast");
+    expect(nameEl.className).toContain("text-sm");
+    expect(nameEl.className).not.toContain("text-xs");
+  });
+
+  // -------------------------------------------------------------------------
+  // 5. Non-compact render caps name column with max-w-36 (not w-full greedy)
+  //    — explicit contrast to test 2 above
+  // -------------------------------------------------------------------------
+  it("renders the move-name span with max-w-36 in default (non-compact) mode", () => {
+    renderLane({ move1: "Moonblast", move2: null, move3: null, move4: null });
+    const nameEl = screen.getByText("Moonblast");
+    expect(nameEl.className).toContain("max-w-36");
+    expect(nameEl.className).not.toContain("w-full");
+  });
+
+  // -------------------------------------------------------------------------
+  // 6. All 4 move slots render in compact mode (getMoveColClasses(true) used
+  //    for every row, not just the first one)
+  // -------------------------------------------------------------------------
+  it.each([
+    ["move1", "Moonblast"],
+    ["move2", "Psychic"],
+    ["move3", "Thunderbolt"],
+    ["move4", "Protect"],
+  ] as const)(
+    "renders %s slot name '%s' in compact mode",
+    (slot, moveName) => {
+      renderLane(
+        { [slot]: moveName },
+        VGC_FORMAT,
+        undefined,
+        { compact: true }
+      );
+      const nameEl = screen.getByText(moveName);
+      expect(nameEl).toBeInTheDocument();
+      expect(nameEl.className).toContain("text-xs");
+    }
+  );
+
+  // -------------------------------------------------------------------------
+  // 7. Empty slots render '+ Add move' placeholder in compact mode
+  //    — confirms the empty-slot branch inside MoveTile still fires when compact
+  // -------------------------------------------------------------------------
+  it("renders '+ Add move' for empty slots in compact mode", () => {
+    renderLane(
+      { move1: "Moonblast", move2: null, move3: null, move4: null },
+      VGC_FORMAT,
+      undefined,
+      { compact: true }
+    );
+    expect(screen.getAllByText("+ Add move").length).toBe(3);
   });
 });
 

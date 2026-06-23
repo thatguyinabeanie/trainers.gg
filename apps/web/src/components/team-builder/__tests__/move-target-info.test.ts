@@ -1,9 +1,4 @@
-import {
-  getMoveTargetInfo,
-  getMoveTargetLabel,
-  getMoveTargetDesc,
-  type MoveTargetKind,
-} from "../calc/move-target-info";
+import { getMoveTargetInfo } from "../calc/move-target-info";
 
 // =============================================================================
 // getMoveTargetInfo
@@ -119,45 +114,5 @@ describe("getMoveTargetInfo", () => {
       const result = getMoveTargetInfo("Earthquake");
       expect(result.kind).toBe("all-foes");
     });
-  });
-});
-
-// =============================================================================
-// getMoveTargetLabel
-// =============================================================================
-
-describe("getMoveTargetLabel", () => {
-  it.each<[MoveTargetKind, string]>([
-    ["all-foes", "ALL-FOES"],
-    ["all-others", "ALL-OTHERS"],
-    ["single-foe", "SINGLE-FOE"],
-    ["single", "SINGLE"],
-    ["self", "SELF"],
-  ])("kind %s → label %s", (kind, expected) => {
-    expect(getMoveTargetLabel(kind)).toBe(expected);
-  });
-});
-
-// =============================================================================
-// getMoveTargetDesc
-// =============================================================================
-
-describe("getMoveTargetDesc", () => {
-  it.each<[MoveTargetKind, RegExp]>([
-    ["all-foes", /−25%.*2 foes/i],
-    ["all-others", /hits everyone but you/i],
-    ["single-foe", /single target.*never spreads/i],
-    ["single", /single target.*any side/i],
-    ["self", /self \/ status/i],
-  ])("kind %s returns a description matching %s", (kind, pattern) => {
-    expect(getMoveTargetDesc(kind)).toMatch(pattern);
-  });
-
-  it("all-foes description mentions spread penalty", () => {
-    expect(getMoveTargetDesc("all-foes")).toContain("−25%");
-  });
-
-  it("all-others description mentions spread penalty", () => {
-    expect(getMoveTargetDesc("all-others")).toContain("−25%");
   });
 });

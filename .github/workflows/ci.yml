@@ -385,6 +385,12 @@ jobs:
     needs: [test-web, test-mobile, test-packages, e2e-tests]
     if: always() # publish even when a test job failed or e2e was skipped
     permissions:
+      # A job-level permissions block REPLACES the workflow defaults, so every
+      # scope the action needs must be listed. EnricoMi reads the commit via
+      # GET /commits/{sha}; without contents: read that call 403s ("Resource
+      # not accessible by integration") — which started failing once the repo
+      # went private and the token stopped defaulting to read.
+      contents: read
       checks: write
       pull-requests: write
     steps:
