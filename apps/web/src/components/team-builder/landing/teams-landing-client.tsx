@@ -184,6 +184,7 @@ export function TeamsLandingClient() {
     archiveDraft,
     pinDraft,
     toggleDraftFolder,
+    setDraftSortOrder,
   } = useLocalDrafts();
 
   const {
@@ -405,6 +406,15 @@ export function TeamsLandingClient() {
     const highlightSpecies =
       allMatches.find((m) => m.id === record.id)?.matchedSpecies ?? [];
 
+    // Compute Move up/down availability for this record (used by tap fallback).
+    // Only meaningful when reorderable; positions are within the flat list.
+    const allIds = reorderable
+      ? sections.flatMap((s) => s.drafts.map((d) => d.id))
+      : [];
+    const rowIndex = reorderable ? allIds.indexOf(record.id) : -1;
+    const canMoveUp = reorderable && rowIndex > 0;
+    const canMoveDown = reorderable && rowIndex >= 0 && rowIndex < allIds.length - 1;
+
     const row = (
       // The outer div carries the tabIndex and ref so TeamSections can manage
       // roving tabindex focus across sections.
@@ -431,6 +441,11 @@ export function TeamsLandingClient() {
           selectable={isClient}
           selected={isSelected(record.id)}
           onToggleSelect={handleToggleSelect}
+          // Reorder — drag handle + Move up/down menu items (Milestone C)
+          reorderable={reorderable}
+          canMoveUp={canMoveUp}
+          canMoveDown={canMoveDown}
+          onMove={reorderable ? handleMove : undefined}
         />
       </div>
     );
@@ -445,6 +460,81 @@ export function TeamsLandingClient() {
     }
 
     return row;
+  }
+
+  // ==========================================================================
+  // Drag reorder — only active in custom sort mode for All-teams or manual-folder
+  // views (both produce a single flat section that spans the whole list).
+  // ==========================================================================
+
+  /**
+   * True when the current view supports drag-and-drop / Move up|down reorder.
+   * Conditions: sort === "custom" AND (All-teams view OR a manual folder view).
+   * Smart folders, archived view, and non-custom sorts are not reorderable.
+   */
+  const isManualFolderSelected =
+    prefs.selectedFolderId !== null &&
+    prefs.selectedFolderId !== ARCHIVED_VIEW_ID &&
+    manualFolders.some((f) => f.id === prefs.selectedFolderId);
+
+  const reorderable =
+    prefs.sort === "custom" &&
+    (prefs.selectedFolderId === null || isManualFolderSelected);
+
+  /**
+   * Renumber sortOrder for every draft in the visible reorderable list.
+   * After a drag or Move up/down the caller provides the new ordered array of
+   * ids; we assign `sortOrder = index` to each so the persisted order matches.
+   */
+  function renumberSortOrders(orderedDraftIds: string[]): void {
+    for (let i = 0; i < orderedDraftIds.length; i++) {
+      const id = orderedDraftIds[i];
+      if (id !== undefined) {
+        setDraftSortOrder(id, i);
+      }
+    }
+  }
+
+  /**
+   * Called by TeamSections when a drag-drop completes.
+   * `fromId` is the draft that was dragged; `toIndex` is the destination (0-based
+   * within the visible flat list produced by groupDrafts).
+   */
+  function handleDragReorder(fromId: string, toIndex: number): void {
+    // Use the sections computed above to get the current display order
+    const allIds = sections.flatMap((s) => s.drafts.map((d) => d.id));
+    const fromIndex = allIds.indexOf(fromId);
+    if (fromIndex === -1) return;
+
+    // Build the new order by moving the item
+    const newOrder = [...allIds];
+    newOrder.splice(fromIndex, 1);
+    newOrder.splice(toIndex, 0, fromId);
+
+    renumberSortOrders(newOrder);
+  }
+
+  /**
+   * Called by the row's "Move up" / "Move down" overflow menu items.
+   * Swaps the draft with its neighbor, then renumbers all sortOrders.
+   */
+  function handleMove(id: string, dir: "up" | "down"): void {
+    const allIds = sections.flatMap((s) => s.drafts.map((d) => d.id));
+    const idx = allIds.indexOf(id);
+    if (idx === -1) return;
+
+    const targetIdx = dir === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= allIds.length) return;
+
+    const newOrder = [...allIds];
+    // Swap
+    const temp = newOrder[idx];
+    const targetItem = newOrder[targetIdx];
+    if (temp === undefined || targetItem === undefined) return;
+    newOrder[idx] = targetItem;
+    newOrder[targetIdx] = temp;
+
+    renumberSortOrders(newOrder);
   }
 
   // ==========================================================================
@@ -586,6 +676,8 @@ export function TeamsLandingClient() {
                 sections={sections}
                 density={prefs.density}
                 renderRow={renderRow}
+                reorderable={reorderable}
+                onDragReorder={handleDragReorder}
                 emptyState={
                   isArchiveView ? (
                     <p className="text-muted-foreground py-8 text-center text-sm">
@@ -662,7 +754,6 @@ export function TeamsLandingClient() {
         onSave={handleSmartFolderSave}
       />
 
-      {/* TODO Milestone C: drag reorder */}
     </div>
   );
 }

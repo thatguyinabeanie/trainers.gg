@@ -12,10 +12,28 @@
  *
  * Activation (Enter/Space) is forwarded to the row's own Link or button — this
  * component only manages focus; it does NOT intercept activation events.
+ *
+ * When `reorderable` is true (custom sort mode, single-section views), wraps
+ * the sole reorderable section in DndContext + SortableContext from @dnd-kit.
+ * Each row must be rendered via TeamRow which calls useSortable internally.
  */
 
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 import { cn } from "@/lib/utils";
 
@@ -47,6 +65,19 @@ export interface TeamSectionsProps {
   renderRow: (record: LocalDraftRecord, rowProps: RowInjectedProps) => ReactNode;
   /** Content rendered when `sections` is empty or all sections have 0 drafts. */
   emptyState?: ReactNode;
+  /**
+   * When true, wraps the (single) visible section in a DndContext +
+   * SortableContext so rows can be dragged to reorder. Only meaningful
+   * for custom-sort all-teams and manual-folder views (which produce a
+   * single section). Multi-section views should pass `false`.
+   */
+  reorderable?: boolean;
+  /**
+   * Called when a drag-drop reorder completes. Receives the draft id that
+   * was dragged and the new index it was dropped at (0-based within the
+   * visible flat list). The caller is responsible for renumbering sortOrder.
+   */
+  onDragReorder?: (fromId: string, toIndex: number) => void;
 }
 
 // =============================================================================
@@ -79,6 +110,8 @@ export function TeamSections({
   density,
   renderRow,
   emptyState,
+  reorderable = false,
+  onDragReorder,
 }: TeamSectionsProps) {
   // Per-section collapsed state, keyed by section.id.
   // All sections start expanded (not in the map = expanded).
@@ -92,6 +125,39 @@ export function TeamSections({
 
   // Track whether the last navigation was via keyboard so we can move focus.
   const lastNavByKeyboard = useRef(false);
+
+  // -------------------------------------------------------------------------
+  // dnd-kit sensors — used only when reorderable is true.
+  // Sensors are always initialised (Rules of Hooks) but do nothing unless the
+  // DndContext is rendered (which only happens when reorderable is true).
+  // -------------------------------------------------------------------------
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      // Require 8px movement before activating drag so accidental touches
+      // on mobile don't hijack link taps.
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !onDragReorder) return;
+
+    // Compute new index from the visible drafts in the first (and only)
+    // reorderable section. The SortableContext receives the flat id list in
+    // display order, so we need to locate the `over` item's position in it.
+    const reorderableSection = sections[0];
+    if (!reorderableSection) return;
+
+    const draftsInOrder = reorderableSection.drafts;
+    const toIndex = draftsInOrder.findIndex((d) => d.id === over.id);
+    if (toIndex === -1) return;
+
+    onDragReorder(String(active.id), toIndex);
+  }
 
   // -------------------------------------------------------------------------
   // Compute the total number of visible (non-collapsed) rows for clamping.
@@ -220,25 +286,59 @@ export function TeamSections({
                 className={cn("mt-1 pl-2", DENSITY_CLASS[density])}
                 data-density={density}
               >
-                {section.drafts.map((record, localIdx) => {
-                  const flatIdx = sectionStart + localIdx;
-                  const isActive = flatIdx === effectiveActive;
+                {/* When reorderable, wrap in dnd-kit context for drag support */}
+                {reorderable ? (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={section.drafts.map((d) => d.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {section.drafts.map((record, localIdx) => {
+                        const flatIdx = sectionStart + localIdx;
+                        const isActive = flatIdx === effectiveActive;
 
-                  return (
-                    <div key={record.id} role="listitem">
-                      {renderRow(record, {
-                        tabIndex: isActive ? 0 : -1,
-                        ref: (el) => {
-                          if (el) {
-                            rowRefs.current.set(flatIdx, el);
-                          } else {
-                            rowRefs.current.delete(flatIdx);
-                          }
-                        },
+                        return (
+                          <div key={record.id} role="listitem">
+                            {renderRow(record, {
+                              tabIndex: isActive ? 0 : -1,
+                              ref: (el) => {
+                                if (el) {
+                                  rowRefs.current.set(flatIdx, el);
+                                } else {
+                                  rowRefs.current.delete(flatIdx);
+                                }
+                              },
+                            })}
+                          </div>
+                        );
                       })}
-                    </div>
-                  );
-                })}
+                    </SortableContext>
+                  </DndContext>
+                ) : (
+                  section.drafts.map((record, localIdx) => {
+                    const flatIdx = sectionStart + localIdx;
+                    const isActive = flatIdx === effectiveActive;
+
+                    return (
+                      <div key={record.id} role="listitem">
+                        {renderRow(record, {
+                          tabIndex: isActive ? 0 : -1,
+                          ref: (el) => {
+                            if (el) {
+                              rowRefs.current.set(flatIdx, el);
+                            } else {
+                              rowRefs.current.delete(flatIdx);
+                            }
+                          },
+                        })}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             )}
           </div>

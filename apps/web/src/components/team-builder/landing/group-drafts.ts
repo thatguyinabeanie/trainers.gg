@@ -286,6 +286,22 @@ export function groupDrafts(
   // ------------------------------------------------------------------
   const nonArchived = drafts.filter((d) => !d.archived);
 
+  // Custom sort in All-teams view: emit a single flat "all" section ordered
+  // by sortOrder (nulls last, updatedAt desc tiebreaker). Drag must span the
+  // whole list, so we cannot split into Pinned + gen→format groups here.
+  if (sort === "custom") {
+    sortDrafts(nonArchived, sort);
+    if (nonArchived.length === 0) return [];
+    return [
+      {
+        id: "all",
+        kind: "auto",
+        title: "All teams",
+        drafts: nonArchived,
+      },
+    ];
+  }
+
   // Pinned section — pinned non-archived drafts
   const pinnedDrafts = nonArchived.filter((d) => d.pinned);
   sortDrafts(pinnedDrafts, sort);

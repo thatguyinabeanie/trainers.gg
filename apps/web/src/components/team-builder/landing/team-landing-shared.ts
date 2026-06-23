@@ -111,4 +111,28 @@ export interface TeamRowProps {
    * the parent should treat this as a range selection.
    */
   onToggleSelect?: (id: string, opts: { shift: boolean }) => void;
+  // ---------------------------------------------------------------------------
+  // Milestone C — drag reorder (all additive; row unchanged when absent)
+  // ---------------------------------------------------------------------------
+  /**
+   * When true, a grip handle is rendered for drag-reorder.
+   * Also enables "Move up" / "Move down" in the overflow menu (tap/keyboard
+   * fallback for mobile and keyboard users).
+   */
+  reorderable?: boolean;
+  /**
+   * Whether this row can be moved up (i.e. it is not the first item).
+   * Used to disable the "Move up" menu item.
+   */
+  canMoveUp?: boolean;
+  /**
+   * Whether this row can be moved down (i.e. it is not the last item).
+   * Used to disable the "Move down" menu item.
+   */
+  canMoveDown?: boolean;
+  /**
+   * Called when the user selects "Move up" or "Move down" from the overflow
+   * menu. `dir` is `"up"` or `"down"`.
+   */
+  onMove?: (id: string, dir: "up" | "down") => void;
 }

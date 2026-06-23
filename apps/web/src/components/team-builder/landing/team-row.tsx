@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { MoreHorizontal, Trash2, Pin, PinOff, Archive, ArchiveX, FolderOpen, Check } from "lucide-react";
+import { MoreHorizontal, Trash2, Pin, PinOff, Archive, ArchiveX, FolderOpen, Check, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { getFormatLabel } from "@trainers/pokemon";
@@ -70,7 +72,7 @@ function Sprite({ slot, index, highlighted }: SpriteProps) {
 /**
  * Name-first row for the /builder landing draft list.
  *
- * Layout: [checkbox?] → [name] → [sprites] → [format badge] … [⋯ overflow menu]
+ * Layout: [grip?] → [checkbox?] → [name] → [sprites] → [format badge] … [⋯ overflow menu]
  *
  * The main area is a Next.js Link to the draft editor. The overflow menu
  * is a sibling (not nested inside the link) to avoid nested interactive
@@ -84,6 +86,7 @@ function Sprite({ slot, index, highlighted }: SpriteProps) {
  * - `archived` / `onToggleArchive` — adds Archive/Unarchive item when callback is provided
  * - `manualFolders` / `memberFolderIds` / `onToggleFolder` — adds "Move to folder" submenu
  * - `selectable` / `selected` / `onToggleSelect` — bulk-selection checkbox (Milestone C)
+ * - `reorderable` / `canMoveUp` / `canMoveDown` / `onMove` — drag reorder + tap fallback (Milestone C)
  */
 export function TeamRow({
   summary,
@@ -100,9 +103,34 @@ export function TeamRow({
   selectable,
   selected,
   onToggleSelect,
+  reorderable,
+  canMoveUp,
+  canMoveDown,
+  onMove,
 }: TeamRowProps) {
   const highlightSet = new Set(highlightSpecies ?? []);
   const memberSet = new Set(memberFolderIds ?? []);
+
+  // dnd-kit sortable — only active when reorderable; disabled otherwise so the
+  // hook is always called (Rules of Hooks) but has no drag behaviour.
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: summary.id,
+    disabled: !reorderable,
+  });
+
+  const sortableStyle: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+    opacity: isDragging ? 0.5 : undefined,
+  };
 
   // Determine whether the "Move to folder" submenu should appear
   const showFolderMenu =
@@ -111,7 +139,31 @@ export function TeamRow({
     manualFolders.length > 0;
 
   return (
-    <div className="group flex items-center gap-2 rounded-lg py-1.5 transition-colors hover:bg-accent/40 sm:gap-3">
+    <div
+      ref={setNodeRef}
+      style={sortableStyle}
+      className="group flex items-center gap-2 rounded-lg py-1.5 transition-colors hover:bg-accent/40 sm:gap-3"
+    >
+      {/* Drag grip handle — shown only when reorderable */}
+      {reorderable && (
+        // ≥40px tap area on mobile, shrinks to sm: size; hover-revealed on desktop
+        <div
+          className={cn(
+            "flex shrink-0 cursor-grab items-center justify-center active:cursor-grabbing",
+            "size-10 sm:size-6",
+            // Desktop: hidden by default, revealed on group-hover
+            "opacity-0 group-hover:opacity-100 focus-within:opacity-100",
+            // Always visible on mobile so touch users can see it
+            "sm:opacity-0 sm:group-hover:opacity-100"
+          )}
+          aria-hidden
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="size-4 text-muted-foreground" />
+        </div>
+      )}
+
       {/* Bulk-selection checkbox — sibling of Link, never nested inside it */}
       {selectable && (
         // Wrapper gives a ≥40px tap target on mobile without inflating layout
@@ -199,6 +251,26 @@ export function TeamRow({
             </DropdownMenuItem>
           )}
 
+          {/* Move up / Move down — tap/keyboard fallback for drag reorder */}
+          {reorderable && onMove && (
+            <>
+              <DropdownMenuItem
+                disabled={!canMoveUp}
+                onClick={() => onMove(summary.id, "up")}
+              >
+                <ArrowUp className="size-4" />
+                Move up
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!canMoveDown}
+                onClick={() => onMove(summary.id, "down")}
+              >
+                <ArrowDown className="size-4" />
+                Move down
+              </DropdownMenuItem>
+            </>
+          )}
+
           {/* Pin / Unpin — shown when onTogglePin is provided */}
           {onTogglePin && (
             <DropdownMenuItem onClick={() => onTogglePin(summary.id)}>
@@ -259,7 +331,7 @@ export function TeamRow({
           )}
 
           {/* Separator before Delete when there are extra actions */}
-          {(onPeek || onTogglePin || onToggleArchive || showFolderMenu) && (
+          {(onPeek || reorderable || onTogglePin || onToggleArchive || showFolderMenu) && (
             <DropdownMenuSeparator />
           )}
 
