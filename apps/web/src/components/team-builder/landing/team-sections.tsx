@@ -1,0 +1,249 @@
+"use client";
+
+/**
+ * team-sections.tsx
+ *
+ * Collapsible, keyboard-navigable section list for the team-builder landing.
+ *
+ * Receives pre-grouped `DraftSection[]` from the caller (produced by
+ * `groupDrafts`) and renders each section as a collapsible block. A roving
+ * tabindex spans all visible rows across all expanded sections so the user can
+ * navigate with ArrowDown/j (next) and ArrowUp/k (previous).
+ *
+ * Activation (Enter/Space) is forwarded to the row's own Link or button — this
+ * component only manages focus; it does NOT intercept activation events.
+ */
+
+import { useState, useRef, useEffect, type ReactNode } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+
+import { type DraftSection } from "./group-drafts";
+import { type LocalDraftRecord } from "../persistence/local-drafts-types";
+import { type Density } from "../persistence/landing-prefs-types";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+/** Props injected by TeamSections into each rendered row via `renderRow`. */
+export interface RowInjectedProps {
+  /** Roving tabindex value: 0 for the active row, -1 for all others. */
+  tabIndex: number;
+  /** Callback ref — consumer spreads this onto the row's focusable wrapper. */
+  ref: (el: HTMLElement | null) => void;
+}
+
+export interface TeamSectionsProps {
+  /** Ordered sections to render. Produced by `groupDrafts`. */
+  sections: readonly DraftSection[];
+  /** Visual density — controls vertical spacing between rows. */
+  density: Density;
+  /**
+   * Render prop for each row. Receives the draft record and injected
+   * tabindex/ref props that must be spread onto the row's focusable wrapper.
+   */
+  renderRow: (record: LocalDraftRecord, rowProps: RowInjectedProps) => ReactNode;
+  /** Content rendered when `sections` is empty or all sections have 0 drafts. */
+  emptyState?: ReactNode;
+}
+
+// =============================================================================
+// Density spacing
+// =============================================================================
+
+/** Vertical gap class applied between rows depending on density setting. */
+const DENSITY_CLASS: Record<Density, string> = {
+  comfortable: "space-y-1",
+  compact: "space-y-0",
+};
+
+// =============================================================================
+// TeamSections
+// =============================================================================
+
+/**
+ * Renders `sections` as collapsible blocks with roving tabindex keyboard nav.
+ *
+ * Collapse state is per-section (`useState` keyed by section id); all sections
+ * start expanded. Collapsed sections' rows are excluded from the roving order.
+ *
+ * Key bindings on the section list container:
+ *   ArrowDown / j → move active index forward (clamp at last row)
+ *   ArrowUp   / k → move active index backward (clamp at first row)
+ *   Enter / Space  → forwarded to the row element natively (no hijack)
+ */
+export function TeamSections({
+  sections,
+  density,
+  renderRow,
+  emptyState,
+}: TeamSectionsProps) {
+  // Per-section collapsed state, keyed by section.id.
+  // All sections start expanded (not in the map = expanded).
+  const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
+
+  // Active roving-tabindex index (into the flat ordered list of visible rows).
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Ref map: flat index → DOM element for the row.
+  const rowRefs = useRef<Map<number, HTMLElement>>(new Map());
+
+  // Track whether the last navigation was via keyboard so we can move focus.
+  const lastNavByKeyboard = useRef(false);
+
+  // -------------------------------------------------------------------------
+  // Compute the total number of visible (non-collapsed) rows for clamping.
+  // -------------------------------------------------------------------------
+  let totalVisible = 0;
+  for (const section of sections) {
+    if (!collapsedMap[section.id]) {
+      totalVisible += section.drafts.length;
+    }
+  }
+
+  // The effective active index, clamped to the current visible row count.
+  const effectiveActive =
+    totalVisible === 0 ? 0 : Math.min(activeIndex, totalVisible - 1);
+
+  // -------------------------------------------------------------------------
+  // Focus management: move DOM focus to the active row after keyboard nav.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!lastNavByKeyboard.current) return;
+    lastNavByKeyboard.current = false;
+    const el = rowRefs.current.get(effectiveActive);
+    if (el) {
+      el.focus();
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // Keyboard handler — installed on the wrapping div so the whole list area
+  // receives ArrowDown/j/ArrowUp/k.
+  // -------------------------------------------------------------------------
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (totalVisible === 0) return;
+
+    const isDown = e.key === "ArrowDown" || e.key === "j";
+    const isUp = e.key === "ArrowUp" || e.key === "k";
+
+    if (!isDown && !isUp) return;
+
+    e.preventDefault();
+    lastNavByKeyboard.current = true;
+
+    if (isDown) {
+      setActiveIndex((prev) => Math.min(prev + 1, totalVisible - 1));
+    } else {
+      setActiveIndex((prev) => Math.max(prev - 1, 0));
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Early exit: empty state
+  // -------------------------------------------------------------------------
+  const hasAnyDrafts = sections.some((s) => s.drafts.length > 0);
+  if (sections.length === 0 || !hasAnyDrafts) {
+    return emptyState ? <>{emptyState}</> : null;
+  }
+
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
+  // Build a lookup: sectionId → starting flat index.
+  // We need this to map each section's local row position to a flat index.
+  const sectionStartMap = new Map<string, number>();
+  let startIdx = 0;
+  for (const section of sections) {
+    const isCollapsed = Boolean(collapsedMap[section.id]);
+    if (!isCollapsed) {
+      sectionStartMap.set(section.id, startIdx);
+      startIdx += section.drafts.length;
+    }
+  }
+
+  return (
+    // The container captures keyboard events for roving tabindex navigation.
+    // tabIndex={-1} makes it programmatically focusable (so keyboard events
+    // can be dispatched to it) without inserting it into the tab order.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    <div
+      role="list"
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
+      className="space-y-4 outline-none"
+    >
+      {sections.map((section) => {
+        const isCollapsed = Boolean(collapsedMap[section.id]);
+        const count = section.drafts.length;
+        const sectionStart = sectionStartMap.get(section.id) ?? 0;
+
+        return (
+          <div key={section.id} role="listitem" data-section-id={section.id}>
+            {/* Section header */}
+            <button
+              type="button"
+              aria-expanded={!isCollapsed}
+              onClick={() =>
+                setCollapsedMap((prev) => ({
+                  ...prev,
+                  [section.id]: !prev[section.id],
+                }))
+              }
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md px-2 py-1.5",
+                "text-left text-sm font-medium",
+                "hover:bg-accent/40 focus-visible:ring-ring",
+                "focus-visible:outline-none focus-visible:ring-2",
+                "transition-colors"
+              )}
+            >
+              {isCollapsed ? (
+                <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+              )}
+              <span className="flex-1 truncate">{section.title}</span>
+              <span
+                className="text-muted-foreground text-xs tabular-nums"
+                aria-label={`${count} draft${count !== 1 ? "s" : ""}`}
+              >
+                {count}
+              </span>
+            </button>
+
+            {/* Section rows */}
+            {!isCollapsed && (
+              <div
+                className={cn("mt-1 pl-2", DENSITY_CLASS[density])}
+                data-density={density}
+              >
+                {section.drafts.map((record, localIdx) => {
+                  const flatIdx = sectionStart + localIdx;
+                  const isActive = flatIdx === effectiveActive;
+
+                  return (
+                    <div key={record.id} role="listitem">
+                      {renderRow(record, {
+                        tabIndex: isActive ? 0 : -1,
+                        ref: (el) => {
+                          if (el) {
+                            rowRefs.current.set(flatIdx, el);
+                          } else {
+                            rowRefs.current.delete(flatIdx);
+                          }
+                        },
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
