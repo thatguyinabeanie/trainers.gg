@@ -14,11 +14,15 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowLeft,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   PanelRightOpen,
 } from "lucide-react";
 import {
@@ -733,6 +737,7 @@ export function TeamWorkspaceV2({
 
   const isMobile = useIsMobile();
   const isClient = useIsClient();
+  const [railCollapsed, setRailCollapsed] = useState(false);
   const { mode: layoutMode } = useTeamLayout();
 
   // ---------------------------------------------------------------------------
@@ -903,11 +908,53 @@ export function TeamWorkspaceV2({
         {/* Middle row: editor team rail (desktop) + content. Sandwiched between
             the full-width topbar (above) and the full-width dock (below). */}
         <div className="flex min-h-0 flex-1">
-          {isClient && !isMobile && draftId && (
-            <aside className="bg-muted/40 w-56 shrink-0 overflow-y-auto border-r border-border/40 p-2">
-              <EditorTeamRail currentDraftId={draftId} />
-            </aside>
-          )}
+          {isClient &&
+            !isMobile &&
+            draftId &&
+            (railCollapsed ? (
+              // Collapsed: slim strip with back-to-landing + re-open chevron
+              <div className="bg-muted/40 flex w-10 shrink-0 flex-col items-center gap-1 border-r border-border/40 pt-2">
+                <Link
+                  href="/builder"
+                  aria-label="Your Teams"
+                  className="text-muted-foreground hover:text-foreground flex size-8 items-center justify-center rounded-md transition-colors"
+                >
+                  <ArrowLeft className="size-4" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setRailCollapsed(false)}
+                  aria-label="Show team rail"
+                  className="text-muted-foreground hover:text-foreground flex size-8 items-center justify-center rounded-md transition-colors"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
+            ) : (
+              <aside className="bg-muted/40 flex w-56 shrink-0 flex-col overflow-hidden border-r border-border/40">
+                {/* Header: back-to-landing link + collapse toggle */}
+                <div className="flex items-center justify-between gap-1 px-2 pt-2">
+                  <Link
+                    href="/builder"
+                    className="text-muted-foreground hover:text-foreground flex min-h-8 items-center gap-1.5 rounded-md px-1.5 text-sm font-medium transition-colors"
+                  >
+                    <ArrowLeft className="size-3.5 shrink-0" />
+                    Your Teams
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setRailCollapsed(true)}
+                    aria-label="Hide team rail"
+                    className="text-muted-foreground hover:text-foreground flex size-7 shrink-0 items-center justify-center rounded-md transition-colors"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-2 pt-1">
+                  <EditorTeamRail currentDraftId={draftId} />
+                </div>
+              </aside>
+            ))}
 
           <div
             className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
