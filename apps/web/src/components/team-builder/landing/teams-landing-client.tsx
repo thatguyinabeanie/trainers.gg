@@ -22,6 +22,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsClient } from "@/hooks/use-is-client";
 import { useAuthContext } from "@/components/auth/auth-provider";
+import { PageContainer } from "@/components/layout/page-container";
 
 import { useLocalDrafts } from "../persistence/use-local-drafts";
 import { useFolders } from "../persistence/use-folders";
@@ -547,7 +548,6 @@ export function TeamsLandingClient() {
   const hasNoMatches = hasSearchQuery && allMatches.length === 0;
 
   // Empty state conditions
-  const isNoDrafts = hydrated && drafts.length === 0;
   const isNoSearchMatches = hydrated && hasNoMatches;
 
   // ==========================================================================
@@ -574,91 +574,90 @@ export function TeamsLandingClient() {
   // ==========================================================================
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6">
-      <div className="flex gap-4">
-        {/* Desktop rail — rendered inline */}
-        {isClient && !isMobile && (
-          <div className="shrink-0">{rail}</div>
-        )}
-
-        {/* Main content pane */}
-        <div className="min-w-0 flex-1">
-          {/* Page header */}
-          <div className="mb-4 flex items-center gap-3 flex-wrap">
-            {/* Mobile: Folders button that opens the rail in a Sheet */}
-            {isClient && isMobile && (
-              <Sheet open={railSheetOpen} onOpenChange={setRailSheetOpen}>
-                <SheetTrigger
-                  className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                  aria-label="Open folders"
-                >
-                  <FolderOpen className="size-4" />
-                  Folders
-                </SheetTrigger>
-                <SheetContent side="left" className="overflow-y-auto p-0">
-                  <SheetHeader className="sr-only">
-                    <SheetTitle>Folders</SheetTitle>
-                  </SheetHeader>
-                  <div className="p-3">{rail}</div>
-                </SheetContent>
-              </Sheet>
-            )}
-
-            <h1 className="text-xl font-semibold tracking-tight flex-1">
-              Your Teams
-            </h1>
-
-            <Button
-              onClick={handleNewTeam}
-              size="lg"
-              className="min-h-10 shrink-0"
-              aria-label="Create a new team"
-            >
-              <Plus className="size-4" />
-              New Team
-            </Button>
-          </div>
-
-          {/* Search bar */}
-          {showSearch && (
-            <div className="mb-3 flex items-center gap-2">
-              <div className="min-w-0 flex-1">
-                <SmartSearch
-                  value={search}
-                  onValueChange={setSearch}
-                  suggestions={suggestions}
-                />
-              </div>
-              {/* "Save as smart folder" — only shown when there's an active query */}
-              {hasSearchQuery && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="min-h-10 shrink-0 gap-1.5 text-xs sm:min-h-8"
-                  onClick={handleSaveAsSmartFolder}
-                  aria-label="Save as smart folder"
-                >
-                  <Zap className="size-3.5" />
-                  Save as folder
-                </Button>
-              )}
-            </div>
+    <PageContainer>
+      {/* Empty state: suppress the rail — it's noisy when folders are all empty */}
+      {hydrated && drafts.length === 0 ? (
+        <LandingEmptyState
+          variant={isAuthenticated ? "authed" : "guest"}
+          onNewTeam={handleNewTeam}
+        />
+      ) : (
+        <div className="flex gap-0">
+          {/* Desktop rail — rendered inline; gap-0 + rail border provides separation */}
+          {isClient && !isMobile && (
+            <div className="shrink-0">{rail}</div>
           )}
 
-          {/* Content states */}
-          {!hydrated ? (
-            <LandingSkeleton />
-          ) : isNoDrafts ? (
-            <LandingEmptyState
-              variant={isAuthenticated ? "authed" : "guest"}
-              onNewTeam={handleNewTeam}
-            />
-          ) : isNoSearchMatches ? (
-            <NoMatchesState onClear={handleClearSearch} />
-          ) : (
-            <>
-              {/* Toolbar — sort + density controls */}
-              <div className="mb-3">
+          {/* Main content pane */}
+          <div className="min-w-0 flex-1">
+            {/* Page header — tournaments pattern: title left, actions right */}
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <h1 className="text-3xl font-bold">Your Teams</h1>
+
+              <div className="flex shrink-0 items-center gap-2">
+                {/* Mobile: Folders button that opens the rail in a Sheet */}
+                {isClient && isMobile && (
+                  <Sheet open={railSheetOpen} onOpenChange={setRailSheetOpen}>
+                    <SheetTrigger
+                      className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                      aria-label="Open folders"
+                    >
+                      <FolderOpen className="size-4" />
+                      Folders
+                    </SheetTrigger>
+                    <SheetContent side="left" className="overflow-y-auto p-0">
+                      <SheetHeader className="sr-only">
+                        <SheetTitle>Folders</SheetTitle>
+                      </SheetHeader>
+                      <div className="p-3">{rail}</div>
+                    </SheetContent>
+                  </Sheet>
+                )}
+
+                <Button
+                  onClick={handleNewTeam}
+                  size="lg"
+                  className="min-h-10 shrink-0"
+                  aria-label="Create a new team"
+                >
+                  <Plus className="size-4" />
+                  New Team
+                </Button>
+              </div>
+            </div>
+
+            {/* Toolbar row: "Viewing" label + search + sort/density controls */}
+            {showSearch && (
+              <div className="mb-3 flex items-center gap-2">
+                {/* "Viewing" label — desktop only (mockup) */}
+                {isClient && !isMobile && (
+                  <span className="text-muted-foreground shrink-0 text-sm">
+                    Viewing
+                  </span>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <SmartSearch
+                    value={search}
+                    onValueChange={setSearch}
+                    suggestions={suggestions}
+                  />
+                </div>
+
+                {/* "Save as smart folder" — only shown when there's an active query */}
+                {hasSearchQuery && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-10 shrink-0 gap-1.5 text-xs sm:min-h-8"
+                    onClick={handleSaveAsSmartFolder}
+                    aria-label="Save as smart folder"
+                  >
+                    <Zap className="size-3.5" />
+                    Save as folder
+                  </Button>
+                )}
+
                 <LandingToolbar
                   sort={prefs.sort}
                   density={prefs.density}
@@ -667,33 +666,57 @@ export function TeamsLandingClient() {
                   onDensityChange={(d) => setPrefs({ density: d })}
                 />
               </div>
+            )}
 
-              {/* Archived-view contextual note */}
-              {isArchiveView && <ArchivedViewNote />}
+            {/* Content states */}
+            {!hydrated ? (
+              <LandingSkeleton />
+            ) : isNoSearchMatches ? (
+              <NoMatchesState onClear={handleClearSearch} />
+            ) : (
+              <>
+                {/* Archived-view contextual note */}
+                {isArchiveView && <ArchivedViewNote />}
 
-              {/* Sections */}
-              <TeamSections
-                sections={sections}
-                density={prefs.density}
-                renderRow={renderRow}
-                reorderable={reorderable}
-                onDragReorder={handleDragReorder}
-                emptyState={
-                  isArchiveView ? (
-                    <p className="text-muted-foreground py-8 text-center text-sm">
-                      No archived teams.
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground py-8 text-center text-sm">
-                      No teams in this folder.
-                    </p>
-                  )
-                }
-              />
-            </>
-          )}
+                {/* Sections */}
+                <TeamSections
+                  sections={sections}
+                  density={prefs.density}
+                  renderRow={renderRow}
+                  reorderable={reorderable}
+                  onDragReorder={handleDragReorder}
+                  emptyState={
+                    isArchiveView ? (
+                      <p className="text-muted-foreground py-8 text-center text-sm">
+                        No archived teams.
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground py-8 text-center text-sm">
+                        No teams in this folder.
+                      </p>
+                    )
+                  }
+                />
+
+                {/* Keyboard-hint strip — desktop only */}
+                {isClient && !isMobile && (
+                  <p className="text-muted-foreground mt-4 text-xs">
+                    <kbd className="font-sans">⌘K</kbd> search
+                    {" · "}
+                    <kbd className="font-sans">↑↓</kbd> move
+                    {" · "}
+                    <kbd className="font-sans">↵</kbd> open
+                    {" · "}
+                    <kbd className="font-sans">Space</kbd> select
+                    {" · "}
+                    <kbd className="font-sans">⌘\</kbd> rail
+                  </p>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Bulk-action bar — fixed at bottom, shown when ≥1 row is selected */}
       <BulkActionBar
@@ -754,6 +777,6 @@ export function TeamsLandingClient() {
         onSave={handleSmartFolderSave}
       />
 
-    </div>
+    </PageContainer>
   );
 }

@@ -229,7 +229,7 @@ export function FolderRail({
   return (
     <nav
       className={cn(
-        "flex flex-col gap-0.5 py-2",
+        "flex flex-col gap-0.5 py-2 border-r border-border/40 pr-2",
         collapsed ? "w-10" : "w-52"
       )}
       aria-label="Folders"
@@ -269,7 +269,7 @@ export function FolderRail({
       {/* Smart folders */}
       {!collapsed && (
         <div className="mt-2 mb-0.5 px-3">
-          <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Smart
           </span>
         </div>
@@ -302,7 +302,7 @@ export function FolderRail({
       {/* Manual folders */}
       {!collapsed && (
         <div className="mt-2 mb-0.5 px-3">
-          <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Folders
           </span>
         </div>

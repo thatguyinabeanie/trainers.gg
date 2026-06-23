@@ -25,6 +25,12 @@ export interface LocalDraftSummary {
   /** Species slots ordered by team_position, filled slots only. */
   species: DraftSpeciesSlot[];
   updatedAt: string;
+  /**
+   * Whether the team passes format legality checks.
+   * Legal = team.format_legal !== false AND every filled pokemon's
+   * format_legal !== false. Mirrors the isIllegal() logic in predicate-eval.ts.
+   */
+  isLegal: boolean;
 }
 
 /** Default display name for an unnamed draft. */
@@ -35,6 +41,14 @@ export function toDraftSummary(record: LocalDraftRecord): LocalDraftSummary {
   const filled = record.team.team_pokemon
     .filter((tp) => tp.pokemon !== null)
     .sort((a, b) => a.team_position - b.team_position);
+
+  // Legal = team-level format_legal is not explicitly false, AND every filled
+  // pokemon's format_legal is not explicitly false. Mirrors isIllegal() in
+  // predicate-eval.ts (inverted).
+  const isLegal =
+    record.team.format_legal !== false &&
+    filled.every((tp) => tp.pokemon?.format_legal !== false);
+
   return {
     id: record.id,
     name: record.team.name?.trim() || UNTITLED_DRAFT_NAME,
@@ -45,6 +59,7 @@ export function toDraftSummary(record: LocalDraftRecord): LocalDraftSummary {
       isShiny: tp.pokemon?.is_shiny ?? false,
     })),
     updatedAt: record.updatedAt,
+    isLegal,
   };
 }
 

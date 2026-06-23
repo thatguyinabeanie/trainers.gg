@@ -35,8 +35,12 @@ export function LandingShell({ footer }: LandingShellProps) {
 
       {/* Scrollable content area: landing list + site footer */}
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
-        <TeamsLandingClient />
-        {footer}
+        {/* flex-1 lets the content grow, pushing the footer to the bottom */}
+        <div className="flex-1">
+          <TeamsLandingClient />
+        </div>
+        {/* mt-auto pins the footer to the viewport bottom on short pages */}
+        <div className="mt-auto">{footer}</div>
       </div>
     </div>
   );
