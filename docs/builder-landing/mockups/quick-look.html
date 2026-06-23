@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+
+    /*
+     * BRAINSTORM COMPANION FRAME TEMPLATE
+     *
+     * This template provides a consistent frame with:
+     * - OS-aware light/dark theming
+     * - Header branding and connection status
+     * - Scrollable main content area
+     * - CSS helpers for common UI patterns
+     *
+     * Content is injected via placeholder comment in #frame-content.
+     */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    /* ===== THEME VARIABLES ===== */
+    :root {
+      --bg-primary: #f5f5f7;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e5e5e7;
+      --border: #d1d1d6;
+      --text-primary: #1d1d1f;
+      --text-secondary: #86868b;
+      --text-tertiary: #aeaeb2;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --success: #34c759;
+      --warning: #ff9f0a;
+      --error: #ff3b30;
+      --selected-bg: #e8f4fd;
+      --selected-border: #0071e3;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1d1d1f;
+        --bg-secondary: #2d2d2f;
+        --bg-tertiary: #3d3d3f;
+        --border: #424245;
+        --text-primary: #f5f5f7;
+        --text-secondary: #86868b;
+        --text-tertiary: #636366;
+        --accent: #0a84ff;
+        --accent-hover: #409cff;
+        --selected-bg: rgba(10, 132, 255, 0.15);
+        --selected-border: #0a84ff;
+      }
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* ===== FRAME STRUCTURE ===== */
+    .brand { display: flex; align-items: center; min-width: 0; overflow: hidden; color: var(--text-secondary); line-height: 1; }
+    .brand a { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; min-width: 0; max-width: 100%; line-height: 1; }
+    .brand-copy { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1; transform: translateY(-1px); }
+    .brand-logo { display: block; height: 1em; width: auto; max-width: 180px; flex-shrink: 0; filter: invert(1); }
+    @media (prefers-color-scheme: dark) {
+      .brand-logo { filter: none; }
+    }
+    .status { font-size: 0.7rem; color: var(--status-color, var(--success)); display: flex; align-items: center; gap: 0.4rem; justify-self: end; white-space: nowrap; line-height: 1; }
+    .status::before { content: ''; width: 6px; height: 6px; background: var(--status-color, var(--success)); border-radius: 50%; }
+
+    .main { flex: 1; overflow-y: auto; }
+    #frame-content { padding: 2rem; min-height: 100%; }
+
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1.5rem;
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 1rem;
+      min-height: 42px;
+    }
+    .header .brand { justify-self: start; width: 100%; font-size: 0.75rem; line-height: 1; }
+    .header .status { grid-column: 2; line-height: 1; }
+    .header span {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .header .selected-text {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .section { margin-bottom: 2rem; }
+    .label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+
+    /* ===== OPTIONS (for A/B/C choices) ===== */
+    .options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .option {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .option:hover { border-color: var(--accent); }
+    .option.selected { background: var(--selected-bg); border-color: var(--selected-border); }
+    .option .letter {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      width: 1.75rem; height: 1.75rem;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .option.selected .letter { background: var(--accent); color: white; }
+    .option .content { flex: 1; }
+    .option .content h3 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+    .option .content p { color: var(--text-secondary); font-size: 0.85rem; margin: 0; }
+
+    /* ===== CARDS (for showing designs/mockups) ===== */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card.selected { border-color: var(--selected-border); border-width: 2px; }
+    .card-image { background: var(--bg-tertiary); aspect-ratio: 16/10; display: flex; align-items: center; justify-content: center; }
+    .card-body { padding: 1rem; }
+    .card-body h3 { margin-bottom: 0.25rem; }
+    .card-body p { color: var(--text-secondary); font-size: 0.85rem; }
+
+    /* ===== MOCKUP CONTAINER ===== */
+    .mockup {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .mockup-header {
+      background: var(--bg-tertiary);
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .mockup-body { padding: 1.5rem; }
+
+    /* ===== SPLIT VIEW (side-by-side comparison) ===== */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+
+    /* ===== PROS/CONS ===== */
+    .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .pros, .cons { background: var(--bg-secondary); border-radius: 8px; padding: 1rem; }
+    .pros h4 { color: var(--success); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .cons h4 { color: var(--error); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .pros ul, .cons ul { margin-left: 1.25rem; font-size: 0.85rem; color: var(--text-secondary); }
+    .pros li, .cons li { margin-bottom: 0.25rem; }
+
+    /* ===== PLACEHOLDER (for mockup areas) ===== */
+    .placeholder {
+      background: var(--bg-tertiary);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+
+    /* ===== INLINE MOCKUP ELEMENTS ===== */
+    .mock-nav { background: var(--accent); color: white; padding: 0.75rem 1rem; display: flex; gap: 1.5rem; font-size: 0.9rem; }
+    .mock-sidebar { background: var(--bg-tertiary); padding: 1rem; min-width: 180px; }
+    .mock-content { padding: 1.5rem; flex: 1; }
+    .mock-button { background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; }
+    .mock-input { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; width: 100%; }
+  
+body{margin:0}
+main.content{max-width:880px;margin:0 auto;padding:32px}
+</style></head>
+<body><main class="content">
+<style>html,body{height:auto!important;overflow:visible!important}</style>
+<style>
+  .ql-row { display:flex; align-items:center; gap:11px; padding:10px 13px; background:#f8fafc; border-radius:11px; border:1px solid #eef2f6; }
+  .ql-row.dim { opacity:.5; }
+  .ql-sps { display:flex; gap:3px; } .ql-sp { width:20px; height:20px; border-radius:50%; background:#cbd5e1; }
+  .ql-mn { flex:1; min-width:0; }
+  .ql-nm { font-weight:600; font-size:13px; color:#1e293b; }
+  .ql-sub { font-size:10px; color:#94a3b8; margin-top:2px; }
+  .ql-pill { font-size:9px; border-radius:6px; padding:2px 7px; background:#ccfbf1; color:#0f766e; }
+  .ql-fmt { font-size:9px; border-radius:6px; padding:2px 7px; background:#eef2f6; color:#475569; }
+  .ql-dots { color:#64748b; font-size:15px; }
+  .ql-chev { color:#0d9488; font-weight:700; font-size:12px; }
+
+  /* mon cell (shared) */
+  .mon { background:#fff; border:1px solid #eef2f6; border-radius:9px; padding:8px; }
+  .mon-h { display:flex; align-items:center; gap:6px; }
+  .mon-sp { width:22px; height:22px; border-radius:50%; background:#cbd5e1; flex:none; }
+  .mon-nm { font-weight:700; font-size:11px; color:#1e293b; line-height:1.1; }
+  .mon-tera { font-size:8px; color:#fff; background:#7c3aed; border-radius:4px; padding:1px 4px; margin-left:auto; }
+  .mon-line { font-size:9.5px; color:#64748b; margin-top:4px; }
+  .mon-line b { color:#0f766e; font-weight:600; }
+  .mon-moves { display:grid; grid-template-columns:1fr 1fr; gap:2px 6px; margin-top:5px; }
+  .mv { font-size:9px; color:#475569; background:#f1f5f9; border-radius:4px; padding:1px 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mon-evs { font-size:8.5px; color:#94a3b8; margin-top:4px; }
+
+  /* A: hovercard */
+  .hovercard { margin-top:7px; margin-left:30px; width:480px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 12px 34px rgba(15,23,42,.16); padding:11px; }
+  .hovercard .hc-h { font-size:9px; text-transform:uppercase; letter-spacing:.05em; color:#94a3b8; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+
+  /* B: inline expand */
+  .expand { margin-top:6px; padding:11px; background:#f0fdfa; border:1px solid #cffafe; border-radius:11px; }
+  .grid6 { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+
+  /* C: side panel */
+  .panelwrap { display:flex; gap:10px; }
+  .panel-list { width:230px; display:flex; flex-direction:column; gap:6px; }
+  .panel { flex:1; background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 8px 24px rgba(15,23,42,.10); padding:11px; }
+  .panel-h { display:flex; align-items:center; gap:8px; padding-bottom:8px; border-bottom:1px solid #f1f5f9; margin-bottom:8px; }
+  .panel-h .pn { font-weight:700; font-size:13px; color:#1e293b; }
+  .panel-h .x { margin-left:auto; color:#cbd5e1; }
+  .prow { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid #f8fafc; }
+  .prow .mon-sp { width:24px; height:24px; }
+  .prow .pinfo { flex:1; min-width:0; }
+  .prow .pname { font-weight:600; font-size:11px; color:#1e293b; }
+  .prow .pmeta { font-size:9px; color:#94a3b8; }
+  .prow .pmoves { font-size:9px; color:#475569; text-align:right; max-width:200px; }
+
+  .option .content h3 { margin-bottom:3px; }
+  .leanline { margin-top:18px; }
+</style>
+
+<h2>Theme B — How should "peek a team without opening it" work?</h2>
+<p class="subtitle">All three show the same thing: the full 6 with item, ability, tera &amp; moves — no need to open the editor. The fork is the <b>form factor</b>, and it drives the desktop ↔ mobile story.</p>
+
+<div class="options">
+
+  <!-- A: HOVERCARD -->
+  <div class="option" data-choice="hovercard" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Hovercard (desktop) · bottom-sheet (mobile) &nbsp;·&nbsp; my lean</h3>
+      <div class="ql-row">
+        <div class="ql-sps"><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i></div>
+        <div class="ql-mn"><div class="ql-nm">Sun Offense</div><div class="ql-sub">admin_trainer · 2d</div></div>
+        <span class="ql-fmt">Reg H</span><span class="ql-pill">✓ Synced</span><span class="ql-dots">⋯</span>
+      </div>
+      <div class="hovercard">
+        <div class="hc-h">🔍 Quick look · hovering</div>
+        <div class="grid3">
+          <div class="mon"><div class="mon-h"><i class="mon-sp"></i><span class="mon-nm">Incineroar</span><span class="mon-tera">Grass</span></div><div class="mon-line">@ Sitrus Berry · <b>Intimidate</b></div><div class="mon-moves"><span class="mv">Fake Out</span><span class="mv">Knock Off</span><span class="mv">Parting Shot</span><span class="mv">Will-O-Wisp</span></div></div>
+          <div class="mon"><div class="mon-h"><i class="mon-sp"></i><span class="mon-nm">Flutter Mane</span><span class="mon-tera">Fairy</span></div><div class="mon-line">@ Booster · <b>Protosyn.</b></div><div class="mon-moves"><span class="mv">Moonblast</span><span class="mv">Shadow Ball</span><span class="mv">Daz. Gleam</span><span class="mv">Protect</span></div></div>
+          <div class="mon"><div class="mon-h"><i class="mon-sp"></i><span class="mon-nm">Rillaboom</span><span class="mon-tera">Fire</span></div><div class="mon-line">@ Assault Vest · <b>Grassy Surge</b></div><div class="mon-moves"><span class="mv">Grassy Glide</span><span class="mv">Wood Hammer</span><span class="mv">U-turn</span><span class="mv">Fake Out</span></div></div>
+          <div class="mon"><div class="mon-h"><i class="mon-sp"></i><span class="mon-nm">Urshifu-R</span><span class="mon-tera">Dark</span></div><div class="mon-line">@ Focus Sash · <b>Unseen Fist</b></div><div class="mon-moves"><span class="mv">Surging St.</span><span class="mv">Close Combat</span><span class="mv">Aqua Jet</span><span class="mv">Detect</span></div></div>
+          <div class="mon"><div class="mon-h"><i class="mon-sp"></i><span class="mon-nm">Amoonguss</span><span class="mon-tera">Water</span></div><div class="mon-line">@ Rocky Helmet · <b>Regenerator</b></div><div class="mon-moves"><span class="mv">Spore</span><span class="mv">Rage Powder</span><span class="mv">Pollen Puff</span><span class="mv">Protect</span></div></div>
+          <div class="mon"><div class="mon-h"><i class="mon-sp"></i><span class="mon-nm">Raging Bolt</span><span class="mon-tera">Electric</span></div><div class="mon-line">@ Life Orb · <b>Protosyn.</b></div><div class="mon-moves"><span class="mv">Thunderclap</span><span class="mv">Draco Meteor</span><span class="mv">Thunderbolt</span><span class="mv">Protect</span></div></div>
+        </div>
+      </div>
+      <p>Floats over the row on hover; vanishes on mouse-out — zero layout shift, instant. On mobile (no hover) the same card slides up as a <b>bottom sheet</b> on tap — reusing the pattern already used for row actions &amp; folders. One overlay model, two triggers.</p>
+    </div>
+  </div>
+
+  <!-- B: INLINE EXPAND -->
+  <div class="option" data-choice="expand" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Inline expand — row opens in place</h3>
+      <div class="ql-row" style="border-bottom-left-radius:0;border-bottom-right-radius:0">
+        <span class="ql-chev">▾</span>
+        <div class="ql-sps"><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i></div>
+        <div class="ql-mn"><div class="ql-nm">Sun Offense</div><div class="ql-sub">admin_trainer · 2d</div></div>
+        <span class="ql-fmt">Reg H</span><span class="ql-pill">✓ Synced</span><span class="ql-dots">⋯</span>
+      </div>
+      <div class="expand">
+        <div class="grid6">
+          <div class="mon"><div class="mon-h"><i class="mon-sp"></i><span class="mon-nm">Incineroar</span><span class="mon-tera">Grass</span></div><div class="mon-line">@ Sitrus Berry · <b>Intimidate</b></div><div class="mon-moves"><span class="mv">Fake Out</span><span class="mv">Knock Off</span><span class="mv">Parting Shot</span><span class="mv">Will-O-Wisp</span></div><div class="mon-evs">Careful · 252 HP / 4 Atk / 252 SpD</div></div>
+          <div class="mon"><div class="mon-h"><i class="mon-sp"></i><span class="mon-nm">Flutter Mane</span><span class="mon-tera">Fairy</span></div><div class="mon-line">@ Booster · <b>Protosyn.</b></div><div class="mon-moves"><span class="mv">Moonblast</span><span class="mv">Shadow Ball</span><span class="mv">Daz. Gleam</span><span class="mv">Protect</span></div><div class="mon-evs">Timid · 4 HP / 252 SpA / 252 Spe</div></div>
+          <div class="mon"><div class="mon-h"><i class="mon-sp"></i><span class="mon-nm">Raging Bolt</span><span class="mon-tera">Electric</span></div><div class="mon-line">@ Life Orb · <b>Protosyn.</b></div><div class="mon-moves"><span class="mv">Thunderclap</span><span class="mv">Draco Meteor</span><span class="mv">Thunderbolt</span><span class="mv">Protect</span></div><div class="mon-evs">Modest · 196 HP / 156 SpA / …</div></div>
+        </div>
+        <div style="font-size:10px;color:#0f766e;margin-top:7px;font-weight:600">+ 3 more · full EV spreads &amp; nature shown inline</div>
+      </div>
+      <p>Click the row (or a ▾) and it <b>expands in place</b>, pushing rows below down — room for the fullest detail (EV spreads + nature per mon). Identical on desktop and mobile, but it shifts the list and only one or two can be open before it gets long.</p>
+    </div>
+  </div>
+
+  <!-- C: SIDE PANEL -->
+  <div class="option" data-choice="panel" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Side peek panel — list stays, detail on the right</h3>
+      <div class="panelwrap">
+        <div class="panel-list">
+          <div class="ql-row" style="background:#ccfbf1;border-color:#5eead4"><div class="ql-sps"><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i></div><div class="ql-mn"><div class="ql-nm">Sun Offense</div></div></div>
+          <div class="ql-row dim"><div class="ql-sps"><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i></div><div class="ql-mn"><div class="ql-nm">Rain Core</div></div></div>
+          <div class="ql-row dim"><div class="ql-sps"><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i><i class="ql-sp"></i></div><div class="ql-mn"><div class="ql-nm">Trick Room</div></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-h"><i class="mon-sp" style="width:18px;height:18px"></i><span class="pn">Sun Offense</span><span class="x">✕</span></div>
+          <div class="prow"><i class="mon-sp"></i><div class="pinfo"><div class="pname">Incineroar <span class="mon-tera">Grass</span></div><div class="pmeta">@ Sitrus · Intimidate</div></div><div class="pmoves">Fake Out · Knock Off · Parting Shot · Will-O-Wisp</div></div>
+          <div class="prow"><i class="mon-sp"></i><div class="pinfo"><div class="pname">Flutter Mane <span class="mon-tera">Fairy</span></div><div class="pmeta">@ Booster · Protosyn.</div></div><div class="pmoves">Moonblast · Shadow Ball · Daz. Gleam · Protect</div></div>
+          <div class="prow"><i class="mon-sp"></i><div class="pinfo"><div class="pname">Rillaboom <span class="mon-tera">Fire</span></div><div class="pmeta">@ A. Vest · Grassy Surge</div></div><div class="pmoves">Grassy Glide · Wood Hammer · U-turn · Fake Out</div></div>
+          <div class="prow"><i class="mon-sp"></i><div class="pinfo"><div class="pname">Urshifu-R <span class="mon-tera">Dark</span></div><div class="pmeta">@ Sash · Unseen Fist</div></div><div class="pmoves">Surging Strikes · Close Combat · Aqua Jet · Detect</div></div>
+          <div style="font-size:9px;color:#94a3b8;text-align:center;padding-top:6px">+ 2 more · room for stats &amp; type coverage too</div>
+        </div>
+      </div>
+      <p>A persistent panel (or mobile sheet) shows the selected team's full detail while the list stays put — the most room (could even add computed stats / type coverage later). Heaviest to build, and on a laptop it squeezes the list width.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle leanline">My lean is <b>A (hovercard + mobile bottom-sheet)</b>: fast, no layout shift, and the bottom-sheet half reuses a pattern the app already has. Curious whether you'd trade that for B's "fullest detail, identical everywhere."</p>
+</main></body></html>

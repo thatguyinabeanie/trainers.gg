@@ -1,7 +1,7 @@
 # Team Builder Landing — Design Package
 
 **Status:** Design complete ✅ · Implementation not started
-**Date:** 2026-06-22
+**Date:** 2026-06-22 · **Expanded:** 2026-06-23 (quick-look, list controls, bulk actions, archive & safety; name-first rows)
 **PR:** #374
 
 A rich, organized **landing/home for the team builder** — the screen you see at `/builder` before editing a specific team. Today `/builder` drops straight into a single-team editor with no "all my teams" surface; this design closes that gap and aims to **beat** the Pokémon Showdown teambuilder rather than match it.
@@ -38,6 +38,10 @@ Each links to the rendered screenshot and the self-contained HTML you can open i
 | 11 | [empty-states](./mockups/empty-states.png) · [html](./mockups/empty-states.html) | Empty on-ramps: scratch + import + sample |
 | 12 | [empty-merged](./mockups/empty-merged.png) · [html](./mockups/empty-merged.html) | **Empty = full shell + welcome inside; seed Smart Folders** ✅ |
 | 13 | [mobile](./mockups/mobile.png) · [html](./mockups/mobile.html) | **Mobile folders: bottom sheet** ✅ |
+| 14 | [quick-look](./mockups/quick-look.png) · [html](./mockups/quick-look.html) | **Quick-look peek: hovercard + mobile bottom-sheet** ✅ |
+| 15 | [bulk-actions](./mockups/bulk-actions.png) · [html](./mockups/bulk-actions.html) | **Bulk select: hover checkbox + mobile long-press** ✅ |
+| 16 | [list-controls](./mockups/list-controls.png) · [html](./mockups/list-controls.html) | **Pin section + name-first rows + density / reorder / keyboard** ✅ |
+| 17 | [archive-safety](./mockups/archive-safety.png) · [html](./mockups/archive-safety.html) | **Safety: Archive (keep-but-hide) + Undo on delete** ✅ |
 
 ## Locked decisions (summary)
 
@@ -54,4 +58,10 @@ Each links to the rendered screenshot and the self-contained HTML you can open i
 | Row interactions | Menus (always) + drag-and-drop (enhancement) |
 | Empty/first-run | Full shell renders; welcome + 3 on-ramps inside main area; guest variant |
 | Routing | Route per team: `/builder` landing + `/builder/t/[id]` editor |
-| Mobile | Single column; alt dropdown; Folders → bottom sheet; actions → bottom sheet; `+ New` FAB |
+| Row anatomy | **Name-first everywhere**: name (📌) → sprites → format → sync → ⋯ (fixed-width name column) |
+| Quick-look | Hovercard (desktop) + bottom-sheet (mobile); full 6 with item / ability / tera / moves |
+| List controls | Sort (Recent/Name/Format/Completeness/Custom) + density toggle; pin-to-top (📌 section); manual reorder (Custom-order); keyboard nav |
+| Bulk actions | Hover checkbox + mobile long-press (+ ⇧/⌘-click); action bar: move folder/alt · export · archive · delete; export-all backup |
+| Safety / states | Archive (🗄 Archived, restorable) + Undo toast on delete; loading skeletons; error/retry; remembered UI prefs |
+| Mobile | Single column; alt dropdown; Folders → bottom sheet; quick-look + actions → bottom sheets; long-press multi-select; `+ New` FAB |
+| Parked / dropped | Tournament usage + meta-fit (parked, notes only); legal-for-event + per-card health badge (dropped, redundant) |
