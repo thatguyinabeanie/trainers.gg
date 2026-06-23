@@ -2,23 +2,31 @@
  * local-drafts-store.ts
  *
  * Pure, SSR-safe module for managing multiple local team drafts in localStorage.
- * Generalizes the single-slot localTeam.v1 store into a keyed multi-draft v2 store.
+ * Generalizes the single-slot localTeam.v1 store into a keyed multi-draft v3 store.
  *
- * Handles one-time migration from the legacy v1 key on first read after upgrade.
+ * Handles one-time migrations:
+ *   (a) legacy v1 key → v3 (first call after Phase 1 upgrade)
+ *   (b) existing v2 store → v3 (Milestone B upgrade: new attribute fields)
+ *
  * All functions are SSR-safe: SSR guard returns empty/null where appropriate.
  */
 
 import { toast } from "sonner";
 import { type TeamWithPokemon } from "@trainers/supabase";
 import { logError } from "@trainers/utils";
-import { type LocalDraftId, type LocalDraftRecord, type LocalDraftStoreV2 } from "./local-drafts-types";
+import {
+  type LocalDraftId,
+  type LocalDraftRecord,
+  type LocalDraftStoreV2,
+  type LocalDraftStoreV3,
+} from "./local-drafts-types";
 import { type LocalTeamData } from "./types";
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-/** localStorage key for the v2 multi-draft store. */
+/** localStorage key for the v3 multi-draft store. */
 export const LOCAL_DRAFTS_STORAGE_KEY = "trainersgg.builder.localDrafts.v2";
 
 /** localStorage key for the legacy single-slot v1 store (migration source). */
@@ -26,6 +34,14 @@ export const LEGACY_LOCAL_TEAM_KEY = "trainersgg.builder.localTeam.v1";
 
 /** Default format for new drafts — Pokémon Champions (Reg M-A). */
 const DEFAULT_FORMAT = "gen9championsvgc2026regma";
+
+/** Default values for the Milestone-B attributes added in v3. */
+const V3_DEFAULTS = {
+  pinned: false,
+  archived: false,
+  sortOrder: null,
+  folderIds: [],
+} as const;
 
 // =============================================================================
 // Internal helpers
@@ -75,12 +91,25 @@ function dedupeTeamPokemon(
 }
 
 /**
+ * Upgrade a v2 draft object (missing Milestone-B fields) to a full v3 record
+ * by defaulting all new fields.
+ */
+function upgradeV2DraftToV3(draft: LocalDraftStoreV2["drafts"][number]): LocalDraftRecord {
+  return {
+    ...draft,
+    ...V3_DEFAULTS,
+    folderIds: [], // ensure a fresh array, not a shared reference
+  };
+}
+
+/**
  * Attempt a one-time migration from the legacy v1 single-slot store.
- * Runs only when the v2 key is absent and the v1 key holds a valid payload.
- * On success: writes v2 store with the migrated draft and removes the legacy key.
+ * Runs only when the v3 key is absent and the v1 key holds a valid payload.
+ * On success: writes v3 store with the migrated draft (with v3 defaults) and removes
+ * the legacy key.
  * On any parse/validation error: skips silently.
  */
-function maybeMigrateFromLegacy(): LocalDraftStoreV2 | null {
+function maybeMigrateFromLegacy(): LocalDraftStoreV3 | null {
   try {
     const raw = localStorage.getItem(LEGACY_LOCAL_TEAM_KEY);
     if (!raw) return null;
@@ -97,8 +126,10 @@ function maybeMigrateFromLegacy(): LocalDraftStoreV2 | null {
       },
       createdAt: now,
       updatedAt: parsed.updatedAt ?? now,
+      ...V3_DEFAULTS,
+      folderIds: [],
     };
-    const store: LocalDraftStoreV2 = { version: 2, drafts: [record] };
+    const store: LocalDraftStoreV3 = { version: 3, drafts: [record] };
     localStorage.setItem(LOCAL_DRAFTS_STORAGE_KEY, JSON.stringify(store));
     localStorage.removeItem(LEGACY_LOCAL_TEAM_KEY);
     return store;
@@ -109,42 +140,60 @@ function maybeMigrateFromLegacy(): LocalDraftStoreV2 | null {
 }
 
 /**
- * Read and parse the v2 store from localStorage.
- * Performs one-time migration on first call after upgrade.
- * On corruption: logs the error, removes the malformed key, returns empty store.
+ * Read and parse the v3 store from localStorage.
+ * Performs one-time migrations on first call after upgrade:
+ *   - v1 legacy key → v3 (first call after Phase 1 upgrade)
+ *   - v2 store → v3 (adds Milestone-B attribute fields with defaults)
+ * On corruption or unknown version: logs the error, removes the malformed key,
+ * returns empty store.
  * SSR guard: returns empty store when window is unavailable.
  */
-function readStore(): LocalDraftStoreV2 {
+function readStore(): LocalDraftStoreV3 {
   if (typeof window === "undefined") {
-    return { version: 2, drafts: [] };
+    return { version: 3, drafts: [] };
   }
 
   const raw = localStorage.getItem(LOCAL_DRAFTS_STORAGE_KEY);
 
-  // v2 key absent — attempt one-time migration from legacy v1
+  // Key absent — attempt one-time migration from legacy v1
   if (!raw) {
     const migrated = maybeMigrateFromLegacy();
-    return migrated ?? { version: 2, drafts: [] };
+    return migrated ?? { version: 3, drafts: [] };
   }
 
   try {
-    const parsed: LocalDraftStoreV2 = JSON.parse(raw);
-    if (parsed.version !== 2 || !Array.isArray(parsed.drafts)) {
-      throw new Error("Malformed store");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- intentional: parsing unknown version for migration
+    const parsed: any = JSON.parse(raw);
+
+    // v2 → v3 migration: upgrade each draft with the new attribute defaults
+    if (parsed.version === 2 && Array.isArray(parsed.drafts)) {
+      const upgraded: LocalDraftStoreV3 = {
+        version: 3,
+        drafts: (parsed as LocalDraftStoreV2).drafts.map(upgradeV2DraftToV3),
+      };
+      localStorage.setItem(LOCAL_DRAFTS_STORAGE_KEY, JSON.stringify(upgraded));
+      return upgraded;
     }
-    return parsed;
+
+    // v3 — validate and return
+    if (parsed.version === 3 && Array.isArray(parsed.drafts)) {
+      return parsed as LocalDraftStoreV3;
+    }
+
+    // Unknown version or malformed — treat as corrupt
+    throw new Error("Malformed store");
   } catch (error) {
     logError("localDraftsStore.read", error);
     localStorage.removeItem(LOCAL_DRAFTS_STORAGE_KEY);
-    return { version: 2, drafts: [] };
+    return { version: 3, drafts: [] };
   }
 }
 
 /**
- * Persist the v2 store to localStorage.
+ * Persist the v3 store to localStorage.
  * On quota error: logs and shows a toast. SSR-safe (no-op when window unavailable).
  */
-function writeStore(store: LocalDraftStoreV2): void {
+function writeStore(store: LocalDraftStoreV3): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(LOCAL_DRAFTS_STORAGE_KEY, JSON.stringify(store));
@@ -155,7 +204,7 @@ function writeStore(store: LocalDraftStoreV2): void {
 }
 
 // =============================================================================
-// Public API
+// Public API — core CRUD
 // =============================================================================
 
 /**
@@ -177,8 +226,11 @@ export function generateLocalDraftId(existingIds?: readonly string[]): LocalDraf
 
 /**
  * Return all local drafts, sorted by `updatedAt` descending (most recent first).
- * Runs the one-time v1→v2 migration on first call if needed.
+ * Runs the one-time migrations on first call if needed.
  * SSR-safe: returns `[]` on the server.
+ *
+ * Note: archived drafts are returned — callers decide whether to filter them.
+ * Archived filtering happens in the UI layer, not here.
  *
  * @returns Array of LocalDraftRecord objects.
  */
@@ -202,6 +254,8 @@ export function getLocalDraft(id: LocalDraftId): LocalDraftRecord | null {
 /**
  * Create a new local draft, persist it to the front of the store, and return it.
  * The draft's team starts as a fresh empty team, optionally overridden by `init`.
+ * New drafts are created with the v3 attribute defaults:
+ *   `pinned: false`, `archived: false`, `sortOrder: null`, `folderIds: []`.
  *
  * @param init - Optional overrides for name and/or format.
  * @returns The newly-created LocalDraftRecord.
@@ -224,9 +278,11 @@ export function createLocalDraft(init?: { name?: string; format?: string }): Loc
     team,
     createdAt: now,
     updatedAt: now,
+    ...V3_DEFAULTS,
+    folderIds: [],
   };
 
-  writeStore({ version: 2, drafts: [record, ...store.drafts] });
+  writeStore({ version: 3, drafts: [record, ...store.drafts] });
   return record;
 }
 
@@ -234,6 +290,7 @@ export function createLocalDraft(init?: { name?: string; format?: string }): Loc
  * Update the team for an existing local draft (upsert on the team field).
  * Deduplicates team_pokemon as defense-in-depth.
  * Bumps `updatedAt` to the current timestamp.
+ * Preserves all Milestone-B attribute fields (pinned, archived, sortOrder, folderIds).
  * No-op if the id does not exist in the store.
  *
  * @param id  - The LocalDraftId to update.
@@ -245,8 +302,11 @@ export function saveLocalDraftTeam(id: LocalDraftId, team: TeamWithPokemon): voi
   const idx = store.drafts.findIndex((d) => d.id === id);
   if (idx === -1) return; // unknown id — no-op
 
+  const existing = store.drafts[idx]!;
   const updated: LocalDraftRecord = {
-    ...store.drafts[idx]!,
+    // Preserve all existing fields (including Milestone-B attributes)
+    ...existing,
+    // Only replace team and updatedAt
     team: {
       ...team,
       team_pokemon: dedupeTeamPokemon(team.team_pokemon),
@@ -256,7 +316,7 @@ export function saveLocalDraftTeam(id: LocalDraftId, team: TeamWithPokemon): voi
 
   const newDrafts = [...store.drafts];
   newDrafts[idx] = updated;
-  writeStore({ version: 2, drafts: newDrafts });
+  writeStore({ version: 3, drafts: newDrafts });
 }
 
 /**
@@ -271,6 +331,107 @@ export function deleteLocalDraft(id: LocalDraftId): boolean {
   const before = store.drafts.length;
   const newDrafts = store.drafts.filter((d) => d.id !== id);
   if (newDrafts.length === before) return false;
-  writeStore({ version: 2, drafts: newDrafts });
+  writeStore({ version: 3, drafts: newDrafts });
   return true;
+}
+
+// =============================================================================
+// Public API — Milestone-B attribute mutators
+// =============================================================================
+
+/**
+ * Set the `pinned` state for an existing local draft.
+ * No-op if the id does not exist in the store.
+ *
+ * @param id - The LocalDraftId to update.
+ * @param pinned - Whether the draft should be pinned.
+ */
+export function setDraftPinned(id: LocalDraftId, pinned: boolean): void {
+  if (typeof window === "undefined") return;
+  const store = readStore();
+  const idx = store.drafts.findIndex((d) => d.id === id);
+  if (idx === -1) return;
+
+  const newDrafts = [...store.drafts];
+  newDrafts[idx] = { ...store.drafts[idx]!, pinned };
+  writeStore({ version: 3, drafts: newDrafts });
+}
+
+/**
+ * Set the `archived` state for an existing local draft.
+ * No-op if the id does not exist in the store.
+ *
+ * @param id - The LocalDraftId to update.
+ * @param archived - Whether the draft should be archived.
+ */
+export function setDraftArchived(id: LocalDraftId, archived: boolean): void {
+  if (typeof window === "undefined") return;
+  const store = readStore();
+  const idx = store.drafts.findIndex((d) => d.id === id);
+  if (idx === -1) return;
+
+  const newDrafts = [...store.drafts];
+  newDrafts[idx] = { ...store.drafts[idx]!, archived };
+  writeStore({ version: 3, drafts: newDrafts });
+}
+
+/**
+ * Set the `sortOrder` for an existing local draft.
+ * No-op if the id does not exist in the store.
+ *
+ * @param id - The LocalDraftId to update.
+ * @param sortOrder - The new sort position, or `null` to reset to unset.
+ */
+export function setDraftSortOrder(id: LocalDraftId, sortOrder: number | null): void {
+  if (typeof window === "undefined") return;
+  const store = readStore();
+  const idx = store.drafts.findIndex((d) => d.id === id);
+  if (idx === -1) return;
+
+  const newDrafts = [...store.drafts];
+  newDrafts[idx] = { ...store.drafts[idx]!, sortOrder };
+  writeStore({ version: 3, drafts: newDrafts });
+}
+
+/**
+ * Replace the `folderIds` array for an existing local draft.
+ * No-op if the id does not exist in the store.
+ *
+ * @param id - The LocalDraftId to update.
+ * @param folderIds - The new complete set of folder IDs for this draft.
+ */
+export function setDraftFolders(id: LocalDraftId, folderIds: string[]): void {
+  if (typeof window === "undefined") return;
+  const store = readStore();
+  const idx = store.drafts.findIndex((d) => d.id === id);
+  if (idx === -1) return;
+
+  const newDrafts = [...store.drafts];
+  newDrafts[idx] = { ...store.drafts[idx]!, folderIds: [...folderIds] };
+  writeStore({ version: 3, drafts: newDrafts });
+}
+
+/**
+ * Toggle membership of a single folder id for an existing local draft.
+ * If the draft already belongs to the folder, removes it; otherwise adds it.
+ * No-op if the draft id does not exist in the store.
+ *
+ * @param id - The LocalDraftId to update.
+ * @param folderId - The folder ID to add or remove.
+ */
+export function toggleDraftFolder(id: LocalDraftId, folderId: string): void {
+  if (typeof window === "undefined") return;
+  const store = readStore();
+  const idx = store.drafts.findIndex((d) => d.id === id);
+  if (idx === -1) return;
+
+  const draft = store.drafts[idx]!;
+  const hasMembership = draft.folderIds.includes(folderId);
+  const newFolderIds = hasMembership
+    ? draft.folderIds.filter((f) => f !== folderId)
+    : [...draft.folderIds, folderId];
+
+  const newDrafts = [...store.drafts];
+  newDrafts[idx] = { ...draft, folderIds: newFolderIds };
+  writeStore({ version: 3, drafts: newDrafts });
 }

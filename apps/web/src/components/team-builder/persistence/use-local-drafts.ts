@@ -5,7 +5,8 @@
  *
  * React hooks for reading and mutating the multi-draft local store.
  *
- * - useLocalDrafts — list/create/delete drafts; hydrates from localStorage on mount.
+ * - useLocalDrafts — list/create/delete drafts; exposes Milestone-B attribute mutators;
+ *   hydrates from localStorage on mount.
  * - useLocalDraft  — single-draft read/write with 300ms debounced persistence.
  *
  * Both hooks are SSR-safe: the store module returns empty values on the server,
@@ -21,6 +22,10 @@ import {
   saveLocalDraftTeam,
   deleteLocalDraft,
   createEmptyTeam,
+  setDraftPinned,
+  setDraftArchived,
+  setDraftSortOrder as storeSortOrder,
+  toggleDraftFolder as storeToggleFolder,
 } from "./local-drafts-store";
 import { type LocalDraftId, type LocalDraftRecord } from "./local-drafts-types";
 
@@ -46,12 +51,34 @@ interface UseLocalDraftsReturn {
   createDraft: (init?: { name?: string; format?: string }) => LocalDraftRecord;
   /** Delete a draft by id. Removes it from state and the store. */
   deleteDraft: (id: LocalDraftId) => void;
+  /**
+   * Pin or unpin a draft.
+   * Updates the store and refreshes the in-memory drafts list.
+   */
+  pinDraft: (id: LocalDraftId, pinned: boolean) => void;
+  /**
+   * Archive or unarchive a draft.
+   * Updates the store and refreshes the in-memory drafts list.
+   */
+  archiveDraft: (id: LocalDraftId, archived: boolean) => void;
+  /**
+   * Set the manual sort-order position for a draft.
+   * Pass `null` to reset to unset (falls back to `updatedAt` order).
+   * Updates the store and refreshes the in-memory drafts list.
+   */
+  setDraftSortOrder: (id: LocalDraftId, order: number | null) => void;
+  /**
+   * Toggle membership of a folder id on a draft.
+   * Adds the folderId if absent, removes it if present.
+   * Updates the store and refreshes the in-memory drafts list.
+   */
+  toggleDraftFolder: (id: LocalDraftId, folderId: string) => void;
 }
 
 /**
  * Hook that manages the list of local drafts.
  * Hydrates from localStorage on mount; exposes create/delete mutations
- * that keep React state in sync with the store.
+ * and Milestone-B attribute mutators that keep React state in sync with the store.
  */
 export function useLocalDrafts(): UseLocalDraftsReturn {
   const [drafts, setDrafts] = useState<LocalDraftRecord[]>([]);
@@ -75,7 +102,36 @@ export function useLocalDrafts(): UseLocalDraftsReturn {
     setDrafts((prev) => prev.filter((d) => d.id !== id));
   }
 
-  return { drafts, hydrated, createDraft, deleteDraft };
+  function pinDraft(id: LocalDraftId, pinned: boolean): void {
+    setDraftPinned(id, pinned);
+    setDrafts(listLocalDrafts());
+  }
+
+  function archiveDraft(id: LocalDraftId, archived: boolean): void {
+    setDraftArchived(id, archived);
+    setDrafts(listLocalDrafts());
+  }
+
+  function setDraftSortOrder(id: LocalDraftId, order: number | null): void {
+    storeSortOrder(id, order);
+    setDrafts(listLocalDrafts());
+  }
+
+  function toggleDraftFolder(id: LocalDraftId, folderId: string): void {
+    storeToggleFolder(id, folderId);
+    setDrafts(listLocalDrafts());
+  }
+
+  return {
+    drafts,
+    hydrated,
+    createDraft,
+    deleteDraft,
+    pinDraft,
+    archiveDraft,
+    setDraftSortOrder,
+    toggleDraftFolder,
+  };
 }
 
 // =============================================================================

@@ -6,7 +6,7 @@ import {
   LOCAL_DRAFTS_STORAGE_KEY,
   createLocalDraft,
 } from "../local-drafts-store";
-import { type LocalDraftRecord, type LocalDraftStoreV2 } from "../local-drafts-types";
+import { type LocalDraftRecord, type LocalDraftStoreV3 } from "../local-drafts-types";
 
 // =============================================================================
 // localStorage mock (matches use-local-team-storage.test.ts pattern)
@@ -70,10 +70,10 @@ function makeTeam(overrides: Partial<TeamWithPokemon> = {}): TeamWithPokemon {
   };
 }
 
-function readV2Store(): LocalDraftStoreV2 | null {
+function readV3Store(): LocalDraftStoreV3 | null {
   const raw = localStorageMock._store[LOCAL_DRAFTS_STORAGE_KEY];
   if (!raw) return null;
-  return JSON.parse(raw) as LocalDraftStoreV2;
+  return JSON.parse(raw) as LocalDraftStoreV3;
 }
 
 function seedDraft(name: string): LocalDraftRecord {
@@ -81,7 +81,7 @@ function seedDraft(name: string): LocalDraftRecord {
 }
 
 // =============================================================================
-// useLocalDrafts
+// useLocalDrafts — existing behavior
 // =============================================================================
 
 describe("useLocalDrafts", () => {
@@ -115,6 +115,20 @@ describe("useLocalDrafts", () => {
     expect(created!.team.name).toBe("New Draft");
     expect(result.current.drafts).toHaveLength(1);
     expect(result.current.drafts[0]!.team.name).toBe("New Draft");
+  });
+
+  it("createDraft sets Milestone-B defaults on the new draft", () => {
+    const { result } = renderHook(() => useLocalDrafts());
+
+    let created: LocalDraftRecord | undefined;
+    act(() => {
+      created = result.current.createDraft({ name: "With Defaults" });
+    });
+
+    expect(created!.pinned).toBe(false);
+    expect(created!.archived).toBe(false);
+    expect(created!.sortOrder).toBeNull();
+    expect(created!.folderIds).toEqual([]);
   });
 
   it("createDraft prepends when drafts already exist", () => {
@@ -152,7 +166,7 @@ describe("useLocalDrafts", () => {
       result.current.deleteDraft(draft.id);
     });
 
-    const stored = readV2Store();
+    const stored = readV3Store();
     expect(stored?.drafts.find((d) => d.id === draft.id)).toBeUndefined();
   });
 
@@ -165,6 +179,211 @@ describe("useLocalDrafts", () => {
     });
 
     expect(result.current.drafts).toHaveLength(1);
+  });
+});
+
+// =============================================================================
+// useLocalDrafts — Milestone-B mutators
+// =============================================================================
+
+describe("useLocalDrafts — pinDraft", () => {
+  it("sets pinned to true and refreshes state", () => {
+    const draft = seedDraft("Pin Me");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.pinDraft(draft.id, true);
+    });
+
+    const found = result.current.drafts.find((d) => d.id === draft.id);
+    expect(found!.pinned).toBe(true);
+  });
+
+  it("sets pinned to false (unpin) and refreshes state", () => {
+    const draft = seedDraft("Unpin Me");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    // Pin first
+    act(() => {
+      result.current.pinDraft(draft.id, true);
+    });
+
+    // Then unpin
+    act(() => {
+      result.current.pinDraft(draft.id, false);
+    });
+
+    const found = result.current.drafts.find((d) => d.id === draft.id);
+    expect(found!.pinned).toBe(false);
+  });
+
+  it("persists the pinned state to the store", () => {
+    const draft = seedDraft("Persist Pin");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.pinDraft(draft.id, true);
+    });
+
+    const stored = readV3Store();
+    const storedDraft = stored?.drafts.find((d) => d.id === draft.id);
+    expect(storedDraft!.pinned).toBe(true);
+  });
+});
+
+describe("useLocalDrafts — archiveDraft", () => {
+  it("sets archived to true and refreshes state", () => {
+    const draft = seedDraft("Archive Me");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.archiveDraft(draft.id, true);
+    });
+
+    const found = result.current.drafts.find((d) => d.id === draft.id);
+    expect(found!.archived).toBe(true);
+  });
+
+  it("sets archived to false (unarchive) and refreshes state", () => {
+    const draft = seedDraft("Unarchive Me");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.archiveDraft(draft.id, true);
+    });
+    act(() => {
+      result.current.archiveDraft(draft.id, false);
+    });
+
+    const found = result.current.drafts.find((d) => d.id === draft.id);
+    expect(found!.archived).toBe(false);
+  });
+
+  it("persists the archived state to the store", () => {
+    const draft = seedDraft("Persist Archive");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.archiveDraft(draft.id, true);
+    });
+
+    const stored = readV3Store();
+    const storedDraft = stored?.drafts.find((d) => d.id === draft.id);
+    expect(storedDraft!.archived).toBe(true);
+  });
+
+  it("archived drafts are still included in the drafts list (UI filters)", () => {
+    const draft = seedDraft("Archived");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.archiveDraft(draft.id, true);
+    });
+
+    // useLocalDrafts does NOT filter archived — UI decides
+    expect(result.current.drafts.some((d) => d.id === draft.id)).toBe(true);
+  });
+});
+
+describe("useLocalDrafts — setDraftSortOrder", () => {
+  it("sets a numeric sort order and refreshes state", () => {
+    const draft = seedDraft("Sort Me");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.setDraftSortOrder(draft.id, 3);
+    });
+
+    const found = result.current.drafts.find((d) => d.id === draft.id);
+    expect(found!.sortOrder).toBe(3);
+  });
+
+  it("resets sort order to null and refreshes state", () => {
+    const draft = seedDraft("Reset Sort");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.setDraftSortOrder(draft.id, 5);
+    });
+    act(() => {
+      result.current.setDraftSortOrder(draft.id, null);
+    });
+
+    const found = result.current.drafts.find((d) => d.id === draft.id);
+    expect(found!.sortOrder).toBeNull();
+  });
+
+  it("persists sortOrder to the store", () => {
+    const draft = seedDraft("Persist Sort");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.setDraftSortOrder(draft.id, 10);
+    });
+
+    const stored = readV3Store();
+    const storedDraft = stored?.drafts.find((d) => d.id === draft.id);
+    expect(storedDraft!.sortOrder).toBe(10);
+  });
+});
+
+describe("useLocalDrafts — toggleDraftFolder", () => {
+  it("adds a folder id when not already a member and refreshes state", () => {
+    const draft = seedDraft("Add Folder");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.toggleDraftFolder(draft.id, "folder-alpha");
+    });
+
+    const found = result.current.drafts.find((d) => d.id === draft.id);
+    expect(found!.folderIds).toContain("folder-alpha");
+  });
+
+  it("removes a folder id when already a member and refreshes state", () => {
+    const draft = seedDraft("Remove Folder");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    // Add first
+    act(() => {
+      result.current.toggleDraftFolder(draft.id, "folder-beta");
+    });
+
+    // Remove
+    act(() => {
+      result.current.toggleDraftFolder(draft.id, "folder-beta");
+    });
+
+    const found = result.current.drafts.find((d) => d.id === draft.id);
+    expect(found!.folderIds).not.toContain("folder-beta");
+  });
+
+  it("persists folder membership to the store", () => {
+    const draft = seedDraft("Persist Folder");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.toggleDraftFolder(draft.id, "folder-gamma");
+    });
+
+    const stored = readV3Store();
+    const storedDraft = stored?.drafts.find((d) => d.id === draft.id);
+    expect(storedDraft!.folderIds).toContain("folder-gamma");
+  });
+
+  it("toggle add then toggle remove leaves no membership (round-trip)", () => {
+    const draft = seedDraft("Round Trip");
+    const { result } = renderHook(() => useLocalDrafts());
+
+    act(() => {
+      result.current.toggleDraftFolder(draft.id, "folder-delta");
+    });
+    act(() => {
+      result.current.toggleDraftFolder(draft.id, "folder-delta");
+    });
+
+    const found = result.current.drafts.find((d) => d.id === draft.id);
+    expect(found!.folderIds).toEqual([]);
   });
 });
 
