@@ -37,6 +37,12 @@ The remaining risks are slow and quiet:
 - **Retention for product/legal tables** — `notifications` (purge read >90d?), `match_messages`
   (archive old chat?), `audit_log` (compliance retention window?). Documented in `docs/cost-model.md`;
   each needs a deliberate call before a janitor is added.
+- **Bluesky PDS** — the social / federated-identity layer (`@username.trainers.gg` handles, account
+  provisioning, community→Bluesky federation) isn't on the near-term roadmap, so the always-on Fly
+  machine is cost for an unused feature. **Login with Bluesky is independent and stays.** Reversible
+  disable path (scale-to-zero / unset `PDS_ADMIN_PASSWORD` / full decommission) documented in
+  `docs/cost-model.md` → _Bluesky PDS — disable to cut cost_. Needs Product (confirm parked) + Infra
+  (execute) sign-off; **code/infra-touching → separate branch**, not this docs branch.
 
 ## Verification
 

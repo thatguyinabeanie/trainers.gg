@@ -43,7 +43,7 @@ Three layers. For each driver, the cost _characteristic_ tells you what makes th
 
 | Driver      | Characteristic | Notes                                                                                                                          |
 | ----------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| PDS machine | fixed monthly  | One `shared-cpu-1x` / 1GB machine + a persistent volume. Scales with PDS user growth, not app traffic. Small and predictable. |
+| PDS machine | fixed monthly  | One `shared-cpu-1x` / 1GB machine + a persistent volume. Scales with PDS user growth, not app traffic. Small and predictable. **Candidate to disable** — see [Bluesky PDS — disable to cut cost](#bluesky-pds--disable-to-cut-cost-open-decision). |
 
 ---
 
@@ -131,6 +131,40 @@ These have product or compliance value, so they need a deliberate call before an
 | `audit_log`      | Immutable by design (forensic/compliance). Keep ~1–2 years hot; archive-then-delete only with explicit sign-off.                       | Compliance     |
 
 When one of these is decided, add a janitor following the `import_runs` pattern and move the row to category 2.
+
+---
+
+## Bluesky PDS — disable to cut cost (open decision)
+
+The self-hosted PDS (`infra/pds`, Fly app `trainers-pds`) powers the **social / federated-identity layer**: `@username.trainers.gg` handles, auto-provisioned trainers.gg Bluesky accounts on signup, and community → Bluesky profile sync. That layer is **not on the near-term roadmap**, so the machine is a small fixed cost for a feature that isn't in use.
+
+> **Key fact: "Login with Bluesky" does _not_ depend on the PDS.** OAuth runs against the public Bluesky network (`public.api.bsky.app`) via standard AT Protocol OAuth (DPoP + PKCE), using only `ATPROTO_PRIVATE_KEY` + the callback route — it never contacts `pds.trainers.gg`. Keep `packages/atproto/` and the OAuth flow untouched.
+
+### Cost today
+
+- One `shared-cpu-1x` / 1 GB Fly machine, `min_machines_running = 1`, `auto_stop_machines = false` → runs **24/7**, plus a persistent `pds_data` volume. Small fixed monthly cost (confirm the exact figure in the Fly dashboard).
+- Secondary: PDS blobs also land in Supabase Storage (S3). Disabling stops _new_ PDS blobs accruing there.
+
+### What's lost if disabled
+
+| Feature                                              | Status if PDS off                                   |
+| --------------------------------------------------- | --------------------------------------------------- |
+| Login with Bluesky (OAuth)                          | ✅ Unaffected                                        |
+| `@username.trainers.gg` federated handles           | ❌ Not issued                                        |
+| Auto-provisioned trainers.gg Bluesky account        | ❌ Skipped (user marked `pds_status: 'pending'`)     |
+| Community profile → Bluesky federation              | ❌ No sync                                           |
+
+### Disable path (reversible, cheapest-reversal first)
+
+The edge functions **already degrade gracefully** when the admin password is absent — `signup` guards PDS creation behind `if (PDS_CONFIG.hasAdminPassword)` (`signup/index.ts:201`), and `provision-pds` early-returns when `!PDS_CONFIG.hasAdminPassword` (`provision-pds/index.ts:122`). OAuth users get `pds_status: 'pending'`, so re-enabling later is trivial.
+
+1. **Scale to zero (softest)** — set `min_machines_running = 0` + `auto_stop_machines = true` in `infra/pds/fly.toml`. Machine sleeps when idle; the data volume is retained. Fully reversible.
+2. **Stop provisioning (recommended if not building social)** — unset `PDS_ADMIN_PASSWORD` in Fly secrets; edge functions skip PDS creation. Combine with #1 to also drop compute cost.
+3. **Decommission (hardest to undo)** — `fly apps destroy trainers-pds` + remove the volume + delete `infra/pds/`. Frees the cost entirely but loses existing handles. **Pre-check first:** `SELECT count(*) FROM users WHERE pds_status = 'active';` to confirm no users depend on trainers.gg handles.
+
+> ⚠️ All three levers are **code/infra-touching** — none belong on this docs-only branch. This section records the decision and the path; implementation is a separate branch.
+
+**Decision owner:** Product (confirm the social layer is parked) + Infra (execute the disable).
 
 ---
 
