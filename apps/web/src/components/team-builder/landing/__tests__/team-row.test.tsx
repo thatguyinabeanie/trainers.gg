@@ -225,6 +225,9 @@ function buildSummary(
       { species: "Rillaboom", isShiny: false },
     ],
     updatedAt: "2026-06-23T10:00:00Z",
+    // A complete team is legal by default; pass { isLegal: false } to test
+    // the illegal-team rendering path explicitly.
+    isLegal: true,
     ...overrides,
   };
 }
@@ -321,13 +324,42 @@ describe("TeamRow", () => {
 
     it("renders nothing for the format when format is null", () => {
       render(<TeamRow summary={buildSummary({ format: null })} />);
-      // No badge should appear
-      expect(screen.queryByTestId("badge")).not.toBeInTheDocument();
+      // The format label text must not appear — query by text so we avoid the
+      // shared data-testid="badge" that other badges (sync status, legality) also carry.
+      expect(screen.queryByText("Format:gen9vgc2026regi")).not.toBeInTheDocument();
     });
   });
 
   // ---------------------------------------------------------------------------
-  // 4. Link href
+  // 4. Legality badge (StatusBadge driven by isLegal)
+  // ---------------------------------------------------------------------------
+
+  describe("legality badge", () => {
+    it("renders 'Legal' text when isLegal is true", () => {
+      render(<TeamRow summary={buildSummary({ isLegal: true })} />);
+      // StatusBadge renders via the mocked Badge → <span data-testid="badge">Legal</span>
+      const badges = screen.getAllByTestId("badge");
+      const legalBadge = badges.find((el) => el.textContent === "Legal");
+      expect(legalBadge).toBeInTheDocument();
+    });
+
+    it("renders 'Illegal' text when isLegal is false", () => {
+      render(<TeamRow summary={buildSummary({ isLegal: false })} />);
+      const badges = screen.getAllByTestId("badge");
+      const illegalBadge = badges.find((el) => el.textContent === "Illegal");
+      expect(illegalBadge).toBeInTheDocument();
+    });
+
+    it("does NOT render 'Illegal' when isLegal is true", () => {
+      render(<TeamRow summary={buildSummary({ isLegal: true })} />);
+      const badges = screen.getAllByTestId("badge");
+      const illegalBadge = badges.find((el) => el.textContent === "Illegal");
+      expect(illegalBadge).toBeUndefined();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 5. Link href
   // ---------------------------------------------------------------------------
 
   describe("main link", () => {
@@ -343,7 +375,7 @@ describe("TeamRow", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 5. Overflow menu — Delete calls onDelete
+  // 6. Overflow menu — Delete calls onDelete
   // ---------------------------------------------------------------------------
 
   describe("overflow menu", () => {
@@ -376,7 +408,7 @@ describe("TeamRow", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 6. onDelete undefined — row renders without crashing
+  // 7. onDelete undefined — row renders without crashing
   // ---------------------------------------------------------------------------
 
   describe("when onDelete is undefined", () => {
@@ -399,7 +431,7 @@ describe("TeamRow", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 7. highlightSpecies — teal ring/bg applied to matched sprites
+  // 8. highlightSpecies — teal ring/bg applied to matched sprites
   // ---------------------------------------------------------------------------
 
   describe("highlightSpecies prop", () => {
@@ -472,7 +504,7 @@ describe("TeamRow", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 8. onPeek — Peek menu item
+  // 9. onPeek — Peek menu item
   // ---------------------------------------------------------------------------
 
   describe("onPeek prop", () => {
@@ -522,7 +554,7 @@ describe("TeamRow", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 9. Pin / Unpin menu item (Milestone B)
+  // 10. Pin / Unpin menu item (Milestone B)
   // ---------------------------------------------------------------------------
 
   describe("onTogglePin prop", () => {
@@ -611,7 +643,7 @@ describe("TeamRow", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 10. Archive / Unarchive menu item (Milestone B)
+  // 11. Archive / Unarchive menu item (Milestone B)
   // ---------------------------------------------------------------------------
 
   describe("onToggleArchive prop", () => {
@@ -683,7 +715,7 @@ describe("TeamRow", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 11. Move to folder submenu (Milestone B)
+  // 12. Move to folder submenu (Milestone B)
   // ---------------------------------------------------------------------------
 
   describe("onToggleFolder / manualFolders prop", () => {
@@ -818,7 +850,7 @@ describe("TeamRow", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 12. Row is additive — no Milestone B items when callbacks absent
+  // 13. Row is additive — no Milestone B items when callbacks absent
   // ---------------------------------------------------------------------------
 
   describe("additive safety — no callbacks provided", () => {

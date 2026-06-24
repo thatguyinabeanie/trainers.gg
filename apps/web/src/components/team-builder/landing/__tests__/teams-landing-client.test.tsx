@@ -729,7 +729,9 @@ describe("TeamsLandingClient", () => {
     it("calls createDraft and navigates when header button is clicked", async () => {
       const returnedRecord = makeRecord("local-new01", "New Draft");
       mockCreateDraft.mockReturnValue(returnedRecord);
-      setupDefaultMocks([]);
+      // Seed one existing draft so the populated branch (with the header "Create a
+      // new team" button) renders — the empty branch only shows "Create your first team".
+      setupDefaultMocks([makeRecord("local-existing01", "Existing Team")]);
 
       const user = userEvent.setup();
       render(<TeamsLandingClient />);
@@ -877,7 +879,9 @@ describe("TeamsLandingClient", () => {
 
   describe("page header", () => {
     it("always shows the 'Your Teams' heading", () => {
-      setupDefaultMocks([]);
+      // Seed one draft so the populated branch renders — the empty-state branch
+      // does not include the "Your Teams" heading.
+      setupDefaultMocks([makeRecord("local-hdr00")]);
       render(<TeamsLandingClient />);
       expect(screen.getByRole("heading", { name: /your teams/i })).toBeInTheDocument();
     });
