@@ -69,6 +69,7 @@ jest.mock("sonner", () => ({ toast: mockToast }));
 
 // FolderRail stub — exposes onSelect, counts, collapsed, and folder creation callbacks
 jest.mock("../folder-rail", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ARCHIVED_VIEW_ID } = require("../group-drafts");
   return {
   FolderRail: ({
