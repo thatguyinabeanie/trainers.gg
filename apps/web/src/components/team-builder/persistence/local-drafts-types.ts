@@ -36,6 +36,14 @@ export interface LocalDraftRecord {
    * Empty array means the draft is in no folder.
    */
   folderIds: string[];
+  /**
+   * Origin of this record. Absent ⇒ "local" (back-compat default for existing
+   * localStorage drafts). "account" records are DB-backed teams mapped into this
+   * shape by toAccountRecord() so the landing pipeline treats both uniformly.
+   */
+  source?: "local" | "account";
+  /** DB team id when source === "account"; null/absent for local drafts. */
+  accountTeamId?: number | null;
 }
 
 /**

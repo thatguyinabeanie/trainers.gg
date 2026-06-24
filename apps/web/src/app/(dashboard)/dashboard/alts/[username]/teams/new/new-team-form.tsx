@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 
 import { type GameFormat } from "@trainers/pokemon";
 
-import { teamKeys } from "@/components/team-builder/teams-list-client";
+import { teamKeys } from "@/components/team-builder/team-query-keys";
 import { submitNewTeam } from "@/components/team-builder/new-team-submit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

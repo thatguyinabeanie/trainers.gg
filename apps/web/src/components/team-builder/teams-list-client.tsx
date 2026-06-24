@@ -24,16 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 
+import { teamKeys } from "./team-query-keys";
 import { NewTeamDialog } from "./new-team-dialog";
-
-// ---------------------------------------------------------------------------
-// Query key factory
-// ---------------------------------------------------------------------------
-
-export const teamKeys = {
-  all: (altId: number) => ["teams", altId] as const,
-  detail: (teamId: number) => ["team", teamId] as const,
-};
 
 // ---------------------------------------------------------------------------
 // Constants

@@ -79,7 +79,8 @@ jest.mock("../new-team-dialog", () => ({
     mockNewTeamDialog(props),
 }));
 
-import { TeamsListClient, teamKeys } from "../teams-list-client";
+import { TeamsListClient } from "../teams-list-client";
+import { teamKeys } from "../team-query-keys";
 
 // =============================================================================
 // Helpers
