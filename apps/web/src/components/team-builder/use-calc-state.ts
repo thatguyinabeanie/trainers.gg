@@ -265,6 +265,21 @@ const FORMAT_UNINITIALIZED = Symbol("format-uninitialized");
  * the runtime load is the dynamic import() in the effect below. */
 type CalcEngine = typeof CalcEngineModule;
 
+/** Module-level cache of the loaded engine. The first hook instance's dynamic
+ * import populates it, so every later useCalcState mount resolves the engine
+ * synchronously (the chunk loads once, not per instance). */
+let cachedCalcEngine: CalcEngine | null = null;
+
+/**
+ * Test-only: synchronously prime the engine cache so unit/integration tests can
+ * render the hook and assert calc output without awaiting the in-hook dynamic
+ * import. Call once in a `beforeAll`. In production the engine loads via the
+ * effect in `useCalcState`; this is never imported by app code.
+ */
+export async function __loadCalcEngineForTests(): Promise<void> {
+  cachedCalcEngine = await import("./calc/calc-engine");
+}
+
 // `Verdict` + `getVerdict` live in ./calc/calc-verdict (engine-free) so always-on
 // consumers (dockbar, calc-display-helpers) can use them without pulling
 // @smogon/calc into the initial bundle. Re-exported here for back-compat.
@@ -470,26 +485,19 @@ export function useCalcState({
   faintedYours = 0,
   faintedTheirs = 0,
 }: UseCalcStateOptions): UseCalcStateReturn {
-  // --- Lazy engine — loaded only when calc is first enabled ---
-  // Holds the resolved calc-engine module; null until the chunk arrives.
-  // This is the only entry point to @smogon/calc; nothing in the always-loaded
-  // path may statically import that package.
-  const [engine, setEngine] = useState<CalcEngine | null>(null);
+  // --- Lazy engine — the ONLY entry point to @smogon/calc ----------------
+  // Nothing in the always-mounted path statically imports @smogon/calc; it is
+  // pulled in here via a dynamic import() so it stays out of the editor's
+  // initial bundle. Init from the module cache so a second-or-later mount has
+  // the engine synchronously; the load fires on mount so the chunk is
+  // pre-fetched before the user opens the calc panel.
+  const [engine, setEngine] = useState<CalcEngine | null>(cachedCalcEngine);
 
-  // calcEnabled is forwarded from the provider. We read it indirectly via a
-  // separate prop — but the hook itself cannot receive it directly without
-  // changing the existing call signature. Instead we lazily load the engine
-  // whenever the hook is called inside a live CalcStateProvider (which always
-  // mounts now). We gate on `selectedPokemon` being non-null as a proxy for
-  // the user having opened the calc panel at least once. Actually, we want to
-  // load as soon as possible after mount so we don't delay on first open.
-  // The cleanest gate: load unconditionally on mount (it will only fire once
-  // thanks to the `!engine` guard), so the chunk is pre-fetched in the
-  // background as soon as the workspace renders.
   useEffect(() => {
     if (engine) return;
     let cancelled = false;
     import("./calc/calc-engine").then((m) => {
+      cachedCalcEngine = m;
       if (!cancelled) setEngine(m);
     });
     return () => {
