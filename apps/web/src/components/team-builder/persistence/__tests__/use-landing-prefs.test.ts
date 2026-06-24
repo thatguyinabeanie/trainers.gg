@@ -3,6 +3,7 @@ import { renderHook, act } from "@testing-library/react";
 import {
   LANDING_PREFS_STORAGE_KEY,
   writeLandingPrefs,
+  notify as notifyPrefsStore,
 } from "../landing-prefs-store";
 import {
   DEFAULT_LANDING_PREFS,
@@ -51,6 +52,9 @@ function seedPrefs(prefs: Partial<LandingPrefs> = {}): void {
 beforeEach(() => {
   localStorageMock.clear();
   jest.clearAllMocks();
+  // Reset the module-level snapshot cache so useSyncExternalStore re-reads
+  // from the (now-cleared) localStorage on the next render.
+  notifyPrefsStore();
 });
 
 // =============================================================================

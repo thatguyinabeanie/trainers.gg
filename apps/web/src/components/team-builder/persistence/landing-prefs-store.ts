@@ -23,6 +23,67 @@ import {
 } from "./landing-prefs-types";
 
 // =============================================================================
+// Subscription / snapshot (useSyncExternalStore support)
+// =============================================================================
+
+type Listener = () => void;
+
+/** Module-level subscriber set — shared across all hook instances. */
+const listeners = new Set<Listener>();
+
+/**
+ * Cached snapshot — null means dirty (needs re-read from localStorage).
+ * `getPrefsSnapshot` returns the cached value when clean; sets it when dirty.
+ * This guarantees referential stability between notifications so that
+ * `useSyncExternalStore` does not infinite-loop.
+ */
+let cache: LandingPrefs | null = null;
+
+/** Stable server-side snapshot — same object reference every call. */
+const SERVER_SNAPSHOT: LandingPrefs = { ...DEFAULT_LANDING_PREFS };
+
+/**
+ * Return a referentially stable snapshot of the current landing prefs.
+ * Rebuilds from localStorage only when `cache` is null (after a `notify()`).
+ */
+export function getPrefsSnapshot(): LandingPrefs {
+  if (cache === null) cache = readLandingPrefs();
+  return cache;
+}
+
+/** Server snapshot — always returns the same DEFAULT_LANDING_PREFS reference. */
+export function getPrefsServerSnapshot(): LandingPrefs {
+  return SERVER_SNAPSHOT;
+}
+
+/**
+ * Invalidate the cache and notify all subscribers.
+ * Called at the end of every write operation so React re-renders consumers.
+ * Exported so tests can reset the cache after clearing localStorage.
+ */
+export function notify(): void {
+  cache = null;
+  for (const l of listeners) l();
+}
+
+/**
+ * Subscribe a listener to prefs-store changes.
+ * Also listens for cross-tab `storage` events on this store's key.
+ * Returns an unsubscribe function (required by `useSyncExternalStore`).
+ */
+export function subscribePrefs(listener: Listener): () => void {
+  listeners.add(listener);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === LANDING_PREFS_STORAGE_KEY || e.key === null) notify();
+  };
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+// =============================================================================
 // Constants
 // =============================================================================
 
@@ -122,6 +183,7 @@ export function writeLandingPrefs(prefs: LandingPrefs): void {
   const stored: StoredLandingPrefs = { version: 1, prefs };
   try {
     localStorage.setItem(LANDING_PREFS_STORAGE_KEY, JSON.stringify(stored));
+    notify();
   } catch (error) {
     logError("landingPrefsStore.write", error);
   }

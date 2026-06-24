@@ -5,6 +5,7 @@ import { useLocalDrafts, useLocalDraft } from "../use-local-drafts";
 import {
   LOCAL_DRAFTS_STORAGE_KEY,
   createLocalDraft,
+  notify as notifyDraftsStore,
 } from "../local-drafts-store";
 import { type LocalDraftRecord, type LocalDraftStoreV3 } from "../local-drafts-types";
 
@@ -41,6 +42,9 @@ beforeEach(() => {
   jest.useFakeTimers();
   localStorageMock.clear();
   jest.clearAllMocks();
+  // Reset the module-level snapshot cache so useSyncExternalStore re-reads
+  // from the (now-cleared) localStorage on the next render.
+  notifyDraftsStore();
 });
 
 afterEach(() => {

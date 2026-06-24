@@ -5,19 +5,25 @@
  *
  * React hook for reading and updating the builder landing UI preferences.
  *
- * Hydration strategy (mirrors use-local-drafts.ts):
- * - Starts with `DEFAULT_LANDING_PREFS` as initial state and `hydrated: false`
- *   to avoid SSR/hydration mismatches (the server has no access to localStorage).
- * - After mount, reads the stored value from localStorage and updates state.
- * - `hydrated` flips to `true` after the first mount effect completes.
+ * Hydration strategy:
+ * - `prefs` is read via `useSyncExternalStore` — server snapshot returns
+ *   DEFAULT_LANDING_PREFS; client snapshot returns the live localStorage value.
+ * - `hydrated` is derived from `useIsClient()` — true once mounted on the client.
+ * - `setPrefs` calls `patchLandingPrefs` which writes to localStorage and calls
+ *   `notify()` in the store, driving a re-render via the subscription.
  *
- * `setPrefs` calls `patchLandingPrefs` to merge + persist, then updates React
- * state so the UI reflects the change immediately without a re-read.
+ * No setState-in-effect, no manual re-sync. Per react-patterns.md.
  */
 
-import { useState, useEffect } from "react";
-import { DEFAULT_LANDING_PREFS, type LandingPrefs } from "./landing-prefs-types";
-import { readLandingPrefs, patchLandingPrefs } from "./landing-prefs-store";
+import { useSyncExternalStore } from "react";
+import { type LandingPrefs } from "./landing-prefs-types";
+import {
+  subscribePrefs,
+  getPrefsSnapshot,
+  getPrefsServerSnapshot,
+  patchLandingPrefs,
+} from "./landing-prefs-store";
+import { useIsClient } from "@/hooks/use-is-client";
 
 // =============================================================================
 // Return type
@@ -25,13 +31,13 @@ import { readLandingPrefs, patchLandingPrefs } from "./landing-prefs-store";
 
 /** Return value of `useLandingPrefs`. */
 export interface UseLandingPrefsReturn {
-  /** Current landing preferences (starts as defaults until hydrated). */
+  /** Current landing preferences (defaults until hydrated). */
   prefs: LandingPrefs;
   /** True once the initial hydration from localStorage is complete. */
   hydrated: boolean;
   /**
    * Merge a partial update into the current preferences, persist, and
-   * update state immediately. Safe to call before hydration (rare edge case).
+   * trigger a re-render via the store subscription.
    */
   setPrefs: (partial: Partial<LandingPrefs>) => void;
 }
@@ -43,25 +49,24 @@ export interface UseLandingPrefsReturn {
 /**
  * Hook for reading and updating the builder landing UI preferences.
  *
- * Initialises from `DEFAULT_LANDING_PREFS` to avoid SSR/hydration mismatches,
- * then hydrates from localStorage on mount.
+ * Uses `useSyncExternalStore` against the shared subscription in
+ * landing-prefs-store.ts. The server snapshot is DEFAULT_LANDING_PREFS;
+ * the client snapshot is the live merged value from localStorage.
  *
  * @returns `{ prefs, hydrated, setPrefs }`
  */
 export function useLandingPrefs(): UseLandingPrefsReturn {
-  const [prefs, setPrefsState] = useState<LandingPrefs>(DEFAULT_LANDING_PREFS);
-  const [hydrated, setHydrated] = useState(false);
-
-  // Hydrate from localStorage on mount (client only)
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: hydrate from localStorage after mount to avoid SSR mismatch
-    setPrefsState(readLandingPrefs());
-    setHydrated(true);
-  }, []);
+  const prefs = useSyncExternalStore(
+    subscribePrefs,
+    getPrefsSnapshot,
+    getPrefsServerSnapshot
+  );
+  const hydrated = useIsClient();
 
   function setPrefs(partial: Partial<LandingPrefs>): void {
-    const next = patchLandingPrefs(partial);
-    setPrefsState(next);
+    // patchLandingPrefs writes to localStorage and calls notify() in the store,
+    // which invalidates the cache and triggers a re-render via the subscription.
+    patchLandingPrefs(partial);
   }
 
   return { prefs, hydrated, setPrefs };

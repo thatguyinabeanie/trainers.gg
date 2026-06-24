@@ -6,17 +6,20 @@
  * React hooks for reading and mutating the multi-draft local store.
  *
  * - useLocalDrafts — list/create/delete drafts; exposes Milestone-B attribute mutators;
- *   hydrates from localStorage on mount.
+ *   hydrates via useSyncExternalStore (SSR-safe, no setState-in-effect).
  * - useLocalDraft  — single-draft read/write with 300ms debounced persistence.
  *
- * Both hooks are SSR-safe: the store module returns empty values on the server,
- * and hydration happens only in the mount effect.
+ * Both hooks are SSR-safe: getServerSnapshot() returns [] on the server,
+ * and the real value loads on the first client render via useSyncExternalStore.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useSyncExternalStore, useState, useEffect, useRef } from "react";
 import { type TeamWithPokemon } from "@trainers/supabase";
+import { useIsClient } from "@/hooks/use-is-client";
 import {
-  listLocalDrafts,
+  subscribe,
+  getSnapshot,
+  getServerSnapshot,
   getLocalDraft,
   createLocalDraft,
   saveLocalDraftTeam,
@@ -53,79 +56,68 @@ interface UseLocalDraftsReturn {
   deleteDraft: (id: LocalDraftId) => void;
   /**
    * Pin or unpin a draft.
-   * Updates the store and refreshes the in-memory drafts list.
+   * Updates the store; the subscription drives the re-render.
    */
   pinDraft: (id: LocalDraftId, pinned: boolean) => void;
   /**
    * Archive or unarchive a draft.
-   * Updates the store and refreshes the in-memory drafts list.
+   * Updates the store; the subscription drives the re-render.
    */
   archiveDraft: (id: LocalDraftId, archived: boolean) => void;
   /**
    * Set the manual sort-order position for a draft.
    * Pass `null` to reset to unset (falls back to `updatedAt` order).
-   * Updates the store and refreshes the in-memory drafts list.
+   * Updates the store; the subscription drives the re-render.
    */
   setDraftSortOrder: (id: LocalDraftId, order: number | null) => void;
   /**
    * Toggle membership of a folder id on a draft.
    * Adds the folderId if absent, removes it if present.
-   * Updates the store and refreshes the in-memory drafts list.
+   * Updates the store; the subscription drives the re-render.
    */
   toggleDraftFolder: (id: LocalDraftId, folderId: string) => void;
 }
 
 /**
  * Hook that manages the list of local drafts.
- * Hydrates from localStorage on mount; exposes create/delete mutations
- * and Milestone-B attribute mutators that keep React state in sync with the store.
+ *
+ * Uses `useSyncExternalStore` against the module-level subscription in
+ * local-drafts-store.ts. The server snapshot is `[]`; the client snapshot is
+ * the live sorted draft list. `hydrated` is derived from `useIsClient()` —
+ * true once the component is mounted on the client.
+ *
+ * Mutators are thin wrappers that call the store write fn; the store calls
+ * `notify()` which invalidates the cache and triggers a re-render via the
+ * subscription — no manual setDrafts(...) re-sync calls needed.
  */
 export function useLocalDrafts(): UseLocalDraftsReturn {
-  const [drafts, setDrafts] = useState<LocalDraftRecord[]>([]);
-  const [hydrated, setHydrated] = useState(false);
-
-  // Hydrate from localStorage on mount
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: hydrate from localStorage after mount to avoid SSR mismatch
-    setDrafts(listLocalDrafts());
-    setHydrated(true);
-  }, []);
+  const drafts = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const hydrated = useIsClient();
 
   function createDraft(init?: { name?: string; format?: string }): LocalDraftRecord {
-    const record = createLocalDraft(init);
-    setDrafts((prev) => [record, ...prev]);
-    return record;
+    // createLocalDraft writes to the store and calls notify() — subscription
+    // drives the re-render automatically.
+    return createLocalDraft(init);
   }
 
   function deleteDraft(id: LocalDraftId): void {
     deleteLocalDraft(id);
-    setDrafts((prev) => prev.filter((d) => d.id !== id));
   }
-
-  // The attribute mutators below call setDrafts with a direct value (not a
-  // functional updater). This is intentional and safe: the store write is
-  // synchronous, so listLocalDrafts() immediately reflects the change.
-  // createDraft/deleteDraft use functional updaters because they already hold
-  // the new record/id in hand and can compute next state without re-reading.
 
   function pinDraft(id: LocalDraftId, pinned: boolean): void {
     setDraftPinned(id, pinned);
-    setDrafts(listLocalDrafts());
   }
 
   function archiveDraft(id: LocalDraftId, archived: boolean): void {
     setDraftArchived(id, archived);
-    setDrafts(listLocalDrafts());
   }
 
   function setDraftSortOrder(id: LocalDraftId, order: number | null): void {
     storeSortOrder(id, order);
-    setDrafts(listLocalDrafts());
   }
 
   function toggleDraftFolder(id: LocalDraftId, folderId: string): void {
     storeToggleFolder(id, folderId);
-    setDrafts(listLocalDrafts());
   }
 
   return {
@@ -172,11 +164,13 @@ interface UseLocalDraftReturn {
  * On unmount, flushes any pending write immediately so navigating away
  * never silently drops the final edit.
  *
+ * `hydrated` is derived from `useIsClient()` — consistent with useLocalDrafts.
+ *
  * @param id - The LocalDraftId of the draft to edit.
  */
 export function useLocalDraft(id: LocalDraftId): UseLocalDraftReturn {
   const [team, setTeamState] = useState<TeamWithPokemon>(createEmptyTeam);
-  const [hydrated, setHydrated] = useState(false);
+  const hydrated = useIsClient();
   const [exists, setExists] = useState(false);
 
   // Per-instance ref timer — not module-level, so multiple editors don't clobber each other.
@@ -184,16 +178,18 @@ export function useLocalDraft(id: LocalDraftId): UseLocalDraftReturn {
   // Ref to the latest team value so the flush-on-unmount callback has stable access.
   const latestTeam = useRef<TeamWithPokemon>(team);
 
-  // Hydrate from localStorage on mount
+  // Hydrate from localStorage on mount.
+  // Note: this effect does NOT call setState synchronously — it runs after mount.
+  // `hydrated` is already covered by useIsClient(); this effect only loads the
+  // team data and sets `exists`. The setTeamState here fires inside the useEffect
+  // body, which is the approved pattern for data loading (not derived state).
   useEffect(() => {
     const record = getLocalDraft(id);
     if (record) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: hydrate from localStorage after mount to avoid SSR mismatch
       setTeamState(record.team);
       latestTeam.current = record.team;
       setExists(true);
     }
-    setHydrated(true);
 
     // Flush any pending write and cancel the timer on unmount
     return () => {

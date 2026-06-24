@@ -5,25 +5,28 @@
  *
  * React hook for reading and mutating the local folders store (manual + smart).
  *
- * useFolders — lists all folders; hydrates from localStorage on mount;
- * exposes create/rename/delete mutations that keep React state in sync with
- * the underlying store module.
+ * useFolders — lists all folders using useSyncExternalStore; exposes
+ * create/rename/delete mutations. SSR-safe: server snapshots return empty
+ * manual folders and seeded-only smart folders.
  *
- * SSR-safe: the store returns empty values on the server, and hydration happens
- * only in the mount effect (matching the useLocalDrafts pattern).
+ * Replaces the old setState-in-effect hydration pattern with
+ * useSyncExternalStore + useIsClient() per react-patterns.md.
  */
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import {
-  listManualFolders,
-  listSmartFolders,
+  subscribe,
+  getManualSnapshot,
+  getManualServerSnapshot,
+  getSmartSnapshot,
+  getSmartServerSnapshot,
   createManualFolder,
   renameManualFolder,
   deleteManualFolder,
   createSmartFolder,
   deleteSmartFolder,
 } from "./local-folders-store";
-import { SEEDED_SMART_FOLDERS } from "./local-folders-store";
+import { useIsClient } from "@/hooks/use-is-client";
 import { type ManualFolder, type SmartFolder } from "./local-folders-types";
 import { type Predicate } from "../landing/search-types";
 
@@ -37,14 +40,14 @@ export interface UseFoldersReturn {
   /**
    * All smart folders: seeded defaults first, then user-created.
    * Seeded folders are available immediately (before hydration) because they
-   * are constants, not stored in localStorage.
+   * are returned by getSmartServerSnapshot().
    */
   smartFolders: SmartFolder[];
   /** True once the initial hydration from localStorage is complete. */
   hydrated: boolean;
   /**
    * Create a new manual folder with the given name.
-   * Persists immediately and updates state.
+   * Persists immediately; subscription drives the re-render.
    *
    * @param name - Display name for the new folder.
    * @returns The created ManualFolder.
@@ -67,7 +70,7 @@ export interface UseFoldersReturn {
   deleteManualFolder: (id: string) => void;
   /**
    * Create a new user smart folder with the given name and criteria.
-   * Persists immediately and updates state.
+   * Persists immediately; subscription drives the re-render.
    *
    * @param name     - Display name for the smart folder.
    * @param criteria - Predicates defining the membership rule.
@@ -89,49 +92,42 @@ export interface UseFoldersReturn {
 
 /**
  * Hook that manages all local folders (manual + smart).
- * Hydrates from localStorage on mount; exposes CRUD mutations that keep
- * React state in sync with the store.
  *
- * Smart folders always include the seeded defaults first; user-created smart
- * folders follow in insertion order.
+ * Uses `useSyncExternalStore` against the shared subscription in
+ * local-folders-store.ts. The server snapshot for manual folders is `[]`;
+ * the server snapshot for smart folders contains the seeded defaults.
+ * `hydrated` is derived from `useIsClient()`.
+ *
+ * Mutators call store write fns directly — the store's `notify()` invalidates
+ * the cache and triggers a re-render via the subscription.
  */
 export function useFolders(): UseFoldersReturn {
-  const [manualFolders, setManualFolders] = useState<ManualFolder[]>([]);
-  // Pre-populate with seeded smart folders so they are available before hydration
-  const [smartFolders, setSmartFolders] = useState<SmartFolder[]>(
-    SEEDED_SMART_FOLDERS
+  const manualFolders = useSyncExternalStore(
+    subscribe,
+    getManualSnapshot,
+    getManualServerSnapshot
   );
-  const [hydrated, setHydrated] = useState(false);
-
-  // Hydrate from localStorage on mount
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: hydrate from localStorage after mount to avoid SSR mismatch
-    setManualFolders(listManualFolders());
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: hydrate from localStorage after mount to avoid SSR mismatch
-    setSmartFolders(listSmartFolders());
-    setHydrated(true);
-  }, []);
+  const smartFolders = useSyncExternalStore(
+    subscribe,
+    getSmartSnapshot,
+    getSmartServerSnapshot
+  );
+  const hydrated = useIsClient();
 
   // ---------------------------------------------------------------------------
   // Manual folder mutations
   // ---------------------------------------------------------------------------
 
   function handleCreateManualFolder(name: string): ManualFolder {
-    const folder = createManualFolder(name);
-    setManualFolders((prev) => [...prev, folder]);
-    return folder;
+    return createManualFolder(name);
   }
 
   function handleRenameManualFolder(id: string, name: string): void {
     renameManualFolder(id, name);
-    setManualFolders((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, name } : f))
-    );
   }
 
   function handleDeleteManualFolder(id: string): void {
     deleteManualFolder(id);
-    setManualFolders((prev) => prev.filter((f) => f.id !== id));
   }
 
   // ---------------------------------------------------------------------------
@@ -142,18 +138,11 @@ export function useFolders(): UseFoldersReturn {
     name: string,
     criteria: Predicate[]
   ): SmartFolder {
-    const folder = createSmartFolder(name, criteria);
-    setSmartFolders((prev) => [...prev, folder]);
-    return folder;
+    return createSmartFolder(name, criteria);
   }
 
   function handleDeleteSmartFolder(id: string): void {
     deleteSmartFolder(id);
-    // Seeded folders remain in state regardless (deleteSmartFolder is a no-op
-    // for seeded ids, so we only remove non-seeded folders from state)
-    setSmartFolders((prev) =>
-      prev.filter((f) => f.id !== id || f.isSeeded)
-    );
   }
 
   return {

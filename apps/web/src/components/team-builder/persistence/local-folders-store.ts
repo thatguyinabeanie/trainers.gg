@@ -117,10 +117,92 @@ function writeStore(store: LocalFoldersStoreV1): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(LOCAL_FOLDERS_STORAGE_KEY, JSON.stringify(store));
+    notify();
   } catch (error) {
     logError("localFoldersStore.write", error);
     toast.error("Could not save your folders locally. Storage may be full.");
   }
+}
+
+// =============================================================================
+// Subscription / snapshot (useSyncExternalStore support)
+// =============================================================================
+
+type Listener = () => void;
+
+/** Module-level subscriber set — shared across all hook instances. */
+const listeners = new Set<Listener>();
+
+/**
+ * Cached snapshots for manual and smart folders.
+ * null means dirty — needs re-read from localStorage on next getSnapshot call.
+ * Guarantees referential stability between notifications so that
+ * `useSyncExternalStore` does not infinite-loop.
+ */
+let manualCache: ManualFolder[] | null = null;
+let smartCache: SmartFolder[] | null = null;
+
+/**
+ * Stable server-side snapshots returned during SSR.
+ * Same object references every call — required by `useSyncExternalStore`.
+ */
+const SERVER_MANUAL_SNAPSHOT: ManualFolder[] = [];
+const SERVER_SMART_SNAPSHOT: SmartFolder[] = [...SEEDED_SMART_FOLDERS];
+
+/**
+ * Invalidate both caches and notify all subscribers.
+ * Called at the end of every write operation so React re-renders consumers.
+ * Exported so tests can reset the cache after clearing localStorage.
+ */
+export function notify(): void {
+  manualCache = null;
+  smartCache = null;
+  for (const l of listeners) l();
+}
+
+/**
+ * Subscribe a listener to folder-store changes.
+ * Also listens for cross-tab `storage` events on this store's key.
+ * Returns an unsubscribe function (required by `useSyncExternalStore`).
+ */
+export function subscribe(listener: Listener): () => void {
+  listeners.add(listener);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === LOCAL_FOLDERS_STORAGE_KEY || e.key === null) notify();
+  };
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+/**
+ * Return a referentially stable snapshot of manual folders.
+ * Rebuilds from localStorage only when `manualCache` is null (after a `notify()`).
+ */
+export function getManualSnapshot(): ManualFolder[] {
+  if (manualCache === null) manualCache = [...readStore().manual];
+  return manualCache;
+}
+
+/** Server snapshot for manual folders — always the same empty-array reference. */
+export function getManualServerSnapshot(): ManualFolder[] {
+  return SERVER_MANUAL_SNAPSHOT;
+}
+
+/**
+ * Return a referentially stable snapshot of smart folders (seeded + user-created).
+ * Rebuilds from localStorage only when `smartCache` is null (after a `notify()`).
+ */
+export function getSmartSnapshot(): SmartFolder[] {
+  if (smartCache === null) smartCache = [...SEEDED_SMART_FOLDERS, ...readStore().smart];
+  return smartCache;
+}
+
+/** Server snapshot for smart folders — seeded folders only (same reference). */
+export function getSmartServerSnapshot(): SmartFolder[] {
+  return SERVER_SMART_SNAPSHOT;
 }
 
 // =============================================================================

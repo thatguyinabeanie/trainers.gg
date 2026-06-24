@@ -23,6 +23,73 @@ import {
 import { type LocalTeamData } from "./types";
 
 // =============================================================================
+// Subscription / snapshot (useSyncExternalStore support)
+// =============================================================================
+
+type Listener = () => void;
+
+/** Module-level subscriber set — shared across all hook instances. */
+const listeners = new Set<Listener>();
+
+/**
+ * Cached snapshot — null means dirty (needs re-read from localStorage).
+ * `getSnapshot` returns the cached value when clean; sets it when dirty.
+ * This guarantees referential stability between notifications so that
+ * `useSyncExternalStore` does not infinite-loop.
+ */
+let cache: LocalDraftRecord[] | null = null;
+
+/** Read fresh from localStorage (uncached). Used by non-React callers. */
+function readFresh(): LocalDraftRecord[] {
+  const store = readStore();
+  return [...store.drafts].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/**
+ * Return a referentially stable snapshot of the draft list.
+ * Rebuilds from localStorage only when `cache` is null (after a `notify()`).
+ */
+export function getSnapshot(): LocalDraftRecord[] {
+  if (cache === null) cache = readFresh();
+  return cache;
+}
+
+/** Stable empty array returned on the server (SSR). Same reference every call. */
+const SERVER_SNAPSHOT: LocalDraftRecord[] = [];
+
+/** Server snapshot — always returns the same empty-array reference. */
+export function getServerSnapshot(): LocalDraftRecord[] {
+  return SERVER_SNAPSHOT;
+}
+
+/**
+ * Invalidate the cache and notify all subscribers.
+ * Called at the end of every write operation so React re-renders consumers.
+ * Exported so tests can reset the cache after clearing localStorage.
+ */
+export function notify(): void {
+  cache = null;
+  for (const l of listeners) l();
+}
+
+/**
+ * Subscribe a listener to draft-store changes.
+ * Also listens for cross-tab `storage` events on this store's key.
+ * Returns an unsubscribe function (required by `useSyncExternalStore`).
+ */
+export function subscribe(listener: Listener): () => void {
+  listeners.add(listener);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === LOCAL_DRAFTS_STORAGE_KEY || e.key === null) notify();
+  };
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+// =============================================================================
 // Constants
 // =============================================================================
 
@@ -209,6 +276,7 @@ function writeStore(store: LocalDraftStoreV3): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(LOCAL_DRAFTS_STORAGE_KEY, JSON.stringify(store));
+    notify();
   } catch (error) {
     logError("localDraftsStore.write", error);
     toast.error("Could not save your team locally. Storage may be full.");
@@ -247,8 +315,7 @@ export function generateLocalDraftId(existingIds?: readonly string[]): LocalDraf
  * @returns Array of LocalDraftRecord objects.
  */
 export function listLocalDrafts(): LocalDraftRecord[] {
-  const store = readStore();
-  return [...store.drafts].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return readFresh();
 }
 
 /**
