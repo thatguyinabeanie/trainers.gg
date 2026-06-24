@@ -120,8 +120,11 @@ export function TeamSections({
   // Active roving-tabindex index (into the flat ordered list of visible rows).
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Ref map: flat index → DOM element for the row.
-  const rowRefs = useRef<Map<number, HTMLElement>>(new Map());
+  // Container ref used to querySelector the active row by its data-roving-idx
+  // attribute. This avoids the previous rowRefs Map pattern where
+  // rowRefs.current was read/written inside inline callback refs — React
+  // Compiler flags ref access inside functions created during render.
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Track whether the last navigation was via keyboard so we can move focus.
   const lastNavByKeyboard = useRef(false);
@@ -175,11 +178,18 @@ export function TeamSections({
 
   // -------------------------------------------------------------------------
   // Focus management: move DOM focus to the active row after keyboard nav.
+  //
+  // The active row is identified by tabIndex={0} (all others are -1), so
+  // querySelector('[tabindex="0"]') reliably finds the one focusable row.
+  // Reading containerRef.current inside useEffect is safe per react-patterns.md
+  // ("Read refs inside effects, event handlers, and subscription callbacks").
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (!lastNavByKeyboard.current) return;
     lastNavByKeyboard.current = false;
-    const el = rowRefs.current.get(effectiveActive);
+    const el = containerRef.current?.querySelector<HTMLElement>(
+      '[tabindex="0"]'
+    );
     if (el) {
       el.focus();
     }
@@ -231,12 +241,13 @@ export function TeamSections({
   }
 
   return (
-    // The container captures keyboard events for roving tabindex navigation.
-    // tabIndex={-1} makes it programmatically focusable (so keyboard events
-    // can be dispatched to it) without inserting it into the tab order.
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    // Outer div: keyboard navigation container only — no list role so the
+    // onKeyDown does not conflict with a non-interactive ARIA role.
+    // tabIndex={-1} makes it programmatically focusable without inserting it
+    // into the tab order. The role="list" / role="listitem" semantics are
+    // carried by the inner markup below.
     <div
-      role="list"
+      ref={containerRef}
       tabIndex={-1}
       onKeyDown={handleKeyDown}
       className="space-y-4 outline-none"
@@ -247,7 +258,7 @@ export function TeamSections({
         const sectionStart = sectionStartMap.get(section.id) ?? 0;
 
         return (
-          <div key={section.id} role="listitem" data-section-id={section.id}>
+          <div key={section.id} data-section-id={section.id}>
             {/* Section header */}
             <button
               type="button"
@@ -280,9 +291,12 @@ export function TeamSections({
               </span>
             </button>
 
-            {/* Section rows */}
+            {/* Section rows — role="list" here (not on the keyboard-nav outer
+                container) so the interactive onKeyDown div has no non-
+                interactive ARIA role conflict. */}
             {!isCollapsed && (
               <div
+                role="list"
                 className={cn("mt-1 pl-2", DENSITY_CLASS[density])}
                 data-density={density}
               >
@@ -305,13 +319,10 @@ export function TeamSections({
                           <div key={record.id} role="listitem">
                             {renderRow(record, {
                               tabIndex: isActive ? 0 : -1,
-                              ref: (el) => {
-                                if (el) {
-                                  rowRefs.current.set(flatIdx, el);
-                                } else {
-                                  rowRefs.current.delete(flatIdx);
-                                }
-                              },
+                              // No-op ref: focus is managed via querySelector on
+                              // the container (see useEffect above). The consumer
+                              // may safely ignore or spread this.
+                              ref: () => {},
                             })}
                           </div>
                         );
@@ -327,13 +338,10 @@ export function TeamSections({
                       <div key={record.id} role="listitem">
                         {renderRow(record, {
                           tabIndex: isActive ? 0 : -1,
-                          ref: (el) => {
-                            if (el) {
-                              rowRefs.current.set(flatIdx, el);
-                            } else {
-                              rowRefs.current.delete(flatIdx);
-                            }
-                          },
+                          // No-op ref: focus is managed via querySelector on
+                          // the container (see useEffect above). The consumer
+                          // may safely ignore or spread this.
+                          ref: () => {},
                         })}
                       </div>
                     );

@@ -307,39 +307,51 @@ export function CriteriaBuilder({
 
   // Instance-scoped row-id counter — avoids cross-instance/render leakage from
   // a module-level counter. Each CriteriaBuilder mount gets its own sequence.
-  const counterRef = useRef(0);
+  //
+  // The counter is seeded to the number of IDs consumed by the useState
+  // initializer below (which uses a local counter so it never reads .current
+  // during render — React Compiler forbids ref reads during render).
+  const initialSeedCount = initialCriteria?.length ?? 1;
+  const counterRef = useRef(initialSeedCount);
   function nextId(): string {
+    // Only called from event handlers (handleAddRow, handleChangeRow) — never
+    // during render, so reading .current here is safe.
     return `row-${++counterRef.current}`;
   }
 
   // Seed rows from initialCriteria when provided.
+  // Uses a local counter instead of counterRef.current so no ref is read/
+  // written during render (React Compiler `refs-during-render` rule).
   const [rows, setRows] = useState<RowState[]>(() => {
+    let c = 0;
+    const localId = (): string => `row-${++c}`;
+
     if (initialCriteria && initialCriteria.length > 0) {
       return initialCriteria.map((p): RowState => {
         switch (p.kind) {
           case "text":
-            return { id: nextId(), kind: "text", value: p.value };
+            return { id: localId(), kind: "text", value: p.value };
           case "field":
             return {
-              id: nextId(),
+              id: localId(),
               kind: "field",
               field: p.field,
               value: p.value,
             };
           case "flag":
-            return { id: nextId(), kind: "flag", flag: p.flag };
+            return { id: localId(), kind: "flag", flag: p.flag };
           case "format":
-            return { id: nextId(), kind: "format", value: p.value };
+            return { id: localId(), kind: "format", value: p.value };
           case "updated_within":
             return {
-              id: nextId(),
+              id: localId(),
               kind: "updated_within",
               days: String(p.days),
             };
         }
       });
     }
-    return [defaultRow("text", nextId)];
+    return [defaultRow("text", localId)];
   });
 
   const validPredicates = rows

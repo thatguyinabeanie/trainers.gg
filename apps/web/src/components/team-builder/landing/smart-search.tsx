@@ -76,7 +76,19 @@ export function SmartSearch({
   // Open when focused AND there are suggestions
   const shouldShowDropdown = isOpen && suggestions.length > 0;
 
+  // Reset active index when the suggestions array reference changes (user typed
+  // a new character). Performed during render via a prev-value guard so no
+  // effect is needed (React Compiler forbids setState synchronously inside
+  // an effect body — set-state-in-effect rule).
+  const [prevSuggestions, setPrevSuggestions] = useState(suggestions);
+  if (suggestions !== prevSuggestions) {
+    setPrevSuggestions(suggestions);
+    setActiveIndex(-1);
+  }
+
   // ⌘K / Ctrl+K global shortcut — focuses the input
+  // (useEffect is correct here: this is an external-system sync, not derived
+  // state, so it cannot be moved to render time)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -87,11 +99,6 @@ export function SmartSearch({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
-
-  // Reset active index when suggestions change (e.g. user types)
-  useEffect(() => {
-    setActiveIndex(-1);
-  }, [suggestions]);
 
   function handleFocus() {
     setIsOpen(true);

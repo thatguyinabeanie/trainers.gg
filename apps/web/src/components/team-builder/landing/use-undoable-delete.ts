@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { toast } from "sonner";
 
 // =============================================================================
@@ -112,9 +112,9 @@ export function useUndoableDelete<T extends { id: string }>({
   const onCommitRef = useRef(onCommit);
 
   // Keep onCommitRef current without needing it as a dep of effects.
-  // useLayoutEffect ensures the ref is updated before any useEffect fires.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
+  // useLayoutEffect ensures the ref is updated before any useEffect fires
+  // (react-patterns.md: "Updating refs from props").
+  useLayoutEffect(() => {
     onCommitRef.current = onCommit;
   });
 
@@ -140,21 +140,6 @@ export function useUndoableDelete<T extends { id: string }>({
 
     setPendingIds(new Set<string>());
   });
-
-  // Keep flushPendingRef.current up-to-date (reconstruct to close over latest refs).
-  // This runs after every render but is side-effect-free.
-  flushPendingRef.current = () => {
-    const batches = batchesRef.current;
-    if (batches.size === 0) return;
-
-    batches.forEach((batch) => {
-      clearTimeout(batch.timerId);
-      onCommitRef.current(batch.items);
-    });
-    batches.clear();
-
-    setPendingIds(new Set<string>());
-  };
 
   // Cleanup on unmount — flush so no deletes are lost and no timers leak.
   useEffect(() => {
