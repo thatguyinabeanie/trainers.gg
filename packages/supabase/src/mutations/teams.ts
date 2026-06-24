@@ -206,3 +206,106 @@ export async function reorderTeamPokemon(
   if (error)
     throw new Error(`Failed to reorder team pokemon: ${error.message}`);
 }
+
+// =============================================================================
+// Team landing flags & bulk operations
+// =============================================================================
+
+/**
+ * Toggle any subset of per-team landing flags.
+ * Accepts `pinned`, `archived`, and/or `sort_order` — only the provided
+ * fields are updated. RLS enforces ownership server-side.
+ */
+export async function updateTeamFlags(
+  supabase: TypedClient,
+  teamId: number,
+  flags: Pick<TablesUpdate<"teams">, "pinned" | "archived" | "sort_order">
+): Promise<void> {
+  const { error } = await supabase
+    .from("teams")
+    .update(flags)
+    .eq("id", teamId);
+  if (error) throw new Error(`Failed to update team flags: ${error.message}`);
+}
+
+/**
+ * Persist a custom-order sequence for the caller's teams in one round-trip
+ * via the `reorder_teams` RPC. Ownership is enforced server-side — rows for
+ * teams not owned by the caller are silently skipped by the RPC.
+ *
+ * Mirrors the snake_case positional mapping used by `reorderTeamPokemon`.
+ */
+export async function reorderTeams(
+  supabase: TypedClient,
+  orders: { teamId: number; sortOrder: number }[]
+): Promise<void> {
+  const { error } = await supabase.rpc("reorder_teams", {
+    p_orders: orders.map((o) => ({
+      team_id: o.teamId,
+      sort_order: o.sortOrder,
+    })),
+  });
+  if (error) throw new Error(`Failed to reorder teams: ${error.message}`);
+}
+
+/** Split an array into fixed-size chunks (the last chunk may be smaller). */
+function chunkArray<T>(items: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    result.push(items.slice(i, i + size));
+  }
+  return result;
+}
+
+/** Maximum number of IDs per `.in()` call — keeps URIs within safe limits. */
+const BULK_CHUNK_SIZE = 100;
+
+/**
+ * Archive or unarchive many owned teams atomically.
+ * Processes IDs in batches of 100 to keep PostgREST URIs within safe limits.
+ * RLS silently filters updates to rows not owned by the caller — no error is
+ * thrown for unowned IDs.
+ */
+export async function bulkSetArchived(
+  supabase: TypedClient,
+  teamIds: number[],
+  archived: boolean
+): Promise<void> {
+  for (const chunk of chunkArray(teamIds, BULK_CHUNK_SIZE)) {
+    const { error } = await supabase
+      .from("teams")
+      .update({ archived })
+      .in("id", chunk);
+    if (error)
+      throw new Error(`Failed to bulk set archived on teams: ${error.message}`);
+  }
+}
+
+/**
+ * Permanently delete many owned teams and their pokemon records.
+ * Loops the atomic `delete_team` RPC per ID so each deletion is transactional.
+ * If one or more deletions fail, the successes are NOT rolled back — the full
+ * error list is collected and thrown as a single aggregated error.
+ */
+export async function bulkDeleteTeams(
+  supabase: TypedClient,
+  teamIds: number[]
+): Promise<void> {
+  const failures: string[] = [];
+
+  for (const id of teamIds) {
+    try {
+      await deleteTeam(supabase, id);
+    } catch (err) {
+      failures.push(
+        err instanceof Error ? err.message : `Unknown error for team ${id}`
+      );
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      `Failed to delete ${failures.length} team(s): ${failures.join("; ")}`
+    );
+  }
+}

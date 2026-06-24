@@ -17,6 +17,10 @@ import {
   updatePokemon as updatePokemonMutation,
   removePokemonFromTeam as removePokemonFromTeamMutation,
   reorderTeamPokemon as reorderTeamPokemonMutation,
+  updateTeamFlags as updateTeamFlagsMutation,
+  reorderTeams as reorderTeamsMutation,
+  bulkSetArchived as bulkSetArchivedMutation,
+  bulkDeleteTeams as bulkDeleteTeamsMutation,
   getTeamWithPokemon,
   type TablesInsert,
   type TablesUpdate,
@@ -36,6 +40,9 @@ import {
   reorderTeamPokemonInputSchema,
   pokemonPayloadSchema,
   pokemonUpdateSchema,
+  teamFlagsSchema,
+  reorderTeamsInputSchema,
+  bulkTeamIdsSchema,
 } from "@trainers/validators";
 
 import { getErrorMessage } from "@trainers/utils";
@@ -501,4 +508,119 @@ export async function reorderTeamPokemonAction(
     );
     invalidateTeamDetailCache(parsed.data.teamId);
   }, "Failed to reorder team pokemon");
+}
+
+// =============================================================================
+// Team landing flags & bulk ops
+// =============================================================================
+
+/**
+ * Set pin/archive/sort-order flags on a single team.
+ * Maps camelCase `sortOrder` to snake_case `sort_order` for the mutation.
+ */
+export async function setTeamFlagsAction(
+  teamId: number,
+  flags: { pinned?: boolean; archived?: boolean; sortOrder?: number | null }
+): Promise<ActionResult<void>> {
+  const parsedId = updateTeamInputSchema.safeParse({ teamId });
+  if (!parsedId.success) {
+    return {
+      success: false,
+      error: parsedId.error.issues[0]?.message ?? "Invalid team id",
+    };
+  }
+  const parsedFlags = teamFlagsSchema.safeParse(flags);
+  if (!parsedFlags.success) {
+    return {
+      success: false,
+      error: parsedFlags.error.issues[0]?.message ?? "Invalid flags",
+    };
+  }
+  return withAction(async () => {
+    await rejectBots();
+    const supabase = await createClient();
+    const { pinned, archived, sortOrder } = parsedFlags.data;
+    await updateTeamFlagsMutation(supabase, parsedId.data.teamId, {
+      ...(pinned !== undefined && { pinned }),
+      ...(archived !== undefined && { archived }),
+      ...(sortOrder !== undefined && { sort_order: sortOrder }),
+    });
+    invalidateTeamDetailCache(parsedId.data.teamId);
+  }, "Failed to update team flags");
+}
+
+/**
+ * Persist a new sort order for multiple teams in one call.
+ * Delegates ownership enforcement to the `reorder_teams` RPC.
+ */
+export async function reorderTeamsAction(
+  orders: { teamId: number; sortOrder: number }[]
+): Promise<ActionResult<void>> {
+  const parsed = reorderTeamsInputSchema.safeParse(orders);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+  return withAction(async () => {
+    await rejectBots();
+    const supabase = await createClient();
+    await reorderTeamsMutation(supabase, parsed.data);
+    for (const { teamId } of parsed.data) {
+      invalidateTeamDetailCache(teamId);
+    }
+  }, "Failed to reorder teams");
+}
+
+/**
+ * Archive or unarchive a batch of teams.
+ */
+export async function bulkArchiveTeamsAction(
+  teamIds: number[],
+  archived: boolean
+): Promise<ActionResult<void>> {
+  const parsedIds = bulkTeamIdsSchema.safeParse(teamIds);
+  if (!parsedIds.success) {
+    return {
+      success: false,
+      error: parsedIds.error.issues[0]?.message ?? "Invalid team ids",
+    };
+  }
+  if (typeof archived !== "boolean") {
+    return { success: false, error: "archived must be a boolean" };
+  }
+  return withAction(async () => {
+    await rejectBots();
+    const supabase = await createClient();
+    await bulkSetArchivedMutation(supabase, parsedIds.data, archived);
+    for (const id of parsedIds.data) {
+      invalidateTeamDetailCache(id);
+    }
+  }, "Failed to bulk archive teams");
+}
+
+/**
+ * Permanently delete multiple teams and their pokemon records.
+ * Each deletion is transactional; partial failures are surfaced as an
+ * aggregated error from the mutation layer.
+ */
+export async function bulkDeleteTeamsAction(
+  teamIds: number[]
+): Promise<ActionResult<void>> {
+  const parsedIds = bulkTeamIdsSchema.safeParse(teamIds);
+  if (!parsedIds.success) {
+    return {
+      success: false,
+      error: parsedIds.error.issues[0]?.message ?? "Invalid team ids",
+    };
+  }
+  return withAction(async () => {
+    await rejectBots();
+    const supabase = await createClient();
+    await bulkDeleteTeamsMutation(supabase, parsedIds.data);
+    for (const id of parsedIds.data) {
+      invalidateTeamDetailCache(id);
+    }
+  }, "Failed to bulk delete teams");
 }

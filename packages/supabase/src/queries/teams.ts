@@ -1,3 +1,4 @@
+import { fetchInChunks } from "./players";
 import type { TypedClient } from "../client";
 import type { Tables } from "../types";
 
@@ -34,6 +35,14 @@ export type TeamListItem = Pick<
 /** Team list item with the owning alt's username for cross-alt views. */
 export type CrossAltTeamListItem = TeamListItem & {
   alt_username: string;
+};
+
+/** Enriched per-user team: full team row + all pokemon + owning alt + folder membership ids. */
+export type EnrichedUserTeam = TeamWithPokemon & {
+  alt_username: string;
+  alt_id: number;
+  /** team_folder_members.folder_id values (raw numeric DB ids) this team belongs to. */
+  folder_ids: number[];
 };
 
 // =============================================================================
@@ -175,6 +184,90 @@ export async function getTeamsForUser(
     return {
       ...rest,
       alt_username: (alt as unknown as { username: string })?.username ?? "",
+    };
+  });
+}
+
+/**
+ * All teams the user owns across every alt, enriched for the builder landing
+ * (search + quick-look read item/ability/tera/moves/nature for all 6 from this
+ * one list — no per-row fetch). Includes landing flags + folder membership ids.
+ * P-bucket: call with an authenticated client (RLS scopes to the user's alts).
+ */
+export async function getEnrichedTeamsForUser(
+  supabase: TypedClient,
+  userId: string
+): Promise<EnrichedUserTeam[]> {
+  const { data: teams, error: teamsError } = await supabase
+    .from("teams")
+    .select(
+      `
+      id,
+      name,
+      format,
+      is_public,
+      format_legal,
+      description,
+      notes,
+      tags,
+      parent_team_id,
+      pinned,
+      archived,
+      sort_order,
+      created_by,
+      created_at,
+      updated_at,
+      alt:alts!teams_created_by_fkey!inner(id, username),
+      team_pokemon(
+        id,
+        pokemon_id,
+        team_position,
+        pokemon:pokemon(*)
+      )
+    `
+    )
+    .eq("alts.user_id", userId)
+    .order("updated_at", { ascending: false });
+
+  if (teamsError)
+    throw new Error(
+      `Failed to fetch enriched teams for user: ${teamsError.message}`
+    );
+
+  const teamRows = teams ?? [];
+  const teamIds = teamRows.map((t) => t.id);
+
+  // Fetch folder memberships in URI-safe chunks (guards unbounded .in() gotcha)
+  const folderMembers =
+    teamIds.length > 0
+      ? await fetchInChunks(teamIds, (idChunk) =>
+          supabase
+            .from("team_folder_members")
+            .select("team_id, folder_id")
+            .in("team_id", idChunk)
+        )
+      : [];
+
+  // Build a lookup map: teamId → folder_id[]
+  const folderMap = new Map<number, number[]>();
+  for (const row of folderMembers) {
+    const existing = folderMap.get(row.team_id);
+    if (existing) {
+      existing.push(row.folder_id);
+    } else {
+      folderMap.set(row.team_id, [row.folder_id]);
+    }
+  }
+
+  // Map each row to EnrichedUserTeam: flatten alt embed, attach folder_ids
+  return teamRows.map((t) => {
+    const { alt, ...rest } = t;
+    const altEmbed = alt as unknown as { id: number; username: string };
+    return {
+      ...rest,
+      alt_id: altEmbed?.id ?? 0,
+      alt_username: altEmbed?.username ?? "",
+      folder_ids: folderMap.get(t.id) ?? [],
     };
   });
 }
