@@ -186,6 +186,7 @@ export function useLocalDraft(id: LocalDraftId): UseLocalDraftReturn {
   useEffect(() => {
     const record = getLocalDraft(id);
     if (record) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: load draft from localStorage after mount to avoid SSR mismatch
       setTeamState(record.team);
       latestTeam.current = record.team;
       setExists(true);
@@ -201,7 +202,6 @@ export function useLocalDraft(id: LocalDraftId): UseLocalDraftReturn {
     };
     // This effect runs once per mount. The consumer passes key={id} to remount
     // when the id changes, so id is intentionally excluded from the deps array.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function setTeam(

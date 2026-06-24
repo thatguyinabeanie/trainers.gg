@@ -1,11 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 import {
   BUILDER_LS_KEY,
   makeDraftRecord,
-  seedDrafts,
   seedDraftsBeforeLoad,
-  clearDrafts,
 } from "../fixtures/builder-drafts";
 
 // ────────────────────────────────────────────────────────────────────────────────
@@ -57,7 +55,7 @@ test.use({
 
 // Helper: clear the local drafts store before each test so the empty state
 // always renders on a fresh visit, regardless of test ordering.
-async function clearLocalDrafts(page: import("@playwright/test").Page) {
+async function clearLocalDrafts(page: Page) {
   // Navigate to origin so localStorage is accessible, then clear the key.
   // Must be called after an initial page.goto() so we have an origin context.
   await page.evaluate((key) => {

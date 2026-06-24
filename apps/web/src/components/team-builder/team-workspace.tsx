@@ -565,20 +565,23 @@ export function TeamWorkspaceV2({
     }
   }, [prefs.loading]);
 
-  /** Controls the import dialog. */
-  const [importOpen, setImportOpen] = useState(false);
+  /**
+   * Controls the import dialog. Initialized open when the parent route arrives
+   * with ?action=import (the editor team-rail's "Import a paste" handoff) so we
+   * never call setState inside an effect just to open it. Mirrors the
+   * ?action=save handling in LocalBuilderWorkspace.
+   */
+  const [importOpen, setImportOpen] = useState(actionParam === "import");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   /** Controls the mobile team-rail Sheet (mobile-only; desktop uses the aside). */
   const [railSheetOpen, setRailSheetOpen] = useState(false);
 
-  // Open ImportDialog when the parent route passes ?action=import, then strip
-  // the param so re-renders don't re-open it. Mirrors the ?action=save handling
-  // in LocalBuilderWorkspace — that path triggers an immediate mutation so it
-  // strips via redirect; this path just opens a dialog so we strip in-place.
+  // Strip ?action=import from the URL after the dialog has been opened via the
+  // initializer above, so a later re-render (or back-nav) doesn't re-open it.
+  // No setState here — just an imperative URL cleanup (router.replace).
   useEffect(() => {
     if (actionParam === "import") {
-      setImportOpen(true);
       router.replace(pathname);
     }
   }, [actionParam, pathname, router]);
