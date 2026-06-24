@@ -11,7 +11,7 @@
  *   - Accessible names present on all controls
  */
 
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+import { describe, it, expect, jest } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
@@ -21,102 +21,14 @@ import React from "react";
 // =============================================================================
 
 // Mock lucide-react icons so we don't need SVG rendering in JSDOM.
-jest.mock("lucide-react", () => {
-  const mock = (name: string) => {
-    const Icon = (props: Record<string, unknown>) => (
-      <svg data-testid={`icon-${name}`} {...props} />
-    );
-    Icon.displayName = name;
-    return Icon;
-  };
-  return new Proxy({}, { get: (_target, prop: string) => mock(prop) });
-});
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+jest.mock("lucide-react", () => require("@trainers/test-utils/mocks/lucide-react").default);
 
 // Mock DropdownMenu — Base UI's Menu uses portals and floating-ui positioning
-// that don't work in JSDOM.  Provide a minimal open/close toggle so we can
-// verify that the folder list renders and calls onMoveToFolder.
-jest.mock("@/components/ui/dropdown-menu", () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const React = require("react");
-
-  function DropdownMenu({ children }: { children: React.ReactNode }) {
-    const [open, setOpen] = React.useState(false);
-    return (
-      <div data-testid="dropdown-menu">
-        {React.Children.map(children, (child: React.ReactNode) =>
-          React.isValidElement(child)
-            ? React.cloneElement(
-                child as React.ReactElement<Record<string, unknown>>,
-                {
-                  open,
-                  onToggle: () => setOpen((v: boolean) => !v),
-                }
-              )
-            : child
-        )}
-      </div>
-    );
-  }
-
-  function DropdownMenuTrigger({
-    children,
-    onToggle,
-    "aria-label": ariaLabel,
-  }: {
-    children: React.ReactNode;
-    onToggle?: () => void;
-    "aria-label"?: string;
-    // Accept (and ignore) render prop so the real component prop passes through
-    render?: unknown;
-    className?: string;
-  }) {
-    return (
-      <button onClick={onToggle} aria-label={ariaLabel ?? "Move to folder"}>
-        {children}
-      </button>
-    );
-  }
-
-  function DropdownMenuContent({
-    children,
-    open,
-  }: {
-    children: React.ReactNode;
-    open?: boolean;
-    side?: string;
-    align?: string;
-  }) {
-    if (!open) return null;
-    return <div data-testid="dropdown-content">{children}</div>;
-  }
-
-  function DropdownMenuItem({
-    children,
-    onClick,
-    disabled,
-  }: {
-    children: React.ReactNode;
-    onClick?: () => void;
-    disabled?: boolean;
-  }) {
-    return (
-      <div
-        role="menuitem"
-        aria-disabled={disabled}
-        onClick={disabled ? undefined : onClick}
-      >
-        {children}
-      </div>
-    );
-  }
-
-  return {
-    DropdownMenu,
-    DropdownMenuTrigger,
-    DropdownMenuContent,
-    DropdownMenuItem,
-  };
-});
+// that don't work in JSDOM.  Open/close-toggle variant: DropdownMenuContent
+// is only rendered after the trigger is clicked.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+jest.mock("@/components/ui/dropdown-menu", () => require("@trainers/test-utils/mocks/ui-dropdown-menu"));
 
 // Mock Button — render a plain <button> so RTL interaction works without
 // needing Base UI's ButtonPrimitive setup in JSDOM.

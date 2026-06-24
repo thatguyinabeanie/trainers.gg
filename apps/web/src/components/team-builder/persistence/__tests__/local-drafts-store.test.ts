@@ -663,7 +663,7 @@ describe("setDraftPinned", () => {
   });
 
   it("is a no-op for an unknown id", () => {
-    const record = createLocalDraft();
+    createLocalDraft();
     const snapshotBefore = JSON.stringify(readV3Store());
 
     setDraftPinned("local-zzzz", true);
@@ -711,7 +711,7 @@ describe("setDraftArchived", () => {
   });
 
   it("is a no-op for an unknown id", () => {
-    const record = createLocalDraft();
+    createLocalDraft();
     const snapshotBefore = JSON.stringify(readV3Store());
 
     setDraftArchived("local-zzzz", true);
@@ -759,7 +759,7 @@ describe("setDraftSortOrder", () => {
   });
 
   it("is a no-op for an unknown id", () => {
-    const record = createLocalDraft();
+    createLocalDraft();
     const snapshotBefore = JSON.stringify(readV3Store());
 
     setDraftSortOrder("local-zzzz", 99);
@@ -816,7 +816,7 @@ describe("setDraftFolders", () => {
   });
 
   it("is a no-op for an unknown id", () => {
-    const record = createLocalDraft();
+    createLocalDraft();
     const snapshotBefore = JSON.stringify(readV3Store());
 
     setDraftFolders("local-zzzz", ["some-folder"]);
@@ -866,7 +866,7 @@ describe("toggleDraftFolder", () => {
   });
 
   it("is a no-op for an unknown draft id", () => {
-    const record = createLocalDraft();
+    createLocalDraft();
     const snapshotBefore = JSON.stringify(readV3Store());
 
     toggleDraftFolder("local-zzzz", "folder-x");

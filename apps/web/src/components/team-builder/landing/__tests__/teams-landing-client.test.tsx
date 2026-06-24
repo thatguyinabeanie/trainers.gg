@@ -68,7 +68,9 @@ jest.mock("sonner", () => ({ toast: mockToast }));
 // ---------------------------------------------------------------------------
 
 // FolderRail stub — exposes onSelect, counts, collapsed, and folder creation callbacks
-jest.mock("../folder-rail", () => ({
+jest.mock("../folder-rail", () => {
+  const { ARCHIVED_VIEW_ID } = require("../group-drafts");
+  return {
   FolderRail: ({
     selectedFolderId,
     onSelect,
@@ -105,7 +107,7 @@ jest.mock("../folder-rail", () => ({
         Folder 1
       </button>
       <button
-        onClick={() => onSelect("__archived__")}
+        onClick={() => onSelect(ARCHIVED_VIEW_ID)}
         aria-label="Select Archived"
       >
         Archived
@@ -133,7 +135,8 @@ jest.mock("../folder-rail", () => ({
       )}
     </div>
   ),
-}));
+  };
+});
 
 // TeamSections stub — exposes sections count and calls renderRow for each draft
 jest.mock("../team-sections", () => ({

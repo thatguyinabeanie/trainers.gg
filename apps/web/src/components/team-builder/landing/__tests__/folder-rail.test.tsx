@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -20,63 +20,12 @@ import React from "react";
 // Module-level mocks — before imports so Jest hoisting works
 // =============================================================================
 
-// Mock DropdownMenu — Base UI Menu uses portals/floating-ui that JSDOM can't handle.
-jest.mock("@/components/ui/dropdown-menu", () => {
+// Mock DropdownMenu — shared open/close-toggle variant from @trainers/test-utils.
+// DropdownMenuContent only renders after the trigger is clicked.
+jest.mock("@/components/ui/dropdown-menu", () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const React = require("react");
-
-  function DropdownMenu({ children }: { children: React.ReactNode }) {
-    return <div data-testid="dropdown-menu">{children}</div>;
-  }
-
-  function DropdownMenuTrigger({
-    children,
-    className,
-    "aria-label": ariaLabel,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-    "aria-label"?: string;
-  }) {
-    return (
-      <button
-        data-testid="dropdown-trigger"
-        className={className}
-        aria-label={ariaLabel}
-      >
-        {children}
-      </button>
-    );
-  }
-
-  function DropdownMenuContent({
-    children,
-  }: {
-    children: React.ReactNode;
-    align?: string;
-    sideOffset?: number;
-  }) {
-    return <div data-testid="dropdown-content">{children}</div>;
-  }
-
-  function DropdownMenuItem({
-    children,
-    onClick,
-    variant: _variant,
-  }: {
-    children: React.ReactNode;
-    onClick?: () => void;
-    variant?: string;
-  }) {
-    return (
-      <button data-testid="dropdown-item" onClick={onClick}>
-        {children}
-      </button>
-    );
-  }
-
-  return { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger };
-});
+  require("@trainers/test-utils/mocks/ui-dropdown-menu")
+);
 
 // Mock Badge — render a simple span with the text
 jest.mock("@/components/ui/badge", () => ({
@@ -130,19 +79,11 @@ jest.mock("@/components/ui/input", () => ({
   }),
 }));
 
-// Stub lucide-react icons
-jest.mock("lucide-react", () => {
+// Stub lucide-react icons — shared Proxy-based stub from @trainers/test-utils.
+jest.mock("lucide-react", () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const React = require("react");
-  const mock = (name: string) => {
-    const Icon = (props: Record<string, unknown>) => (
-      <svg data-testid={`icon-${name}`} {...props} />
-    );
-    Icon.displayName = name;
-    return Icon;
-  };
-  return new Proxy({}, { get: (_target, prop: string) => mock(prop as string) });
-});
+  require("@trainers/test-utils/mocks/lucide-react").default
+);
 
 // =============================================================================
 // Imports (after mocks)
@@ -449,23 +390,25 @@ describe("FolderRail", () => {
       expect(triggers).toHaveLength(2);
     });
 
-    it("calls onDeleteManualFolder with the correct id when Delete is clicked", async () => {
+    it("calls onDeleteManualFolder with the correct id when Delete is clicked for Team Alpha", async () => {
       const user = userEvent.setup();
       const { props } = renderRail();
-      // The dropdown content is always visible in our mock
-      const deleteItems = screen.getAllByTestId("dropdown-item");
-      // Find the one in the context of Team Alpha — first manual folder
-      const teamAlphaDelete = deleteItems[0];
-      await user.click(teamAlphaDelete);
+      // Open Team Alpha's dropdown by identity, not DOM order
+      await user.click(screen.getByRole("button", { name: "Options for Team Alpha" }));
+      const alphaMenu = screen.getByTestId("dropdown-content");
+      await user.click(within(alphaMenu).getByRole("menuitem", { name: /delete/i }));
       expect(props.onDeleteManualFolder).toHaveBeenCalledTimes(1);
       expect(props.onDeleteManualFolder).toHaveBeenCalledWith("folder-aa01");
     });
 
-    it("calls onDeleteManualFolder with the second folder id for the second row", async () => {
+    it("calls onDeleteManualFolder with the second folder id for Team Beta", async () => {
       const user = userEvent.setup();
       const { props } = renderRail();
-      const deleteItems = screen.getAllByTestId("dropdown-item");
-      await user.click(deleteItems[1]);
+      // Open Team Beta's dropdown by identity, not DOM order
+      await user.click(screen.getByRole("button", { name: "Options for Team Beta" }));
+      const betaMenu = screen.getByTestId("dropdown-content");
+      await user.click(within(betaMenu).getByRole("menuitem", { name: /delete/i }));
+      expect(props.onDeleteManualFolder).toHaveBeenCalledTimes(1);
       expect(props.onDeleteManualFolder).toHaveBeenCalledWith("folder-bb02");
     });
 

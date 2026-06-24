@@ -635,6 +635,7 @@ describe("groupDrafts — sort: custom", () => {
     const opts: GroupOptions = { ...BASE_OPTS, sort: "custom" };
     const sections = groupDrafts([third, nullOrder, first, second], opts);
 
+    expect(sections).toHaveLength(1);
     const section = sections[0];
     expect(section).toBeDefined();
     const ids = section!.drafts.map((d) => d.id);
@@ -658,6 +659,7 @@ describe("groupDrafts — sort: custom", () => {
     const opts: GroupOptions = { ...BASE_OPTS, sort: "custom" };
     const sections = groupDrafts([olderNull, newerNull], opts);
 
+    expect(sections).toHaveLength(1);
     const ids = sections[0]!.drafts.map((d) => d.id);
     expect(ids[0]).toBe("newer-null");
     expect(ids[1]).toBe("older-null");
@@ -675,6 +677,7 @@ describe("groupDrafts — sort: custom", () => {
     const opts: GroupOptions = { ...BASE_OPTS, sort: "custom" };
     const sections = groupDrafts([noOrder, withOrder], opts);
 
+    expect(sections).toHaveLength(1);
     const ids = sections[0]!.drafts.map((d) => d.id);
     expect(ids[0]).toBe("with-order");
     expect(ids[1]).toBe("no-order");

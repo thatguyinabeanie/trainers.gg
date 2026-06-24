@@ -11,7 +11,7 @@
  *   - ids removed from orderedIds are pruned from selected
  */
 
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect } from "@jest/globals";
 import { renderHook, act } from "@testing-library/react";
 
 import { useDraftSelection } from "../use-draft-selection";

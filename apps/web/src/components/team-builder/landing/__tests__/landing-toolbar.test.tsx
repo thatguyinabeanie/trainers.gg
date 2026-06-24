@@ -12,119 +12,14 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
 
 // =============================================================================
 // Module-level mocks — declared before imports so Jest hoisting works
 // =============================================================================
 
-// Mock Select — Base UI Select uses portals/floating-ui that JSDOM can't handle.
-// Provide a thin wrapper that exposes value and fires onValueChange when the
-// hidden trigger button is clicked with a specific value.
-jest.mock("@/components/ui/select", () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const React = require("react");
-
-  function Select({
-    children,
-    value,
-    onValueChange,
-  }: {
-    children: React.ReactNode;
-    value?: string;
-    onValueChange?: (v: string) => void;
-  }) {
-    return (
-      <div data-testid="select" data-value={value}>
-        {React.Children.map(children, (child: React.ReactNode) =>
-          React.isValidElement(child)
-            ? React.cloneElement(
-                child as React.ReactElement<Record<string, unknown>>,
-                { _onValueChange: onValueChange, _currentValue: value }
-              )
-            : child
-        )}
-      </div>
-    );
-  }
-
-  function SelectTrigger({
-    children,
-    className,
-    id,
-    "aria-label": ariaLabel,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-    id?: string;
-    "aria-label"?: string;
-  }) {
-    return (
-      <button
-        id={id}
-        className={className}
-        aria-label={ariaLabel ?? "Sort teams by"}
-        role="combobox"
-        aria-haspopup="listbox"
-      >
-        {children}
-      </button>
-    );
-  }
-
-  function SelectValue({
-    placeholder,
-    _currentValue,
-  }: {
-    placeholder?: string;
-    _currentValue?: string;
-  }) {
-    return <span data-testid="select-value">{_currentValue ?? placeholder}</span>;
-  }
-
-  function SelectContent({
-    children,
-    _onValueChange,
-  }: {
-    children: React.ReactNode;
-    _onValueChange?: (v: string) => void;
-  }) {
-    return (
-      <div data-testid="select-content">
-        {React.Children.map(children, (child: React.ReactNode) =>
-          React.isValidElement(child)
-            ? React.cloneElement(
-                child as React.ReactElement<Record<string, unknown>>,
-                { _onValueChange }
-              )
-            : child
-        )}
-      </div>
-    );
-  }
-
-  function SelectItem({
-    children,
-    value,
-    _onValueChange,
-  }: {
-    children: React.ReactNode;
-    value: string;
-    _onValueChange?: (v: string) => void;
-  }) {
-    return (
-      <button
-        role="option"
-        data-value={value}
-        onClick={() => _onValueChange?.(value)}
-      >
-        {children}
-      </button>
-    );
-  }
-
-  return { Select, SelectContent, SelectItem, SelectTrigger, SelectValue };
-});
+// Mock Select — context-based native <select> variant shared across tests.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+jest.mock("@/components/ui/select", () => require("@trainers/test-utils/mocks/ui-select"));
 
 // Mock ToggleGroup — Base UI ToggleGroup does not work in JSDOM.
 // Base UI ToggleGroup is array-shaped: value is string[], onValueChange receives string[].
@@ -241,7 +136,7 @@ describe("LandingToolbar", () => {
   describe("renders current state", () => {
     it("renders the current sort value in the select", () => {
       renderToolbar({ sort: "name" });
-      const selectEl = screen.getByTestId("select");
+      const selectEl = screen.getByTestId("select-root");
       expect(selectEl).toHaveAttribute("data-value", "name");
     });
 
@@ -265,44 +160,47 @@ describe("LandingToolbar", () => {
   // ---------------------------------------------------------------------------
 
   describe("sort control", () => {
-    it("calls onSortChange with 'name' when Name option is clicked", async () => {
+    // The shared mock renders a native <select aria-label="Sort teams by">.
+    // Use userEvent.selectOptions to drive value changes.
+
+    it("calls onSortChange with 'name' when Name option is selected", async () => {
       const user = userEvent.setup();
       renderToolbar({ sort: "recent" });
-      const nameOption = screen.getByRole("option", { name: "Name" });
-      await user.click(nameOption);
+      const sortSelect = screen.getByLabelText("Sort teams by");
+      await user.selectOptions(sortSelect, "name");
       expect(onSortChange).toHaveBeenCalledTimes(1);
       expect(onSortChange).toHaveBeenCalledWith("name");
     });
 
-    it("calls onSortChange with 'format' when Format option is clicked", async () => {
+    it("calls onSortChange with 'format' when Format option is selected", async () => {
       const user = userEvent.setup();
       renderToolbar({ sort: "recent" });
-      const formatOption = screen.getByRole("option", { name: "Format" });
-      await user.click(formatOption);
+      const sortSelect = screen.getByLabelText("Sort teams by");
+      await user.selectOptions(sortSelect, "format");
       expect(onSortChange).toHaveBeenCalledWith("format");
     });
 
-    it("calls onSortChange with 'completeness' when Completeness option is clicked", async () => {
+    it("calls onSortChange with 'completeness' when Completeness option is selected", async () => {
       const user = userEvent.setup();
       renderToolbar({ sort: "recent" });
-      const option = screen.getByRole("option", { name: "Completeness" });
-      await user.click(option);
+      const sortSelect = screen.getByLabelText("Sort teams by");
+      await user.selectOptions(sortSelect, "completeness");
       expect(onSortChange).toHaveBeenCalledWith("completeness");
     });
 
-    it("calls onSortChange with 'custom' when Custom option is clicked", async () => {
+    it("calls onSortChange with 'custom' when Custom option is selected", async () => {
       const user = userEvent.setup();
       renderToolbar({ sort: "recent" });
-      const option = screen.getByRole("option", { name: "Custom" });
-      await user.click(option);
+      const sortSelect = screen.getByLabelText("Sort teams by");
+      await user.selectOptions(sortSelect, "custom");
       expect(onSortChange).toHaveBeenCalledWith("custom");
     });
 
-    it("calls onSortChange with 'recent' when Recent option is clicked", async () => {
+    it("calls onSortChange with 'recent' when Recent option is selected", async () => {
       const user = userEvent.setup();
       renderToolbar({ sort: "name" });
-      const option = screen.getByRole("option", { name: "Recent" });
-      await user.click(option);
+      const sortSelect = screen.getByLabelText("Sort teams by");
+      await user.selectOptions(sortSelect, "recent");
       expect(onSortChange).toHaveBeenCalledWith("recent");
     });
   });

@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, beforeEach } from "@jest/globals";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 
@@ -22,16 +22,8 @@ import React from "react";
 // Module-level mocks — before component import so Jest hoisting works
 // =============================================================================
 
-jest.mock("lucide-react", () => {
-  const mock = (name: string) => {
-    const Icon = (props: Record<string, unknown>) => (
-      <svg data-testid={`icon-${name}`} {...props} />
-    );
-    Icon.displayName = name;
-    return Icon;
-  };
-  return new Proxy({}, { get: (_target, prop: string) => mock(prop) });
-});
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+jest.mock("lucide-react", () => require("@trainers/test-utils/mocks/lucide-react").default);
 
 // =============================================================================
 // Imports
@@ -40,7 +32,6 @@ jest.mock("lucide-react", () => {
 import { TeamSections, type RowInjectedProps } from "../team-sections";
 import { type DraftSection } from "../group-drafts";
 import { type LocalDraftRecord } from "../../persistence/local-drafts-types";
-import { type Density } from "../../persistence/landing-prefs-types";
 import { makeDraftRecord } from "./fixtures";
 
 // =============================================================================
@@ -578,7 +569,9 @@ describe("TeamSections", () => {
         />
       );
 
-      const listEl = screen.getByRole("list");
+      // Two sections → two role="list" elements; click the first one to focus
+      // the keyboard-nav container (keyDown bubbles up to the outer div).
+      const [listEl] = screen.getAllByRole("list");
       await user.click(listEl);
       // sectionOne: index 0 = draftA, index 1 = draftB
       // sectionTwo: index 2 = draftC, index 3 = draftD
