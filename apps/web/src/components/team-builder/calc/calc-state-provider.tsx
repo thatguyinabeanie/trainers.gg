@@ -43,8 +43,9 @@ export interface CalcStateProviderProps {
  * intentionally when the active row switches (the user has configured a
  * target and shouldn't need to re-configure it on every row change).
  *
- * This component is loaded lazily via next/dynamic in team-workspace.tsx so
- * the @smogon/calc engine is excluded from the initial JS chunk.
+ * This component is always-mounted in team-workspace.tsx. The @smogon/calc
+ * engine is excluded from the initial JS chunk via a lazy dynamic import()
+ * inside use-calc-state.ts — loaded on first mount, not gated on calc open.
  */
 export function CalcStateProvider({
   selectedPokemon,

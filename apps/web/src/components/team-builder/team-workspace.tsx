@@ -12,7 +12,6 @@ import {
   useState,
   useTransition,
 } from "react";
-import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -82,6 +81,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { CalcBottomPanel } from "./calc/calc-bottom-panel";
+import { CalcStateProvider } from "./calc/calc-state-provider";
 import { useCalcStateContext } from "./calc/calc-state-context";
 import { Dockbar } from "./dock/dockbar";
 import { SpeedTiersDialog } from "./dock/speed-tiers-dialog";
@@ -100,14 +100,6 @@ import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
 import { TeamLayoutToggle } from "./team-layout-toggle";
 import { SingleFocusView } from "./layouts/single-focus-view";
 import { EditorTeamRail } from "./editor/editor-team-rail";
-
-// Lazily load the calc engine provider so @smogon/calc stays out of the editor's
-// initial chunk. Mounted only when a calc-consuming view is open (see needsCalc).
-// ssr:false is valid — this is a Client Component and calc is browser-only.
-const CalcStateProviderDynamic = dynamic(
-  () => import("./calc/calc-state-provider").then((m) => m.CalcStateProvider),
-  { ssr: false }
-);
 
 // =============================================================================
 // KO-tier semantic tokens (migrated from .builderApp's CSS-module rule).
@@ -577,6 +569,14 @@ export function TeamWorkspaceV2({
   /** Controls the mobile team-rail Sheet (mobile-only; desktop uses the aside). */
   const [railSheetOpen, setRailSheetOpen] = useState(false);
 
+  // Re-open the import dialog when actionParam changes to "import" while the
+  // component is already mounted (e.g. navigating to ?action=import from the
+  // editor team-rail while the workspace is live). The initial useState handles
+  // the first mount; this effect handles subsequent navigations.
+  useEffect(() => {
+    if (actionParam === "import") setImportOpen(true);
+  }, [actionParam]);
+
   // Strip ?action=import from the URL after the dialog has been opened via the
   // initializer above, so a later re-render (or back-nav) doesn't re-open it.
   // No setState here — just an imperative URL cleanup (router.replace).
@@ -890,19 +890,10 @@ export function TeamWorkspaceV2({
     }
   }
 
-  // needsCalc gates mounting the heavy (lazy) engine provider — mount it only
-  // when a view actually renders live calc results:
-  //   rightDrawer === "calc"  — the damage-calc side panel
-  //   speedView !== null      — speed-tiers panel/dialog reads live weather state
-  // Single-focus does NOT need it by default: SingleFocusView renders
-  // CalcVersusView only when calc.calcEnabled (=== rightDrawer === "calc"),
-  // otherwise a plain FocusCard (single-focus-view.tsx:267) — so the rightDrawer
-  // check already covers it. Including layoutMode === "single" here would load
-  // the engine on every editor open (single-focus is the default), defeating
-  // the split.
-  const needsCalc =
-    state.rightDrawer === "calc" || state.speedView !== null;
-
+  // `calcEnabled` gates the lazy engine LOAD (not the provider mount — the
+  // provider is always mounted, see below). The @smogon/calc chunk is only
+  // fetched once a view renders live calc results: rightDrawer === "calc"
+  // (the damage-calc side panel).
   const calcProviderProps = {
     selectedPokemon: slots[calcAttackerIdx] ?? null,
     format,
@@ -913,9 +904,11 @@ export function TeamWorkspaceV2({
     faintedTheirs: state.faintedTheirs,
   };
 
-  // The workspace body — rendered unconditionally. CalcStateProviderDynamic
-  // wraps it only when needsCalc is true; otherwise DEFAULT_CALC_CONTEXT
-  // satisfies reads (calcEnabled=false, all setters no-ops).
+  // The workspace body — CalcStateProvider always wraps it (always-mounted so
+  // children never remount when calc opens for the first time). The engine
+  // chunk (@smogon/calc) is loaded lazily inside use-calc-state.ts via a
+  // dynamic import(), keeping it out of the initial bundle while letting the
+  // provider render immediately.
   const workspaceBody = (
     <>
       <div
@@ -1521,13 +1514,7 @@ export function TeamWorkspaceV2({
 
   return (
     <TeamLayoutContext.Provider value={layoutMode}>
-      {needsCalc ? (
-        <CalcStateProviderDynamic {...calcProviderProps}>
-          {workspaceBody}
-        </CalcStateProviderDynamic>
-      ) : (
-        workspaceBody
-      )}
+      <CalcStateProvider {...calcProviderProps}>{workspaceBody}</CalcStateProvider>
     </TeamLayoutContext.Provider>
   );
 }

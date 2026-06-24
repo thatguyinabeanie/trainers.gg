@@ -24,9 +24,6 @@ import {
 // =============================================================================
 
 jest.mock("../calc/calc-state-context", () => ({
-  CalcStateProvider: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
   useCalcStateContext: () => ({
     defenderSpecies: "",
     moveCalcOutputs: [null, null, null, null],
@@ -40,6 +37,15 @@ jest.mock("../calc/calc-state-context", () => ({
     setField: jest.fn(),
     calcEnabled: false,
   }),
+}));
+
+// The workspace statically imports CalcStateProvider from calc-state-provider.
+// Mock it as a transparent pass-through so the always-mounted provider
+// doesn't attempt to load the @smogon/calc engine chunk in the test env.
+jest.mock("../calc/calc-state-provider", () => ({
+  CalcStateProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }));
 
 jest.mock("../dock/dockbar", () => ({
