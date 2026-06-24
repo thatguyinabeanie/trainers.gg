@@ -86,10 +86,21 @@ export function useDraftSelection(
   // stays consistent. This avoids the set-state-in-effect anti-pattern by
   // computing during render; the deferred setSelected is a reconciliation
   // flush that React batches after paint.
+  //
+  // Guard: only call setSelected when the pruned set ACTUALLY differs from the
+  // stored selection. Without the guard, every render allocates a new Set and
+  // schedules an extra render of every `isSelected` consumer — even when no
+  // ids were removed. Compare size first (cheap), then membership (O(n) but
+  // only reached when sizes match and at least one id was removed above).
   if (prunedSelected !== selected) {
-    // React allows calling setState during render for this exact pattern
-    // (derived-state reconciliation). See react-patterns.md.
-    setSelected(prunedSelected);
+    const differs =
+      prunedSelected.size !== selected.size ||
+      [...prunedSelected].some((id) => !selected.has(id));
+    if (differs) {
+      // React allows calling setState during render for this exact pattern
+      // (derived-state reconciliation). See react-patterns.md.
+      setSelected(prunedSelected);
+    }
   }
 
   // ---------------------------------------------------------------------------

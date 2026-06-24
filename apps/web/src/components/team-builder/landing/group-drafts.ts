@@ -131,6 +131,23 @@ function resolveAutoGroup(formatId: string | null | undefined): {
  * serves as a stable tiebreaker.
  */
 function sortDrafts(drafts: LocalDraftRecord[], sort: SortMode): void {
+  if (sort === "completeness") {
+    // Precompute filledCount ONCE per draft before sorting so that the
+    // comparator does not call toDraftSummary O(N log N) times — each call
+    // iterates the draft's team_pokemon slots, turning a linear pass into a
+    // quadratic one for large lists.
+    const filled = new Map<string, number>(
+      drafts.map((d) => [d.id, toDraftSummary(d).filledCount])
+    );
+    drafts.sort((a, b) => {
+      const countA = filled.get(a.id) ?? 0;
+      const countB = filled.get(b.id) ?? 0;
+      if (countB !== countA) return countB - countA;
+      return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+    });
+    return;
+  }
+
   drafts.sort((a, b) => {
     switch (sort) {
       case "recent": {
@@ -156,13 +173,6 @@ function sortDrafts(drafts: LocalDraftRecord[], sort: SortMode): void {
         const nameB = (b.team.name ?? "").toLowerCase();
         if (nameA < nameB) return -1;
         if (nameA > nameB) return 1;
-        return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
-      }
-
-      case "completeness": {
-        const countA = toDraftSummary(a).filledCount;
-        const countB = toDraftSummary(b).filledCount;
-        if (countB !== countA) return countB - countA;
         return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
       }
 

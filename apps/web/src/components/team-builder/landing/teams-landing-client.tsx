@@ -128,6 +128,9 @@ function SmartFolderDialog({
 }: SmartFolderDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* max-w-[calc(100vw-2rem)]: viewport-minus-gutter dialog cap; the
+          Tailwind spacing scale has no equivalent for a dynamic viewport-relative
+          max-width with a fixed gutter subtracted, so calc() is required here. */}
       <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
