@@ -358,10 +358,18 @@ export function TeamsLandingClient() {
   // --------------------------------------------------------------------------
 
   function handleBulkMoveToFolder(folderId: string) {
+    let moved = 0;
     for (const id of selected) {
-      toggleDraftFolder(id, folderId);
+      // Only toggle membership when the draft is NOT already in the target folder.
+      // toggleDraftFolder toggles — calling it on an already-member draft would
+      // silently remove it, causing data loss.
+      const draft = drafts.find((d) => d.id === id);
+      if (draft && !draft.folderIds.includes(folderId)) {
+        toggleDraftFolder(id, folderId);
+        moved++;
+      }
     }
-    toast.success(`Moved ${count} team${count === 1 ? "" : "s"} to folder`);
+    toast.success(`Moved ${moved} team${moved === 1 ? "" : "s"} to folder`);
     clear();
   }
 
