@@ -150,9 +150,7 @@ export function NewTeamDialog({
         queryKey: teamKeys.all(effectiveAltId),
       });
       handleOpenChange(false);
-      router.push(
-        `/dashboard/alts/${effectiveAltUsername}/teams/${res.teamId}`
-      );
+      router.push(`/builder/t/acct-${res.teamId}`);
     });
   }
 

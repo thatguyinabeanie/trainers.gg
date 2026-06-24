@@ -78,7 +78,7 @@ export function TeamCard({ team, handle, className }: TeamCardProps) {
 
   return (
     <Link
-      href={`/dashboard/alts/${handle}/teams/${team.id}`}
+      href={`/builder/t/acct-${team.id}`}
       className={cn(
         "bg-card hover:bg-accent/50 group flex flex-col gap-3 rounded-xl border p-3 transition-colors md:p-4",
         className

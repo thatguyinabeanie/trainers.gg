@@ -38,7 +38,7 @@ function TeamCard({
 }) {
   return (
     <Link
-      href={`/dashboard/alts/${altUsername}/teams/${team.id}`}
+      href={`/builder/t/acct-${team.id}`}
       className="group bg-background/60 hover:bg-background flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
     >
       {/* Team name */}
