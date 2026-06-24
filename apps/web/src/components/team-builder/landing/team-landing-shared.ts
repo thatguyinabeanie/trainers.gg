@@ -68,6 +68,45 @@ export function draftEditorHref(id: string): string {
   return `/builder/t/${id}`;
 }
 
+// =============================================================================
+// Save-local payload helper
+// =============================================================================
+
+/**
+ * Build the payload expected by the save-local teams API from a local draft.
+ *
+ * Mirrors the inline mapping in `local-builder-workspace.tsx` (handleSaveToAccount,
+ * ~lines 196-211): filters out empty slots, sorts by team_position, and strips the
+ * synthetic negative `id` field before submitting to the server.
+ *
+ * Centralised here so the login-reconcile banner and the workspace can share
+ * identical behaviour without importing from each other.
+ */
+export function toSaveLocalPayload(
+  record: LocalDraftRecord,
+  altId: number
+): {
+  altId: number;
+  name: string;
+  format: string;
+  pokemon: Record<string, unknown>[];
+} {
+  const pokemon = record.team.team_pokemon
+    .filter((tp) => tp.pokemon !== null)
+    .sort((a, b) => a.team_position - b.team_position)
+    .map((tp) => {
+      const { id: _id, ...pokemonData } = tp.pokemon!;
+      return pokemonData as Record<string, unknown>;
+    });
+
+  return {
+    altId,
+    name: record.team.name || "Untitled Team",
+    format: record.team.format || "gen9championsvgc2026regma",
+    pokemon,
+  };
+}
+
 /** Props for the name-first TeamRow on the landing. */
 export interface TeamRowProps {
   summary: LocalDraftSummary;

@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     revalidateTeamDetailCache(teamResult.id);
 
-    const redirectUrl = `/dashboard/alts/${ownedAlt.username}/teams/${teamResult.id}`;
+    const redirectUrl = `/builder/t/acct-${teamResult.id}`;
     const result: ActionResult<{ teamId: number; redirectUrl: string }> = {
       success: true,
       data: { teamId: teamResult.id, redirectUrl },
