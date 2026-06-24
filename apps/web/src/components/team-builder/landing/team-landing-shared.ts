@@ -31,6 +31,11 @@ export interface LocalDraftSummary {
    * format_legal !== false. Mirrors the isIllegal() logic in predicate-eval.ts.
    */
   isLegal: boolean;
+  /**
+   * Origin of this draft. "account" = DB-backed (synced), "local" = localStorage only.
+   * Defaults to "local" for back-compat with existing records that lack the field.
+   */
+  source: "local" | "account";
 }
 
 /** Default display name for an unnamed draft. */
@@ -60,6 +65,7 @@ export function toDraftSummary(record: LocalDraftRecord): LocalDraftSummary {
     })),
     updatedAt: record.updatedAt,
     isLegal,
+    source: record.source ?? "local",
   };
 }
 
@@ -110,6 +116,13 @@ export function toSaveLocalPayload(
 /** Props for the name-first TeamRow on the landing. */
 export interface TeamRowProps {
   summary: LocalDraftSummary;
+  /**
+   * Whether the current user is signed in. Affects the sync badge:
+   * - undefined/false + source "local" → "Local-only" (lock icon, muted)
+   * - true + source "local" → "Local" (cloud icon, amber/muted — unsaved draft)
+   * - source "account" → "Synced" (check icon, teal/emerald — DB-backed)
+   */
+  isAuthenticated?: boolean;
   /** Delete this draft (handled by the row's overflow menu). */
   onDelete?: (id: string) => void;
   /**

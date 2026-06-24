@@ -14,6 +14,8 @@ import {
   GripVertical,
   ArrowUp,
   ArrowDown,
+  Cloud,
+  Lock,
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -44,6 +46,55 @@ import {
   type DraftSpeciesSlot,
   draftEditorHref,
 } from "./team-landing-shared";
+
+// ---------------------------------------------------------------------------
+// Sync badge — derives label, icon, and classes from source + auth state
+// ---------------------------------------------------------------------------
+
+interface SyncBadgeConfig {
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  className: string;
+  title: string;
+}
+
+/**
+ * Derives the sync badge config from the draft's storage origin and the current
+ * auth state. Extracted so both mobile and desktop layouts share identical logic.
+ *
+ * - "account" → Synced (teal/emerald — DB-backed)
+ * - "local" + authed → Local (amber/muted — unsaved draft, can be promoted)
+ * - "local" + guest → Local-only (muted — device-only storage)
+ */
+function syncBadge(
+  source: "local" | "account",
+  isAuthenticated: boolean | undefined
+): SyncBadgeConfig {
+  if (source === "account") {
+    return {
+      label: "Synced",
+      Icon: Check,
+      className:
+        "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs",
+      title: "Saved to your account",
+    };
+  }
+  if (isAuthenticated) {
+    return {
+      label: "Local",
+      Icon: Cloud,
+      className:
+        "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs",
+      title: "Unsaved draft — save to an alt",
+    };
+  }
+  return {
+    label: "Local-only",
+    Icon: Lock,
+    className: "border-muted-foreground/30 text-muted-foreground text-xs",
+    title: "Saved on this device only",
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Sprite strip — renders up to 6 species sprites
@@ -286,6 +337,7 @@ interface MobileRowProps
     | "summary"
     | "highlightSpecies"
     | "pinned"
+    | "isAuthenticated"
     | "selectable"
     | "selected"
     | "onToggleSelect"
@@ -307,6 +359,7 @@ function MobileTeamRow({
   summary,
   highlightSpecies,
   pinned,
+  isAuthenticated,
   selectable,
   selected,
   onToggleSelect,
@@ -381,19 +434,26 @@ function MobileTeamRow({
               </span>
             )}
           </div>
-          {/* Right meta: format + local */}
+          {/* Right meta: format + sync badge */}
           <div className="flex shrink-0 items-center gap-1">
             {summary.format && (
               <Badge variant="secondary" className="text-xs">
                 {getFormatLabel(summary.format)}
               </Badge>
             )}
-            <Badge
-              variant="outline"
-              className="border-muted-foreground/30 text-muted-foreground text-xs"
-            >
-              Local
-            </Badge>
+            {(() => {
+              const badge = syncBadge(summary.source, isAuthenticated);
+              return (
+                <Badge
+                  variant="outline"
+                  className={cn(badge.className)}
+                  title={badge.title}
+                >
+                  <badge.Icon className="mr-1 size-3" aria-hidden />
+                  {badge.label}
+                </Badge>
+              );
+            })()}
           </div>
         </div>
       </Link>
@@ -449,6 +509,7 @@ export function TeamRow({
   summary,
   onDelete,
   highlightSpecies,
+  isAuthenticated,
   onPeek,
   pinned,
   archived,
@@ -501,6 +562,7 @@ export function TeamRow({
           summary={summary}
           highlightSpecies={highlightSpecies}
           pinned={pinned}
+          isAuthenticated={isAuthenticated}
           selectable={selectable}
           selected={selected}
           onToggleSelect={onToggleSelect}
@@ -631,12 +693,19 @@ export function TeamRow({
             status={summary.isLegal ? "active" : "cancelled"}
             label={summary.isLegal ? "Legal" : "Illegal"}
           />
-          <Badge
-            variant="outline"
-            className="border-muted-foreground/30 text-muted-foreground text-xs"
-          >
-            Local
-          </Badge>
+          {(() => {
+            const badge = syncBadge(summary.source, isAuthenticated);
+            return (
+              <Badge
+                variant="outline"
+                className={cn(badge.className)}
+                title={badge.title}
+              >
+                <badge.Icon className="mr-1 size-3" aria-hidden />
+                {badge.label}
+              </Badge>
+            );
+          })()}
         </div>
       </Link>
 

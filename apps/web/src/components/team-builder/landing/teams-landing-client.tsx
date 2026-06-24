@@ -21,16 +21,19 @@ import {
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsClient } from "@/hooks/use-is-client";
-import { useAuthContext } from "@/components/auth/auth-provider";
 import { PageContainer } from "@/components/layout/page-container";
 import { cn } from "@/lib/utils";
+import { teamsApi } from "@/lib/api/teams-client";
 
-import { useLocalDrafts } from "../persistence/use-local-drafts";
+import { useUnifiedTeams } from "../persistence/use-unified-teams";
+import { deleteLocalDraft } from "../persistence/local-drafts-store";
 import { useFolders } from "../persistence/use-folders";
 import { useLandingPrefs } from "../persistence/use-landing-prefs";
+import { type EnrichedAccountTeam } from "../persistence/account-team-record";
 import {
   toDraftSummary,
   draftEditorHref,
+  toSaveLocalPayload,
 } from "./team-landing-shared";
 import { TeamRow } from "./team-row";
 import { SmartSearch } from "./smart-search";
@@ -42,6 +45,7 @@ import { QuickLook } from "./quick-look";
 import { QuickLookSheet } from "./quick-look-sheet";
 import { BulkActionBar } from "./bulk-action-bar";
 import { LandingEmptyState } from "./empty-state";
+import { ReconcileBanner } from "./reconcile-banner";
 import { toQuickLookData } from "./quick-look-shared";
 import { parseSearchInput, getSuggestions } from "./search-parse";
 import { filterDrafts } from "./predicate-eval";
@@ -153,6 +157,12 @@ function SmartFolderDialog({
 // TeamsLandingClient
 // =============================================================================
 
+interface TeamsLandingClientProps {
+  userId?: string | null;
+  initialAccountTeams?: EnrichedAccountTeam[];
+  initialAlts?: { id: number; username: string }[];
+}
+
 /**
  * Client component for the /builder landing page.
  *
@@ -161,7 +171,7 @@ function SmartFolderDialog({
  * - Right: header (SmartSearch + New Team) + LandingToolbar + TeamSections
  *
  * Data pipeline:
- * 1. Raw drafts from useLocalDrafts
+ * 1. Merged account + local drafts from useUnifiedTeams
  * 2. Pending-delete exclusion: pendingIds filtered out BEFORE search/group
  * 3. Search: filterDrafts(drafts, parseSearchInput(search)) → DraftMatch[]
  * 4. Group: groupDrafts(matchedRecords, { sort, selectedFolderId, manualFolders, smartFolders }) → DraftSection[]
@@ -178,9 +188,14 @@ function SmartFolderDialog({
  * - Mobile: rows receive onPeek which opens a single <QuickLookSheet>; rail
  *   is rendered inside a Sheet opened by a "Folders" button in the header
  *
- * Phase 1: local-drafts-only, additive (no DB, no auth required).
+ * Phase 2: unified account + local drafts. userId/initialAccountTeams/initialAlts
+ * are SSR-seeded from the page to avoid waterfall on first load.
  */
-export function TeamsLandingClient() {
+export function TeamsLandingClient({
+  userId = null,
+  initialAccountTeams,
+  initialAlts = [],
+}: TeamsLandingClientProps) {
   const {
     drafts,
     hydrated,
@@ -190,7 +205,10 @@ export function TeamsLandingClient() {
     pinDraft,
     toggleDraftFolder,
     setDraftSortOrder,
-  } = useLocalDrafts();
+    accountLoading,
+    accountError,
+    refetchAccount,
+  } = useUnifiedTeams({ userId, initialAccountTeams });
 
   const {
     manualFolders,
@@ -198,11 +216,11 @@ export function TeamsLandingClient() {
     createManualFolder,
     deleteManualFolder,
     createSmartFolder,
-  } = useFolders();
+  } = useFolders(userId);
 
   const { prefs, setPrefs } = useLandingPrefs();
 
-  const { isAuthenticated } = useAuthContext();
+  const isAuthenticated = userId != null;
 
   const router = useRouter();
   const isClient = useIsClient();
@@ -220,6 +238,9 @@ export function TeamsLandingClient() {
     | { mode: "new" }
     | { mode: "save-as"; initialCriteria: Predicate[] }
   >(null);
+  // Reconcile banner — dismissed when user acts or explicitly dismisses
+  const [reconcileDismissed, setReconcileDismissed] = useState(false);
+  const [savingReconcile, setSavingReconcile] = useState(false);
 
   // ==========================================================================
   // Undoable delete
@@ -232,6 +253,11 @@ export function TeamsLandingClient() {
   // ==========================================================================
   // Data pipeline
   // ==========================================================================
+
+  // Count local-only drafts for the reconcile banner
+  const localDraftCount = drafts.filter(
+    (d) => (d.source ?? "local") === "local"
+  ).length;
 
   // Filter out pending-delete drafts BEFORE search/group so they vanish immediately
   const visibleDrafts = drafts.filter((d) => !pendingIds.has(d.id));
@@ -407,6 +433,31 @@ export function TeamsLandingClient() {
     clear();
   }
 
+  // --------------------------------------------------------------------------
+  // Reconcile banner handler — save all local drafts to a chosen alt
+  // --------------------------------------------------------------------------
+
+  async function handleSaveAllToAlt(altId: number) {
+    setSavingReconcile(true);
+    const locals = drafts.filter((d) => (d.source ?? "local") === "local");
+    let ok = 0;
+    for (const rec of locals) {
+      try {
+        const res = await teamsApi.saveLocal(toSaveLocalPayload(rec, altId));
+        if (res.success) {
+          deleteLocalDraft(rec.id);
+          ok++;
+        }
+      } catch {
+        // Continue saving remaining teams; aggregate count below
+      }
+    }
+    setSavingReconcile(false);
+    setReconcileDismissed(true);
+    refetchAccount();
+    toast.success(`Saved ${ok} team${ok === 1 ? "" : "s"} to your account.`);
+  }
+
   // ==========================================================================
   // renderRow — the render prop passed to TeamSections
   // ==========================================================================
@@ -440,6 +491,7 @@ export function TeamsLandingClient() {
         <TeamRow
           summary={summary}
           highlightSpecies={highlightSpecies}
+          isAuthenticated={isAuthenticated}
           pinned={record.pinned}
           archived={record.archived}
           onTogglePin={handleTogglePin}
@@ -604,13 +656,40 @@ export function TeamsLandingClient() {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
         <div className="flex-1">
           <PageContainer>
-            {hydrated && drafts.length === 0 ? (
+            {hydrated && drafts.length === 0 && !accountLoading ? (
               <LandingEmptyState
                 variant={isAuthenticated ? "authed" : "guest"}
                 onNewTeam={handleNewTeam}
               />
             ) : (
               <div className="min-w-0">
+            {/* Reconcile banner — shown when signed-in user has unsynced local drafts */}
+            {isAuthenticated && !reconcileDismissed && localDraftCount > 0 && (
+              <ReconcileBanner
+                localDraftCount={localDraftCount}
+                alts={initialAlts}
+                onSaveAllToAlt={handleSaveAllToAlt}
+                onDismiss={() => setReconcileDismissed(true)}
+                saving={savingReconcile}
+              />
+            )}
+
+            {/* Account error strip — non-blocking; local drafts still render below */}
+            {accountError && (
+              <div className="mb-3 flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm">
+                <span className="text-destructive">
+                  Couldn&apos;t load your saved teams.
+                </span>
+                <button
+                  type="button"
+                  onClick={refetchAccount}
+                  className="ml-3 shrink-0 rounded px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/50"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
             {/* Page header — tournaments pattern: title left, actions right */}
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <h1 className="text-3xl font-bold">Your Teams</h1>
