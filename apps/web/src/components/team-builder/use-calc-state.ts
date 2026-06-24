@@ -8,6 +8,7 @@ import {
 } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
+import type * as CalcEngineModule from "./calc/calc-engine";
 import { type KoTierLabel } from "./calc/recovery";
 
 export type { KoTierLabel };
@@ -259,8 +260,10 @@ const FORMAT_UNINITIALIZED = Symbol("format-uninitialized");
 // Lazy engine type alias
 // =============================================================================
 
-/** The resolved module shape of calc-engine.ts — loaded on demand. */
-type CalcEngine = typeof import("./calc/calc-engine");
+/** The resolved module shape of calc-engine.ts — loaded on demand. The import
+ * is type-only (erased at build) so it never pulls @smogon/calc into the bundle;
+ * the runtime load is the dynamic import() in the effect below. */
+type CalcEngine = typeof CalcEngineModule;
 
 // `Verdict` + `getVerdict` live in ./calc/calc-verdict (engine-free) so always-on
 // consumers (dockbar, calc-display-helpers) can use them without pulling
@@ -492,7 +495,6 @@ export function useCalcState({
     return () => {
       cancelled = true;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- Direction ---

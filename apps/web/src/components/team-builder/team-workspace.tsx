@@ -101,6 +101,10 @@ import { TeamLayoutToggle } from "./team-layout-toggle";
 import { SingleFocusView } from "./layouts/single-focus-view";
 import { EditorTeamRail } from "./editor/editor-team-rail";
 
+// Sentinel for the actionParam render-time reconciliation in TeamWorkspaceV2 —
+// distinguishes "no value seen yet" from a real null/undefined actionParam.
+const ACTION_PARAM_UNSEEN = Symbol("unseenActionParam");
+
 // =============================================================================
 // KO-tier semantic tokens (migrated from .builderApp's CSS-module rule).
 //
@@ -571,11 +575,16 @@ export function TeamWorkspaceV2({
 
   // Re-open the import dialog when actionParam changes to "import" while the
   // component is already mounted (e.g. navigating to ?action=import from the
-  // editor team-rail while the workspace is live). The initial useState handles
-  // the first mount; this effect handles subsequent navigations.
-  useEffect(() => {
+  // editor team-rail while the workspace is live). Render-time adjustment with a
+  // sentinel — the approved alternative to a setState-in-effect (see
+  // react-patterns "Reset state when a dependency changes").
+  const [seenActionParam, setSeenActionParam] = useState<
+    typeof actionParam | typeof ACTION_PARAM_UNSEEN
+  >(ACTION_PARAM_UNSEEN);
+  if (seenActionParam !== actionParam) {
+    setSeenActionParam(actionParam);
     if (actionParam === "import") setImportOpen(true);
-  }, [actionParam]);
+  }
 
   // Strip ?action=import from the URL after the dialog has been opened via the
   // initializer above, so a later re-render (or back-nav) doesn't re-open it.
