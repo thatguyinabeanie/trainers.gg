@@ -169,8 +169,10 @@ jest.mock("../calc/move-target-info", () => ({
   }),
 }));
 
-// getVerdict
-jest.mock("../use-calc-state", () => ({
+// getVerdict — imported by calc-display-helpers from ../calc/calc-verdict (moved
+// out of ../use-calc-state in commit 0301b2ed). Mock the canonical path so
+// getKoTier's verdict branch returns null and the "4HKO+" fallback fires.
+jest.mock("../calc/calc-verdict", () => ({
   getVerdict: jest.fn().mockReturnValue(null),
 }));
 
