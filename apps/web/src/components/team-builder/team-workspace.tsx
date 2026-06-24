@@ -13,7 +13,7 @@ import {
   useTransition,
 } from "react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  LayoutList,
   PanelRightOpen,
 } from "lucide-react";
 import {
@@ -73,6 +74,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { CalcBottomPanel } from "./calc/calc-bottom-panel";
 import { useCalcStateContext } from "./calc/calc-state-context";
 import { Dockbar } from "./dock/dockbar";
@@ -155,6 +163,12 @@ interface TeamWorkspaceV2Props {
    * highlights this draft. Undefined for account-backed teams.
    */
   draftId?: string;
+  /**
+   * The `?action=` search param value forwarded from the parent route.
+   * Supported values:
+   *   "import" — opens ImportDialog on mount, then strips the param.
+   */
+  actionParam?: string;
 }
 
 /**
@@ -487,8 +501,10 @@ export function TeamWorkspaceV2({
   isAuthenticated,
   renderHeader,
   draftId,
+  actionParam,
 }: TeamWorkspaceV2Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const state = useBuilderState();
   const prefs = useBuilderPreferences(isAuthenticated);
 
@@ -549,9 +565,23 @@ export function TeamWorkspaceV2({
     }
   }, [prefs.loading]);
 
-  /** Controls the import sheet. */
+  /** Controls the import dialog. */
   const [importOpen, setImportOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  /** Controls the mobile team-rail Sheet (mobile-only; desktop uses the aside). */
+  const [railSheetOpen, setRailSheetOpen] = useState(false);
+
+  // Open ImportDialog when the parent route passes ?action=import, then strip
+  // the param so re-renders don't re-open it. Mirrors the ?action=save handling
+  // in LocalBuilderWorkspace — that path triggers an immediate mutation so it
+  // strips via redirect; this path just opens a dialog so we strip in-place.
+  useEffect(() => {
+    if (actionParam === "import") {
+      setImportOpen(true);
+      router.replace(pathname);
+    }
+  }, [actionParam, pathname, router]);
 
   /** Controls the mobile validate popover. */
   const [mobileValidateOpen, setMobileValidateOpen] = useState(false);
@@ -960,6 +990,30 @@ export function TeamWorkspaceV2({
             className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             ref={worklaneRef}
           >
+            {/* Mobile team-rail Sheet — replaces the desktop aside on phones.
+                Trigger sits in a slim bar above the content so it's always
+                reachable without scrolling. */}
+            {isClient && isMobile && draftId && (
+              <Sheet open={railSheetOpen} onOpenChange={setRailSheetOpen}>
+                <div className="border-border/40 flex items-center gap-2 border-b px-3 py-1.5">
+                  <SheetTrigger
+                    className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    aria-label="Open teams"
+                  >
+                    <LayoutList className="size-4" />
+                    Teams
+                  </SheetTrigger>
+                </div>
+                <SheetContent side="left" className="overflow-y-auto p-0">
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Your Teams</SheetTitle>
+                  </SheetHeader>
+                  <div className="p-3">
+                    <EditorTeamRail currentDraftId={draftId} />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            )}
             {/* Horizontal split: true flex layout with ghost resize handles */}
             {!isMobile ? (
               <ResizablePanelGroup

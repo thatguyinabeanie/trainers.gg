@@ -66,6 +66,12 @@ export function LocalBuilderWorkspace({ draftId }: LocalBuilderWorkspaceProps) {
 
   const { team, setTeam, hydrated, exists } = useLocalDraft(draftId);
   const [isSaving, setIsSaving] = useState(false);
+  // Synchronous re-entrancy guard for handleSaveToAccount.
+  // React state (isSaving) is not updated synchronously, so StrictMode
+  // double-invocations or a dep changing in the same tick could fire two
+  // concurrent saveLocal calls before isSaving flips. The ref is checked and
+  // set atomically (JS single-threaded), making the guard truly once-at-a-time.
+  const savingRef = useRef(false);
 
   // Eagerly fetched alts + teams for authenticated users
   const [alts, setAlts] = useState<Tables<"alts">[]>([]);
@@ -154,9 +160,16 @@ export function LocalBuilderWorkspace({ draftId }: LocalBuilderWorkspaceProps) {
   ]);
 
   async function handleSaveToAccount() {
-    if (isSaving) return;
+    // Synchronous ref check prevents re-entrancy before React state updates.
+    // isSaving alone is not enough: the effect that calls this can re-run (e.g.
+    // StrictMode double-invoke) before setIsSaving(true) has flushed, allowing
+    // two concurrent saveLocal calls. The ref is set in the same tick as the
+    // check, so the second invocation is rejected immediately.
+    if (savingRef.current) return;
+    savingRef.current = true;
     if (!user) {
       toast.error("You must be signed in to save a team.");
+      savingRef.current = false;
       return;
     }
     setIsSaving(true);
@@ -173,6 +186,7 @@ export function LocalBuilderWorkspace({ draftId }: LocalBuilderWorkspaceProps) {
           toast.error(
             "No profile found. Please complete your profile setup first."
           );
+          savingRef.current = false;
           setIsSaving(false);
           return;
         }
@@ -198,19 +212,24 @@ export function LocalBuilderWorkspace({ draftId }: LocalBuilderWorkspaceProps) {
 
       if (!result.success) {
         toast.error(result.error ?? "Failed to save team to your account.");
+        savingRef.current = false;
         setIsSaving(false);
         return;
       }
 
-      // Success — delete this local draft and redirect to the new team
+      // Success — delete this local draft and redirect to the new team.
+      // savingRef reset before push is harmless and keeps ref/state in lockstep.
       deleteLocalDraft(draftId);
       toast.success("Team saved to your account!");
+      savingRef.current = false;
+      setIsSaving(false);
       router.push(result.data.redirectUrl);
     } catch (error) {
       logError("localBuilder.saveToAccount", error);
       toast.error(
         getErrorMessage(error, "Something went wrong. Please try again.")
       );
+      savingRef.current = false;
       setIsSaving(false);
     }
   }
@@ -274,6 +293,7 @@ export function LocalBuilderWorkspace({ draftId }: LocalBuilderWorkspaceProps) {
         onAltSelect={setSelectedAltId}
         isAuthenticated={isAuthenticated}
         draftId={draftId}
+        actionParam={actionParam ?? undefined}
         renderHeader={(actions) => (
           <BuilderNav>
             <BuilderTopbar

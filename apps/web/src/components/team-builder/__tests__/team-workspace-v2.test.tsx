@@ -300,6 +300,7 @@ jest.mock("next/navigation", () => ({
     replace: jest.fn(),
   }),
   useSearchParams: () => new URLSearchParams(),
+  usePathname: jest.fn(() => "/builder/t/local-test"),
 }));
 
 // Toast — capture calls

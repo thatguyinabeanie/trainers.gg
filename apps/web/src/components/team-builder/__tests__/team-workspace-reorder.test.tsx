@@ -193,6 +193,7 @@ jest.mock("../layouts/single-focus-view", () => ({
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: jest.fn(), replace: jest.fn() }),
   useSearchParams: () => new URLSearchParams(),
+  usePathname: jest.fn(() => "/builder/t/local-test"),
 }));
 
 // Mock CSS module

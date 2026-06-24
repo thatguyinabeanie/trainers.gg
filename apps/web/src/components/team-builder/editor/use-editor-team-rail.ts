@@ -171,8 +171,9 @@ export function useEditorTeamRail(currentDraftId: string): EditorTeamRailState {
 
   function reload() {
     setReloadKey((k) => k + 1);
-    // After a reload, re-derive expand defaults to open the current draft's section.
-    setExpanded(buildInitialExpanded(readSections(), currentDraftId));
+    // No setExpanded here: the render-time sectionsWithDefaults merge (~lines 148-166)
+    // already gives any NEW section id a default open value (Pinned or the section
+    // containing currentDraftId) without clobbering sections the user has toggled.
   }
 
   // Suppress the reloadKey-in-scope lint warning: it's used to trigger re-reads
