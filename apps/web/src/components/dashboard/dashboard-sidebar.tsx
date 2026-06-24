@@ -162,8 +162,6 @@ export function DashboardSidebar({
             pathname={pathname}
             communities={communities}
             isOnboarding={isOnboarding}
-            alts={alts}
-            selectedAltUsername={selectedAltUsername}
             hasTeamBuilderAccess={hasTeamBuilderAccess}
             isSiteAdmin={isSiteAdmin}
           />
@@ -601,8 +599,6 @@ interface PlayerNavProps {
   pathname: string;
   communities: CommunityInfo[];
   isOnboarding?: boolean;
-  alts: AltInfo[];
-  selectedAltUsername: string | null;
   hasTeamBuilderAccess?: boolean;
   isSiteAdmin?: boolean;
 }
@@ -611,8 +607,6 @@ function PlayerNav({
   pathname,
   communities,
   isOnboarding = false,
-  alts,
-  selectedAltUsername,
   hasTeamBuilderAccess = false,
   isSiteAdmin = false,
 }: PlayerNavProps) {

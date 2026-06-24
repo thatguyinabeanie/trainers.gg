@@ -7,6 +7,8 @@
  * import from this module.
  */
 
+import { getActiveFormats } from "@trainers/pokemon";
+
 import { type LocalDraftRecord } from "../persistence/local-drafts-types";
 
 /** Up-to-6 species slots used to render a row's sprite strip. */
@@ -108,7 +110,7 @@ export function toSaveLocalPayload(
   return {
     altId,
     name: record.team.name || "Untitled Team",
-    format: record.team.format || "gen9championsvgc2026regma",
+    format: record.team.format || getActiveFormats()[0]?.id || "",
     pokemon,
   };
 }

@@ -536,9 +536,25 @@ export async function setTeamFlagsAction(
       error: parsedFlags.error.issues[0]?.message ?? "Invalid flags",
     };
   }
-  return withAction(async () => {
+
+  try {
     await rejectBots();
-    const supabase = await createClient();
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update team flags"),
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated." };
+  }
+
+  return withAction(async () => {
     const { pinned, archived, sortOrder } = parsedFlags.data;
     await updateTeamFlagsMutation(supabase, parsedId.data.teamId, {
       ...(pinned !== undefined && { pinned }),
@@ -563,9 +579,25 @@ export async function reorderTeamsAction(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
-  return withAction(async () => {
+
+  try {
     await rejectBots();
-    const supabase = await createClient();
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to reorder teams"),
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated." };
+  }
+
+  return withAction(async () => {
     await reorderTeamsMutation(supabase, parsed.data);
     for (const { teamId } of parsed.data) {
       invalidateTeamDetailCache(teamId);
@@ -590,9 +622,25 @@ export async function bulkArchiveTeamsAction(
   if (typeof archived !== "boolean") {
     return { success: false, error: "archived must be a boolean" };
   }
-  return withAction(async () => {
+
+  try {
     await rejectBots();
-    const supabase = await createClient();
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to bulk archive teams"),
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated." };
+  }
+
+  return withAction(async () => {
     await bulkSetArchivedMutation(supabase, parsedIds.data, archived);
     for (const id of parsedIds.data) {
       invalidateTeamDetailCache(id);
@@ -615,9 +663,25 @@ export async function bulkDeleteTeamsAction(
       error: parsedIds.error.issues[0]?.message ?? "Invalid team ids",
     };
   }
-  return withAction(async () => {
+
+  try {
     await rejectBots();
-    const supabase = await createClient();
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to bulk delete teams"),
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated." };
+  }
+
+  return withAction(async () => {
     await bulkDeleteTeamsMutation(supabase, parsedIds.data);
     for (const id of parsedIds.data) {
       invalidateTeamDetailCache(id);

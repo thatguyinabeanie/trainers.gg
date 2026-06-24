@@ -4,9 +4,8 @@
  * BuilderAccountWorkspace
  *
  * Client component for the /builder/t/[id] editor route when editing an
- * account-backed (API-persisted) team. Mirrors DashboardBuilderWrapper's
- * persistence + crash-recovery setup but wraps the workspace in BuilderNav
- * (the /builder route chrome) rather than the dashboard PageHeader.
+ * account-backed (API-persisted) team. Provides API persistence + crash-recovery
+ * for the /builder/t/[id] account-team editor.
  *
  * Features:
  * - API persistence with router.refresh() on mutation success

@@ -31,10 +31,8 @@ import { cn } from "@/lib/utils";
 
 function TeamCard({
   team,
-  altUsername,
 }: {
   team: { id: number; name: string; pokemonSpecies: string[] };
-  altUsername: string;
 }) {
   return (
     <Link
@@ -270,7 +268,7 @@ export function TeamsSubTable({
           ) : (
             <div className="space-y-1">
               {teams.map((team) => (
-                <TeamCard key={team.id} team={team} altUsername={altUsername} />
+                <TeamCard key={team.id} team={team} />
               ))}
             </div>
           )}

@@ -51,6 +51,17 @@ export default async function BuilderTeamEditorPage({
 
   // Use the authenticated, RLS-scoped read client so only owned/public teams resolve.
   const supabase = await createClientReadOnly();
+
+  // Require authentication before fetching — an expired or absent session would
+  // otherwise cause getTeamWithPokemon to silently return null (same as not found),
+  // and getCurrentUserAlts to return an empty array, giving no meaningful error.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/builder");
+  }
+
   const [team, alts] = await Promise.all([
     getTeamWithPokemon(supabase, numericId),
     getCurrentUserAlts(supabase),

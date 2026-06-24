@@ -168,7 +168,7 @@ export function useFolders(userId?: string | null): UseFoldersReturn {
   const { data: dbData } = useQuery<DbFolderCache>({
     queryKey,
     enabled: userId != null,
-    staleTime: 60_000,
+    staleTime: 30_000,
     queryFn: async () => {
       const [rawManual, rawSmart] = await Promise.all([
         getTeamFoldersForUser(supabase),
@@ -229,7 +229,7 @@ export function useFolders(userId?: string | null): UseFoldersReturn {
     }
 
     // DB path: optimistic append → call action → invalidate on settle
-    const tempId = `dbfolder-pending-${name.length}`;
+    const tempId = `dbfolder-pending-${Date.now().toString(36)}`;
     const tempFolder: ManualFolder = {
       id: tempId,
       name,
@@ -260,7 +260,7 @@ export function useFolders(userId?: string | null): UseFoldersReturn {
 
   function handleRenameManualFolder(id: string, name: string): void {
     if (id.startsWith("dbfolder-")) {
-      const numericId = Number(id.slice(9));
+      const numericId = Number(id.slice("dbfolder-".length));
       const prev = getCachedDb();
       // Optimistic patch
       setCachedDb({
@@ -289,7 +289,7 @@ export function useFolders(userId?: string | null): UseFoldersReturn {
 
   function handleDeleteManualFolder(id: string): void {
     if (id.startsWith("dbfolder-")) {
-      const numericId = Number(id.slice(9));
+      const numericId = Number(id.slice("dbfolder-".length));
       const prev = getCachedDb();
       // Optimistic removal
       setCachedDb({
@@ -329,7 +329,7 @@ export function useFolders(userId?: string | null): UseFoldersReturn {
       return localCreateSmartFolder(name, criteria);
     }
 
-    const tempId = `dbsmart-pending-${name.length}`;
+    const tempId = `dbsmart-pending-${Date.now().toString(36)}`;
     const tempFolder: SmartFolder = {
       id: tempId,
       name,
@@ -360,7 +360,7 @@ export function useFolders(userId?: string | null): UseFoldersReturn {
 
   function handleDeleteSmartFolder(id: string): void {
     if (id.startsWith("dbsmart-")) {
-      const numericId = Number(id.slice(8));
+      const numericId = Number(id.slice("dbsmart-".length));
       const prev = getCachedDb();
       setCachedDb({
         ...prev,

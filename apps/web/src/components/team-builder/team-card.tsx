@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 
 interface TeamCardProps {
   team: TeamListItem;
-  handle: string;
   className?: string;
 }
 
@@ -69,7 +68,7 @@ function SpriteSlot({ species, isShiny, position }: SpriteSlotProps) {
  * Displays 6 sprite slots, format badge, name, and last updated time.
  * Navigates to the team workspace on click.
  */
-export function TeamCard({ team, handle, className }: TeamCardProps) {
+export function TeamCard({ team, className }: TeamCardProps) {
   // Sort by position and pad to 6 slots
   const sortedPokemon = [...team.team_pokemon].sort(
     (a, b) => a.team_position - b.team_position

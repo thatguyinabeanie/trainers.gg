@@ -11,6 +11,7 @@
  */
 
 import { useState } from "react";
+import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,7 @@ export function ReconcileBanner({
   const pluralisedCopy = `You have ${localDraftCount} local ${teamLabel} on this device. Save ${localDraftCount === 1 ? "it" : "them"} to your alt?`;
 
   function handleSave() {
+    if (selectedAltId === 0 || alts.length === 0) return;
     onSaveAllToAlt(selectedAltId);
   }
 
@@ -122,11 +124,11 @@ export function ReconcileBanner({
           onClick={onDismiss}
           aria-label="Dismiss"
           className={cn(
-            "flex size-10 items-center justify-center text-xs sm:size-7",
+            "flex size-10 items-center justify-center sm:size-7",
             "text-muted-foreground hover:text-foreground transition-colors"
           )}
         >
-          ✕
+          <X className="size-3.5" aria-hidden />
         </button>
       </div>
     </div>

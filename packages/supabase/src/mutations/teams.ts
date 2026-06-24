@@ -304,8 +304,14 @@ export async function bulkDeleteTeams(
   }
 
   if (failures.length > 0) {
+    // Log per-team detail server-side only — do not surface Postgres detail
+    // or internal IDs to the caller.
+    console.error(
+      `bulkDeleteTeams: ${failures.length} of ${teamIds.length} deletion(s) failed`,
+      failures
+    );
     throw new Error(
-      `Failed to delete ${failures.length} team(s): ${failures.join("; ")}`
+      `Failed to delete ${failures.length} of ${teamIds.length} team(s).`
     );
   }
 }

@@ -93,7 +93,7 @@ export function useUnifiedTeams(args: UseUnifiedTeamsArgs): UseUnifiedTeamsRetur
     queryFn: () => fetchEnrichedAccountTeams(supabase, args.userId!),
     enabled: args.userId != null,
     initialData: args.userId != null ? args.initialAccountTeams : undefined,
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
 
   // Map account teams to the canonical LocalDraftRecord shape.
@@ -225,7 +225,7 @@ export function useUnifiedTeams(args: UseUnifiedTeamsArgs): UseUnifiedTeamsRetur
       return;
     }
 
-    const fid = Number(folderId.slice("dbfolder-".length));
+    const numericFolderId = Number(folderId.slice("dbfolder-".length));
 
     // Determine current folder membership from the cached record.
     const cached = (qc.getQueryData<EnrichedAccountTeam[]>(key) ?? []).find(
@@ -239,14 +239,14 @@ export function useUnifiedTeams(args: UseUnifiedTeamsArgs): UseUnifiedTeamsRetur
         ...t,
         folderIds: t.folderIds.filter((fid_) => fid_ !== folderId),
       }));
-      void run(removeTeamFromFolderAction(fid, acctId), rollback);
+      void run(removeTeamFromFolderAction(numericFolderId, acctId), rollback);
     } else {
       // Optimistically add to folderIds.
       const rollback = patchAccount(acctId, (t) => ({
         ...t,
         folderIds: [...t.folderIds, folderId],
       }));
-      void run(addTeamToFolderAction(fid, acctId), rollback);
+      void run(addTeamToFolderAction(numericFolderId, acctId), rollback);
     }
   }
 

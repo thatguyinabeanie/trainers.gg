@@ -137,6 +137,12 @@ export async function renameTeamFolderAction(
 
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Not authenticated." };
+    }
     await renameTeamFolderMutation(supabase, parsedId.data, parsedName.data);
     return { success: true, data: undefined };
   } catch (error) {
@@ -169,6 +175,12 @@ export async function deleteTeamFolderAction(
 
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Not authenticated." };
+    }
     await deleteTeamFolderMutation(supabase, parsedId.data);
     return { success: true, data: undefined };
   } catch (error) {
@@ -209,6 +221,12 @@ export async function addTeamToFolderAction(
 
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Not authenticated." };
+    }
     await addTeamToFolderMutation(supabase, parsedFolderId.data, parsedTeamId.data);
     return { success: true, data: undefined };
   } catch (error) {
@@ -244,6 +262,12 @@ export async function removeTeamFromFolderAction(
 
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Not authenticated." };
+    }
     await removeTeamFromFolderMutation(supabase, parsedFolderId.data, parsedTeamId.data);
     return { success: true, data: undefined };
   } catch (error) {
@@ -286,6 +310,12 @@ export async function bulkAddTeamsToFolderAction(
 
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Not authenticated." };
+    }
     await bulkAddTeamsToFolderMutation(
       supabase,
       parsedFolderId.data,
@@ -386,6 +416,12 @@ export async function updateSmartFolderAction(
 
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Not authenticated." };
+    }
     await updateSmartFolderMutation(supabase, parsedId.data, {
       name: parsedData.data.name,
       criteria: parsedData.data.criteria as Json | undefined,
@@ -420,6 +456,12 @@ export async function deleteSmartFolderAction(
 
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Not authenticated." };
+    }
     await deleteSmartFolderMutation(supabase, parsedId.data);
     return { success: true, data: undefined };
   } catch (error) {

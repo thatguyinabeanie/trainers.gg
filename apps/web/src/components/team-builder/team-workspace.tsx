@@ -1112,7 +1112,7 @@ export function TeamWorkspaceV2({
                                     `Team transferred to ${targetAlt.username}.`
                                   );
                                   router.push(
-                                    `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
+                                    `/builder/t/acct-${team.id}`
                                   );
                                 }
                               : undefined
@@ -1300,7 +1300,7 @@ export function TeamWorkspaceV2({
                                   `Team transferred to ${targetAlt.username}.`
                                 );
                                 router.push(
-                                  `/dashboard/alts/${targetAlt.username}/teams/${team.id}`
+                                  `/builder/t/acct-${team.id}`
                                 );
                               }
                             : undefined

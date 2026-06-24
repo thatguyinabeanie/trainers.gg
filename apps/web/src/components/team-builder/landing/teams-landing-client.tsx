@@ -441,21 +441,28 @@ export function TeamsLandingClient({
     setSavingReconcile(true);
     const locals = drafts.filter((d) => (d.source ?? "local") === "local");
     let ok = 0;
+    let failed = 0;
     for (const rec of locals) {
       try {
         const res = await teamsApi.saveLocal(toSaveLocalPayload(rec, altId));
         if (res.success) {
           deleteLocalDraft(rec.id);
           ok++;
+        } else {
+          failed++;
         }
       } catch {
         // Continue saving remaining teams; aggregate count below
+        failed++;
       }
     }
     setSavingReconcile(false);
     setReconcileDismissed(true);
     refetchAccount();
-    toast.success(`Saved ${ok} team${ok === 1 ? "" : "s"} to your account.`);
+    toast.success(`Saved ${ok}/${locals.length} team${locals.length === 1 ? "" : "s"} to your account.`);
+    if (failed > 0) {
+      toast.error(`${failed} team${failed === 1 ? "" : "s"} failed to save.`);
+    }
   }
 
   // ==========================================================================
