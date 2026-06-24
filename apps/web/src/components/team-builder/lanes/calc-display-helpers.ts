@@ -8,11 +8,8 @@
 // =============================================================================
 
 import { getMoveTargetInfo } from "../calc/move-target-info";
-import {
-  type CalcOutput,
-  type KoTierLabel,
-  getVerdict,
-} from "../use-calc-state";
+import { type CalcOutput, type KoTierLabel } from "../use-calc-state";
+import { getVerdict } from "../calc/calc-verdict";
 
 /**
  * Numeric coloring tag for KO-tier rows: "1" = OHKO, "2" = 2HKO, "3" = 3HKO,

@@ -12,12 +12,17 @@ import {
   useState,
   useTransition,
 } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowLeft,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  LayoutList,
   PanelRightOpen,
 } from "lucide-react";
 import {
@@ -51,6 +56,7 @@ import {
 
 import type { BuilderPersistence } from "./persistence/types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsClient } from "@/hooks/use-is-client";
 import { cn } from "@/lib/utils";
 import {
   ResizablePanelGroup,
@@ -67,11 +73,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalcBottomPanel } from "./calc/calc-bottom-panel";
 import {
-  CalcStateProvider,
-  useCalcStateContext,
-} from "./calc/calc-state-context";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { CalcBottomPanel } from "./calc/calc-bottom-panel";
+import { CalcStateProvider } from "./calc/calc-state-provider";
+import { useCalcStateContext } from "./calc/calc-state-context";
 import { Dockbar } from "./dock/dockbar";
 import { SpeedTiersDialog } from "./dock/speed-tiers-dialog";
 import { UNINITIALIZED_FORMAT_ID } from "./dock/speed-tiers-content";
@@ -88,6 +99,11 @@ import { useBuilderState } from "./use-builder-state";
 import { useTeamLayout, TeamLayoutContext } from "./use-team-layout";
 import { TeamLayoutToggle } from "./team-layout-toggle";
 import { SingleFocusView } from "./layouts/single-focus-view";
+import { EditorTeamRail } from "./editor/editor-team-rail";
+
+// Sentinel for the actionParam render-time reconciliation in TeamWorkspaceV2 —
+// distinguishes "no value seen yet" from a real null/undefined actionParam.
+const ACTION_PARAM_UNSEEN = Symbol("unseenActionParam");
 
 // =============================================================================
 // KO-tier semantic tokens (migrated from .builderApp's CSS-module rule).
@@ -137,6 +153,18 @@ interface TeamWorkspaceV2Props {
    * own header chrome (standalone vs dashboard PageHeader).
    */
   renderHeader: (actions: WorkspaceHeaderActions) => ReactNode;
+  /**
+   * Route-level draft id (e.g. "local-ab12") for local drafts. When present,
+   * the editor team rail mounts (sandwiched between the topbar and dock) and
+   * highlights this draft. Undefined for account-backed teams.
+   */
+  draftId?: string;
+  /**
+   * The `?action=` search param value forwarded from the parent route.
+   * Supported values:
+   *   "import" — opens ImportDialog on mount, then strips the param.
+   */
+  actionParam?: string;
 }
 
 /**
@@ -468,8 +496,11 @@ export function TeamWorkspaceV2({
   onAltSelect,
   isAuthenticated,
   renderHeader,
+  draftId,
+  actionParam,
 }: TeamWorkspaceV2Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const state = useBuilderState();
   const prefs = useBuilderPreferences(isAuthenticated);
 
@@ -530,9 +561,39 @@ export function TeamWorkspaceV2({
     }
   }, [prefs.loading]);
 
-  /** Controls the import sheet. */
-  const [importOpen, setImportOpen] = useState(false);
+  /**
+   * Controls the import dialog. Initialized open when the parent route arrives
+   * with ?action=import (the editor team-rail's "Import a paste" handoff) so we
+   * never call setState inside an effect just to open it. Mirrors the
+   * ?action=save handling in LocalBuilderWorkspace.
+   */
+  const [importOpen, setImportOpen] = useState(actionParam === "import");
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  /** Controls the mobile team-rail Sheet (mobile-only; desktop uses the aside). */
+  const [railSheetOpen, setRailSheetOpen] = useState(false);
+
+  // Re-open the import dialog when actionParam changes to "import" while the
+  // component is already mounted (e.g. navigating to ?action=import from the
+  // editor team-rail while the workspace is live). Render-time adjustment with a
+  // sentinel — the approved alternative to a setState-in-effect (see
+  // react-patterns "Reset state when a dependency changes").
+  const [seenActionParam, setSeenActionParam] = useState<
+    typeof actionParam | typeof ACTION_PARAM_UNSEEN
+  >(ACTION_PARAM_UNSEEN);
+  if (seenActionParam !== actionParam) {
+    setSeenActionParam(actionParam);
+    if (actionParam === "import") setImportOpen(true);
+  }
+
+  // Strip ?action=import from the URL after the dialog has been opened via the
+  // initializer above, so a later re-render (or back-nav) doesn't re-open it.
+  // No setState here — just an imperative URL cleanup (router.replace).
+  useEffect(() => {
+    if (actionParam === "import") {
+      router.replace(pathname);
+    }
+  }, [actionParam, pathname, router]);
 
   /** Controls the mobile validate popover. */
   const [mobileValidateOpen, setMobileValidateOpen] = useState(false);
@@ -717,6 +778,8 @@ export function TeamWorkspaceV2({
   }
 
   const isMobile = useIsMobile();
+  const isClient = useIsClient();
+  const [railCollapsed, setRailCollapsed] = useState(false);
   const { mode: layoutMode } = useTeamLayout();
 
   // ---------------------------------------------------------------------------
@@ -836,41 +899,126 @@ export function TeamWorkspaceV2({
     }
   }
 
-  return (
-    <TeamLayoutContext.Provider value={layoutMode}>
-      <CalcStateProvider
-        selectedPokemon={slots[calcAttackerIdx] ?? null}
-        format={format}
-        field={state.field}
-        setField={state.setField}
-        calcEnabled={state.rightDrawer === "calc"}
-        faintedYours={state.faintedYours}
-        faintedTheirs={state.faintedTheirs}
+  // `calcEnabled` gates the lazy engine LOAD (not the provider mount — the
+  // provider is always mounted, see below). The @smogon/calc chunk is only
+  // fetched once a view renders live calc results: rightDrawer === "calc"
+  // (the damage-calc side panel).
+  const calcProviderProps = {
+    selectedPokemon: slots[calcAttackerIdx] ?? null,
+    format,
+    field: state.field,
+    setField: state.setField,
+    calcEnabled: state.rightDrawer === "calc",
+    faintedYours: state.faintedYours,
+    faintedTheirs: state.faintedTheirs,
+  };
+
+  // The workspace body — CalcStateProvider always wraps it (always-mounted so
+  // children never remount when calc opens for the first time). The engine
+  // chunk (@smogon/calc) is loaded lazily inside use-calc-state.ts via a
+  // dynamic import(), keeping it out of the initial bundle while letting the
+  // provider render immediately.
+  const workspaceBody = (
+    <>
+      <div
+        className="flex h-full flex-col overflow-hidden"
+        style={builderTokenStyle}
       >
-        <div
-          className="flex h-full flex-col overflow-hidden"
-          style={builderTokenStyle}
-        >
-          {renderHeader({
-            onOpenImport: () => setImportOpen(true),
-            validationErrors,
-            onValidate: validate,
-            onJumpToPokemon: handleJumpToPokemon,
-            onNameChange: async (name) => {
-              const result = await persistence.updateTeam(team.id, { name });
-              if (!result.success) {
-                toast.error(result.error ?? "Failed to rename team.");
-                return;
-              }
-              persistence.onMutationSuccess();
-            },
-            onOpenSettings: () => setSettingsOpen(true),
-          })}
+        {renderHeader({
+          onOpenImport: () => setImportOpen(true),
+          validationErrors,
+          onValidate: validate,
+          onJumpToPokemon: handleJumpToPokemon,
+          onNameChange: async (name) => {
+            const result = await persistence.updateTeam(team.id, { name });
+            if (!result.success) {
+              toast.error(result.error ?? "Failed to rename team.");
+              return;
+            }
+            persistence.onMutationSuccess();
+          },
+          onOpenSettings: () => setSettingsOpen(true),
+        })}
+
+        {/* Middle row: editor team rail (desktop) + content. Sandwiched between
+            the full-width topbar (above) and the full-width dock (below). */}
+        <div className="flex min-h-0 flex-1">
+          {isClient &&
+            !isMobile &&
+            draftId &&
+            (railCollapsed ? (
+              // Collapsed: slim strip with back-to-landing + re-open chevron
+              <div className="bg-muted/40 flex w-10 shrink-0 flex-col items-center gap-1 border-r border-border/40 pt-2">
+                <Link
+                  href="/builder"
+                  aria-label="Your Teams"
+                  className="text-muted-foreground hover:text-foreground flex size-8 items-center justify-center rounded-md transition-colors"
+                >
+                  <ArrowLeft className="size-4" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setRailCollapsed(false)}
+                  aria-label="Show team rail"
+                  className="text-muted-foreground hover:text-foreground flex size-8 items-center justify-center rounded-md transition-colors"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
+            ) : (
+              <aside className="bg-muted/40 flex w-56 shrink-0 flex-col overflow-hidden border-r border-border/40">
+                {/* Header: back-to-landing link + collapse toggle */}
+                <div className="flex items-center justify-between gap-1 px-2 pt-2">
+                  <Link
+                    href="/builder"
+                    className="text-muted-foreground hover:text-foreground flex min-h-8 items-center gap-1.5 rounded-md px-1.5 text-sm font-medium transition-colors"
+                  >
+                    <ArrowLeft className="size-3.5 shrink-0" />
+                    Your Teams
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setRailCollapsed(true)}
+                    aria-label="Hide team rail"
+                    className="text-muted-foreground hover:text-foreground flex size-7 shrink-0 items-center justify-center rounded-md transition-colors"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-2 pt-1">
+                  <EditorTeamRail currentDraftId={draftId} />
+                </div>
+              </aside>
+            ))}
 
           <div
             className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             ref={worklaneRef}
           >
+            {/* Mobile team-rail Sheet — replaces the desktop aside on phones.
+                Trigger sits in a slim bar above the content so it's always
+                reachable without scrolling. */}
+            {isClient && isMobile && draftId && (
+              <Sheet open={railSheetOpen} onOpenChange={setRailSheetOpen}>
+                <div className="border-border/40 flex items-center gap-2 border-b px-3 py-1.5">
+                  <SheetTrigger
+                    className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    aria-label="Open teams"
+                  >
+                    <LayoutList className="size-4" />
+                    Teams
+                  </SheetTrigger>
+                </div>
+                <SheetContent side="left" className="overflow-y-auto p-0">
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Your Teams</SheetTitle>
+                  </SheetHeader>
+                  <div className="p-3">
+                    <EditorTeamRail currentDraftId={draftId} />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            )}
             {/* Horizontal split: true flex layout with ghost resize handles */}
             {!isMobile ? (
               <ResizablePanelGroup
@@ -1315,6 +1463,8 @@ export function TeamWorkspaceV2({
               </div>
             )}
           </div>
+        </div>
+        {/* End middle row — the full-width dock below sandwiches the rail */}
 
           <DockbarConnected
             onOpen={(key) => {
@@ -1368,7 +1518,12 @@ export function TeamWorkspaceV2({
           setToggle={setSpeedToggle}
           onCollapseToSidepane={() => state.setSpeedView("sidepane")}
         />
-      </CalcStateProvider>
+    </>
+  );
+
+  return (
+    <TeamLayoutContext.Provider value={layoutMode}>
+      <CalcStateProvider {...calcProviderProps}>{workspaceBody}</CalcStateProvider>
     </TeamLayoutContext.Provider>
   );
 }

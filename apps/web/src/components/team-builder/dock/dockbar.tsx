@@ -6,7 +6,8 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { CopyrightYear } from "@/components/layout/copyright-year";
 
-import { getVerdict, type CalcOutput } from "../use-calc-state";
+import { type CalcOutput } from "../use-calc-state";
+import { getVerdict } from "../calc/calc-verdict";
 
 // =============================================================================
 // Internal components

@@ -40,10 +40,8 @@ jest.mock("@smogon/calc", () => {
 // Import AFTER mocks are in place
 // =============================================================================
 
-import {
-  CalcStateProvider,
-  useCalcStateContext,
-} from "../calc/calc-state-context";
+import { CalcStateProvider } from "../calc/calc-state-provider";
+import { useCalcStateContext } from "../calc/calc-state-context";
 
 // =============================================================================
 // Fixtures
@@ -125,15 +123,12 @@ function makeWrapper(
 // =============================================================================
 
 describe("useCalcStateContext — outside provider", () => {
-  it("throws the canonical error when called outside <CalcStateProvider>", () => {
-    // Suppress the React error boundary console.error for this test
-    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
-
-    expect(() => {
-      renderHook(() => useCalcStateContext());
-    }).toThrow("useCalcStateContext must be used within a <CalcStateProvider>");
-
-    spy.mockRestore();
+  it("returns DEFAULT_CALC_CONTEXT (calcEnabled=false) when called outside <CalcStateProvider>", () => {
+    const { result } = renderHook(() => useCalcStateContext());
+    // Now returns the safe no-op default instead of throwing, so children that
+    // read calc state (e.g. speed-tier panels before CalcStateProviderDynamic
+    // resolves) don't crash.
+    expect(result.current.calcEnabled).toBe(false);
   });
 });
 

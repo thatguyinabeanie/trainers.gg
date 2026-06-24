@@ -9,7 +9,7 @@
  * catch wrapper-level wiring regressions.
  */
 
-import { describe, it, expect } from "@jest/globals";
+import { describe, it, expect, beforeAll } from "@jest/globals";
 import { act, renderHook } from "@testing-library/react";
 
 // =============================================================================
@@ -20,7 +20,13 @@ import { act, renderHook } from "@testing-library/react";
 import { type Tables } from "@trainers/supabase";
 import { type GameFormat } from "@trainers/pokemon";
 
-import { useCalcState } from "../use-calc-state";
+import { useCalcState, __loadCalcEngineForTests } from "../use-calc-state";
+
+// Prime the lazily-imported @smogon/calc engine once so renderHook resolves it
+// synchronously (this file exercises the real engine, not a mock).
+beforeAll(async () => {
+  await __loadCalcEngineForTests();
+});
 
 // =============================================================================
 // Formats
