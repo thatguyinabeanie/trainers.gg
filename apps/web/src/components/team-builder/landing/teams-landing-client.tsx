@@ -5,13 +5,19 @@ import { useRouter } from "next/navigation";
 import { Plus, FolderOpen, Zap } from "lucide-react";
 import { toast } from "sonner";
 
+import { exportTeamToShowdown } from "@trainers/pokemon";
+import { getErrorMessage } from "@trainers/utils";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -25,6 +31,8 @@ import { PageContainer } from "@/components/layout/page-container";
 import { cn } from "@/lib/utils";
 import { teamsApi } from "@/lib/api/teams-client";
 
+import { dbPokemonToFlat } from "../pokemon-utils";
+
 import { useUnifiedTeams } from "../persistence/use-unified-teams";
 import { deleteLocalDraft } from "../persistence/local-drafts-store";
 import { useFolders } from "../persistence/use-folders";
@@ -35,6 +43,8 @@ import {
   draftEditorHref,
   toSaveLocalPayload,
 } from "./team-landing-shared";
+import { AltPills } from "./alt-pills";
+import { ExportAllButton } from "./export-all-button";
 import { TeamRow } from "./team-row";
 import { SmartSearch } from "./smart-search";
 import { LandingToolbar } from "./landing-toolbar";
@@ -205,6 +215,12 @@ export function TeamsLandingClient({
     accountLoading,
     accountError,
     refetchAccount,
+    renameRecord,
+    duplicateRecord,
+    duplicateRecordToAlt,
+    moveRecordToAlt,
+    makeRecordPublic,
+    setRecordLocalOnly,
   } = useUnifiedTeams({ userId, initialAccountTeams });
 
   const {
@@ -236,6 +252,12 @@ export function TeamsLandingClient({
   // Reconcile banner — dismissed when user acts or explicitly dismisses
   const [reconcileDismissed, setReconcileDismissed] = useState(false);
   const [savingReconcile, setSavingReconcile] = useState(false);
+  // Rename dialog state
+  const [renameTarget, setRenameTarget] = useState<{
+    id: string;
+    currentName: string;
+  } | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   // ==========================================================================
   // Undoable delete
@@ -257,12 +279,26 @@ export function TeamsLandingClient({
   // Filter out pending-delete drafts BEFORE search/group so they vanish immediately
   const visibleDrafts = drafts.filter((d) => !pendingIds.has(d.id));
 
+  // Guard: if prefs.selectedAltId references an alt no longer in initialAlts (stale),
+  // treat it as null so a deleted alt doesn't hide all teams.
+  const selectedAltIdValid =
+    prefs.selectedAltId == null ||
+    initialAlts.some((a) => a.id === prefs.selectedAltId)
+      ? prefs.selectedAltId
+      : null;
+
+  // Alt scope — filter to the selected alt, or show all when selectedAltId is null.
+  const altScoped =
+    selectedAltIdValid == null
+      ? visibleDrafts
+      : visibleDrafts.filter((d) => d.altId === selectedAltIdValid);
+
   const query = parseSearchInput(search);
-  const allMatches = filterDrafts(visibleDrafts, query);
+  const allMatches = filterDrafts(altScoped, query);
 
   // Matched records (full objects) for grouping
   const matchedIds = new Set(allMatches.map((m) => m.id));
-  const matchedRecords = visibleDrafts.filter((d) => matchedIds.has(d.id));
+  const matchedRecords = altScoped.filter((d) => matchedIds.has(d.id));
 
   // Group the matched records into sections
   const sections = groupDrafts(matchedRecords, {
@@ -366,6 +402,46 @@ export function TeamsLandingClient({
     createSmartFolder(name, criteria);
     toast.success(`Smart folder "${name}" created`);
     setSmartFolderDialog(null);
+  }
+
+  // --------------------------------------------------------------------------
+  // Rename dialog
+  // --------------------------------------------------------------------------
+
+  function openRenameDialog(id: string) {
+    const record = drafts.find((d) => d.id === id);
+    if (!record) return;
+    const currentName = record.team.name?.trim() || "";
+    setRenameTarget({ id, currentName });
+    setRenameValue(currentName);
+  }
+
+  function handleRenameSubmit() {
+    if (!renameTarget) return;
+    renameRecord(renameTarget.id, renameValue.trim());
+    setRenameTarget(null);
+    setRenameValue("");
+  }
+
+  // --------------------------------------------------------------------------
+  // Single-team export (Showdown paste → clipboard)
+  // --------------------------------------------------------------------------
+
+  async function handleExportOne(id: string) {
+    const record = drafts.find((d) => d.id === id);
+    if (!record) return;
+
+    try {
+      const sorted = [...record.team.team_pokemon]
+        .sort((a, b) => a.team_position - b.team_position)
+        .flatMap((tp) => (tp.pokemon ? [dbPokemonToFlat(tp.pokemon)] : []));
+
+      const paste = exportTeamToShowdown(sorted);
+      await navigator.clipboard.writeText(paste);
+      toast.success("Copied team paste.");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Export failed — please try again."));
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -510,6 +586,8 @@ export function TeamsLandingClient({
     const canMoveDown =
       reorderable && rowIndex >= 0 && rowIndex < allIds.length - 1;
 
+    const altUsername = initialAlts.find((a) => a.id === record.altId)?.username;
+
     const row = (
       // The outer div carries the tabIndex and ref so TeamSections can manage
       // roving tabindex focus across sections.
@@ -542,6 +620,19 @@ export function TeamsLandingClient({
           canMoveUp={canMoveUp}
           canMoveDown={canMoveDown}
           onMove={reorderable ? handleMove : undefined}
+          // §5 alt badge + §10.2 row-action props
+          alts={initialAlts}
+          showAltBadge={selectedAltIdValid == null && initialAlts.length > 1}
+          altUsername={altUsername}
+          isPublic={record.team.is_public ?? false}
+          localOnly={record.localOnly ?? false}
+          onRename={(id) => openRenameDialog(id)}
+          onDuplicate={(id) => duplicateRecord(id)}
+          onMoveToAlt={(id, altId) => moveRecordToAlt(id, altId)}
+          onDuplicateToAlt={(id, altId) => duplicateRecordToAlt(id, altId)}
+          onMakePublic={(id, isPublic) => makeRecordPublic(id, isPublic)}
+          onToggleLocalOnly={(id, localOnly) => setRecordLocalOnly(id, localOnly)}
+          onExport={(id) => void handleExportOne(id)}
         />
       </div>
     );
@@ -638,7 +729,7 @@ export function TeamsLandingClient({
   // ==========================================================================
 
   const showSearch =
-    hydrated && (visibleDrafts.length > 0 || search.length > 0);
+    hydrated && (altScoped.length > 0 || search.length > 0);
   const isArchiveView = prefs.selectedFolderId === ARCHIVED_VIEW_ID;
   const hasSearchQuery = search.length > 0;
   const hasNoMatches = hasSearchQuery && allMatches.length === 0;
@@ -766,45 +857,50 @@ export function TeamsLandingClient({
                   </div>
                 </div>
 
-                {/* Toolbar row: "Viewing" label + search + sort/density controls */}
+                {/* Toolbar row: alt pills + search + sort/density controls */}
                 {showSearch && (
-                  <div className="mb-3 flex items-center gap-2">
-                    {/* "Viewing" label — desktop only (mockup) */}
-                    {isClient && !isMobile && (
-                      <span className="text-muted-foreground shrink-0 text-sm">
-                        Viewing
-                      </span>
-                    )}
+                  <div className="mb-3 flex flex-col gap-2">
+                    {/* Alt pills — "Viewing" scope selector (wraps on mobile) */}
+                    <AltPills
+                      alts={initialAlts}
+                      selectedAltId={prefs.selectedAltId}
+                      onSelect={(altId) => setPrefs({ selectedAltId: altId })}
+                    />
 
-                    <div className="min-w-0 flex-1">
-                      <SmartSearch
-                        value={search}
-                        onValueChange={setSearch}
-                        suggestions={suggestions}
+                    <div className="flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <SmartSearch
+                          value={search}
+                          onValueChange={setSearch}
+                          suggestions={suggestions}
+                        />
+                      </div>
+
+                      {/* "Save as smart folder" — only shown when there's an active query */}
+                      {hasSearchQuery && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="min-h-10 shrink-0 gap-1.5 text-xs sm:min-h-8"
+                          onClick={handleSaveAsSmartFolder}
+                          aria-label="Save as smart folder"
+                        >
+                          <Zap className="size-3.5" />
+                          Save as folder
+                        </Button>
+                      )}
+
+                      {/* Export-all backup button */}
+                      <ExportAllButton records={drafts} />
+
+                      <LandingToolbar
+                        sort={prefs.sort}
+                        density={prefs.density}
+                        resultCount={allMatches.length}
+                        onSortChange={(s) => setPrefs({ sort: s })}
+                        onDensityChange={(d) => setPrefs({ density: d })}
                       />
                     </div>
-
-                    {/* "Save as smart folder" — only shown when there's an active query */}
-                    {hasSearchQuery && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="min-h-10 shrink-0 gap-1.5 text-xs sm:min-h-8"
-                        onClick={handleSaveAsSmartFolder}
-                        aria-label="Save as smart folder"
-                      >
-                        <Zap className="size-3.5" />
-                        Save as folder
-                      </Button>
-                    )}
-
-                    <LandingToolbar
-                      sort={prefs.sort}
-                      density={prefs.density}
-                      resultCount={allMatches.length}
-                      onSortChange={(s) => setPrefs({ sort: s })}
-                      onDensityChange={(d) => setPrefs({ density: d })}
-                    />
                   </div>
                 )}
 
@@ -918,6 +1014,54 @@ export function TeamsLandingClient({
         }
         onSave={handleSmartFolderSave}
       />
+
+      {/* Rename dialog */}
+      <Dialog
+        open={renameTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRenameTarget(null);
+            setRenameValue("");
+          }
+        }}
+      >
+        {/* max-w-[calc(100vw-2rem)]: viewport-minus-gutter; calc() required for
+            dynamic viewport-relative max-width with fixed gutter offset. */}
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Rename team</DialogTitle>
+            <DialogDescription>
+              Enter a new name for this team.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            placeholder="Team name"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleRenameSubmit();
+            }}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRenameTarget(null);
+                setRenameValue("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRenameSubmit}
+              disabled={renameValue.trim().length === 0}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

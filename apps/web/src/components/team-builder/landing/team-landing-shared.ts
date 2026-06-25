@@ -204,4 +204,55 @@ export interface TeamRowProps {
    * menu. `dir` is `"up"` or `"down"`.
    */
   onMove?: (id: string, dir: "up" | "down") => void;
+  // ---------------------------------------------------------------------------
+  // §10.2 — additional row actions + §5 alt mini-badge
+  // ---------------------------------------------------------------------------
+  /** Alt accounts available for "Move to alt" / "Duplicate to alt" submenus. */
+  alts?: { id: number; username: string }[];
+  /**
+   * When true, renders a small muted "@altUsername" badge near the format/sync
+   * badges. Only meaningful for account-sourced rows shown in the "All alts" view.
+   */
+  showAltBadge?: boolean;
+  /**
+   * The username of the alt that owns this team (account rows).
+   * Displayed in the alt mini-badge when showAltBadge is true.
+   */
+  altUsername?: string;
+  /**
+   * Whether this team is currently public (account rows).
+   * Drives the "Make public" / "Make private" label in the overflow menu.
+   */
+  isPublic?: boolean;
+  /**
+   * Whether this team is local-only and should not sync (local rows).
+   * Drives the "Keep local-only" / "Allow syncing" label.
+   */
+  localOnly?: boolean;
+  /** When provided, adds a "Rename" item to the overflow menu. */
+  onRename?: (id: string) => void;
+  /** When provided, adds a "Duplicate" item to the overflow menu. */
+  onDuplicate?: (id: string) => void;
+  /**
+   * When provided alongside `alts`, adds a "Move to alt ▸" submenu.
+   * Calls onMoveToAlt(id, altId) when the user picks an alt.
+   */
+  onMoveToAlt?: (id: string, altId: number) => void;
+  /**
+   * When provided alongside `alts`, adds a "Duplicate to alt ▸" submenu.
+   * Calls onDuplicateToAlt(id, altId) when the user picks an alt.
+   */
+  onDuplicateToAlt?: (id: string, altId: number) => void;
+  /** When provided, adds an "Export (Showdown)" item to the overflow menu. */
+  onExport?: (id: string) => void;
+  /**
+   * When provided and summary.source === "account", adds a "Make public" /
+   * "Make private" toggle to the overflow menu. Passes !isPublic as the new value.
+   */
+  onMakePublic?: (id: string, isPublic: boolean) => void;
+  /**
+   * When provided and summary.source === "local", adds a "Keep local-only" /
+   * "Allow syncing" toggle to the overflow menu. Passes !localOnly as the new value.
+   */
+  onToggleLocalOnly?: (id: string, localOnly: boolean) => void;
 }

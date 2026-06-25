@@ -16,6 +16,12 @@ import {
   ArrowDown,
   Cloud,
   Lock,
+  Pencil,
+  Copy,
+  ArrowRightLeft,
+  Upload,
+  Globe,
+  Users,
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -156,6 +162,17 @@ interface OverflowMenuProps
     | "canMoveUp"
     | "canMoveDown"
     | "onMove"
+    | "alts"
+    | "altUsername"
+    | "isPublic"
+    | "localOnly"
+    | "onRename"
+    | "onDuplicate"
+    | "onMoveToAlt"
+    | "onDuplicateToAlt"
+    | "onExport"
+    | "onMakePublic"
+    | "onToggleLocalOnly"
   > {
   /** Additional classes on the trigger button. */
   triggerClassName?: string;
@@ -176,6 +193,17 @@ function OverflowMenu({
   canMoveUp,
   canMoveDown,
   onMove,
+  alts,
+  altUsername: _altUsername,
+  isPublic,
+  localOnly,
+  onRename,
+  onDuplicate,
+  onMoveToAlt,
+  onDuplicateToAlt,
+  onExport,
+  onMakePublic,
+  onToggleLocalOnly,
   triggerClassName,
 }: OverflowMenuProps) {
   const memberSet = new Set(memberFolderIds ?? []);
@@ -183,6 +211,30 @@ function OverflowMenu({
     onToggleFolder !== undefined &&
     manualFolders !== undefined &&
     manualFolders.length > 0;
+
+  const showMoveToAlt =
+    onMoveToAlt !== undefined && alts !== undefined && alts.length > 0;
+  const showDuplicateToAlt =
+    onDuplicateToAlt !== undefined && alts !== undefined && alts.length > 0;
+  const showMakePublic =
+    summary.source === "account" && onMakePublic !== undefined;
+  const showToggleLocalOnly =
+    summary.source === "local" && onToggleLocalOnly !== undefined;
+
+  // True when there will be any item above the destructive separator
+  const hasNonDestructiveItems =
+    onPeek ||
+    reorderable ||
+    onRename ||
+    onDuplicate ||
+    showMoveToAlt ||
+    showDuplicateToAlt ||
+    onExport ||
+    showMakePublic ||
+    showToggleLocalOnly ||
+    onTogglePin ||
+    onToggleArchive ||
+    showFolderMenu;
 
   return (
     <DropdownMenu>
@@ -224,6 +276,101 @@ function OverflowMenu({
               Move down
             </DropdownMenuItem>
           </>
+        )}
+
+        {/* Rename — shown when onRename is provided */}
+        {onRename && (
+          <DropdownMenuItem onClick={() => onRename(summary.id)}>
+            <Pencil className="size-4" />
+            Rename
+          </DropdownMenuItem>
+        )}
+
+        {/* Duplicate — shown when onDuplicate is provided */}
+        {onDuplicate && (
+          <DropdownMenuItem onClick={() => onDuplicate(summary.id)}>
+            <Copy className="size-4" />
+            Duplicate
+          </DropdownMenuItem>
+        )}
+
+        {/* Move to alt ▸ submenu — shown when onMoveToAlt + alts are provided */}
+        {showMoveToAlt && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <ArrowRightLeft className="size-4" />
+              Move to alt
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              {alts!.map((alt) => (
+                <DropdownMenuItem
+                  key={alt.id}
+                  onClick={() => onMoveToAlt!(summary.id, alt.id)}
+                >
+                  <Users className="size-3.5" aria-hidden />
+                  @{alt.username}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
+
+        {/* Duplicate to alt ▸ submenu — shown when onDuplicateToAlt + alts are provided */}
+        {showDuplicateToAlt && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Copy className="size-4" />
+              Duplicate to alt
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              {alts!.map((alt) => (
+                <DropdownMenuItem
+                  key={alt.id}
+                  onClick={() => onDuplicateToAlt!(summary.id, alt.id)}
+                >
+                  <Users className="size-3.5" aria-hidden />
+                  @{alt.username}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
+
+        {/* Export — shown when onExport is provided */}
+        {onExport && (
+          <DropdownMenuItem onClick={() => onExport(summary.id)}>
+            <Upload className="size-4" />
+            Export (Showdown)
+          </DropdownMenuItem>
+        )}
+
+        {/* Make public / Make private — account rows only */}
+        {showMakePublic && (
+          <DropdownMenuItem
+            onClick={() => onMakePublic!(summary.id, !isPublic)}
+          >
+            {isPublic ? (
+              <>
+                <Lock className="size-4" />
+                Make private
+              </>
+            ) : (
+              <>
+                <Globe className="size-4" />
+                Make public
+              </>
+            )}
+          </DropdownMenuItem>
+        )}
+
+        {/* Keep local-only / Allow syncing — local rows only */}
+        {showToggleLocalOnly && (
+          <DropdownMenuItem
+            onClick={() => onToggleLocalOnly!(summary.id, !localOnly)}
+          >
+            <Lock className="size-4" />
+            {localOnly ? "Allow syncing" : "Keep local-only"}
+          </DropdownMenuItem>
         )}
 
         {/* Pin / Unpin — shown when onTogglePin is provided */}
@@ -286,11 +433,7 @@ function OverflowMenu({
         )}
 
         {/* Separator before Delete when there are extra actions */}
-        {(onPeek ||
-          reorderable ||
-          onTogglePin ||
-          onToggleArchive ||
-          showFolderMenu) && <DropdownMenuSeparator />}
+        {hasNonDestructiveItems && <DropdownMenuSeparator />}
 
         <DropdownMenuItem
           variant="destructive"
@@ -353,6 +496,18 @@ interface MobileRowProps
     | "canMoveUp"
     | "canMoveDown"
     | "onMove"
+    | "alts"
+    | "showAltBadge"
+    | "altUsername"
+    | "isPublic"
+    | "localOnly"
+    | "onRename"
+    | "onDuplicate"
+    | "onMoveToAlt"
+    | "onDuplicateToAlt"
+    | "onExport"
+    | "onMakePublic"
+    | "onToggleLocalOnly"
   > {}
 
 function MobileTeamRow({
@@ -375,6 +530,18 @@ function MobileTeamRow({
   canMoveUp,
   canMoveDown,
   onMove,
+  alts,
+  showAltBadge,
+  altUsername,
+  isPublic,
+  localOnly,
+  onRename,
+  onDuplicate,
+  onMoveToAlt,
+  onDuplicateToAlt,
+  onExport,
+  onMakePublic,
+  onToggleLocalOnly,
 }: MobileRowProps) {
   const highlightSet = new Set(highlightSpecies ?? []);
 
@@ -383,7 +550,7 @@ function MobileTeamRow({
       {/* Bulk-selection checkbox — sibling of Link, not nested inside it */}
       {selectable && (
         <div
-          className="flex shrink-0 items-center justify-center pt-0.5 size-6"
+          className="flex size-6 shrink-0 items-center justify-center pt-0.5"
           onClick={(e) => e.stopPropagation()}
         >
           <Checkbox
@@ -421,7 +588,7 @@ function MobileTeamRow({
           )}
         </div>
 
-        {/* Row 2: name + pin badge (left) · format / local (right) */}
+        {/* Row 2: name + pin badge (left) · format / local / alt badge (right) */}
         <div className="flex min-w-0 items-center gap-1.5">
           {/* Name + pin badge */}
           <div className="flex min-w-0 flex-1 items-center gap-1">
@@ -434,7 +601,7 @@ function MobileTeamRow({
               </span>
             )}
           </div>
-          {/* Right meta: format + sync badge */}
+          {/* Right meta: format + sync badge + optional alt mini-badge */}
           <div className="flex shrink-0 items-center gap-1">
             {summary.format && (
               <Badge variant="secondary" className="text-xs">
@@ -454,6 +621,16 @@ function MobileTeamRow({
                 </Badge>
               );
             })()}
+            {/* Alt mini-badge — §5: shown in "All alts" view */}
+            {showAltBadge && altUsername && (
+              <Badge
+                variant="outline"
+                className="max-w-20 truncate border-muted-foreground/20 text-xs text-muted-foreground"
+                title={`@${altUsername}`}
+              >
+                @{altUsername}
+              </Badge>
+            )}
           </div>
         </div>
       </Link>
@@ -474,6 +651,17 @@ function MobileTeamRow({
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}
         onMove={onMove}
+        alts={alts}
+        altUsername={altUsername}
+        isPublic={isPublic}
+        localOnly={localOnly}
+        onRename={onRename}
+        onDuplicate={onDuplicate}
+        onMoveToAlt={onMoveToAlt}
+        onDuplicateToAlt={onDuplicateToAlt}
+        onExport={onExport}
+        onMakePublic={onMakePublic}
+        onToggleLocalOnly={onToggleLocalOnly}
         triggerClassName="opacity-100"
       />
     </div>
@@ -525,6 +713,18 @@ export function TeamRow({
   canMoveUp,
   canMoveDown,
   onMove,
+  alts,
+  showAltBadge,
+  altUsername,
+  isPublic,
+  localOnly,
+  onRename,
+  onDuplicate,
+  onMoveToAlt,
+  onDuplicateToAlt,
+  onExport,
+  onMakePublic,
+  onToggleLocalOnly,
 }: TeamRowProps) {
   const highlightSet = new Set(highlightSpecies ?? []);
 
@@ -578,6 +778,18 @@ export function TeamRow({
           canMoveUp={canMoveUp}
           canMoveDown={canMoveDown}
           onMove={onMove}
+          alts={alts}
+          showAltBadge={showAltBadge}
+          altUsername={altUsername}
+          isPublic={isPublic}
+          localOnly={localOnly}
+          onRename={onRename}
+          onDuplicate={onDuplicate}
+          onMoveToAlt={onMoveToAlt}
+          onDuplicateToAlt={onDuplicateToAlt}
+          onExport={onExport}
+          onMakePublic={onMakePublic}
+          onToggleLocalOnly={onToggleLocalOnly}
         />
       </div>
     );
@@ -680,7 +892,7 @@ export function TeamRow({
           )}
         </div>
 
-        {/* Right group: format badge · legal status · local badge —
+        {/* Right group: format badge · legal status · local badge · alt mini-badge
             sits directly after the sprites (no flex spacer) so the team's
             identity reads as one tight cluster instead of name···void···badges */}
         <div className="flex shrink-0 items-center gap-2">
@@ -706,6 +918,16 @@ export function TeamRow({
               </Badge>
             );
           })()}
+          {/* Alt mini-badge — §5: shown in "All alts" view for account rows */}
+          {showAltBadge && altUsername && (
+            <Badge
+              variant="outline"
+              className="max-w-24 truncate border-muted-foreground/20 text-xs text-muted-foreground"
+              title={`@${altUsername}`}
+            >
+              @{altUsername}
+            </Badge>
+          )}
         </div>
       </Link>
 
@@ -725,6 +947,17 @@ export function TeamRow({
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}
         onMove={onMove}
+        alts={alts}
+        altUsername={altUsername}
+        isPublic={isPublic}
+        localOnly={localOnly}
+        onRename={onRename}
+        onDuplicate={onDuplicate}
+        onMoveToAlt={onMoveToAlt}
+        onDuplicateToAlt={onDuplicateToAlt}
+        onExport={onExport}
+        onMakePublic={onMakePublic}
+        onToggleLocalOnly={onToggleLocalOnly}
       />
     </div>
   );
