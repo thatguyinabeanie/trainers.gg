@@ -1,4 +1,11 @@
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+import {
+  describe,
+  it,
+  expect,
+  jest,
+  beforeEach,
+  beforeAll,
+} from "@jest/globals";
 import { act, renderHook } from "@testing-library/react";
 
 // =============================================================================
@@ -79,7 +86,18 @@ function getPokemonSpeciesCalls(): string[] {
 import { getFormatById } from "@trainers/pokemon";
 import { type Tables } from "@trainers/supabase";
 
-import { getVerdict, useCalcState } from "../use-calc-state";
+import {
+  getVerdict,
+  useCalcState,
+  __loadCalcEngineForTests,
+} from "../use-calc-state";
+
+// The engine (@smogon/calc) loads lazily via dynamic import() in useCalcState.
+// Prime the module cache once so renderHook resolves it synchronously and these
+// tests can assert calc output without awaiting the in-hook load.
+beforeAll(async () => {
+  await __loadCalcEngineForTests();
+});
 
 // =============================================================================
 // Factory

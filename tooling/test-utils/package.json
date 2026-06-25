@@ -10,7 +10,10 @@
       "default": "./jest-config.cjs"
     },
     "./factories": "./src/factories/index.ts",
-    "./mocks": "./src/mocks/index.ts"
+    "./mocks": "./src/mocks/index.ts",
+    "./mocks/lucide-react": "./src/mocks/lucide-react.tsx",
+    "./mocks/ui-select": "./src/mocks/ui-select.tsx",
+    "./mocks/ui-dropdown-menu": "./src/mocks/ui-dropdown-menu.tsx"
   },
   "scripts": {},
   "dependencies": {
@@ -21,8 +24,10 @@
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "@types/jest": "catalog:testing",
+    "@types/react": "catalog:react",
     "jest": "catalog:testing",
     "prettier": "catalog:",
+    "react": "catalog:react",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"
