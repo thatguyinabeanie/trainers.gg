@@ -1,8 +1,8 @@
 # Team Builder Landing — Full Design Spec
 
-**Status:** Design complete + implementation gaps resolved (2026-06-23); pending implementation plan
+**Status:** Design complete + implemented — Phase 1 (#376) + Phase 2 (#377) shipped; test-hardening pending. See [README.md — Implementation status](./README.md#implementation-status) for a full shipped/deferred breakdown.
 **Date:** 2026-06-22 · **Expanded:** 2026-06-23 (added Quick-look, List controls, Bulk actions, Archive & safety; flipped row anatomy to name-first)
-**Companion docs:** [`README.md`](./README.md) (overview + mockup gallery) · `docs/builder-single-focus-redesign/` (the editor middle-section work — separate, non-overlapping)
+**Companion docs:** [`README.md`](./README.md) (overview + mockup gallery + implementation status) · `docs/builder-single-focus-redesign/` (the editor middle-section work — separate, non-overlapping)
 
 > Every wireframe referenced below lives in [`mockups/`](./mockups/) as both a PNG and a self-contained HTML you can open in a browser. The **Decision Log** (§21) records why each choice won and what was rejected, each linked to its mock.
 

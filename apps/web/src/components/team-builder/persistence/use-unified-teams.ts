@@ -24,13 +24,22 @@ import { type ActionResult } from "@trainers/validators";
 import { fetchEnrichedAccountTeams } from "@/lib/data/enriched-teams";
 import { useSupabase } from "@/lib/supabase";
 import { addTeamToFolderAction, removeTeamFromFolderAction } from "@/actions/team-folders";
-import { deleteTeamAction, setTeamFlagsAction } from "@/actions/teams";
+import {
+  deleteTeamAction,
+  forkTeamAction,
+  setTeamFlagsAction,
+  transferTeamAction,
+  updateTeamAction,
+} from "@/actions/teams";
+import { teamsApi } from "@/lib/api/teams-client";
+import { toSaveLocalPayload } from "../landing/team-landing-shared";
 
 import {
   type EnrichedAccountTeam,
   parseAccountTeamId,
   toAccountRecord,
 } from "./account-team-record";
+import { deleteLocalDraft } from "./local-drafts-store";
 import { type LocalDraftRecord } from "./local-drafts-types";
 import { teamKeys } from "../team-query-keys";
 import { useLocalDrafts } from "./use-local-drafts";
@@ -71,6 +80,38 @@ export interface UseUnifiedTeamsReturn {
    * accept any folder id handled by the local store.
    */
   toggleDraftFolder: (id: string, folderId: string) => void;
+  // ---------------------------------------------------------------------------
+  // §10.2 Row-action mutators
+  // ---------------------------------------------------------------------------
+  /** Rename a draft / account team. */
+  renameRecord: (id: string, name: string) => void;
+  /**
+   * Duplicate a draft into a new draft on the same alt.
+   * Local → new local draft. Account → fork to the same alt; refetches.
+   */
+  duplicateRecord: (id: string) => void;
+  /**
+   * Duplicate and associate with a target alt.
+   * Local → saves to the alt (keeps the local draft), then refetches.
+   * Account → forks to target alt, then refetches.
+   */
+  duplicateRecordToAlt: (id: string, altId: number) => void;
+  /**
+   * Move a draft to a different alt.
+   * Local → saves to the alt then deletes the local draft + refetches.
+   * Account → transfers to the alt then refetches.
+   */
+  moveRecordToAlt: (id: string, altId: number) => void;
+  /**
+   * Toggle the public/private visibility of a draft.
+   * Local drafts cannot be made public — shows an error toast.
+   */
+  makeRecordPublic: (id: string, isPublic: boolean) => void;
+  /**
+   * Set the deliberate local-only flag.
+   * Account teams cannot be local-only — shows an error toast.
+   */
+  setRecordLocalOnly: (id: string, localOnly: boolean) => void;
 }
 
 // =============================================================================
@@ -265,6 +306,170 @@ export function useUnifiedTeams(args: UseUnifiedTeamsArgs): UseUnifiedTeamsRetur
     }
   }
 
+  // ===========================================================================
+  // §10.2 Row-action mutators
+  // ===========================================================================
+
+  function renameRecord(id: string, name: string): void {
+    const acctId = parseAccountTeamId(id);
+    if (acctId == null) {
+      // Local draft — synchronous store update.
+      local.renameDraft(id, name);
+      return;
+    }
+    // Account team — optimistic patch + server action.
+    const rollback = patchAccount(acctId, (t) => ({
+      ...t,
+      team: { ...t.team, name },
+    }));
+    void run(updateTeamAction(acctId, { name }), rollback);
+  }
+
+  function duplicateRecord(id: string): void {
+    const acctId = parseAccountTeamId(id);
+    if (acctId == null) {
+      // Local draft — synchronous store duplicate.
+      local.duplicateDraft(id);
+      return;
+    }
+    // Account team — fork to the same alt, then refetch for the new row.
+    const cachedList = qc.getQueryData<EnrichedAccountTeam[]>(key);
+    const cached = cachedList?.find((t) => t.team.id === acctId);
+    if (!cached) {
+      toast.error("Your teams are still loading — try again in a moment.");
+      return;
+    }
+    const { altId } = cached;
+    void (async () => {
+      try {
+        const res = await forkTeamAction(acctId, altId);
+        if (!res.success) {
+          toast.error(res.error);
+        } else {
+          toast.success("Team duplicated.");
+        }
+      } catch (e) {
+        logError("unifiedTeams.duplicateRecord", e);
+        toast.error("Something went wrong.");
+      } finally {
+        await refetchAccount();
+      }
+    })();
+  }
+
+  function duplicateRecordToAlt(id: string, altId: number): void {
+    const acctId = parseAccountTeamId(id);
+    if (acctId == null) {
+      // Local draft → save to the target alt (keeps the local draft), then refetch.
+      const localRecord = drafts.find((r) => r.id === id);
+      if (!localRecord) {
+        toast.error("Draft not found.");
+        return;
+      }
+      void (async () => {
+        try {
+          const res = await teamsApi.saveLocal(toSaveLocalPayload(localRecord, altId));
+          if (!res.success) {
+            toast.error(res.error);
+          } else {
+            toast.success("Team copied to alt.");
+          }
+        } catch (e) {
+          logError("unifiedTeams.duplicateRecordToAlt", e);
+          toast.error("Something went wrong.");
+        } finally {
+          await refetchAccount();
+        }
+      })();
+      return;
+    }
+    // Account team → fork to target alt, then refetch.
+    void (async () => {
+      try {
+        const res = await forkTeamAction(acctId, altId);
+        if (!res.success) {
+          toast.error(res.error);
+        } else {
+          toast.success("Team copied to alt.");
+        }
+      } catch (e) {
+        logError("unifiedTeams.duplicateRecordToAlt", e);
+        toast.error("Something went wrong.");
+      } finally {
+        await refetchAccount();
+      }
+    })();
+  }
+
+  function moveRecordToAlt(id: string, altId: number): void {
+    const acctId = parseAccountTeamId(id);
+    if (acctId == null) {
+      // Local draft → save to alt, then delete the local draft and refetch.
+      const localRecord = drafts.find((r) => r.id === id);
+      if (!localRecord) {
+        toast.error("Draft not found.");
+        return;
+      }
+      void (async () => {
+        try {
+          const res = await teamsApi.saveLocal(toSaveLocalPayload(localRecord, altId));
+          if (!res.success) {
+            toast.error(res.error);
+            return;
+          }
+          deleteLocalDraft(id);
+          toast.success("Team moved to alt.");
+        } catch (e) {
+          logError("unifiedTeams.moveRecordToAlt", e);
+          toast.error("Something went wrong.");
+        } finally {
+          await refetchAccount();
+        }
+      })();
+      return;
+    }
+    // Account team → transfer to target alt, then refetch (structural op — no optimistic).
+    void (async () => {
+      try {
+        const res = await transferTeamAction(acctId, altId);
+        if (!res.success) {
+          toast.error(res.error);
+        } else {
+          toast.success("Team moved to alt.");
+        }
+      } catch (e) {
+        logError("unifiedTeams.moveRecordToAlt", e);
+        toast.error("Something went wrong.");
+      } finally {
+        await refetchAccount();
+      }
+    })();
+  }
+
+  function makeRecordPublic(id: string, isPublic: boolean): void {
+    const acctId = parseAccountTeamId(id);
+    if (acctId == null) {
+      toast.error("Save this team to an alt to make it public.");
+      return;
+    }
+    // Account team — optimistic patch + server action.
+    const rollback = patchAccount(acctId, (t) => ({
+      ...t,
+      team: { ...t.team, is_public: isPublic },
+    }));
+    void run(updateTeamAction(acctId, { is_public: isPublic }), rollback);
+  }
+
+  function setRecordLocalOnly(id: string, localOnly: boolean): void {
+    const acctId = parseAccountTeamId(id);
+    if (acctId == null) {
+      // Local draft — synchronous store update.
+      local.setDraftLocalOnly(id, localOnly);
+      return;
+    }
+    toast.error("Synced teams already live in your account.");
+  }
+
   return {
     drafts,
     hydrated: local.hydrated,
@@ -277,5 +482,11 @@ export function useUnifiedTeams(args: UseUnifiedTeamsArgs): UseUnifiedTeamsRetur
     archiveDraft,
     setDraftSortOrder,
     toggleDraftFolder,
+    renameRecord,
+    duplicateRecord,
+    duplicateRecordToAlt,
+    moveRecordToAlt,
+    makeRecordPublic,
+    setRecordLocalOnly,
   };
 }

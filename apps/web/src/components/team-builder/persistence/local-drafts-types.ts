@@ -44,6 +44,16 @@ export interface LocalDraftRecord {
   source?: "local" | "account";
   /** DB team id when source === "account"; null/absent for local drafts. */
   accountTeamId?: number | null;
+  /**
+   * Owning alt id for account teams (source === "account"); null/absent for
+   * local drafts. Used by the "Viewing" alt scope filter.
+   */
+  altId?: number | null;
+  /**
+   * Deliberate sticky "local-only" flag: a local draft the user has chosen
+   * NOT to sync (spec §9). Excluded from the reconcile prompt.
+   */
+  localOnly?: boolean;
 }
 
 /**

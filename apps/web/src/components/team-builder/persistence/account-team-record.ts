@@ -58,5 +58,6 @@ export function toAccountRecord(t: EnrichedAccountTeam): LocalDraftRecord {
     folderIds: t.folderIds,
     source: "account",
     accountTeamId: t.team.id,
+    altId: t.altId,
   };
 }

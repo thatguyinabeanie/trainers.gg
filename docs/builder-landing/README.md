@@ -1,12 +1,36 @@
 # Team Builder Landing — Design Package
 
-**Status:** Design complete ✅ · Implementation not started
+**Status:** Implemented — Phase 1 (#376) + Phase 2 (#377); test-hardening pending
 **Date:** 2026-06-22 · **Expanded:** 2026-06-23 (quick-look, list controls, bulk actions, archive & safety; name-first rows)
-**PR:** #374
+**Design PR:** #374
 
 A rich, organized **landing/home for the team builder** — the screen you see at `/builder` before editing a specific team. Today `/builder` drops straight into a single-team editor with no "all my teams" surface; this design closes that gap and aims to **beat** the Pokémon Showdown teambuilder rather than match it.
 
 This package complements `docs/builder-single-focus-redesign/` (which redesigns the per-Pokémon *editor* middle section). The two do not overlap.
+
+## Implementation status
+
+**Shipped (Phase 1 #376 + Phase 2 #377)**
+
+- `/builder` landing + `/builder/t/[id]` editor hosting both local drafts and account teams
+- Unified list (`useUnifiedTeams`): local-first store (v3) merged with DB-backed account teams
+- Smart search + quick-look (hovercard desktop / bottom-sheet mobile)
+- Folders: auto (gen→format), manual (⭐), smart (⚡) — DB-backed for authed users; local substitution for guests
+- Sort + density toggle (persisted); pin/archive/sort_order; drag-reorder (Custom-order)
+- Bulk select + action bar; deferred-commit delete + Undo toast
+- "Viewing" alt pills + alt scoping + alt mini-badge on rows
+- Fuller row ⋯ menu (rename / duplicate / move-to-alt / duplicate-to-alt / export / make-public / keep-local-only)
+- Top-level "Export / back up all teams"
+- Loading / error / empty / first-run states; mobile (FAB, folder bottom-sheet, long-press select)
+- Reconcile banner for login-with-local-drafts flow; sync badges (Synced / Local / Local-only)
+- Full Phase 2–6 DB + RLS layer: `team_folders` / `team_folder_members` / `smart_folders`, `reorder_teams` RPC, enriched query, flag/folder/bulk mutations + server actions
+- Dashboard team routes consolidated into `/builder` (dashboard routes redirect)
+
+**Deferred / open**
+
+- "✨ Start from a sample" on-ramp: still stubbed — sample team source TBD (see spec §20)
+- Full test-hardening pass: Jest (migrate fixtures → `makeDraftRecord`; Milestone C tests) + RTL + Playwright E2E; CI disabled (GitHub Actions billing)
+- `hasTeamBuilderAccess` beta gate retired as **obsolete** — `/builder` is open, team-builder is GA
 
 ## Files
 
