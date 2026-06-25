@@ -28,7 +28,7 @@ This package complements `docs/builder-single-focus-redesign/` (which redesigns 
 
 **Deferred / open**
 
-- "✨ Start from a sample" on-ramp: still stubbed — sample team source TBD (see spec §20)
+- "✨ Start from a sample" on-ramp: still stubbed (disabled "coming soon") — source **decided: VGCPastes integration** (community VGC team-paste archive); build deferred to that separate effort
 - Full test-hardening pass: Jest (migrate fixtures → `makeDraftRecord`; Milestone C tests) + RTL + Playwright E2E; CI disabled (GitHub Actions billing)
 - `hasTeamBuilderAccess` beta gate retired as **obsolete** — `/builder` is open, team-builder is GA
 

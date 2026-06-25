@@ -497,7 +497,7 @@ Each entry: the question, options explored, the choice, why, and what was reject
 **Q:** Own URL per team vs in-place swap? **Chosen:** **route per team** (`/builder/t/[id]`). **Why:** working back button, shareable links, SSR for account teams. **Rejected:** in-place swap (no deep links, faked back button). Note: a real refactor splitting today's single page.
 
 ### D11 — Empty on-ramps · [empty-states](mockups/empty-states.html)
-**Q:** Two on-ramps (scratch + import) vs three (+ sample)? **Chosen:** **three** (sample source TBD, likely data-driven from the Meta Explorer). **Why:** the sample door beats the blank canvas for newcomers. **Rejected:** two-only (loses newcomer help).
+**Q:** Two on-ramps (scratch + import) vs three (+ sample)? **Chosen:** **three**. **Why:** the sample door beats the blank canvas for newcomers. **Rejected:** two-only (loses newcomer help). **Source decided (2026-06-25):** sample teams will come from a **VGCPastes integration** (the community VGC team-paste archive) — supersedes the earlier "Meta Explorer / TBD" lean. The on-ramp ships **stubbed (disabled "coming soon")** until that integration lands; it is a separate effort.
 
 ### D12 — Empty rendered in the real shell + seeding · [empty-merged](mockups/empty-merged.html)
 **Q:** Full-page welcome takeover vs render the real workspace empty? And seed Smart Folders? **Chosen:** **render the real shell** with the welcome inside the main area; **seed defaults** (Incomplete / Illegal / Recently edited). **Why:** structure is learnable from minute one; seeded folders demonstrate the feature and pay off immediately. **Rejected:** full-page takeover (hides the layout), empty rail (barren, undiscoverable).
