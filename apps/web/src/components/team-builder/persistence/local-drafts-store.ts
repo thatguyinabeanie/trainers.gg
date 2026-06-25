@@ -129,6 +129,9 @@ export function createEmptyTeam(): TeamWithPokemon {
     tags: null,
     is_public: null,
     parent_team_id: null,
+    pinned: false,
+    archived: false,
+    sort_order: null,
     created_by: -1,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -488,6 +491,91 @@ export function setDraftFolders(id: LocalDraftId, folderIds: string[]): void {
   const newDrafts = [...store.drafts];
   newDrafts[idx] = { ...store.drafts[idx]!, folderIds: [...folderIds] };
   writeStore({ version: 3, drafts: newDrafts });
+}
+
+/**
+ * Rename a local draft by updating the team name on its team graph.
+ * Bumps `updatedAt` to the current timestamp.
+ * No-op if the id does not exist in the store.
+ *
+ * @param id   - The LocalDraftId to update.
+ * @param name - The new team name.
+ */
+export function renameLocalDraft(id: LocalDraftId, name: string): void {
+  if (typeof window === "undefined") return;
+  const store = readStore();
+  const idx = store.drafts.findIndex((d) => d.id === id);
+  if (idx === -1) return;
+
+  const record = store.drafts[idx]!;
+  const newDrafts = [...store.drafts];
+  newDrafts[idx] = {
+    ...record,
+    team: { ...record.team, name },
+    updatedAt: new Date().toISOString(),
+  };
+  writeStore({ version: 3, drafts: newDrafts });
+}
+
+/**
+ * Set the deliberate local-only flag on an existing local draft.
+ * When `true`, the draft is excluded from the sync reconcile prompt (spec §9).
+ * No-op if the id does not exist in the store.
+ *
+ * @param id        - The LocalDraftId to update.
+ * @param localOnly - Whether the draft should be permanently local-only.
+ */
+export function setDraftLocalOnly(id: LocalDraftId, localOnly: boolean): void {
+  if (typeof window === "undefined") return;
+  const store = readStore();
+  const idx = store.drafts.findIndex((d) => d.id === id);
+  if (idx === -1) return;
+
+  const newDrafts = [...store.drafts];
+  newDrafts[idx] = { ...store.drafts[idx]!, localOnly };
+  writeStore({ version: 3, drafts: newDrafts });
+}
+
+/**
+ * Duplicate a draft into a brand-new local draft.
+ * The copy gets a fresh id, `name: "<name> (copy)"`, `pinned: false`,
+ * `archived: false`, `sortOrder: null`, and the source's `folderIds` and
+ * `localOnly` flag. The team graph is deep-cloned via `structuredClone`.
+ *
+ * Returns the new LocalDraftRecord, or `null` if the source id is not found.
+ *
+ * @param id - The LocalDraftId of the draft to duplicate.
+ * @returns The newly-created LocalDraftRecord, or `null` if source not found.
+ */
+export function duplicateLocalDraft(id: LocalDraftId): LocalDraftRecord | null {
+  if (typeof window === "undefined") return null;
+  const store = readStore();
+  const source = store.drafts.find((d) => d.id === id);
+  if (!source) return null;
+
+  const existingIds = store.drafts.map((d) => d.id);
+  const newId = generateLocalDraftId(existingIds);
+  const now = new Date().toISOString();
+
+  const record: LocalDraftRecord = {
+    id: newId,
+    team: structuredClone({
+      ...source.team,
+      name: `${source.team.name || "Untitled Team"} (copy)`,
+    }),
+    createdAt: now,
+    updatedAt: now,
+    pinned: false,
+    archived: false,
+    sortOrder: null,
+    folderIds: [...source.folderIds],
+    source: source.source,
+    // accountTeamId intentionally omitted — copy is always a local draft
+    localOnly: source.localOnly,
+  };
+
+  writeStore({ version: 3, drafts: [record, ...store.drafts] });
+  return record;
 }
 
 /**

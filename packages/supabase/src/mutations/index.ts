@@ -113,7 +113,28 @@ export {
   updatePokemon,
   removePokemonFromTeam,
   reorderTeamPokemon,
+  updateTeamFlags,
+  reorderTeams,
+  bulkSetArchived,
+  bulkDeleteTeams,
 } from "./teams";
+
+// Team folder mutations
+export {
+  createTeamFolder,
+  renameTeamFolder,
+  deleteTeamFolder,
+  addTeamToFolder,
+  removeTeamFromFolder,
+  bulkAddTeamsToFolder,
+} from "./team-folders";
+
+// Smart folder mutations
+export {
+  createSmartFolder,
+  updateSmartFolder,
+  deleteSmartFolder,
+} from "./smart-folders";
 
 // Coach mutations
 export {

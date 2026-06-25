@@ -1,13 +1,18 @@
 "use client";
 
 /**
- * DashboardBuilderWrapper
+ * BuilderAccountWorkspace
  *
- * Client component that wraps TeamWorkspaceV2 with API persistence for the
- * authenticated dashboard builder. Includes:
+ * Client component for the /builder/t/[id] editor route when editing an
+ * account-backed (API-persisted) team. Provides API persistence + crash-recovery
+ * for the /builder/t/[id] account-team editor.
+ *
+ * Features:
  * - API persistence with router.refresh() on mutation success
  * - localStorage crash-recovery backup with 7-day TTL
  * - Restore banner when backup differs from server state
+ * - Full BuilderNav chrome: breadcrumb, topbar, auth section
+ * - Export menu (Copy Showdown / Pokepaste)
  */
 
 import { useRouter } from "next/navigation";
@@ -16,7 +21,7 @@ import { toast } from "sonner";
 import { type GameFormat } from "@trainers/pokemon";
 import { type TeamWithPokemon, type Tables } from "@trainers/supabase";
 
-import { PageHeader } from "@/components/dashboard/page-header";
+import { BuilderNav } from "@/components/builder-nav";
 
 import { ExportMenu } from "./export-menu";
 import { createApiPersistence } from "./persistence/api-persistence";
@@ -29,10 +34,9 @@ import { Topbar } from "./topbar";
 // Props
 // =============================================================================
 
-interface DashboardBuilderWrapperProps {
+interface BuilderAccountWorkspaceProps {
   team: TeamWithPokemon;
   format: GameFormat | undefined;
-  username: string;
   alts: Tables<"alts">[];
 }
 
@@ -40,12 +44,11 @@ interface DashboardBuilderWrapperProps {
 // Component
 // =============================================================================
 
-export function DashboardBuilderWrapper({
+export function BuilderAccountWorkspace({
   team,
   format,
-  username: _username,
   alts,
-}: DashboardBuilderWrapperProps) {
+}: BuilderAccountWorkspaceProps) {
   const router = useRouter();
   const { hasPendingRestore, backupSavedAt, dismiss, snapshot } =
     useLocalBackup(team);
@@ -102,16 +105,16 @@ export function DashboardBuilderWrapper({
         format={format}
         alts={alts}
         persistence={persistence}
-        isAuthenticated={true}
+        isAuthenticated
         renderHeader={(actions) => (
-          <PageHeader hideNotifications>
+          <BuilderNav>
             <Topbar
               team={team}
               mode="api"
               exportMenu={<ExportMenu team={team} />}
               {...actions}
             />
-          </PageHeader>
+          </BuilderNav>
         )}
       />
     </PersistenceProvider>

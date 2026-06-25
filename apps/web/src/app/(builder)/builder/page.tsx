@@ -1,6 +1,11 @@
 import { type Metadata } from "next";
 
+import { getCurrentUserAlts } from "@trainers/supabase";
+
 import { CopyrightYear } from "@/components/layout/copyright-year";
+import { fetchEnrichedAccountTeams } from "@/lib/data/enriched-teams";
+import { createClientReadOnly } from "@/lib/supabase/server";
+import { type EnrichedAccountTeam } from "@/components/team-builder/persistence/account-team-record";
 import { LandingShell } from "@/components/team-builder/landing/landing-shell";
 
 export const metadata: Metadata = {
@@ -29,6 +34,31 @@ const siteFooter = (
   </footer>
 );
 
-export default function BuilderPage() {
-  return <LandingShell footer={siteFooter} />;
+export default async function BuilderPage() {
+  const supabase = await createClientReadOnly();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const userId = user?.id ?? null;
+
+  let initialAccountTeams: EnrichedAccountTeam[] | undefined = undefined;
+  let initialAlts: { id: number; username: string }[] = [];
+
+  if (userId) {
+    const [teams, alts] = await Promise.all([
+      fetchEnrichedAccountTeams(supabase, userId),
+      getCurrentUserAlts(supabase),
+    ]);
+    initialAccountTeams = teams;
+    initialAlts = alts.map((a) => ({ id: a.id, username: a.username }));
+  }
+
+  return (
+    <LandingShell
+      footer={siteFooter}
+      userId={userId}
+      initialAccountTeams={initialAccountTeams}
+      initialAlts={initialAlts}
+    />
+  );
 }

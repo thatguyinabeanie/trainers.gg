@@ -217,6 +217,23 @@ export {
   type PokemonUpdate,
   teamUpdateDataSchema,
   type TeamUpdateData,
+  // Phase 2 — landing page (flags, reorder, folders, smart-folder criteria)
+  teamFlagsSchema,
+  type TeamFlagsInput,
+  reorderTeamsInputSchema,
+  type ReorderTeamsInput,
+  teamFolderNameSchema,
+  type TeamFolderNameInput,
+  bulkTeamIdsSchema,
+  type BulkTeamIdsInput,
+  smartFolderPredicateSchema,
+  type SmartFolderPredicate,
+  smartFolderCriteriaSchema,
+  type SmartFolderCriteria,
+  createSmartFolderInputSchema,
+  type CreateSmartFolderInput,
+  updateSmartFolderInputSchema,
+  type UpdateSmartFolderInput,
 } from "./team-builder";
 
 // Builder UI preference validators

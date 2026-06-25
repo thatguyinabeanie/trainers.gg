@@ -25,7 +25,7 @@ export function QuickActions() {
     {
       label: "Team Builder",
       description: "Build your roster",
-      href: "/teams",
+      href: "/builder",
       icon: Plus,
       variant: "outline" as const,
     },

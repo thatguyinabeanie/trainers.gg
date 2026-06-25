@@ -29,6 +29,9 @@ import {
   setDraftArchived,
   setDraftSortOrder as storeSortOrder,
   toggleDraftFolder as storeToggleFolder,
+  renameLocalDraft as storeRenameDraft,
+  setDraftLocalOnly as storeSetDraftLocalOnly,
+  duplicateLocalDraft as storeDuplicateDraft,
 } from "./local-drafts-store";
 import { type LocalDraftId, type LocalDraftRecord } from "./local-drafts-types";
 
@@ -76,6 +79,22 @@ interface UseLocalDraftsReturn {
    * Updates the store; the subscription drives the re-render.
    */
   toggleDraftFolder: (id: LocalDraftId, folderId: string) => void;
+  /**
+   * Rename a draft by updating its team name.
+   * Bumps updatedAt; the subscription drives the re-render.
+   */
+  renameDraft: (id: LocalDraftId, name: string) => void;
+  /**
+   * Set the deliberate local-only flag on a draft.
+   * When true, the draft is excluded from the sync reconcile prompt (spec §9).
+   * Updates the store; the subscription drives the re-render.
+   */
+  setDraftLocalOnly: (id: LocalDraftId, localOnly: boolean) => void;
+  /**
+   * Duplicate a draft into a brand-new draft (new id), name "<name> (copy)".
+   * Returns the new LocalDraftRecord, or null if the source id is not found.
+   */
+  duplicateDraft: (id: LocalDraftId) => LocalDraftRecord | null;
 }
 
 /**
@@ -120,6 +139,18 @@ export function useLocalDrafts(): UseLocalDraftsReturn {
     storeToggleFolder(id, folderId);
   }
 
+  function renameDraft(id: LocalDraftId, name: string): void {
+    storeRenameDraft(id, name);
+  }
+
+  function setDraftLocalOnly(id: LocalDraftId, localOnly: boolean): void {
+    storeSetDraftLocalOnly(id, localOnly);
+  }
+
+  function duplicateDraft(id: LocalDraftId): LocalDraftRecord | null {
+    return storeDuplicateDraft(id);
+  }
+
   return {
     drafts,
     hydrated,
@@ -129,6 +160,9 @@ export function useLocalDrafts(): UseLocalDraftsReturn {
     archiveDraft,
     setDraftSortOrder,
     toggleDraftFolder,
+    renameDraft,
+    setDraftLocalOnly,
+    duplicateDraft,
   };
 }
 

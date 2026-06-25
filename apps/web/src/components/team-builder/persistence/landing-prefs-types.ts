@@ -48,6 +48,11 @@ export interface LandingPrefs {
    * `null` means "All teams" (no folder filter applied).
    */
   selectedFolderId: string | null;
+  /**
+   * ID of the alt whose teams are currently being viewed.
+   * `null` means "All alts" (no alt filter applied).
+   */
+  selectedAltId: number | null;
 }
 
 // =============================================================================
@@ -64,4 +69,5 @@ export const DEFAULT_LANDING_PREFS: LandingPrefs = {
   density: "comfortable",
   railCollapsed: false,
   selectedFolderId: null,
+  selectedAltId: null,
 };

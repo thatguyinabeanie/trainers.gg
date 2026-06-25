@@ -162,8 +162,6 @@ export function DashboardSidebar({
             pathname={pathname}
             communities={communities}
             isOnboarding={isOnboarding}
-            alts={alts}
-            selectedAltUsername={selectedAltUsername}
             hasTeamBuilderAccess={hasTeamBuilderAccess}
             isSiteAdmin={isSiteAdmin}
           />
@@ -601,8 +599,6 @@ interface PlayerNavProps {
   pathname: string;
   communities: CommunityInfo[];
   isOnboarding?: boolean;
-  alts: AltInfo[];
-  selectedAltUsername: string | null;
   hasTeamBuilderAccess?: boolean;
   isSiteAdmin?: boolean;
 }
@@ -611,25 +607,9 @@ function PlayerNav({
   pathname,
   communities,
   isOnboarding = false,
-  alts,
-  selectedAltUsername,
   hasTeamBuilderAccess = false,
   isSiteAdmin = false,
 }: PlayerNavProps) {
-  // Resolve the current alt to build a context-aware Team Builder link.
-  // When "All Alts" is selected (no cookie), go to the cross-alt teams page.
-  // When a specific alt is selected, go to that alt's teams page.
-  // For single-alt users, go directly to their only alt's teams page.
-  const selectedAlt =
-    selectedAltUsername != null
-      ? (alts.find((alt) => alt.username === selectedAltUsername) ?? null)
-      : null;
-  const builderAltUsername =
-    selectedAlt?.username ?? (alts.length === 1 ? alts[0]?.username : null);
-  const builderHref = builderAltUsername
-    ? `/dashboard/alts/${builderAltUsername}/teams`
-    : "/dashboard/teams";
-
   const playerItems = [
     {
       label: "Home",
@@ -646,11 +626,9 @@ function PlayerNav({
     },
     {
       label: "Builder",
-      href: builderHref,
+      href: "/builder",
       icon: Hammer,
-      isActive:
-        pathname === "/dashboard/teams" ||
-        (pathname.includes("/alts/") && pathname.includes("/teams")),
+      isActive: pathname.startsWith("/builder"),
       disabled: !hasTeamBuilderAccess,
     },
   ];
@@ -808,7 +786,7 @@ function PlayerNav({
                   ? [
                       {
                         label: "Team Builder",
-                        href: builderHref,
+                        href: "/builder",
                         icon: Hammer,
                       },
                     ]

@@ -7,6 +7,8 @@
  * import from this module.
  */
 
+import { getActiveFormats } from "@trainers/pokemon";
+
 import { type LocalDraftRecord } from "../persistence/local-drafts-types";
 
 /** Up-to-6 species slots used to render a row's sprite strip. */
@@ -31,6 +33,11 @@ export interface LocalDraftSummary {
    * format_legal !== false. Mirrors the isIllegal() logic in predicate-eval.ts.
    */
   isLegal: boolean;
+  /**
+   * Origin of this draft. "account" = DB-backed (synced), "local" = localStorage only.
+   * Defaults to "local" for back-compat with existing records that lack the field.
+   */
+  source: "local" | "account";
 }
 
 /** Default display name for an unnamed draft. */
@@ -60,6 +67,7 @@ export function toDraftSummary(record: LocalDraftRecord): LocalDraftSummary {
     })),
     updatedAt: record.updatedAt,
     isLegal,
+    source: record.source ?? "local",
   };
 }
 
@@ -68,9 +76,55 @@ export function draftEditorHref(id: string): string {
   return `/builder/t/${id}`;
 }
 
+// =============================================================================
+// Save-local payload helper
+// =============================================================================
+
+/**
+ * Build the payload expected by the save-local teams API from a local draft.
+ *
+ * Mirrors the inline mapping in `local-builder-workspace.tsx` (handleSaveToAccount,
+ * ~lines 196-211): filters out empty slots, sorts by team_position, and strips the
+ * synthetic negative `id` field before submitting to the server.
+ *
+ * Centralised here so the login-reconcile banner and the workspace can share
+ * identical behaviour without importing from each other.
+ */
+export function toSaveLocalPayload(
+  record: LocalDraftRecord,
+  altId: number
+): {
+  altId: number;
+  name: string;
+  format: string;
+  pokemon: Record<string, unknown>[];
+} {
+  const pokemon = record.team.team_pokemon
+    .filter((tp) => tp.pokemon !== null)
+    .sort((a, b) => a.team_position - b.team_position)
+    .map((tp) => {
+      const { id: _id, ...pokemonData } = tp.pokemon!;
+      return pokemonData as Record<string, unknown>;
+    });
+
+  return {
+    altId,
+    name: record.team.name || "Untitled Team",
+    format: record.team.format || getActiveFormats()[0]?.id || "",
+    pokemon,
+  };
+}
+
 /** Props for the name-first TeamRow on the landing. */
 export interface TeamRowProps {
   summary: LocalDraftSummary;
+  /**
+   * Whether the current user is signed in. Affects the sync badge:
+   * - undefined/false + source "local" → "Local-only" (lock icon, muted)
+   * - true + source "local" → "Local" (cloud icon, amber/muted — unsaved draft)
+   * - source "account" → "Synced" (check icon, teal/emerald — DB-backed)
+   */
+  isAuthenticated?: boolean;
   /** Delete this draft (handled by the row's overflow menu). */
   onDelete?: (id: string) => void;
   /**
@@ -150,4 +204,55 @@ export interface TeamRowProps {
    * menu. `dir` is `"up"` or `"down"`.
    */
   onMove?: (id: string, dir: "up" | "down") => void;
+  // ---------------------------------------------------------------------------
+  // §10.2 — additional row actions + §5 alt mini-badge
+  // ---------------------------------------------------------------------------
+  /** Alt accounts available for "Move to alt" / "Duplicate to alt" submenus. */
+  alts?: { id: number; username: string }[];
+  /**
+   * When true, renders a small muted "@altUsername" badge near the format/sync
+   * badges. Only meaningful for account-sourced rows shown in the "All alts" view.
+   */
+  showAltBadge?: boolean;
+  /**
+   * The username of the alt that owns this team (account rows).
+   * Displayed in the alt mini-badge when showAltBadge is true.
+   */
+  altUsername?: string;
+  /**
+   * Whether this team is currently public (account rows).
+   * Drives the "Make public" / "Make private" label in the overflow menu.
+   */
+  isPublic?: boolean;
+  /**
+   * Whether this team is local-only and should not sync (local rows).
+   * Drives the "Keep local-only" / "Allow syncing" label.
+   */
+  localOnly?: boolean;
+  /** When provided, adds a "Rename" item to the overflow menu. */
+  onRename?: (id: string) => void;
+  /** When provided, adds a "Duplicate" item to the overflow menu. */
+  onDuplicate?: (id: string) => void;
+  /**
+   * When provided alongside `alts`, adds a "Move to alt ▸" submenu.
+   * Calls onMoveToAlt(id, altId) when the user picks an alt.
+   */
+  onMoveToAlt?: (id: string, altId: number) => void;
+  /**
+   * When provided alongside `alts`, adds a "Duplicate to alt ▸" submenu.
+   * Calls onDuplicateToAlt(id, altId) when the user picks an alt.
+   */
+  onDuplicateToAlt?: (id: string, altId: number) => void;
+  /** When provided, adds an "Export (Showdown)" item to the overflow menu. */
+  onExport?: (id: string) => void;
+  /**
+   * When provided and summary.source === "account", adds a "Make public" /
+   * "Make private" toggle to the overflow menu. Passes !isPublic as the new value.
+   */
+  onMakePublic?: (id: string, isPublic: boolean) => void;
+  /**
+   * When provided and summary.source === "local", adds a "Keep local-only" /
+   * "Allow syncing" toggle to the overflow menu. Passes !localOnly as the new value.
+   */
+  onToggleLocalOnly?: (id: string, localOnly: boolean) => void;
 }

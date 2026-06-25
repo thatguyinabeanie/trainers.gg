@@ -36,6 +36,24 @@ export interface LocalDraftRecord {
    * Empty array means the draft is in no folder.
    */
   folderIds: string[];
+  /**
+   * Origin of this record. Absent ⇒ "local" (back-compat default for existing
+   * localStorage drafts). "account" records are DB-backed teams mapped into this
+   * shape by toAccountRecord() so the landing pipeline treats both uniformly.
+   */
+  source?: "local" | "account";
+  /** DB team id when source === "account"; null/absent for local drafts. */
+  accountTeamId?: number | null;
+  /**
+   * Owning alt id for account teams (source === "account"); null/absent for
+   * local drafts. Used by the "Viewing" alt scope filter.
+   */
+  altId?: number | null;
+  /**
+   * Deliberate sticky "local-only" flag: a local draft the user has chosen
+   * NOT to sync (spec §9). Excluded from the reconcile prompt.
+   */
+  localOnly?: boolean;
 }
 
 /**

@@ -1,5 +1,13 @@
 # Team Builder Landing — Phased Implementation Plan
 
+## Status (2026-06-25)
+
+Phases 1–6 + dashboard consolidation implemented on `feat/builder-landing-phase2` (PR #377). Alt-pills, fuller row ⋯ menu, and top-level "Export / back up all teams" are in. `hasTeamBuilderAccess` beta gate retired as obsolete — `/builder` is open and team-builder is GA. Remaining work = test-hardening pass (Jest migrate fixtures + Milestone C tests + RTL + Playwright E2E; CI currently disabled due to GitHub Actions billing).
+
+The phase tables below are preserved as historical record.
+
+---
+
 > **For agentic workers:** This is the **governing roadmap**. Each phase below is a self-contained, working, testable deliverable. Per-phase bite-sized TDD task breakdowns are authored **just-in-time** at the start of each phase (via `superpowers:writing-plans` → `superpowers:subagent-driven-development`), because later phases' exact interfaces depend on earlier phases' outcomes.
 
 **Goal:** Turn `/builder` from a single-team editor into a rich team-management landing — unified list, alts, folders, smart search, quick-look, bulk actions, and a safe lifecycle — that beats the Showdown teambuilder.
