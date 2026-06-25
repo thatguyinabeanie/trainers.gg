@@ -728,8 +728,10 @@ export function TeamRow({
 }: TeamRowProps) {
   const highlightSet = new Set(highlightSpecies ?? []);
 
-  // dnd-kit sortable — only active when reorderable; disabled otherwise so the
-  // hook is always called (Rules of Hooks) but has no drag behaviour.
+  // dnd-kit sortable — always enabled so rows can be dragged in any sort mode
+  // (onto alt pills or folder-rail nodes). When not in custom-order mode the
+  // transform/transition are suppressed (see sortableStyle below) so only the
+  // opacity-lift visual appears while the row is airborne.
   const {
     attributes,
     listeners,
@@ -739,7 +741,6 @@ export function TeamRow({
     isDragging,
   } = useSortable({
     id: summary.id,
-    disabled: !reorderable,
   });
 
   // Mobile detection — SSR renders desktop path; client corrects after hydration.
@@ -747,9 +748,13 @@ export function TeamRow({
   const isClient = useIsClient();
   const isMobile = useIsMobile();
 
+  // In custom-order mode apply the full translate + transition so the list
+  // reflows during a reorder drag. In other modes suppress the transform so
+  // sibling rows don't shuffle misleadingly — the row just fades via opacity
+  // while it's being dragged onto an alt pill or folder node.
   const sortableStyle: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: reorderable ? CSS.Transform.toString(transform) : undefined,
+    transition: reorderable ? transition : undefined,
     zIndex: isDragging ? 10 : undefined,
     opacity: isDragging ? 0.5 : undefined,
   };
@@ -802,25 +807,24 @@ export function TeamRow({
       style={sortableStyle}
       className="group flex items-center gap-2 rounded-lg bg-muted/30 py-2.5 transition-colors hover:bg-muted/50 sm:gap-3"
     >
-      {/* Drag grip handle — shown only when reorderable */}
-      {reorderable && (
-        // ≥40px tap area on mobile, shrinks to sm: size; hover-revealed on desktop
-        <div
-          className={cn(
-            "flex shrink-0 cursor-grab items-center justify-center active:cursor-grabbing",
-            "size-10 sm:size-6",
-            // Desktop: hidden by default, revealed on group-hover
-            "opacity-0 group-hover:opacity-100 focus-within:opacity-100",
-            // Always visible on mobile so touch users can see it
-            "sm:opacity-0 sm:group-hover:opacity-100"
-          )}
-          aria-hidden
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="size-4 text-muted-foreground" />
-        </div>
-      )}
+      {/* Drag grip handle — always rendered on desktop, hover-revealed.
+          Rows are draggable in ALL sort modes (onto alt pills or folder nodes).
+          In custom-order mode they additionally reorder the list. */}
+      <div
+        className={cn(
+          "flex shrink-0 cursor-grab items-center justify-center active:cursor-grabbing",
+          "size-10 sm:size-6",
+          // Desktop: hidden by default, revealed on group-hover/focus
+          "opacity-0 group-hover:opacity-100 focus-within:opacity-100",
+          // Keep the sm overrides consistent (sm is desktop threshold)
+          "sm:opacity-0 sm:group-hover:opacity-100"
+        )}
+        aria-hidden
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="size-4 text-muted-foreground" />
+      </div>
 
       {/* Bulk-selection checkbox — sibling of Link, never nested inside it */}
       {selectable && (

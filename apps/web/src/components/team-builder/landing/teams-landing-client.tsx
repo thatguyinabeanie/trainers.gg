@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, FolderOpen, Zap } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 
 import { exportTeamToShowdown } from "@trainers/pokemon";
@@ -725,6 +735,63 @@ export function TeamsLandingClient({
   }
 
   // ==========================================================================
+  // dnd-kit sensors — hoisted here so the single DndContext wraps rail,
+  // toolbar, and content. This enables dropping rows onto alt pills and
+  // folder-rail nodes in addition to reordering within custom-sort sections.
+  // ==========================================================================
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      // Require 8px movement so accidental clicks don't activate drag.
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  /**
+   * Unified drag-end handler.
+   *
+   * Routing priority (checked in order):
+   * 1. Dropped on an alt pill  → move team to that alt
+   * 2. Dropped on a folder node → toggle team into that folder
+   * 3. Dropped on another row (custom-order mode only) → reorder
+   */
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Alt-drop target: "alt-drop-{altId}"
+    if (overId.startsWith("alt-drop-")) {
+      const altId = Number(overId.slice("alt-drop-".length));
+      if (!Number.isNaN(altId)) {
+        moveRecordToAlt(activeId, altId);
+      }
+      return;
+    }
+
+    // Folder-drop target: "folder-drop-{folderId}"
+    if (overId.startsWith("folder-drop-")) {
+      const folderId = overId.slice("folder-drop-".length);
+      toggleDraftFolder(activeId, folderId);
+      return;
+    }
+
+    // Row-on-row reorder — only in custom-order mode
+    if (prefs.sort === "custom" && activeId !== overId) {
+      const allIds = sections.flatMap((s) => s.drafts.map((d) => d.id));
+      const toIndex = allIds.findIndex((id) => id === overId);
+      if (toIndex !== -1) {
+        handleDragReorder(activeId, toIndex);
+      }
+    }
+  }
+
+  // ==========================================================================
   // Derived display state
   // ==========================================================================
 
@@ -762,6 +829,15 @@ export function TeamsLandingClient({
 
   return (
     <div className="flex min-h-0 w-full flex-1">
+      {/* Single DndContext for the entire [rail | toolbar | content] region.
+          Drag-end routing: alt-drop-{id} → moveRecordToAlt,
+          folder-drop-{id} → toggleDraftFolder,
+          row-on-row (custom sort) → handleDragReorder. */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
       {/* Flush-left, full-height sidebar — desktop only, hidden when there are no drafts */}
       {isClient && !isMobile && !(hydrated && drafts.length === 0) && (
         <aside
@@ -919,8 +995,6 @@ export function TeamsLandingClient({
                       sections={sections}
                       density={prefs.density}
                       renderRow={renderRow}
-                      reorderable={reorderable}
-                      onDragReorder={handleDragReorder}
                       emptyState={
                         isArchiveView ? (
                           <p className="text-muted-foreground py-8 text-center text-sm">
@@ -955,6 +1029,7 @@ export function TeamsLandingClient({
           </PageContainer>
         </div>
       </div>
+      </DndContext>
 
       {/* Bulk-action bar — fixed at bottom, shown when ≥1 row is selected */}
       <BulkActionBar
