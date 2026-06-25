@@ -36,12 +36,15 @@ export async function updateSmartFolder(
   folderId: number,
   data: Pick<TablesUpdate<"smart_folders">, "name" | "criteria">
 ): Promise<void> {
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("smart_folders")
     .update(data)
-    .eq("id", folderId);
+    .eq("id", folderId)
+    .select("id");
 
   if (error) throw new Error(`Failed to update smart folder: ${error.message}`);
+  if (!updated || updated.length === 0)
+    throw new Error("Smart folder not found or not authorized");
 }
 
 /**

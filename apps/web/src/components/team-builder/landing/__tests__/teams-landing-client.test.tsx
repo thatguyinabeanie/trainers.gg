@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
@@ -73,70 +80,75 @@ jest.mock("../folder-rail", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ARCHIVED_VIEW_ID } = require("../group-drafts");
   return {
-  FolderRail: ({
-    selectedFolderId,
-    onSelect,
-    counts,
-    collapsed,
-    onCreateManualFolder,
-    onDeleteManualFolder,
-    onCreateSmartFolder,
-  }: {
-    selectedFolderId: string | null;
-    onSelect: (id: string | null) => void;
-    counts: { all: number; archived: number; manual: Record<string, number>; smart: Record<string, number> };
-    collapsed: boolean;
-    onCreateManualFolder: (name: string) => void;
-    onDeleteManualFolder?: (id: string) => void;
-    onCreateSmartFolder?: () => void;
-  }) => (
-    <div
-      data-testid="folder-rail"
-      data-selected={selectedFolderId ?? "null"}
-      data-collapsed={collapsed ? "true" : "false"}
-      data-all-count={counts.all}
-    >
-      <button
-        onClick={() => onSelect(null)}
-        aria-label="Select All Teams folder"
+    FolderRail: ({
+      selectedFolderId,
+      onSelect,
+      counts,
+      collapsed,
+      onCreateManualFolder,
+      onDeleteManualFolder,
+      onCreateSmartFolder,
+    }: {
+      selectedFolderId: string | null;
+      onSelect: (id: string | null) => void;
+      counts: {
+        all: number;
+        archived: number;
+        manual: Record<string, number>;
+        smart: Record<string, number>;
+      };
+      collapsed: boolean;
+      onCreateManualFolder: (name: string) => void;
+      onDeleteManualFolder?: (id: string) => void;
+      onCreateSmartFolder?: () => void;
+    }) => (
+      <div
+        data-testid="folder-rail"
+        data-selected={selectedFolderId ?? "null"}
+        data-collapsed={collapsed ? "true" : "false"}
+        data-all-count={counts.all}
       >
-        All Teams
-      </button>
-      <button
-        onClick={() => onSelect("folder-1")}
-        aria-label="Select folder-1"
-      >
-        Folder 1
-      </button>
-      <button
-        onClick={() => onSelect(ARCHIVED_VIEW_ID)}
-        aria-label="Select Archived"
-      >
-        Archived
-      </button>
-      {onCreateManualFolder && (
         <button
-          onClick={() => onCreateManualFolder("New Folder")}
-          aria-label="Create manual folder"
+          onClick={() => onSelect(null)}
+          aria-label="Select All Teams folder"
         >
-          + New Folder
+          All Teams
         </button>
-      )}
-      {onDeleteManualFolder && (
         <button
-          onClick={() => onDeleteManualFolder("folder-1")}
-          aria-label="Delete folder-1"
+          onClick={() => onSelect("folder-1")}
+          aria-label="Select folder-1"
         >
-          Delete Folder
+          Folder 1
         </button>
-      )}
-      {onCreateSmartFolder && (
-        <button onClick={onCreateSmartFolder} aria-label="New smart folder">
-          + Smart Folder
+        <button
+          onClick={() => onSelect(ARCHIVED_VIEW_ID)}
+          aria-label="Select Archived"
+        >
+          Archived
         </button>
-      )}
-    </div>
-  ),
+        {onCreateManualFolder && (
+          <button
+            onClick={() => onCreateManualFolder("New Folder")}
+            aria-label="Create manual folder"
+          >
+            + New Folder
+          </button>
+        )}
+        {onDeleteManualFolder && (
+          <button
+            onClick={() => onDeleteManualFolder("folder-1")}
+            aria-label="Delete folder-1"
+          >
+            Delete Folder
+          </button>
+        )}
+        {onCreateSmartFolder && (
+          <button onClick={onCreateSmartFolder} aria-label="New smart folder">
+            + Smart Folder
+          </button>
+        )}
+      </div>
+    ),
   };
 });
 
@@ -150,7 +162,10 @@ jest.mock("../team-sections", () => ({
   }: {
     sections: Array<{ id: string; drafts: Array<{ id: string }> }>;
     density: string;
-    renderRow: (record: { id: string }, rowProps: { tabIndex: number; ref: () => void }) => React.ReactNode;
+    renderRow: (
+      record: { id: string },
+      rowProps: { tabIndex: number; ref: () => void }
+    ) => React.ReactNode;
     emptyState?: React.ReactNode;
   }) => {
     const allDrafts = sections.flatMap((s) => s.drafts);
@@ -158,7 +173,11 @@ jest.mock("../team-sections", () => ({
       return emptyState ? <>{emptyState}</> : null;
     }
     return (
-      <div data-testid="team-sections" data-density={density} data-section-count={sections.length}>
+      <div
+        data-testid="team-sections"
+        data-density={density}
+        data-section-count={sections.length}
+      >
         {allDrafts.map((record) =>
           renderRow(record, { tabIndex: 0, ref: () => {} })
         )}
@@ -285,12 +304,14 @@ jest.mock("../quick-look-sheet", () => ({
 
 // Stub toQuickLookData
 jest.mock("../quick-look-shared", () => ({
-  toQuickLookData: jest.fn((record: { id: string; team: { name: string } }) => ({
-    id: record.id,
-    name: record.team.name || "Untitled Team",
-    format: null,
-    slots: [],
-  })),
+  toQuickLookData: jest.fn(
+    (record: { id: string; team: { name: string } }) => ({
+      id: record.id,
+      name: record.team.name || "Untitled Team",
+      format: null,
+      slots: [],
+    })
+  ),
 }));
 
 // Stub toDraftSummary + draftEditorHref
@@ -423,7 +444,10 @@ jest.mock("../bulk-action-bar", () => ({
         data-count={selectedCount}
       >
         <span>{selectedCount} selected</span>
-        <button onClick={() => onMoveToFolder("folder-1")} aria-label="Move to folder">
+        <button
+          onClick={() => onMoveToFolder("folder-1")}
+          aria-label="Move to folder"
+        >
           Move to folder
         </button>
         <button onClick={onExport} aria-label="Export selected">
@@ -460,10 +484,7 @@ jest.mock("../empty-state", () => ({
     onImport?: () => void;
   }) => (
     <div data-testid="landing-empty-state" data-variant={variant}>
-      <button
-        onClick={onNewTeam}
-        aria-label="Create your first team"
-      >
+      <button onClick={onNewTeam} aria-label="Create your first team">
         Start from scratch
       </button>
     </div>
@@ -573,8 +594,16 @@ jest.mock("@/components/ui/sheet", () => ({
     side?: string;
     className?: string;
   }) => <div data-testid="sheet-content">{children}</div>,
-  SheetHeader: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div data-testid="sheet-header" className={className}>{children}</div>
+  SheetHeader: ({
+    children,
+    className,
+  }: {
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <div data-testid="sheet-header" className={className}>
+      {children}
+    </div>
   ),
   SheetTitle: ({ children }: { children: React.ReactNode }) => (
     <h2 data-testid="sheet-title">{children}</h2>
@@ -590,7 +619,10 @@ jest.mock("lucide-react", () => {
     Icon.displayName = name;
     return Icon;
   };
-  return new Proxy({}, { get: (_target, prop: string) => mock(prop as string) });
+  return new Proxy(
+    {},
+    { get: (_target, prop: string) => mock(prop as string) }
+  );
 });
 
 // =============================================================================
@@ -643,7 +675,9 @@ function makeDraftRecord(
 }
 
 /** Default hook return values for a fresh, hydrated state (useUnifiedTeams shape). */
-function makeDefaultDraftsHook(drafts = [makeRecord("local-aa01", "Test Team")]) {
+function makeDefaultDraftsHook(
+  drafts = [makeRecord("local-aa01", "Test Team")]
+) {
   return {
     drafts,
     hydrated: true,
@@ -751,7 +785,9 @@ describe("TeamsLandingClient", () => {
       const user = userEvent.setup();
       render(<TeamsLandingClient />);
 
-      await user.click(screen.getByRole("button", { name: /create a new team/i }));
+      await user.click(
+        screen.getByRole("button", { name: /create a new team/i })
+      );
       expect(mockCreateDraft).toHaveBeenCalledTimes(1);
       expect(mockPush).toHaveBeenCalledWith("/builder/t/local-new01");
     });
@@ -795,7 +831,9 @@ describe("TeamsLandingClient", () => {
     it("does NOT show LandingEmptyState when there are drafts", () => {
       setupDefaultMocks([makeRecord("local-cc01", "Existing Team")]);
       render(<TeamsLandingClient />);
-      expect(screen.queryByTestId("landing-empty-state")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("landing-empty-state")
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -820,7 +858,12 @@ describe("TeamsLandingClient", () => {
         deleteSmartFolder: jest.fn(),
       });
       (useLandingPrefs as MockUseLandingPrefs).mockReturnValue({
-        prefs: { sort: "recent", density: "comfortable", railCollapsed: false, selectedFolderId: null },
+        prefs: {
+          sort: "recent",
+          density: "comfortable",
+          railCollapsed: false,
+          selectedFolderId: null,
+        },
         hydrated: false,
         setPrefs: mockSetPrefs,
       });
@@ -852,10 +895,14 @@ describe("TeamsLandingClient", () => {
       render(<TeamsLandingClient />);
 
       expect(screen.getByTestId("team-row-local-del01")).toBeInTheDocument();
-      await user.click(screen.getByRole("button", { name: "Delete Delete Me" }));
+      await user.click(
+        screen.getByRole("button", { name: "Delete Delete Me" })
+      );
 
       // The row should be gone from the rendered list immediately
-      expect(screen.queryByTestId("team-row-local-del01")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("team-row-local-del01")
+      ).not.toBeInTheDocument();
     });
 
     it("calls deleteDraft after the undo window expires", async () => {
@@ -884,7 +931,9 @@ describe("TeamsLandingClient", () => {
       // does not include the "Your Teams" heading.
       setupDefaultMocks([makeRecord("local-hdr00")]);
       render(<TeamsLandingClient />);
-      expect(screen.getByRole("heading", { name: /your teams/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: /your teams/i })
+      ).toBeInTheDocument();
     });
 
     it("always shows the header New Team button", () => {
@@ -925,7 +974,9 @@ describe("TeamsLandingClient", () => {
 
       // Rain Team matches "Rain" by name; Trick Room does not
       expect(screen.getByTestId("team-row-local-s01")).toBeInTheDocument();
-      expect(screen.queryByTestId("team-row-local-s02")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("team-row-local-s02")
+      ).not.toBeInTheDocument();
     });
 
     it("shows 'no matches' state when search yields no results", async () => {
@@ -970,7 +1021,9 @@ describe("TeamsLandingClient", () => {
       it("does NOT render a QuickLookSheet on desktop", () => {
         setupDefaultMocks([makeRecord("local-ql02")]);
         render(<TeamsLandingClient />);
-        expect(screen.queryByTestId("quick-look-sheet")).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId("quick-look-sheet")
+        ).not.toBeInTheDocument();
       });
 
       it("rows do NOT receive onPeek on desktop", () => {
@@ -1010,11 +1063,15 @@ describe("TeamsLandingClient", () => {
         setupDefaultMocks([makeRecord("local-mob04", "Rain Team")]);
         render(<TeamsLandingClient />);
 
-        await user.click(screen.getByRole("button", { name: /peek rain team/i }));
+        await user.click(
+          screen.getByRole("button", { name: /peek rain team/i })
+        );
         expect(screen.getByTestId("quick-look-sheet")).toBeInTheDocument();
 
         await user.click(screen.getByRole("button", { name: /close sheet/i }));
-        expect(screen.queryByTestId("quick-look-sheet")).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId("quick-look-sheet")
+        ).not.toBeInTheDocument();
       });
     });
 
@@ -1028,7 +1085,9 @@ describe("TeamsLandingClient", () => {
         setupDefaultMocks([makeRecord("local-ssr01")]);
         render(<TeamsLandingClient />);
         expect(screen.queryByTestId("quick-look")).not.toBeInTheDocument();
-        expect(screen.queryByTestId("quick-look-sheet")).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId("quick-look-sheet")
+        ).not.toBeInTheDocument();
       });
     });
   });
@@ -1068,19 +1127,30 @@ describe("TeamsLandingClient", () => {
       setupDefaultMocks([makeRecord("local-f01")]);
       render(<TeamsLandingClient />);
 
-      await user.click(screen.getByRole("button", { name: /select folder-1/i }));
-      expect(mockSetPrefs).toHaveBeenCalledWith({ selectedFolderId: "folder-1" });
+      await user.click(
+        screen.getByRole("button", { name: /select folder-1/i })
+      );
+      expect(mockSetPrefs).toHaveBeenCalledWith({
+        selectedFolderId: "folder-1",
+      });
     });
 
     it("selecting All Teams calls setPrefs({ selectedFolderId: null })", async () => {
       const user = userEvent.setup();
       // Start with a folder selected
       (useLandingPrefs as MockUseLandingPrefs).mockReturnValue({
-        prefs: { sort: "recent", density: "comfortable", railCollapsed: false, selectedFolderId: "folder-1" },
+        prefs: {
+          sort: "recent",
+          density: "comfortable",
+          railCollapsed: false,
+          selectedFolderId: "folder-1",
+        },
         hydrated: true,
         setPrefs: mockSetPrefs,
       });
-      (useUnifiedTeams as MockUseUnifiedTeams).mockReturnValue(makeDefaultDraftsHook([makeRecord("local-f02")]));
+      (useUnifiedTeams as MockUseUnifiedTeams).mockReturnValue(
+        makeDefaultDraftsHook([makeRecord("local-f02")])
+      );
       (useFolders as MockUseFolders).mockReturnValue({
         manualFolders: [],
         smartFolders: [],
@@ -1093,7 +1163,9 @@ describe("TeamsLandingClient", () => {
       });
       render(<TeamsLandingClient />);
 
-      await user.click(screen.getByRole("button", { name: /select all teams/i }));
+      await user.click(
+        screen.getByRole("button", { name: /select all teams/i })
+      );
       expect(mockSetPrefs).toHaveBeenCalledWith({ selectedFolderId: null });
     });
   });
@@ -1117,7 +1189,9 @@ describe("TeamsLandingClient", () => {
       setupDefaultMocks([makeRecord("local-t02")]);
       render(<TeamsLandingClient />);
 
-      await user.click(screen.getByRole("button", { name: /density compact/i }));
+      await user.click(
+        screen.getByRole("button", { name: /density compact/i })
+      );
       expect(mockSetPrefs).toHaveBeenCalledWith({ density: "compact" });
     });
   });
@@ -1179,7 +1253,9 @@ describe("TeamsLandingClient", () => {
   describe("archive/unarchive interaction", () => {
     it("clicking Toggle archive calls archiveDraft(id, true) and shows toast", async () => {
       const user = userEvent.setup();
-      const draft = makeRecord("local-a01", "Archivable Team", { archived: false });
+      const draft = makeRecord("local-a01", "Archivable Team", {
+        archived: false,
+      });
       setupDefaultMocks([draft]);
       render(<TeamsLandingClient />);
 
@@ -1193,7 +1269,9 @@ describe("TeamsLandingClient", () => {
     it("clicking Toggle archive on an archived draft unarchives it (archived view)", async () => {
       const user = userEvent.setup();
       // Use the archived view so the archived draft is visible
-      const draft = makeRecord("local-a02", "Archived Team", { archived: true });
+      const draft = makeRecord("local-a02", "Archived Team", {
+        archived: true,
+      });
       (useLandingPrefs as MockUseLandingPrefs).mockReturnValue({
         prefs: {
           sort: "recent",
@@ -1204,7 +1282,9 @@ describe("TeamsLandingClient", () => {
         hydrated: true,
         setPrefs: mockSetPrefs,
       });
-      (useUnifiedTeams as MockUseUnifiedTeams).mockReturnValue(makeDefaultDraftsHook([draft]));
+      (useUnifiedTeams as MockUseUnifiedTeams).mockReturnValue(
+        makeDefaultDraftsHook([draft])
+      );
       (useFolders as MockUseFolders).mockReturnValue({
         manualFolders: [],
         smartFolders: [],
@@ -1239,7 +1319,10 @@ describe("TeamsLandingClient", () => {
       await user.click(
         screen.getByRole("button", { name: /move movable team to folder/i })
       );
-      expect(mockToggleDraftFolder).toHaveBeenCalledWith("local-m01", "folder-1");
+      expect(mockToggleDraftFolder).toHaveBeenCalledWith(
+        "local-m01",
+        "folder-1"
+      );
     });
   });
 
@@ -1288,7 +1371,9 @@ describe("TeamsLandingClient", () => {
       await user.click(
         screen.getByRole("button", { name: /save as (smart )?folder/i })
       );
-      await user.click(screen.getByRole("button", { name: /save smart folder/i }));
+      await user.click(
+        screen.getByRole("button", { name: /save smart folder/i })
+      );
 
       expect(mockCreateSmartFolder).toHaveBeenCalledTimes(1);
       expect(mockToast.success).toHaveBeenCalledWith(
@@ -1307,7 +1392,9 @@ describe("TeamsLandingClient", () => {
       setupDefaultMocks([makeRecord("local-nsf01")]);
       render(<TeamsLandingClient />);
 
-      await user.click(screen.getByRole("button", { name: /new smart folder/i }));
+      await user.click(
+        screen.getByRole("button", { name: /new smart folder/i })
+      );
       expect(screen.getByRole("dialog")).toBeInTheDocument();
       expect(screen.getByTestId("criteria-builder")).toBeInTheDocument();
     });
@@ -1350,7 +1437,9 @@ describe("TeamsLandingClient", () => {
     it("does NOT show archived-view note in the default 'All teams' view", () => {
       setupDefaultMocks([makeRecord("local-arc02")]);
       render(<TeamsLandingClient />);
-      expect(screen.queryByText(/viewing archived teams/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/viewing archived teams/i)
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -1361,7 +1450,12 @@ describe("TeamsLandingClient", () => {
   describe("toolbar", () => {
     it("passes sort and density from prefs to LandingToolbar", () => {
       (useLandingPrefs as MockUseLandingPrefs).mockReturnValue({
-        prefs: { sort: "name", density: "compact", railCollapsed: false, selectedFolderId: null },
+        prefs: {
+          sort: "name",
+          density: "compact",
+          railCollapsed: false,
+          selectedFolderId: null,
+        },
         hydrated: true,
         setPrefs: mockSetPrefs,
       });
@@ -1403,7 +1497,9 @@ describe("TeamsLandingClient", () => {
       render(<TeamsLandingClient />);
 
       // Click the row's checkbox (rendered by the stub when selectable)
-      await user.click(screen.getByRole("checkbox", { name: /select team a/i }));
+      await user.click(
+        screen.getByRole("checkbox", { name: /select team a/i })
+      );
 
       const bar = screen.getByTestId("bulk-action-bar");
       expect(bar).toBeInTheDocument();
@@ -1416,11 +1512,15 @@ describe("TeamsLandingClient", () => {
       render(<TeamsLandingClient />);
 
       // Select a row
-      await user.click(screen.getByRole("checkbox", { name: /select team b/i }));
+      await user.click(
+        screen.getByRole("checkbox", { name: /select team b/i })
+      );
       expect(screen.getByTestId("bulk-action-bar")).toBeInTheDocument();
 
       // Clear selection
-      await user.click(screen.getByRole("button", { name: /clear selection/i }));
+      await user.click(
+        screen.getByRole("button", { name: /clear selection/i })
+      );
       expect(screen.queryByTestId("bulk-action-bar")).not.toBeInTheDocument();
     });
   });
@@ -1438,16 +1538,27 @@ describe("TeamsLandingClient", () => {
       const user = userEvent.setup();
       render(<TeamsLandingClient />);
 
-      await user.click(screen.getByRole("checkbox", { name: /select team a/i }));
-      await user.click(screen.getByRole("checkbox", { name: /select team b/i }));
+      await user.click(
+        screen.getByRole("checkbox", { name: /select team a/i })
+      );
+      await user.click(
+        screen.getByRole("checkbox", { name: /select team b/i })
+      );
 
-      expect(screen.getByTestId("bulk-action-bar")).toHaveAttribute("data-count", "2");
+      expect(screen.getByTestId("bulk-action-bar")).toHaveAttribute(
+        "data-count",
+        "2"
+      );
 
-      await user.click(screen.getByRole("button", { name: /archive selected/i }));
+      await user.click(
+        screen.getByRole("button", { name: /archive selected/i })
+      );
 
       expect(mockArchiveDraft).toHaveBeenCalledWith("local-ba01", true);
       expect(mockArchiveDraft).toHaveBeenCalledWith("local-ba02", true);
-      expect(mockToast.success).toHaveBeenCalledWith(expect.stringMatching(/archived/i));
+      expect(mockToast.success).toHaveBeenCalledWith(
+        expect.stringMatching(/archived/i)
+      );
 
       // Selection cleared after archive
       expect(screen.queryByTestId("bulk-action-bar")).not.toBeInTheDocument();
@@ -1467,13 +1578,23 @@ describe("TeamsLandingClient", () => {
       const user = userEvent.setup();
       render(<TeamsLandingClient />);
 
-      await user.click(screen.getByRole("checkbox", { name: /select team c/i }));
-      await user.click(screen.getByRole("checkbox", { name: /select team d/i }));
+      await user.click(
+        screen.getByRole("checkbox", { name: /select team c/i })
+      );
+      await user.click(
+        screen.getByRole("checkbox", { name: /select team d/i })
+      );
 
       await user.click(screen.getByRole("button", { name: /move to folder/i }));
 
-      expect(mockToggleDraftFolder).toHaveBeenCalledWith("local-bm01", "folder-1");
-      expect(mockToggleDraftFolder).toHaveBeenCalledWith("local-bm02", "folder-1");
+      expect(mockToggleDraftFolder).toHaveBeenCalledWith(
+        "local-bm01",
+        "folder-1"
+      );
+      expect(mockToggleDraftFolder).toHaveBeenCalledWith(
+        "local-bm02",
+        "folder-1"
+      );
 
       // Selection cleared after move
       expect(screen.queryByTestId("bulk-action-bar")).not.toBeInTheDocument();
@@ -1501,14 +1622,24 @@ describe("TeamsLandingClient", () => {
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       render(<TeamsLandingClient />);
 
-      await user.click(screen.getByRole("checkbox", { name: /select team e/i }));
-      await user.click(screen.getByRole("checkbox", { name: /select team f/i }));
+      await user.click(
+        screen.getByRole("checkbox", { name: /select team e/i })
+      );
+      await user.click(
+        screen.getByRole("checkbox", { name: /select team f/i })
+      );
 
-      await user.click(screen.getByRole("button", { name: /delete selected/i }));
+      await user.click(
+        screen.getByRole("button", { name: /delete selected/i })
+      );
 
       // Rows are gone immediately
-      expect(screen.queryByTestId("team-row-local-bd01")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("team-row-local-bd02")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("team-row-local-bd01")
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("team-row-local-bd02")
+      ).not.toBeInTheDocument();
 
       // deleteDraft not yet called (still in undo window)
       expect(mockDeleteDraft).not.toHaveBeenCalled();
@@ -1532,7 +1663,9 @@ describe("TeamsLandingClient", () => {
       render(<TeamsLandingClient />);
 
       // The FAB has aria-label "New team" (lowercase t); the header button is "Create a new team"
-      expect(screen.getByRole("button", { name: "New team" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "New team" })
+      ).toBeInTheDocument();
     });
 
     it("does NOT render the FAB on desktop", () => {
@@ -1542,7 +1675,9 @@ describe("TeamsLandingClient", () => {
       render(<TeamsLandingClient />);
 
       // No button with exact label "New team" (the FAB) — only "Create a new team" (header)
-      expect(screen.queryByRole("button", { name: "New team" })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "New team" })
+      ).not.toBeInTheDocument();
     });
 
     it("FAB creates a draft and navigates on click", async () => {

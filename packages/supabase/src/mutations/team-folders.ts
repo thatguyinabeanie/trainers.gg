@@ -54,12 +54,15 @@ export async function renameTeamFolder(
   folderId: number,
   name: string
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("team_folders")
     .update({ name })
-    .eq("id", folderId);
+    .eq("id", folderId)
+    .select("id");
 
   if (error) throw new Error(`Failed to rename team folder: ${error.message}`);
+  if (!data || data.length === 0)
+    throw new Error("Folder not found or not authorized");
 }
 
 /**
@@ -100,7 +103,10 @@ export async function addTeamToFolder(
 
   const { error } = await supabase
     .from("team_folder_members")
-    .upsert(insert, { onConflict: "folder_id,team_id", ignoreDuplicates: true });
+    .upsert(insert, {
+      onConflict: "folder_id,team_id",
+      ignoreDuplicates: true,
+    });
 
   if (error) throw new Error(`Failed to add team to folder: ${error.message}`);
 }
@@ -144,11 +150,12 @@ export async function bulkAddTeamsToFolder(
 
     const { error } = await supabase
       .from("team_folder_members")
-      .upsert(rows, { onConflict: "folder_id,team_id", ignoreDuplicates: true });
+      .upsert(rows, {
+        onConflict: "folder_id,team_id",
+        ignoreDuplicates: true,
+      });
 
     if (error)
-      throw new Error(
-        `Failed to bulk-add teams to folder: ${error.message}`
-      );
+      throw new Error(`Failed to bulk-add teams to folder: ${error.message}`);
   }
 }

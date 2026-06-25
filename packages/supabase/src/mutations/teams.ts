@@ -221,11 +221,14 @@ export async function updateTeamFlags(
   teamId: number,
   flags: Pick<TablesUpdate<"teams">, "pinned" | "archived" | "sort_order">
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("teams")
     .update(flags)
-    .eq("id", teamId);
+    .eq("id", teamId)
+    .select("id");
   if (error) throw new Error(`Failed to update team flags: ${error.message}`);
+  if (!data || data.length === 0)
+    throw new Error("Team not found or not authorized");
 }
 
 /**
@@ -291,17 +294,20 @@ export async function bulkDeleteTeams(
   supabase: TypedClient,
   teamIds: number[]
 ): Promise<void> {
-  const failures: string[] = [];
+  const results = await Promise.allSettled(
+    teamIds.map((id) => deleteTeam(supabase, id))
+  );
 
-  for (const id of teamIds) {
-    try {
-      await deleteTeam(supabase, id);
-    } catch (err) {
+  const failures: string[] = [];
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
       failures.push(
-        err instanceof Error ? err.message : `Unknown error for team ${id}`
+        result.reason instanceof Error
+          ? result.reason.message
+          : `Unknown error for team ${teamIds[i] ?? i}`
       );
     }
-  }
+  });
 
   if (failures.length > 0) {
     // Log per-team detail server-side only — do not surface Postgres detail
