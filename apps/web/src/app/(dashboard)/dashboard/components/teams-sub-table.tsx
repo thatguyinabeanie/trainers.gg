@@ -31,14 +31,12 @@ import { cn } from "@/lib/utils";
 
 function TeamCard({
   team,
-  altUsername,
 }: {
   team: { id: number; name: string; pokemonSpecies: string[] };
-  altUsername: string;
 }) {
   return (
     <Link
-      href={`/dashboard/alts/${altUsername}/teams/${team.id}`}
+      href={`/builder/t/acct-${team.id}`}
       className="group bg-background/60 hover:bg-background flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
     >
       {/* Team name */}
@@ -270,7 +268,7 @@ export function TeamsSubTable({
           ) : (
             <div className="space-y-1">
               {teams.map((team) => (
-                <TeamCard key={team.id} team={team} altUsername={altUsername} />
+                <TeamCard key={team.id} team={team} />
               ))}
             </div>
           )}

@@ -2315,6 +2315,33 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_folders: {
+        Row: {
+          created_at: string
+          criteria: Json
+          id: number
+          is_seeded: boolean
+          name: string
+          owner_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          criteria?: Json
+          id?: never
+          is_seeded?: boolean
+          name: string
+          owner_user_id: string
+        }
+        Update: {
+          created_at?: string
+          criteria?: Json
+          id?: never
+          is_seeded?: boolean
+          name?: string
+          owner_user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           amount: number | null
@@ -2413,6 +2440,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_folder_members: {
+        Row: {
+          created_at: string
+          folder_id: number
+          id: number
+          team_id: number
+        }
+        Insert: {
+          created_at?: string
+          folder_id: number
+          id?: never
+          team_id: number
+        }
+        Update: {
+          created_at?: string
+          folder_id?: number
+          id?: never
+          team_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_folder_members_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "team_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_folder_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_folders: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+          owner_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          name: string
+          owner_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          name?: string
+          owner_user_id?: string
+        }
+        Relationships: []
       }
       team_pokemon: {
         Row: {
@@ -2539,6 +2623,7 @@ export type Database = {
       }
       teams: {
         Row: {
+          archived: boolean
           created_at: string | null
           created_by: number
           description: string | null
@@ -2549,10 +2634,13 @@ export type Database = {
           name: string
           notes: string | null
           parent_team_id: number | null
+          pinned: boolean
+          sort_order: number | null
           tags: string[] | null
           updated_at: string | null
         }
         Insert: {
+          archived?: boolean
           created_at?: string | null
           created_by: number
           description?: string | null
@@ -2563,10 +2651,13 @@ export type Database = {
           name: string
           notes?: string | null
           parent_team_id?: number | null
+          pinned?: boolean
+          sort_order?: number | null
           tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
+          archived?: boolean
           created_at?: string | null
           created_by?: number
           description?: string | null
@@ -2577,6 +2668,8 @@ export type Database = {
           name?: string
           notes?: string | null
           parent_team_id?: number | null
+          pinned?: boolean
+          sort_order?: number | null
           tags?: string[] | null
           updated_at?: string | null
         }
@@ -4558,6 +4651,7 @@ export type Database = {
         Args: { p_positions: Json; p_team_id: number }
         Returns: undefined
       }
+      reorder_teams: { Args: { p_orders: Json }; Returns: undefined }
       report_match_result: {
         Args: {
           p_match_id: number

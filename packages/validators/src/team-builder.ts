@@ -205,3 +205,91 @@ export const teamUpdateDataSchema = z.object({
 });
 
 export type TeamUpdateData = z.infer<typeof teamUpdateDataSchema>;
+
+// =============================================================================
+// Team-builder landing Phase 2 schemas
+// =============================================================================
+
+/** Flags that can be set on a team (pin, archive, custom sort order). */
+export const teamFlagsSchema = z.object({
+  pinned: z.boolean().optional(),
+  archived: z.boolean().optional(),
+  sortOrder: z.number().int().nullable().optional(),
+});
+
+export type TeamFlagsInput = z.infer<typeof teamFlagsSchema>;
+
+/** Input for batch-reordering teams via drag-and-drop. */
+export const reorderTeamsInputSchema = z
+  .array(
+    z.object({
+      teamId: positiveIntSchema,
+      sortOrder: z.number().int(),
+    })
+  )
+  .min(1)
+  .max(500);
+
+export type ReorderTeamsInput = z.infer<typeof reorderTeamsInputSchema>;
+
+/** Folder name — trimmed, 1–60 characters. */
+export const teamFolderNameSchema = z.string().trim().min(1).max(60);
+
+export type TeamFolderNameInput = z.infer<typeof teamFolderNameSchema>;
+
+/** A list of team IDs for bulk operations (archive, delete, move, etc.). */
+export const bulkTeamIdsSchema = z.array(positiveIntSchema).min(1).max(500);
+
+export type BulkTeamIdsInput = z.infer<typeof bulkTeamIdsSchema>;
+
+/**
+ * A single predicate in a smart-folder criteria set.
+ * Mirrors the client-side `Predicate` union from search-types.ts.
+ */
+export const smartFolderPredicateSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("text"), value: z.string() }),
+  z.object({
+    kind: z.literal("field"),
+    field: z.enum(["name", "species", "ability", "item", "move", "tera"]),
+    value: z.string(),
+  }),
+  z.object({
+    kind: z.literal("flag"),
+    flag: z.enum(["complete", "incomplete", "legal", "illegal"]),
+  }),
+  z.object({ kind: z.literal("format"), value: z.string() }),
+  z.object({
+    kind: z.literal("updated_within"),
+    days: z.number().int().positive(),
+  }),
+]);
+
+export type SmartFolderPredicate = z.infer<typeof smartFolderPredicateSchema>;
+
+/** Persisted criteria for a smart folder — versioned for forward-compatibility. */
+export const smartFolderCriteriaSchema = z.object({
+  version: z.literal(1),
+  predicates: z.array(smartFolderPredicateSchema).max(50),
+});
+
+export type SmartFolderCriteria = z.infer<typeof smartFolderCriteriaSchema>;
+
+/** Input for creating a new smart folder. */
+export const createSmartFolderInputSchema = z.object({
+  name: teamFolderNameSchema,
+  criteria: smartFolderCriteriaSchema,
+});
+
+export type CreateSmartFolderInput = z.infer<
+  typeof createSmartFolderInputSchema
+>;
+
+/** Input for updating an existing smart folder — all fields optional. */
+export const updateSmartFolderInputSchema = z.object({
+  name: teamFolderNameSchema.optional(),
+  criteria: smartFolderCriteriaSchema.optional(),
+});
+
+export type UpdateSmartFolderInput = z.infer<
+  typeof updateSmartFolderInputSchema
+>;

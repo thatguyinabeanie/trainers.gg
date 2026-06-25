@@ -132,6 +132,10 @@ function mergePrefs(stored: Partial<LandingPrefs>): LandingPrefs {
       stored.selectedFolderId !== undefined
         ? stored.selectedFolderId
         : DEFAULT_LANDING_PREFS.selectedFolderId,
+    selectedAltId:
+      stored.selectedAltId !== undefined
+        ? stored.selectedAltId
+        : DEFAULT_LANDING_PREFS.selectedAltId,
   };
 }
 

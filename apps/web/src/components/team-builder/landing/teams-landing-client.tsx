@@ -3,15 +3,31 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, FolderOpen, Zap } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
+
+import { exportTeamToShowdown } from "@trainers/pokemon";
+import { getErrorMessage } from "@trainers/utils";
 
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -21,17 +37,24 @@ import {
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsClient } from "@/hooks/use-is-client";
-import { useAuthContext } from "@/components/auth/auth-provider";
 import { PageContainer } from "@/components/layout/page-container";
 import { cn } from "@/lib/utils";
+import { teamsApi } from "@/lib/api/teams-client";
 
-import { useLocalDrafts } from "../persistence/use-local-drafts";
+import { dbPokemonToFlat } from "../pokemon-utils";
+
+import { useUnifiedTeams } from "../persistence/use-unified-teams";
+import { deleteLocalDraft } from "../persistence/local-drafts-store";
 import { useFolders } from "../persistence/use-folders";
 import { useLandingPrefs } from "../persistence/use-landing-prefs";
+import { type EnrichedAccountTeam } from "../persistence/account-team-record";
 import {
   toDraftSummary,
   draftEditorHref,
+  toSaveLocalPayload,
 } from "./team-landing-shared";
+import { AltPills } from "./alt-pills";
+import { ExportAllButton } from "./export-all-button";
 import { TeamRow } from "./team-row";
 import { SmartSearch } from "./smart-search";
 import { LandingToolbar } from "./landing-toolbar";
@@ -42,6 +65,7 @@ import { QuickLook } from "./quick-look";
 import { QuickLookSheet } from "./quick-look-sheet";
 import { BulkActionBar } from "./bulk-action-bar";
 import { LandingEmptyState } from "./empty-state";
+import { ReconcileBanner } from "./reconcile-banner";
 import { toQuickLookData } from "./quick-look-shared";
 import { parseSearchInput, getSuggestions } from "./search-parse";
 import { filterDrafts } from "./predicate-eval";
@@ -58,10 +82,7 @@ function LandingSkeleton() {
   return (
     <div aria-hidden className="space-y-2">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div
-          key={i}
-          className="animate-pulse rounded-lg bg-muted/50 h-10"
-        />
+        <div key={i} className="bg-muted/50 h-10 animate-pulse rounded-lg" />
       ))}
     </div>
   );
@@ -153,6 +174,12 @@ function SmartFolderDialog({
 // TeamsLandingClient
 // =============================================================================
 
+interface TeamsLandingClientProps {
+  userId?: string | null;
+  initialAccountTeams?: EnrichedAccountTeam[];
+  initialAlts?: { id: number; username: string }[];
+}
+
 /**
  * Client component for the /builder landing page.
  *
@@ -161,7 +188,7 @@ function SmartFolderDialog({
  * - Right: header (SmartSearch + New Team) + LandingToolbar + TeamSections
  *
  * Data pipeline:
- * 1. Raw drafts from useLocalDrafts
+ * 1. Merged account + local drafts from useUnifiedTeams
  * 2. Pending-delete exclusion: pendingIds filtered out BEFORE search/group
  * 3. Search: filterDrafts(drafts, parseSearchInput(search)) → DraftMatch[]
  * 4. Group: groupDrafts(matchedRecords, { sort, selectedFolderId, manualFolders, smartFolders }) → DraftSection[]
@@ -178,9 +205,14 @@ function SmartFolderDialog({
  * - Mobile: rows receive onPeek which opens a single <QuickLookSheet>; rail
  *   is rendered inside a Sheet opened by a "Folders" button in the header
  *
- * Phase 1: local-drafts-only, additive (no DB, no auth required).
+ * Phase 2: unified account + local drafts. userId/initialAccountTeams/initialAlts
+ * are SSR-seeded from the page to avoid waterfall on first load.
  */
-export function TeamsLandingClient() {
+export function TeamsLandingClient({
+  userId = null,
+  initialAccountTeams,
+  initialAlts = [],
+}: TeamsLandingClientProps) {
   const {
     drafts,
     hydrated,
@@ -190,7 +222,16 @@ export function TeamsLandingClient() {
     pinDraft,
     toggleDraftFolder,
     setDraftSortOrder,
-  } = useLocalDrafts();
+    accountLoading,
+    accountError,
+    refetchAccount,
+    renameRecord,
+    duplicateRecord,
+    duplicateRecordToAlt,
+    moveRecordToAlt,
+    makeRecordPublic,
+    setRecordLocalOnly,
+  } = useUnifiedTeams({ userId, initialAccountTeams });
 
   const {
     manualFolders,
@@ -198,11 +239,11 @@ export function TeamsLandingClient() {
     createManualFolder,
     deleteManualFolder,
     createSmartFolder,
-  } = useFolders();
+  } = useFolders(userId);
 
   const { prefs, setPrefs } = useLandingPrefs();
 
-  const { isAuthenticated } = useAuthContext();
+  const isAuthenticated = userId != null;
 
   const router = useRouter();
   const isClient = useIsClient();
@@ -216,10 +257,17 @@ export function TeamsLandingClient() {
   const [railSheetOpen, setRailSheetOpen] = useState(false);
   // Smart-folder dialog: "new" or "save-as" (pre-filled with current search)
   const [smartFolderDialog, setSmartFolderDialog] = useState<
-    | null
-    | { mode: "new" }
-    | { mode: "save-as"; initialCriteria: Predicate[] }
+    null | { mode: "new" } | { mode: "save-as"; initialCriteria: Predicate[] }
   >(null);
+  // Reconcile banner — dismissed when user acts or explicitly dismisses
+  const [reconcileDismissed, setReconcileDismissed] = useState(false);
+  const [savingReconcile, setSavingReconcile] = useState(false);
+  // Rename dialog state
+  const [renameTarget, setRenameTarget] = useState<{
+    id: string;
+    currentName: string;
+  } | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   // ==========================================================================
   // Undoable delete
@@ -233,15 +281,34 @@ export function TeamsLandingClient() {
   // Data pipeline
   // ==========================================================================
 
+  // Count local-only drafts for the reconcile banner
+  const localDraftCount = drafts.filter(
+    (d) => (d.source ?? "local") === "local"
+  ).length;
+
   // Filter out pending-delete drafts BEFORE search/group so they vanish immediately
   const visibleDrafts = drafts.filter((d) => !pendingIds.has(d.id));
 
+  // Guard: if prefs.selectedAltId references an alt no longer in initialAlts (stale),
+  // treat it as null so a deleted alt doesn't hide all teams.
+  const selectedAltIdValid =
+    prefs.selectedAltId == null ||
+    initialAlts.some((a) => a.id === prefs.selectedAltId)
+      ? prefs.selectedAltId
+      : null;
+
+  // Alt scope — filter to the selected alt, or show all when selectedAltId is null.
+  const altScoped =
+    selectedAltIdValid == null
+      ? visibleDrafts
+      : visibleDrafts.filter((d) => d.altId === selectedAltIdValid);
+
   const query = parseSearchInput(search);
-  const allMatches = filterDrafts(visibleDrafts, query);
+  const allMatches = filterDrafts(altScoped, query);
 
   // Matched records (full objects) for grouping
   const matchedIds = new Set(allMatches.map((m) => m.id));
-  const matchedRecords = visibleDrafts.filter((d) => matchedIds.has(d.id));
+  const matchedRecords = altScoped.filter((d) => matchedIds.has(d.id));
 
   // Group the matched records into sections
   const sections = groupDrafts(matchedRecords, {
@@ -259,7 +326,7 @@ export function TeamsLandingClient() {
 
   // Peek record for mobile sheet
   const peekRecord =
-    peekId !== null ? drafts.find((d) => d.id === peekId) ?? null : null;
+    peekId !== null ? (drafts.find((d) => d.id === peekId) ?? null) : null;
 
   // ==========================================================================
   // Bulk selection — ordered ids from the currently visible rows
@@ -335,13 +402,56 @@ export function TeamsLandingClient() {
 
   function handleSaveAsSmartFolder() {
     const currentPredicates = parseSearchInput(search).predicates;
-    setSmartFolderDialog({ mode: "save-as", initialCriteria: currentPredicates });
+    setSmartFolderDialog({
+      mode: "save-as",
+      initialCriteria: currentPredicates,
+    });
   }
 
   function handleSmartFolderSave(name: string, criteria: Predicate[]) {
     createSmartFolder(name, criteria);
     toast.success(`Smart folder "${name}" created`);
     setSmartFolderDialog(null);
+  }
+
+  // --------------------------------------------------------------------------
+  // Rename dialog
+  // --------------------------------------------------------------------------
+
+  function openRenameDialog(id: string) {
+    const record = drafts.find((d) => d.id === id);
+    if (!record) return;
+    const currentName = record.team.name?.trim() || "";
+    setRenameTarget({ id, currentName });
+    setRenameValue(currentName);
+  }
+
+  function handleRenameSubmit() {
+    if (!renameTarget) return;
+    renameRecord(renameTarget.id, renameValue.trim());
+    setRenameTarget(null);
+    setRenameValue("");
+  }
+
+  // --------------------------------------------------------------------------
+  // Single-team export (Showdown paste → clipboard)
+  // --------------------------------------------------------------------------
+
+  async function handleExportOne(id: string) {
+    const record = drafts.find((d) => d.id === id);
+    if (!record) return;
+
+    try {
+      const sorted = [...record.team.team_pokemon]
+        .sort((a, b) => a.team_position - b.team_position)
+        .flatMap((tp) => (tp.pokemon ? [dbPokemonToFlat(tp.pokemon)] : []));
+
+      const paste = exportTeamToShowdown(sorted);
+      await navigator.clipboard.writeText(paste);
+      toast.success("Copied team paste.");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Export failed — please try again."));
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -407,6 +517,63 @@ export function TeamsLandingClient() {
     clear();
   }
 
+  // --------------------------------------------------------------------------
+  // Reconcile banner handler — save all local drafts to a chosen alt
+  // --------------------------------------------------------------------------
+
+  async function handleSaveAllToAlt(altId: number) {
+    setSavingReconcile(true);
+    const locals = drafts.filter((d) => (d.source ?? "local") === "local");
+
+    // Save all local drafts in parallel — avoids N serialized round-trips.
+    const results = await Promise.allSettled(
+      locals.map((rec) => teamsApi.saveLocal(toSaveLocalPayload(rec, altId)))
+    );
+
+    // Tally outcomes and collect the ids of records that saved successfully.
+    let ok = 0;
+    let failed = 0;
+    const succeededIds: string[] = [];
+    results.forEach((result, i) => {
+      const rec = locals[i];
+      if (result.status === "fulfilled" && result.value.success) {
+        ok++;
+        if (rec) succeededIds.push(rec.id);
+      } else {
+        failed++;
+      }
+    });
+
+    // Only refetch + clean up localStorage if at least one team was saved.
+    if (succeededIds.length > 0) {
+      // Refetch FIRST so the account cache contains the newly-saved teams before
+      // we delete them from localStorage — prevents a brief gap where the teams
+      // appear in neither store.
+      await refetchAccount();
+
+      for (const id of succeededIds) {
+        deleteLocalDraft(id);
+      }
+    }
+
+    setSavingReconcile(false);
+    // Only dismiss the banner if at least one team saved — leave it open on
+    // total failure so the user can retry.
+    if (ok > 0) {
+      setReconcileDismissed(true);
+    }
+
+    // Only show a success toast when at least one team was saved.
+    if (ok > 0) {
+      toast.success(
+        `Saved ${ok}/${locals.length} team${locals.length === 1 ? "" : "s"} to your account.`
+      );
+    }
+    if (failed > 0) {
+      toast.error(`${failed} team${failed === 1 ? "" : "s"} failed to save.`);
+    }
+  }
+
   // ==========================================================================
   // renderRow — the render prop passed to TeamSections
   // ==========================================================================
@@ -426,7 +593,10 @@ export function TeamsLandingClient() {
       : [];
     const rowIndex = reorderable ? allIds.indexOf(record.id) : -1;
     const canMoveUp = reorderable && rowIndex > 0;
-    const canMoveDown = reorderable && rowIndex >= 0 && rowIndex < allIds.length - 1;
+    const canMoveDown =
+      reorderable && rowIndex >= 0 && rowIndex < allIds.length - 1;
+
+    const altUsername = initialAlts.find((a) => a.id === record.altId)?.username;
 
     const row = (
       // The outer div carries the tabIndex and ref so TeamSections can manage
@@ -435,11 +605,12 @@ export function TeamsLandingClient() {
         key={record.id}
         ref={rowProps.ref}
         tabIndex={rowProps.tabIndex}
-        className="outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 rounded-lg"
+        className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40"
       >
         <TeamRow
           summary={summary}
           highlightSpecies={highlightSpecies}
+          isAuthenticated={isAuthenticated}
           pinned={record.pinned}
           archived={record.archived}
           onTogglePin={handleTogglePin}
@@ -459,6 +630,19 @@ export function TeamsLandingClient() {
           canMoveUp={canMoveUp}
           canMoveDown={canMoveDown}
           onMove={reorderable ? handleMove : undefined}
+          // §5 alt badge + §10.2 row-action props
+          alts={initialAlts}
+          showAltBadge={selectedAltIdValid == null && initialAlts.length > 1}
+          altUsername={altUsername}
+          isPublic={record.team.is_public ?? false}
+          localOnly={record.localOnly ?? false}
+          onRename={(id) => openRenameDialog(id)}
+          onDuplicate={(id) => duplicateRecord(id)}
+          onMoveToAlt={(id, altId) => moveRecordToAlt(id, altId)}
+          onDuplicateToAlt={(id, altId) => duplicateRecordToAlt(id, altId)}
+          onMakePublic={(id, isPublic) => makeRecordPublic(id, isPublic)}
+          onToggleLocalOnly={(id, localOnly) => setRecordLocalOnly(id, localOnly)}
+          onExport={(id) => void handleExportOne(id)}
         />
       </div>
     );
@@ -551,10 +735,68 @@ export function TeamsLandingClient() {
   }
 
   // ==========================================================================
+  // dnd-kit sensors — hoisted here so the single DndContext wraps rail,
+  // toolbar, and content. This enables dropping rows onto alt pills and
+  // folder-rail nodes in addition to reordering within custom-sort sections.
+  // ==========================================================================
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      // Require 8px movement so accidental clicks don't activate drag.
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  /**
+   * Unified drag-end handler.
+   *
+   * Routing priority (checked in order):
+   * 1. Dropped on an alt pill  → move team to that alt
+   * 2. Dropped on a folder node → toggle team into that folder
+   * 3. Dropped on another row (custom-order mode only) → reorder
+   */
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Alt-drop target: "alt-drop-{altId}"
+    if (overId.startsWith("alt-drop-")) {
+      const altId = Number(overId.slice("alt-drop-".length));
+      if (!Number.isNaN(altId)) {
+        moveRecordToAlt(activeId, altId);
+      }
+      return;
+    }
+
+    // Folder-drop target: "folder-drop-{folderId}"
+    if (overId.startsWith("folder-drop-")) {
+      const folderId = overId.slice("folder-drop-".length);
+      toggleDraftFolder(activeId, folderId);
+      return;
+    }
+
+    // Row-on-row reorder — only in custom-order mode
+    if (prefs.sort === "custom" && activeId !== overId) {
+      const allIds = sections.flatMap((s) => s.drafts.map((d) => d.id));
+      const toIndex = allIds.findIndex((id) => id === overId);
+      if (toIndex !== -1) {
+        handleDragReorder(activeId, toIndex);
+      }
+    }
+  }
+
+  // ==========================================================================
   // Derived display state
   // ==========================================================================
 
-  const showSearch = hydrated && (visibleDrafts.length > 0 || search.length > 0);
+  const showSearch =
+    hydrated && (altScoped.length > 0 || search.length > 0);
   const isArchiveView = prefs.selectedFolderId === ARCHIVED_VIEW_ID;
   const hasSearchQuery = search.length > 0;
   const hasNoMatches = hasSearchQuery && allMatches.length === 0;
@@ -587,11 +829,20 @@ export function TeamsLandingClient() {
 
   return (
     <div className="flex min-h-0 w-full flex-1">
+      {/* Single DndContext for the entire [rail | toolbar | content] region.
+          Drag-end routing: alt-drop-{id} → moveRecordToAlt,
+          folder-drop-{id} → toggleDraftFolder,
+          row-on-row (custom sort) → handleDragReorder. */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
       {/* Flush-left, full-height sidebar — desktop only, hidden when there are no drafts */}
       {isClient && !isMobile && !(hydrated && drafts.length === 0) && (
         <aside
           className={cn(
-            "bg-muted/30 shrink-0 self-stretch overflow-y-auto border-r border-border/40",
+            "bg-muted/30 border-border/40 shrink-0 self-stretch overflow-y-auto border-r",
             // Slim icon-strip padding when collapsed; roomier when expanded
             prefs.railCollapsed ? "px-1 py-3" : "p-3"
           )}
@@ -604,142 +855,181 @@ export function TeamsLandingClient() {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
         <div className="flex-1">
           <PageContainer>
-            {hydrated && drafts.length === 0 ? (
+            {hydrated && drafts.length === 0 && !accountLoading ? (
               <LandingEmptyState
                 variant={isAuthenticated ? "authed" : "guest"}
                 onNewTeam={handleNewTeam}
               />
             ) : (
               <div className="min-w-0">
-            {/* Page header — tournaments pattern: title left, actions right */}
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <h1 className="text-3xl font-bold">Your Teams</h1>
+                {/* Reconcile banner — shown when signed-in user has unsynced local drafts */}
+                {isAuthenticated &&
+                  !reconcileDismissed &&
+                  localDraftCount > 0 && (
+                    <ReconcileBanner
+                      localDraftCount={localDraftCount}
+                      alts={initialAlts}
+                      onSaveAllToAlt={handleSaveAllToAlt}
+                      onDismiss={() => setReconcileDismissed(true)}
+                      saving={savingReconcile}
+                    />
+                  )}
 
-              <div className="flex shrink-0 items-center gap-2">
-                {/* Mobile: Folders button that opens the rail in a Sheet */}
-                {isClient && isMobile && (
-                  <Sheet open={railSheetOpen} onOpenChange={setRailSheetOpen}>
-                    <SheetTrigger
-                      className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                      aria-label="Open folders"
+                {/* Account error strip — non-blocking; local drafts still render below */}
+                {accountError && (
+                  <div className="border-destructive/30 bg-destructive/5 mb-3 flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                    <span className="text-destructive">
+                      Couldn&apos;t load your saved teams.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={refetchAccount}
+                      className="text-destructive hover:bg-destructive/10 focus-visible:ring-destructive/50 ml-3 shrink-0 rounded px-2 py-1 text-xs font-medium focus-visible:ring-2 focus-visible:outline-none"
                     >
-                      <FolderOpen className="size-4" />
-                      Folders
-                    </SheetTrigger>
-                    <SheetContent side="left" className="overflow-y-auto p-0">
-                      <SheetHeader className="sr-only">
-                        <SheetTitle>Folders</SheetTitle>
-                      </SheetHeader>
-                      <div className="p-3">{rail}</div>
-                    </SheetContent>
-                  </Sheet>
+                      Retry
+                    </button>
+                  </div>
                 )}
 
-                <Button
-                  onClick={handleNewTeam}
-                  size="lg"
-                  className="min-h-10 shrink-0"
-                  aria-label="Create a new team"
-                >
-                  <Plus className="size-4" />
-                  New Team
-                </Button>
-              </div>
-            </div>
+                {/* Page header — tournaments pattern: title left, actions right */}
+                <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <h1 className="text-3xl font-bold">Your Teams</h1>
 
-            {/* Toolbar row: "Viewing" label + search + sort/density controls */}
-            {showSearch && (
-              <div className="mb-3 flex items-center gap-2">
-                {/* "Viewing" label — desktop only (mockup) */}
-                {isClient && !isMobile && (
-                  <span className="text-muted-foreground shrink-0 text-sm">
-                    Viewing
-                  </span>
-                )}
+                  <div className="flex shrink-0 items-center gap-2">
+                    {/* Mobile: Folders button that opens the rail in a Sheet */}
+                    {isClient && isMobile && (
+                      <Sheet
+                        open={railSheetOpen}
+                        onOpenChange={setRailSheetOpen}
+                      >
+                        <SheetTrigger
+                          className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                          aria-label="Open folders"
+                        >
+                          <FolderOpen className="size-4" />
+                          Folders
+                        </SheetTrigger>
+                        <SheetContent
+                          side="left"
+                          className="overflow-y-auto p-0"
+                        >
+                          <SheetHeader className="sr-only">
+                            <SheetTitle>Folders</SheetTitle>
+                          </SheetHeader>
+                          <div className="p-3">{rail}</div>
+                        </SheetContent>
+                      </Sheet>
+                    )}
 
-                <div className="min-w-0 flex-1">
-                  <SmartSearch
-                    value={search}
-                    onValueChange={setSearch}
-                    suggestions={suggestions}
-                  />
+                    <Button
+                      onClick={handleNewTeam}
+                      size="lg"
+                      className="min-h-10 shrink-0"
+                      aria-label="Create a new team"
+                    >
+                      <Plus className="size-4" />
+                      New Team
+                    </Button>
+                  </div>
                 </div>
 
-                {/* "Save as smart folder" — only shown when there's an active query */}
-                {hasSearchQuery && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="min-h-10 shrink-0 gap-1.5 text-xs sm:min-h-8"
-                    onClick={handleSaveAsSmartFolder}
-                    aria-label="Save as smart folder"
-                  >
-                    <Zap className="size-3.5" />
-                    Save as folder
-                  </Button>
+                {/* Toolbar row: alt pills + search + sort/density controls */}
+                {showSearch && (
+                  <div className="mb-3 flex flex-col gap-2">
+                    {/* Alt pills — "Viewing" scope selector (wraps on mobile) */}
+                    <AltPills
+                      alts={initialAlts}
+                      selectedAltId={prefs.selectedAltId}
+                      onSelect={(altId) => setPrefs({ selectedAltId: altId })}
+                    />
+
+                    <div className="flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <SmartSearch
+                          value={search}
+                          onValueChange={setSearch}
+                          suggestions={suggestions}
+                        />
+                      </div>
+
+                      {/* "Save as smart folder" — only shown when there's an active query */}
+                      {hasSearchQuery && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="min-h-10 shrink-0 gap-1.5 text-xs sm:min-h-8"
+                          onClick={handleSaveAsSmartFolder}
+                          aria-label="Save as smart folder"
+                        >
+                          <Zap className="size-3.5" />
+                          Save as folder
+                        </Button>
+                      )}
+
+                      {/* Export-all backup button */}
+                      <ExportAllButton records={drafts} />
+
+                      <LandingToolbar
+                        sort={prefs.sort}
+                        density={prefs.density}
+                        resultCount={allMatches.length}
+                        onSortChange={(s) => setPrefs({ sort: s })}
+                        onDensityChange={(d) => setPrefs({ density: d })}
+                      />
+                    </div>
+                  </div>
                 )}
 
-                <LandingToolbar
-                  sort={prefs.sort}
-                  density={prefs.density}
-                  resultCount={allMatches.length}
-                  onSortChange={(s) => setPrefs({ sort: s })}
-                  onDensityChange={(d) => setPrefs({ density: d })}
-                />
-              </div>
-            )}
+                {/* Content states */}
+                {!hydrated ? (
+                  <LandingSkeleton />
+                ) : isNoSearchMatches ? (
+                  <NoMatchesState onClear={handleClearSearch} />
+                ) : (
+                  <>
+                    {/* Archived-view contextual note */}
+                    {isArchiveView && <ArchivedViewNote />}
 
-            {/* Content states */}
-            {!hydrated ? (
-              <LandingSkeleton />
-            ) : isNoSearchMatches ? (
-              <NoMatchesState onClear={handleClearSearch} />
-            ) : (
-              <>
-                {/* Archived-view contextual note */}
-                {isArchiveView && <ArchivedViewNote />}
+                    {/* Sections */}
+                    <TeamSections
+                      sections={sections}
+                      density={prefs.density}
+                      renderRow={renderRow}
+                      emptyState={
+                        isArchiveView ? (
+                          <p className="text-muted-foreground py-8 text-center text-sm">
+                            No archived teams.
+                          </p>
+                        ) : (
+                          <p className="text-muted-foreground py-8 text-center text-sm">
+                            No teams in this folder.
+                          </p>
+                        )
+                      }
+                    />
 
-                {/* Sections */}
-                <TeamSections
-                  sections={sections}
-                  density={prefs.density}
-                  renderRow={renderRow}
-                  reorderable={reorderable}
-                  onDragReorder={handleDragReorder}
-                  emptyState={
-                    isArchiveView ? (
-                      <p className="text-muted-foreground py-8 text-center text-sm">
-                        No archived teams.
+                    {/* Keyboard-hint strip — desktop only */}
+                    {isClient && !isMobile && (
+                      <p className="text-muted-foreground mt-4 text-xs">
+                        <kbd className="font-sans">⌘K</kbd> search
+                        {" · "}
+                        <kbd className="font-sans">↑↓</kbd> move
+                        {" · "}
+                        <kbd className="font-sans">↵</kbd> open
+                        {" · "}
+                        <kbd className="font-sans">Space</kbd> select
+                        {" · "}
+                        <kbd className="font-sans">⌘\</kbd> rail
                       </p>
-                    ) : (
-                      <p className="text-muted-foreground py-8 text-center text-sm">
-                        No teams in this folder.
-                      </p>
-                    )
-                  }
-                />
-
-                {/* Keyboard-hint strip — desktop only */}
-                {isClient && !isMobile && (
-                  <p className="text-muted-foreground mt-4 text-xs">
-                    <kbd className="font-sans">⌘K</kbd> search
-                    {" · "}
-                    <kbd className="font-sans">↑↓</kbd> move
-                    {" · "}
-                    <kbd className="font-sans">↵</kbd> open
-                    {" · "}
-                    <kbd className="font-sans">Space</kbd> select
-                    {" · "}
-                    <kbd className="font-sans">⌘\</kbd> rail
-                  </p>
+                    )}
+                  </>
                 )}
-              </>
-            )}
               </div>
             )}
           </PageContainer>
         </div>
       </div>
+      </DndContext>
 
       {/* Bulk-action bar — fixed at bottom, shown when ≥1 row is selected */}
       <BulkActionBar
@@ -758,7 +1048,7 @@ export function TeamsLandingClient() {
           type="button"
           onClick={handleNewTeam}
           aria-label="New team"
-          className="fixed bottom-6 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg transition-colors hover:bg-teal-700 active:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+          className="fixed right-4 bottom-6 z-40 flex size-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg transition-colors hover:bg-teal-700 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:outline-none active:bg-teal-800"
         >
           <Plus className="size-6" aria-hidden />
           <span className="sr-only">New team</span>
@@ -799,6 +1089,54 @@ export function TeamsLandingClient() {
         }
         onSave={handleSmartFolderSave}
       />
+
+      {/* Rename dialog */}
+      <Dialog
+        open={renameTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRenameTarget(null);
+            setRenameValue("");
+          }
+        }}
+      >
+        {/* max-w-[calc(100vw-2rem)]: viewport-minus-gutter; calc() required for
+            dynamic viewport-relative max-width with fixed gutter offset. */}
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Rename team</DialogTitle>
+            <DialogDescription>
+              Enter a new name for this team.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            placeholder="Team name"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleRenameSubmit();
+            }}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRenameTarget(null);
+                setRenameValue("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRenameSubmit}
+              disabled={renameValue.trim().length === 0}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

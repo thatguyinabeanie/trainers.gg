@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, FolderOpen, FolderPlus, MoreHorizontal, Trash2, Zap } from "lucide-react";
+import { useDroppable } from "@dnd-kit/core";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -116,6 +117,36 @@ function RailItem({
           {actions}
         </div>
       )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Droppable wrapper for manual folder rail nodes (§10.3)
+//
+// Only MANUAL folders are drop targets — auto/smart/system nodes don't accept
+// team drops. useDroppable must live inside a component, not a .map() callback.
+// =============================================================================
+
+interface DroppableRailItemProps extends Omit<RailItemProps, "id"> {
+  /** The manual folder's id (e.g. "folder-*" / "dbfolder-*") */
+  folderId: string;
+}
+
+function DroppableRailItem({ folderId, ...railProps }: DroppableRailItemProps) {
+  // id scheme: "folder-drop-{folderId}" — matched by prefix in the orchestrator's onDragEnd
+  const { setNodeRef, isOver } = useDroppable({ id: `folder-drop-${folderId}` });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "rounded-md transition-colors",
+        // Drop-active highlight — ring appears only while a drag hovers over this node
+        isOver && "ring-2 ring-primary bg-primary/10"
+      )}
+    >
+      <RailItem id={folderId} {...railProps} />
     </div>
   );
 }
@@ -307,10 +338,13 @@ export function FolderRail({
           </span>
         </div>
       )}
+      {/* Manual folder nodes — each is a droppable drop target (§10.3).
+          DroppableRailItem wraps RailItem so useDroppable is called per-component,
+          not inside a .map() callback (Rules of Hooks). */}
       {manualFolders.map((folder) => (
-        <RailItem
+        <DroppableRailItem
           key={folder.id}
-          id={folder.id}
+          folderId={folder.id}
           label={folder.name}
           count={counts.manual[folder.id] ?? 0}
           icon={<FolderOpen className="size-3.5" />}

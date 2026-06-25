@@ -300,10 +300,22 @@ export {
   getTeamWithPokemon,
   getTeamsForAltByFormatFull,
   getTeamsForUser,
+  getEnrichedTeamsForUser,
   type TeamListItem,
   type TeamWithPokemon,
   type CrossAltTeamListItem,
+  type EnrichedUserTeam,
 } from "./teams";
+
+// Team folder + smart folder queries
+export {
+  getTeamFoldersForUser,
+  getSmartFoldersForUser,
+  getFolderMembershipsForUser,
+  type TeamFolder,
+  type SmartFolder,
+  type TeamFolderMembership,
+} from "./team-folders";
 
 // Coach queries
 export { getCoachBadges, getCoachProfileByHandle, listCoaches } from "./coach";

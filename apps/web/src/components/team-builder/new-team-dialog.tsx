@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-import { teamKeys } from "./teams-list-client";
+import { teamKeys } from "./team-query-keys";
 import { submitNewTeam } from "./new-team-submit";
 
 // =============================================================================
@@ -150,9 +150,7 @@ export function NewTeamDialog({
         queryKey: teamKeys.all(effectiveAltId),
       });
       handleOpenChange(false);
-      router.push(
-        `/dashboard/alts/${effectiveAltUsername}/teams/${res.teamId}`
-      );
+      router.push(`/builder/t/acct-${res.teamId}`);
     });
   }
 

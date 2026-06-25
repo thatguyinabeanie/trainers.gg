@@ -2,6 +2,8 @@
 
 All-in-one integrated platform for Pokemon fans. Current focus: competitive battling (VGC, Showdown, Pokemon Champions). Monorepo: Next.js 16 web, Expo 55 mobile, Supabase backend, Bluesky PDS integration.
 
+> **⚠️ Pre-release (no users yet).** Nothing is in production and no one is relying on any URL, route, API path, or table. You may freely **rename/move/redirect routes, change API paths, and alter schema with NO back-compat concern** — do not add redirect shims, deprecation aliases, or migration fallbacks to preserve old surfaces. Prefer the clean end-state. (This note will be removed at launch, after which breaking changes need real migration paths.)
+
 Domain knowledge lives in on-demand skills. **Invoke the relevant skill before working in an area** — skills are auto-discovered (their descriptions are provided to you automatically), so this file lists names only.
 
 ## Workspace Skills

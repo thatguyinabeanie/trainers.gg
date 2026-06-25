@@ -274,7 +274,7 @@ export function getActionItems(
         icon: Plus,
         title: "Build your first team",
         description: "Use the Team Builder to create your competitive roster",
-        href: "/teams",
+        href: "/builder",
         variant: "discovery",
       },
       {
