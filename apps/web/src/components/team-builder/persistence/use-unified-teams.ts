@@ -53,8 +53,8 @@ export interface UseUnifiedTeamsReturn {
   accountLoading: boolean;
   /** Error from the account-teams query, or null. */
   accountError: Error | null;
-  /** Trigger a fresh fetch of the account-teams query. */
-  refetchAccount: () => void;
+  /** Trigger a fresh fetch of the account-teams query and return the promise. */
+  refetchAccount: () => Promise<unknown>;
   /** Always creates a LOCAL draft (account creation is a separate flow). */
   createDraft: (init?: { name?: string; format?: string }) => LocalDraftRecord;
   /** Delete by id — routes to the appropriate backend. */
@@ -107,8 +107,8 @@ export function useUnifiedTeams(args: UseUnifiedTeamsArgs): UseUnifiedTeamsRetur
   const accountLoading = args.userId != null && accountQuery.isLoading;
   const accountError = (accountQuery.error as Error | null) ?? null;
 
-  function refetchAccount(): void {
-    void accountQuery.refetch();
+  function refetchAccount(): Promise<unknown> {
+    return accountQuery.refetch();
   }
 
   // =============================================================================
@@ -227,11 +227,26 @@ export function useUnifiedTeams(args: UseUnifiedTeamsArgs): UseUnifiedTeamsRetur
 
     const numericFolderId = Number(folderId.slice("dbfolder-".length));
 
+    // Guard: pending folders have ids like "dbfolder-pending-<hex>", which yield NaN.
+    // Dispatching an action with NaN would silently fail after hitting the server.
+    if (Number.isNaN(numericFolderId)) {
+      toast.error("That folder is still saving — try again in a moment.");
+      return;
+    }
+
     // Determine current folder membership from the cached record.
-    const cached = (qc.getQueryData<EnrichedAccountTeam[]>(key) ?? []).find(
-      (t) => t.team.id === acctId
-    );
-    const alreadyMember = cached?.folderIds.includes(folderId) ?? false;
+    const cachedList = qc.getQueryData<EnrichedAccountTeam[]>(key);
+    const cached = cachedList?.find((t) => t.team.id === acctId);
+
+    // Guard: if the account query hasn't resolved yet the cached record is undefined.
+    // Defaulting alreadyMember = false would always ADD — wrong when the team is
+    // already a member. Wait for the query to settle instead of guessing.
+    if (cached === undefined) {
+      toast.error("Your teams are still loading — try again in a moment.");
+      return;
+    }
+
+    const alreadyMember = cached.folderIds.includes(folderId);
 
     if (alreadyMember) {
       // Optimistically remove from folderIds.

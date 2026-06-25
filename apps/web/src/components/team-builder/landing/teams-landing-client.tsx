@@ -440,26 +440,45 @@ export function TeamsLandingClient({
   async function handleSaveAllToAlt(altId: number) {
     setSavingReconcile(true);
     const locals = drafts.filter((d) => (d.source ?? "local") === "local");
+
+    // Save all local drafts in parallel — avoids N serialized round-trips.
+    const results = await Promise.allSettled(
+      locals.map((rec) => teamsApi.saveLocal(toSaveLocalPayload(rec, altId)))
+    );
+
+    // Tally outcomes and collect the ids of records that saved successfully.
     let ok = 0;
     let failed = 0;
-    for (const rec of locals) {
-      try {
-        const res = await teamsApi.saveLocal(toSaveLocalPayload(rec, altId));
-        if (res.success) {
-          deleteLocalDraft(rec.id);
-          ok++;
-        } else {
-          failed++;
-        }
-      } catch {
-        // Continue saving remaining teams; aggregate count below
+    const succeededIds: string[] = [];
+    results.forEach((result, i) => {
+      const rec = locals[i];
+      if (result.status === "fulfilled" && result.value.success) {
+        ok++;
+        if (rec) succeededIds.push(rec.id);
+      } else {
         failed++;
       }
+    });
+
+    // Refetch FIRST so the account cache contains the newly-saved teams before
+    // we delete them from localStorage — prevents a brief gap where the teams
+    // appear in neither store.
+    await refetchAccount();
+
+    // Now it is safe to remove the saved drafts from localStorage.
+    for (const id of succeededIds) {
+      deleteLocalDraft(id);
     }
+
     setSavingReconcile(false);
     setReconcileDismissed(true);
-    refetchAccount();
-    toast.success(`Saved ${ok}/${locals.length} team${locals.length === 1 ? "" : "s"} to your account.`);
+
+    // Only show a success toast when at least one team was saved.
+    if (ok > 0) {
+      toast.success(
+        `Saved ${ok}/${locals.length} team${locals.length === 1 ? "" : "s"} to your account.`
+      );
+    }
     if (failed > 0) {
       toast.error(`${failed} team${failed === 1 ? "" : "s"} failed to save.`);
     }

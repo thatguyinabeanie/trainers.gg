@@ -25,14 +25,15 @@ jest.mock("@/components/auth/auth-provider", () => ({
   useAuthContext: () => mockUseAuthContext(),
 }));
 
-// Mock useLocalDrafts so we can control state
+// Mock useUnifiedTeams so we can control state without a QueryClientProvider
 const mockCreateDraft = jest.fn();
 const mockDeleteDraft = jest.fn();
 const mockPinDraft = jest.fn();
 const mockArchiveDraft = jest.fn();
 const mockToggleDraftFolder = jest.fn();
-jest.mock("../../persistence/use-local-drafts", () => ({
-  useLocalDrafts: jest.fn(),
+const mockRefetchAccount = jest.fn();
+jest.mock("../../persistence/use-unified-teams", () => ({
+  useUnifiedTeams: jest.fn(),
 }));
 
 // Mock useFolders
@@ -442,6 +443,12 @@ jest.mock("../bulk-action-bar", () => ({
   },
 }));
 
+// ReconcileBanner stub — only rendered on authenticated paths (userId != null);
+// kept minimal since guest tests never trigger it.
+jest.mock("../reconcile-banner", () => ({
+  ReconcileBanner: () => null,
+}));
+
 // LandingEmptyState stub — exposes variant + onNewTeam
 jest.mock("../empty-state", () => ({
   LandingEmptyState: ({
@@ -591,7 +598,7 @@ jest.mock("lucide-react", () => {
 // =============================================================================
 
 import { TeamsLandingClient } from "../teams-landing-client";
-import { useLocalDrafts } from "../../persistence/use-local-drafts";
+import { useUnifiedTeams } from "../../persistence/use-unified-teams";
 import { useFolders } from "../../persistence/use-folders";
 import { useLandingPrefs } from "../../persistence/use-landing-prefs";
 
@@ -599,7 +606,7 @@ import { useLandingPrefs } from "../../persistence/use-landing-prefs";
 // Helpers
 // =============================================================================
 
-type MockUseLocalDrafts = jest.MockedFunction<typeof useLocalDrafts>;
+type MockUseUnifiedTeams = jest.MockedFunction<typeof useUnifiedTeams>;
 type MockUseFolders = jest.MockedFunction<typeof useFolders>;
 type MockUseLandingPrefs = jest.MockedFunction<typeof useLandingPrefs>;
 
@@ -635,7 +642,7 @@ function makeDraftRecord(
   };
 }
 
-/** Default hook return values for a fresh, hydrated state. */
+/** Default hook return values for a fresh, hydrated state (useUnifiedTeams shape). */
 function makeDefaultDraftsHook(drafts = [makeRecord("local-aa01", "Test Team")]) {
   return {
     drafts,
@@ -646,6 +653,9 @@ function makeDefaultDraftsHook(drafts = [makeRecord("local-aa01", "Test Team")])
     archiveDraft: mockArchiveDraft,
     setDraftSortOrder: jest.fn(),
     toggleDraftFolder: mockToggleDraftFolder,
+    accountLoading: false,
+    accountError: null,
+    refetchAccount: mockRefetchAccount,
   };
 }
 
@@ -654,7 +664,7 @@ function makeRecord(id: string, name = "Test Team", opts = {}) {
 }
 
 function setupDefaultMocks(drafts = [makeRecord("local-aa01")]) {
-  (useLocalDrafts as MockUseLocalDrafts).mockReturnValue(
+  (useUnifiedTeams as MockUseUnifiedTeams).mockReturnValue(
     makeDefaultDraftsHook(drafts)
   );
   (useFolders as MockUseFolders).mockReturnValue({
@@ -689,7 +699,8 @@ describe("TeamsLandingClient", () => {
     // Default to desktop + hydrated
     mockUseIsClient.mockReturnValue(true);
     mockUseIsMobile.mockReturnValue(false);
-    // Default to unauthenticated guest
+    // Auth context mock is kept for module resolution (the component no longer calls it;
+    // authentication is controlled via the userId prop passed to TeamsLandingClient).
     mockUseAuthContext.mockReturnValue({
       user: null,
       loading: false,
@@ -766,31 +777,17 @@ describe("TeamsLandingClient", () => {
   // ---------------------------------------------------------------------------
 
   describe("empty state", () => {
-    it("renders LandingEmptyState with guest variant when drafts is empty and unauthenticated", () => {
-      mockUseAuthContext.mockReturnValue({
-        user: null,
-        loading: false,
-        isAuthenticated: false,
-        signOut: jest.fn(),
-        refetchUser: jest.fn(),
-      });
+    it("renders LandingEmptyState with guest variant when drafts is empty and userId is null", () => {
       setupDefaultMocks([]);
-      render(<TeamsLandingClient />);
+      render(<TeamsLandingClient userId={null} />);
       const emptyState = screen.getByTestId("landing-empty-state");
       expect(emptyState).toBeInTheDocument();
       expect(emptyState).toHaveAttribute("data-variant", "guest");
     });
 
-    it("renders LandingEmptyState with authed variant when authenticated and no drafts", () => {
-      mockUseAuthContext.mockReturnValue({
-        user: { id: "user-1" },
-        loading: false,
-        isAuthenticated: true,
-        signOut: jest.fn(),
-        refetchUser: jest.fn(),
-      });
+    it("renders LandingEmptyState with authed variant when userId is provided and no drafts", () => {
       setupDefaultMocks([]);
-      render(<TeamsLandingClient />);
+      render(<TeamsLandingClient userId="user-1" />);
       const emptyState = screen.getByTestId("landing-empty-state");
       expect(emptyState).toHaveAttribute("data-variant", "authed");
     });
@@ -808,7 +805,7 @@ describe("TeamsLandingClient", () => {
 
   describe("loading skeleton", () => {
     it("shows skeleton when hydrated is false", () => {
-      (useLocalDrafts as MockUseLocalDrafts).mockReturnValue({
+      (useUnifiedTeams as MockUseUnifiedTeams).mockReturnValue({
         ...makeDefaultDraftsHook([]),
         hydrated: false,
       });
@@ -1083,7 +1080,7 @@ describe("TeamsLandingClient", () => {
         hydrated: true,
         setPrefs: mockSetPrefs,
       });
-      (useLocalDrafts as MockUseLocalDrafts).mockReturnValue(makeDefaultDraftsHook([makeRecord("local-f02")]));
+      (useUnifiedTeams as MockUseUnifiedTeams).mockReturnValue(makeDefaultDraftsHook([makeRecord("local-f02")]));
       (useFolders as MockUseFolders).mockReturnValue({
         manualFolders: [],
         smartFolders: [],
@@ -1207,7 +1204,7 @@ describe("TeamsLandingClient", () => {
         hydrated: true,
         setPrefs: mockSetPrefs,
       });
-      (useLocalDrafts as MockUseLocalDrafts).mockReturnValue(makeDefaultDraftsHook([draft]));
+      (useUnifiedTeams as MockUseUnifiedTeams).mockReturnValue(makeDefaultDraftsHook([draft]));
       (useFolders as MockUseFolders).mockReturnValue({
         manualFolders: [],
         smartFolders: [],
@@ -1332,7 +1329,7 @@ describe("TeamsLandingClient", () => {
         hydrated: true,
         setPrefs: mockSetPrefs,
       });
-      (useLocalDrafts as MockUseLocalDrafts).mockReturnValue(
+      (useUnifiedTeams as MockUseUnifiedTeams).mockReturnValue(
         makeDefaultDraftsHook([makeRecord("local-arc01")])
       );
       (useFolders as MockUseFolders).mockReturnValue({
@@ -1368,7 +1365,7 @@ describe("TeamsLandingClient", () => {
         hydrated: true,
         setPrefs: mockSetPrefs,
       });
-      (useLocalDrafts as MockUseLocalDrafts).mockReturnValue(
+      (useUnifiedTeams as MockUseUnifiedTeams).mockReturnValue(
         makeDefaultDraftsHook([makeRecord("local-tb01")])
       );
       (useFolders as MockUseFolders).mockReturnValue({

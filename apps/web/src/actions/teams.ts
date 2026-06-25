@@ -546,10 +546,18 @@ export async function setTeamFlagsAction(
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  let user: { id: string } | null;
+  try {
+    supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update team flags"),
+    };
+  }
   if (!user) {
     return { success: false, error: "Not authenticated." };
   }
@@ -589,19 +597,27 @@ export async function reorderTeamsAction(
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  let user: { id: string } | null;
+  try {
+    supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to reorder teams"),
+    };
+  }
   if (!user) {
     return { success: false, error: "Not authenticated." };
   }
 
   return withAction(async () => {
     await reorderTeamsMutation(supabase, parsed.data);
-    for (const { teamId } of parsed.data) {
-      invalidateTeamDetailCache(teamId);
-    }
+    await Promise.all(
+      parsed.data.map(({ teamId }) => invalidateTeamDetailCache(teamId))
+    );
   }, "Failed to reorder teams");
 }
 
@@ -632,19 +648,25 @@ export async function bulkArchiveTeamsAction(
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  let user: { id: string } | null;
+  try {
+    supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to bulk archive teams"),
+    };
+  }
   if (!user) {
     return { success: false, error: "Not authenticated." };
   }
 
   return withAction(async () => {
     await bulkSetArchivedMutation(supabase, parsedIds.data, archived);
-    for (const id of parsedIds.data) {
-      invalidateTeamDetailCache(id);
-    }
+    await Promise.all(parsedIds.data.map((id) => invalidateTeamDetailCache(id)));
   }, "Failed to bulk archive teams");
 }
 
@@ -673,18 +695,24 @@ export async function bulkDeleteTeamsAction(
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  let user: { id: string } | null;
+  try {
+    supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to bulk delete teams"),
+    };
+  }
   if (!user) {
     return { success: false, error: "Not authenticated." };
   }
 
   return withAction(async () => {
     await bulkDeleteTeamsMutation(supabase, parsedIds.data);
-    for (const id of parsedIds.data) {
-      invalidateTeamDetailCache(id);
-    }
+    await Promise.all(parsedIds.data.map((id) => invalidateTeamDetailCache(id)));
   }, "Failed to bulk delete teams");
 }

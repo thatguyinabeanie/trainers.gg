@@ -129,6 +129,18 @@ interface DbFolderCache {
 }
 
 // =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * Parse a numeric id from a prefixed string like "dbfolder-42" or "dbsmart-7".
+ * Returns NaN when the suffix is not a valid integer (e.g. "dbfolder-pending-abc").
+ */
+function parsePrefixedId(id: string, prefix: string): number {
+  return Number(id.slice(prefix.length));
+}
+
+// =============================================================================
 // useFolders
 // =============================================================================
 
@@ -260,7 +272,13 @@ export function useFolders(userId?: string | null): UseFoldersReturn {
 
   function handleRenameManualFolder(id: string, name: string): void {
     if (id.startsWith("dbfolder-")) {
-      const numericId = Number(id.slice("dbfolder-".length));
+      const numericId = parsePrefixedId(id, "dbfolder-");
+      // Pending folders ("dbfolder-pending-<hex>") yield NaN — bail before any
+      // optimistic patch or action call to avoid a visible flicker + server error.
+      if (Number.isNaN(numericId)) {
+        toast.error("That folder is still saving — try again in a moment.");
+        return;
+      }
       const prev = getCachedDb();
       // Optimistic patch
       setCachedDb({
@@ -289,7 +307,12 @@ export function useFolders(userId?: string | null): UseFoldersReturn {
 
   function handleDeleteManualFolder(id: string): void {
     if (id.startsWith("dbfolder-")) {
-      const numericId = Number(id.slice("dbfolder-".length));
+      const numericId = parsePrefixedId(id, "dbfolder-");
+      // Pending folders yield NaN — bail before optimistic patch or action call.
+      if (Number.isNaN(numericId)) {
+        toast.error("That folder is still saving — try again in a moment.");
+        return;
+      }
       const prev = getCachedDb();
       // Optimistic removal
       setCachedDb({
@@ -360,7 +383,13 @@ export function useFolders(userId?: string | null): UseFoldersReturn {
 
   function handleDeleteSmartFolder(id: string): void {
     if (id.startsWith("dbsmart-")) {
-      const numericId = Number(id.slice("dbsmart-".length));
+      const numericId = parsePrefixedId(id, "dbsmart-");
+      // Pending smart folders ("dbsmart-pending-<hex>") yield NaN — bail before
+      // any optimistic patch or action call to avoid a visible flicker + server error.
+      if (Number.isNaN(numericId)) {
+        toast.error("That folder is still saving — try again in a moment.");
+        return;
+      }
       const prev = getCachedDb();
       setCachedDb({
         ...prev,
