@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useIsClient } from "@/hooks/use-is-client";
 
 const CONSENT_KEY = "cookie-consent";
 
@@ -34,13 +35,14 @@ function subscribeToConsent(callback: () => void) {
 }
 
 export function CookieConsent() {
+  const isClient = useIsClient();
   const status = useSyncExternalStore(
     subscribeToConsent,
     getConsentStatus,
     () => "undecided" as ConsentStatus
   );
 
-  if (status !== "undecided") return null;
+  if (!isClient || status !== "undecided") return null;
 
   return (
     <div
