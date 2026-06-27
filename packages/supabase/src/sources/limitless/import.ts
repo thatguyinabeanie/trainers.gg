@@ -349,6 +349,7 @@ export async function importTournament(
         ability: string | null;
         held_item: string | null;
         tera_type: string | null;
+        nature: string | null;
         moves: string[];
       }> = [];
       for (const { id: standingId, index } of standingIds) {
@@ -365,6 +366,7 @@ export async function importTournament(
               ability: mon.ability ?? null,
               held_item: mon.item ?? null,
               tera_type: mon.tera ?? null,
+              nature: mon.nature ?? null,
               moves: mon.attacks ?? [],
             });
           }
