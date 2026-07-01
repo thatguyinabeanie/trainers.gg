@@ -139,36 +139,36 @@ function makeTeam(overrides: Partial<TeamWithPokemon> = {}): TeamWithPokemon {
 describe("TeamCard", () => {
   describe("basic rendering", () => {
     it("renders the team name", () => {
-      render(<TeamCard team={makeTeam()} handle="ash_ketchum" />);
+      render(<TeamCard team={makeTeam()} />);
       expect(screen.getByText("Test Team")).toBeInTheDocument();
     });
 
     it("renders the format badge when format is set", () => {
-      render(<TeamCard team={makeTeam()} handle="ash_ketchum" />);
+      render(<TeamCard team={makeTeam()} />);
       expect(screen.getByText("gen9vgc2026regi")).toBeInTheDocument();
     });
 
     it("does not render a format badge when format is null", () => {
       const team = makeTeam({ format: null });
-      render(<TeamCard team={team} handle="ash_ketchum" />);
+      render(<TeamCard team={team} />);
       expect(screen.queryByText("gen9vgc2026regi")).not.toBeInTheDocument();
     });
 
     it("renders the last updated time", () => {
-      render(<TeamCard team={makeTeam()} handle="ash_ketchum" />);
+      render(<TeamCard team={makeTeam()} />);
       expect(screen.getByText("2h ago")).toBeInTheDocument();
     });
   });
 
   describe("sprite slots", () => {
     it("renders sprites for pokemon that have species", () => {
-      render(<TeamCard team={makeTeam()} handle="ash_ketchum" />);
+      render(<TeamCard team={makeTeam()} />);
       const images = screen.getAllByRole("img");
       expect(images).toHaveLength(2);
     });
 
     it("renders 6 slots total (pads with empty slots)", () => {
-      render(<TeamCard team={makeTeam()} handle="ash_ketchum" />);
+      render(<TeamCard team={makeTeam()} />);
       // 2 filled + 4 empty = 6 slots
       const emptySlots = screen
         .getAllByRole("generic")
@@ -180,7 +180,7 @@ describe("TeamCard", () => {
 
     it("renders all empty slots when team_pokemon is empty", () => {
       const team = makeTeam({ team_pokemon: [] });
-      render(<TeamCard team={team} handle="ash_ketchum" />);
+      render(<TeamCard team={team} />);
       const emptySlots = screen
         .getAllByRole("generic")
         .filter((el) =>
@@ -192,12 +192,9 @@ describe("TeamCard", () => {
 
   describe("link", () => {
     it("links to the team workspace", () => {
-      render(<TeamCard team={makeTeam()} handle="ash_ketchum" />);
+      render(<TeamCard team={makeTeam()} />);
       const link = screen.getByRole("link");
-      expect(link).toHaveAttribute(
-        "href",
-        "/dashboard/alts/ash_ketchum/teams/1"
-      );
+      expect(link).toHaveAttribute("href", "/builder/t/acct-1");
     });
   });
 
@@ -217,7 +214,7 @@ describe("TeamCard", () => {
           ) as TeamWithPokemon["team_pokemon"][number],
         ],
       });
-      render(<TeamCard team={team} handle="ash_ketchum" />);
+      render(<TeamCard team={team} />);
       // Pikachu and Charizard sprites should both be present
       expect(screen.getByAltText("Pikachu")).toBeInTheDocument();
       expect(screen.getByAltText("Charizard")).toBeInTheDocument();
