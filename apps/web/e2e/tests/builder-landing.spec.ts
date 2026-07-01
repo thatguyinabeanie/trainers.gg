@@ -80,7 +80,7 @@ test.describe("Builder landing — empty state and New Team flow", () => {
 
     // Empty state message
     await expect(
-      main.getByText(/no teams yet/i)
+      main.getByTestId("landing-empty-state")
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -94,7 +94,7 @@ test.describe("Builder landing — empty state and New Team flow", () => {
     const main = page.getByRole("main");
 
     // Wait for hydration — landing must show empty state before clicking
-    await expect(main.getByText(/no teams yet/i)).toBeVisible({
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
       timeout: 15000,
     });
 
@@ -118,7 +118,7 @@ test.describe("Builder landing — empty state and New Team flow", () => {
     await page.reload();
 
     const main = page.getByRole("main");
-    await expect(main.getByText(/no teams yet/i)).toBeVisible({
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
       timeout: 15000,
     });
 
@@ -137,7 +137,7 @@ test.describe("Builder landing — empty state and New Team flow", () => {
     });
 
     // Sanity: empty-state text should no longer be visible
-    await expect(main.getByText(/no teams yet/i)).not.toBeVisible();
+    await expect(main.getByTestId("landing-empty-state")).not.toBeVisible();
   });
 });
 
@@ -153,7 +153,7 @@ test.describe("Builder editor — deep-link reload", () => {
     await page.reload();
 
     const main = page.getByRole("main");
-    await expect(main.getByText(/no teams yet/i)).toBeVisible({
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
       timeout: 15000,
     });
 
@@ -221,7 +221,7 @@ test.describe("Builder landing — multi-draft", () => {
     await page.reload();
 
     const main = page.getByRole("main");
-    await expect(main.getByText(/no teams yet/i)).toBeVisible({
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
       timeout: 15000,
     });
 
@@ -265,7 +265,7 @@ test.describe("Builder landing — delete draft", () => {
     await page.reload();
 
     const main = page.getByRole("main");
-    await expect(main.getByText(/no teams yet/i)).toBeVisible({
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
       timeout: 15000,
     });
 
