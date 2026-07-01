@@ -87,7 +87,7 @@ function createImportMock() {
     typeof importTournament
   >[0];
 
-  return { supabase, teamPokemonInsert, from, rpc };
+  return { supabase, teamPokemonInsert, tournamentsUpsert, from, rpc };
 }
 
 /** Builds a minimal TournamentData fixture with no organizer/phases/pairings
@@ -230,7 +230,7 @@ describe("importTournament", () => {
   });
 
   it("resolves the Limitless format code through LIMITLESS_TO_FORMAT for the tournament upsert", async () => {
-    const { supabase, from } = createImportMock();
+    const { supabase, tournamentsUpsert } = createImportMock();
 
     const data = buildTournamentData([
       { id: "flutter-mane", name: "Flutter Mane", nature: "Timid" },
@@ -238,13 +238,7 @@ describe("importTournament", () => {
 
     await importTournament(supabase, data, "M-B");
 
-    expect(from).toHaveBeenCalledWith("tournaments");
-    const tournamentsMock = (
-      from.mock.results.find(
-        (r, i) => from.mock.calls[i]?.[0] === "tournaments"
-      ) as { value: { upsert: jest.Mock } } | undefined
-    )?.value;
-    expect(tournamentsMock?.upsert).toHaveBeenCalledWith(
+    expect(tournamentsUpsert).toHaveBeenCalledWith(
       expect.objectContaining({ format_id: "gen9championsvgc2026regmb" }),
       expect.anything()
     );
