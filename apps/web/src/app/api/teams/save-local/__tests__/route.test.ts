@@ -100,7 +100,7 @@ describe("POST /api/teams/save-local", () => {
       success: true,
       data: {
         teamId: 77,
-        redirectUrl: "/dashboard/alts/ash_ketchum/teams/77",
+        redirectUrl: "/builder/t/acct-77",
       },
     });
   });

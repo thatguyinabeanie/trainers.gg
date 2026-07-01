@@ -239,6 +239,7 @@ export type Database = {
           held_item: string | null
           id: number
           moves: string[] | null
+          nature: string | null
           position: number
           species: string
           standing_id: number
@@ -249,6 +250,7 @@ export type Database = {
           held_item?: string | null
           id?: never
           moves?: string[] | null
+          nature?: string | null
           position: number
           species: string
           standing_id: number
@@ -259,6 +261,7 @@ export type Database = {
           held_item?: string | null
           id?: never
           moves?: string[] | null
+          nature?: string | null
           position?: number
           species?: string
           standing_id?: number

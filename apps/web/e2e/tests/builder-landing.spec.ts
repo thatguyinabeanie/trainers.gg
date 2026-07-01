@@ -80,7 +80,7 @@ test.describe("Builder landing — empty state and New Team flow", () => {
 
     // Empty state message
     await expect(
-      main.getByText(/no teams yet/i)
+      main.getByTestId("landing-empty-state")
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -94,7 +94,7 @@ test.describe("Builder landing — empty state and New Team flow", () => {
     const main = page.getByRole("main");
 
     // Wait for hydration — landing must show empty state before clicking
-    await expect(main.getByText(/no teams yet/i)).toBeVisible({
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
       timeout: 15000,
     });
 
@@ -118,7 +118,7 @@ test.describe("Builder landing — empty state and New Team flow", () => {
     await page.reload();
 
     const main = page.getByRole("main");
-    await expect(main.getByText(/no teams yet/i)).toBeVisible({
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
       timeout: 15000,
     });
 
@@ -137,7 +137,7 @@ test.describe("Builder landing — empty state and New Team flow", () => {
     });
 
     // Sanity: empty-state text should no longer be visible
-    await expect(main.getByText(/no teams yet/i)).not.toBeVisible();
+    await expect(main.getByTestId("landing-empty-state")).not.toBeVisible();
   });
 });
 
@@ -153,7 +153,7 @@ test.describe("Builder editor — deep-link reload", () => {
     await page.reload();
 
     const main = page.getByRole("main");
-    await expect(main.getByText(/no teams yet/i)).toBeVisible({
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
       timeout: 15000,
     });
 
@@ -221,7 +221,7 @@ test.describe("Builder landing — multi-draft", () => {
     await page.reload();
 
     const main = page.getByRole("main");
-    await expect(main.getByText(/no teams yet/i)).toBeVisible({
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
       timeout: 15000,
     });
 
@@ -265,7 +265,7 @@ test.describe("Builder landing — delete draft", () => {
     await page.reload();
 
     const main = page.getByRole("main");
-    await expect(main.getByText(/no teams yet/i)).toBeVisible({
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
       timeout: 15000,
     });
 
@@ -310,7 +310,7 @@ test.describe("Builder landing — delete draft", () => {
     const alpha = makeDraftRecord({ id: "local-aaa1", team: { name: "Team Alpha" } });
     const beta = makeDraftRecord({ id: "local-bbb2", team: { name: "Team Beta" } });
 
-    seedDraftsBeforeLoad(page, [alpha, beta]);
+    await seedDraftsBeforeLoad(page, [alpha, beta]);
 
     await page.goto("/builder");
 
@@ -367,7 +367,7 @@ test.describe("Builder landing — smart search and filter", () => {
       makeDraftRecord({ id: "local-s003", team: { name: "Venusaur Vanguard" } }),
     ];
 
-    seedDraftsBeforeLoad(page, drafts);
+    await seedDraftsBeforeLoad(page, drafts);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -400,7 +400,7 @@ test.describe("Builder landing — smart search and filter", () => {
       makeDraftRecord({ id: "local-c002", team: { name: "Water Team" } }),
     ];
 
-    seedDraftsBeforeLoad(page, drafts);
+    await seedDraftsBeforeLoad(page, drafts);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -444,7 +444,7 @@ test.describe("Builder landing — folder create and team filing", () => {
       team: { name: "Folder Test Team" },
     });
 
-    seedDraftsBeforeLoad(page, [draft]);
+    await seedDraftsBeforeLoad(page, [draft]);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -509,7 +509,7 @@ test.describe("Builder landing — bulk selection and action bar", () => {
       makeDraftRecord({ id: "local-b002", team: { name: "Bulk Team Beta" } }),
     ];
 
-    seedDraftsBeforeLoad(page, drafts);
+    await seedDraftsBeforeLoad(page, drafts);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -536,7 +536,7 @@ test.describe("Builder landing — bulk selection and action bar", () => {
       makeDraftRecord({ id: "local-ba02", team: { name: "Archive Bystander" } }),
     ];
 
-    seedDraftsBeforeLoad(page, drafts);
+    await seedDraftsBeforeLoad(page, drafts);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -576,7 +576,7 @@ test.describe("Builder landing — bulk selection and action bar", () => {
       makeDraftRecord({ id: "local-bd02", team: { name: "Delete Bystander" } }),
     ];
 
-    seedDraftsBeforeLoad(page, drafts);
+    await seedDraftsBeforeLoad(page, drafts);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -609,7 +609,7 @@ test.describe("Builder landing — bulk selection and action bar", () => {
       team: { name: "Clearable Draft" },
     });
 
-    seedDraftsBeforeLoad(page, [draft]);
+    await seedDraftsBeforeLoad(page, [draft]);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -650,7 +650,7 @@ test.describe("Builder landing — undoable delete", () => {
       team: { name: "Undo Me" },
     });
 
-    seedDraftsBeforeLoad(page, [draft]);
+    await seedDraftsBeforeLoad(page, [draft]);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -707,7 +707,7 @@ test.describe("Builder landing — archive and restore", () => {
       team: { name: "Archive Me" },
     });
 
-    seedDraftsBeforeLoad(page, [draft]);
+    await seedDraftsBeforeLoad(page, [draft]);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -754,7 +754,7 @@ test.describe("Builder landing — archive and restore", () => {
       archived: true,
     });
 
-    seedDraftsBeforeLoad(page, [draft]);
+    await seedDraftsBeforeLoad(page, [draft]);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -814,7 +814,7 @@ test.describe("Builder landing — drag reorder (Custom sort)", () => {
       makeDraftRecord({ id: "local-d002", team: { name: "Reorder Second" } }),
     ];
 
-    seedDraftsBeforeLoad(page, drafts);
+    await seedDraftsBeforeLoad(page, drafts);
     await page.goto("/builder");
 
     const main = page.getByRole("main");
@@ -869,7 +869,7 @@ test.describe("Builder landing — drag reorder (Custom sort)", () => {
       }),
     ];
 
-    seedDraftsBeforeLoad(page, drafts);
+    await seedDraftsBeforeLoad(page, drafts);
     await page.goto("/builder");
 
     const main = page.getByRole("main");

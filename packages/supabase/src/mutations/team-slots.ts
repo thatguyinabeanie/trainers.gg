@@ -592,7 +592,7 @@ async function readLimitlessSlotRows(
         ability: row.ability,
         teraType: row.tera_type,
         moves: row.moves ?? [],
-        nature: null, // limitless.team_pokemon has no nature column
+        nature: null, // deferred — limitless.team_pokemon.nature now exists; wiring it through is a follow-up
       });
     }
 
