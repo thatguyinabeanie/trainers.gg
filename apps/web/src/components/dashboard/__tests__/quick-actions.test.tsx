@@ -42,7 +42,7 @@ describe("QuickActions", () => {
     it.each([
       { label: "Join Tournament", href: "/tournaments" },
       { label: "Create Alt", href: "/dashboard/alts" },
-      { label: "Team Builder", href: "/teams" },
+      { label: "Team Builder", href: "/builder" },
       { label: "Leaderboards", href: "/leaderboards" },
     ])("renders '$label' link pointing to '$href'", ({ label, href }) => {
       render(<QuickActions />);

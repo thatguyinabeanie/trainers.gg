@@ -1187,9 +1187,7 @@ describe("TeamWorkspaceV2 — alt transfer", () => {
     await user.selectOptions(altSelect, "2");
 
     expect(mockTransferTeam).toHaveBeenCalledWith(1, 2);
-    expect(mockRouterPush).toHaveBeenCalledWith(
-      "/dashboard/alts/gary_oak/teams/1"
-    );
+    expect(mockRouterPush).toHaveBeenCalledWith("/builder/t/acct-1");
     expect(mockToastSuccess).toHaveBeenCalledWith(
       "Team transferred to gary_oak."
     );
