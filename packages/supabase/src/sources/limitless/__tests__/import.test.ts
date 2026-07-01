@@ -9,7 +9,7 @@
  */
 
 import { importTournament } from "../import";
-import type { TournamentData } from "../types";
+import { type TournamentData } from "../types";
 
 // =============================================================================
 // Helpers — bespoke chainable mock tailored to importTournament's call graph
