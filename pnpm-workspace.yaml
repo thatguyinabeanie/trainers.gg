@@ -77,9 +77,10 @@ catalogs:
     # supabase/postgres image tag AND whether `gen types --local` works offline.
     # 2.106.0 pulls image .063 (supabase_admin needs a password) and its `gen
     # types` requires a platform token even locally (LegacyPlatformAuthRequired).
-    # 2.105.0 pulls .134 (trust auth) and generates types offline. Bump only
-    # after verifying both on a fresh `db:reset`.
-    supabase: 2.105.0
+    # Pin to a specific version — controls the supabase/postgres Docker image tag
+    # pulled for local dev. Verify trust auth + offline type generation with a
+    # fresh `db:reset` after bumping.
+    supabase: 2.109.0
 
   tamagui:
     "@tamagui/config": 2.0.0-rc.41
