@@ -53,6 +53,19 @@ test.use({
   },
 });
 
+// Pre-grant cookie consent before every test's first navigation so the
+// `<div role="dialog" aria-label="Cookie consent">` banner never mounts.
+// CookieConsent only hides once localStorage["cookie-consent"] is exactly
+// "granted" or "denied" — with the empty storage state this suite uses, the
+// banner would otherwise render on every page load (including reloads, since
+// addInitScript re-runs on each navigation) and intercept pointer events
+// aimed at buttons underneath it.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("cookie-consent", "granted");
+  });
+});
+
 // Helper: clear the local drafts store before each test so the empty state
 // always renders on a fresh visit, regardless of test ordering.
 async function clearLocalDrafts(page: Page) {
@@ -73,15 +86,26 @@ test.describe("Builder landing — empty state and New Team flow", () => {
 
     const main = page.getByRole("main");
 
-    // Page heading
-    await expect(
-      main.getByRole("heading", { name: /your teams/i })
-    ).toBeVisible({ timeout: 15000 });
+    // Empty state renders instead of the "Your Teams" populated view
+    await expect(main.getByTestId("landing-empty-state")).toBeVisible({
+      timeout: 15000,
+    });
 
-    // Empty state message
+    // Guest-variant headline
     await expect(
-      main.getByTestId("landing-empty-state")
+      main.getByRole("heading", { name: /let's build your first team/i })
     ).toBeVisible({ timeout: 10000 });
+
+    // On-ramp cards are present
+    await expect(
+      main.getByRole("button", { name: /start from scratch/i })
+    ).toBeVisible();
+    await expect(
+      main.getByRole("button", { name: /import a paste/i })
+    ).toBeVisible();
+
+    // Guest local-save note
+    await expect(main.getByText(/building as a guest/i)).toBeVisible();
   });
 
   test("New Team button navigates to a local-draft editor URL", async ({
@@ -98,12 +122,13 @@ test.describe("Builder landing — empty state and New Team flow", () => {
       timeout: 15000,
     });
 
-    // Click the New Team button (there are two — header and empty-state CTA;
-    // either works, prefer the header button by role first, fall back to label)
-    const newTeamButton = main
-      .getByRole("button", { name: /new team/i })
-      .first();
-    await newTeamButton.click();
+    // Empty state has no "New Team" button — the primary create action is the
+    // "Start from scratch" on-ramp card, which runs the same create+navigate
+    // handler as the populated view's "New Team" button.
+    const startFromScratchButton = main.getByRole("button", {
+      name: /start from scratch/i,
+    });
+    await startFromScratchButton.click();
 
     // URL should become /builder/t/local-<suffix>
     await page.waitForURL(/\/builder\/t\/local-/, { timeout: 15000 });
@@ -122,8 +147,8 @@ test.describe("Builder landing — empty state and New Team flow", () => {
       timeout: 15000,
     });
 
-    // Create a new team
-    await main.getByRole("button", { name: /new team/i }).first().click();
+    // Create a new team — empty state uses "Start from scratch"
+    await main.getByRole("button", { name: /start from scratch/i }).click();
     await page.waitForURL(/\/builder\/t\/local-/, { timeout: 15000 });
 
     // Go back
@@ -157,7 +182,7 @@ test.describe("Builder editor — deep-link reload", () => {
       timeout: 15000,
     });
 
-    await main.getByRole("button", { name: /new team/i }).first().click();
+    await main.getByRole("button", { name: /start from scratch/i }).click();
     await page.waitForURL(/\/builder\/t\/local-/, { timeout: 15000 });
 
     const editorUrl = page.url();
@@ -225,18 +250,23 @@ test.describe("Builder landing — multi-draft", () => {
       timeout: 15000,
     });
 
-    // Create first draft
-    await main.getByRole("button", { name: /new team/i }).first().click();
+    // Create first draft — landing is still in the EMPTY state here, so the
+    // create action is the "Start from scratch" on-ramp card (there is no
+    // "New Team" button until at least one draft exists).
+    await main.getByRole("button", { name: /start from scratch/i }).click();
     await page.waitForURL(/\/builder\/t\/local-/, { timeout: 15000 });
 
-    // Navigate back to landing
+    // Navigate back to landing — now POPULATED (1 draft), so "Your Teams" +
+    // the header "New Team" button render.
     await page.goto("/builder");
     await expect(main.getByRole("heading", { name: /your teams/i })).toBeVisible(
       { timeout: 15000 }
     );
 
-    // Create second draft
-    await main.getByRole("button", { name: /new team/i }).first().click();
+    // Create second draft via the populated view's "New Team" button
+    await main
+      .getByRole("button", { name: /create a new team/i })
+      .click();
     await page.waitForURL(/\/builder\/t\/local-/, { timeout: 15000 });
 
     // Navigate back to landing
@@ -269,8 +299,8 @@ test.describe("Builder landing — delete draft", () => {
       timeout: 15000,
     });
 
-    // Create a draft
-    await main.getByRole("button", { name: /new team/i }).first().click();
+    // Create a draft — landing is still EMPTY here, so use "Start from scratch"
+    await main.getByRole("button", { name: /start from scratch/i }).click();
     await page.waitForURL(/\/builder\/t\/local-/, { timeout: 15000 });
 
     // Return to landing
@@ -284,9 +314,14 @@ test.describe("Builder landing — delete draft", () => {
       timeout: 10000,
     });
 
-    // Open the overflow ("Team options") menu on the row
-    // TeamRow renders a DropdownMenuTrigger with aria-label="Team options"
-    const optionsButton = main.getByRole("button", { name: /team options/i });
+    // Open the overflow ("Team options") menu on the row. The trigger is
+    // opacity-0 until the row is hovered (group-hover reveal), so hover the
+    // row first.
+    const row = main.getByTestId("team-row").filter({
+      has: main.getByText(/untitled team/i),
+    });
+    await row.hover();
+    const optionsButton = row.getByRole("button", { name: /team options/i });
     await optionsButton.waitFor({ state: "visible", timeout: 10000 });
     await optionsButton.click();
 
@@ -327,14 +362,18 @@ test.describe("Builder landing — delete draft", () => {
     // DropdownMenuTrigger aria-label="Team options" scoped inside its row.
     // Use the row's container to scope the button click.
     //
-    // TeamRow renders a `div.group` that contains the team name and the options button.
-    const alphaRow = main.locator("div.group", {
+    // Scope by data-testid="team-row" (added to the row wrapper in
+    // teams-landing-client.tsx) rather than `div.group` — the FolderRail's
+    // nodes also use `.group`, so `div.group` is ambiguous within <main>.
+    const alphaRow = main.getByTestId("team-row").filter({
       has: main.getByText("Team Alpha"),
     });
     const alphaOptionsButton = alphaRow.getByRole("button", {
       name: /team options/i,
     });
 
+    // The trigger is opacity-0 until the row is hovered (group-hover reveal).
+    await alphaRow.hover();
     await alphaOptionsButton.waitFor({ state: "visible", timeout: 10000 });
     await alphaOptionsButton.click();
 
@@ -380,8 +419,13 @@ test.describe("Builder landing — smart search and filter", () => {
     await expect(main.getByText("Blastoise Brigade")).toBeVisible({ timeout: 10000 });
 
     // Type into the search combobox — searches by name:
-    // The SmartSearch input has role="combobox" (confirmed in smart-search.tsx line 173)
-    const searchInput = main.getByRole("combobox");
+    // The SmartSearch input has role="combobox" (confirmed in smart-search.tsx line 173).
+    // Scope by accessible name (the placeholder) since the sort control
+    // (landing-toolbar.tsx) is ALSO role="combobox" — an unscoped
+    // getByRole("combobox") matches both and throws a strict-mode violation.
+    const searchInput = main.getByRole("combobox", {
+      name: "Search teams… (⌘K)",
+    });
     await searchInput.fill("Charizard");
 
     // Only "Charizard Squad" should remain visible
@@ -408,7 +452,11 @@ test.describe("Builder landing — smart search and filter", () => {
       { timeout: 15000 }
     );
 
-    const searchInput = main.getByRole("combobox");
+    // Scope by accessible name — see note above on the sort control also
+    // being role="combobox".
+    const searchInput = main.getByRole("combobox", {
+      name: "Search teams… (⌘K)",
+    });
     await searchInput.fill("Dragon");
 
     // Filtered
@@ -464,14 +512,24 @@ test.describe("Builder landing — folder create and team filing", () => {
     await folderNameInput.fill("My Folder");
     await folderNameInput.press("Enter");
 
-    // The folder should now appear in the rail
-    await expect(page.getByRole("button", { name: "My Folder" })).toBeVisible({
+    // The folder should now appear in the rail. Use exact:true — the rail
+    // also renders a sibling "Options for My Folder" button, and by default
+    // getByRole name matching is substring-based, so "My Folder" would match
+    // both.
+    await expect(
+      page.getByRole("button", { name: "My Folder", exact: true })
+    ).toBeVisible({
       timeout: 5000,
     });
 
-    // Step 2: Open the team's overflow menu and move it to "My Folder"
-    // aria-label="Team options" (team-row.tsx line 146)
-    const optionsBtn = main.getByRole("button", { name: /team options/i });
+    // Step 2: Open the team's overflow menu and move it to "My Folder".
+    // aria-label="Team options" (team-row.tsx line 146). The trigger is
+    // opacity-0 until the row is hovered (group-hover reveal).
+    const teamRow = main.getByTestId("team-row").filter({
+      has: main.getByText("Folder Test Team"),
+    });
+    await teamRow.hover();
+    const optionsBtn = teamRow.getByRole("button", { name: /team options/i });
     await optionsBtn.waitFor({ state: "visible", timeout: 10000 });
     await optionsBtn.click();
 
@@ -481,12 +539,17 @@ test.describe("Builder landing — folder create and team filing", () => {
     await moveToFolder.hover();
 
     // Click the specific folder name in the submenu
-    const folderMenuItem = page.getByRole("menuitem", { name: "My Folder" });
+    const folderMenuItem = page.getByRole("menuitem", {
+      name: "My Folder",
+      exact: true,
+    });
     await folderMenuItem.waitFor({ state: "visible", timeout: 5000 });
     await folderMenuItem.click();
 
     // Step 3: Click the folder in the rail — the team should appear in the folder view
-    await page.getByRole("button", { name: "My Folder" }).click();
+    await page
+      .getByRole("button", { name: "My Folder", exact: true })
+      .click();
     await expect(main.getByText("Folder Test Team")).toBeVisible({ timeout: 5000 });
   });
 });
@@ -660,8 +723,13 @@ test.describe("Builder landing — undoable delete", () => {
 
     await expect(main.getByText("Undo Me")).toBeVisible({ timeout: 10000 });
 
-    // Open the overflow menu on the row
-    const optionsBtn = main.getByRole("button", { name: /team options/i });
+    // Open the overflow menu on the row. The trigger is opacity-0 until the
+    // row is hovered (group-hover reveal), so hover the row first.
+    const row = main.getByTestId("team-row").filter({
+      has: main.getByText("Undo Me"),
+    });
+    await row.hover();
+    const optionsBtn = row.getByRole("button", { name: /team options/i });
     await optionsBtn.waitFor({ state: "visible", timeout: 10000 });
     await optionsBtn.click();
 
@@ -717,8 +785,13 @@ test.describe("Builder landing — archive and restore", () => {
 
     await expect(main.getByText("Archive Me")).toBeVisible({ timeout: 10000 });
 
-    // Open the overflow menu and click "Archive"
-    const optionsBtn = main.getByRole("button", { name: /team options/i });
+    // Open the overflow menu and click "Archive". The trigger is opacity-0
+    // until the row is hovered (group-hover reveal), so hover the row first.
+    const row = main.getByTestId("team-row").filter({
+      has: main.getByText("Archive Me"),
+    });
+    await row.hover();
+    const optionsBtn = row.getByRole("button", { name: /team options/i });
     await optionsBtn.waitFor({ state: "visible", timeout: 10000 });
     await optionsBtn.click();
 
@@ -769,8 +842,13 @@ test.describe("Builder landing — archive and restore", () => {
 
     await expect(main.getByText("Restore Me")).toBeVisible({ timeout: 5000 });
 
-    // Open the overflow menu and click "Unarchive"
-    const optionsBtn = main.getByRole("button", { name: /team options/i });
+    // Open the overflow menu and click "Unarchive". The trigger is opacity-0
+    // until the row is hovered (group-hover reveal), so hover the row first.
+    const row = main.getByTestId("team-row").filter({
+      has: main.getByText("Restore Me"),
+    });
+    await row.hover();
+    const optionsBtn = row.getByRole("button", { name: /team options/i });
     await optionsBtn.waitFor({ state: "visible", timeout: 10000 });
     await optionsBtn.click();
 
@@ -836,9 +914,10 @@ test.describe("Builder landing — drag reorder (Custom sort)", () => {
     // With Custom sort, the overflow menu for each row should include
     // "Move up" and "Move down" items (team-row.tsx lines 162-175).
     // Open the options for "Reorder Second" (bottom row — can move up, not down)
-    const secondRow = main.locator("div.group", {
+    const secondRow = main.getByTestId("team-row").filter({
       has: main.getByText("Reorder Second"),
     });
+    await secondRow.hover();
     const secondOptions = secondRow.getByRole("button", { name: /team options/i });
     await secondOptions.waitFor({ state: "visible", timeout: 10000 });
     await secondOptions.click();
@@ -887,14 +966,15 @@ test.describe("Builder landing — drag reorder (Custom sort)", () => {
     await customOption.click();
 
     // Verify initial order: Alpha first, Beta second
-    const rows = main.locator("div.group");
+    const rows = main.getByTestId("team-row");
     const firstRowText = rows.first();
     await expect(firstRowText).toContainText("Alpha Row", { timeout: 5000 });
 
     // Open options for "Beta Row" and click "Move up"
-    const betaRow = main.locator("div.group", {
+    const betaRow = main.getByTestId("team-row").filter({
       has: main.getByText("Beta Row"),
     });
+    await betaRow.hover();
     const betaOptions = betaRow.getByRole("button", { name: /team options/i });
     await betaOptions.waitFor({ state: "visible", timeout: 10000 });
     await betaOptions.click();
@@ -923,7 +1003,7 @@ test.describe("Builder landing — drag reorder (Custom sort)", () => {
     }
 
     // Beta Row should still be first
-    await expect(main.locator("div.group").first()).toContainText("Beta Row", {
+    await expect(main.getByTestId("team-row").first()).toContainText("Beta Row", {
       timeout: 5000,
     });
   });
