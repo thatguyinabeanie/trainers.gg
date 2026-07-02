@@ -82,7 +82,7 @@ describe("buildTeamSlotRows — empty input", () => {
 // =============================================================================
 
 describe("buildTeamSlotRows — rk9 shaped fixture", () => {
-  it("maps rk9 fields correctly: division, placement, no W/L/T, stat_alignment→nature, is_online=false", () => {
+  it("maps rk9 fields correctly: division, placement, no W/L/T, nature, is_online=false", () => {
     const raw: RawSlotRow[] = [
       rawSlot({
         playerKey: "rk9:standing:101",
@@ -98,8 +98,8 @@ describe("buildTeamSlotRows — rk9 shaped fixture", () => {
         ability: "as-one",
         teraType: "ice",
         moves: ["glacial-lance", "ice-spinner", "trick-room", "protect"],
-        // stat_alignment already mapped to nature by the reader
-        nature: "brave",
+        // rk9's nature column is read directly by the reader (no rename mapping)
+        nature: "Brave",
       }),
     ];
 
@@ -131,7 +131,7 @@ describe("buildTeamSlotRows — rk9 shaped fixture", () => {
       "trick-room",
       "protect",
     ]);
-    expect(row.nature).toBe("brave");
+    expect(row.nature).toBe("Brave");
   });
 
   it("stamps event_tier from rk9 meta on all rows", () => {
@@ -211,7 +211,7 @@ describe("buildTeamSlotRows — trainers.gg shaped fixture", () => {
         ability: "orichalcum-pulse",
         teraType: "fire",
         moves: ["flare-blitz", "close-combat", "collision-course", "protect"],
-        nature: "adamant",
+        nature: "Adamant",
       }),
     ];
 
@@ -223,7 +223,7 @@ describe("buildTeamSlotRows — trainers.gg shaped fixture", () => {
     expect(row.event_key).toBe("trainers.gg:42");
     expect(row.is_online).toBe(true);
     expect(row.placement).toBeNull();
-    expect(row.nature).toBe("adamant");
+    expect(row.nature).toBe("Adamant");
     expect(row.division).toBeNull();
     expect(row.event_tier).toBeNull();
   });
@@ -505,7 +505,7 @@ describe("buildTeamSlotRows — forbidden fields never emitted", () => {
         ability: "intimidate",
         teraType: "fire",
         moves: ["fake-out", "parting-shot", "flare-blitz", "darkest-lariat"],
-        nature: "adamant",
+        nature: "Adamant",
       }),
       rawSlot({
         playerKey: "p2",
@@ -669,7 +669,7 @@ const rawSlotForFk: RawSlotRow = {
   ability: "hadron-engine",
   teraType: "electric",
   moves: ["volt-switch"],
-  nature: "modest",
+  nature: "Modest",
 };
 
 describe("buildTeamSlotRows polymorphic FK column (Decision 1)", () => {

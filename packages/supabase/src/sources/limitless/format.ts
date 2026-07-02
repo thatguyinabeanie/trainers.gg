@@ -1,5 +1,6 @@
 export const LIMITLESS_TO_FORMAT: Record<string, string> = {
   "M-A": "gen9championsvgc2026regma",
+  "M-B": "gen9championsvgc2026regmb",
   SVI: "gen9vgc2025regi",
   SVH: "gen9vgc2024regh",
   SVG: "gen9vgc2024regg",

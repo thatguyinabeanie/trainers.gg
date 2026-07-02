@@ -129,9 +129,18 @@ export function makeDraftRecord(
  * Use this as the preferred mechanism — call it BEFORE `page.goto()` so the
  * React component sees the data on its first render and doesn't flash an empty
  * state before hydration corrects it.
+ *
+ * MUST be awaited: `page.addInitScript` is an async CDP round-trip that
+ * registers the script on the browser context. Without awaiting it, the
+ * following `page.goto()` can commit its navigation before the script is
+ * actually registered, so the init script never fires and the seed is
+ * silently lost — the exact "seeded value is gone after navigation" symptom.
  */
-export function seedDraftsBeforeLoad(page: Page, records: DraftRecord[]): void {
-  page.addInitScript(
+export async function seedDraftsBeforeLoad(
+  page: Page,
+  records: DraftRecord[]
+): Promise<void> {
+  await page.addInitScript(
     ({ key, store }) => {
       localStorage.setItem(key, JSON.stringify(store));
     },

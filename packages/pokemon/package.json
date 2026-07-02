@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./regulation-calendar": "./src/regulation-calendar.ts",
     "./types": "./src/types.ts",
-    "./sprites": "./src/sprites.ts"
+    "./sprites": "./src/sprites.ts",
+    "./natures": "./src/natures.ts"
   },
   "scripts": {
     "test": "jest",

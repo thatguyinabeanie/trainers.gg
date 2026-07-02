@@ -101,7 +101,7 @@ const rk9TeamPokemonRow = {
   held_item: "focus-sash",
   tera_type: "fairy",
   moves: ["moonblast", "shadow-ball"],
-  stat_alignment: "timid",
+  nature: "timid",
   standings: {
     id: 10,
     division: "masters",
@@ -346,7 +346,7 @@ describe("compileEventTeamSlots — chunking", () => {
       held_item: null,
       tera_type: null,
       moves: [],
-      stat_alignment: null,
+      nature: null,
       standings: {
         id: i,
         division: "masters",
@@ -402,7 +402,7 @@ describe("compileEventTeamSlots — pagination", () => {
       held_item: null,
       tera_type: null,
       moves: [],
-      stat_alignment: null,
+      nature: null,
       standings: {
         id: i,
         division: "masters",
@@ -444,7 +444,7 @@ describe("compileEventTeamSlots — pagination", () => {
       held_item: null,
       tera_type: null,
       moves: [],
-      stat_alignment: null,
+      nature: null,
       standings: {
         id: i,
         division: "masters",

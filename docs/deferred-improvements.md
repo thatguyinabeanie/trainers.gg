@@ -30,6 +30,17 @@ This is **not** a wish list or a "maybe someday" pile. Every entry here is somet
 
 ## Open
 
+### Convert `type` and `tera_type` columns to Postgres enums (like `pokemon_nature`)
+
+- **Status:** Open
+- **Area:** DB `tera_type` columns (`public.pokemon`, `public.tournament_team_sheets`, `public.team_slots`, `rk9.team_pokemon`, `limitless.team_pokemon`) and any plain Pokémon-`type` columns; `packages/pokemon` type roster/guards; source importers; generated `types.ts`
+- **Logged:** 2026-07-01 (branch `feat/limitless-nature-and-mb`, user follow-up right after the `pokemon_nature` enum work)
+- **Context:** The nature PR converted free-form `nature` text → a shared Title-Case `public.pokemon_nature` enum with importer coercion (`isNature`) and the two usage RPCs casting `nature::text` to preserve histogram ordering. Pokémon **types** and **Tera types** are still free-form text and should get the same treatment.
+- **Shipped instead:** Only `nature` was enum-ified in this PR (5 live columns + `rk9.stat_alignment`→`nature` rename).
+- **Deferred improvement:** Add **two** enums, not one — **`tera_type` is a superset of `type`**: it is every standard type **plus `Stellar`** (Terapagos/Stellar tera). So model `public.pokemon_type` (the 18 standard types) and a separate `public.pokemon_tera_type` = the 18 types ∪ `{Stellar}`. Convert each `tera_type` column to `pokemon_tera_type` and any plain type column to `pokemon_type`, mirroring the nature migration exactly: coerce invalid→NULL before `ALTER TYPE`, add `isType`/`isTeraType` guards in `packages/pokemon`, coerce at every importer write site, regenerate `types.ts`, and fix the typecheck ripples. **Casing caveat:** unlike Title-Case natures, existing type/tera values are lowercase slugs (e.g. `"fire"`, `"electric"` — seen in `compile.test.ts` fixtures); confirm the `@pkmn`/DB convention before choosing enum-value casing so no re-casing is needed at any boundary.
+- **Why deferred:** User asked to land the nature enum first; types/tera are a separate scope whose superset relationship + casing need their own design pass.
+- **References:** `docs/decisions/2026-07-01-pokemon-nature-enum.md` (design template), migration `20260701233927_pokemon_nature_enum.sql` (mechanics template), `packages/pokemon/src/natures.ts` (guard-module pattern to mirror for types).
+
 ### Route `searchPlayers` alt reads through a public-allowlist view/RPC
 
 - **Status:** Open

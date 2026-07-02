@@ -1,5 +1,17 @@
 import { describe, it, expect, beforeEach } from "@jest/globals";
 import { renderHook, act } from "@testing-library/react";
+import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// use-folders.ts imports useSupabase (from @/lib/supabase) at module load —
+// mock the whole module so the import chain doesn't try to create a real
+// Supabase client (which throws in the jest env with no Supabase env vars).
+// Matches the pattern in team-builder/__tests__/new-team-dialog.test.tsx and
+// local-builder-workspace.test.tsx.
+jest.mock("@/lib/supabase", () => ({
+  useSupabase: jest.fn(() => ({})),
+}));
+
 import { useFolders } from "../use-folders";
 import {
   LOCAL_FOLDERS_STORAGE_KEY,
@@ -54,26 +66,46 @@ function readStore(): LocalFoldersStoreV1 | null {
   return JSON.parse(raw) as LocalFoldersStoreV1;
 }
 
+/**
+ * useFolders() calls useQuery/useQueryClient unconditionally (even when no
+ * userId is passed — the DB query is merely `enabled: false`), so every
+ * renderHook() call needs a QueryClientProvider ancestor. Matches the
+ * makeQueryClient/makeWrapper pattern in use-usage-data.test.tsx.
+ */
+function makeWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return React.createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children
+    );
+  }
+  return Wrapper;
+}
+
 // =============================================================================
 // useFolders — hydration
 // =============================================================================
 
 describe("useFolders hydration", () => {
   it("hydrated starts false and becomes true after mount", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     expect(result.current.hydrated).toBe(true);
   });
 
   it("manualFolders starts empty and hydrates on mount", () => {
     storeCreateManualFolder("Existing Folder");
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     expect(result.current.hydrated).toBe(true);
     expect(result.current.manualFolders).toHaveLength(1);
     expect(result.current.manualFolders[0]!.name).toBe("Existing Folder");
   });
 
   it("smartFolders always includes seeded folders after mount", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     const seededIds = SEEDED_SMART_FOLDERS.map((f) => f.id);
     for (const id of seededIds) {
       expect(result.current.smartFolders.find((f) => f.id === id)).toBeDefined();
@@ -82,19 +114,19 @@ describe("useFolders hydration", () => {
 
   it("smartFolders includes user-created folders after mount", () => {
     storeCreateSmartFolder("Pre-existing Smart", []);
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     expect(result.current.smartFolders.find((f) => f.name === "Pre-existing Smart")).toBeDefined();
   });
 
   it("returns empty manualFolders when localStorage is empty", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     expect(result.current.manualFolders).toEqual([]);
   });
 
   it("seeded smart folders are available before hydration (pre-populated)", () => {
     // Seeded folders are pre-populated in initial state, not just after effect
     // We can verify they appear in the first synchronous render result
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     // After renderHook effects run, seeded folders should be present
     expect(result.current.smartFolders.length).toBeGreaterThanOrEqual(SEEDED_SMART_FOLDERS.length);
   });
@@ -106,7 +138,7 @@ describe("useFolders hydration", () => {
 
 describe("useFolders.createManualFolder", () => {
   it("adds a new folder to manualFolders and returns it", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     let created: ReturnType<typeof result.current.createManualFolder> | undefined;
 
     act(() => {
@@ -120,7 +152,7 @@ describe("useFolders.createManualFolder", () => {
   });
 
   it("appends successive folders in insertion order", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
 
     act(() => {
       result.current.createManualFolder("First");
@@ -136,7 +168,7 @@ describe("useFolders.createManualFolder", () => {
   });
 
   it("persists the folder to localStorage", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
 
     act(() => {
       result.current.createManualFolder("Persisted");
@@ -154,7 +186,7 @@ describe("useFolders.createManualFolder", () => {
 
 describe("useFolders.renameManualFolder", () => {
   it("renames the folder in state", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     let folderId: string | undefined;
 
     act(() => {
@@ -168,7 +200,7 @@ describe("useFolders.renameManualFolder", () => {
   });
 
   it("is a no-op for an unknown id (state unchanged)", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
 
     act(() => {
       result.current.createManualFolder("Safe");
@@ -189,7 +221,7 @@ describe("useFolders.renameManualFolder", () => {
 
 describe("useFolders.deleteManualFolder", () => {
   it("removes the folder from state", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     let folderId: string | undefined;
 
     act(() => {
@@ -203,7 +235,7 @@ describe("useFolders.deleteManualFolder", () => {
   });
 
   it("removes the folder from localStorage", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     let folderId: string | undefined;
 
     act(() => {
@@ -218,7 +250,7 @@ describe("useFolders.deleteManualFolder", () => {
   });
 
   it("leaves other folders intact", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     let keepId: string | undefined;
     let deleteId: string | undefined;
 
@@ -235,7 +267,7 @@ describe("useFolders.deleteManualFolder", () => {
   });
 
   it("is a no-op for an unknown id (state unchanged)", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
 
     act(() => {
       result.current.createManualFolder("Safe");
@@ -256,7 +288,7 @@ describe("useFolders.deleteManualFolder", () => {
 
 describe("useFolders.createSmartFolder", () => {
   it("adds the smart folder to state after seeded ones", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     const criteria = [{ kind: "text" as const, value: "pikachu" }];
 
     act(() => {
@@ -270,7 +302,7 @@ describe("useFolders.createSmartFolder", () => {
   });
 
   it("seeded folders remain first in smartFolders after creating a user folder", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
 
     act(() => {
       result.current.createSmartFolder("User Smart", []);
@@ -283,7 +315,7 @@ describe("useFolders.createSmartFolder", () => {
   });
 
   it("persists the smart folder to localStorage", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
 
     act(() => {
       result.current.createSmartFolder("Persisted Smart", []);
@@ -295,7 +327,7 @@ describe("useFolders.createSmartFolder", () => {
   });
 
   it("returns the created smart folder", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     let created: ReturnType<typeof result.current.createSmartFolder> | undefined;
 
     act(() => {
@@ -313,7 +345,7 @@ describe("useFolders.createSmartFolder", () => {
 
 describe("useFolders.deleteSmartFolder", () => {
   it("removes a user smart folder from state", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     let folderId: string | undefined;
 
     act(() => {
@@ -327,7 +359,7 @@ describe("useFolders.deleteSmartFolder", () => {
   });
 
   it("does NOT remove seeded folders from state when deleting their id", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
 
     act(() => {
       result.current.deleteSmartFolder(SEEDED_FOLDER_IDS.INCOMPLETE);
@@ -339,7 +371,7 @@ describe("useFolders.deleteSmartFolder", () => {
   });
 
   it("leaves other user smart folders intact", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
     let keepId: string | undefined;
     let deleteId: string | undefined;
 
@@ -356,7 +388,7 @@ describe("useFolders.deleteSmartFolder", () => {
   });
 
   it("is a no-op for an unknown id (state unchanged)", () => {
-    const { result } = renderHook(() => useFolders());
+    const { result } = renderHook(() => useFolders(), { wrapper: makeWrapper() });
 
     act(() => {
       result.current.createSmartFolder("Safe Smart", []);

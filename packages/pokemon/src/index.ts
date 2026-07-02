@@ -41,6 +41,9 @@ export {
 } from "./format-rules";
 
 // Stats calculator
+// Nature/ALL_NATURES/isNature are re-exported here from stats-calculator.ts,
+// which itself re-exports them from the zero-import ./natures module — see
+// ./natures for the bundle-safe import path used by importer write sites.
 export {
   type BaseStats,
   type NatureEffect,

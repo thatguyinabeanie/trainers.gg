@@ -1282,6 +1282,112 @@ describe("runTeamsBatch — invalid roster_entry_id", () => {
 });
 
 // =============================================================================
+// runTeamsBatch — nature coercion on the team_pokemon upsert
+//
+// docs/decisions/2026-07-01-pokemon-nature-enum.md Part B/D: worker.ts must
+// coerce mon.nature through isNature() before the upsert (invalid → null),
+// and the upsert row key is `nature` — the pokemon_nature enum column no
+// longer accepts the old `stat_alignment` key name.
+// =============================================================================
+
+describe("runTeamsBatch — nature coercion on team_pokemon upsert", () => {
+  function buildNatureSupabaseMock(teamPokemonUpsert: jest.Mock) {
+    const standingsPages = [
+      [{ id: 7, roster_entry_id: "entry-7", team_scrape_attempted_at: null }],
+      [],
+    ];
+    let standingsPageIdx = 0;
+    const standingsChainInner = makeChain(() => {
+      const page = standingsPages[standingsPageIdx] ?? [];
+      standingsPageIdx++;
+      return { data: page, error: null };
+    });
+
+    const eventsChainInner = makeChain(() => ({ data: null, error: null }));
+    const speciesMapChainInner = makeChain(() => ({ data: [], error: null }));
+    const teamPokemonChainInner = makeChain(() => ({ data: [], error: null }));
+    teamPokemonChainInner.upsert = teamPokemonUpsert;
+
+    return {
+      schema: jest.fn().mockImplementation((_schema: string) => ({
+        from: jest.fn().mockImplementation((table: string) => {
+          if (table === "standings") return standingsChainInner;
+          if (table === "events") return eventsChainInner;
+          if (table === "species_map") return speciesMapChainInner;
+          if (table === "team_pokemon") return teamPokemonChainInner;
+          return makeChain(() => ({ data: null, error: null }));
+        }),
+      })),
+    };
+  }
+
+  it("coerces an unrecognized nature to null and upserts under the 'nature' key", async () => {
+    const scraperModule = jest.requireMock("../scraper") as {
+      parseTeamListPage: jest.Mock;
+    };
+    scraperModule.parseTeamListPage.mockReturnValueOnce([
+      {
+        speciesRaw: "Flutter Mane",
+        teraType: "Fairy",
+        ability: "Protosynthesis",
+        heldItem: "Booster Energy",
+        nature: "NotANature",
+        moves: ["Moonblast", "Shadow Ball", "Icy Wind", "Protect"],
+      },
+    ]);
+
+    const teamPokemonUpsert = jest
+      .fn()
+      .mockReturnValue(makeChain(() => ({ data: null, error: null })));
+    const supabase = buildNatureSupabaseMock(teamPokemonUpsert);
+
+    await runTeamsBatch(supabase as never, "evt-1", {
+      batchSize: 10,
+      concurrency: 1,
+    });
+
+    expect(teamPokemonUpsert).toHaveBeenCalledTimes(1);
+    const [rows] = teamPokemonUpsert.mock.calls[0] as [
+      Array<{ nature: string | null }>,
+    ];
+    expect(rows[0]?.nature).toBeNull();
+    expect(rows[0]).toHaveProperty("nature");
+    expect(rows[0]).not.toHaveProperty("stat_alignment");
+  });
+
+  it("passes through a recognized nature under the 'nature' key", async () => {
+    const scraperModule = jest.requireMock("../scraper") as {
+      parseTeamListPage: jest.Mock;
+    };
+    scraperModule.parseTeamListPage.mockReturnValueOnce([
+      {
+        speciesRaw: "Incineroar",
+        teraType: "Dark",
+        ability: "Intimidate",
+        heldItem: "Sitrus Berry",
+        nature: "Careful",
+        moves: ["Fake Out", "Knock Off", "Parting Shot", "Flare Blitz"],
+      },
+    ]);
+
+    const teamPokemonUpsert = jest
+      .fn()
+      .mockReturnValue(makeChain(() => ({ data: null, error: null })));
+    const supabase = buildNatureSupabaseMock(teamPokemonUpsert);
+
+    await runTeamsBatch(supabase as never, "evt-1", {
+      batchSize: 10,
+      concurrency: 1,
+    });
+
+    const [rows] = teamPokemonUpsert.mock.calls[0] as [
+      Array<{ nature: string | null }>,
+    ];
+    expect(rows[0]?.nature).toBe("Careful");
+  });
+});
+
+// =============================================================================
 // runRosterStage — new review-fix error branches
 // =============================================================================
 

@@ -90,6 +90,7 @@ describe("round-trip write → read", () => {
       density: "compact",
       railCollapsed: true,
       selectedFolderId: "folder-abc",
+      selectedAltId: 42,
     };
 
     writeLandingPrefs(input);
@@ -115,6 +116,8 @@ describe("round-trip write → read", () => {
     ["railCollapsed", true],
     ["selectedFolderId", "my-folder"],
     ["selectedFolderId", null],
+    ["selectedAltId", 7],
+    ["selectedAltId", null],
   ])("round-trips field %s = %j correctly", (field, value) => {
     const input: LandingPrefs = {
       ...DEFAULT_LANDING_PREFS,
@@ -174,6 +177,7 @@ describe("readLandingPrefs — partial stored prefs", () => {
     expect(result.density).toBe(DEFAULT_LANDING_PREFS.density);
     expect(result.railCollapsed).toBe(DEFAULT_LANDING_PREFS.railCollapsed);
     expect(result.selectedFolderId).toBe(DEFAULT_LANDING_PREFS.selectedFolderId);
+    expect(result.selectedAltId).toBe(DEFAULT_LANDING_PREFS.selectedAltId);
   });
 
   it("ignores unknown extra keys in the stored prefs", () => {
