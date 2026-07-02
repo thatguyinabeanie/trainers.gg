@@ -9,7 +9,7 @@
     "limitless": "tsx src/cli.ts limitless"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.4",
+    "@supabase/supabase-js": "catalog:supabase",
     "@trainers/supabase": "workspace:*",
     "@trainers/pokemon": "workspace:*",
     "cheerio": "^1.0.0",
