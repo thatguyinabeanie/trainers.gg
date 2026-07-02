@@ -2,10 +2,16 @@
  * Tests for importTournament in import.ts.
  *
  * Focus: the team_pokemon batch-insert mapping (~line 369) that persists
- * `mon.nature ?? null` — Copilot flagged this line on PR #379 as untested.
- * The mock supabase client below stubs exactly the tables/methods
- * importTournament touches on its write path (per the DI convention in
- * .claude/rules/supabase-patterns.md — supabase is always the first param).
+ * `isNature(mon.nature) ? mon.nature : null` — Copilot flagged the original
+ * `mon.nature ?? null` line on PR #379 as untested. The mock supabase client
+ * below stubs exactly the tables/methods importTournament touches on its
+ * write path (per the DI convention in .claude/rules/supabase-patterns.md —
+ * supabase is always the first param).
+ *
+ * The `isNature()` coercion (docs/decisions/2026-07-01-pokemon-nature-enum.md)
+ * ensures an unrecognized third-party nature value can never fail the DB
+ * insert against the `pokemon_nature` enum column — it is coerced to null
+ * before insert rather than propagated as-is.
  */
 
 import { importTournament } from "../import";
@@ -174,6 +180,32 @@ describe("importTournament", () => {
     // treats an `undefined` field differently from an explicit `null` column value.
     expect(noNature).toHaveProperty("nature", null);
     expect("nature" in (noNature as object)).toBe(true);
+  });
+
+  it("coerces an unrecognized nature value to null (isNature guard)", async () => {
+    const { supabase, teamPokemonInsert } = createImportMock();
+
+    const data = buildTournamentData([
+      {
+        id: "landorus-therian",
+        name: "Landorus-Therian",
+        item: "Choice Scarf",
+        ability: "Intimidate",
+        attacks: ["Earthquake", "U-turn", "Stone Edge", "Superpower"],
+        // Not one of the 25 canonical natures — must coerce to null rather
+        // than fail the pokemon_nature enum insert.
+        nature: "NotANature",
+        tera: "Flying",
+      },
+    ]);
+
+    await importTournament(supabase, data, "M-B");
+
+    const insertedRows = teamPokemonInsert.mock.calls[0]?.[0] as Array<{
+      species: string;
+      nature: string | null;
+    }>;
+    expect(insertedRows[0]?.nature).toBeNull();
   });
 
   it("maps decklist nature: null explicitly to nature: null (not dropped)", async () => {

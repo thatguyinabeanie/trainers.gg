@@ -180,7 +180,7 @@ export function PokemonCard({ pokemon, className }: PokemonCardProps) {
           {pokemon.ability}
         </div>
 
-        {/* Nature (stat alignment) — only shown when present (Champions formats) */}
+        {/* Nature — only shown when present (Champions formats) */}
         {pokemon.nature ? (
           <div className="text-primary text-[11px] font-medium">
             {NATURE_LABELS[pokemon.nature.toLowerCase()] ?? pokemon.nature}

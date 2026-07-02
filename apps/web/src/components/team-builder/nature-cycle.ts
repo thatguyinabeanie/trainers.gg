@@ -6,7 +6,7 @@
  * Pure module — no React imports.
  */
 
-import { NATURE_EFFECTS } from "@trainers/pokemon";
+import { NATURE_EFFECTS, type Nature } from "@trainers/pokemon";
 
 // =============================================================================
 // Types
@@ -24,7 +24,7 @@ export type NatureStat =
 // =============================================================================
 
 /** Canonical neutral nature — the rest (Hardy/Docile/Bashful/Quirky) are duplicates. */
-export const NEUTRAL_NATURE = "Serious";
+export const NEUTRAL_NATURE: Nature = "Serious";
 
 export const ALL_NATURE_STATS: NatureStat[] = [
   "attack",
@@ -69,9 +69,9 @@ export const SHORT_TO_LONG: Record<string, NatureStat> = {
 export function findNatureFor(
   boost: NatureStat,
   reduce: NatureStat
-): string | null {
+): Nature | null {
   for (const [name, eff] of Object.entries(NATURE_EFFECTS)) {
-    if (eff.boost === boost && eff.reduce === reduce) return name;
+    if (eff.boost === boost && eff.reduce === reduce) return name as Nature;
   }
   return null;
 }
@@ -118,7 +118,7 @@ export function computeNatureForSuffix(opts: {
   currentNature: string;
   statKey: string;
   suffix: "+" | "-" | null;
-}): string | null {
+}): Nature | null {
   const { currentNature, statKey, suffix } = opts;
   if (statKey === "hp") return null;
   const stat = statKey as NatureStat;
@@ -172,7 +172,7 @@ export function computeNatureForSuffix(opts: {
 export function cycleNature(
   currentNature: string,
   statKey: string
-): string | null {
+): Nature | null {
   if (statKey === "hp") return null;
   const longStat = SHORT_TO_LONG[statKey] ?? (statKey as NatureStat);
   if (!ALL_NATURE_STATS.includes(longStat)) return null;

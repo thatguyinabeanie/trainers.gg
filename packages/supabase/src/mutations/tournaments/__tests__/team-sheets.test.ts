@@ -338,7 +338,7 @@ describe("createTournamentTeamSheets", () => {
       ["Champions format", CHAMPIONS_FORMAT, "Timid"],
       ["non-Champions format", STANDARD_FORMAT, null],
     ])(
-      "maps stat_alignment to nature for %s",
+      "reads nature per format for %s",
       async (_label, format, expectedNature) => {
         const fromSpy = jest.spyOn(mockClient, "from");
         const upsertMock = jest.fn().mockResolvedValue({ error: null });

@@ -9,16 +9,21 @@
 Convert the free-form `nature` text columns across the DB into a shared,
 Title-Case Postgres enum `public.pokemon_nature` (the 25 canonical natures).
 Importers coerce unknown values to `NULL` before insert so a surprise third-party
-value can never fail an import. This is a self-contained spec: each wave below can
-be executed from this file alone.
+value can never fail an import. **Also unify vocabulary:** RK9's `stat_alignment`
+(the same datum under another name) is **renamed to `nature`** — DB column, the
+`statAlignment` scraper/import field, and all reads — so the codebase uses a single
+word everywhere. Pre-launch, so no back-compat shim. This is a self-contained spec:
+each wave below can be executed from this file alone.
 
 ---
 
 ## Locked decisions (do not re-litigate)
 
 1. **Mechanism:** one shared Postgres enum `public.pokemon_nature`.
-2. **Scope:** every scalar nature column (6 of them, table below), **including**
+2. **Scope:** every scalar nature column (**5 live ones**, table below), **including**
    RK9's `stat_alignment` (nature under another name) and `team_slots.nature`.
+   (An earlier draft listed 6; `public.team_pokemon.nature` was a phantom — see
+   the correction note under the table.)
 3. **Casing:** **Title Case bare names** — `'Jolly'` (not `'jolly'`, not
    `'Jolly Nature'`). Matches `@pkmn`/Showdown, our `ALL_NATURES`/`isNature()`,
    Showdown export, and existing rows → **zero re-casing at any boundary**.
@@ -30,6 +35,14 @@ be executed from this file alone.
    re-typed by the new migration along with the others.
 6. **Excluded:** `public.pokemon_detail_stats.natures` is a `jsonb` **array** of
    aggregated usage, not a scalar — leave it untouched.
+7. **Vocabulary unification (NEW):** RK9's `stat_alignment` is **renamed to
+   `nature`** everywhere we own the name — the DB column (`RENAME COLUMN` in the
+   same new migration, on top of the enum re-type), the `statAlignment` field in
+   the RK9 scraper/worker/import types, and every read of the column. The only
+   thing that keeps the old wording is `extractLabeledValue($block, $, "Stat
+   Alignment")` in `scraper.ts` — that string matches RK9's **HTML label**, not our
+   schema, so it stays verbatim. Committed historical migrations are never edited,
+   so their `stat_alignment` references remain as historical record.
 
 ---
 
@@ -51,11 +64,20 @@ Canonical source of truth in code: `packages/pokemon/src/stats-calculator.ts`
 | # | Table.column | Nullable? | Defined in | Coerce-on-cast rule |
 |---|---|---|---|---|
 | 1 | `public.pokemon.nature` | **NOT NULL**, no default | `00000000000000_baseline.sql:792` | invalid → `'Hardy'` (can't null a NOT NULL col) |
-| 2 | `public.team_pokemon.nature` (builder) | nullable, no default | `20260409214302_team_builder_schema.sql:77` | invalid → `NULL` |
+| ~~2~~ | ~~`public.team_pokemon.nature`~~ **(does not exist — see note)** | — | — | — |
 | 3 | `public.tournament_team_sheets.nature` | nullable | `20260605020000_tournament_team_sheets_nature.sql` | invalid → `NULL` |
 | 4 | `limitless.team_pokemon.nature` | nullable | `20260627030045_limitless_team_pokemon_nature.sql` | invalid → `NULL` |
 | 5 | `team_slots.nature` | nullable | `20260610005051_create_team_slots.sql:51` | invalid → `NULL` (+ RPC edits, see 1a step 3) |
-| 6 | `rk9.team_pokemon.stat_alignment` | nullable | `20260603213904_rk9_team_pokemon_stat_alignment.sql` | invalid → `NULL` (column keeps its name) |
+| 6 | `rk9.team_pokemon.stat_alignment` → **`nature`** | nullable | `20260603213904_rk9_team_pokemon_stat_alignment.sql` | invalid → `NULL`, **then `RENAME COLUMN … TO nature`** (decision 7) |
+
+> **Correction (found at implementation, 2026-07-01):** row #2 was a phantom.
+> `public.team_pokemon` is a pure join table (`team_id`, `pokemon_id`,
+> `team_position`) with no `nature` column — verified against generated
+> `types.ts`. The spec's cited line `20260409214302_team_builder_schema.sql:77`
+> is actually `imported_team_sheets.nature`, a table since dropped and absent
+> from the current schema. The builder's per-Pokémon nature lives on
+> `public.pokemon.nature` (row #1), which is converted. **Five live columns are
+> converted (#1, #3, #4, #5, #6); there is no #2.**
 
 ---
 
@@ -89,7 +111,7 @@ never invent them). E2E stays CI-verified.**
 | Wave | Task | Model | Files owned (disjoint) |
 |---|---|---|---|
 | 1a | Author the migration | sonnet | the new migration file only |
-| 1b | Coercion + zero-dep `natures` extraction | sonnet | `packages/pokemon/src/natures.ts` (new), `stats-calculator.ts`, `packages/pokemon/src/index.ts`, `packages/pokemon/package.json`, `sources/limitless/import.ts`, `sources/limitless/__tests__/import.test.ts`, `sources/rk9/worker.ts`, `sources/rk9/import.ts` (+ nearest rk9 test) |
+| 1b | Coercion + zero-dep `natures` extraction + `stat_alignment`→`nature` rename | sonnet | `packages/pokemon/src/natures.ts` (new), `stats-calculator.ts`, `packages/pokemon/src/index.ts`, `packages/pokemon/package.json`, `sources/limitless/import.ts`, `sources/limitless/__tests__/import.test.ts`, `sources/rk9/types.ts`, `sources/rk9/scraper.ts`, `sources/rk9/worker.ts`, `sources/rk9/import.ts` (+ nearest rk9 test), `mutations/team-slots.ts`, `mutations/__tests__/team-slots.test.ts`, `mutations/tournaments/__tests__/team-sheets.test.ts`, `usage/compile.ts`, `usage/__tests__/compile.test.ts`, `apps/web/src/components/match/pokemon-card.tsx` |
 | apply | `pnpm db:reset` then `pnpm generate-types`, one command at a time | haiku | `packages/supabase/src/types.ts` (generated) |
 | 2 | Fix enum-type typecheck ripples | sonnet | whatever `tsc` flags (allowlist set after regen) |
 | review | `migration-reviewer` + `reviewing-database` | sonnet | read-only |
@@ -131,6 +153,16 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 - Before each `ALTER`, check for a column `DEFAULT`; if any nature column has one,
   `ALTER COLUMN … DROP DEFAULT` before the type change and re-add a recast default
   after (none expected — verify while reading each source migration).
+
+**Step 2b — rename the RK9 column (decision 7):** after column #6's coerce + type
+change, rename it. Idempotent guard so replays on a fresh DB don't fail:
+```sql
+ALTER TABLE rk9.team_pokemon RENAME COLUMN stat_alignment TO nature;
+```
+Do the coerce+`ALTER TYPE` against `stat_alignment` first, then `RENAME` — order
+matters (the rename changes the name every later statement must use). If a guard is
+needed for replay idempotency, gate on `information_schema.columns` for
+`rk9.team_pokemon.stat_alignment` existing before renaming.
 
 **Step 3 — fix the two `team_slots` usage RPCs (this is the subtle part):**
 Both live in `20260610005051_create_team_slots.sql`. They do NOT return `nature`
@@ -185,16 +217,41 @@ whichever is confirmed bundle-safe for these files' runtime):
 
 - `packages/supabase/src/sources/limitless/import.ts:369` —
   `nature: mon.nature ?? null` → `nature: isNature(mon.nature) ? mon.nature : null`.
-- `packages/supabase/src/sources/rk9/worker.ts:561` —
-  `stat_alignment: mon.statAlignment ?? null` → `stat_alignment: isNature(mon.statAlignment) ? mon.statAlignment : null`.
-- `packages/supabase/src/sources/rk9/import.ts:459` — same coercion as worker.ts.
-  (RK9 has two insert sites; coerce both. If one is dead code, note it in the report.)
+- `packages/supabase/src/sources/rk9/worker.ts:561` — **rename + coerce in one:**
+  `stat_alignment: mon.statAlignment ?? null` → `nature: isNature(mon.nature) ? mon.nature : null`
+  (insert key becomes `nature` per decision 7; the local insert-row type at
+  `worker.ts:491` renames its `stat_alignment` field to `nature` too).
+- `packages/supabase/src/sources/rk9/import.ts:459` — same rename + coercion; its
+  insert-row type at `import.ts:414` renames `stat_alignment` → `nature`.
+  (RK9 has two insert sites; do both. If one is dead code, note it in the report.)
 
 **Part C — tests (write, don't run):**
 - `sources/limitless/__tests__/import.test.ts`: add a case asserting an unknown
   nature (e.g. `"NotANature"`) inserts `null`, alongside existing `"Jolly"` and
   `undefined → null` cases.
-- Add/extend the nearest RK9 test to assert invalid `stat_alignment` → `null`.
+- Add/extend the nearest RK9 test to assert an invalid nature → `null`, and update
+  it to expect the `nature` insert key (not `stat_alignment`).
+
+**Part D — the `stat_alignment` → `nature` rename (decision 7).** Beyond the two
+insert sites in Part B, rename the field/reads everywhere we own the name. `mon.nature`
+above assumes the scraper now emits `nature`, so start at the source:
+- `sources/rk9/types.ts:78-79` — rename the `statAlignment: string | null` field to
+  `nature: string | null` (update its doc comment).
+- `sources/rk9/scraper.ts:279,295` — rename the local `const statAlignment` and the
+  emitted `statAlignment: … || null` to `nature`. **Keep** the label argument
+  `extractLabeledValue($block, $, "Stat Alignment")` verbatim — it matches RK9's HTML.
+- `mutations/team-slots.ts:493` — in the `.select(...)` string, `stat_alignment` →
+  `nature`; `:533-534` — `nature: row.stat_alignment ?? null` → `nature: row.nature ?? null`
+  and update the adjacent comment (the map is now an identity).
+- `usage/compile.ts:53,88` — update the `stat_alignment→nature` mapping doc comments
+  (the reader now reads a `nature` column directly; the mapping is trivial).
+- Tests referencing the old name: `mutations/__tests__/team-slots.test.ts` (4 fixtures
+  keyed `stat_alignment`), `mutations/tournaments/__tests__/team-sheets.test.ts:341`
+  (title), `usage/__tests__/compile.test.ts:85,101` (title + comment) — rename to
+  `nature`.
+- `apps/web/src/components/match/pokemon-card.tsx:183` — comment only; drop the
+  "(stat alignment)" aside or reword to just "nature". (Different package — list it
+  explicitly in the allowlist.)
 
 **Runtime check:** confirm where these importers actually run (per the
 `autonomous-import-architecture` learning they run in a Next.js/Vercel **Node**

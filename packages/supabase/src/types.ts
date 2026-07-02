@@ -239,7 +239,7 @@ export type Database = {
           held_item: string | null
           id: number
           moves: string[] | null
-          nature: string | null
+          nature: Database["public"]["Enums"]["pokemon_nature"] | null
           position: number
           species: string
           standing_id: number
@@ -250,7 +250,7 @@ export type Database = {
           held_item?: string | null
           id?: never
           moves?: string[] | null
-          nature?: string | null
+          nature?: Database["public"]["Enums"]["pokemon_nature"] | null
           position: number
           species: string
           standing_id: number
@@ -261,7 +261,7 @@ export type Database = {
           held_item?: string | null
           id?: never
           moves?: string[] | null
-          nature?: string | null
+          nature?: Database["public"]["Enums"]["pokemon_nature"] | null
           position?: number
           species?: string
           standing_id?: number
@@ -2140,7 +2140,7 @@ export type Database = {
           move2: string | null
           move3: string | null
           move4: string | null
-          nature: string
+          nature: Database["public"]["Enums"]["pokemon_nature"]
           nickname: string | null
           notes: string | null
           species: string
@@ -2171,7 +2171,7 @@ export type Database = {
           move2?: string | null
           move3?: string | null
           move4?: string | null
-          nature: string
+          nature: Database["public"]["Enums"]["pokemon_nature"]
           nickname?: string | null
           notes?: string | null
           species: string
@@ -2202,7 +2202,7 @@ export type Database = {
           move2?: string | null
           move3?: string | null
           move4?: string | null
-          nature?: string
+          nature?: Database["public"]["Enums"]["pokemon_nature"]
           nickname?: string | null
           notes?: string | null
           species?: string
@@ -2556,7 +2556,7 @@ export type Database = {
           limitless_tournament_id: string | null
           losses: number | null
           moves: string[]
-          nature: string | null
+          nature: Database["public"]["Enums"]["pokemon_nature"] | null
           placement: number | null
           player_key: string
           position: number
@@ -2583,7 +2583,7 @@ export type Database = {
           limitless_tournament_id?: string | null
           losses?: number | null
           moves?: string[]
-          nature?: string | null
+          nature?: Database["public"]["Enums"]["pokemon_nature"] | null
           placement?: number | null
           player_key: string
           position: number
@@ -2610,7 +2610,7 @@ export type Database = {
           limitless_tournament_id?: string | null
           losses?: number | null
           moves?: string[]
-          nature?: string | null
+          nature?: Database["public"]["Enums"]["pokemon_nature"] | null
           placement?: number | null
           player_key?: string
           position?: number
@@ -3570,7 +3570,7 @@ export type Database = {
           move2: string | null
           move3: string | null
           move4: string | null
-          nature: string | null
+          nature: Database["public"]["Enums"]["pokemon_nature"] | null
           position: number
           registration_id: number
           species: string
@@ -3589,7 +3589,7 @@ export type Database = {
           move2?: string | null
           move3?: string | null
           move4?: string | null
-          nature?: string | null
+          nature?: Database["public"]["Enums"]["pokemon_nature"] | null
           position: number
           registration_id: number
           species: string
@@ -3608,7 +3608,7 @@ export type Database = {
           move2?: string | null
           move3?: string | null
           move4?: string | null
-          nature?: string | null
+          nature?: Database["public"]["Enums"]["pokemon_nature"] | null
           position?: number
           registration_id?: number
           species?: string
@@ -4830,6 +4830,32 @@ export type Database = {
         | "external"
       phase_status: "pending" | "active" | "completed"
       pokemon_gender: "Male" | "Female"
+      pokemon_nature:
+        | "Hardy"
+        | "Lonely"
+        | "Brave"
+        | "Adamant"
+        | "Naughty"
+        | "Bold"
+        | "Docile"
+        | "Relaxed"
+        | "Impish"
+        | "Lax"
+        | "Timid"
+        | "Hasty"
+        | "Serious"
+        | "Jolly"
+        | "Naive"
+        | "Modest"
+        | "Mild"
+        | "Quiet"
+        | "Bashful"
+        | "Rash"
+        | "Calm"
+        | "Gentle"
+        | "Sassy"
+        | "Careful"
+        | "Quirky"
       registration_status:
         | "pending"
         | "registered"
@@ -5141,7 +5167,7 @@ export type Database = {
           species: string
           species_raw: string
           standing_id: number
-          stat_alignment: string | null
+          nature: Database["public"]["Enums"]["pokemon_nature"] | null
           tera_type: string | null
         }
         Insert: {
@@ -5155,7 +5181,7 @@ export type Database = {
           species: string
           species_raw: string
           standing_id: number
-          stat_alignment?: string | null
+          nature?: Database["public"]["Enums"]["pokemon_nature"] | null
           tera_type?: string | null
         }
         Update: {
@@ -5169,7 +5195,7 @@ export type Database = {
           species?: string
           species_raw?: string
           standing_id?: number
-          stat_alignment?: string | null
+          nature?: Database["public"]["Enums"]["pokemon_nature"] | null
           tera_type?: string | null
         }
         Relationships: [
@@ -5453,6 +5479,33 @@ export const Constants = {
       ],
       phase_status: ["pending", "active", "completed"],
       pokemon_gender: ["Male", "Female"],
+      pokemon_nature: [
+        "Hardy",
+        "Lonely",
+        "Brave",
+        "Adamant",
+        "Naughty",
+        "Bold",
+        "Docile",
+        "Relaxed",
+        "Impish",
+        "Lax",
+        "Timid",
+        "Hasty",
+        "Serious",
+        "Jolly",
+        "Naive",
+        "Modest",
+        "Mild",
+        "Quiet",
+        "Bashful",
+        "Rash",
+        "Calm",
+        "Gentle",
+        "Sassy",
+        "Careful",
+        "Quirky",
+      ],
       registration_status: [
         "pending",
         "registered",

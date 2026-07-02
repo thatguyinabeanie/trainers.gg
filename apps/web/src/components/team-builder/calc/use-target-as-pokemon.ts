@@ -1,5 +1,6 @@
 "use client";
 
+import { isNature } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
 import {
@@ -133,7 +134,7 @@ export function useTargetAsPokemon(
     // Core identity fields
     species: defenderSpecies,
     ability: defenderAbility,
-    nature: defenderNature,
+    nature: isNature(defenderNature) ? defenderNature : "Hardy",
     held_item: defenderItem || null,
     tera_type: defenderTera || null,
     // EVs (null means 0 in the engine; use explicit null when 0 for DB compat)
