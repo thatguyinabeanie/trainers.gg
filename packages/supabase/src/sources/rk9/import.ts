@@ -15,6 +15,7 @@
  */
 
 import { validatePokemonLegality } from "@trainers/pokemon";
+import { isNature, type Nature } from "@trainers/pokemon/natures";
 
 import { type TypedClient } from "../../client";
 
@@ -411,7 +412,7 @@ export async function importEvent(
     ability: string | null;
     held_item: string | null;
     tera_type: string | null;
-    stat_alignment: string | null;
+    nature: Nature | null;
     moves: string[] | null;
     is_legal: boolean;
     legality_reason: string | null;
@@ -456,7 +457,7 @@ export async function importEvent(
             ability,
             held_item: heldItem,
             tera_type: mon.teraType || null,
-            stat_alignment: mon.statAlignment ?? null,
+            nature: isNature(mon.nature) ? mon.nature : null,
             moves,
             is_legal: legality.isLegal,
             legality_reason: legality.reason,

@@ -5,6 +5,8 @@
  * package-local TypedClient DI convention and package-relative imports.
  */
 
+import { isNature, type Nature } from "@trainers/pokemon/natures";
+
 import { type TablesInsert } from "../../types";
 import { type TypedClient } from "../../client";
 
@@ -349,6 +351,7 @@ export async function importTournament(
         ability: string | null;
         held_item: string | null;
         tera_type: string | null;
+        nature: Nature | null;
         moves: string[];
       }> = [];
       for (const { id: standingId, index } of standingIds) {
@@ -365,6 +368,7 @@ export async function importTournament(
               ability: mon.ability ?? null,
               held_item: mon.item ?? null,
               tera_type: mon.tera ?? null,
+              nature: isNature(mon.nature) ? mon.nature : null,
               moves: mon.attacks ?? [],
             });
           }

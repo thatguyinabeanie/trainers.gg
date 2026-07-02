@@ -1,4 +1,4 @@
-import { isChampionsFormatId } from "@trainers/pokemon";
+import { isChampionsFormatId, type Nature } from "@trainers/pokemon";
 
 import type { TypedClient } from "../../client";
 
@@ -96,7 +96,7 @@ export async function createTournamentTeamSheets(
     move2: string | null;
     move3: string | null;
     move4: string | null;
-    nature: string | null;
+    nature: Nature | null;
   }> = [];
 
   for (const reg of registrations) {
@@ -116,7 +116,7 @@ export async function createTournamentTeamSheets(
           move2: string | null;
           move3: string | null;
           move4: string | null;
-          nature: string;
+          nature: Nature;
         } | null;
       }>;
     };

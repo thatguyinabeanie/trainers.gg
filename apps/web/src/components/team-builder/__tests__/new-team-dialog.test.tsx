@@ -285,9 +285,7 @@ describe("NewTeamDialog", () => {
     });
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(mockRouterPush).toHaveBeenCalledWith(
-      "/dashboard/alts/ash_ketchum/teams/99"
-    );
+    expect(mockRouterPush).toHaveBeenCalledWith("/builder/t/acct-99");
   });
 
   // ---------------------------------------------------------------------------
@@ -402,9 +400,7 @@ describe("NewTeamDialog", () => {
     });
 
     await waitFor(() => {
-      expect(mockRouterPush).toHaveBeenCalledWith(
-        "/dashboard/alts/misty_cerulean/teams/99"
-      );
+      expect(mockRouterPush).toHaveBeenCalledWith("/builder/t/acct-99");
     });
   });
 

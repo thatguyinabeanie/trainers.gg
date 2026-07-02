@@ -16,6 +16,8 @@
  * this event+division", since raw rows ARE the sheet data.
  */
 
+import { isNature, type Nature } from "@trainers/pokemon/natures";
+
 // =============================================================================
 // Input / output types
 // =============================================================================
@@ -50,9 +52,10 @@ export interface EventMeta {
 
 /**
  * One raw Pokemon slot read from a source schema, pre-normalized by the reader.
- * The reader is responsible for slug normalization, stat_alignment→nature
- * mapping (rk9), and any source-specific field remapping before calling
- * buildTeamSlotRows.
+ * The reader is responsible for slug normalization and any source-specific
+ * field remapping before calling buildTeamSlotRows. rk9's nature column reads
+ * directly (no rename mapping — rk9.team_pokemon.stat_alignment was renamed
+ * to nature in the DB, see docs/decisions/2026-07-01-pokemon-nature-enum.md).
  */
 export interface RawSlotRow {
   /** Source-qualified standing/registration id. */
@@ -85,9 +88,9 @@ export interface RawSlotRow {
    */
   moves: (string | null)[];
   /**
-   * Nature (stat alignment). Mapped by the reader from rk9's stat_alignment
-   * field or the trainers.gg sheet's nature field. null for Limitless
-   * (not captured by that source).
+   * Nature. Read directly by the reader from rk9's `nature` column or the
+   * trainers.gg sheet's `nature` field. null for Limitless (not yet wired
+   * through — see the readLimitlessSlotRows comment in mutations/team-slots.ts).
    */
   nature: string | null;
 }
@@ -141,7 +144,7 @@ export interface TeamSlotRow {
   /** Filtered move slugs — null/empty/whitespace entries removed, order preserved. */
   moves: string[];
   /** Nature; null for Limitless or when not captured by the source. */
-  nature: string | null;
+  nature: Nature | null;
   /**
    * Polymorphic source-event FK (Decision 1). Exactly one of these is set for
    * rk9/limitless rows; both null for trainers.gg. Drives ON DELETE CASCADE
@@ -278,7 +281,7 @@ export function buildTeamSlotRows(
       ability: row.ability,
       tera_type: row.teraType,
       moves: filterMoves(row.moves),
-      nature: row.nature,
+      nature: isNature(row.nature) ? row.nature : null,
     });
   }
 

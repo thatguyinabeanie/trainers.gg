@@ -370,7 +370,7 @@ describe("TeamsSubTable", () => {
       { wrapper: createWrapper() }
     );
     const link = screen.getByText("Trick Room").closest("a");
-    expect(link).toHaveAttribute("href", "/dashboard/alts/ash_main/teams/7");
+    expect(link).toHaveAttribute("href", "/builder/t/acct-7");
   });
 
   // -- Recent results display --

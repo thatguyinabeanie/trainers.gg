@@ -11,6 +11,7 @@
  * - `processRk9Queue` — drain the full import queue within a deadline
  */
 
+import { isNature, type Nature } from "@trainers/pokemon/natures";
 import { getErrorMessage } from "@trainers/utils";
 
 import { type TypedClient } from "../../client";
@@ -488,7 +489,7 @@ export async function runTeamsBatch(
     ability: string | null;
     held_item: string | null;
     tera_type: string | null;
-    stat_alignment: string | null;
+    nature: Nature | null;
     moves: string[] | null;
   }[] = [];
   const processedIds = new Set<number>();
@@ -558,7 +559,7 @@ export async function runTeamsBatch(
               ability: mon.ability || null,
               held_item: mon.heldItem || null,
               tera_type: mon.teraType || null,
-              stat_alignment: mon.statAlignment ?? null,
+              nature: isNature(mon.nature) ? mon.nature : null,
               moves: mon.moves.length > 0 ? mon.moves : null,
             });
           }

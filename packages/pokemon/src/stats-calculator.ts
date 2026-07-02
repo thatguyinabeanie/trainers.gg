@@ -7,6 +7,13 @@ import { Dex } from "@pkmn/dex";
 
 import { REG_MA_BUNDLE } from "./champions-reg-ma";
 import { REG_MB_BUNDLE } from "./champions-reg-mb";
+import { ALL_NATURES, type Nature, isNature } from "./natures";
+
+// Re-exported for backward compatibility — `ALL_NATURES`, `Nature`, and
+// `isNature` now live in the zero-import `./natures` module so bundle-safe
+// callers (e.g. importers) can pull in the guard without dragging `@pkmn/dex`
+// in via this file. See docs/decisions/2026-07-01-pokemon-nature-enum.md.
+export { ALL_NATURES, type Nature, isNature };
 
 /**
  * Composed map of all Champions-exclusive mega base stats, drawn from the
@@ -44,49 +51,6 @@ export interface BaseStats {
 export interface NatureEffect {
   boost?: keyof Omit<BaseStats, "hp">;
   reduce?: keyof Omit<BaseStats, "hp">;
-}
-
-/**
- * Canonical 25-nature roster. Source of truth for the `Nature` type and the
- * `isNature` runtime guard. Order matches `NATURE_EFFECTS` and the picker's
- * preferred display order.
- */
-export const ALL_NATURES = [
-  "Hardy",
-  "Lonely",
-  "Brave",
-  "Adamant",
-  "Naughty",
-  "Bold",
-  "Docile",
-  "Relaxed",
-  "Impish",
-  "Lax",
-  "Timid",
-  "Hasty",
-  "Serious",
-  "Jolly",
-  "Naive",
-  "Modest",
-  "Mild",
-  "Quiet",
-  "Bashful",
-  "Rash",
-  "Calm",
-  "Gentle",
-  "Sassy",
-  "Careful",
-  "Quirky",
-] as const;
-
-/** 25-nature literal union. Derived from `ALL_NATURES`. */
-export type Nature = (typeof ALL_NATURES)[number];
-
-const ALL_NATURES_SET: ReadonlySet<string> = new Set(ALL_NATURES);
-
-/** Runtime guard. Use at parse-time / DB-read boundaries. */
-export function isNature(s: string | null | undefined): s is Nature {
-  return s != null && ALL_NATURES_SET.has(s);
 }
 
 export const NATURE_EFFECTS: Record<string, NatureEffect> = {

@@ -605,6 +605,7 @@ export function TeamsLandingClient({
         key={record.id}
         ref={rowProps.ref}
         tabIndex={rowProps.tabIndex}
+        data-testid="team-row"
         className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40"
       >
         <TeamRow

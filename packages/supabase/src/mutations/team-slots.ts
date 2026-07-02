@@ -490,7 +490,7 @@ async function readRk9SlotRows(
       .schema("rk9")
       .from("team_pokemon")
       .select(
-        "standing_id, position, species, ability, held_item, tera_type, moves, stat_alignment, standings!inner(id, division, placement, players(country))"
+        "standing_id, position, species, ability, held_item, tera_type, moves, nature, standings!inner(id, division, placement, players(country))"
       )
       .eq("standings.event_id", eventId)
       .eq("is_legal", true)
@@ -530,8 +530,9 @@ async function readRk9SlotRows(
         ability: row.ability,
         teraType: row.tera_type,
         moves: row.moves ?? [],
-        // stat_alignment is RK9's nature field (Champions M-A only; null for older events)
-        nature: row.stat_alignment ?? null,
+        // rk9.team_pokemon.nature (Champions M-A only; null for older events) —
+        // now a direct identity read, no longer a stat_alignment→nature rename.
+        nature: row.nature ?? null,
       });
     }
 
@@ -592,7 +593,7 @@ async function readLimitlessSlotRows(
         ability: row.ability,
         teraType: row.tera_type,
         moves: row.moves ?? [],
-        nature: null, // limitless.team_pokemon has no nature column
+        nature: null, // deferred — limitless.team_pokemon.nature now exists; wiring it through is a follow-up
       });
     }
 

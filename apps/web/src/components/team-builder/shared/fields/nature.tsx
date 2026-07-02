@@ -6,6 +6,7 @@ import {
   type StatKey,
   type GameFormat,
   isChampionsFormat,
+  isNature,
 } from "@trainers/pokemon";
 import { type Tables, type TablesUpdate } from "@trainers/supabase";
 
@@ -90,7 +91,9 @@ export function NatureCell({
             value={pokemon.nature ?? ""}
             species={species}
             format={format}
-            onPick={(nature) => onUpdate({ nature })}
+            onPick={(nature) => {
+              if (isNature(nature)) onUpdate({ nature });
+            }}
             onClose={() => setOpen(false)}
           />
         </FormChip>
@@ -135,7 +138,9 @@ export function NatureCell({
             value={pokemon.nature ?? ""}
             species={species}
             format={format}
-            onPick={(nature) => onUpdate({ nature })}
+            onPick={(nature) => {
+              if (isNature(nature)) onUpdate({ nature });
+            }}
             onClose={() => setOpen(false)}
           />
         </PopoverContent>

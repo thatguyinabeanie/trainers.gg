@@ -34,6 +34,9 @@ export interface LimitlessStanding {
     item?: string;
     ability?: string;
     attacks?: string[];
+    // Limitless sends a per-Pokemon nature on every decklist entry; may be
+    // absent (undefined) or explicit null on older/partial decklists.
+    nature?: string | null;
     tera?: string | null;
   }> | null;
 }

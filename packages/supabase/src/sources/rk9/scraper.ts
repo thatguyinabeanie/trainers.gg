@@ -274,9 +274,10 @@ function parsePokemonBlocks($: $API, $container: $Selection): RK9Pokemon[] {
     // Extract Held Item from "<b>Held Item:</b> value"
     const heldItem = extractLabeledValue($block, $, "Held Item");
 
-    // Extract Stat Alignment (nature) from "<b>Stat Alignment:</b> value"
+    // Extract Nature from "<b>Stat Alignment:</b> value" — the label string is
+    // RK9's HTML wording, not our schema; keep it verbatim.
     // Only present in newer formats (e.g., Champions M-A); null for older tournaments.
-    const statAlignment = extractLabeledValue($block, $, "Stat Alignment");
+    const nature = extractLabeledValue($block, $, "Stat Alignment");
 
     // Extract moves from <span class="badge"> elements
     const moves: string[] = [];
@@ -292,7 +293,7 @@ function parsePokemonBlocks($: $API, $container: $Selection): RK9Pokemon[] {
       teraType: teraType || null,
       ability: ability || "",
       heldItem: heldItem || "",
-      statAlignment: statAlignment || null,
+      nature: nature || null,
       moves,
     });
   });

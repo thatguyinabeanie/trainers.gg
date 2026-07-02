@@ -7,6 +7,7 @@ import {
   getBaseStats,
   getNatureMultiplier,
   isChampionsFormat,
+  isNature,
   NATURE_EFFECTS,
   STAT_KEYS,
   STAT_LABELS,
@@ -882,7 +883,10 @@ export function RadialStatEditor({
           {/* Single-select dropdown of every nature (alignment in Champions) */}
           <select
             value={nature}
-            onChange={(e) => onUpdate({ nature: e.target.value })}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (isNature(value)) onUpdate({ nature: value });
+            }}
             aria-label={naturePillLabel}
             className="text-foreground cursor-pointer bg-transparent font-mono text-xs font-semibold outline-none"
           >
