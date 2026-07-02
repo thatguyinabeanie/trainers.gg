@@ -33,6 +33,7 @@
     "@trainers/supabase/types": "../../src/types.ts",
     "@trainers/supabase/usage": "../../src/usage/compile.ts",
     "@trainers/pokemon": "../../../pokemon/src/index.ts",
+    "@trainers/pokemon/natures": "../../../pokemon/src/natures.ts",
     "@trainers/posthog": "../../../posthog/src/index.ts"
   },
   "lint": {
