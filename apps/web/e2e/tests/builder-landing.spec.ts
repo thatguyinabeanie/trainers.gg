@@ -318,7 +318,7 @@ test.describe("Builder landing — delete draft", () => {
     // opacity-0 until the row is hovered (group-hover reveal), so hover the
     // row first.
     const row = main.getByTestId("team-row").filter({
-      has: main.getByText(/untitled team/i),
+      hasText: /untitled team/i,
     });
     await row.hover();
     const optionsButton = row.getByRole("button", { name: /team options/i });
@@ -366,7 +366,7 @@ test.describe("Builder landing — delete draft", () => {
     // teams-landing-client.tsx) rather than `div.group` — the FolderRail's
     // nodes also use `.group`, so `div.group` is ambiguous within <main>.
     const alphaRow = main.getByTestId("team-row").filter({
-      has: main.getByText("Team Alpha"),
+      hasText: "Team Alpha",
     });
     const alphaOptionsButton = alphaRow.getByRole("button", {
       name: /team options/i,
@@ -526,7 +526,7 @@ test.describe("Builder landing — folder create and team filing", () => {
     // aria-label="Team options" (team-row.tsx line 146). The trigger is
     // opacity-0 until the row is hovered (group-hover reveal).
     const teamRow = main.getByTestId("team-row").filter({
-      has: main.getByText("Folder Test Team"),
+      hasText: "Folder Test Team",
     });
     await teamRow.hover();
     const optionsBtn = teamRow.getByRole("button", { name: /team options/i });
@@ -726,7 +726,7 @@ test.describe("Builder landing — undoable delete", () => {
     // Open the overflow menu on the row. The trigger is opacity-0 until the
     // row is hovered (group-hover reveal), so hover the row first.
     const row = main.getByTestId("team-row").filter({
-      has: main.getByText("Undo Me"),
+      hasText: "Undo Me",
     });
     await row.hover();
     const optionsBtn = row.getByRole("button", { name: /team options/i });
@@ -788,7 +788,7 @@ test.describe("Builder landing — archive and restore", () => {
     // Open the overflow menu and click "Archive". The trigger is opacity-0
     // until the row is hovered (group-hover reveal), so hover the row first.
     const row = main.getByTestId("team-row").filter({
-      has: main.getByText("Archive Me"),
+      hasText: "Archive Me",
     });
     await row.hover();
     const optionsBtn = row.getByRole("button", { name: /team options/i });
@@ -845,7 +845,7 @@ test.describe("Builder landing — archive and restore", () => {
     // Open the overflow menu and click "Unarchive". The trigger is opacity-0
     // until the row is hovered (group-hover reveal), so hover the row first.
     const row = main.getByTestId("team-row").filter({
-      has: main.getByText("Restore Me"),
+      hasText: "Restore Me",
     });
     await row.hover();
     const optionsBtn = row.getByRole("button", { name: /team options/i });
@@ -915,7 +915,7 @@ test.describe("Builder landing — drag reorder (Custom sort)", () => {
     // "Move up" and "Move down" items (team-row.tsx lines 162-175).
     // Open the options for "Reorder Second" (bottom row — can move up, not down)
     const secondRow = main.getByTestId("team-row").filter({
-      has: main.getByText("Reorder Second"),
+      hasText: "Reorder Second",
     });
     await secondRow.hover();
     const secondOptions = secondRow.getByRole("button", { name: /team options/i });
@@ -972,7 +972,7 @@ test.describe("Builder landing — drag reorder (Custom sort)", () => {
 
     // Open options for "Beta Row" and click "Move up"
     const betaRow = main.getByTestId("team-row").filter({
-      has: main.getByText("Beta Row"),
+      hasText: "Beta Row",
     });
     await betaRow.hover();
     const betaOptions = betaRow.getByRole("button", { name: /team options/i });
