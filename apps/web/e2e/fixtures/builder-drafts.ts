@@ -142,7 +142,17 @@ export async function seedDraftsBeforeLoad(
 ): Promise<void> {
   await page.addInitScript(
     ({ key, store }) => {
-      localStorage.setItem(key, JSON.stringify(store));
+      // Seed ONLY when the store is absent. addInitScript re-runs on EVERY
+      // navigation (including page.reload()), so an unconditional setItem would
+      // overwrite any state the app has since persisted — e.g. a custom-sort
+      // reorder written to this same key — reverting it on reload and breaking
+      // "persists after reload" assertions. Guarding on absence makes this a
+      // true first-load seed while leaving app-persisted mutations intact.
+      // (Each Playwright test gets a fresh context, so the key is always absent
+      // on the first navigation and the seed still lands.)
+      if (localStorage.getItem(key) === null) {
+        localStorage.setItem(key, JSON.stringify(store));
+      }
     },
     { key: BUILDER_LS_KEY, store: { version: 3, drafts: records } }
   );
