@@ -190,6 +190,8 @@ After the Phase 2–3 data-access migration:
 
 ## Related docs
 
+- `docs/cost-model.md` — ongoing cost surface, billing-alert checklist, and data-retention policy
+  (this runbook is the event-time spike companion to that doc)
 - `docs/decisions/2026-06-11-data-access-and-rls-decisions.md` — cost model, architecture decisions,
   realtime carve-out (post-decision consideration #0)
 - `.claude/skills/using-realtime/SKILL.md` — payload-driven pattern, column-homogeneous-sensitivity
