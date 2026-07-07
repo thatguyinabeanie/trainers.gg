@@ -40,7 +40,7 @@ jobs:
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -58,7 +58,7 @@ jobs:
           echo "key=node-modules-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}" >> "$GITHUB_OUTPUT"
 
       - name: Cache node_modules
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         id: node-modules-cache
         with:
           path: |
@@ -84,7 +84,7 @@ jobs:
     timeout-minutes: 10
     needs: [install]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -97,7 +97,7 @@ jobs:
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: ESLint cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             apps/*/.eslintcache
@@ -121,7 +121,7 @@ jobs:
     timeout-minutes: 10
     needs: [install]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -134,7 +134,7 @@ jobs:
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: TypeScript cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             apps/*/tsconfig.tsbuildinfo
@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -196,7 +196,7 @@ jobs:
       matrix:
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -209,7 +209,7 @@ jobs:
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: Jest cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: apps/web/.jest-cache
           # Shard-distinct key: both shards save independently without colliding.
@@ -262,7 +262,7 @@ jobs:
     timeout-minutes: 10
     needs: [install]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -275,7 +275,7 @@ jobs:
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: Jest cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: apps/mobile/.jest-cache
           key: jest-mobile-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
@@ -317,7 +317,7 @@ jobs:
     timeout-minutes: 10
     needs: [install]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -330,7 +330,7 @@ jobs:
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: Jest cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             packages/atproto/.jest-cache
@@ -417,7 +417,7 @@ jobs:
     needs: [test-web, test-mobile, test-packages]
     if: always()
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -446,7 +446,7 @@ jobs:
     outputs:
       playwright-version: ${{ steps.playwright-version.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -463,7 +463,7 @@ jobs:
         run: echo "version=$(pnpm --filter=@trainers/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -475,7 +475,7 @@ jobs:
 
       - name: Cache Playwright system deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: /var/cache/apt/archives/*.deb
           key: playwright-apt-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
@@ -499,7 +499,7 @@ jobs:
       url: ${{ steps.final-url.outputs.url }}
       branch-db-ready: ${{ steps.db-check-second.outputs.ready || steps.db-check-first.outputs.ready }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -688,7 +688,7 @@ jobs:
     timeout-minutes: 15
     needs: [install, e2e-prepare, deploy-preview]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
@@ -701,14 +701,14 @@ jobs:
           vercel-team-id: ${{ secrets.VERCEL_TEAM_ID }}
 
       - name: Restore Playwright browsers
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ needs.e2e-prepare.outputs.playwright-version }}
           fail-on-cache-miss: true
 
       - name: Restore Playwright system deps cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: /var/cache/apt/archives/*.deb
           key: playwright-apt-${{ runner.os }}-${{ needs.e2e-prepare.outputs.playwright-version }}
@@ -782,7 +782,7 @@ jobs:
     timeout-minutes: 10
     needs: [deploy-preview]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           submodules: recursive
